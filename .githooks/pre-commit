@@ -1,0 +1,30 @@
+#!/usr/bin/env sh
+# Pre-commit checks. Each block runs only when the staged change touches
+# files it cares about. Add new checks below; keep them small and conditional.
+
+set -e
+
+cd "$(git rev-parse --show-toplevel)"
+
+STAGED="$(git diff --cached --name-only --diff-filter=ACMR)"
+
+# Markdown / MDX / Astro link validation
+if printf '%s\n' "$STAGED" | grep -qiE '\.(md|mdx|astro)$'; then
+  pnpm --silent check:docs
+fi
+
+# TypeScript typecheck (single canonical script — astro + scripts together)
+if printf '%s\n' "$STAGED" | grep -qE '\.(ts|tsx|astro)$|^scripts/'; then
+  pnpm --silent typecheck
+fi
+
+# GitHub Actions workflow lint. actionlint validates schema, expression syntax,
+# job/output references, and runs shellcheck on inline `run:` blocks. Soft-skip
+# if not installed — `pnpm bootstrap` (or `pnpm preflight`) flags it.
+if printf '%s\n' "$STAGED" | grep -qE '^\.github/(workflows|actions)/'; then
+  if command -v actionlint >/dev/null 2>&1; then
+    actionlint
+  else
+    printf 'warn: actionlint not installed; skipping workflow lint. Run `pnpm bootstrap --phase install` to install.\n' >&2
+  fi
+fi

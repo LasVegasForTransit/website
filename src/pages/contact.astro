@@ -1,0 +1,57 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import SectionHeader from '../components/SectionHeader.astro';
+import { site } from '../lib/site';
+import { getEntry, render } from 'astro:content';
+import { requireEntry } from '../lib/content-guard';
+
+const contactPage = await getEntry('pages', 'contact');
+requireEntry(contactPage, 'pages', 'contact');
+const { Content } = await render(contactPage);
+---
+
+<BaseLayout title="Contact" description="Get in touch with Las Vegans for Better Transit.">
+  <header class="container-page pt-20 pb-12 md:pt-28 md:pb-16">
+    <SectionHeader
+      title="Talk to us."
+      lede="Las Vegans for Better Transit is always open to hearing from residents, business owners, electeds, and journalists."
+    />
+  </header>
+  <hr class="rule-thick container-page" />
+
+  <section class="container-page py-16 md:py-20 grid gap-12 md:grid-cols-[3fr_2fr]">
+    <div class="prose-doc max-w-none">
+      <Content />
+    </div>
+
+    <aside class="border border-ink p-8 self-start">
+      <h2 class="text-title-md">Direct contact</h2>
+      <ul class="mt-6 space-y-6">
+        <li>
+          <p class="eyebrow">General</p>
+          <a href={`mailto:${site.email.general}`} class="block mt-1 text-lg font-bold underline">
+            {site.email.general}
+          </a>
+        </li>
+        <li>
+          <p class="eyebrow">Press</p>
+          <a href={`mailto:${site.email.press}`} class="block mt-1 text-lg font-bold underline">
+            {site.email.press}
+          </a>
+        </li>
+        <li>
+          <p class="eyebrow">Partnerships</p>
+          <a href={`mailto:${site.email.partners}`} class="block mt-1 text-lg font-bold underline">
+            {site.email.partners}
+          </a>
+        </li>
+      </ul>
+
+      <h2 class="text-title-md mt-10">Follow us</h2>
+      <ul class="mt-4 space-y-2 text-sm font-semibold">
+        <li><a href={site.social.instagram} rel="noopener">Instagram →</a></li>
+        <li><a href={site.social.bluesky} rel="noopener">Bluesky →</a></li>
+      </ul>
+    </aside>
+  </section>
+</BaseLayout>

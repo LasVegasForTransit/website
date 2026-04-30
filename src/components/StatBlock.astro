@@ -1,0 +1,16 @@
+---
+interface Props {
+  value: string;
+  label: string;
+  context?: string;
+}
+const { value, label, context } = Astro.props;
+---
+
+<div class="reveal-stat flex flex-col gap-3">
+  <span class="block text-[clamp(3.5rem,9vw,7rem)] font-black leading-none tracking-tighter tnum"
+    >{value}</span
+  >
+  <span class="eyebrow">{label}</span>
+  {context && <p class="text-sm text-mute max-w-xs">{context}</p>}
+</div>

@@ -1,0 +1,25 @@
+---
+import BaseLayout from './BaseLayout.astro';
+import SectionHeader from '../components/SectionHeader.astro';
+
+interface Props {
+  title: string;
+  summary?: string;
+  eyebrow?: string;
+  description?: string;
+}
+
+const { title, summary, eyebrow, description } = Astro.props;
+---
+
+<BaseLayout title={title} description={description ?? summary}>
+  <article>
+    <header class="container-page pt-20 pb-12 md:pt-28 md:pb-20">
+      <SectionHeader eyebrow={eyebrow} title={title} lede={summary} />
+    </header>
+    <hr class="rule-thick container-page" />
+    <div class="container-prose py-16 md:py-24 prose-doc">
+      <slot />
+    </div>
+  </article>
+</BaseLayout>

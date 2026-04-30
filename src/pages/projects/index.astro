@@ -1,0 +1,58 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import SectionHeader from '../../components/SectionHeader.astro';
+import ProjectCard from '../../components/ProjectCard.astro';
+import InitiativeChip from '../../components/InitiativeChip.astro';
+import { getCollection } from 'astro:content';
+
+const projects = await getCollection('projects', (entry) => !entry.id.startsWith('_'));
+const initiatives = await getCollection('initiatives');
+
+const sorted = projects.sort((a, b) => {
+  const ao = a.data.order ?? 999;
+  const bo = b.data.order ?? 999;
+  if (ao !== bo) return ao - bo;
+  return a.data.title.localeCompare(b.data.title);
+});
+
+const initiativesById = new Map(initiatives.map((i) => [i.id, i]));
+---
+
+<BaseLayout
+  title="Projects"
+  description="The work we're doing right now to build a transit constituency in the Las Vegas Valley."
+>
+  <header class="container-page pt-20 pb-12 md:pt-28 md:pb-16">
+    <SectionHeader
+      eyebrow="The work, in public"
+      title="Our projects"
+      lede="What we're working on, who's leading it, and how it's going. This page is the public-facing version of our internal tracker."
+    />
+  </header>
+  <hr class="rule-thick container-page" />
+
+  <section class="container-page py-12">
+    <p class="eyebrow">Initiatives</p>
+    <div class="mt-4 flex flex-wrap gap-3">
+      {initiatives.map((i) => <InitiativeChip title={i.data.title} />)}
+    </div>
+  </section>
+
+  <section class="container-page pb-20 md:pb-28">
+    <div class="grid gap-6 md:grid-cols-2">
+      {
+        sorted.map((project) => (
+          <ProjectCard
+            href={`/projects/${project.id}`}
+            title={project.data.title}
+            status={project.data.status}
+            tldr={project.data.tldr}
+            initiatives={project.data.initiatives.map((slug) => ({
+              title: initiativesById.get(slug)?.data.title ?? slug,
+            }))}
+          />
+        ))
+      }
+    </div>
+  </section>
+</BaseLayout>

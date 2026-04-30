@@ -1,0 +1,58 @@
+name: Deploy to Cloudflare Pages
+description: >
+  Download the dist artifact built by `build-site`, then deploy it to a
+  Cloudflare Pages project via wrangler. Wrangler is a pinned devDependency
+  (no `pnpm dlx` fetch in CI), so deploys are deterministic.
+
+  Caller must already have `setup-node-pnpm` in the same job and must export
+  CLOUDFLARE_API_TOKEN + CLOUDFLARE_ACCOUNT_ID via the job `env:` block (do
+  NOT pass tokens as inputs — composite-action inputs end up in `with:`,
+  which serializes into workflow logs).
+
+inputs:
+  branch:
+    description: Pages branch (e.g. `main` for production, head ref for previews).
+    required: true
+  project-name:
+    description: Cloudflare Pages project name.
+    required: false
+    default: lvbt-website
+
+outputs:
+  url:
+    description: The deployment URL parsed from wrangler stdout.
+    value: ${{ steps.deploy.outputs.url }}
+
+runs:
+  using: composite
+  steps:
+    - name: Download dist artifact
+      uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+      with:
+        name: dist-${{ github.sha }}
+        path: dist/
+
+    - name: Deploy
+      id: deploy
+      shell: bash
+      env:
+        # Re-export from the caller's env so wrangler picks them up. Composite
+        # actions inherit the caller's env automatically, but this makes the
+        # contract explicit.
+        CLOUDFLARE_API_TOKEN: ${{ env.CLOUDFLARE_API_TOKEN }}
+        CLOUDFLARE_ACCOUNT_ID: ${{ env.CLOUDFLARE_ACCOUNT_ID }}
+      run: |
+        set -euo pipefail
+        out=$(pnpm exec wrangler pages deploy dist \
+          --project-name='${{ inputs.project-name }}' \
+          --branch='${{ inputs.branch }}' \
+          --commit-hash='${{ github.sha }}' \
+          --commit-message="$(git log -1 --pretty=%s | head -c 200)" \
+          2>&1 | tee /dev/stderr)
+        # Wrangler prints `Take a peek over at https://<hash>.<project>.pages.dev`.
+        url=$(printf '%s\n' "$out" | grep -oE 'https://[a-z0-9-]+\.[a-z0-9-]+\.pages\.dev' | tail -1)
+        if [ -z "$url" ]; then
+          echo "::warning::Could not parse Pages URL from wrangler output."
+          url=""
+        fi
+        echo "url=$url" >> "$GITHUB_OUTPUT"

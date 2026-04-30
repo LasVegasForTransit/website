@@ -1,0 +1,69 @@
+---
+import '../styles/global.css';
+import Header from '../components/site/Header.astro';
+import Footer from '../components/site/Footer.astro';
+import { site } from '../lib/site';
+
+interface Props {
+  title?: string;
+  description?: string;
+  ogImage?: string;
+  noindex?: boolean;
+}
+
+const {
+  title,
+  description = 'Las Vegans for Better Transit is the grassroots advocacy group fighting for world-class public transit and supportive land use in the Las Vegas Valley.',
+  ogImage = '/og-default.png',
+  noindex = false,
+} = Astro.props;
+
+const fullTitle = title ? `${title} — ${site.name}` : `${site.name}`;
+const canonical = new URL(Astro.url.pathname, site.url).toString();
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <script is:inline>document.documentElement.classList.add('reveal-ready');</script>
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="canonical" href={canonical} />
+    <title>{fullTitle}</title>
+    <meta name="description" content={description} />
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content={fullTitle} />
+    <meta property="og:description" content={description} />
+    <meta property="og:url" content={canonical} />
+    <meta property="og:image" content={new URL(ogImage, site.url).toString()} />
+    <meta name="twitter:card" content="summary_large_image" />
+    {noindex && <meta name="robots" content="noindex,nofollow" />}
+    <link rel="sitemap" href="/sitemap-index.xml" />
+  </head>
+  <body class="min-h-screen flex flex-col">
+    <Header />
+    <main id="main" class="flex-1">
+      <slot />
+    </main>
+    <Footer />
+    <script is:inline>
+      (() => {
+        const targets = document.querySelectorAll('.reveal, .reveal-stat, .reveal-quote');
+        if (!targets.length) return;
+        const obs = new IntersectionObserver(
+          (entries) => {
+            for (const entry of entries) {
+              if (entry.isIntersecting) {
+                entry.target.classList.add('is-visible');
+                obs.unobserve(entry.target);
+              }
+            }
+          },
+          { threshold: 0.15, rootMargin: '0px 0px -40px 0px' },
+        );
+        targets.forEach((el) => obs.observe(el));
+      })();
+    </script>
+  </body>
+</html>

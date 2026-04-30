@@ -1,0 +1,15 @@
+# pnpm 10 requires `packages` whenever pnpm-workspace.yaml exists, even for
+# single-package repos like this one. Listing the repo root keeps pnpm settings
+# (onlyBuiltDependencies, peerDependencyRules) co-located with the package.
+packages:
+  - .
+
+onlyBuiltDependencies:
+  - esbuild
+  - sharp
+
+peerDependencyRules:
+  allowedVersions:
+    # tsconfck (transitive via astro) declares peer typescript@^5 but
+    # works with TS 6. Drop this once upstream widens its peer range.
+    tsconfck>typescript: '6'

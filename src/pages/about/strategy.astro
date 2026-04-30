@@ -1,0 +1,13 @@
+---
+import DocLayout from '../../layouts/DocLayout.astro';
+import { getEntry, render } from 'astro:content';
+import { requireEntry } from '../../lib/content-guard';
+
+const strategy = await getEntry('docs', 'strategy');
+requireEntry(strategy, 'docs', 'strategy');
+const { Content } = await render(strategy);
+---
+
+<DocLayout title={strategy.data.title} summary={strategy.data.summary}>
+  <Content />
+</DocLayout>

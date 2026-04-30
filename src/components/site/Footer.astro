@@ -1,0 +1,65 @@
+---
+import { site } from '../../lib/site';
+const year = new Date().getFullYear();
+---
+
+<footer class="mt-32 bg-ink text-paper">
+  <div class="h-2 bg-accent"></div>
+
+  <div class="container-page pt-20 pb-16 grid gap-16 md:grid-cols-12">
+    <div class="md:col-span-7">
+      <a href="/" class="text-display-md tracking-tight no-underline block">
+        <span class="block leading-[0.9]">Las Vegans</span>
+        <span class="block leading-[0.9] text-accent">for Better Transit</span>
+      </a>
+    </div>
+    <div class="md:col-span-3">
+      <p class="eyebrow text-accent-soft">Organization</p>
+      <ul class="mt-5 space-y-3 text-base font-semibold">
+        <li><a href="/about" class="no-underline hover:text-accent">About</a></li>
+        <li><a href="/vision" class="no-underline hover:text-accent">Vision</a></li>
+        <li><a href="/projects" class="no-underline hover:text-accent">Projects</a></li>
+        <li><a href="/events" class="no-underline hover:text-accent">Events</a></li>
+        <li><a href="/contact" class="no-underline hover:text-accent">Contact</a></li>
+      </ul>
+    </div>
+    <div class="md:col-span-2">
+      <p class="eyebrow text-accent-soft">Get involved</p>
+      <ul class="mt-5 space-y-3 text-base font-semibold">
+        <li><a href="/join" class="no-underline hover:text-accent">Join us</a></li>
+        <li>
+          <a href={site.donate.url} rel="noopener" class="no-underline hover:text-accent">Donate</a>
+        </li>
+        <li>
+          <a href={site.social.instagram} rel="noopener" class="no-underline hover:text-accent"
+            >Instagram</a
+          >
+        </li>
+        <li>
+          <a href={`mailto:${site.email.general}`} class="no-underline hover:text-accent">Email</a>
+        </li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="container-page py-16 border-t border-paper/15">
+    <p class="eyebrow text-accent-soft">§ The work</p>
+    <p class="text-headline-lg mt-5 max-w-4xl">
+      14th-busiest bus system in the country. <span class="text-accent">Zero miles of rail.</span> We're
+      organizing the people who can change that — before the 2027 Nevada session closes the window.
+    </p>
+  </div>
+
+  <div
+    class="container-page py-6 border-t border-paper/15 flex flex-col md:flex-row gap-3 justify-between text-xs uppercase tracking-wider text-paper/60"
+  >
+    <span>Founded April 2026 · Las Vegas, Nevada · © {year} {site.shortName}</span>
+    <span
+      >Open-source. <a
+        href="https://github.com/"
+        rel="noopener"
+        class="underline underline-offset-4 hover:text-accent">View on GitHub →</a
+      ></span
+    >
+  </div>
+</footer>

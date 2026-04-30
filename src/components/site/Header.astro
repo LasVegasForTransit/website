@@ -1,0 +1,60 @@
+---
+import { site, navMain } from '../../lib/site';
+const path = Astro.url.pathname;
+---
+
+{
+  /* Sentinel drives data-stuck via IntersectionObserver below; cheaper
+    and more reliable than listening to scroll events. */
+}
+<div data-header-sentinel aria-hidden="true" class="h-px"></div>
+<header
+  data-site-header
+  class="sticky top-0 z-50 bg-paper/80 border-b border-transparent data-[stuck]:backdrop-blur-md data-[stuck]:backdrop-saturate-150 data-[stuck]:border-rule/15 transition-[border-color] duration-200 ease-out"
+>
+  <div class="container-page py-4 flex items-center justify-between gap-6">
+    <a href="/" class="font-extrabold tracking-tight text-lg md:text-xl no-underline">
+      <span class="block leading-none">Las Vegans</span>
+      <span class="block leading-none text-accent">for Better Transit</span>
+    </a>
+    <nav aria-label="Primary" class="hidden md:block">
+      <ul class="flex items-center gap-7 text-sm font-semibold">
+        {
+          navMain.map((item) => {
+            const active = path.startsWith(item.href);
+            return (
+              <li>
+                <a
+                  href={item.href}
+                  aria-current={active ? 'page' : undefined}
+                  class:list={['nav-link no-underline hover:text-accent', active && 'text-accent']}
+                >
+                  {item.label}
+                </a>
+              </li>
+            );
+          })
+        }
+      </ul>
+    </nav>
+    <a
+      href="/join"
+      class="press hidden md:inline-flex items-center bg-ink text-paper px-4 py-2 text-sm font-bold no-underline hover:bg-accent"
+    >
+      Get involved →
+    </a>
+    <a href="/join" class="md:hidden text-sm font-bold underline">Join →</a>
+  </div>
+</header>
+
+<script is:inline>
+  (() => {
+    const sentinel = document.querySelector('[data-header-sentinel]');
+    const header = document.querySelector('[data-site-header]');
+    if (!sentinel || !header) return;
+    new IntersectionObserver(([entry]) => {
+      if (entry.isIntersecting) delete header.dataset.stuck;
+      else header.dataset.stuck = '';
+    }).observe(sentinel);
+  })();
+</script>

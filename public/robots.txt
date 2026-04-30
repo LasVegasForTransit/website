@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://lasvegasfortransit.org/sitemap-index.xml

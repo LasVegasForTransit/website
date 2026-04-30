@@ -1,0 +1,29 @@
+---
+interface Props {
+  status: 'active' | 'planned' | 'complete' | 'paused';
+}
+const { status } = Astro.props;
+
+const styles: Record<Props['status'], string> = {
+  active: 'bg-accent text-paper border-accent',
+  planned: 'bg-transparent text-ink border-ink',
+  complete: 'bg-rule/15 text-mute border-mute/30',
+  paused: 'bg-transparent text-mute border-dashed border-mute',
+};
+
+const label: Record<Props['status'], string> = {
+  active: 'Active',
+  planned: 'Planned',
+  complete: 'Complete',
+  paused: 'Paused',
+};
+---
+
+<span
+  class:list={[
+    'inline-flex items-center px-2.5 py-1 text-xs font-bold uppercase tracking-wider border',
+    styles[status],
+  ]}
+>
+  {label[status]}
+</span>
