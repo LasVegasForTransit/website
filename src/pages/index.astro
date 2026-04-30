@@ -1,0 +1,186 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import StatBlock from '../components/StatBlock.astro';
+import PullQuote from '../components/PullQuote.astro';
+import NewsletterEmbed from '../components/NewsletterEmbed.astro';
+---
+
+<BaseLayout
+  title="Building the public-transit movement Las Vegas has never had"
+  description="Las Vegans for Better Transit is the grassroots advocacy group fighting for world-class public transit and supportive land use in the Las Vegas Valley."
+>
+  {/* HERO */}
+  <section class="container-page py-16 md:py-28">
+    <p class="eyebrow">Las Vegans for Better Transit</p>
+    <h1 class="text-display-lg mt-4">
+      We're building the public-transit <span class="text-accent">movement</span> Las Vegas has never had.
+    </h1>
+    <p class="lede mt-8 max-w-2xl">
+      The buses we already have are about to be cut in half — and the 2027 Nevada session is the only window to stop it.
+    </p>
+    <div class="mt-10 flex flex-wrap items-center gap-4">
+      <a
+        href="/vision"
+        class="press inline-flex items-center bg-ink text-paper px-6 py-3 font-bold uppercase tracking-wider no-underline hover:bg-accent"
+      >
+        Read our vision →
+      </a>
+      <a
+        href="/join"
+        class="press inline-flex items-center border-2 border-ink px-6 py-3 font-bold uppercase tracking-wider no-underline hover:bg-ink hover:text-paper"
+      >
+        Get involved
+      </a>
+    </div>
+  </section>
+
+  <hr class="rule-thick container-page" />
+
+  {/* THE REALITY */}
+  <section class="container-page py-20 md:py-28">
+    <div class="reveal">
+      <p class="eyebrow">§ 01 / The reality</p>
+      <h2 class="text-headline-lg mt-4 max-w-3xl">
+        The Valley moves on a bus system most Las Vegans have never thought twice about.
+      </h2>
+    </div>
+    <div class="reveal-stagger mt-16 grid gap-12 md:grid-cols-3">
+      <StatBlock value="2.3M" label="Residents in the Valley" />
+      <StatBlock
+        value="57.9M"
+        label="Annual RTC bus trips"
+        context="The 14th-busiest bus system in the United States."
+      />
+      <StatBlock value="0 mi" label="Light rail in the entire metro" />
+    </div>
+  </section>
+
+  <hr class="rule-thick container-page" />
+
+  {/* THE CLIFF */}
+  <section class="bg-ink text-paper">
+    <div class="container-page py-20 md:py-28">
+      <div class="reveal">
+        <p class="eyebrow text-accent-soft">§ 02 / The cliff</p>
+        <h2 class="text-headline-lg mt-4 max-w-3xl">
+          Without action in the 2027 Nevada legislative session, 42% of bus service is gone in 2028.
+        </h2>
+      </div>
+      <div class="mt-12 max-w-3xl">
+        <PullQuote cite="RTC of Southern Nevada, March 2026">
+          "Without a new dedicated funding source, the Regional Transportation Commission of
+          Southern Nevada will be forced to eliminate fifteen routes and reduce service across the
+          network — affecting hundreds of thousands of riders by 2028."
+        </PullQuote>
+      </div>
+      <p class="lede mt-12 max-w-2xl text-paper/80">
+        The Nevada Legislature meets every two years. The 2027 session is the only window before the
+        cuts hit. After that, recovery starts from a smaller, weaker baseline.
+      </p>
+      <a
+        href="/vision"
+        class="inline-block mt-8 font-bold uppercase tracking-wider underline underline-offset-4 decoration-accent decoration-2"
+      >
+        Read why now →
+      </a>
+    </div>
+  </section>
+
+  {/* THERE IS STILL HOPE */}
+  <section class="container-page py-20 md:py-28">
+    <div class="reveal">
+      <p class="eyebrow">§ 03 / There is still hope</p>
+      <h2 class="text-headline-lg mt-4 max-w-3xl">
+        Real projects are already in motion. They need a public that's organized to defend them.
+      </h2>
+    </div>
+    <div class="reveal-stagger mt-16 grid gap-6 md:grid-cols-3">
+      <div class="reveal border border-ink p-8">
+        <p class="eyebrow">Fall 2026</p>
+        <h3 class="text-title-lg mt-3">Maryland Parkway BRT</h3>
+        <p class="mt-4 leading-relaxed">
+          $378 million, 29 stations, hydrogen fuel cell buses, dedicated lanes from downtown to
+          Henderson.
+        </p>
+      </div>
+      <div class="reveal border border-ink p-8">
+        <p class="eyebrow">Underway</p>
+        <h3 class="text-title-lg mt-3">Charleston corridor</h3>
+        <p class="mt-4 leading-relaxed">
+          A 17-mile light-rail-vs.-BRT study covering 12,000+ daily transit trips. The Valley's
+          first potential rail line.
+        </p>
+      </div>
+      <div class="reveal border border-ink p-8">
+        <p class="eyebrow">Expected 2029</p>
+        <h3 class="text-title-lg mt-3">Brightline West</h3>
+        <p class="mt-4 leading-relaxed">
+          High-speed rail to Southern California — and a new last-mile imperative for transit at our
+          end.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <hr class="rule-thick container-page" />
+
+  {/* WHAT WE DO */}
+  <section class="container-page py-20 md:py-28">
+    <div class="reveal">
+      <p class="eyebrow">§ 04 / What we do</p>
+      <h2 class="text-headline-lg mt-4 max-w-3xl">We educate, we organize, and we advocate.</h2>
+    </div>
+    <div class="reveal-stagger mt-16 grid gap-12 md:grid-cols-3">
+      <div class="reveal">
+        <h3 class="text-title-lg">Educate</h3>
+        <p class="mt-4 leading-relaxed">
+          We help Las Vegans see the connection between how we get around, what our neighborhoods
+          look like, and what daily life in the Valley costs.
+        </p>
+        <a href="/vision" class="inline-block mt-4 font-bold underline underline-offset-4"
+          >Our vision →</a
+        >
+      </div>
+      <div class="reveal">
+        <h3 class="text-title-lg">Organize</h3>
+        <p class="mt-4 leading-relaxed">
+          We turn diffuse public support for transit into a constituency legislators have to answer
+          to.
+        </p>
+        <a href="/projects" class="inline-block mt-4 font-bold underline underline-offset-4"
+          >Our projects →</a
+        >
+      </div>
+      <div class="reveal">
+        <h3 class="text-title-lg">Advocate</h3>
+        <p class="mt-4 leading-relaxed">
+          We show up at the Legislature, the RTC board, and city councils across the Valley.
+        </p>
+        <a href="/about/strategy" class="inline-block mt-4 font-bold underline underline-offset-4"
+          >Our strategy →</a
+        >
+      </div>
+    </div>
+  </section>
+
+  {/* CTA BAND */}
+  <section class="bg-accent text-paper">
+    <div class="container-page py-20 md:py-28">
+      <p class="eyebrow text-paper/80">The 2027 session is the moment</p>
+      <h2 class="text-display-lg mt-4 max-w-4xl">We need you in the room.</h2>
+      <a
+        href="/join"
+        class="press inline-flex mt-10 items-center bg-ink text-paper px-6 py-3 font-bold uppercase tracking-wider no-underline hover:bg-paper hover:text-ink"
+      >
+        Get involved →
+      </a>
+    </div>
+  </section>
+
+  {/* NEWSLETTER */}
+  <section class="container-page py-20">
+    <div class="max-w-2xl mx-auto">
+      <NewsletterEmbed />
+    </div>
+  </section>
+</BaseLayout>

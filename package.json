@@ -1,0 +1,46 @@
+{
+  "name": "website",
+  "type": "module",
+  "version": "0.0.1",
+  "engines": {
+    "node": ">=22.12.0"
+  },
+  "packageManager": "pnpm@10.33.0",
+  "scripts": {
+    "dev": "portless run astro dev",
+    "build": "astro build",
+    "preview": "astro preview",
+    "astro": "astro",
+    "bootstrap": "tsx scripts/bootstrap/cold-start.ts",
+    "preflight": "tsx scripts/bootstrap/cold-start.ts --doctor",
+    "check:docs": "tsx scripts/check-docs-links.ts",
+    "typecheck": "astro check && tsc -p scripts/tsconfig.json",
+    "lint": "prettier --write .",
+    "lint:check": "prettier --check .",
+    "test": "playwright test",
+    "test:update": "playwright test --update-snapshots",
+    "test:install": "playwright install --with-deps chromium",
+    "prepare": "git config --local core.hooksPath .githooks 2>/dev/null || true"
+  },
+  "dependencies": {
+    "@astrojs/mdx": "^5.0.4",
+    "@astrojs/sitemap": "^3.7.2",
+    "@fontsource-variable/public-sans": "^5.2.7",
+    "@tailwindcss/vite": "^4.2.4",
+    "astro": "^6.2.1",
+    "tailwindcss": "^4.2.4"
+  },
+  "devDependencies": {
+    "@astrojs/check": "^0.9.4",
+    "@clack/prompts": "^1.3.0",
+    "@playwright/test": "^1.50.0",
+    "@types/node": "^25.6.0",
+    "picocolors": "^1.1.1",
+    "portless": "^0.12.0",
+    "prettier": "^3.4.2",
+    "prettier-plugin-astro": "^0.14.1",
+    "tsx": "^4.21.0",
+    "typescript": "^6.0.3",
+    "wrangler": "^4.86.0"
+  }
+}

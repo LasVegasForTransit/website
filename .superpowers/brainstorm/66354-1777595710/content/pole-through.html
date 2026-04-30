@@ -1,0 +1,1012 @@
+<h2>Pole through sign · proper structural geometry</h2>
+<p class="subtitle">
+  The post is one continuous vertical line. The sign element is a hollow diamond outline. The post
+  passes through the diamond's top and bottom vertices, extends above and below. Single-SVG lockup,
+  mathematical alignment.
+</p>
+
+<style>
+  .pub {
+    font-family: 'Public Sans Variable', system-ui, sans-serif;
+  }
+
+  .frame {
+    border: 1px solid #1f232b;
+    background: #fff;
+    margin-bottom: 14px;
+  }
+  .frame > .head {
+    padding: 16px 24px;
+    border-bottom: 1px solid #1f232b;
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 16px;
+  }
+  .frame > .head .title {
+    font-family: 'Public Sans Variable', system-ui, sans-serif;
+    font-weight: 800;
+    font-size: 16px;
+    color: #0f1115;
+    letter-spacing: -0.01em;
+  }
+  .frame > .head .sub {
+    font-family: 'Public Sans Variable', system-ui, sans-serif;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+    color: #5c6068;
+    font-weight: 700;
+  }
+
+  .stage-row {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
+  .stage {
+    border: 1px solid #1f232b;
+    background: #fff;
+    cursor: pointer;
+    transition:
+      transform 0.15s,
+      box-shadow 0.15s;
+    display: grid;
+    grid-template-columns: 1fr 240px;
+  }
+  .stage:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 0 #0f1115;
+  }
+  .stage.selected {
+    outline: 4px solid #e5471a;
+    outline-offset: -4px;
+  }
+  .stage .canvas {
+    background: #f7f4ec;
+    padding: 56px 48px;
+    min-height: 200px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+  }
+  .stage .canvas .badge {
+    position: absolute;
+    top: 12px;
+    left: 12px;
+    width: 30px;
+    height: 30px;
+    background: #0f1115;
+    color: #f7f4ec;
+    font-weight: 800;
+    font-size: 13px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Public Sans Variable', system-ui, sans-serif;
+  }
+  .stage .info {
+    padding: 24px;
+    border-left: 1px solid #1f232b;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 6px;
+  }
+  .stage .info .lbl {
+    font-family: 'Public Sans Variable', system-ui, sans-serif;
+    font-size: 9px;
+    text-transform: uppercase;
+    letter-spacing: 0.16em;
+    color: #5c6068;
+    font-weight: 800;
+  }
+  .stage .info h4 {
+    font-family: 'Public Sans Variable', system-ui, sans-serif;
+    font-size: 15px;
+    margin: 0 0 4px;
+    font-weight: 800;
+    color: #0f1115;
+    letter-spacing: -0.01em;
+    line-height: 1.2;
+  }
+  .stage .info p {
+    font-family: 'Public Sans Variable', system-ui, sans-serif;
+    font-size: 11px;
+    line-height: 1.55;
+    color: #3a3e46;
+    margin: 0;
+  }
+
+  .lockup-svg {
+    display: block;
+    max-width: 100%;
+    height: auto;
+  }
+
+  /* Silhouette demo */
+  .silhouette-row {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 24px;
+    padding: 36px 0;
+  }
+  .silhouette {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+  }
+  .silhouette svg {
+    width: 80px;
+    height: 100px;
+  }
+  .silhouette .lbl {
+    font-family: 'Public Sans Variable', system-ui, sans-serif;
+    font-size: 9px;
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+    color: #5c6068;
+    font-weight: 800;
+    text-align: center;
+  }
+</style>
+
+<!-- ============== THE THREE LOCKUP VARIANTS ============== -->
+
+<div class="stage-row">
+  <!-- PT1: Symmetric diamond -->
+  <div class="stage" onclick="toggleSelect(this)" data-choice="pt1">
+    <div class="canvas">
+      <div class="badge">A</div>
+      <svg
+        class="lockup-svg"
+        viewBox="0 0 290 54"
+        xmlns="http://www.w3.org/2000/svg"
+        style="width: 560px"
+      >
+        <!-- Post: full height, passes through diamond -->
+        <line
+          x1="16"
+          y1="2"
+          x2="16"
+          y2="52"
+          stroke="#0f1115"
+          stroke-width="2"
+          stroke-linecap="butt"
+        />
+        <!-- Diamond: hollow outline, post passes through top/bottom vertices -->
+        <polygon
+          points="16,12 30,27 16,42 2,27"
+          fill="none"
+          stroke="#0f1115"
+          stroke-width="2"
+          stroke-linejoin="round"
+        />
+        <!-- Bulb at right vertex -->
+        <circle cx="30" cy="27" r="2.5" fill="#e5471a" />
+        <!-- Wordmark -->
+        <text
+          x="38"
+          y="24"
+          font-family="Public Sans Variable, system-ui, sans-serif"
+          font-weight="800"
+          font-size="22"
+          fill="#0f1115"
+          letter-spacing="-0.6"
+        >
+          Las Vegans
+        </text>
+        <text
+          x="38"
+          y="46"
+          font-family="Public Sans Variable, system-ui, sans-serif"
+          font-weight="800"
+          font-size="22"
+          fill="#e5471a"
+          letter-spacing="-0.6"
+        >
+          for Better Transit
+        </text>
+      </svg>
+    </div>
+    <div class="info">
+      <div class="lbl">A · Symmetric diamond</div>
+      <h4>Hollow diamond, pole through</h4>
+      <p>
+        Diamond outline extends both sides of the post. Post passes through top and bottom vertices.
+        Reads unmistakably as "sign on pole." Single bulb-dot at right vertex (the "presenting"
+        point toward the wordmark).
+      </p>
+    </div>
+  </div>
+
+  <!-- PT2: Asymmetric diamond, leaning right -->
+  <div class="stage" onclick="toggleSelect(this)" data-choice="pt2">
+    <div class="canvas">
+      <div class="badge">B</div>
+      <svg
+        class="lockup-svg"
+        viewBox="0 0 290 54"
+        xmlns="http://www.w3.org/2000/svg"
+        style="width: 560px"
+      >
+        <line
+          x1="12"
+          y1="2"
+          x2="12"
+          y2="52"
+          stroke="#0f1115"
+          stroke-width="2"
+          stroke-linecap="butt"
+        />
+        <!-- Asymmetric diamond: wider right than left -->
+        <polygon
+          points="12,12 28,27 12,42 6,27"
+          fill="none"
+          stroke="#0f1115"
+          stroke-width="2"
+          stroke-linejoin="round"
+        />
+        <circle cx="28" cy="27" r="2.5" fill="#e5471a" />
+        <text
+          x="36"
+          y="24"
+          font-family="Public Sans Variable, system-ui, sans-serif"
+          font-weight="800"
+          font-size="22"
+          fill="#0f1115"
+          letter-spacing="-0.6"
+        >
+          Las Vegans
+        </text>
+        <text
+          x="36"
+          y="46"
+          font-family="Public Sans Variable, system-ui, sans-serif"
+          font-weight="800"
+          font-size="22"
+          fill="#e5471a"
+          letter-spacing="-0.6"
+        >
+          for Better Transit
+        </text>
+      </svg>
+    </div>
+    <div class="info">
+      <div class="lbl">B · Asymmetric (lean-right)</div>
+      <h4>Diamond leaning toward wordmark</h4>
+      <p>
+        Diamond extends 16px to the right but only 6px to the left of the post. Suggests
+        "presenting" the wordmark. More compact than A; slightly less iconic as silhouette.
+      </p>
+    </div>
+  </div>
+
+  <!-- PT3: Just two posts (the actual sign skeleton) -->
+  <div class="stage" onclick="toggleSelect(this)" data-choice="pt3">
+    <div class="canvas">
+      <div class="badge">C</div>
+      <svg
+        class="lockup-svg"
+        viewBox="0 0 290 54"
+        xmlns="http://www.w3.org/2000/svg"
+        style="width: 560px"
+      >
+        <!-- Two posts (the actual sign has two) -->
+        <line
+          x1="10"
+          y1="2"
+          x2="10"
+          y2="52"
+          stroke="#0f1115"
+          stroke-width="2"
+          stroke-linecap="butt"
+        />
+        <line
+          x1="22"
+          y1="2"
+          x2="22"
+          y2="52"
+          stroke="#0f1115"
+          stroke-width="2"
+          stroke-linecap="butt"
+        />
+        <!-- Diamond: BOTH posts pass through it -->
+        <polygon
+          points="16,12 32,27 16,42 0,27"
+          fill="none"
+          stroke="#0f1115"
+          stroke-width="2"
+          stroke-linejoin="round"
+        />
+        <circle cx="32" cy="27" r="2.5" fill="#e5471a" />
+        <text
+          x="40"
+          y="24"
+          font-family="Public Sans Variable, system-ui, sans-serif"
+          font-weight="800"
+          font-size="22"
+          fill="#0f1115"
+          letter-spacing="-0.6"
+        >
+          Las Vegans
+        </text>
+        <text
+          x="40"
+          y="46"
+          font-family="Public Sans Variable, system-ui, sans-serif"
+          font-weight="800"
+          font-size="22"
+          fill="#e5471a"
+          letter-spacing="-0.6"
+        >
+          for Better Transit
+        </text>
+      </svg>
+    </div>
+    <div class="info">
+      <div class="lbl">C · Two posts (faithful)</div>
+      <h4>Two poles, both through diamond</h4>
+      <p>
+        Faithful to the actual sign, which has two posts. The diamond is suspended between them.
+        More information density — also more visual weight. Probably needs to scale larger to read
+        clearly.
+      </p>
+    </div>
+  </div>
+</div>
+
+<!-- ============== SILHOUETTE STUDY ============== -->
+
+<div class="frame" style="margin-top: 32px">
+  <div class="head">
+    <div class="title">Silhouette read · marks alone, no wordmark</div>
+    <div class="sub">does each shape read as "sign on pole" by itself?</div>
+  </div>
+  <div style="background: #f7f4ec; padding: 0 32px">
+    <div class="silhouette-row">
+      <div class="silhouette">
+        <svg viewBox="0 0 32 54" xmlns="http://www.w3.org/2000/svg">
+          <line
+            x1="16"
+            y1="2"
+            x2="16"
+            y2="52"
+            stroke="#0f1115"
+            stroke-width="2.5"
+            stroke-linecap="butt"
+          />
+          <polygon
+            points="16,12 30,27 16,42 2,27"
+            fill="none"
+            stroke="#0f1115"
+            stroke-width="2.5"
+            stroke-linejoin="round"
+          />
+          <circle cx="30" cy="27" r="3" fill="#e5471a" />
+        </svg>
+        <span class="lbl">A · Symmetric</span>
+      </div>
+      <div class="silhouette">
+        <svg viewBox="0 0 32 54" xmlns="http://www.w3.org/2000/svg">
+          <line
+            x1="12"
+            y1="2"
+            x2="12"
+            y2="52"
+            stroke="#0f1115"
+            stroke-width="2.5"
+            stroke-linecap="butt"
+          />
+          <polygon
+            points="12,12 28,27 12,42 6,27"
+            fill="none"
+            stroke="#0f1115"
+            stroke-width="2.5"
+            stroke-linejoin="round"
+          />
+          <circle cx="28" cy="27" r="3" fill="#e5471a" />
+        </svg>
+        <span class="lbl">B · Asymmetric</span>
+      </div>
+      <div class="silhouette">
+        <svg viewBox="0 0 32 54" xmlns="http://www.w3.org/2000/svg">
+          <line
+            x1="10"
+            y1="2"
+            x2="10"
+            y2="52"
+            stroke="#0f1115"
+            stroke-width="2.5"
+            stroke-linecap="butt"
+          />
+          <line
+            x1="22"
+            y1="2"
+            x2="22"
+            y2="52"
+            stroke="#0f1115"
+            stroke-width="2.5"
+            stroke-linecap="butt"
+          />
+          <polygon
+            points="16,12 32,27 16,42 0,27"
+            fill="none"
+            stroke="#0f1115"
+            stroke-width="2.5"
+            stroke-linejoin="round"
+          />
+          <circle cx="32" cy="27" r="3" fill="#e5471a" />
+        </svg>
+        <span class="lbl">C · Two posts</span>
+      </div>
+    </div>
+    <p
+      style="
+        font-family: 'Public Sans Variable', system-ui, sans-serif;
+        font-size: 11px;
+        color: #5c6068;
+        text-align: center;
+        margin: 0;
+        padding: 0 0 24px;
+        line-height: 1.5;
+      "
+    >
+      A is the cleanest silhouette — instantly reads as "sign on pole." B is more compact but less
+      symmetrical. C is the most literal to the real sign but may overstate the structural reading.
+    </p>
+  </div>
+</div>
+
+<!-- ============== ALIGNMENT GUIDES (A) ============== -->
+
+<div class="frame" style="margin-top: 14px">
+  <div class="head">
+    <div class="title">Construction · variant A with alignment guides</div>
+    <div class="sub">every coordinate is intentional</div>
+  </div>
+  <div style="background: #f7f4ec; padding: 56px 48px">
+    <svg
+      viewBox="0 0 290 54"
+      xmlns="http://www.w3.org/2000/svg"
+      style="width: 600px; max-width: 100%; display: block; margin: 0 auto"
+    >
+      <!-- Guide lines -->
+      <line
+        x1="0"
+        y1="2"
+        x2="290"
+        y2="2"
+        stroke="#e5471a"
+        stroke-width="0.4"
+        stroke-dasharray="2 2"
+        opacity="0.5"
+      />
+      <line
+        x1="0"
+        y1="8"
+        x2="290"
+        y2="8"
+        stroke="#e5471a"
+        stroke-width="0.4"
+        stroke-dasharray="2 2"
+        opacity="0.5"
+      />
+      <line
+        x1="0"
+        y1="12"
+        x2="290"
+        y2="12"
+        stroke="#e5471a"
+        stroke-width="0.4"
+        stroke-dasharray="2 2"
+        opacity="0.5"
+      />
+      <line
+        x1="0"
+        y1="27"
+        x2="290"
+        y2="27"
+        stroke="#e5471a"
+        stroke-width="0.4"
+        stroke-dasharray="2 2"
+        opacity="0.5"
+      />
+      <line
+        x1="0"
+        y1="42"
+        x2="290"
+        y2="42"
+        stroke="#e5471a"
+        stroke-width="0.4"
+        stroke-dasharray="2 2"
+        opacity="0.5"
+      />
+      <line
+        x1="0"
+        y1="46"
+        x2="290"
+        y2="46"
+        stroke="#e5471a"
+        stroke-width="0.4"
+        stroke-dasharray="2 2"
+        opacity="0.5"
+      />
+      <line
+        x1="0"
+        y1="52"
+        x2="290"
+        y2="52"
+        stroke="#e5471a"
+        stroke-width="0.4"
+        stroke-dasharray="2 2"
+        opacity="0.5"
+      />
+      <text
+        x="288"
+        y="0"
+        text-anchor="end"
+        font-family="SF Mono,Menlo,monospace"
+        font-size="4"
+        fill="#e5471a"
+      >
+        post top y=2
+      </text>
+      <text
+        x="288"
+        y="6"
+        text-anchor="end"
+        font-family="SF Mono,Menlo,monospace"
+        font-size="4"
+        fill="#e5471a"
+      >
+        cap-top y=8
+      </text>
+      <text
+        x="288"
+        y="10"
+        text-anchor="end"
+        font-family="SF Mono,Menlo,monospace"
+        font-size="4"
+        fill="#e5471a"
+      >
+        diamond top y=12
+      </text>
+      <text
+        x="288"
+        y="25"
+        text-anchor="end"
+        font-family="SF Mono,Menlo,monospace"
+        font-size="4"
+        fill="#e5471a"
+      >
+        midline y=27
+      </text>
+      <text
+        x="288"
+        y="40"
+        text-anchor="end"
+        font-family="SF Mono,Menlo,monospace"
+        font-size="4"
+        fill="#e5471a"
+      >
+        diamond bottom y=42
+      </text>
+      <text
+        x="288"
+        y="44"
+        text-anchor="end"
+        font-family="SF Mono,Menlo,monospace"
+        font-size="4"
+        fill="#e5471a"
+      >
+        baseline y=46
+      </text>
+      <text
+        x="288"
+        y="50"
+        text-anchor="end"
+        font-family="SF Mono,Menlo,monospace"
+        font-size="4"
+        fill="#e5471a"
+      >
+        post bottom y=52
+      </text>
+      <!-- Mark -->
+      <line
+        x1="16"
+        y1="2"
+        x2="16"
+        y2="52"
+        stroke="#0f1115"
+        stroke-width="2"
+        stroke-linecap="butt"
+      />
+      <polygon
+        points="16,12 30,27 16,42 2,27"
+        fill="none"
+        stroke="#0f1115"
+        stroke-width="2"
+        stroke-linejoin="round"
+      />
+      <circle cx="30" cy="27" r="2.5" fill="#e5471a" />
+      <!-- Wordmark -->
+      <text
+        x="38"
+        y="24"
+        font-family="Public Sans Variable, system-ui, sans-serif"
+        font-weight="800"
+        font-size="22"
+        fill="#0f1115"
+        letter-spacing="-0.6"
+      >
+        Las Vegans
+      </text>
+      <text
+        x="38"
+        y="46"
+        font-family="Public Sans Variable, system-ui, sans-serif"
+        font-weight="800"
+        font-size="22"
+        fill="#e5471a"
+        letter-spacing="-0.6"
+      >
+        for Better Transit
+      </text>
+    </svg>
+    <div style="margin-top: 24px; max-width: 560px; margin-left: auto; margin-right: auto">
+      <p
+        style="
+          font-family: 'Public Sans Variable', system-ui, sans-serif;
+          font-size: 11px;
+          color: #3a3e46;
+          margin: 0 0 8px;
+          line-height: 1.6;
+        "
+      >
+        <strong style="color: #0f1115">Three nested vertical extents:</strong>
+      </p>
+      <ul
+        style="
+          font-family: 'Public Sans Variable', system-ui, sans-serif;
+          font-size: 11px;
+          color: #3a3e46;
+          margin: 0;
+          padding-left: 18px;
+          line-height: 1.7;
+        "
+      >
+        <li>
+          <strong>Post:</strong> y=2 to y=52 (50px) — the tallest element. Extends above the
+          wordmark cap-top and below the baseline.
+        </li>
+        <li><strong>Wordmark:</strong> y=8 to y=46 (38px) — sits inside the post.</li>
+        <li>
+          <strong>Diamond:</strong> y=12 to y=42 (30px) — sits inside the wordmark height. Post
+          passes through its top vertex (16,12) and bottom vertex (16,42).
+        </li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- ============== AT SCALE ============== -->
+
+<div class="frame" style="margin-top: 14px">
+  <div class="head">
+    <div class="title">Variant A at scale · 14px → 56px</div>
+    <div class="sub">the silhouette holds</div>
+  </div>
+  <div
+    style="
+      background: #f7f4ec;
+      padding: 36px 32px;
+      display: flex;
+      flex-direction: column;
+      gap: 32px;
+      align-items: flex-start;
+    "
+  >
+    <div style="display: flex; align-items: center; gap: 32px">
+      <span
+        style="
+          font-family: 'Public Sans Variable', system-ui, sans-serif;
+          font-size: 9px;
+          text-transform: uppercase;
+          letter-spacing: 0.14em;
+          color: #5c6068;
+          font-weight: 800;
+          width: 80px;
+        "
+        >14PX</span
+      >
+      <svg viewBox="0 0 290 54" xmlns="http://www.w3.org/2000/svg" style="height: 35px">
+        <line
+          x1="16"
+          y1="2"
+          x2="16"
+          y2="52"
+          stroke="#0f1115"
+          stroke-width="2"
+          stroke-linecap="butt"
+        />
+        <polygon
+          points="16,12 30,27 16,42 2,27"
+          fill="none"
+          stroke="#0f1115"
+          stroke-width="2"
+          stroke-linejoin="round"
+        />
+        <circle cx="30" cy="27" r="2.5" fill="#e5471a" />
+        <text
+          x="38"
+          y="24"
+          font-family="Public Sans Variable, system-ui, sans-serif"
+          font-weight="800"
+          font-size="22"
+          fill="#0f1115"
+          letter-spacing="-0.6"
+        >
+          Las Vegans
+        </text>
+        <text
+          x="38"
+          y="46"
+          font-family="Public Sans Variable, system-ui, sans-serif"
+          font-weight="800"
+          font-size="22"
+          fill="#e5471a"
+          letter-spacing="-0.6"
+        >
+          for Better Transit
+        </text>
+      </svg>
+    </div>
+
+    <div
+      style="
+        display: flex;
+        align-items: center;
+        gap: 32px;
+        padding-top: 24px;
+        border-top: 1px solid rgba(0, 0, 0, 0.08);
+        width: 100%;
+      "
+    >
+      <span
+        style="
+          font-family: 'Public Sans Variable', system-ui, sans-serif;
+          font-size: 9px;
+          text-transform: uppercase;
+          letter-spacing: 0.14em;
+          color: #5c6068;
+          font-weight: 800;
+          width: 80px;
+        "
+        >18PX</span
+      >
+      <svg viewBox="0 0 290 54" xmlns="http://www.w3.org/2000/svg" style="height: 45px">
+        <line
+          x1="16"
+          y1="2"
+          x2="16"
+          y2="52"
+          stroke="#0f1115"
+          stroke-width="2"
+          stroke-linecap="butt"
+        />
+        <polygon
+          points="16,12 30,27 16,42 2,27"
+          fill="none"
+          stroke="#0f1115"
+          stroke-width="2"
+          stroke-linejoin="round"
+        />
+        <circle cx="30" cy="27" r="2.5" fill="#e5471a" />
+        <text
+          x="38"
+          y="24"
+          font-family="Public Sans Variable, system-ui, sans-serif"
+          font-weight="800"
+          font-size="22"
+          fill="#0f1115"
+          letter-spacing="-0.6"
+        >
+          Las Vegans
+        </text>
+        <text
+          x="38"
+          y="46"
+          font-family="Public Sans Variable, system-ui, sans-serif"
+          font-weight="800"
+          font-size="22"
+          fill="#e5471a"
+          letter-spacing="-0.6"
+        >
+          for Better Transit
+        </text>
+      </svg>
+    </div>
+
+    <div
+      style="
+        display: flex;
+        align-items: center;
+        gap: 32px;
+        padding-top: 24px;
+        border-top: 1px solid rgba(0, 0, 0, 0.08);
+        width: 100%;
+      "
+    >
+      <span
+        style="
+          font-family: 'Public Sans Variable', system-ui, sans-serif;
+          font-size: 9px;
+          text-transform: uppercase;
+          letter-spacing: 0.14em;
+          color: #5c6068;
+          font-weight: 800;
+          width: 80px;
+        "
+        >28PX</span
+      >
+      <svg viewBox="0 0 290 54" xmlns="http://www.w3.org/2000/svg" style="height: 70px">
+        <line
+          x1="16"
+          y1="2"
+          x2="16"
+          y2="52"
+          stroke="#0f1115"
+          stroke-width="2"
+          stroke-linecap="butt"
+        />
+        <polygon
+          points="16,12 30,27 16,42 2,27"
+          fill="none"
+          stroke="#0f1115"
+          stroke-width="2"
+          stroke-linejoin="round"
+        />
+        <circle cx="30" cy="27" r="2.5" fill="#e5471a" />
+        <text
+          x="38"
+          y="24"
+          font-family="Public Sans Variable, system-ui, sans-serif"
+          font-weight="800"
+          font-size="22"
+          fill="#0f1115"
+          letter-spacing="-0.6"
+        >
+          Las Vegans
+        </text>
+        <text
+          x="38"
+          y="46"
+          font-family="Public Sans Variable, system-ui, sans-serif"
+          font-weight="800"
+          font-size="22"
+          fill="#e5471a"
+          letter-spacing="-0.6"
+        >
+          for Better Transit
+        </text>
+      </svg>
+    </div>
+
+    <div
+      style="
+        display: flex;
+        align-items: center;
+        gap: 32px;
+        padding-top: 24px;
+        border-top: 1px solid rgba(0, 0, 0, 0.08);
+        width: 100%;
+      "
+    >
+      <span
+        style="
+          font-family: 'Public Sans Variable', system-ui, sans-serif;
+          font-size: 9px;
+          text-transform: uppercase;
+          letter-spacing: 0.14em;
+          color: #5c6068;
+          font-weight: 800;
+          width: 80px;
+        "
+        >44PX</span
+      >
+      <svg viewBox="0 0 290 54" xmlns="http://www.w3.org/2000/svg" style="height: 110px">
+        <line
+          x1="16"
+          y1="2"
+          x2="16"
+          y2="52"
+          stroke="#0f1115"
+          stroke-width="2"
+          stroke-linecap="butt"
+        />
+        <polygon
+          points="16,12 30,27 16,42 2,27"
+          fill="none"
+          stroke="#0f1115"
+          stroke-width="2"
+          stroke-linejoin="round"
+        />
+        <circle cx="30" cy="27" r="2.5" fill="#e5471a" />
+        <text
+          x="38"
+          y="24"
+          font-family="Public Sans Variable, system-ui, sans-serif"
+          font-weight="800"
+          font-size="22"
+          fill="#0f1115"
+          letter-spacing="-0.6"
+        >
+          Las Vegans
+        </text>
+        <text
+          x="38"
+          y="46"
+          font-family="Public Sans Variable, system-ui, sans-serif"
+          font-weight="800"
+          font-size="22"
+          fill="#e5471a"
+          letter-spacing="-0.6"
+        >
+          for Better Transit
+        </text>
+      </svg>
+    </div>
+  </div>
+</div>
+
+<div style="margin-top: 32px; padding: 24px; background: #f7f4ec; border-left: 6px solid #0f1115">
+  <div
+    class="pub"
+    style="
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.14em;
+      font-weight: 800;
+      color: #5c6068;
+      margin-bottom: 10px;
+    "
+  >
+    What changed
+  </div>
+  <ul
+    style="
+      margin: 0;
+      padding-left: 18px;
+      font-family: 'Public Sans Variable', system-ui, sans-serif;
+      font-size: 13px;
+      line-height: 1.7;
+      color: #0f1115;
+    "
+  >
+    <li>
+      Chevron arms became a <strong>full hollow diamond</strong> — gives the post something to pass
+      <em>through</em>, not just connect at one point.
+    </li>
+    <li>
+      Post now extends <strong>above the wordmark cap-top and below the baseline</strong> by 6px —
+      the "pole goes through and beyond the sign" reading is now visible.
+    </li>
+    <li>
+      Three nested vertical extents (post tallest, wordmark middle, diamond shortest) create a
+      stable structural composition.
+    </li>
+    <li>
+      Single bulb-dot moved to the <strong>diamond's right vertex</strong> — the "presenting" point
+      that connects toward the wordmark. Earned ornament.
+    </li>
+    <li>Silhouette study shows the marks alone — A reads instantly as "sign on pole."</li>
+  </ul>
+</div>
+
+<p class="subtitle" style="margin-top: 24px">
+  Pick A, B, or C. Then we lock the system: this as the bold mark/lockup + bulb-letter LVBT as the
+  fun mark + the wordmark itself unchanged. I'll write the spec.
+</p>

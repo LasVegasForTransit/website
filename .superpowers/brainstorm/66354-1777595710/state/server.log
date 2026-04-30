@@ -1,0 +1,21 @@
+{"type":"server-started","port":54575,"host":"127.0.0.1","url_host":"localhost","url":"http://localhost:54575","screen_dir":"/Users/williecubed/Projects/LasVegansForTransit/website/.superpowers/brainstorm/66354-1777595710/content","state_dir":"/Users/williecubed/Projects/LasVegansForTransit/website/.superpowers/brainstorm/66354-1777595710/state"}
+{"type":"screen-added","file":"/Users/williecubed/Projects/LasVegansForTransit/website/.superpowers/brainstorm/66354-1777595710/content/intro.html"}
+{"type":"screen-added","file":"/Users/williecubed/Projects/LasVegansForTransit/website/.superpowers/brainstorm/66354-1777595710/content/directions.html"}
+{"type":"screen-added","file":"/Users/williecubed/Projects/LasVegansForTransit/website/.superpowers/brainstorm/66354-1777595710/content/directions-v2.html"}
+{"type":"screen-added","file":"/Users/williecubed/Projects/LasVegansForTransit/website/.superpowers/brainstorm/66354-1777595710/content/welcome-sign.html"}
+{"type":"screen-added","file":"/Users/williecubed/Projects/LasVegansForTransit/website/.superpowers/brainstorm/66354-1777595710/content/unified.html"}
+{"type":"screen-added","file":"/Users/williecubed/Projects/LasVegansForTransit/website/.superpowers/brainstorm/66354-1777595710/content/shapes-in-ui.html"}
+{"type":"screen-added","file":"/Users/williecubed/Projects/LasVegansForTransit/website/.superpowers/brainstorm/66354-1777595710/content/level3-redo.html"}
+{"type":"screen-added","file":"/Users/williecubed/Projects/LasVegansForTransit/website/.superpowers/brainstorm/66354-1777595710/content/craft-quality.html"}
+{"type":"screen-added","file":"/Users/williecubed/Projects/LasVegansForTransit/website/.superpowers/brainstorm/66354-1777595710/content/two-marks.html"}
+{"type":"screen-added","file":"/Users/williecubed/Projects/LasVegansForTransit/website/.superpowers/brainstorm/66354-1777595710/content/structural-mark.html"}
+{"type":"screen-added","file":"/Users/williecubed/Projects/LasVegansForTransit/website/.superpowers/brainstorm/66354-1777595710/content/lockup-bracket.html"}
+{"type":"screen-added","file":"/Users/williecubed/Projects/LasVegansForTransit/website/.superpowers/brainstorm/66354-1777595710/content/lockup-tight.html"}
+{"type":"screen-added","file":"/Users/williecubed/Projects/LasVegansForTransit/website/.superpowers/brainstorm/66354-1777595710/content/pole-through.html"}
+{"type":"screen-added","file":"/Users/williecubed/Projects/LasVegansForTransit/website/.superpowers/brainstorm/66354-1777595710/content/lockup-fixed.html"}
+{"type":"screen-added","file":"/Users/williecubed/Projects/LasVegansForTransit/website/.superpowers/brainstorm/66354-1777595710/content/lockup-real.html"}
+{"type":"screen-added","file":"/Users/williecubed/Projects/LasVegansForTransit/website/.superpowers/brainstorm/66354-1777595710/content/lockup-real-v2.html"}
+{"type":"screen-added","file":"/Users/williecubed/Projects/LasVegansForTransit/website/.superpowers/brainstorm/66354-1777595710/content/lockup-real-v3.html"}
+{"type":"screen-added","file":"/Users/williecubed/Projects/LasVegansForTransit/website/.superpowers/brainstorm/66354-1777595710/content/lockup-real-v4.html"}
+{"type":"screen-added","file":"/Users/williecubed/Projects/LasVegansForTransit/website/.superpowers/brainstorm/66354-1777595710/content/lockup-real-v5.html"}
+{"type":"server-stopped","reason":"idle timeout"}

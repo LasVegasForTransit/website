@@ -1,0 +1,406 @@
+<h2>Five directions for "Vegas-y, but credible"</h2>
+<p class="subtitle">
+  Each shows: palette · a rough complementary mark · the wordmark in that treatment · one-line
+  essence. Click to select your favorite (or favorites — multi-select on).
+</p>
+
+<style>
+  .dir-card {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0;
+    min-height: 280px;
+    border: 1px solid var(--border, #1f232b);
+    margin-bottom: 16px;
+    cursor: pointer;
+    transition: transform 0.15s;
+  }
+  .dir-card:hover {
+    transform: translateY(-2px);
+  }
+  .dir-card.selected {
+    outline: 4px solid #e5471a;
+    outline-offset: -4px;
+  }
+  .dir-info {
+    padding: 28px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    background: #fff;
+    color: #0f1115;
+  }
+  .dir-info h3 {
+    font-size: 22px;
+    margin: 0 0 8px;
+    font-weight: 800;
+    letter-spacing: -0.01em;
+  }
+  .dir-info .essence {
+    font-size: 14px;
+    line-height: 1.5;
+    color: #5c6068;
+    margin: 0 0 16px;
+  }
+  .dir-info .palette {
+    display: flex;
+    gap: 0;
+    height: 28px;
+    margin-bottom: 12px;
+    border: 1px solid #0f1115;
+  }
+  .dir-info .palette span {
+    flex: 1;
+  }
+  .dir-info .label {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    font-weight: 700;
+    color: #5c6068;
+    margin-bottom: 6px;
+  }
+  .dir-stage {
+    padding: 32px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 20px;
+  }
+  .dir-stage .glyph {
+    width: 96px;
+    height: 96px;
+  }
+  .dir-stage .wordmark {
+    font-family: 'Public Sans Variable', system-ui, sans-serif;
+    font-weight: 800;
+    line-height: 0.95;
+    letter-spacing: -0.03em;
+    font-size: 28px;
+  }
+  .dir-letter {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    width: 28px;
+    height: 28px;
+    background: #0f1115;
+    color: #f7f4ec;
+    font-weight: 800;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .dir-card {
+    position: relative;
+  }
+</style>
+
+<div class="cards" data-multiselect>
+  <!-- A. Resident Vegas / Valley civic -->
+  <div class="dir-card" data-choice="resident" onclick="toggleSelect(this)">
+    <div class="dir-letter">A</div>
+    <div class="dir-stage" style="background: #e8dcc4">
+      <svg class="glyph" viewBox="0 0 96 96" xmlns="http://www.w3.org/2000/svg">
+        <!-- Spring Mountains ridge + bus shelter pole -->
+        <path d="M0 70 L20 50 L32 60 L48 38 L64 56 L80 44 L96 60 L96 96 L0 96 Z" fill="#0f1115" />
+        <rect x="44" y="20" width="3" height="50" fill="#e5471a" />
+        <rect x="40" y="18" width="11" height="6" fill="#e5471a" />
+      </svg>
+      <div class="wordmark" style="color: #0f1115">
+        <div>Las Vegans</div>
+        <div style="color: #c2410c">for Better Transit</div>
+      </div>
+    </div>
+    <div class="dir-info">
+      <div>
+        <p class="label">A · Resident Vegas / Valley civic</p>
+        <h3>The Vegas locals know</h3>
+        <p class="essence">
+          Stucco neighborhoods, the 215, Spring Mountains on the horizon, mid-century motels. Warms
+          the existing palette with sun-bleached desert neutrals. "We live here" framing,
+          visualized.
+        </p>
+      </div>
+      <div>
+        <div class="label">Palette extension</div>
+        <div class="palette">
+          <span style="background: #0f1115"></span>
+          <span style="background: #f7f4ec"></span>
+          <span style="background: #e5471a"></span>
+          <span style="background: #e8dcc4"></span>
+          <span style="background: #7a8b6b"></span>
+          <span style="background: #5b7a8c"></span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- B. Mojave / desert geology -->
+  <div class="dir-card" data-choice="mojave" onclick="toggleSelect(this)">
+    <div class="dir-letter">B</div>
+    <div
+      class="dir-stage"
+      style="background: linear-gradient(180deg, #f4d4b8 0%, #d97757 50%, #6b3e2e 100%)"
+    >
+      <svg class="glyph" viewBox="0 0 96 96" xmlns="http://www.w3.org/2000/svg">
+        <!-- Layered topography / strata -->
+        <path d="M0 30 Q24 22 48 30 T96 30" stroke="#0f1115" stroke-width="2" fill="none" />
+        <path d="M0 45 Q24 38 48 45 T96 45" stroke="#0f1115" stroke-width="2" fill="none" />
+        <path d="M0 60 Q24 52 48 60 T96 60" stroke="#0f1115" stroke-width="2" fill="none" />
+        <path d="M0 75 Q24 68 48 75 T96 75" stroke="#0f1115" stroke-width="2" fill="none" />
+      </svg>
+      <div class="wordmark" style="color: #0f1115">
+        <div>Las Vegans</div>
+        <div style="color: #6b3e2e">for Better Transit</div>
+      </div>
+    </div>
+    <div class="dir-info">
+      <div>
+        <p class="label">B · Mojave / desert geology</p>
+        <h3>Big landscape, slow time, dignified</h3>
+        <p class="essence">
+          Red Rock, the basin, dry wash patterns, sunrise gradients on ridges. Trades the bright
+          orange-red for deeper rust/ochre tones. Connects transit to place — geology, not pop
+          image.
+        </p>
+      </div>
+      <div>
+        <div class="label">Palette extension</div>
+        <div class="palette">
+          <span style="background: #0f1115"></span>
+          <span style="background: #f4d4b8"></span>
+          <span style="background: #d97757"></span>
+          <span style="background: #6b3e2e"></span>
+          <span style="background: #8b9a7a"></span>
+          <span style="background: #3a4a5c"></span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- C. Working Vegas / hospitality + labor -->
+  <div class="dir-card" data-choice="labor" onclick="toggleSelect(this)">
+    <div class="dir-letter">C</div>
+    <div class="dir-stage" style="background: #0f1115">
+      <svg class="glyph" viewBox="0 0 96 96" xmlns="http://www.w3.org/2000/svg">
+        <!-- Hi-vis chevron / schedule slab -->
+        <rect x="8" y="8" width="80" height="80" fill="#fbbf24" />
+        <path d="M20 60 L40 30 L48 36 L32 60 Z M44 60 L64 30 L72 36 L56 60 Z" fill="#0f1115" />
+        <rect x="8" y="68" width="80" height="6" fill="#0f1115" />
+        <rect x="8" y="78" width="80" height="6" fill="#dc2626" />
+      </svg>
+      <div class="wordmark" style="color: #f7f4ec">
+        <div>Las Vegans</div>
+        <div style="color: #fbbf24">for Better Transit</div>
+      </div>
+    </div>
+    <div class="dir-info">
+      <div>
+        <p class="label">C · Working Vegas / hospitality + labor</p>
+        <h3>The 2 AM bus, made visible</h3>
+        <p class="essence">
+          Culinary 226 red, sodium-lamp yellow, graveyard-shift midnight, hi-vis schedule grids.
+          Most aligned with existing copy. Reads as labor-org, picket-line confident.
+        </p>
+      </div>
+      <div>
+        <div class="label">Palette extension</div>
+        <div class="palette">
+          <span style="background: #0f1115"></span>
+          <span style="background: #f7f4ec"></span>
+          <span style="background: #e5471a"></span>
+          <span style="background: #fbbf24"></span>
+          <span style="background: #dc2626"></span>
+          <span style="background: #1e2a4a"></span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- D. Sports / civic pride era -->
+  <div class="dir-card" data-choice="sports" onclick="toggleSelect(this)">
+    <div class="dir-letter">D</div>
+    <div class="dir-stage" style="background: #0f1115">
+      <svg class="glyph" viewBox="0 0 96 96" xmlns="http://www.w3.org/2000/svg">
+        <!-- Shield / badge with LV monogram -->
+        <path
+          d="M48 6 L84 18 L84 52 Q84 76 48 90 Q12 76 12 52 L12 18 Z"
+          fill="#c8a04a"
+          stroke="#0f1115"
+          stroke-width="2"
+        />
+        <text
+          x="48"
+          y="58"
+          text-anchor="middle"
+          font-family="system-ui,sans-serif"
+          font-weight="900"
+          font-size="36"
+          fill="#0f1115"
+          letter-spacing="-2"
+        >
+          LV
+        </text>
+      </svg>
+      <div class="wordmark" style="color: #f7f4ec">
+        <div>Las Vegans</div>
+        <div style="color: #c8a04a">for Better Transit</div>
+      </div>
+    </div>
+    <div class="dir-info">
+      <div>
+        <p class="label">D · Sports / civic pride era</p>
+        <h3>Real-city confidence</h3>
+        <p class="essence">
+          Aces, Knights, Raiders, A's. Black + metallics, badge silhouettes, jersey-style numerals.
+          "Vegas is a real city now" energy — bold, aligned, post-tourist. Risk: another sports
+          team.
+        </p>
+      </div>
+      <div>
+        <div class="label">Palette extension</div>
+        <div class="palette">
+          <span style="background: #0f1115"></span>
+          <span style="background: #f7f4ec"></span>
+          <span style="background: #c8a04a"></span>
+          <span style="background: #a8a8a8"></span>
+          <span style="background: #7a0019"></span>
+          <span style="background: #1a1a1a"></span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- E. Restrained tourist Vegas / neon-as-typography -->
+  <div class="dir-card" data-choice="neon" onclick="toggleSelect(this)">
+    <div class="dir-letter">E</div>
+    <div class="dir-stage" style="background: #0f1115; position: relative; overflow: hidden">
+      <!-- Marquee bulb dots -->
+      <div
+        style="
+          position: absolute;
+          top: 8px;
+          left: 8px;
+          right: 8px;
+          height: 8px;
+          display: flex;
+          justify-content: space-between;
+        "
+      >
+        <span
+          style="
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: #ff3b8b;
+            box-shadow: 0 0 8px #ff3b8b;
+          "
+        ></span>
+        <span
+          style="
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: #ff3b8b;
+            box-shadow: 0 0 8px #ff3b8b;
+          "
+        ></span>
+        <span
+          style="
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: #ff3b8b;
+            box-shadow: 0 0 8px #ff3b8b;
+          "
+        ></span>
+        <span
+          style="
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: #ff3b8b;
+            box-shadow: 0 0 8px #ff3b8b;
+          "
+        ></span>
+        <span
+          style="
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: #ff3b8b;
+            box-shadow: 0 0 8px #ff3b8b;
+          "
+        ></span>
+        <span
+          style="
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: #ff3b8b;
+            box-shadow: 0 0 8px #ff3b8b;
+          "
+        ></span>
+      </div>
+      <svg class="glyph" viewBox="0 0 96 96" xmlns="http://www.w3.org/2000/svg">
+        <!-- Neon-tube arrow -->
+        <path
+          d="M16 48 L72 48 M52 28 L72 48 L52 68"
+          stroke="#22d3ee"
+          stroke-width="6"
+          fill="none"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          filter="url(#glow)"
+        />
+        <defs>
+          <filter id="glow"><feGaussianBlur stdDeviation="2" /></filter>
+        </defs>
+        <path
+          d="M16 48 L72 48 M52 28 L72 48 L52 68"
+          stroke="#fff"
+          stroke-width="2"
+          fill="none"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        />
+      </svg>
+      <div class="wordmark" style="color: #f7f4ec">
+        <div>Las Vegans</div>
+        <div style="color: #22d3ee; text-shadow: 0 0 8px rgba(34, 211, 238, 0.6)">
+          for Better Transit
+        </div>
+      </div>
+    </div>
+    <div class="dir-info">
+      <div>
+        <p class="label">E · Restrained tourist Vegas / neon-as-typography</p>
+        <h3>Strip confidence, civic discipline</h3>
+        <p class="essence">
+          Marquee letterforms, dot-matrix bulb arrays, tube-light strokes — the visual confidence of
+          a Strip sign, but rationed. One electric accent (cyan or pink), used sparingly. Memorable;
+          risky if overdone.
+        </p>
+      </div>
+      <div>
+        <div class="label">Palette extension</div>
+        <div class="palette">
+          <span style="background: #0f1115"></span>
+          <span style="background: #f7f4ec"></span>
+          <span style="background: #e5471a"></span>
+          <span style="background: #22d3ee"></span>
+          <span style="background: #ff3b8b"></span>
+          <span style="background: #1a1a2e"></span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<p class="subtitle" style="margin-top: 32px">
+  Click any (or several) to mark favorites. Then tell me in the terminal which you want to push
+  further — or which combination.
+</p>

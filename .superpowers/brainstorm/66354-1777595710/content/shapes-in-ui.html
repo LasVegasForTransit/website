@@ -1,0 +1,556 @@
+<h2>Shapes from the sign, working as UI primitives</h2>
+<p class="subtitle">
+  Top: a mocked-up homepage section using six sign-derived shapes together. Below: each shape
+  isolated, with where it'd live on the site.
+</p>
+
+<style>
+  /* Reusable */
+  .ink {
+    color: #0f1115;
+  }
+  .paper-bg {
+    background: #f7f4ec;
+  }
+  .pub {
+    font-family: 'Public Sans Variable', system-ui, sans-serif;
+  }
+  .display {
+    font-weight: 900;
+    letter-spacing: -0.03em;
+    line-height: 0.95;
+  }
+  .lede {
+    font-size: 14px;
+    line-height: 1.5;
+    color: #3a3e46;
+  }
+  .eyebrow {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+    font-weight: 700;
+    color: #5c6068;
+  }
+
+  /* === Pattern primitives === */
+
+  /* P1: diamond-row divider */
+  .div-diamonds {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 14px;
+    margin: 24px 0;
+  }
+  .div-diamonds .d {
+    width: 10px;
+    height: 10px;
+    background: #0f1115;
+    transform: rotate(45deg);
+  }
+  .div-diamonds .d.gold {
+    background: #fbbf24;
+    border: 1.5px solid #0f1115;
+  }
+
+  /* P2: marquee CTA button */
+  .marquee-btn {
+    position: relative;
+    display: inline-block;
+    padding: 16px 36px;
+    background: #0f1115;
+    color: #f7f4ec;
+    font-weight: 800;
+    letter-spacing: 0.14em;
+    font-size: 13px;
+    text-transform: uppercase;
+    border: 0;
+    cursor: pointer;
+  }
+  .marquee-btn .bulbs {
+    position: absolute;
+    inset: -7px;
+    pointer-events: none;
+  }
+  .marquee-btn .bulbs span {
+    position: absolute;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: #fbbf24;
+    border: 1px solid #0f1115;
+  }
+
+  /* P3: capsule letters */
+  .caps {
+    display: inline-flex;
+    gap: 4px;
+  }
+  .caps span {
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: #fff;
+    border: 1.5px solid #0f1115;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    font-weight: 800;
+    color: #dc2626;
+    font-family: 'Public Sans Variable', system-ui, sans-serif;
+  }
+  .caps.lg span {
+    width: 30px;
+    height: 30px;
+    font-size: 14px;
+  }
+
+  /* P4: star bullets */
+  .star-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+  }
+  .star-list li {
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+    padding: 6px 0;
+    font-size: 14px;
+    line-height: 1.5;
+    color: #0f1115;
+    font-family: 'Public Sans Variable', system-ui, sans-serif;
+    font-weight: 600;
+  }
+  .star-list li::before {
+    content: '';
+    flex-shrink: 0;
+    width: 14px;
+    height: 14px;
+    background: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 14 14'><path d='M7 0 L9 5 L14 5 L10 8 L11.5 13 L7 10 L2.5 13 L4 8 L0 5 L5 5 Z' fill='%23dc2626' stroke='%230f1115' stroke-width='0.6'/></svg>")
+      center/contain no-repeat;
+    margin-top: 4px;
+  }
+
+  /* P5: diamond stat — uses clip-path with SVG bulb-border overlay */
+  .dia-stat {
+    position: relative;
+    width: 280px;
+    height: 200px;
+  }
+  .dia-stat .face {
+    position: absolute;
+    inset: 0;
+    clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%);
+    background: #f7f4ec;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 0 40px;
+  }
+  .dia-stat .num {
+    font-family: 'Public Sans Variable', system-ui, sans-serif;
+    font-weight: 900;
+    font-size: 56px;
+    letter-spacing: -0.04em;
+    color: #e5471a;
+    line-height: 1;
+  }
+  .dia-stat .lbl {
+    font-family: 'Public Sans Variable', system-ui, sans-serif;
+    font-size: 9px;
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+    font-weight: 700;
+    color: #0f1115;
+    margin-top: 6px;
+    text-align: center;
+  }
+  .dia-stat svg {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+  }
+
+  /* P6: diamond image frame */
+  .dia-img {
+    position: relative;
+    width: 280px;
+    height: 200px;
+  }
+  .dia-img .face {
+    position: absolute;
+    inset: 0;
+    clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%);
+    background: linear-gradient(180deg, #f4d4b8 0%, #d97757 50%, #6b3e2e 100%);
+  }
+  .dia-img svg {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+  }
+
+  /* P7: bulb dash divider (alt to solid rule) */
+  .bulb-dash {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    padding: 8px 0;
+  }
+  .bulb-dash span {
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background: #fbbf24;
+    border: 1px solid #0f1115;
+  }
+
+  /* === Cards === */
+  .pat-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+    margin-top: 16px;
+  }
+  @media (max-width: 900px) {
+    .pat-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+  .pat {
+    border: 1px solid #1f232b;
+    background: #fff;
+    display: flex;
+    flex-direction: column;
+  }
+  .pat .demo {
+    background: #f7f4ec;
+    padding: 32px 28px;
+    min-height: 200px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .pat .meta {
+    padding: 16px 22px;
+    border-top: 1px solid #1f232b;
+  }
+  .pat .meta .lbl {
+    font-size: 9px;
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+    font-weight: 700;
+    color: #5c6068;
+    margin-bottom: 4px;
+  }
+  .pat .meta h4 {
+    font-size: 15px;
+    margin: 0 0 6px;
+    font-weight: 800;
+    letter-spacing: -0.01em;
+    line-height: 1.2;
+    color: #0f1115;
+  }
+  .pat .meta p {
+    font-size: 12px;
+    line-height: 1.5;
+    color: #3a3e46;
+    margin: 0;
+  }
+</style>
+
+<!-- Reusable bulb-border-on-diamond as inline SVG path generator -->
+<svg width="0" height="0" style="position: absolute" aria-hidden="true">
+  <defs>
+    <symbol id="dia-bulbs" viewBox="0 0 280 200">
+      <polygon
+        points="140,4 276,100 140,196 4,100"
+        fill="none"
+        stroke="#fbbf24"
+        stroke-width="6"
+        stroke-linejoin="round"
+      />
+      <!-- bulb dots -->
+      <g fill="#fbbf24" stroke="#0f1115" stroke-width="0.6">
+        <!-- top-right edge: 140,4 → 276,100 (8 bulbs) -->
+        <circle cx="155" cy="14" r="2.6" />
+        <circle cx="172" cy="26" r="2.6" />
+        <circle cx="189" cy="38" r="2.6" />
+        <circle cx="206" cy="50" r="2.6" />
+        <circle cx="223" cy="62" r="2.6" />
+        <circle cx="240" cy="74" r="2.6" />
+        <circle cx="257" cy="86" r="2.6" />
+        <!-- bottom-right: 276,100 → 140,196 -->
+        <circle cx="261" cy="110" r="2.6" />
+        <circle cx="244" cy="122" r="2.6" />
+        <circle cx="227" cy="134" r="2.6" />
+        <circle cx="210" cy="146" r="2.6" />
+        <circle cx="193" cy="158" r="2.6" />
+        <circle cx="176" cy="170" r="2.6" />
+        <circle cx="159" cy="182" r="2.6" />
+        <!-- bottom-left: 140,196 → 4,100 -->
+        <circle cx="125" cy="186" r="2.6" />
+        <circle cx="108" cy="174" r="2.6" />
+        <circle cx="91" cy="162" r="2.6" />
+        <circle cx="74" cy="150" r="2.6" />
+        <circle cx="57" cy="138" r="2.6" />
+        <circle cx="40" cy="126" r="2.6" />
+        <circle cx="23" cy="114" r="2.6" />
+        <!-- top-left: 4,100 → 140,4 -->
+        <circle cx="19" cy="90" r="2.6" />
+        <circle cx="36" cy="78" r="2.6" />
+        <circle cx="53" cy="66" r="2.6" />
+        <circle cx="70" cy="54" r="2.6" />
+        <circle cx="87" cy="42" r="2.6" />
+        <circle cx="104" cy="30" r="2.6" />
+        <circle cx="121" cy="18" r="2.6" />
+      </g>
+    </symbol>
+  </defs>
+</svg>
+
+<!-- ============== IN-CONTEXT MOCKUP ============== -->
+
+<div
+  style="background: #f7f4ec; border: 1px solid #1f232b; padding: 48px 56px; margin-bottom: 32px"
+>
+  <div style="display: flex; gap: 48px; align-items: flex-start">
+    <!-- Left: text content -->
+    <div style="flex: 1.4; min-width: 0">
+      <!-- Capsule eyebrow -->
+      <div class="caps" style="margin-bottom: 16px"><span>T</span><span>H</span><span>E</span></div>
+      <div style="margin-bottom: 16px" class="eyebrow">Vision · 2030</div>
+      <h2 class="pub display" style="font-size: 56px; margin: 0 0 20px; color: #0f1115">
+        Largest US metro <span style="color: #e5471a">without light rail.</span>
+      </h2>
+      <p class="lede pub" style="font-size: 16px; max-width: 480px; margin: 0 0 28px">
+        And our buses are about to be cut in half. RTC's funding cliff hits in 2026 — 42% of routes
+        go away. This is what gets cut, and who pays.
+      </p>
+
+      <!-- Star bullets -->
+      <ul class="star-list" style="margin-bottom: 32px">
+        <li>Hospitality workers get to the Strip on a 2 AM bus from North Las Vegas</li>
+        <li>Students and seniors lose 6 of 10 routes between school and home</li>
+        <li>UNLV and CSN students lose direct service to two of three campuses</li>
+      </ul>
+
+      <!-- Marquee CTA button -->
+      <button class="marquee-btn">
+        <span class="bulbs">
+          <span style="top: -3px; left: 6px"></span>
+          <span style="top: -3px; left: 50%; transform: translateX(-50%)"></span>
+          <span style="top: -3px; right: 6px"></span>
+          <span style="bottom: -3px; left: 6px"></span>
+          <span style="bottom: -3px; left: 50%; transform: translateX(-50%)"></span>
+          <span style="bottom: -3px; right: 6px"></span>
+          <span style="left: -3px; top: 50%; transform: translateY(-50%)"></span>
+          <span style="right: -3px; top: 50%; transform: translateY(-50%)"></span>
+        </span>
+        Join the campaign →
+      </button>
+    </div>
+
+    <!-- Right: diamond stat -->
+    <div style="flex: 1; display: flex; flex-direction: column; align-items: center; gap: 20px">
+      <div class="dia-stat">
+        <div class="face">
+          <div class="num">42%</div>
+          <div class="lbl">of bus service<br />about to be cut</div>
+        </div>
+        <svg viewBox="0 0 280 200"><use href="#dia-bulbs" /></svg>
+      </div>
+      <div class="bulb-dash">
+        <span></span><span></span><span></span><span></span><span></span><span></span><span></span
+        ><span></span><span></span><span></span><span></span><span></span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Diamond divider before next section -->
+  <div class="div-diamonds">
+    <span class="d"></span><span class="d"></span><span class="d gold"></span><span class="d"></span
+    ><span class="d"></span>
+  </div>
+
+  <!-- Next section opener -->
+  <div style="display: flex; align-items: baseline; gap: 16px">
+    <div class="caps lg"><span>0</span><span>1</span></div>
+    <div>
+      <div class="eyebrow" style="margin-bottom: 4px">Issue brief</div>
+      <h3 class="pub display" style="font-size: 28px; margin: 0; color: #0f1115">
+        Light rail along Maryland Parkway
+      </h3>
+    </div>
+  </div>
+</div>
+
+<!-- ============== INDIVIDUAL PATTERNS ============== -->
+
+<div
+  class="section-head"
+  style="margin: 32px 0 16px; padding-bottom: 12px; border-bottom: 6px solid #0f1115"
+>
+  <h3
+    class="pub"
+    style="font-weight: 900; font-size: 22px; letter-spacing: -0.02em; margin: 0; color: #0f1115"
+  >
+    The seven primitives, isolated
+  </h3>
+</div>
+
+<div class="pat-grid">
+  <!-- P1: Diamond divider -->
+  <div class="pat">
+    <div class="demo">
+      <div style="text-align: center">
+        <div class="pub" style="font-size: 14px; color: #5c6068; margin-bottom: 8px">Section A</div>
+        <div class="div-diamonds" style="margin: 12px 0">
+          <span class="d"></span><span class="d"></span><span class="d gold"></span
+          ><span class="d"></span><span class="d"></span>
+        </div>
+        <div class="pub" style="font-size: 14px; color: #5c6068; margin-top: 8px">Section B</div>
+      </div>
+    </div>
+    <div class="meta">
+      <div class="lbl">P1 · Diamond divider</div>
+      <h4>Replaces or extends the 6px ink rule</h4>
+      <p>
+        Five small ink diamonds with a gold one in the middle. More ornament than the existing rule;
+        saves the rule for "load-bearing" hierarchy moments.
+      </p>
+    </div>
+  </div>
+
+  <!-- P2: Marquee CTA -->
+  <div class="pat">
+    <div class="demo">
+      <button class="marquee-btn">
+        <span class="bulbs">
+          <span style="top: -3px; left: 6px"></span>
+          <span style="top: -3px; left: 50%; transform: translateX(-50%)"></span>
+          <span style="top: -3px; right: 6px"></span>
+          <span style="bottom: -3px; left: 6px"></span>
+          <span style="bottom: -3px; left: 50%; transform: translateX(-50%)"></span>
+          <span style="bottom: -3px; right: 6px"></span>
+          <span style="left: -3px; top: 50%; transform: translateY(-50%)"></span>
+          <span style="right: -3px; top: 50%; transform: translateY(-50%)"></span>
+        </span>
+        Join us →
+      </button>
+    </div>
+    <div class="meta">
+      <div class="lbl">P2 · Marquee CTA button</div>
+      <h4>Bulb-bordered primary action</h4>
+      <p>
+        For the one or two highest-priority CTAs per page (Join, Donate, Sign petition). Other
+        actions stay as the existing flat outline buttons.
+      </p>
+    </div>
+  </div>
+
+  <!-- P3: Capsule letters -->
+  <div class="pat">
+    <div class="demo">
+      <div style="display: flex; flex-direction: column; gap: 16px; align-items: center">
+        <div class="caps lg"><span>N</span><span>E</span><span>W</span><span>S</span></div>
+        <div class="caps lg"><span>J</span><span>O</span><span>I</span><span>N</span></div>
+        <div class="caps"><span>0</span><span>1</span></div>
+      </div>
+    </div>
+    <div class="meta">
+      <div class="lbl">P3 · Capsule letters</div>
+      <h4>For category and step labels</h4>
+      <p>
+        Used for top-level section labels (NEWS, JOIN, ACT) and step numbers (01, 02, 03). The most
+        direct lift from the WELCOME treatment.
+      </p>
+    </div>
+  </div>
+
+  <!-- P4: Star bullets -->
+  <div class="pat">
+    <div class="demo" style="justify-content: flex-start">
+      <ul class="star-list">
+        <li>Real bus rapid transit on Maryland Parkway</li>
+        <li>15-minute frequency on every primary corridor</li>
+        <li>Light rail Strip ↔ downtown ↔ airport</li>
+      </ul>
+    </div>
+    <div class="meta">
+      <div class="lbl">P4 · Star bullets</div>
+      <h4>For principles and demands lists</h4>
+      <p>
+        Reserve for "manifesto" content (vision, demands, principles) — not generic bullet lists.
+        Keeps the device meaningful instead of decorative.
+      </p>
+    </div>
+  </div>
+
+  <!-- P5: Diamond stat -->
+  <div class="pat">
+    <div class="demo">
+      <div class="dia-stat" style="width: 240px; height: 170px">
+        <div class="face" style="padding: 0 30px">
+          <div class="num" style="font-size: 44px">1.7M</div>
+          <div class="lbl">people in the<br />Vegas Valley</div>
+        </div>
+        <svg viewBox="0 0 280 200"><use href="#dia-bulbs" /></svg>
+      </div>
+    </div>
+    <div class="meta">
+      <div class="lbl">P5 · Diamond stat block</div>
+      <h4>For headline numbers</h4>
+      <p>
+        Big single statistics get the diamond-and-bulbs treatment. Replaces or augments the existing
+        huge clamp-display StatBlock.
+      </p>
+    </div>
+  </div>
+
+  <!-- P6: Diamond image frame -->
+  <div class="pat">
+    <div class="demo">
+      <div class="dia-img" style="width: 240px; height: 170px">
+        <div class="face"></div>
+        <svg viewBox="0 0 280 200"><use href="#dia-bulbs" /></svg>
+      </div>
+    </div>
+    <div class="meta">
+      <div class="lbl">P6 · Diamond image frame</div>
+      <h4>For hero photos and portraits</h4>
+      <p>
+        Photos cropped to diamond with bulb border. For people (board portraits, testimonials),
+        places (Maryland Parkway, mountains), and key moments.
+      </p>
+    </div>
+  </div>
+
+  <!-- P7: Bulb dash -->
+  <div class="pat" style="grid-column: 1 / -1">
+    <div class="demo">
+      <div class="bulb-dash" style="gap: 10px">
+        <span></span><span></span><span></span><span></span><span></span><span></span><span></span
+        ><span></span><span></span><span></span><span></span><span></span><span></span><span></span
+        ><span></span><span></span><span></span><span></span><span></span><span></span><span></span
+        ><span></span><span></span><span></span>
+      </div>
+    </div>
+    <div class="meta">
+      <div class="lbl">P7 · Bulb dash</div>
+      <h4>For underlines, progress, route lines</h4>
+      <p>
+        A row of small bulbs as an alternative to the 1px gray rule or the 2px link underline.
+        Especially good for route diagrams (each bulb = a stop) and progress indicators.
+      </p>
+    </div>
+  </div>
+</div>
+
+<p class="subtitle" style="margin-top: 32px">
+  If this direction resonates, the next move is consolidating into a single design — a palette/tone
+  choice from sections A–F + the shape primitives here. Tell me your read and we'll lock the design.
+</p>

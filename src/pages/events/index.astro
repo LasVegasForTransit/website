@@ -1,0 +1,112 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import SectionHeader from '../../components/SectionHeader.astro';
+import EventCard from '../../components/EventCard.astro';
+import NewsletterEmbed from '../../components/NewsletterEmbed.astro';
+import { getCollection } from 'astro:content';
+
+const all = await getCollection('events', (e) => !e.id.startsWith('_'));
+const now = new Date();
+
+const upcoming = all
+  .filter((e) => e.data.date >= now)
+  .sort((a, b) => a.data.date.getTime() - b.data.date.getTime());
+
+const past = all
+  .filter((e) => e.data.date < now)
+  .sort((a, b) => b.data.date.getTime() - a.data.date.getTime());
+
+const featured = upcoming.find((e) => e.data.featured) ?? upcoming[0] ?? null;
+const otherUpcoming = featured ? upcoming.filter((e) => e.id !== featured.id) : [];
+---
+
+<BaseLayout title="Events" description="Where we're meeting up next, and what we've done.">
+  <header class="container-page pt-20 pb-12 md:pt-28 md:pb-16">
+    <SectionHeader
+      title="Show up. Things change."
+      lede="The single highest-leverage thing most volunteers can do is be in the room. Here's what's next."
+    />
+  </header>
+  <hr class="rule-thick container-page" />
+
+  {
+    featured ? (
+      <section class="container-page py-12">
+        <EventCard
+          href={`/events/${featured.id}`}
+          title={featured.data.title}
+          date={featured.data.date}
+          endDate={featured.data.endDate}
+          location={featured.data.location}
+          summary={featured.data.summary}
+          featured
+        />
+      </section>
+    ) : (
+      <section class="container-page py-12">
+        <div class="border-2 border-dashed border-ink/30 p-12 md:p-16 text-center">
+          <p class="eyebrow">Nothing on the calendar yet</p>
+          <h2 class="text-headline-lg mt-3 max-w-2xl mx-auto">
+            We're just getting started. Our first public event is being planned.
+          </h2>
+          <p class="lede mt-6 max-w-xl mx-auto">
+            Subscribe below and we'll send you the details the moment a date is locked in.
+          </p>
+        </div>
+        <div class="mt-12 max-w-2xl mx-auto">
+          <NewsletterEmbed />
+        </div>
+      </section>
+    )
+  }
+
+  {
+    otherUpcoming.length > 0 && (
+      <section class="container-page py-12">
+        <p class="eyebrow">More upcoming</p>
+        <div class="mt-6 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+          {otherUpcoming.map((e) => (
+            <EventCard
+              href={`/events/${e.id}`}
+              title={e.data.title}
+              date={e.data.date}
+              endDate={e.data.endDate}
+              location={e.data.location}
+              summary={e.data.summary}
+            />
+          ))}
+        </div>
+      </section>
+    )
+  }
+
+  {
+    past.length > 0 && (
+      <section class="container-page py-16">
+        <p class="eyebrow">Past events</p>
+        <ul class="mt-6 divide-y divide-rule/20 border-y border-rule/20">
+          {past.map((e) => {
+            const dateLabel = new Intl.DateTimeFormat('en-US', {
+              month: 'short',
+              day: 'numeric',
+              year: 'numeric',
+              timeZone: 'America/Los_Angeles',
+            }).format(e.data.date);
+            return (
+              <li>
+                <a
+                  href={`/events/${e.id}`}
+                  class="grid grid-cols-[10rem_1fr_auto] gap-6 items-baseline py-5 no-underline hover:bg-ink hover:text-paper hover:px-3 transition-all"
+                >
+                  <span class="eyebrow">{dateLabel}</span>
+                  <span class="font-semibold">{e.data.title}</span>
+                  <span class="text-sm text-mute">{e.data.location}</span>
+                </a>
+              </li>
+            );
+          })}
+        </ul>
+      </section>
+    )
+  }
+</BaseLayout>

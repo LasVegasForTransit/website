@@ -1,0 +1,634 @@
+<h2>Bold mark · the structural facsimile</h2>
+<p class="subtitle">
+  Just a few lines suggesting the posts and what they hold. Four variants from "almost nothing" to
+  "skeletal sign." Pick the right level of subtle.
+</p>
+
+<style>
+  .pub {
+    font-family: 'Public Sans Variable', system-ui, sans-serif;
+  }
+
+  .stage-row {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+    margin: 24px 0;
+  }
+  @media (max-width: 1100px) {
+    .stage-row {
+      grid-template-columns: 1fr 1fr;
+    }
+  }
+  .stage {
+    border: 1px solid #1f232b;
+    background: #fff;
+    cursor: pointer;
+    transition:
+      transform 0.15s,
+      box-shadow 0.15s;
+    display: flex;
+    flex-direction: column;
+  }
+  .stage:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 0 #0f1115;
+  }
+  .stage.selected {
+    outline: 4px solid #e5471a;
+    outline-offset: -4px;
+  }
+  .stage .canvas {
+    background: #f7f4ec;
+    padding: 40px 28px;
+    min-height: 220px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+  }
+  .stage .canvas .badge {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    width: 28px;
+    height: 28px;
+    background: #0f1115;
+    color: #f7f4ec;
+    font-weight: 800;
+    font-size: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Public Sans Variable', system-ui, sans-serif;
+  }
+  .stage .info {
+    padding: 18px 22px;
+    border-top: 1px solid #1f232b;
+  }
+  .stage .info .lbl {
+    font-size: 9px;
+    text-transform: uppercase;
+    letter-spacing: 0.16em;
+    color: #5c6068;
+    font-weight: 800;
+    margin-bottom: 4px;
+  }
+  .stage .info h4 {
+    font-family: 'Public Sans Variable', system-ui, sans-serif;
+    font-size: 14px;
+    margin: 0 0 6px;
+    font-weight: 800;
+    color: #0f1115;
+    letter-spacing: -0.01em;
+    line-height: 1.2;
+  }
+  .stage .info p {
+    font-family: 'Public Sans Variable', system-ui, sans-serif;
+    font-size: 11px;
+    line-height: 1.5;
+    color: #3a3e46;
+    margin: 0;
+  }
+  .stage .info .reads {
+    display: inline-block;
+    margin-top: 8px;
+    font-family: 'Public Sans Variable', system-ui, sans-serif;
+    font-size: 9px;
+    padding: 3px 6px;
+    background: #f3f4f6;
+    border: 1px solid #e5e7eb;
+    color: #0f1115;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-weight: 700;
+  }
+</style>
+
+<svg width="0" height="0" style="position: absolute" aria-hidden="true">
+  <defs>
+    <!-- BM1: posts + single ink dot (most subtle) -->
+    <symbol id="bm1" viewBox="0 0 100 100">
+      <line
+        x1="32"
+        y1="14"
+        x2="32"
+        y2="86"
+        stroke="#0f1115"
+        stroke-width="2"
+        stroke-linecap="round"
+      />
+      <line
+        x1="68"
+        y1="14"
+        x2="68"
+        y2="86"
+        stroke="#0f1115"
+        stroke-width="2"
+        stroke-linecap="round"
+      />
+      <circle cx="50" cy="42" r="3" fill="#e5471a" />
+    </symbol>
+
+    <!-- BM2: posts + small diamond between -->
+    <symbol id="bm2" viewBox="0 0 100 100">
+      <line
+        x1="28"
+        y1="14"
+        x2="28"
+        y2="86"
+        stroke="#0f1115"
+        stroke-width="2"
+        stroke-linecap="round"
+      />
+      <line
+        x1="72"
+        y1="14"
+        x2="72"
+        y2="86"
+        stroke="#0f1115"
+        stroke-width="2"
+        stroke-linecap="round"
+      />
+      <polygon
+        points="50,32 66,50 50,68 34,50"
+        fill="none"
+        stroke="#0f1115"
+        stroke-width="1.75"
+        stroke-linejoin="round"
+      />
+    </symbol>
+
+    <!-- BM3: posts + small 5-point star between -->
+    <symbol id="bm3" viewBox="0 0 100 100">
+      <line
+        x1="32"
+        y1="14"
+        x2="32"
+        y2="86"
+        stroke="#0f1115"
+        stroke-width="2"
+        stroke-linecap="round"
+      />
+      <line
+        x1="68"
+        y1="14"
+        x2="68"
+        y2="86"
+        stroke="#0f1115"
+        stroke-width="2"
+        stroke-linecap="round"
+      />
+      <!-- 5-point star centered at (50,40), pointing up -->
+      <path
+        d="M50 28 L53 38 L63 38 L55 44 L58 54 L50 48 L42 54 L45 44 L37 38 L47 38 Z"
+        fill="#e5471a"
+      />
+    </symbol>
+
+    <!-- BM4: posts + diamond + tiny star above (skeleton hint) -->
+    <symbol id="bm4" viewBox="0 0 100 100">
+      <line
+        x1="28"
+        y1="20"
+        x2="28"
+        y2="86"
+        stroke="#0f1115"
+        stroke-width="2"
+        stroke-linecap="round"
+      />
+      <line
+        x1="72"
+        y1="20"
+        x2="72"
+        y2="86"
+        stroke="#0f1115"
+        stroke-width="2"
+        stroke-linecap="round"
+      />
+      <!-- Tiny star at top -->
+      <path
+        d="M50 6 L52 12 L58 12 L53 16 L55 22 L50 18 L45 22 L47 16 L42 12 L48 12 Z"
+        fill="#e5471a"
+      />
+      <!-- Diamond between posts -->
+      <polygon
+        points="50,38 68,56 50,74 32,56"
+        fill="none"
+        stroke="#0f1115"
+        stroke-width="1.75"
+        stroke-linejoin="round"
+      />
+    </symbol>
+  </defs>
+</svg>
+
+<div class="stage-row">
+  <div class="stage" onclick="toggleSelect(this)" data-choice="bm1">
+    <div class="canvas">
+      <div class="badge">1</div>
+      <svg viewBox="0 0 100 100" width="120" height="120"><use href="#bm1" /></svg>
+    </div>
+    <div class="info">
+      <div class="lbl">BM1 · Most subtle</div>
+      <h4>Posts + a single point of light</h4>
+      <p>
+        Two posts and one accent dot — the bulb between them. Maximum restraint. Insiders read "the
+        sign" by inference; outsiders see clean architecture.
+      </p>
+      <span class="reads">3 elements</span>
+    </div>
+  </div>
+
+  <div class="stage" onclick="toggleSelect(this)" data-choice="bm2">
+    <div class="canvas">
+      <div class="badge">2</div>
+      <svg viewBox="0 0 100 100" width="120" height="120"><use href="#bm2" /></svg>
+    </div>
+    <div class="info">
+      <div class="lbl">BM2 · Quietly Vegas</div>
+      <h4>Posts + suspended diamond</h4>
+      <p>
+        The diamond outline appears between the posts — the sign's defining shape, but rendered as
+        hairline outline only. Reads as "what's held up."
+      </p>
+      <span class="reads">3 elements · diamond hint</span>
+    </div>
+  </div>
+
+  <div class="stage" onclick="toggleSelect(this)" data-choice="bm3">
+    <div class="canvas">
+      <div class="badge">3</div>
+      <svg viewBox="0 0 100 100" width="120" height="120"><use href="#bm3" /></svg>
+    </div>
+    <div class="info">
+      <div class="lbl">BM3 · The burst star variant</div>
+      <h4>Posts + the star</h4>
+      <p>
+        The red 5-point star sits between the posts where it sits on the actual sign. The star does
+        the Vegas work; the posts do the structure. No diamond.
+      </p>
+      <span class="reads">3 elements · star reference</span>
+    </div>
+  </div>
+
+  <div class="stage" onclick="toggleSelect(this)" data-choice="bm4">
+    <div class="canvas">
+      <div class="badge">4</div>
+      <svg viewBox="0 0 100 100" width="120" height="120"><use href="#bm4" /></svg>
+    </div>
+    <div class="info">
+      <div class="lbl">BM4 · Skeleton sign</div>
+      <h4>Posts + diamond + star</h4>
+      <p>
+        All three structural elements, hairline only. Most recognizable as "the Welcome sign." Risk:
+        tips toward "drawing of the sign" rather than "subtle reference."
+      </p>
+      <span class="reads">4 elements</span>
+    </div>
+  </div>
+</div>
+
+<!-- ============ SCALES ============ -->
+
+<div style="border: 1px solid #1f232b; background: #fff; margin-top: 24px">
+  <div style="padding: 16px 24px; border-bottom: 1px solid #1f232b">
+    <div
+      style="
+        font-family: 'Public Sans Variable', system-ui, sans-serif;
+        font-weight: 800;
+        font-size: 14px;
+        color: #0f1115;
+      "
+    >
+      Scales · all four marks at 16/24/40/72/120px
+    </div>
+  </div>
+  <div style="padding: 28px 32px; background: #f7f4ec">
+    <table style="width: 100%; border-collapse: collapse">
+      <thead>
+        <tr>
+          <th></th>
+          <th
+            style="
+              font-family: 'Public Sans Variable', system-ui, sans-serif;
+              font-size: 9px;
+              text-transform: uppercase;
+              letter-spacing: 0.14em;
+              color: #5c6068;
+              font-weight: 800;
+              padding: 0 0 12px;
+            "
+          >
+            16
+          </th>
+          <th
+            style="
+              font-family: 'Public Sans Variable', system-ui, sans-serif;
+              font-size: 9px;
+              text-transform: uppercase;
+              letter-spacing: 0.14em;
+              color: #5c6068;
+              font-weight: 800;
+              padding: 0 0 12px;
+            "
+          >
+            24
+          </th>
+          <th
+            style="
+              font-family: 'Public Sans Variable', system-ui, sans-serif;
+              font-size: 9px;
+              text-transform: uppercase;
+              letter-spacing: 0.14em;
+              color: #5c6068;
+              font-weight: 800;
+              padding: 0 0 12px;
+            "
+          >
+            40
+          </th>
+          <th
+            style="
+              font-family: 'Public Sans Variable', system-ui, sans-serif;
+              font-size: 9px;
+              text-transform: uppercase;
+              letter-spacing: 0.14em;
+              color: #5c6068;
+              font-weight: 800;
+              padding: 0 0 12px;
+            "
+          >
+            72
+          </th>
+          <th
+            style="
+              font-family: 'Public Sans Variable', system-ui, sans-serif;
+              font-size: 9px;
+              text-transform: uppercase;
+              letter-spacing: 0.14em;
+              color: #5c6068;
+              font-weight: 800;
+              padding: 0 0 12px;
+            "
+          >
+            120
+          </th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr style="border-top: 1px solid rgba(0, 0, 0, 0.08)">
+          <td
+            style="
+              padding: 14px 0;
+              font-family: 'Public Sans Variable', system-ui, sans-serif;
+              font-size: 11px;
+              color: #5c6068;
+              font-weight: 700;
+              width: 100px;
+            "
+          >
+            BM1
+          </td>
+          <td>
+            <svg viewBox="0 0 100 100" width="16" height="16"><use href="#bm1" /></svg>
+          </td>
+          <td>
+            <svg viewBox="0 0 100 100" width="24" height="24"><use href="#bm1" /></svg>
+          </td>
+          <td>
+            <svg viewBox="0 0 100 100" width="40" height="40"><use href="#bm1" /></svg>
+          </td>
+          <td>
+            <svg viewBox="0 0 100 100" width="72" height="72"><use href="#bm1" /></svg>
+          </td>
+          <td>
+            <svg viewBox="0 0 100 100" width="120" height="120"><use href="#bm1" /></svg>
+          </td>
+        </tr>
+        <tr style="border-top: 1px solid rgba(0, 0, 0, 0.08)">
+          <td
+            style="
+              padding: 14px 0;
+              font-family: 'Public Sans Variable', system-ui, sans-serif;
+              font-size: 11px;
+              color: #5c6068;
+              font-weight: 700;
+            "
+          >
+            BM2
+          </td>
+          <td>
+            <svg viewBox="0 0 100 100" width="16" height="16"><use href="#bm2" /></svg>
+          </td>
+          <td>
+            <svg viewBox="0 0 100 100" width="24" height="24"><use href="#bm2" /></svg>
+          </td>
+          <td>
+            <svg viewBox="0 0 100 100" width="40" height="40"><use href="#bm2" /></svg>
+          </td>
+          <td>
+            <svg viewBox="0 0 100 100" width="72" height="72"><use href="#bm2" /></svg>
+          </td>
+          <td>
+            <svg viewBox="0 0 100 100" width="120" height="120"><use href="#bm2" /></svg>
+          </td>
+        </tr>
+        <tr style="border-top: 1px solid rgba(0, 0, 0, 0.08)">
+          <td
+            style="
+              padding: 14px 0;
+              font-family: 'Public Sans Variable', system-ui, sans-serif;
+              font-size: 11px;
+              color: #5c6068;
+              font-weight: 700;
+            "
+          >
+            BM3
+          </td>
+          <td>
+            <svg viewBox="0 0 100 100" width="16" height="16"><use href="#bm3" /></svg>
+          </td>
+          <td>
+            <svg viewBox="0 0 100 100" width="24" height="24"><use href="#bm3" /></svg>
+          </td>
+          <td>
+            <svg viewBox="0 0 100 100" width="40" height="40"><use href="#bm3" /></svg>
+          </td>
+          <td>
+            <svg viewBox="0 0 100 100" width="72" height="72"><use href="#bm3" /></svg>
+          </td>
+          <td>
+            <svg viewBox="0 0 100 100" width="120" height="120"><use href="#bm3" /></svg>
+          </td>
+        </tr>
+        <tr style="border-top: 1px solid rgba(0, 0, 0, 0.08)">
+          <td
+            style="
+              padding: 14px 0;
+              font-family: 'Public Sans Variable', system-ui, sans-serif;
+              font-size: 11px;
+              color: #5c6068;
+              font-weight: 700;
+            "
+          >
+            BM4
+          </td>
+          <td>
+            <svg viewBox="0 0 100 100" width="16" height="16"><use href="#bm4" /></svg>
+          </td>
+          <td>
+            <svg viewBox="0 0 100 100" width="24" height="24"><use href="#bm4" /></svg>
+          </td>
+          <td>
+            <svg viewBox="0 0 100 100" width="40" height="40"><use href="#bm4" /></svg>
+          </td>
+          <td>
+            <svg viewBox="0 0 100 100" width="72" height="72"><use href="#bm4" /></svg>
+          </td>
+          <td>
+            <svg viewBox="0 0 100 100" width="120" height="120"><use href="#bm4" /></svg>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ============ IN CONTEXT ============ -->
+
+<div style="border: 1px solid #1f232b; background: #fff; margin-top: 24px">
+  <div style="padding: 16px 24px; border-bottom: 1px solid #1f232b">
+    <div
+      style="
+        font-family: 'Public Sans Variable', system-ui, sans-serif;
+        font-weight: 800;
+        font-size: 14px;
+        color: #0f1115;
+      "
+    >
+      Pairs · with the wordmark, in a header
+    </div>
+  </div>
+  <div style="padding: 0; background: #f7f4ec">
+    <div
+      style="
+        padding: 18px 24px;
+        border-bottom: 1px solid rgba(0, 0, 0, 0.12);
+        display: flex;
+        align-items: center;
+        gap: 16px;
+      "
+    >
+      <svg viewBox="0 0 100 100" width="40" height="40"><use href="#bm1" /></svg>
+      <div
+        style="
+          font-family: 'Public Sans Variable', system-ui, sans-serif;
+          font-weight: 800;
+          font-size: 18px;
+          line-height: 0.95;
+          letter-spacing: -0.02em;
+        "
+      >
+        <div>Las Vegans</div>
+        <div style="color: #e5471a">for Better Transit</div>
+      </div>
+      <span class="reads" style="margin-left: auto; padding: 4px 10px">BM1 · most subtle</span>
+    </div>
+
+    <div
+      style="
+        padding: 18px 24px;
+        border-bottom: 1px solid rgba(0, 0, 0, 0.12);
+        display: flex;
+        align-items: center;
+        gap: 16px;
+      "
+    >
+      <svg viewBox="0 0 100 100" width="40" height="40"><use href="#bm2" /></svg>
+      <div
+        style="
+          font-family: 'Public Sans Variable', system-ui, sans-serif;
+          font-weight: 800;
+          font-size: 18px;
+          line-height: 0.95;
+          letter-spacing: -0.02em;
+        "
+      >
+        <div>Las Vegans</div>
+        <div style="color: #e5471a">for Better Transit</div>
+      </div>
+      <span class="reads" style="margin-left: auto; padding: 4px 10px">BM2 · diamond hint</span>
+    </div>
+
+    <div
+      style="
+        padding: 18px 24px;
+        border-bottom: 1px solid rgba(0, 0, 0, 0.12);
+        display: flex;
+        align-items: center;
+        gap: 16px;
+      "
+    >
+      <svg viewBox="0 0 100 100" width="40" height="40"><use href="#bm3" /></svg>
+      <div
+        style="
+          font-family: 'Public Sans Variable', system-ui, sans-serif;
+          font-weight: 800;
+          font-size: 18px;
+          line-height: 0.95;
+          letter-spacing: -0.02em;
+        "
+      >
+        <div>Las Vegans</div>
+        <div style="color: #e5471a">for Better Transit</div>
+      </div>
+      <span class="reads" style="margin-left: auto; padding: 4px 10px">BM3 · star</span>
+    </div>
+
+    <div style="padding: 18px 24px; display: flex; align-items: center; gap: 16px">
+      <svg viewBox="0 0 100 100" width="40" height="40"><use href="#bm4" /></svg>
+      <div
+        style="
+          font-family: 'Public Sans Variable', system-ui, sans-serif;
+          font-weight: 800;
+          font-size: 18px;
+          line-height: 0.95;
+          letter-spacing: -0.02em;
+        "
+      >
+        <div>Las Vegans</div>
+        <div style="color: #e5471a">for Better Transit</div>
+      </div>
+      <span class="reads" style="margin-left: auto; padding: 4px 10px">BM4 · skeleton</span>
+    </div>
+  </div>
+</div>
+
+<div style="margin-top: 32px; padding: 24px; background: #f7f4ec; border-left: 6px solid #0f1115">
+  <div
+    class="pub"
+    style="
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.14em;
+      font-weight: 800;
+      color: #5c6068;
+      margin-bottom: 10px;
+    "
+  >
+    Recommendation
+  </div>
+  <p class="pub" style="font-size: 14px; line-height: 1.6; margin: 0; color: #0f1115">
+    <strong>BM2</strong> is probably the right register: subtle enough that the casual viewer just
+    sees clean architecture, recognizable enough that any Las Vegan reads "Welcome sign" instantly.
+    <strong>BM1</strong> is the most disciplined option if you want to err on the side of restraint.
+    <strong>BM4</strong> probably crosses the line — at that point you're rendering the sign, not
+    referencing it.
+  </p>
+</div>
+
+<p class="subtitle" style="margin-top: 24px">
+  Click your pick. Then we have the full system: this as the bold mark, bulb-letter LVBT as the fun
+  mark, the existing wordmark as the lockup. I'll write the design spec.
+</p>

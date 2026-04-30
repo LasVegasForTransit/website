@@ -1,0 +1,776 @@
+<h2>Direction F · The Welcome sign, four ways</h2>
+<p class="subtitle">
+  Same iconic shape — diamond + bulb border + WELCOME capsules + red star + blue posts — used four
+  different ways. Click your favorite.
+</p>
+
+<style>
+  .ws-stack {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    margin-top: 20px;
+  }
+  .ws-card {
+    border: 1px solid #1f232b;
+    cursor: pointer;
+    transition:
+      transform 0.15s,
+      box-shadow 0.15s;
+    position: relative;
+    background: #fff;
+  }
+  .ws-card:hover {
+    transform: translateX(2px);
+    box-shadow: -6px 6px 0 #0f1115;
+  }
+  .ws-card.selected {
+    outline: 4px solid #e5471a;
+    outline-offset: -4px;
+  }
+  .ws-badge {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    width: 32px;
+    height: 32px;
+    background: #0f1115;
+    color: #f7f4ec;
+    font-weight: 800;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 5;
+    font-family: 'Public Sans Variable', system-ui, sans-serif;
+  }
+  .ws-stage {
+    padding: 36px 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 40px;
+    min-height: 320px;
+    background: #f7f4ec;
+  }
+  .ws-info {
+    padding: 22px 32px;
+    border-top: 1px solid #1f232b;
+    background: #fff;
+    display: flex;
+    gap: 24px;
+    align-items: flex-start;
+  }
+  .ws-info .lbl {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+    font-weight: 700;
+    color: #5c6068;
+    margin-bottom: 6px;
+  }
+  .ws-info h3 {
+    font-size: 18px;
+    margin: 0 0 8px;
+    font-weight: 800;
+    letter-spacing: -0.01em;
+    line-height: 1.2;
+  }
+  .ws-info p {
+    font-size: 13px;
+    line-height: 1.55;
+    color: #3a3e46;
+    margin: 0;
+    flex: 1;
+  }
+  .ws-info .meta {
+    width: 200px;
+    flex-shrink: 0;
+  }
+  .wm-side {
+    font-family: 'Public Sans Variable', system-ui, sans-serif;
+    font-weight: 800;
+    line-height: 0.92;
+    letter-spacing: -0.03em;
+    font-size: 36px;
+    color: #0f1115;
+  }
+  .wm-side .accent {
+    color: #e5471a;
+  }
+</style>
+
+<!-- Reusable Welcome-sign SVG defined as a symbol -->
+<svg width="0" height="0" style="position: absolute" aria-hidden="true">
+  <defs>
+    <!-- Faithful colored sign with FABULOUS variant (text passed via <use> won't work, so we duplicate per use) -->
+    <symbol id="sign-frame" viewBox="0 0 400 360">
+      <!-- Two posts (behind) -->
+      <rect
+        x="148"
+        y="20"
+        width="22"
+        height="320"
+        fill="#5a8ec9"
+        stroke="#0f1115"
+        stroke-width="2"
+      />
+      <rect
+        x="230"
+        y="20"
+        width="22"
+        height="320"
+        fill="#5a8ec9"
+        stroke="#0f1115"
+        stroke-width="2"
+      />
+      <!-- Red star -->
+      <g transform="translate(200, 60)">
+        <path
+          d="M 0,-44 L 11,-14 L 42,-14 L 16,6 L 26,36 L 0,18 L -26,36 L -16,6 L -42,-14 L -11,-14 Z"
+          fill="#dc2626"
+          stroke="#0f1115"
+          stroke-width="2"
+          stroke-linejoin="round"
+        />
+      </g>
+      <!-- WELCOME capsule letters -->
+      <g
+        font-family="Public Sans Variable,system-ui,sans-serif"
+        font-weight="800"
+        font-size="15"
+        text-anchor="middle"
+      >
+        <g>
+          <circle cx="116" cy="118" r="13" fill="white" stroke="#0f1115" stroke-width="1.8" />
+          <text x="116" y="123" fill="#dc2626">W</text>
+        </g>
+        <g>
+          <circle cx="144" cy="118" r="13" fill="white" stroke="#0f1115" stroke-width="1.8" />
+          <text x="144" y="123" fill="#dc2626">E</text>
+        </g>
+        <g>
+          <circle cx="172" cy="118" r="13" fill="white" stroke="#0f1115" stroke-width="1.8" />
+          <text x="172" y="123" fill="#dc2626">L</text>
+        </g>
+        <g>
+          <circle cx="200" cy="118" r="13" fill="white" stroke="#0f1115" stroke-width="1.8" />
+          <text x="200" y="123" fill="#dc2626">C</text>
+        </g>
+        <g>
+          <circle cx="228" cy="118" r="13" fill="white" stroke="#0f1115" stroke-width="1.8" />
+          <text x="228" y="123" fill="#dc2626">O</text>
+        </g>
+        <g>
+          <circle cx="256" cy="118" r="13" fill="white" stroke="#0f1115" stroke-width="1.8" />
+          <text x="256" y="123" fill="#dc2626">M</text>
+        </g>
+        <g>
+          <circle cx="284" cy="118" r="13" fill="white" stroke="#0f1115" stroke-width="1.8" />
+          <text x="284" y="123" fill="#dc2626">E</text>
+        </g>
+      </g>
+      <!-- Diamond shape with yellow bulb border -->
+      <polygon
+        points="200,150 378,228 200,306 22,228"
+        fill="white"
+        stroke="#fbbf24"
+        stroke-width="13"
+        stroke-linejoin="round"
+      />
+      <!-- Bulb dots around perimeter -->
+      <g fill="#fbbf24" stroke="#0f1115" stroke-width="0.8">
+        <!-- top-right edge from (200,150) to (378,228) -->
+        <circle cx="218" cy="158" r="3.2" />
+        <circle cx="240" cy="168" r="3.2" />
+        <circle cx="262" cy="178" r="3.2" />
+        <circle cx="284" cy="188" r="3.2" />
+        <circle cx="306" cy="198" r="3.2" />
+        <circle cx="328" cy="208" r="3.2" />
+        <circle cx="350" cy="218" r="3.2" />
+        <!-- bottom-right edge from (378,228) to (200,306) -->
+        <circle cx="362" cy="234" r="3.2" />
+        <circle cx="340" cy="244" r="3.2" />
+        <circle cx="318" cy="254" r="3.2" />
+        <circle cx="296" cy="264" r="3.2" />
+        <circle cx="274" cy="274" r="3.2" />
+        <circle cx="252" cy="284" r="3.2" />
+        <circle cx="230" cy="294" r="3.2" />
+        <!-- bottom-left edge from (200,306) to (22,228) -->
+        <circle cx="182" cy="298" r="3.2" />
+        <circle cx="160" cy="288" r="3.2" />
+        <circle cx="138" cy="278" r="3.2" />
+        <circle cx="116" cy="268" r="3.2" />
+        <circle cx="94" cy="258" r="3.2" />
+        <circle cx="72" cy="248" r="3.2" />
+        <circle cx="50" cy="238" r="3.2" />
+        <!-- top-left edge from (22,228) to (200,150) -->
+        <circle cx="38" cy="222" r="3.2" />
+        <circle cx="60" cy="212" r="3.2" />
+        <circle cx="82" cy="202" r="3.2" />
+        <circle cx="104" cy="192" r="3.2" />
+        <circle cx="126" cy="182" r="3.2" />
+        <circle cx="148" cy="172" r="3.2" />
+        <circle cx="170" cy="162" r="3.2" />
+      </g>
+    </symbol>
+
+    <!-- Monochrome silhouette (F3) -->
+    <symbol id="sign-mono" viewBox="0 0 400 360">
+      <rect x="148" y="20" width="22" height="320" fill="#0f1115" />
+      <rect x="230" y="20" width="22" height="320" fill="#0f1115" />
+      <g transform="translate(200, 60)">
+        <path
+          d="M 0,-44 L 11,-14 L 42,-14 L 16,6 L 26,36 L 0,18 L -26,36 L -16,6 L -42,-14 L -11,-14 Z"
+          fill="#e5471a"
+          stroke="#0f1115"
+          stroke-width="2"
+          stroke-linejoin="round"
+        />
+      </g>
+      <polygon
+        points="200,150 378,228 200,306 22,228"
+        fill="#f7f4ec"
+        stroke="#0f1115"
+        stroke-width="13"
+        stroke-linejoin="round"
+      />
+      <g fill="#0f1115">
+        <circle cx="218" cy="158" r="3.2" />
+        <circle cx="240" cy="168" r="3.2" />
+        <circle cx="262" cy="178" r="3.2" />
+        <circle cx="284" cy="188" r="3.2" />
+        <circle cx="306" cy="198" r="3.2" />
+        <circle cx="328" cy="208" r="3.2" />
+        <circle cx="350" cy="218" r="3.2" />
+        <circle cx="362" cy="234" r="3.2" />
+        <circle cx="340" cy="244" r="3.2" />
+        <circle cx="318" cy="254" r="3.2" />
+        <circle cx="296" cy="264" r="3.2" />
+        <circle cx="274" cy="274" r="3.2" />
+        <circle cx="252" cy="284" r="3.2" />
+        <circle cx="230" cy="294" r="3.2" />
+        <circle cx="182" cy="298" r="3.2" />
+        <circle cx="160" cy="288" r="3.2" />
+        <circle cx="138" cy="278" r="3.2" />
+        <circle cx="116" cy="268" r="3.2" />
+        <circle cx="94" cy="258" r="3.2" />
+        <circle cx="72" cy="248" r="3.2" />
+        <circle cx="50" cy="238" r="3.2" />
+        <circle cx="38" cy="222" r="3.2" />
+        <circle cx="60" cy="212" r="3.2" />
+        <circle cx="82" cy="202" r="3.2" />
+        <circle cx="104" cy="192" r="3.2" />
+        <circle cx="126" cy="182" r="3.2" />
+        <circle cx="148" cy="172" r="3.2" />
+        <circle cx="170" cy="162" r="3.2" />
+      </g>
+    </symbol>
+  </defs>
+</svg>
+
+<div class="ws-stack">
+  <!-- F1 · Reverent homage -->
+  <div class="ws-card" data-choice="reverent" onclick="toggleSelect(this)">
+    <div class="ws-badge">F1</div>
+    <div class="ws-stage">
+      <svg viewBox="0 0 400 360" width="380" height="342" xmlns="http://www.w3.org/2000/svg">
+        <use href="#sign-frame" />
+        <!-- Inner text: faithful original -->
+        <g text-anchor="middle" font-family="Public Sans Variable,system-ui,sans-serif">
+          <text x="200" y="187" font-size="11" font-weight="700" fill="#1f4788" letter-spacing="3">
+            TO Fabulous
+          </text>
+          <text x="200" y="234" font-size="34" font-weight="900" fill="#dc2626" letter-spacing="-1">
+            LAS VEGAS
+          </text>
+          <text x="200" y="270" font-size="11" font-weight="700" fill="#1f4788" letter-spacing="4">
+            NEVADA
+          </text>
+        </g>
+      </svg>
+      <div class="wm-side">
+        <div>Las Vegans</div>
+        <div class="accent">for Better Transit</div>
+      </div>
+    </div>
+    <div class="ws-info">
+      <div class="meta">
+        <p class="lbl">F1 · Reverent homage</p>
+        <h3>Sign stays sacred. We sit beside it.</h3>
+      </div>
+      <p>
+        The actual Welcome sign — text untouched — paired with the LVBT wordmark as a sibling. The
+        brand says:
+        <em>we are of this place, we honor what's here, we're not subverting it.</em> Lowest
+        political risk. The sign reads as an authority co-sign rather than a punchline.
+      </p>
+    </div>
+  </div>
+
+  <!-- F2 · Activated subversion -->
+  <div class="ws-card" data-choice="activated" onclick="toggleSelect(this)">
+    <div class="ws-badge">F2</div>
+    <div class="ws-stage">
+      <svg viewBox="0 0 400 360" width="380" height="342" xmlns="http://www.w3.org/2000/svg">
+        <use href="#sign-frame" />
+        <!-- Inner text: subverted -->
+        <g text-anchor="middle" font-family="Public Sans Variable,system-ui,sans-serif">
+          <text x="200" y="187" font-size="11" font-weight="700" fill="#1f4788" letter-spacing="3">
+            TO BETTER
+          </text>
+          <text x="200" y="234" font-size="32" font-weight="900" fill="#dc2626" letter-spacing="-1">
+            LAS VEGANS
+          </text>
+          <text x="200" y="270" font-size="11" font-weight="700" fill="#1f4788" letter-spacing="4">
+            TRANSIT
+          </text>
+        </g>
+      </svg>
+      <div style="display: flex; flex-direction: column; gap: 16px">
+        <div
+          style="
+            font-family: 'Public Sans Variable', system-ui, sans-serif;
+            font-size: 11px;
+            letter-spacing: 0.14em;
+            color: #5c6068;
+            text-transform: uppercase;
+            font-weight: 700;
+          "
+        >
+          Word substitutions
+        </div>
+        <div
+          style="
+            font-family: 'Public Sans Variable', system-ui, sans-serif;
+            font-size: 14px;
+            line-height: 1.7;
+            color: #0f1115;
+          "
+        >
+          <div>
+            <span style="color: #5c6068; text-decoration: line-through">Fabulous</span> →
+            <strong>BETTER</strong>
+          </div>
+          <div>
+            <span style="color: #5c6068; text-decoration: line-through">LAS VEGAS</span> →
+            <strong>LAS VEGANS</strong>
+          </div>
+          <div>
+            <span style="color: #5c6068; text-decoration: line-through">NEVADA</span> →
+            <strong>TRANSIT</strong>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="ws-info">
+      <div class="meta">
+        <p class="lbl">F2 · Activated subversion</p>
+        <h3>The brand lives inside the sign.</h3>
+      </div>
+      <p>
+        One letter changed in the centerpiece (VEGAS → VEGANS), "Fabulous" swapped for "BETTER" —
+        captures the entire LVBT thesis in 7 words. Most distinctive, highest meme velocity, also
+        highest risk of reading as parody. Probably best used selectively (homepage hero, t-shirts,
+        anniversary moments) rather than as the everyday mark.
+      </p>
+    </div>
+  </div>
+
+  <!-- F3 · Reduced silhouette / glyph -->
+  <div class="ws-card" data-choice="silhouette" onclick="toggleSelect(this)">
+    <div class="ws-badge">F3</div>
+    <div class="ws-stage" style="gap: 60px">
+      <!-- Large glyph -->
+      <svg viewBox="0 0 400 360" width="280" height="252" xmlns="http://www.w3.org/2000/svg">
+        <use href="#sign-mono" />
+      </svg>
+      <!-- Small uses -->
+      <div style="display: flex; flex-direction: column; gap: 24px; align-items: flex-start">
+        <div style="display: flex; gap: 16px; align-items: center">
+          <svg viewBox="0 0 400 360" width="64" height="58" xmlns="http://www.w3.org/2000/svg">
+            <use href="#sign-mono" />
+          </svg>
+          <div
+            style="
+              font-family: 'Public Sans Variable', system-ui, sans-serif;
+              font-size: 11px;
+              color: #5c6068;
+              text-transform: uppercase;
+              letter-spacing: 0.14em;
+              font-weight: 700;
+            "
+          >
+            As favicon / app icon
+          </div>
+        </div>
+        <div style="display: flex; gap: 16px; align-items: center">
+          <svg viewBox="0 0 400 360" width="40" height="36" xmlns="http://www.w3.org/2000/svg">
+            <use href="#sign-mono" />
+          </svg>
+          <div
+            style="
+              font-family: 'Public Sans Variable', system-ui, sans-serif;
+              font-size: 11px;
+              color: #5c6068;
+              text-transform: uppercase;
+              letter-spacing: 0.14em;
+              font-weight: 700;
+            "
+          >
+            Inline byline mark
+          </div>
+        </div>
+        <div
+          style="
+            display: flex;
+            gap: 16px;
+            align-items: center;
+            background: #0f1115;
+            padding: 8px 16px;
+          "
+        >
+          <svg
+            viewBox="0 0 400 360"
+            width="48"
+            height="43"
+            xmlns="http://www.w3.org/2000/svg"
+            style="filter: invert(1)"
+          >
+            <use href="#sign-mono" />
+          </svg>
+          <div
+            style="
+              font-family: 'Public Sans Variable', system-ui, sans-serif;
+              font-size: 11px;
+              color: #f7f4ec;
+              text-transform: uppercase;
+              letter-spacing: 0.14em;
+              font-weight: 700;
+            "
+          >
+            On dark
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="ws-info">
+      <div class="meta">
+        <p class="lbl">F3 · Silhouette mark</p>
+        <h3>The diamond as monogram.</h3>
+      </div>
+      <p>
+        The sign's <em>shape</em> is recognizable enough that you don't need the text to read it as
+        Vegas — locals know the silhouette instantly. Stripped to ink + paper + accent, it works as
+        favicon, app icon, sticker, social avatar, and inline byline mark. This is the SVG logo you
+        mentioned wanting.
+      </p>
+    </div>
+  </div>
+
+  <!-- F4 · System in action -->
+  <div class="ws-card" data-choice="system" onclick="toggleSelect(this)">
+    <div class="ws-badge">F4</div>
+    <div class="ws-stage" style="background: #f7f4ec; padding: 0; align-items: stretch">
+      <!-- Mock webpage hero -->
+      <div
+        style="
+          flex: 1;
+          background: #f7f4ec;
+          padding: 32px;
+          display: flex;
+          flex-direction: column;
+          gap: 20px;
+          border-right: 1px solid #1f232b;
+        "
+      >
+        <!-- Header with small diamond + wordmark -->
+        <div
+          style="
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            border-bottom: 6px solid #0f1115;
+            padding-bottom: 16px;
+          "
+        >
+          <svg viewBox="0 0 400 360" width="36" height="32" xmlns="http://www.w3.org/2000/svg">
+            <use href="#sign-mono" />
+          </svg>
+          <div
+            style="
+              font-family: 'Public Sans Variable', system-ui, sans-serif;
+              font-weight: 800;
+              font-size: 18px;
+              line-height: 0.95;
+              letter-spacing: -0.02em;
+            "
+          >
+            <div>Las Vegans</div>
+            <div style="color: #e5471a">for Better Transit</div>
+          </div>
+          <div
+            style="
+              margin-left: auto;
+              display: flex;
+              gap: 16px;
+              font-family: 'Public Sans Variable', system-ui, sans-serif;
+              font-size: 11px;
+              text-transform: uppercase;
+              letter-spacing: 0.12em;
+              font-weight: 700;
+              color: #5c6068;
+            "
+          >
+            <span>Vision</span><span>Issues</span><span>Join</span>
+          </div>
+        </div>
+        <!-- Hero with sign -->
+        <div style="display: flex; gap: 24px; align-items: center; flex: 1">
+          <svg viewBox="0 0 400 360" width="240" height="216" xmlns="http://www.w3.org/2000/svg">
+            <use href="#sign-frame" />
+            <g text-anchor="middle" font-family="Public Sans Variable,system-ui,sans-serif">
+              <text
+                x="200"
+                y="187"
+                font-size="11"
+                font-weight="700"
+                fill="#1f4788"
+                letter-spacing="3"
+              >
+                TO BETTER
+              </text>
+              <text
+                x="200"
+                y="234"
+                font-size="32"
+                font-weight="900"
+                fill="#dc2626"
+                letter-spacing="-1"
+              >
+                LAS VEGANS
+              </text>
+              <text
+                x="200"
+                y="270"
+                font-size="11"
+                font-weight="700"
+                fill="#1f4788"
+                letter-spacing="4"
+              >
+                TRANSIT
+              </text>
+            </g>
+          </svg>
+          <div style="flex: 1">
+            <div
+              style="
+                font-family: 'Public Sans Variable', system-ui, sans-serif;
+                font-weight: 900;
+                font-size: 40px;
+                line-height: 0.95;
+                letter-spacing: -0.03em;
+                color: #0f1115;
+              "
+            >
+              Largest US metro <span style="color: #e5471a">without light rail.</span>
+            </div>
+            <div
+              style="
+                font-family: 'Public Sans Variable', system-ui, sans-serif;
+                font-size: 13px;
+                color: #5c6068;
+                margin-top: 12px;
+                line-height: 1.5;
+              "
+            >
+              And our buses are about to be cut in half.
+            </div>
+          </div>
+        </div>
+      </div>
+      <!-- Right column: brand system pieces -->
+      <div
+        style="
+          width: 200px;
+          background: #fff;
+          padding: 24px;
+          display: flex;
+          flex-direction: column;
+          gap: 18px;
+        "
+      >
+        <div>
+          <div
+            style="
+              font-family: 'Public Sans Variable', system-ui, sans-serif;
+              font-size: 9px;
+              text-transform: uppercase;
+              letter-spacing: 0.14em;
+              font-weight: 700;
+              color: #5c6068;
+              margin-bottom: 8px;
+            "
+          >
+            The system
+          </div>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 6px">
+          <div
+            style="
+              font-family: 'Public Sans Variable', system-ui, sans-serif;
+              font-size: 11px;
+              font-weight: 700;
+            "
+          >
+            Wordmark
+          </div>
+          <div
+            style="
+              font-family: 'Public Sans Variable', system-ui, sans-serif;
+              font-weight: 800;
+              font-size: 13px;
+              line-height: 0.95;
+            "
+          >
+            Las Vegans<br /><span style="color: #e5471a">for Better Transit</span>
+          </div>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 6px">
+          <div
+            style="
+              font-family: 'Public Sans Variable', system-ui, sans-serif;
+              font-size: 11px;
+              font-weight: 700;
+            "
+          >
+            Diamond mark
+          </div>
+          <svg viewBox="0 0 400 360" width="60" height="54"><use href="#sign-mono" /></svg>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 6px">
+          <div
+            style="
+              font-family: 'Public Sans Variable', system-ui, sans-serif;
+              font-size: 11px;
+              font-weight: 700;
+            "
+          >
+            Capsule labels
+          </div>
+          <div style="display: flex; gap: 3px">
+            <span
+              style="
+                width: 18px;
+                height: 18px;
+                border-radius: 50%;
+                background: #fff;
+                border: 1.5px solid #0f1115;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 10px;
+                font-weight: 800;
+                color: #dc2626;
+                font-family: 'Public Sans Variable', system-ui;
+              "
+              >N</span
+            >
+            <span
+              style="
+                width: 18px;
+                height: 18px;
+                border-radius: 50%;
+                background: #fff;
+                border: 1.5px solid #0f1115;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 10px;
+                font-weight: 800;
+                color: #dc2626;
+                font-family: 'Public Sans Variable', system-ui;
+              "
+              >E</span
+            >
+            <span
+              style="
+                width: 18px;
+                height: 18px;
+                border-radius: 50%;
+                background: #fff;
+                border: 1.5px solid #0f1115;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 10px;
+                font-weight: 800;
+                color: #dc2626;
+                font-family: 'Public Sans Variable', system-ui;
+              "
+              >W</span
+            >
+            <span
+              style="
+                width: 18px;
+                height: 18px;
+                border-radius: 50%;
+                background: #fff;
+                border: 1.5px solid #0f1115;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 10px;
+                font-weight: 800;
+                color: #dc2626;
+                font-family: 'Public Sans Variable', system-ui;
+              "
+              >S</span
+            >
+          </div>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 6px">
+          <div
+            style="
+              font-family: 'Public Sans Variable', system-ui, sans-serif;
+              font-size: 11px;
+              font-weight: 700;
+            "
+          >
+            Bulb-bordered callout
+          </div>
+          <div
+            style="
+              border: 2px dashed #fbbf24;
+              padding: 6px 8px;
+              background: #fff;
+              font-family: 'Public Sans Variable', system-ui, sans-serif;
+              font-size: 9px;
+              font-weight: 700;
+              text-align: center;
+              color: #0f1115;
+            "
+          >
+            SIGN UP
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="ws-info">
+      <div class="meta">
+        <p class="lbl">F4 · Brand system in action</p>
+        <h3>How the pieces compose.</h3>
+      </div>
+      <p>
+        The sign isn't a logo — it's a <em>system</em>. Wordmark in the header (everyday). Diamond
+        silhouette as favicon/byline mark. Full activated sign as a hero element on the homepage.
+        Capsule letters as a typographic device for labels (NEWS, JOIN, ACTS). Bulb-bordered frames
+        for callouts and CTAs. Each piece works alone; together they're unmistakably one brand.
+      </p>
+    </div>
+  </div>
+</div>
+
+<p class="subtitle" style="margin-top: 32px">
+  Click any to mark favorites. Or tell me to push one further (e.g., "F4 + the F2 wording").
+</p>

@@ -1,0 +1,817 @@
+<h2>Two marks · one wordmark · one system</h2>
+<p class="subtitle">
+  Proposed architecture: a fun mark for small/playful contexts, a bold mark for medium/formal
+  contexts, and the existing wordmark as the type lockup. Each derived from the Welcome sign at
+  different intensities.
+</p>
+
+<style>
+  .pub {
+    font-family: 'Public Sans Variable', system-ui, sans-serif;
+  }
+
+  /* === Bulb-letter mark === */
+  .bl {
+    display: inline-flex;
+    align-items: center;
+  }
+  .bl .b {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #fff;
+    border: 1px solid #0f1115;
+    border-radius: 50%;
+    font-family: 'Public Sans Variable', system-ui, sans-serif;
+    font-weight: 800;
+    color: #0f1115;
+    line-height: 1;
+    aspect-ratio: 1;
+  }
+  .bl-lin {
+    gap: 4px;
+  }
+  .bl-lin .b {
+    width: 32px;
+    height: 32px;
+    font-size: 14px;
+  }
+  .bl-lin.bl-xs {
+    gap: 2.5px;
+  }
+  .bl-lin.bl-xs .b {
+    width: 16px;
+    height: 16px;
+    font-size: 9px;
+    border-width: 0.75px;
+  }
+  .bl-lin.bl-sm {
+    gap: 3px;
+  }
+  .bl-lin.bl-sm .b {
+    width: 22px;
+    height: 22px;
+    font-size: 11px;
+  }
+  .bl-lin.bl-md {
+    gap: 4px;
+  }
+  .bl-lin.bl-md .b {
+    width: 32px;
+    height: 32px;
+    font-size: 14px;
+    border-width: 1px;
+  }
+  .bl-lin.bl-lg {
+    gap: 6px;
+  }
+  .bl-lin.bl-lg .b {
+    width: 56px;
+    height: 56px;
+    font-size: 26px;
+    border-width: 1.5px;
+    letter-spacing: -0.02em;
+  }
+  .bl-lin.bl-xl {
+    gap: 8px;
+  }
+  .bl-lin.bl-xl .b {
+    width: 88px;
+    height: 88px;
+    font-size: 42px;
+    border-width: 2px;
+    letter-spacing: -0.02em;
+  }
+  /* Square 2x2 */
+  .bl-sq {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 4px;
+  }
+  .bl-sq .b {
+    width: 32px;
+    height: 32px;
+    font-size: 14px;
+    border: 1px solid #0f1115;
+    border-radius: 50%;
+    background: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Public Sans Variable', system-ui, sans-serif;
+    font-weight: 800;
+    color: #0f1115;
+  }
+  .bl-sq.bl-md .b {
+    width: 32px;
+    height: 32px;
+    font-size: 14px;
+  }
+  .bl-sq.bl-lg .b {
+    width: 56px;
+    height: 56px;
+    font-size: 26px;
+    border-width: 1.5px;
+  }
+  .bl-sq.bl-xl .b {
+    width: 88px;
+    height: 88px;
+    font-size: 42px;
+    border-width: 2px;
+  }
+  /* Variants */
+  .bl-accent .b {
+    color: #e5471a;
+  }
+  .bl-inverted .b {
+    background: #0f1115;
+    color: #f7f4ec;
+    border-color: #0f1115;
+  }
+
+  /* === Layout === */
+  .frame {
+    border: 1px solid #1f232b;
+    background: #fff;
+    margin-bottom: 14px;
+  }
+  .frame > .head {
+    padding: 16px 24px;
+    border-bottom: 1px solid #1f232b;
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 16px;
+  }
+  .frame > .head .title {
+    font-family: 'Public Sans Variable', system-ui, sans-serif;
+    font-weight: 800;
+    font-size: 16px;
+    color: #0f1115;
+    letter-spacing: -0.01em;
+  }
+  .frame > .head .sub {
+    font-family: 'Public Sans Variable', system-ui, sans-serif;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+    color: #5c6068;
+    font-weight: 700;
+  }
+  .frame > .body {
+    padding: 36px 32px;
+    background: #f7f4ec;
+  }
+  .row-2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0;
+  }
+  .row-2 > div {
+    padding: 28px 32px;
+  }
+  .row-2 > div + div {
+    border-left: 1px solid #1f232b;
+  }
+  .lbl {
+    font-family: 'Public Sans Variable', system-ui, sans-serif;
+    font-size: 9px;
+    text-transform: uppercase;
+    letter-spacing: 0.16em;
+    color: #5c6068;
+    font-weight: 800;
+  }
+  .micro {
+    font-family: 'Public Sans Variable', system-ui, sans-serif;
+    font-size: 11px;
+    color: #3a3e46;
+    line-height: 1.5;
+  }
+</style>
+
+<svg width="0" height="0" style="position: absolute" aria-hidden="true">
+  <defs>
+    <!-- Bold mark: diamond + 8-point star, refined, no bulbs no posts -->
+    <symbol id="bold-mark" viewBox="0 0 100 100">
+      <!-- Diamond outline, hairline ink -->
+      <polygon
+        points="50,8 92,50 50,92 8,50"
+        fill="none"
+        stroke="#0f1115"
+        stroke-width="2"
+        stroke-linejoin="round"
+      />
+      <!-- 8-point star centered -->
+      <g fill="#e5471a">
+        <path
+          d="M50 22 L53 44 L74 47 L57 50 L74 53 L53 56 L50 78 L47 56 L26 53 L43 50 L26 47 L47 44 Z"
+        />
+      </g>
+      <!-- Center dot -->
+      <circle cx="50" cy="50" r="2" fill="#0f1115" />
+      <!-- Cardinal accent dots -->
+      <circle cx="50" cy="8" r="2.5" fill="#0f1115" />
+      <circle cx="92" cy="50" r="2.5" fill="#0f1115" />
+      <circle cx="50" cy="92" r="2.5" fill="#0f1115" />
+      <circle cx="8" cy="50" r="2.5" fill="#0f1115" />
+    </symbol>
+    <!-- Bold mark, all-ink mono variant -->
+    <symbol id="bold-mark-mono" viewBox="0 0 100 100">
+      <polygon
+        points="50,8 92,50 50,92 8,50"
+        fill="none"
+        stroke="#0f1115"
+        stroke-width="2"
+        stroke-linejoin="round"
+      />
+      <g fill="#0f1115">
+        <path
+          d="M50 22 L53 44 L74 47 L57 50 L74 53 L53 56 L50 78 L47 56 L26 53 L43 50 L26 47 L47 44 Z"
+        />
+      </g>
+      <circle cx="50" cy="50" r="2" fill="#fff" />
+      <circle cx="50" cy="8" r="2.5" fill="#0f1115" />
+      <circle cx="92" cy="50" r="2.5" fill="#0f1115" />
+      <circle cx="50" cy="92" r="2.5" fill="#0f1115" />
+      <circle cx="8" cy="50" r="2.5" fill="#0f1115" />
+    </symbol>
+    <!-- Bold mark, inverted -->
+    <symbol id="bold-mark-inv" viewBox="0 0 100 100">
+      <polygon
+        points="50,8 92,50 50,92 8,50"
+        fill="none"
+        stroke="#f7f4ec"
+        stroke-width="2"
+        stroke-linejoin="round"
+      />
+      <g fill="#e5471a">
+        <path
+          d="M50 22 L53 44 L74 47 L57 50 L74 53 L53 56 L50 78 L47 56 L26 53 L43 50 L26 47 L47 44 Z"
+        />
+      </g>
+      <circle cx="50" cy="50" r="2" fill="#f7f4ec" />
+      <circle cx="50" cy="8" r="2.5" fill="#f7f4ec" />
+      <circle cx="92" cy="50" r="2.5" fill="#f7f4ec" />
+      <circle cx="50" cy="92" r="2.5" fill="#f7f4ec" />
+      <circle cx="8" cy="50" r="2.5" fill="#f7f4ec" />
+    </symbol>
+  </defs>
+</svg>
+
+<!-- ============ THE TWO MARKS ============ -->
+
+<div class="frame">
+  <div class="head">
+    <div class="title">The two marks</div>
+    <div class="sub">side by side · same vocabulary, different register</div>
+  </div>
+  <div class="row-2">
+    <!-- FUN MARK -->
+    <div
+      style="
+        background: #f7f4ec;
+        min-height: 380px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 24px;
+      "
+    >
+      <div class="lbl">FUN MARK · BULB LETTERS</div>
+      <div class="bl bl-lin bl-xl">
+        <div class="b">L</div>
+        <div class="b">V</div>
+        <div class="b">B</div>
+        <div class="b">T</div>
+      </div>
+      <div class="micro" style="text-align: center; max-width: 320px">
+        Each letter in a bulb chip — direct lift from the Welcome sign's "WELCOME" treatment. Reads
+        as Vegas without ever rendering the literal sign. Built for small scales, charm, and
+        personality.
+      </div>
+    </div>
+
+    <!-- BOLD MARK -->
+    <div
+      style="
+        background: #f7f4ec;
+        min-height: 380px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 24px;
+      "
+    >
+      <div class="lbl">BOLD MARK · DIAMOND + STAR</div>
+      <svg viewBox="0 0 100 100" width="120" height="120"><use href="#bold-mark" /></svg>
+      <div class="micro" style="text-align: center; max-width: 320px">
+        Diamond + 8-point star + 4 cardinal anchors. Hairline construction, no bulbs, no posts.
+        Reads as civic seal. Built for medium-large scales, authority, and gravitas.
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ SCALES ============ -->
+
+<div class="frame">
+  <div class="head">
+    <div class="title">Scales · how each mark behaves at every size</div>
+    <div class="sub">construction quality holds from 16px to hero</div>
+  </div>
+  <div class="body">
+    <div style="display: flex; align-items: center; gap: 32px; padding: 14px 0">
+      <div class="lbl" style="width: 80px">16PX</div>
+      <div class="bl bl-lin bl-xs">
+        <div class="b">L</div>
+        <div class="b">V</div>
+        <div class="b">B</div>
+        <div class="b">T</div>
+      </div>
+      <svg viewBox="0 0 100 100" width="16" height="16"><use href="#bold-mark" /></svg>
+      <div class="micro" style="margin-left: auto">favicon, browser tab, byline mark</div>
+    </div>
+
+    <div
+      style="
+        display: flex;
+        align-items: center;
+        gap: 32px;
+        padding: 14px 0;
+        border-top: 1px solid rgba(0, 0, 0, 0.08);
+      "
+    >
+      <div class="lbl" style="width: 80px">22PX</div>
+      <div class="bl bl-lin bl-sm">
+        <div class="b">L</div>
+        <div class="b">V</div>
+        <div class="b">B</div>
+        <div class="b">T</div>
+      </div>
+      <svg viewBox="0 0 100 100" width="24" height="24"><use href="#bold-mark" /></svg>
+      <div class="micro" style="margin-left: auto">
+        inline beside text, email signatures, footer mark
+      </div>
+    </div>
+
+    <div
+      style="
+        display: flex;
+        align-items: center;
+        gap: 32px;
+        padding: 14px 0;
+        border-top: 1px solid rgba(0, 0, 0, 0.08);
+      "
+    >
+      <div class="lbl" style="width: 80px">32PX</div>
+      <div class="bl bl-lin bl-md">
+        <div class="b">L</div>
+        <div class="b">V</div>
+        <div class="b">B</div>
+        <div class="b">T</div>
+      </div>
+      <svg viewBox="0 0 100 100" width="40" height="40"><use href="#bold-mark" /></svg>
+      <div class="micro" style="margin-left: auto">social avatars, app icons, navigation chip</div>
+    </div>
+
+    <div
+      style="
+        display: flex;
+        align-items: center;
+        gap: 32px;
+        padding: 14px 0;
+        border-top: 1px solid rgba(0, 0, 0, 0.08);
+      "
+    >
+      <div class="lbl" style="width: 80px">56PX</div>
+      <div class="bl bl-lin bl-lg">
+        <div class="b">L</div>
+        <div class="b">V</div>
+        <div class="b">B</div>
+        <div class="b">T</div>
+      </div>
+      <svg viewBox="0 0 100 100" width="72" height="72"><use href="#bold-mark" /></svg>
+      <div class="micro" style="margin-left: auto">page hero stamp, business card, sticker</div>
+    </div>
+
+    <div
+      style="
+        display: flex;
+        align-items: center;
+        gap: 32px;
+        padding: 14px 0;
+        border-top: 1px solid rgba(0, 0, 0, 0.08);
+      "
+    >
+      <div class="lbl" style="width: 80px">88PX+</div>
+      <div class="bl bl-lin bl-xl">
+        <div class="b">L</div>
+        <div class="b">V</div>
+        <div class="b">B</div>
+        <div class="b">T</div>
+      </div>
+      <svg viewBox="0 0 100 100" width="120" height="120"><use href="#bold-mark" /></svg>
+      <div class="micro" style="margin-left: auto">report covers, signage, merch, big context</div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ VARIANTS ============ -->
+
+<div class="frame">
+  <div class="head">
+    <div class="title">Variants · color and surface discipline</div>
+    <div class="sub">three for each mark — light, accent, dark</div>
+  </div>
+  <div class="row-2">
+    <div style="background: #f7f4ec; padding: 28px">
+      <div class="lbl" style="margin-bottom: 16px">FUN MARK · 3 VARIANTS</div>
+      <div style="display: flex; align-items: center; gap: 32px; flex-wrap: wrap">
+        <div style="display: flex; flex-direction: column; align-items: center; gap: 8px">
+          <div class="bl bl-lin bl-md">
+            <div class="b">L</div>
+            <div class="b">V</div>
+            <div class="b">B</div>
+            <div class="b">T</div>
+          </div>
+          <span class="micro">Default · ink</span>
+        </div>
+        <div style="display: flex; flex-direction: column; align-items: center; gap: 8px">
+          <div class="bl bl-lin bl-md bl-accent">
+            <div class="b">L</div>
+            <div class="b">V</div>
+            <div class="b">B</div>
+            <div class="b">T</div>
+          </div>
+          <span class="micro">Accent · red</span>
+        </div>
+        <div
+          style="
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+            padding: 14px;
+            background: #0f1115;
+          "
+        >
+          <div class="bl bl-lin bl-md bl-inverted">
+            <div class="b">L</div>
+            <div class="b">V</div>
+            <div class="b">B</div>
+            <div class="b">T</div>
+          </div>
+          <span class="micro" style="color: #94a0b4">Inverted · on dark</span>
+        </div>
+      </div>
+    </div>
+
+    <div style="background: #f7f4ec; padding: 28px">
+      <div class="lbl" style="margin-bottom: 16px">BOLD MARK · 3 VARIANTS</div>
+      <div style="display: flex; align-items: center; gap: 32px; flex-wrap: wrap">
+        <div style="display: flex; flex-direction: column; align-items: center; gap: 8px">
+          <svg viewBox="0 0 100 100" width="56" height="56"><use href="#bold-mark" /></svg>
+          <span class="micro">Default · star in red</span>
+        </div>
+        <div style="display: flex; flex-direction: column; align-items: center; gap: 8px">
+          <svg viewBox="0 0 100 100" width="56" height="56"><use href="#bold-mark-mono" /></svg>
+          <span class="micro">Mono · all ink</span>
+        </div>
+        <div
+          style="
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+            padding: 14px;
+            background: #0f1115;
+          "
+        >
+          <svg viewBox="0 0 100 100" width="56" height="56"><use href="#bold-mark-inv" /></svg>
+          <span class="micro" style="color: #94a0b4">Inverted · on dark</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ USAGE MATRIX ============ -->
+
+<div class="frame">
+  <div class="head">
+    <div class="title">Usage matrix · where each mark belongs</div>
+    <div class="sub">discipline keeps the marks meaningful</div>
+  </div>
+  <div class="body" style="padding: 0; background: #fff">
+    <table
+      style="
+        width: 100%;
+        border-collapse: collapse;
+        font-family: 'Public Sans Variable', system-ui, sans-serif;
+        font-size: 13px;
+      "
+    >
+      <thead>
+        <tr style="background: #0f1115; color: #f7f4ec">
+          <th
+            style="padding: 14px 20px; text-align: left; font-weight: 700; letter-spacing: 0.05em"
+          >
+            Context
+          </th>
+          <th
+            style="padding: 14px 20px; text-align: left; font-weight: 700; letter-spacing: 0.05em"
+          >
+            Use
+          </th>
+          <th
+            style="padding: 14px 20px; text-align: left; font-weight: 700; letter-spacing: 0.05em"
+          >
+            Why
+          </th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr style="border-bottom: 1px solid #e5e7eb">
+          <td style="padding: 14px 20px">Browser favicon (16/32px)</td>
+          <td style="padding: 14px 20px"><strong>Bold mark</strong></td>
+          <td style="padding: 14px 20px; color: #5c6068">
+            Bulb letters become unreadable noise &lt;20px; the diamond+star reads as a single shape
+          </td>
+        </tr>
+        <tr style="border-bottom: 1px solid #e5e7eb">
+          <td style="padding: 14px 20px">Social avatar (square)</td>
+          <td style="padding: 14px 20px"><strong>Bold mark</strong></td>
+          <td style="padding: 14px 20px; color: #5c6068">
+            Square aspect — bulb letters stretch wide; bold mark is naturally square
+          </td>
+        </tr>
+        <tr style="border-bottom: 1px solid #e5e7eb">
+          <td style="padding: 14px 20px">Email signature, byline</td>
+          <td style="padding: 14px 20px"><strong>Fun mark</strong></td>
+          <td style="padding: 14px 20px; color: #5c6068">
+            Inline with text — the chip rhythm pairs well with sans-serif body copy
+          </td>
+        </tr>
+        <tr style="border-bottom: 1px solid #e5e7eb">
+          <td style="padding: 14px 20px">Site header (left)</td>
+          <td style="padding: 14px 20px">
+            <strong>Wordmark</strong> + small <strong>fun mark</strong> beside it
+          </td>
+          <td style="padding: 14px 20px; color: #5c6068">
+            The lockup carries authority; the chips add personality
+          </td>
+        </tr>
+        <tr style="border-bottom: 1px solid #e5e7eb">
+          <td style="padding: 14px 20px">Footer stamp</td>
+          <td style="padding: 14px 20px"><strong>Fun mark</strong> + © line</td>
+          <td style="padding: 14px 20px; color: #5c6068">
+            Footers want personality; chips give it without taking space
+          </td>
+        </tr>
+        <tr style="border-bottom: 1px solid #e5e7eb">
+          <td style="padding: 14px 20px">Stickers, T-shirt chest hit</td>
+          <td style="padding: 14px 20px"><strong>Either</strong> (depending on size and shape)</td>
+          <td style="padding: 14px 20px; color: #5c6068">
+            Both work; pick by aspect ratio of the surface
+          </td>
+        </tr>
+        <tr style="border-bottom: 1px solid #e5e7eb">
+          <td style="padding: 14px 20px">Report covers, formal docs</td>
+          <td style="padding: 14px 20px"><strong>Bold mark</strong> + wordmark</td>
+          <td style="padding: 14px 20px; color: #5c6068">
+            Civic-seal weight pairs naturally with the formal typography
+          </td>
+        </tr>
+        <tr>
+          <td style="padding: 14px 20px">Co-branding (with allied orgs)</td>
+          <td style="padding: 14px 20px"><strong>Bold mark</strong> only</td>
+          <td style="padding: 14px 20px; color: #5c6068">
+            A symbol-only mark holds its weight beside other logos better than chips
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ============ IN CONTEXT ============ -->
+
+<div class="frame">
+  <div class="head">
+    <div class="title">In context · header, social card, footer</div>
+    <div class="sub">how the system actually appears</div>
+  </div>
+  <div class="body">
+    <!-- Header -->
+    <div
+      style="
+        background: #f7f4ec;
+        padding: 18px 24px;
+        border-bottom: 6px solid #0f1115;
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        margin-bottom: 24px;
+      "
+    >
+      <div class="bl bl-lin bl-sm">
+        <div class="b">L</div>
+        <div class="b">V</div>
+        <div class="b">B</div>
+        <div class="b">T</div>
+      </div>
+      <div
+        style="
+          font-family: 'Public Sans Variable', system-ui, sans-serif;
+          font-weight: 800;
+          font-size: 18px;
+          line-height: 0.95;
+          letter-spacing: -0.02em;
+        "
+      >
+        <div>Las Vegans</div>
+        <div style="color: #e5471a">for Better Transit</div>
+      </div>
+      <div
+        style="
+          margin-left: auto;
+          display: flex;
+          gap: 24px;
+          font-family: 'Public Sans Variable', system-ui, sans-serif;
+          font-size: 11px;
+          text-transform: uppercase;
+          letter-spacing: 0.12em;
+          font-weight: 700;
+          color: #5c6068;
+        "
+      >
+        <span>Vision</span><span>Issues</span><span>News</span><span>Join</span>
+      </div>
+    </div>
+
+    <!-- Social card + footer side by side -->
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px">
+      <!-- Social card -->
+      <div
+        style="
+          background: #0f1115;
+          padding: 32px;
+          aspect-ratio: 1.91/1;
+          display: flex;
+          flex-direction: column;
+          justify-content: space-between;
+        "
+      >
+        <div style="display: flex; align-items: center; gap: 12px">
+          <svg viewBox="0 0 100 100" width="32" height="32"><use href="#bold-mark-inv" /></svg>
+          <div
+            style="
+              font-family: 'Public Sans Variable', system-ui, sans-serif;
+              color: #f7f4ec;
+              font-size: 11px;
+              text-transform: uppercase;
+              letter-spacing: 0.14em;
+              font-weight: 700;
+            "
+          >
+            @LVBT · NEWS
+          </div>
+        </div>
+        <div
+          style="
+            font-family: 'Public Sans Variable', system-ui, sans-serif;
+            color: #f7f4ec;
+            font-weight: 900;
+            font-size: 30px;
+            line-height: 0.95;
+            letter-spacing: -0.025em;
+            max-width: 380px;
+          "
+        >
+          42% of bus service <span style="color: #e5471a">about to be cut.</span>
+        </div>
+        <div style="display: flex; align-items: center; justify-content: space-between">
+          <div
+            style="
+              font-family: 'Public Sans Variable', system-ui, sans-serif;
+              color: #94a0b4;
+              font-size: 11px;
+            "
+          >
+            Read at lvbt.org →
+          </div>
+          <div class="bl bl-lin bl-xs bl-inverted">
+            <div class="b">L</div>
+            <div class="b">V</div>
+            <div class="b">B</div>
+            <div class="b">T</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Footer -->
+      <div
+        style="
+          background: #fff;
+          border: 1px solid #1f232b;
+          padding: 24px;
+          display: flex;
+          flex-direction: column;
+          gap: 16px;
+        "
+      >
+        <div
+          style="
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding-bottom: 14px;
+            border-bottom: 1px solid #1f232b;
+          "
+        >
+          <div class="bl bl-lin bl-sm">
+            <div class="b">L</div>
+            <div class="b">V</div>
+            <div class="b">B</div>
+            <div class="b">T</div>
+          </div>
+          <div
+            style="
+              font-family: 'Public Sans Variable', system-ui, sans-serif;
+              font-weight: 700;
+              font-size: 11px;
+              letter-spacing: 0.12em;
+              text-transform: uppercase;
+              color: #5c6068;
+            "
+          >
+            FOOTER
+          </div>
+        </div>
+        <div
+          style="
+            display: flex;
+            gap: 32px;
+            font-family: 'Public Sans Variable', system-ui, sans-serif;
+            font-size: 12px;
+            color: #3a3e46;
+          "
+        >
+          <div>
+            <div
+              style="
+                font-weight: 800;
+                color: #0f1115;
+                font-size: 11px;
+                text-transform: uppercase;
+                letter-spacing: 0.12em;
+                margin-bottom: 8px;
+              "
+            >
+              About
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 4px">
+              <span>Mission</span><span>Team</span><span>Contact</span>
+            </div>
+          </div>
+          <div>
+            <div
+              style="
+                font-weight: 800;
+                color: #0f1115;
+                font-size: 11px;
+                text-transform: uppercase;
+                letter-spacing: 0.12em;
+                margin-bottom: 8px;
+              "
+            >
+              Get involved
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 4px">
+              <span>Join</span><span>Donate</span><span>Volunteer</span>
+            </div>
+          </div>
+        </div>
+        <div
+          style="
+            margin-top: auto;
+            font-family: 'Public Sans Variable', system-ui, sans-serif;
+            font-size: 10px;
+            color: #5c6068;
+          "
+        >
+          © 2026 · Las Vegans for Better Transit · Las Vegas, NV
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<p class="subtitle" style="margin-top: 32px">
+  If this two-mark architecture lands, the next step is writing the design spec — locking palette,
+  the bulb-letter LVBT mark spec, the bold-mark SVG, the wordmark rules, and the few other
+  primitives we keep (the diamond stat for hero pages only, etc.). Tell me to lock it and I'll write
+  the doc.
+</p>

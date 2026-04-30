@@ -1,0 +1,603 @@
+<h2>Two posts, star, brackets reaching to the wordmark</h2>
+<p class="subtitle">
+  Two parallel posts at wordmark height (no overshoot). Red 5-point star between them at the top.
+  Bracket arms from the right post extend out and terminate at the top-left and bottom-left corners
+  of the wordmark's imaginary box.
+</p>
+
+<style>
+  .pub {
+    font-family: 'Public Sans Variable', system-ui, sans-serif;
+  }
+  .frame {
+    border: 1px solid #1f232b;
+    background: #fff;
+    margin-bottom: 14px;
+  }
+  .frame > .head {
+    padding: 16px 24px;
+    border-bottom: 1px solid #1f232b;
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 16px;
+  }
+  .frame > .head .title {
+    font-family: 'Public Sans Variable', system-ui, sans-serif;
+    font-weight: 800;
+    font-size: 16px;
+    color: #0f1115;
+    letter-spacing: -0.01em;
+  }
+  .frame > .head .sub {
+    font-family: 'Public Sans Variable', system-ui, sans-serif;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+    color: #5c6068;
+    font-weight: 700;
+  }
+  .lockup-svg {
+    display: block;
+    max-width: 100%;
+    height: auto;
+  }
+</style>
+
+<!-- ============== HERO ============== -->
+
+<div class="frame">
+  <div class="head">
+    <div class="title">v1 · Two posts + star + bracket arms</div>
+    <div class="sub">
+      posts: same height as wordmark · star at top between posts · arms to wordmark corners · 3px
+      gap
+    </div>
+  </div>
+  <div
+    style="
+      background: #f7f4ec;
+      padding: 64px 48px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    "
+  >
+    <svg
+      class="lockup-svg"
+      viewBox="0 0 290 48"
+      xmlns="http://www.w3.org/2000/svg"
+      style="width: 600px"
+    >
+      <!-- Two posts: at exact wordmark height (cap-top to baseline) -->
+      <line x1="4" y1="5" x2="4" y2="43" stroke="#0f1115" stroke-width="5" stroke-linecap="butt" />
+      <line
+        x1="18"
+        y1="5"
+        x2="18"
+        y2="43"
+        stroke="#0f1115"
+        stroke-width="5"
+        stroke-linecap="butt"
+      />
+      <!-- Red 5-point star, centered between posts at top -->
+      <path
+        d="M 11 5 L 9.77 8.3 L 6.25 8.46 L 9 10.65 L 8.06 14.05 L 11 12.1 L 13.94 14.05 L 13 10.65 L 15.76 8.46 L 12.23 8.3 Z"
+        fill="#e5471a"
+      />
+      <!-- Bracket arms: from right post midline (18,24) to wordmark corners (37, 5) and (37, 43) -->
+      <path
+        d="M 37 5 L 18 24 L 37 43"
+        stroke="#0f1115"
+        stroke-width="5"
+        fill="none"
+        stroke-linejoin="round"
+        stroke-linecap="butt"
+      />
+      <!-- Wordmark: starts at x=40 (3px gap from arm tips at x=37) -->
+      <text
+        x="40"
+        y="21"
+        font-family="Public Sans Variable, system-ui, sans-serif"
+        font-weight="800"
+        font-size="22"
+        fill="#0f1115"
+        letter-spacing="-0.6"
+      >
+        Las Vegans
+      </text>
+      <text
+        x="40"
+        y="43"
+        font-family="Public Sans Variable, system-ui, sans-serif"
+        font-weight="800"
+        font-size="22"
+        fill="#e5471a"
+        letter-spacing="-0.6"
+      >
+        for Better Transit
+      </text>
+    </svg>
+  </div>
+</div>
+
+<!-- ============== ALIGNMENT GUIDES ============== -->
+
+<div class="frame">
+  <div class="head">
+    <div class="title">Construction · with imaginary wordmark box</div>
+    <div class="sub">
+      arm tips terminate at the box corners · posts and wordmark share top/bottom
+    </div>
+  </div>
+  <div style="background: #f7f4ec; padding: 56px 48px">
+    <svg
+      viewBox="0 0 290 48"
+      xmlns="http://www.w3.org/2000/svg"
+      style="width: 620px; max-width: 100%; display: block; margin: 0 auto"
+    >
+      <!-- Imaginary wordmark box -->
+      <rect
+        x="40"
+        y="5"
+        width="220"
+        height="38"
+        fill="none"
+        stroke="#e5471a"
+        stroke-width="0.4"
+        stroke-dasharray="3 3"
+        opacity="0.7"
+      />
+      <text x="40" y="3" font-family="SF Mono,Menlo,monospace" font-size="3.5" fill="#e5471a">
+        imaginary wordmark box
+      </text>
+      <circle cx="37" cy="5" r="1.2" fill="#e5471a" />
+      <circle cx="37" cy="43" r="1.2" fill="#e5471a" />
+      <text
+        x="35"
+        y="9"
+        text-anchor="end"
+        font-family="SF Mono,Menlo,monospace"
+        font-size="3.5"
+        fill="#e5471a"
+      >
+        arm tip
+      </text>
+      <text
+        x="35"
+        y="46"
+        text-anchor="end"
+        font-family="SF Mono,Menlo,monospace"
+        font-size="3.5"
+        fill="#e5471a"
+      >
+        arm tip
+      </text>
+      <!-- Mark -->
+      <line x1="4" y1="5" x2="4" y2="43" stroke="#0f1115" stroke-width="5" stroke-linecap="butt" />
+      <line
+        x1="18"
+        y1="5"
+        x2="18"
+        y2="43"
+        stroke="#0f1115"
+        stroke-width="5"
+        stroke-linecap="butt"
+      />
+      <path
+        d="M 11 5 L 9.77 8.3 L 6.25 8.46 L 9 10.65 L 8.06 14.05 L 11 12.1 L 13.94 14.05 L 13 10.65 L 15.76 8.46 L 12.23 8.3 Z"
+        fill="#e5471a"
+      />
+      <path
+        d="M 37 5 L 18 24 L 37 43"
+        stroke="#0f1115"
+        stroke-width="5"
+        fill="none"
+        stroke-linejoin="round"
+        stroke-linecap="butt"
+      />
+      <text
+        x="40"
+        y="21"
+        font-family="Public Sans Variable, system-ui, sans-serif"
+        font-weight="800"
+        font-size="22"
+        fill="#0f1115"
+        letter-spacing="-0.6"
+      >
+        Las Vegans
+      </text>
+      <text
+        x="40"
+        y="43"
+        font-family="Public Sans Variable, system-ui, sans-serif"
+        font-weight="800"
+        font-size="22"
+        fill="#e5471a"
+        letter-spacing="-0.6"
+      >
+        for Better Transit
+      </text>
+    </svg>
+    <p
+      style="
+        font-family: 'Public Sans Variable', system-ui, sans-serif;
+        font-size: 12px;
+        color: #3a3e46;
+        margin: 24px auto 0;
+        line-height: 1.6;
+        text-align: center;
+        max-width: 560px;
+      "
+    >
+      Posts span y=5 to y=43 — exactly matches the wordmark's cap-top-to-baseline. Bracket arms
+      originate from the right post's midline (y=24) and terminate at (37, 5) and (37, 43) — just
+      3px before the wordmark's left edge. Star sits at the top between the posts (cx=11, R=5). All
+      four elements share one structural geometry.
+    </p>
+  </div>
+</div>
+
+<!-- ============== AT SCALE ============== -->
+
+<div class="frame">
+  <div class="head">
+    <div class="title">At scale · 14 / 18 / 28 / 44px wordmark</div>
+    <div class="sub">silhouette holds at every size</div>
+  </div>
+  <div
+    style="
+      background: #f7f4ec;
+      padding: 36px 32px;
+      display: flex;
+      flex-direction: column;
+      gap: 36px;
+      align-items: flex-start;
+    "
+  >
+    <div style="display: flex; align-items: center; gap: 32px">
+      <span
+        style="
+          font-family: 'Public Sans Variable', system-ui, sans-serif;
+          font-size: 9px;
+          text-transform: uppercase;
+          letter-spacing: 0.14em;
+          color: #5c6068;
+          font-weight: 800;
+          width: 80px;
+        "
+        >14PX</span
+      >
+      <svg viewBox="0 0 290 48" xmlns="http://www.w3.org/2000/svg" style="height: 30px">
+        <line
+          x1="4"
+          y1="5"
+          x2="4"
+          y2="43"
+          stroke="#0f1115"
+          stroke-width="5"
+          stroke-linecap="butt"
+        />
+        <line
+          x1="18"
+          y1="5"
+          x2="18"
+          y2="43"
+          stroke="#0f1115"
+          stroke-width="5"
+          stroke-linecap="butt"
+        />
+        <path
+          d="M 11 5 L 9.77 8.3 L 6.25 8.46 L 9 10.65 L 8.06 14.05 L 11 12.1 L 13.94 14.05 L 13 10.65 L 15.76 8.46 L 12.23 8.3 Z"
+          fill="#e5471a"
+        />
+        <path
+          d="M 37 5 L 18 24 L 37 43"
+          stroke="#0f1115"
+          stroke-width="5"
+          fill="none"
+          stroke-linejoin="round"
+          stroke-linecap="butt"
+        />
+        <text
+          x="40"
+          y="21"
+          font-family="Public Sans Variable, system-ui, sans-serif"
+          font-weight="800"
+          font-size="22"
+          fill="#0f1115"
+          letter-spacing="-0.6"
+        >
+          Las Vegans
+        </text>
+        <text
+          x="40"
+          y="43"
+          font-family="Public Sans Variable, system-ui, sans-serif"
+          font-weight="800"
+          font-size="22"
+          fill="#e5471a"
+          letter-spacing="-0.6"
+        >
+          for Better Transit
+        </text>
+      </svg>
+    </div>
+
+    <div
+      style="
+        display: flex;
+        align-items: center;
+        gap: 32px;
+        padding-top: 24px;
+        border-top: 1px solid rgba(0, 0, 0, 0.08);
+        width: 100%;
+      "
+    >
+      <span
+        style="
+          font-family: 'Public Sans Variable', system-ui, sans-serif;
+          font-size: 9px;
+          text-transform: uppercase;
+          letter-spacing: 0.14em;
+          color: #5c6068;
+          font-weight: 800;
+          width: 80px;
+        "
+        >18PX</span
+      >
+      <svg viewBox="0 0 290 48" xmlns="http://www.w3.org/2000/svg" style="height: 39px">
+        <line
+          x1="4"
+          y1="5"
+          x2="4"
+          y2="43"
+          stroke="#0f1115"
+          stroke-width="5"
+          stroke-linecap="butt"
+        />
+        <line
+          x1="18"
+          y1="5"
+          x2="18"
+          y2="43"
+          stroke="#0f1115"
+          stroke-width="5"
+          stroke-linecap="butt"
+        />
+        <path
+          d="M 11 5 L 9.77 8.3 L 6.25 8.46 L 9 10.65 L 8.06 14.05 L 11 12.1 L 13.94 14.05 L 13 10.65 L 15.76 8.46 L 12.23 8.3 Z"
+          fill="#e5471a"
+        />
+        <path
+          d="M 37 5 L 18 24 L 37 43"
+          stroke="#0f1115"
+          stroke-width="5"
+          fill="none"
+          stroke-linejoin="round"
+          stroke-linecap="butt"
+        />
+        <text
+          x="40"
+          y="21"
+          font-family="Public Sans Variable, system-ui, sans-serif"
+          font-weight="800"
+          font-size="22"
+          fill="#0f1115"
+          letter-spacing="-0.6"
+        >
+          Las Vegans
+        </text>
+        <text
+          x="40"
+          y="43"
+          font-family="Public Sans Variable, system-ui, sans-serif"
+          font-weight="800"
+          font-size="22"
+          fill="#e5471a"
+          letter-spacing="-0.6"
+        >
+          for Better Transit
+        </text>
+      </svg>
+    </div>
+
+    <div
+      style="
+        display: flex;
+        align-items: center;
+        gap: 32px;
+        padding-top: 24px;
+        border-top: 1px solid rgba(0, 0, 0, 0.08);
+        width: 100%;
+      "
+    >
+      <span
+        style="
+          font-family: 'Public Sans Variable', system-ui, sans-serif;
+          font-size: 9px;
+          text-transform: uppercase;
+          letter-spacing: 0.14em;
+          color: #5c6068;
+          font-weight: 800;
+          width: 80px;
+        "
+        >28PX</span
+      >
+      <svg viewBox="0 0 290 48" xmlns="http://www.w3.org/2000/svg" style="height: 61px">
+        <line
+          x1="4"
+          y1="5"
+          x2="4"
+          y2="43"
+          stroke="#0f1115"
+          stroke-width="5"
+          stroke-linecap="butt"
+        />
+        <line
+          x1="18"
+          y1="5"
+          x2="18"
+          y2="43"
+          stroke="#0f1115"
+          stroke-width="5"
+          stroke-linecap="butt"
+        />
+        <path
+          d="M 11 5 L 9.77 8.3 L 6.25 8.46 L 9 10.65 L 8.06 14.05 L 11 12.1 L 13.94 14.05 L 13 10.65 L 15.76 8.46 L 12.23 8.3 Z"
+          fill="#e5471a"
+        />
+        <path
+          d="M 37 5 L 18 24 L 37 43"
+          stroke="#0f1115"
+          stroke-width="5"
+          fill="none"
+          stroke-linejoin="round"
+          stroke-linecap="butt"
+        />
+        <text
+          x="40"
+          y="21"
+          font-family="Public Sans Variable, system-ui, sans-serif"
+          font-weight="800"
+          font-size="22"
+          fill="#0f1115"
+          letter-spacing="-0.6"
+        >
+          Las Vegans
+        </text>
+        <text
+          x="40"
+          y="43"
+          font-family="Public Sans Variable, system-ui, sans-serif"
+          font-weight="800"
+          font-size="22"
+          fill="#e5471a"
+          letter-spacing="-0.6"
+        >
+          for Better Transit
+        </text>
+      </svg>
+    </div>
+
+    <div
+      style="
+        display: flex;
+        align-items: center;
+        gap: 32px;
+        padding-top: 24px;
+        border-top: 1px solid rgba(0, 0, 0, 0.08);
+        width: 100%;
+      "
+    >
+      <span
+        style="
+          font-family: 'Public Sans Variable', system-ui, sans-serif;
+          font-size: 9px;
+          text-transform: uppercase;
+          letter-spacing: 0.14em;
+          color: #5c6068;
+          font-weight: 800;
+          width: 80px;
+        "
+        >44PX</span
+      >
+      <svg viewBox="0 0 290 48" xmlns="http://www.w3.org/2000/svg" style="height: 96px">
+        <line
+          x1="4"
+          y1="5"
+          x2="4"
+          y2="43"
+          stroke="#0f1115"
+          stroke-width="5"
+          stroke-linecap="butt"
+        />
+        <line
+          x1="18"
+          y1="5"
+          x2="18"
+          y2="43"
+          stroke="#0f1115"
+          stroke-width="5"
+          stroke-linecap="butt"
+        />
+        <path
+          d="M 11 5 L 9.77 8.3 L 6.25 8.46 L 9 10.65 L 8.06 14.05 L 11 12.1 L 13.94 14.05 L 13 10.65 L 15.76 8.46 L 12.23 8.3 Z"
+          fill="#e5471a"
+        />
+        <path
+          d="M 37 5 L 18 24 L 37 43"
+          stroke="#0f1115"
+          stroke-width="5"
+          fill="none"
+          stroke-linejoin="round"
+          stroke-linecap="butt"
+        />
+        <text
+          x="40"
+          y="21"
+          font-family="Public Sans Variable, system-ui, sans-serif"
+          font-weight="800"
+          font-size="22"
+          fill="#0f1115"
+          letter-spacing="-0.6"
+        >
+          Las Vegans
+        </text>
+        <text
+          x="40"
+          y="43"
+          font-family="Public Sans Variable, system-ui, sans-serif"
+          font-weight="800"
+          font-size="22"
+          fill="#e5471a"
+          letter-spacing="-0.6"
+        >
+          for Better Transit
+        </text>
+      </svg>
+    </div>
+  </div>
+</div>
+
+<div style="margin-top: 32px; padding: 24px; background: #f7f4ec; border-left: 6px solid #0f1115">
+  <div
+    class="pub"
+    style="
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.14em;
+      font-weight: 800;
+      color: #5c6068;
+      margin-bottom: 10px;
+    "
+  >
+    All four fixes from the previous round
+  </div>
+  <ul
+    style="
+      margin: 0;
+      padding-left: 18px;
+      font-family: 'Public Sans Variable', system-ui, sans-serif;
+      font-size: 13px;
+      line-height: 1.7;
+      color: #0f1115;
+    "
+  >
+    <li><strong>Two posts, not one</strong> — matches the actual sign's structure.</li>
+    <li>
+      <strong>Red star at the top</strong> between the posts — the burst star, in the brand accent
+      color.
+    </li>
+    <li>
+      <strong>Posts no taller than the wordmark</strong> — both span y=5 to y=43, exactly cap-top to
+      baseline.
+    </li>
+    <li>
+      <strong>3px gap from arm tips to "L"</strong> — slightly looser than the previous (zero-gap)
+      version. Wordmark breathes but the bracket reaches all the way out to it.
+    </li>
+  </ul>
+</div>
+
+<p class="subtitle" style="margin-top: 24px">Tell me what's still off and I'll fix it.</p>

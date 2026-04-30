@@ -1,0 +1,955 @@
+<h2>All ten directions, one page</h2>
+<p class="subtitle">
+  Six abstract directions on top, four literal Welcome-sign treatments below. Click as many as you
+  want — multi-select. Tell me your combination in the terminal (e.g. "B palette + I mark", "C tone
+  + H sign for hero only").
+</p>
+
+<style>
+  .section-head {
+    margin: 32px 0 16px;
+    padding-bottom: 12px;
+    border-bottom: 6px solid #0f1115;
+    display: flex;
+    align-items: baseline;
+    gap: 16px;
+  }
+  .section-head h3 {
+    font-family: 'Public Sans Variable', system-ui, sans-serif;
+    font-weight: 900;
+    font-size: 22px;
+    letter-spacing: -0.02em;
+    margin: 0;
+    color: #0f1115;
+  }
+  .section-head .section-sub {
+    font-family: 'Public Sans Variable', system-ui, sans-serif;
+    font-size: 12px;
+    color: #5c6068;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    font-weight: 700;
+  }
+
+  .grid2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+  }
+  @media (max-width: 900px) {
+    .grid2 {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  .opt {
+    border: 1px solid #1f232b;
+    cursor: pointer;
+    transition:
+      transform 0.15s,
+      box-shadow 0.15s;
+    position: relative;
+    background: #fff;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+  .opt:hover {
+    transform: translateX(2px);
+    box-shadow: -6px 6px 0 #0f1115;
+  }
+  .opt.selected {
+    outline: 4px solid #e5471a;
+    outline-offset: -4px;
+  }
+  .opt .badge {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    width: 28px;
+    height: 28px;
+    background: #0f1115;
+    color: #f7f4ec;
+    font-weight: 800;
+    font-size: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 5;
+    font-family: 'Public Sans Variable', system-ui, sans-serif;
+  }
+  .opt .stage {
+    padding: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 24px;
+    min-height: 220px;
+  }
+  .opt .stage .glyph {
+    width: 92px;
+    height: 92px;
+    flex-shrink: 0;
+  }
+  .opt .stage .wm {
+    font-family: 'Public Sans Variable', system-ui, sans-serif;
+    font-weight: 800;
+    line-height: 0.92;
+    letter-spacing: -0.03em;
+    font-size: 26px;
+  }
+  .opt .info {
+    padding: 18px 22px;
+    border-top: 1px solid #1f232b;
+    background: #fff;
+  }
+  .opt .info .lbl {
+    font-size: 9px;
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+    font-weight: 700;
+    color: #5c6068;
+    margin-bottom: 4px;
+  }
+  .opt .info h4 {
+    font-size: 16px;
+    margin: 0 0 6px;
+    font-weight: 800;
+    letter-spacing: -0.01em;
+    line-height: 1.2;
+    color: #0f1115;
+  }
+  .opt .info p {
+    font-size: 12px;
+    line-height: 1.5;
+    color: #3a3e46;
+    margin: 0 0 10px;
+  }
+  .opt .palette {
+    display: flex;
+    gap: 0;
+    height: 18px;
+    border: 1px solid #0f1115;
+  }
+  .opt .palette span {
+    flex: 1;
+  }
+</style>
+
+<!-- Reusable Welcome-sign SVG symbols -->
+<svg width="0" height="0" style="position: absolute" aria-hidden="true">
+  <defs>
+    <symbol id="u-sign-frame" viewBox="0 0 400 360">
+      <rect
+        x="148"
+        y="20"
+        width="22"
+        height="320"
+        fill="#5a8ec9"
+        stroke="#0f1115"
+        stroke-width="2"
+      />
+      <rect
+        x="230"
+        y="20"
+        width="22"
+        height="320"
+        fill="#5a8ec9"
+        stroke="#0f1115"
+        stroke-width="2"
+      />
+      <g transform="translate(200, 60)">
+        <path
+          d="M 0,-44 L 11,-14 L 42,-14 L 16,6 L 26,36 L 0,18 L -26,36 L -16,6 L -42,-14 L -11,-14 Z"
+          fill="#dc2626"
+          stroke="#0f1115"
+          stroke-width="2"
+          stroke-linejoin="round"
+        />
+      </g>
+      <g
+        font-family="Public Sans Variable,system-ui,sans-serif"
+        font-weight="800"
+        font-size="15"
+        text-anchor="middle"
+      >
+        <g>
+          <circle cx="116" cy="118" r="13" fill="white" stroke="#0f1115" stroke-width="1.8" />
+          <text x="116" y="123" fill="#dc2626">W</text>
+        </g>
+        <g>
+          <circle cx="144" cy="118" r="13" fill="white" stroke="#0f1115" stroke-width="1.8" />
+          <text x="144" y="123" fill="#dc2626">E</text>
+        </g>
+        <g>
+          <circle cx="172" cy="118" r="13" fill="white" stroke="#0f1115" stroke-width="1.8" />
+          <text x="172" y="123" fill="#dc2626">L</text>
+        </g>
+        <g>
+          <circle cx="200" cy="118" r="13" fill="white" stroke="#0f1115" stroke-width="1.8" />
+          <text x="200" y="123" fill="#dc2626">C</text>
+        </g>
+        <g>
+          <circle cx="228" cy="118" r="13" fill="white" stroke="#0f1115" stroke-width="1.8" />
+          <text x="228" y="123" fill="#dc2626">O</text>
+        </g>
+        <g>
+          <circle cx="256" cy="118" r="13" fill="white" stroke="#0f1115" stroke-width="1.8" />
+          <text x="256" y="123" fill="#dc2626">M</text>
+        </g>
+        <g>
+          <circle cx="284" cy="118" r="13" fill="white" stroke="#0f1115" stroke-width="1.8" />
+          <text x="284" y="123" fill="#dc2626">E</text>
+        </g>
+      </g>
+      <polygon
+        points="200,150 378,228 200,306 22,228"
+        fill="white"
+        stroke="#fbbf24"
+        stroke-width="13"
+        stroke-linejoin="round"
+      />
+      <g fill="#fbbf24" stroke="#0f1115" stroke-width="0.8">
+        <circle cx="218" cy="158" r="3.2" />
+        <circle cx="240" cy="168" r="3.2" />
+        <circle cx="262" cy="178" r="3.2" />
+        <circle cx="284" cy="188" r="3.2" />
+        <circle cx="306" cy="198" r="3.2" />
+        <circle cx="328" cy="208" r="3.2" />
+        <circle cx="350" cy="218" r="3.2" />
+        <circle cx="362" cy="234" r="3.2" />
+        <circle cx="340" cy="244" r="3.2" />
+        <circle cx="318" cy="254" r="3.2" />
+        <circle cx="296" cy="264" r="3.2" />
+        <circle cx="274" cy="274" r="3.2" />
+        <circle cx="252" cy="284" r="3.2" />
+        <circle cx="230" cy="294" r="3.2" />
+        <circle cx="182" cy="298" r="3.2" />
+        <circle cx="160" cy="288" r="3.2" />
+        <circle cx="138" cy="278" r="3.2" />
+        <circle cx="116" cy="268" r="3.2" />
+        <circle cx="94" cy="258" r="3.2" />
+        <circle cx="72" cy="248" r="3.2" />
+        <circle cx="50" cy="238" r="3.2" />
+        <circle cx="38" cy="222" r="3.2" />
+        <circle cx="60" cy="212" r="3.2" />
+        <circle cx="82" cy="202" r="3.2" />
+        <circle cx="104" cy="192" r="3.2" />
+        <circle cx="126" cy="182" r="3.2" />
+        <circle cx="148" cy="172" r="3.2" />
+        <circle cx="170" cy="162" r="3.2" />
+      </g>
+    </symbol>
+
+    <symbol id="u-sign-mono" viewBox="0 0 400 360">
+      <rect x="148" y="20" width="22" height="320" fill="#0f1115" />
+      <rect x="230" y="20" width="22" height="320" fill="#0f1115" />
+      <g transform="translate(200, 60)">
+        <path
+          d="M 0,-44 L 11,-14 L 42,-14 L 16,6 L 26,36 L 0,18 L -26,36 L -16,6 L -42,-14 L -11,-14 Z"
+          fill="#e5471a"
+          stroke="#0f1115"
+          stroke-width="2"
+          stroke-linejoin="round"
+        />
+      </g>
+      <polygon
+        points="200,150 378,228 200,306 22,228"
+        fill="#f7f4ec"
+        stroke="#0f1115"
+        stroke-width="13"
+        stroke-linejoin="round"
+      />
+      <g fill="#0f1115">
+        <circle cx="218" cy="158" r="3.2" />
+        <circle cx="240" cy="168" r="3.2" />
+        <circle cx="262" cy="178" r="3.2" />
+        <circle cx="284" cy="188" r="3.2" />
+        <circle cx="306" cy="198" r="3.2" />
+        <circle cx="328" cy="208" r="3.2" />
+        <circle cx="350" cy="218" r="3.2" />
+        <circle cx="362" cy="234" r="3.2" />
+        <circle cx="340" cy="244" r="3.2" />
+        <circle cx="318" cy="254" r="3.2" />
+        <circle cx="296" cy="264" r="3.2" />
+        <circle cx="274" cy="274" r="3.2" />
+        <circle cx="252" cy="284" r="3.2" />
+        <circle cx="230" cy="294" r="3.2" />
+        <circle cx="182" cy="298" r="3.2" />
+        <circle cx="160" cy="288" r="3.2" />
+        <circle cx="138" cy="278" r="3.2" />
+        <circle cx="116" cy="268" r="3.2" />
+        <circle cx="94" cy="258" r="3.2" />
+        <circle cx="72" cy="248" r="3.2" />
+        <circle cx="50" cy="238" r="3.2" />
+        <circle cx="38" cy="222" r="3.2" />
+        <circle cx="60" cy="212" r="3.2" />
+        <circle cx="82" cy="202" r="3.2" />
+        <circle cx="104" cy="192" r="3.2" />
+        <circle cx="126" cy="182" r="3.2" />
+        <circle cx="148" cy="172" r="3.2" />
+        <circle cx="170" cy="162" r="3.2" />
+      </g>
+    </symbol>
+  </defs>
+</svg>
+
+<!-- ================= SECTION 1 ================= -->
+<div class="section-head">
+  <h3>Abstract directions</h3>
+  <span class="section-sub">A–F · palette + complementary mark · interpretive</span>
+</div>
+
+<div class="cards" data-multiselect>
+  <!-- A. Resident Vegas -->
+  <div class="opt" data-choice="A-resident" onclick="toggleSelect(this)">
+    <div class="badge">A</div>
+    <div class="stage" style="background: #e8dcc4">
+      <svg class="glyph" viewBox="0 0 96 96" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <path d="M0 72 L18 50 L30 60 L48 36 L66 56 L82 44 L96 60 L96 96 L0 96 Z" fill="#0f1115" />
+        <circle cx="72" cy="20" r="6" fill="#e5471a" />
+        <rect x="70" y="20" width="4" height="40" fill="#0f1115" />
+      </svg>
+      <div class="wm" style="color: #0f1115">
+        <div>Las Vegans</div>
+        <div style="color: #c2410c">for Better Transit</div>
+      </div>
+    </div>
+    <div class="info">
+      <p class="lbl">A · Resident Vegas / Valley civic</p>
+      <h4>The Vegas locals know</h4>
+      <p>
+        Stucco neighborhoods, the 215, Spring Mountains on the horizon, mid-century motels.
+        Sun-bleached desert neutrals warm the existing palette.
+      </p>
+      <div class="palette">
+        <span style="background: #0f1115"></span><span style="background: #f7f4ec"></span
+        ><span style="background: #e5471a"></span> <span style="background: #e8dcc4"></span
+        ><span style="background: #7a8b6b"></span><span style="background: #5b7a8c"></span>
+      </div>
+    </div>
+  </div>
+
+  <!-- B. Mojave -->
+  <div class="opt" data-choice="B-mojave" onclick="toggleSelect(this)">
+    <div class="badge">B</div>
+    <div
+      class="stage"
+      style="background: linear-gradient(180deg, #f4d4b8 0%, #d97757 55%, #6b3e2e 100%)"
+    >
+      <svg class="glyph" viewBox="0 0 96 96" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <path d="M0 32 Q24 24 48 32 T96 32" stroke="#0f1115" stroke-width="2.5" fill="none" />
+        <path d="M0 48 Q24 40 48 48 T96 48" stroke="#0f1115" stroke-width="2.5" fill="none" />
+        <path d="M0 64 Q24 56 48 64 T96 64" stroke="#0f1115" stroke-width="2.5" fill="none" />
+        <path d="M0 80 Q24 72 48 80 T96 80" stroke="#0f1115" stroke-width="2.5" fill="none" />
+      </svg>
+      <div class="wm" style="color: #0f1115">
+        <div>Las Vegans</div>
+        <div style="color: #6b3e2e">for Better Transit</div>
+      </div>
+    </div>
+    <div class="info">
+      <p class="lbl">B · Mojave / desert geology</p>
+      <h4>Big landscape, slow time, dignified</h4>
+      <p>
+        Red Rock, the basin, dry-wash patterns, sunrise on the ridges. Trades bright orange-red for
+        deeper rust/ochre. Connects transit to <em>place</em>.
+      </p>
+      <div class="palette">
+        <span style="background: #0f1115"></span><span style="background: #f4d4b8"></span
+        ><span style="background: #d97757"></span> <span style="background: #6b3e2e"></span
+        ><span style="background: #8b9a7a"></span><span style="background: #3a4a5c"></span>
+      </div>
+    </div>
+  </div>
+
+  <!-- C. Working Vegas -->
+  <div class="opt" data-choice="C-labor" onclick="toggleSelect(this)">
+    <div class="badge">C</div>
+    <div class="stage" style="background: #0f1115">
+      <svg class="glyph" viewBox="0 0 96 96" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <rect x="6" y="6" width="84" height="84" fill="#fbbf24" />
+        <rect x="14" y="22" width="68" height="6" fill="#0f1115" />
+        <rect x="14" y="36" width="44" height="6" fill="#0f1115" />
+        <rect x="14" y="50" width="56" height="6" fill="#0f1115" />
+        <rect x="6" y="74" width="84" height="6" fill="#0f1115" />
+        <rect x="6" y="84" width="84" height="6" fill="#dc2626" />
+      </svg>
+      <div class="wm" style="color: #f7f4ec">
+        <div>Las Vegans</div>
+        <div style="color: #fbbf24">for Better Transit</div>
+      </div>
+    </div>
+    <div class="info">
+      <p class="lbl">C · Working Vegas / hospitality + labor</p>
+      <h4>The 2 AM bus, made visible</h4>
+      <p>
+        Culinary 226 red, sodium-lamp yellow, graveyard-shift midnight, hi-vis schedule grids. Most
+        aligned with your existing copy. Picket-line confident.
+      </p>
+      <div class="palette">
+        <span style="background: #0f1115"></span><span style="background: #f7f4ec"></span
+        ><span style="background: #e5471a"></span> <span style="background: #fbbf24"></span
+        ><span style="background: #dc2626"></span><span style="background: #1e2a4a"></span>
+      </div>
+    </div>
+  </div>
+
+  <!-- D. Sports -->
+  <div class="opt" data-choice="D-sports" onclick="toggleSelect(this)">
+    <div class="badge">D</div>
+    <div class="stage" style="background: #0f1115">
+      <svg class="glyph" viewBox="0 0 96 96" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <path
+          d="M48 6 L84 18 L84 52 Q84 76 48 90 Q12 76 12 52 L12 18 Z"
+          fill="#c8a04a"
+          stroke="#0f1115"
+          stroke-width="2"
+        />
+        <text
+          x="48"
+          y="60"
+          text-anchor="middle"
+          font-family="Public Sans Variable,system-ui,sans-serif"
+          font-weight="900"
+          font-size="34"
+          fill="#0f1115"
+          letter-spacing="-2"
+        >
+          LV
+        </text>
+      </svg>
+      <div class="wm" style="color: #f7f4ec">
+        <div>Las Vegans</div>
+        <div style="color: #c8a04a">for Better Transit</div>
+      </div>
+    </div>
+    <div class="info">
+      <p class="lbl">D · Sports / civic pride era</p>
+      <h4>Real-city confidence</h4>
+      <p>
+        Aces, Knights, Raiders, A's. Black + metallics, badge silhouettes, jersey-style numerals.
+        "Vegas is a real city now" energy. Risk: reads as a fifth team.
+      </p>
+      <div class="palette">
+        <span style="background: #0f1115"></span><span style="background: #f7f4ec"></span
+        ><span style="background: #c8a04a"></span> <span style="background: #a8a8a8"></span
+        ><span style="background: #7a0019"></span><span style="background: #1a1a1a"></span>
+      </div>
+    </div>
+  </div>
+
+  <!-- E. Neon-as-typography -->
+  <div class="opt" data-choice="E-neon" onclick="toggleSelect(this)">
+    <div class="badge">E</div>
+    <div class="stage" style="background: #0a0a14; position: relative; overflow: hidden">
+      <div
+        style="
+          position: absolute;
+          top: 8px;
+          left: 10px;
+          right: 10px;
+          height: 6px;
+          display: flex;
+          justify-content: space-between;
+        "
+      >
+        <span
+          style="
+            width: 5px;
+            height: 5px;
+            border-radius: 50%;
+            background: #ff3b8b;
+            box-shadow: 0 0 8px #ff3b8b;
+          "
+        ></span>
+        <span
+          style="
+            width: 5px;
+            height: 5px;
+            border-radius: 50%;
+            background: #ff3b8b;
+            box-shadow: 0 0 8px #ff3b8b;
+          "
+        ></span>
+        <span
+          style="
+            width: 5px;
+            height: 5px;
+            border-radius: 50%;
+            background: #ff3b8b;
+            box-shadow: 0 0 8px #ff3b8b;
+          "
+        ></span>
+        <span
+          style="
+            width: 5px;
+            height: 5px;
+            border-radius: 50%;
+            background: #ff3b8b;
+            box-shadow: 0 0 8px #ff3b8b;
+          "
+        ></span>
+        <span
+          style="
+            width: 5px;
+            height: 5px;
+            border-radius: 50%;
+            background: #ff3b8b;
+            box-shadow: 0 0 8px #ff3b8b;
+          "
+        ></span>
+        <span
+          style="
+            width: 5px;
+            height: 5px;
+            border-radius: 50%;
+            background: #ff3b8b;
+            box-shadow: 0 0 8px #ff3b8b;
+          "
+        ></span>
+        <span
+          style="
+            width: 5px;
+            height: 5px;
+            border-radius: 50%;
+            background: #ff3b8b;
+            box-shadow: 0 0 8px #ff3b8b;
+          "
+        ></span>
+      </div>
+      <svg class="glyph" viewBox="0 0 96 96" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <defs>
+          <filter id="glowU" x="-50%" y="-50%" width="200%" height="200%">
+            <feGaussianBlur stdDeviation="2.5" />
+          </filter>
+        </defs>
+        <path
+          d="M14 48 L74 48 M54 26 L76 48 L54 70"
+          stroke="#22d3ee"
+          stroke-width="8"
+          fill="none"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          filter="url(#glowU)"
+        />
+        <path
+          d="M14 48 L74 48 M54 26 L76 48 L54 70"
+          stroke="#fff"
+          stroke-width="2.5"
+          fill="none"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        />
+      </svg>
+      <div class="wm" style="color: #f7f4ec">
+        <div>Las Vegans</div>
+        <div style="color: #22d3ee; text-shadow: 0 0 10px rgba(34, 211, 238, 0.7)">
+          for Better Transit
+        </div>
+      </div>
+    </div>
+    <div class="info">
+      <p class="lbl">E · Restrained tourist Vegas / neon-as-typography</p>
+      <h4>Strip confidence, civic discipline</h4>
+      <p>
+        Marquee letterforms, dot-matrix bulb arrays, tube-light strokes. One electric accent (cyan
+        or pink), used sparingly. Memorable; risky if overdone.
+      </p>
+      <div class="palette">
+        <span style="background: #0a0a14"></span><span style="background: #f7f4ec"></span
+        ><span style="background: #e5471a"></span> <span style="background: #22d3ee"></span
+        ><span style="background: #ff3b8b"></span><span style="background: #fbbf24"></span>
+      </div>
+    </div>
+  </div>
+
+  <!-- F. Civic icon (abstract diamond, no bulbs/posts) -->
+  <div class="opt" data-choice="F-civic" onclick="toggleSelect(this)">
+    <div class="badge">F</div>
+    <div class="stage" style="background: #f7f4ec">
+      <svg class="glyph" viewBox="0 0 96 96" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <!-- Just diamond + 8-point star, no bulbs/posts -->
+        <path d="M48 16 L86 48 L48 80 L10 48 Z" fill="#0f1115" />
+        <g fill="#e5471a">
+          <path d="M48 26 L51 44 L66 48 L51 52 L48 70 L45 52 L30 48 L45 44 Z" />
+        </g>
+        <circle cx="48" cy="48" r="3" fill="#fbbf24" />
+      </svg>
+      <div class="wm" style="color: #0f1115">
+        <div>Las Vegans</div>
+        <div style="color: #e5471a">for Better Transit</div>
+      </div>
+    </div>
+    <div class="info">
+      <p class="lbl">F · Civic icon (abstract sign)</p>
+      <h4>The diamond as seal</h4>
+      <p>
+        Abstracted from the sign — diamond + 8-point star + dot.
+        <em>Reads as Vegas without being the Vegas sign.</em> Plausible deniability with insider
+        recognition. Most flexible mark of any direction.
+      </p>
+      <div class="palette">
+        <span style="background: #0f1115"></span><span style="background: #f7f4ec"></span
+        ><span style="background: #e5471a"></span> <span style="background: #fbbf24"></span
+        ><span style="background: #1f4788"></span><span style="background: #a8a8a8"></span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ================= SECTION 2 ================= -->
+<div class="section-head">
+  <h3>Literal Welcome-sign treatments</h3>
+  <span class="section-sub">G–J · the actual sign as brand vehicle</span>
+</div>
+
+<div class="cards" data-multiselect>
+  <!-- G · Reverent homage -->
+  <div class="opt" data-choice="G-reverent" onclick="toggleSelect(this)">
+    <div class="badge">G</div>
+    <div class="stage" style="background: #f7f4ec; gap: 20px">
+      <svg viewBox="0 0 400 360" width="180" height="162" xmlns="http://www.w3.org/2000/svg">
+        <use href="#u-sign-frame" />
+        <g text-anchor="middle" font-family="Public Sans Variable,system-ui,sans-serif">
+          <text x="200" y="187" font-size="11" font-weight="700" fill="#1f4788" letter-spacing="3">
+            TO Fabulous
+          </text>
+          <text x="200" y="234" font-size="34" font-weight="900" fill="#dc2626" letter-spacing="-1">
+            LAS VEGAS
+          </text>
+          <text x="200" y="270" font-size="11" font-weight="700" fill="#1f4788" letter-spacing="4">
+            NEVADA
+          </text>
+        </g>
+      </svg>
+      <div class="wm" style="color: #0f1115">
+        <div>Las Vegans</div>
+        <div style="color: #e5471a">for Better Transit</div>
+      </div>
+    </div>
+    <div class="info">
+      <p class="lbl">G · Reverent homage</p>
+      <h4>Sign stays sacred. We sit beside it.</h4>
+      <p>
+        Sign untouched, wordmark sits beside as a sibling. <em>We are of this place.</em> Lowest
+        political risk. Reads as authority co-sign rather than punchline.
+      </p>
+      <div class="palette">
+        <span style="background: #0f1115"></span><span style="background: #f7f4ec"></span
+        ><span style="background: #e5471a"></span> <span style="background: #dc2626"></span
+        ><span style="background: #fbbf24"></span><span style="background: #1f4788"></span>
+      </div>
+    </div>
+  </div>
+
+  <!-- H · Activated subversion -->
+  <div class="opt" data-choice="H-activated" onclick="toggleSelect(this)">
+    <div class="badge">H</div>
+    <div class="stage" style="background: #f7f4ec; gap: 16px">
+      <svg viewBox="0 0 400 360" width="180" height="162" xmlns="http://www.w3.org/2000/svg">
+        <use href="#u-sign-frame" />
+        <g text-anchor="middle" font-family="Public Sans Variable,system-ui,sans-serif">
+          <text x="200" y="187" font-size="11" font-weight="700" fill="#1f4788" letter-spacing="3">
+            TO BETTER
+          </text>
+          <text x="200" y="234" font-size="32" font-weight="900" fill="#dc2626" letter-spacing="-1">
+            LAS VEGANS
+          </text>
+          <text x="200" y="270" font-size="11" font-weight="700" fill="#1f4788" letter-spacing="4">
+            TRANSIT
+          </text>
+        </g>
+      </svg>
+      <div
+        style="
+          font-family: 'Public Sans Variable', system-ui, sans-serif;
+          font-size: 11px;
+          line-height: 1.7;
+          color: #0f1115;
+        "
+      >
+        <div>
+          <span style="color: #5c6068; text-decoration: line-through">Fabulous</span> →
+          <strong>BETTER</strong>
+        </div>
+        <div>
+          <span style="color: #5c6068; text-decoration: line-through">VEGAS</span> →
+          <strong>VEGANS</strong>
+        </div>
+        <div>
+          <span style="color: #5c6068; text-decoration: line-through">NEVADA</span> →
+          <strong>TRANSIT</strong>
+        </div>
+      </div>
+    </div>
+    <div class="info">
+      <p class="lbl">H · Activated subversion</p>
+      <h4>The brand lives inside the sign.</h4>
+      <p>
+        Three word swaps capture the entire LVBT thesis. Most distinctive, highest meme velocity.
+        Best used selectively (hero, t-shirts, social) so it stays special.
+      </p>
+      <div class="palette">
+        <span style="background: #0f1115"></span><span style="background: #f7f4ec"></span
+        ><span style="background: #e5471a"></span> <span style="background: #dc2626"></span
+        ><span style="background: #fbbf24"></span><span style="background: #1f4788"></span>
+      </div>
+    </div>
+  </div>
+
+  <!-- I · Silhouette mark -->
+  <div class="opt" data-choice="I-silhouette" onclick="toggleSelect(this)">
+    <div class="badge">I</div>
+    <div class="stage" style="background: #f7f4ec; gap: 32px">
+      <svg viewBox="0 0 400 360" width="140" height="126" xmlns="http://www.w3.org/2000/svg">
+        <use href="#u-sign-mono" />
+      </svg>
+      <div style="display: flex; flex-direction: column; gap: 12px; align-items: flex-start">
+        <div style="display: flex; gap: 10px; align-items: center">
+          <svg viewBox="0 0 400 360" width="48" height="43"><use href="#u-sign-mono" /></svg>
+          <span
+            style="
+              font-family: 'Public Sans Variable', system-ui, sans-serif;
+              font-size: 9px;
+              color: #5c6068;
+              text-transform: uppercase;
+              letter-spacing: 0.12em;
+              font-weight: 700;
+            "
+            >favicon</span
+          >
+        </div>
+        <div
+          style="
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            background: #0f1115;
+            padding: 6px 10px;
+          "
+        >
+          <svg viewBox="0 0 400 360" width="36" height="32" style="filter: invert(1)">
+            <use href="#u-sign-mono" />
+          </svg>
+          <span
+            style="
+              font-family: 'Public Sans Variable', system-ui, sans-serif;
+              font-size: 9px;
+              color: #f7f4ec;
+              text-transform: uppercase;
+              letter-spacing: 0.12em;
+              font-weight: 700;
+            "
+            >on dark</span
+          >
+        </div>
+      </div>
+    </div>
+    <div class="info">
+      <p class="lbl">I · Silhouette mark</p>
+      <h4>The sign as monogram.</h4>
+      <p>
+        Strip text and color, keep the silhouette. <em>Locals read the shape alone.</em> Works as
+        favicon, app icon, social avatar, byline mark. This is your everyday SVG logo at every
+        scale.
+      </p>
+      <div class="palette">
+        <span style="background: #0f1115"></span><span style="background: #f7f4ec"></span
+        ><span style="background: #e5471a"></span>
+      </div>
+    </div>
+  </div>
+
+  <!-- J · System in action -->
+  <div class="opt" data-choice="J-system" onclick="toggleSelect(this)">
+    <div class="badge">J</div>
+    <div class="stage" style="background: #f7f4ec; padding: 16px; align-items: stretch; gap: 12px">
+      <div
+        style="
+          flex: 1;
+          background: #fff;
+          border: 1px solid #1f232b;
+          padding: 14px;
+          display: flex;
+          flex-direction: column;
+          gap: 10px;
+        "
+      >
+        <div
+          style="
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            border-bottom: 3px solid #0f1115;
+            padding-bottom: 8px;
+          "
+        >
+          <svg viewBox="0 0 400 360" width="22" height="20"><use href="#u-sign-mono" /></svg>
+          <div
+            style="
+              font-family: 'Public Sans Variable', system-ui, sans-serif;
+              font-weight: 800;
+              font-size: 11px;
+              line-height: 0.95;
+              letter-spacing: -0.02em;
+            "
+          >
+            <div>Las Vegans</div>
+            <div style="color: #e5471a">for Better Transit</div>
+          </div>
+        </div>
+        <div style="display: flex; gap: 10px; align-items: center">
+          <svg viewBox="0 0 400 360" width="80" height="72">
+            <use href="#u-sign-frame" />
+            <g text-anchor="middle" font-family="Public Sans Variable,system-ui,sans-serif">
+              <text
+                x="200"
+                y="187"
+                font-size="11"
+                font-weight="700"
+                fill="#1f4788"
+                letter-spacing="3"
+              >
+                TO BETTER
+              </text>
+              <text
+                x="200"
+                y="234"
+                font-size="32"
+                font-weight="900"
+                fill="#dc2626"
+                letter-spacing="-1"
+              >
+                LAS VEGANS
+              </text>
+              <text
+                x="200"
+                y="270"
+                font-size="11"
+                font-weight="700"
+                fill="#1f4788"
+                letter-spacing="4"
+              >
+                TRANSIT
+              </text>
+            </g>
+          </svg>
+          <div
+            style="
+              flex: 1;
+              font-family: 'Public Sans Variable', system-ui, sans-serif;
+              font-weight: 900;
+              font-size: 14px;
+              line-height: 0.95;
+              letter-spacing: -0.02em;
+            "
+          >
+            Largest US metro <span style="color: #e5471a">without light rail.</span>
+          </div>
+        </div>
+        <div style="display: flex; gap: 4px; align-items: center; margin-top: auto">
+          <span
+            style="
+              width: 14px;
+              height: 14px;
+              border-radius: 50%;
+              background: #fff;
+              border: 1.5px solid #0f1115;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              font-size: 8px;
+              font-weight: 800;
+              color: #dc2626;
+              font-family: 'Public Sans Variable', system-ui;
+            "
+            >J</span
+          >
+          <span
+            style="
+              width: 14px;
+              height: 14px;
+              border-radius: 50%;
+              background: #fff;
+              border: 1.5px solid #0f1115;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              font-size: 8px;
+              font-weight: 800;
+              color: #dc2626;
+              font-family: 'Public Sans Variable', system-ui;
+            "
+            >O</span
+          >
+          <span
+            style="
+              width: 14px;
+              height: 14px;
+              border-radius: 50%;
+              background: #fff;
+              border: 1.5px solid #0f1115;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              font-size: 8px;
+              font-weight: 800;
+              color: #dc2626;
+              font-family: 'Public Sans Variable', system-ui;
+            "
+            >I</span
+          >
+          <span
+            style="
+              width: 14px;
+              height: 14px;
+              border-radius: 50%;
+              background: #fff;
+              border: 1.5px solid #0f1115;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              font-size: 8px;
+              font-weight: 800;
+              color: #dc2626;
+              font-family: 'Public Sans Variable', system-ui;
+            "
+            >N</span
+          >
+          <span
+            style="
+              margin-left: 8px;
+              border: 1.5px dashed #fbbf24;
+              padding: 2px 6px;
+              font-family: 'Public Sans Variable', system-ui;
+              font-size: 8px;
+              font-weight: 700;
+              color: #0f1115;
+            "
+            >→ Email signup</span
+          >
+        </div>
+      </div>
+    </div>
+    <div class="info">
+      <p class="lbl">J · System in action</p>
+      <h4>The kit of parts, composed.</h4>
+      <p>
+        Wordmark in header (everyday) · diamond mark as favicon · activated sign for hero · capsule
+        letters for labels (JOIN, NEWS) · bulb-bordered dashes around CTAs. Each piece works alone;
+        together unmistakably one brand.
+      </p>
+      <div class="palette">
+        <span style="background: #0f1115"></span><span style="background: #f7f4ec"></span
+        ><span style="background: #e5471a"></span> <span style="background: #dc2626"></span
+        ><span style="background: #fbbf24"></span><span style="background: #1f4788"></span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<p class="subtitle" style="margin-top: 32px">
+  Click as many as appeal. Tell me your combination — e.g. "B's palette + I's mark + C's voice", "F
+  as the everyday glyph + H for hero moments". The next step is consolidating into one design.
+</p>

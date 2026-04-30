@@ -1,0 +1,581 @@
+<h2>Construction quality: the same elements, executed properly</h2>
+<p class="subtitle">
+  Top: bulb letters as a brand signature, shown across scales and contexts. Bottom: the diamond stat
+  block redone with sub-pixel craft. Same vocabulary as before — different execution.
+</p>
+
+<style>
+  .pub {
+    font-family: 'Public Sans Variable', system-ui, sans-serif;
+  }
+
+  /* === Bulb letter system === */
+  .bl {
+    display: inline-flex;
+    gap: 4px;
+    align-items: center;
+  }
+  .bl .b {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #fff;
+    border: 1px solid #0f1115;
+    border-radius: 50%;
+    font-family: 'Public Sans Variable', system-ui, sans-serif;
+    font-weight: 800;
+    color: #0f1115;
+    line-height: 1;
+    aspect-ratio: 1;
+  }
+  /* Sizes */
+  .bl-xs .b {
+    width: 16px;
+    height: 16px;
+    font-size: 9px;
+    border-width: 0.75px;
+  }
+  .bl-sm .b {
+    width: 22px;
+    height: 22px;
+    font-size: 11px;
+    border-width: 1px;
+  }
+  .bl-md .b {
+    width: 32px;
+    height: 32px;
+    font-size: 14px;
+    border-width: 1px;
+  }
+  .bl-lg .b {
+    width: 48px;
+    height: 48px;
+    font-size: 20px;
+    border-width: 1.5px;
+    letter-spacing: -0.02em;
+  }
+  /* Variants */
+  .bl-accent .b {
+    color: #e5471a;
+  }
+  .bl-inverted .b {
+    background: #0f1115;
+    color: #f7f4ec;
+    border-color: #0f1115;
+  }
+  .bl-tight {
+    gap: 2px;
+  }
+  .bl-spaced {
+    gap: 6px;
+  }
+
+  /* === Layout === */
+  .frame {
+    border: 1px solid #1f232b;
+    background: #fff;
+    margin-bottom: 14px;
+  }
+  .frame > .head {
+    padding: 16px 24px;
+    border-bottom: 1px solid #1f232b;
+    display: flex;
+    align-items: baseline;
+    gap: 16px;
+  }
+  .frame > .head .title {
+    font-family: 'Public Sans Variable', system-ui, sans-serif;
+    font-weight: 800;
+    font-size: 14px;
+    color: #0f1115;
+    letter-spacing: -0.01em;
+  }
+  .frame > .head .sub {
+    font-family: 'Public Sans Variable', system-ui, sans-serif;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+    color: #5c6068;
+    font-weight: 700;
+  }
+  .frame > .body {
+    padding: 36px 32px;
+    background: #f7f4ec;
+  }
+
+  .grid-2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0;
+  }
+  .grid-2 > div {
+    padding: 32px 28px;
+  }
+  .grid-2 > div + div {
+    border-left: 1px solid #1f232b;
+  }
+  .scale-row {
+    display: flex;
+    align-items: center;
+    gap: 32px;
+    flex-wrap: wrap;
+    padding: 16px 0;
+  }
+  .scale-row .label {
+    font-family: 'Public Sans Variable', system-ui, sans-serif;
+    font-size: 9px;
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+    color: #5c6068;
+    font-weight: 700;
+  }
+
+  /* === Diamond stat, properly constructed === */
+  .dia-pro {
+    position: relative;
+    width: 320px;
+    height: 224px;
+  }
+  .dia-pro .face {
+    position: absolute;
+    inset: 0;
+    clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%);
+    background: #f7f4ec;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 0 56px;
+    gap: 8px;
+  }
+  .dia-pro .lbl {
+    font-family: 'Public Sans Variable', system-ui, sans-serif;
+    font-size: 9px;
+    text-transform: uppercase;
+    letter-spacing: 0.18em;
+    font-weight: 800;
+    color: #5c6068;
+  }
+  .dia-pro .num {
+    font-family: 'Public Sans Variable', system-ui, sans-serif;
+    font-weight: 900;
+    font-size: 56px;
+    letter-spacing: -0.045em;
+    color: #0f1115;
+    line-height: 0.92;
+    display: flex;
+    align-items: baseline;
+    gap: 2px;
+  }
+  .dia-pro .num .unit {
+    font-size: 22px;
+    color: #e5471a;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+  }
+  .dia-pro .cap {
+    font-family: 'Public Sans Variable', system-ui, sans-serif;
+    font-size: 10px;
+    text-align: center;
+    color: #3a3e46;
+    line-height: 1.4;
+    max-width: 140px;
+  }
+  .dia-pro svg {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+  }
+
+  /* === Diamond stat at hero scale, dark night version === */
+  .dia-night {
+    position: relative;
+    width: 380px;
+    height: 266px;
+  }
+  .dia-night .face {
+    position: absolute;
+    inset: 0;
+    clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%);
+    background: radial-gradient(ellipse at center, #1a1f2e 0%, #0a0d15 100%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 0 60px;
+    gap: 10px;
+  }
+  .dia-night .lbl {
+    font-family: 'Public Sans Variable', system-ui, sans-serif;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.2em;
+    font-weight: 800;
+    color: #94a0b4;
+  }
+  .dia-night .num {
+    font-family: 'Public Sans Variable', system-ui, sans-serif;
+    font-weight: 900;
+    font-size: 64px;
+    letter-spacing: -0.045em;
+    color: #f7f4ec;
+    line-height: 0.92;
+    display: flex;
+    align-items: baseline;
+    gap: 2px;
+  }
+  .dia-night .num .unit {
+    font-size: 24px;
+    color: #fbbf24;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+  }
+  .dia-night .cap {
+    font-family: 'Public Sans Variable', system-ui, sans-serif;
+    font-size: 11px;
+    text-align: center;
+    color: #c0cbde;
+    line-height: 1.4;
+    max-width: 160px;
+  }
+  .dia-night svg {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+  }
+</style>
+
+<svg width="0" height="0" style="position: absolute" aria-hidden="true">
+  <defs>
+    <!-- Refined diamond border: hairline ink, restrained ink-bulbs at cardinal + intermediate points -->
+    <symbol id="dia-pro-border" viewBox="0 0 320 224">
+      <polygon
+        points="160,3 317,112 160,221 3,112"
+        fill="none"
+        stroke="#0f1115"
+        stroke-width="1.25"
+        stroke-linejoin="round"
+      />
+      <!-- Just 12 bulbs total — 3 per edge — small, ink, precise -->
+      <g fill="#0f1115">
+        <!-- Top-right edge: 160,3 → 317,112 -->
+        <circle cx="199" cy="30" r="1.6" />
+        <circle cx="238" cy="58" r="1.6" />
+        <circle cx="278" cy="85" r="1.6" />
+        <!-- Bottom-right: 317,112 → 160,221 -->
+        <circle cx="278" cy="139" r="1.6" />
+        <circle cx="238" cy="166" r="1.6" />
+        <circle cx="199" cy="194" r="1.6" />
+        <!-- Bottom-left: 160,221 → 3,112 -->
+        <circle cx="121" cy="194" r="1.6" />
+        <circle cx="82" cy="166" r="1.6" />
+        <circle cx="42" cy="139" r="1.6" />
+        <!-- Top-left: 3,112 → 160,3 -->
+        <circle cx="42" cy="85" r="1.6" />
+        <circle cx="82" cy="58" r="1.6" />
+        <circle cx="121" cy="30" r="1.6" />
+      </g>
+      <!-- Cardinal accent dots — slightly larger, in accent color -->
+      <g fill="#e5471a">
+        <circle cx="160" cy="3" r="2.4" />
+        <circle cx="317" cy="112" r="2.4" />
+        <circle cx="160" cy="221" r="2.4" />
+        <circle cx="3" cy="112" r="2.4" />
+      </g>
+    </symbol>
+
+    <!-- Night version: glowing bulbs as actual light sources -->
+    <symbol id="dia-night-border" viewBox="0 0 380 266">
+      <defs>
+        <radialGradient id="bulb-glow">
+          <stop offset="0%" stop-color="#fff8e1" stop-opacity="1" />
+          <stop offset="40%" stop-color="#fbbf24" stop-opacity="0.8" />
+          <stop offset="100%" stop-color="#fbbf24" stop-opacity="0" />
+        </radialGradient>
+        <radialGradient id="bulb-core">
+          <stop offset="0%" stop-color="#fffef0" stop-opacity="1" />
+          <stop offset="100%" stop-color="#fbbf24" stop-opacity="1" />
+        </radialGradient>
+      </defs>
+      <polygon
+        points="190,4 376,135 190,262 4,135"
+        fill="none"
+        stroke="#fbbf24"
+        stroke-width="0.75"
+        stroke-linejoin="round"
+        opacity="0.4"
+      />
+      <!-- Glow halos -->
+      <g>
+        <!-- 16 evenly-spaced bulbs, 4 per side -->
+        <circle cx="227" cy="30" r="6" fill="url(#bulb-glow)" />
+        <circle cx="264" cy="56" r="6" fill="url(#bulb-glow)" />
+        <circle cx="301" cy="82" r="6" fill="url(#bulb-glow)" />
+        <circle cx="338" cy="108" r="6" fill="url(#bulb-glow)" />
+        <circle cx="338" cy="161" r="6" fill="url(#bulb-glow)" />
+        <circle cx="301" cy="187" r="6" fill="url(#bulb-glow)" />
+        <circle cx="264" cy="213" r="6" fill="url(#bulb-glow)" />
+        <circle cx="227" cy="239" r="6" fill="url(#bulb-glow)" />
+        <circle cx="153" cy="239" r="6" fill="url(#bulb-glow)" />
+        <circle cx="116" cy="213" r="6" fill="url(#bulb-glow)" />
+        <circle cx="79" cy="187" r="6" fill="url(#bulb-glow)" />
+        <circle cx="42" cy="161" r="6" fill="url(#bulb-glow)" />
+        <circle cx="42" cy="108" r="6" fill="url(#bulb-glow)" />
+        <circle cx="79" cy="82" r="6" fill="url(#bulb-glow)" />
+        <circle cx="116" cy="56" r="6" fill="url(#bulb-glow)" />
+        <circle cx="153" cy="30" r="6" fill="url(#bulb-glow)" />
+      </g>
+      <!-- Bulb cores -->
+      <g>
+        <circle cx="227" cy="30" r="1.5" fill="url(#bulb-core)" />
+        <circle cx="264" cy="56" r="1.5" fill="url(#bulb-core)" />
+        <circle cx="301" cy="82" r="1.5" fill="url(#bulb-core)" />
+        <circle cx="338" cy="108" r="1.5" fill="url(#bulb-core)" />
+        <circle cx="338" cy="161" r="1.5" fill="url(#bulb-core)" />
+        <circle cx="301" cy="187" r="1.5" fill="url(#bulb-core)" />
+        <circle cx="264" cy="213" r="1.5" fill="url(#bulb-core)" />
+        <circle cx="227" cy="239" r="1.5" fill="url(#bulb-core)" />
+        <circle cx="153" cy="239" r="1.5" fill="url(#bulb-core)" />
+        <circle cx="116" cy="213" r="1.5" fill="url(#bulb-core)" />
+        <circle cx="79" cy="187" r="1.5" fill="url(#bulb-core)" />
+        <circle cx="42" cy="161" r="1.5" fill="url(#bulb-core)" />
+        <circle cx="42" cy="108" r="1.5" fill="url(#bulb-core)" />
+        <circle cx="79" cy="82" r="1.5" fill="url(#bulb-core)" />
+        <circle cx="116" cy="56" r="1.5" fill="url(#bulb-core)" />
+        <circle cx="153" cy="30" r="1.5" fill="url(#bulb-core)" />
+      </g>
+    </symbol>
+  </defs>
+</svg>
+
+<!-- ================ BULB LETTERS ================ -->
+
+<div class="frame">
+  <div class="head">
+    <div class="title">Bulb letters · the brand signature</div>
+    <div class="sub">a.k.a. marquee letters · letter chips · in-bowl letters</div>
+  </div>
+  <div class="body">
+    <div class="scale-row">
+      <div class="label">Footer mark · 16px</div>
+      <div class="bl bl-xs">
+        <div class="b">L</div>
+        <div class="b">V</div>
+        <div class="b">B</div>
+        <div class="b">T</div>
+      </div>
+    </div>
+
+    <div class="scale-row" style="border-top: 1px solid rgba(0, 0, 0, 0.08)">
+      <div class="label">Inline byline · 22px</div>
+      <div class="bl bl-sm">
+        <div class="b">L</div>
+        <div class="b">V</div>
+        <div class="b">B</div>
+        <div class="b">T</div>
+      </div>
+      <div class="bl bl-sm bl-accent">
+        <div class="b">N</div>
+        <div class="b">E</div>
+        <div class="b">W</div>
+        <div class="b">S</div>
+      </div>
+    </div>
+
+    <div class="scale-row" style="border-top: 1px solid rgba(0, 0, 0, 0.08)">
+      <div class="label">Section opener · 32px</div>
+      <div class="bl bl-md">
+        <div class="b">0</div>
+        <div class="b">1</div>
+      </div>
+      <div class="bl bl-md bl-accent">
+        <div class="b">J</div>
+        <div class="b">O</div>
+        <div class="b">I</div>
+        <div class="b">N</div>
+      </div>
+      <div class="bl bl-md bl-inverted">
+        <div class="b">A</div>
+        <div class="b">C</div>
+        <div class="b">T</div>
+      </div>
+    </div>
+
+    <div class="scale-row" style="border-top: 1px solid rgba(0, 0, 0, 0.08)">
+      <div class="label">Hero / wordmark glyph · 48px</div>
+      <div class="bl bl-lg bl-accent">
+        <div class="b">L</div>
+        <div class="b">V</div>
+        <div class="b">B</div>
+        <div class="b">T</div>
+      </div>
+    </div>
+
+    <div
+      style="
+        margin-top: 24px;
+        padding-top: 20px;
+        border-top: 1px solid rgba(0, 0, 0, 0.18);
+        display: flex;
+        gap: 16px;
+        align-items: flex-start;
+      "
+    >
+      <div class="bl bl-xs">
+        <div class="b">L</div>
+        <div class="b">V</div>
+        <div class="b">B</div>
+        <div class="b">T</div>
+      </div>
+      <div
+        style="
+          flex: 1;
+          font-family: 'Public Sans Variable', system-ui, sans-serif;
+          font-size: 12px;
+          color: #3a3e46;
+          line-height: 1.55;
+        "
+      >
+        <strong style="color: #0f1115">Why this works at any scale:</strong> hairline 1px borders
+        (not 2–3px), tight typographic centering, mathematical letter spacing (consistent 4px gap
+        regardless of letter width), single-color discipline (ink or accent, not both at once). The
+        construction holds at 16px. That's the test.
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ================ DIAMOND STAT, CONSTRUCTED PROPERLY ================ -->
+
+<div class="frame">
+  <div class="head">
+    <div class="title">Diamond stat · with construction craft</div>
+    <div class="sub">two surfaces — paper and night</div>
+  </div>
+  <div class="grid-2">
+    <div
+      style="
+        background: #f7f4ec;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        min-height: 340px;
+        padding: 32px;
+      "
+    >
+      <div class="dia-pro">
+        <div class="face">
+          <div class="lbl">VEGAS VALLEY</div>
+          <div class="num">1.7<span class="unit">M</span></div>
+          <div class="cap">people. Largest US metro <strong>without light rail.</strong></div>
+        </div>
+        <svg viewBox="0 0 320 224"><use href="#dia-pro-border" /></svg>
+      </div>
+      <div
+        style="
+          margin-top: 24px;
+          font-family: 'Public Sans Variable', system-ui, sans-serif;
+          font-size: 11px;
+          color: #5c6068;
+          max-width: 300px;
+          text-align: center;
+          line-height: 1.5;
+        "
+      >
+        <strong style="color: #0f1115">Paper variant.</strong> 1.25px ink hairline outline. 12 small
+        ink bulbs (3 per edge). 4 cardinal accent dots in brand red. No yellow.
+      </div>
+    </div>
+
+    <div
+      style="
+        background: #0f1115;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        min-height: 340px;
+        padding: 32px;
+      "
+    >
+      <div class="dia-night">
+        <div class="face">
+          <div class="lbl">VEGAS VALLEY</div>
+          <div class="num">1.7<span class="unit">M</span></div>
+          <div class="cap">
+            people. Largest US metro <strong style="color: #f7f4ec">without light rail.</strong>
+          </div>
+        </div>
+        <svg viewBox="0 0 380 266"><use href="#dia-night-border" /></svg>
+      </div>
+      <div
+        style="
+          margin-top: 24px;
+          font-family: 'Public Sans Variable', system-ui, sans-serif;
+          font-size: 11px;
+          color: #94a0b4;
+          max-width: 300px;
+          text-align: center;
+          line-height: 1.5;
+        "
+      >
+        <strong style="color: #f7f4ec">Night variant.</strong> Bulbs as actual light sources —
+        radial gradient halo + bright core. The Vegas grammar (sign at night) translated through
+        2025 craft (atmospheric depth, not flat fills).
+      </div>
+    </div>
+  </div>
+</div>
+
+<div style="margin-top: 32px; padding: 24px; background: #f7f4ec; border-left: 6px solid #0f1115">
+  <div
+    class="pub"
+    style="
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.14em;
+      font-weight: 800;
+      color: #5c6068;
+      margin-bottom: 10px;
+    "
+  >
+    What changed from the rejected version
+  </div>
+  <ul
+    style="
+      margin: 0;
+      padding-left: 18px;
+      font-family: 'Public Sans Variable', system-ui, sans-serif;
+      font-size: 13px;
+      line-height: 1.7;
+      color: #0f1115;
+    "
+  >
+    <li>
+      Stroke went from <strong>5px saturated yellow</strong> to
+      <strong>1.25px ink hairline</strong>.
+    </li>
+    <li>
+      Bulb count went from <strong>28 yellow</strong> to
+      <strong>12 ink + 4 cardinal accents</strong>. Less is more: the eye reads the rhythm without
+      being shouted at.
+    </li>
+    <li>Eliminated the yellow-orange color clash entirely on the paper version.</li>
+    <li>
+      The night version uses bulbs as <strong>light sources</strong> (gradient halos, bright cores)
+      rather than flat dots — atmospheric craft instead of flat decoration.
+    </li>
+    <li>
+      Generous interior padding; type breathes; clear hierarchy (small label → huge number → small
+      caption).
+    </li>
+  </ul>
+</div>
+
+<p class="subtitle" style="margin-top: 24px">
+  If this construction quality reads right, the design framework holds and we can lock the
+  direction. Bulb letters become a brand signature; the diamond stat is reserved for a few key
+  statistics; everything else is the existing Public Sans + ink/paper system, with one or two
+  literal-sign hero moments per project.
+</p>

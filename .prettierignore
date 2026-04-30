@@ -1,0 +1,10 @@
+node_modules/
+dist/
+.astro/
+.wrangler/
+.lvbt/
+playwright-report/
+test-results/
+tests/snapshots/
+pnpm-lock.yaml
+.env*

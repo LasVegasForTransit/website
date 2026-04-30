@@ -1,0 +1,140 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import SectionHeader from '../components/SectionHeader.astro';
+import Carousel from '../components/Carousel.astro';
+import CarouselItem from '../components/CarouselItem.astro';
+import NewsletterEmbed from '../components/NewsletterEmbed.astro';
+import { getEntry, render, getCollection } from 'astro:content';
+import { site } from '../lib/site';
+import { requireEntry } from '../lib/content-guard';
+
+const intro = await getEntry('pages', 'get-involved');
+requireEntry(intro, 'pages', 'get-involved');
+const { Content } = await render(intro);
+
+const events = await getCollection('events', (e) => !e.id.startsWith('_'));
+const now = new Date();
+const upcoming = events
+  .filter((e) => e.data.date >= now)
+  .sort((a, b) => a.data.date.getTime() - b.data.date.getTime())
+  .slice(0, 3);
+---
+
+<BaseLayout
+  title="Get involved"
+  description="Concrete ways to help — for people with five minutes, five hours, or five years."
+>
+  <header class="container-page pt-20 pb-12 md:pt-28 md:pb-16">
+    <SectionHeader
+      title="The 2027 session is the moment."
+      lede="Whether you have five minutes, five hours, or five years to give, there is work that needs you."
+    />
+  </header>
+  <hr class="rule-thick container-page" />
+
+  <Carousel eyebrow="§ 01" title="Spread the word">
+    <CarouselItem
+      href="https://bsky.app/intent/compose?text=Las%20Vegas%20is%20the%20largest%20US%20metro%20without%20light%20rail.%20Our%20buses%20are%20about%20to%20be%20cut%20by%2042%25%20in%202028.%20%40lasvegasfortransit.org%20is%20organizing%20to%20stop%20it.%20https%3A%2F%2Flasvegasfortransit.org"
+      external
+    >
+      <p class="text-title-lg">Quote and share our pitch.</p>
+      <p class="mt-6 text-sm font-bold uppercase tracking-wider">Compose on Bluesky →</p>
+    </CarouselItem>
+  </Carousel>
+
+  <Carousel eyebrow="§ 02" title="Follow & subscribe">
+    <CarouselItem href={site.social.instagram} external>
+      <p class="eyebrow">Instagram</p>
+      <p class="text-title-lg mt-3">Visual storytelling from the Valley.</p>
+      <p class="mt-4 leading-relaxed">@lasvegasfortransit — project updates, event posts.</p>
+    </CarouselItem>
+    <CarouselItem href={site.social.bluesky} external>
+      <p class="eyebrow">Bluesky</p>
+      <p class="text-title-lg mt-3">Where the urbanism conversation actually happens.</p>
+      <p class="mt-4 leading-relaxed">@lasvegasfortransit.org</p>
+    </CarouselItem>
+  </Carousel>
+
+  <section class="container-page py-12">
+    <div class="max-w-2xl">
+      <NewsletterEmbed />
+    </div>
+  </section>
+
+  <Carousel eyebrow="§ 03" title="Donate">
+    <CarouselItem href={site.donate.url} external>
+      <p class="text-title-lg">
+        Every dollar buys a sign, a printed report, an hour of organizer time.
+      </p>
+      <p class="mt-4 leading-relaxed">
+        We're entirely volunteer-run. Donations make the difference between sending a letter to one
+        legislator and sending one to twenty.
+      </p>
+    </CarouselItem>
+    <CarouselItem pending>
+      <p class="text-title-lg">Recurring giving.</p>
+      <p class="mt-4 leading-relaxed">
+        Monthly contributions and tax-deductibility ship with full incorporation.
+      </p>
+    </CarouselItem>
+  </Carousel>
+
+  <Carousel eyebrow="§ 04" title="Merch">
+    <CarouselItem pending>
+      <p class="text-title-lg">Stickers, shirts, pins.</p>
+      <p class="mt-4 leading-relaxed">
+        Wearable art that turns Valley streets into our advertising.
+      </p>
+    </CarouselItem>
+  </Carousel>
+
+  <Carousel eyebrow="§ 05" title="Partner with us">
+    <CarouselItem href={`mailto:${site.email.partners}?subject=Partnership%20inquiry`} external>
+      <p class="text-title-lg">Labor, faith, business, healthcare, schools.</p>
+      <p class="mt-4 leading-relaxed">
+        If you represent a group whose constituents depend on transit, we want to talk.
+      </p>
+      <p class="mt-6 text-sm font-bold uppercase tracking-wider">Email partners@ →</p>
+    </CarouselItem>
+  </Carousel>
+
+  <Carousel eyebrow="§ 06" title="Attend our events">
+    {
+      upcoming.length === 0 ? (
+        <CarouselItem href="/events" pending>
+          <p class="text-title-lg">First event in planning.</p>
+          <p class="mt-4 leading-relaxed">Subscribe to the newsletter to hear about it first.</p>
+        </CarouselItem>
+      ) : (
+        upcoming.map((e) => (
+          <CarouselItem href={`/events/${e.id}`}>
+            <p class="eyebrow">
+              {new Intl.DateTimeFormat('en-US', {
+                month: 'short',
+                day: 'numeric',
+                timeZone: 'America/Los_Angeles',
+              }).format(e.data.date)}
+            </p>
+            <p class="text-title-lg mt-3">{e.data.title}</p>
+            <p class="mt-4 leading-relaxed">{e.data.summary}</p>
+          </CarouselItem>
+        ))
+      )
+    }
+  </Carousel>
+
+  <Carousel eyebrow="§ 07" title="Become a member">
+    <CarouselItem pending>
+      <p class="text-title-lg">Membership program in development.</p>
+      <p class="mt-4 leading-relaxed">
+        A formal structure with bylaws, voting rights, and chapter participation is being designed
+        for a 2027 launch.
+      </p>
+    </CarouselItem>
+  </Carousel>
+
+  <section class="container-prose pb-20 prose-doc">
+    <hr class="rule-thin my-12" />
+    <Content />
+  </section>
+</BaseLayout>

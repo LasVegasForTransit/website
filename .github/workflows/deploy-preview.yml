@@ -1,0 +1,124 @@
+name: Deploy preview
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+  pull-requests: write
+  deployments: write
+
+# Newer pushes to the same PR cancel an in-flight preview deploy.
+concurrency:
+  group: deploy-preview-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  # Same-repo PRs only — fork PRs don't get the prod token. Fork contributors
+  # land via review + main deploy. (Never use `pull_request_target` to work
+  # around this; it executes the PR's workflow with full secrets — exactly
+  # the foot-gun we're avoiding.)
+  guard:
+    name: Same-repo guard
+    runs-on: ubuntu-latest
+    if: github.event.pull_request.head.repo.full_name == github.repository
+    outputs:
+      run: ${{ steps.set.outputs.run }}
+    steps:
+      - id: set
+        run: echo "run=true" >> "$GITHUB_OUTPUT"
+
+  build:
+    name: Build
+    needs: guard
+    if: needs.guard.outputs.run == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+
+      - name: Setup Node + pnpm
+        uses: ./.github/actions/setup-node-pnpm
+
+      - name: Build site
+        uses: ./.github/actions/build-site
+
+  deploy:
+    name: Deploy preview
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment:
+      name: preview
+      url: ${{ steps.deploy.outputs.url }}
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+    outputs:
+      url: ${{ steps.deploy.outputs.url }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+
+      - name: Setup Node + pnpm
+        uses: ./.github/actions/setup-node-pnpm
+
+      - name: Deploy
+        id: deploy
+        uses: ./.github/actions/deploy-cloudflare-pages
+        with:
+          # Cloudflare uses the branch name to namespace preview URLs. github.head_ref
+          # is the source branch (only set on pull_request events); fine for our
+          # same-repo gate.
+          branch: ${{ github.head_ref }}
+
+  comment:
+    name: Comment preview URL on PR
+    needs: deploy
+    if: needs.deploy.outputs.url != ''
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: Upsert PR comment
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+        env:
+          PREVIEW_URL: ${{ needs.deploy.outputs.url }}
+        with:
+          script: |
+            const url = process.env.PREVIEW_URL;
+            const body = [
+              '🚀 **Preview deployed**',
+              '',
+              `→ ${url}`,
+              '',
+              `_Commit: \`${context.sha.slice(0, 7)}\`_`,
+            ].join('\n');
+            const marker = '<!-- lvbt-preview-comment -->';
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+            });
+            const existing = comments.find((c) => c.body && c.body.includes(marker));
+            const fullBody = `${marker}\n${body}`;
+            if (existing) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: existing.id,
+                body: fullBody,
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body: fullBody,
+              });
+            }

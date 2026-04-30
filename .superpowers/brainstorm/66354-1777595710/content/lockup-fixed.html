@@ -1,0 +1,623 @@
+<h2>Stroke weight matched. Gap closed.</h2>
+<p class="subtitle">
+  Strokes are now 5px (proportional to the wordmark's stem weight). Gap from diamond's right vertex
+  to "L" is essentially zero — they read as one composition.
+</p>
+
+<style>
+  .pub {
+    font-family: 'Public Sans Variable', system-ui, sans-serif;
+  }
+  .frame {
+    border: 1px solid #1f232b;
+    background: #fff;
+    margin-bottom: 14px;
+  }
+  .frame > .head {
+    padding: 16px 24px;
+    border-bottom: 1px solid #1f232b;
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 16px;
+  }
+  .frame > .head .title {
+    font-family: 'Public Sans Variable', system-ui, sans-serif;
+    font-weight: 800;
+    font-size: 16px;
+    color: #0f1115;
+    letter-spacing: -0.01em;
+  }
+  .frame > .head .sub {
+    font-family: 'Public Sans Variable', system-ui, sans-serif;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+    color: #5c6068;
+    font-weight: 700;
+  }
+  .lockup-svg {
+    display: block;
+    max-width: 100%;
+    height: auto;
+  }
+
+  .stage-row {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 14px;
+    margin-top: 24px;
+  }
+  .stage {
+    border: 1px solid #1f232b;
+    background: #fff;
+    cursor: pointer;
+    transition:
+      transform 0.15s,
+      box-shadow 0.15s;
+    display: grid;
+    grid-template-columns: 1fr 220px;
+  }
+  .stage:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 0 #0f1115;
+  }
+  .stage.selected {
+    outline: 4px solid #e5471a;
+    outline-offset: -4px;
+  }
+  .stage .canvas {
+    background: #f7f4ec;
+    padding: 56px 48px;
+    min-height: 200px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+  }
+  .stage .canvas .badge {
+    position: absolute;
+    top: 12px;
+    left: 12px;
+    width: 30px;
+    height: 30px;
+    background: #0f1115;
+    color: #f7f4ec;
+    font-weight: 800;
+    font-size: 13px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Public Sans Variable', system-ui, sans-serif;
+  }
+  .stage .info {
+    padding: 24px;
+    border-left: 1px solid #1f232b;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 6px;
+  }
+  .stage .info .lbl {
+    font-family: 'Public Sans Variable', system-ui, sans-serif;
+    font-size: 9px;
+    text-transform: uppercase;
+    letter-spacing: 0.16em;
+    color: #5c6068;
+    font-weight: 800;
+  }
+  .stage .info h4 {
+    font-family: 'Public Sans Variable', system-ui, sans-serif;
+    font-size: 15px;
+    margin: 0 0 4px;
+    font-weight: 800;
+    color: #0f1115;
+  }
+  .stage .info p {
+    font-family: 'Public Sans Variable', system-ui, sans-serif;
+    font-size: 11px;
+    line-height: 1.55;
+    color: #3a3e46;
+    margin: 0;
+  }
+</style>
+
+<!-- ============== TWO VERSIONS: NO BULB / WITH BULB ============== -->
+
+<div class="stage-row">
+  <!-- F1: no bulb (cleanest) -->
+  <div class="stage" onclick="toggleSelect(this)" data-choice="f1">
+    <div class="canvas">
+      <div class="badge">1</div>
+      <svg
+        class="lockup-svg"
+        viewBox="0 0 290 54"
+        xmlns="http://www.w3.org/2000/svg"
+        style="width: 560px"
+      >
+        <line
+          x1="22"
+          y1="4"
+          x2="22"
+          y2="50"
+          stroke="#0f1115"
+          stroke-width="5"
+          stroke-linecap="butt"
+        />
+        <polygon
+          points="22,14 40,27 22,40 4,27"
+          fill="none"
+          stroke="#0f1115"
+          stroke-width="5"
+          stroke-linejoin="round"
+        />
+        <text
+          x="43"
+          y="24"
+          font-family="Public Sans Variable, system-ui, sans-serif"
+          font-weight="800"
+          font-size="22"
+          fill="#0f1115"
+          letter-spacing="-0.6"
+        >
+          Las Vegans
+        </text>
+        <text
+          x="43"
+          y="46"
+          font-family="Public Sans Variable, system-ui, sans-serif"
+          font-weight="800"
+          font-size="22"
+          fill="#e5471a"
+          letter-spacing="-0.6"
+        >
+          for Better Transit
+        </text>
+      </svg>
+    </div>
+    <div class="info">
+      <div class="lbl">F1 · Clean</div>
+      <h4>No bulb · just structure</h4>
+      <p>
+        Pole + diamond outline only. Maximum discipline. The "pole through sign" silhouette does all
+        the work.
+      </p>
+    </div>
+  </div>
+
+  <!-- F2: with bulb at right vertex -->
+  <div class="stage" onclick="toggleSelect(this)" data-choice="f2">
+    <div class="canvas">
+      <div class="badge">2</div>
+      <svg
+        class="lockup-svg"
+        viewBox="0 0 290 54"
+        xmlns="http://www.w3.org/2000/svg"
+        style="width: 560px"
+      >
+        <line
+          x1="22"
+          y1="4"
+          x2="22"
+          y2="50"
+          stroke="#0f1115"
+          stroke-width="5"
+          stroke-linecap="butt"
+        />
+        <polygon
+          points="22,14 40,27 22,40 4,27"
+          fill="none"
+          stroke="#0f1115"
+          stroke-width="5"
+          stroke-linejoin="round"
+        />
+        <circle cx="40" cy="27" r="4" fill="#e5471a" />
+        <text
+          x="48"
+          y="24"
+          font-family="Public Sans Variable, system-ui, sans-serif"
+          font-weight="800"
+          font-size="22"
+          fill="#0f1115"
+          letter-spacing="-0.6"
+        >
+          Las Vegans
+        </text>
+        <text
+          x="48"
+          y="46"
+          font-family="Public Sans Variable, system-ui, sans-serif"
+          font-weight="800"
+          font-size="22"
+          fill="#e5471a"
+          letter-spacing="-0.6"
+        >
+          for Better Transit
+        </text>
+      </svg>
+    </div>
+    <div class="info">
+      <div class="lbl">F2 · With bulb</div>
+      <h4>Single accent dot at right vertex</h4>
+      <p>
+        One earned ornament — the bulb where the diamond presents toward the wordmark. Adds a Vegas
+        tell. Slightly more horizontal space (the bulb pushes the wordmark right by ~5px).
+      </p>
+    </div>
+  </div>
+
+  <!-- F3: bulb on the post (inside diamond) -->
+  <div class="stage" onclick="toggleSelect(this)" data-choice="f3">
+    <div class="canvas">
+      <div class="badge">3</div>
+      <svg
+        class="lockup-svg"
+        viewBox="0 0 290 54"
+        xmlns="http://www.w3.org/2000/svg"
+        style="width: 560px"
+      >
+        <line
+          x1="22"
+          y1="4"
+          x2="22"
+          y2="50"
+          stroke="#0f1115"
+          stroke-width="5"
+          stroke-linecap="butt"
+        />
+        <polygon
+          points="22,14 40,27 22,40 4,27"
+          fill="none"
+          stroke="#0f1115"
+          stroke-width="5"
+          stroke-linejoin="round"
+        />
+        <circle cx="22" cy="27" r="4" fill="#e5471a" />
+        <text
+          x="43"
+          y="24"
+          font-family="Public Sans Variable, system-ui, sans-serif"
+          font-weight="800"
+          font-size="22"
+          fill="#0f1115"
+          letter-spacing="-0.6"
+        >
+          Las Vegans
+        </text>
+        <text
+          x="43"
+          y="46"
+          font-family="Public Sans Variable, system-ui, sans-serif"
+          font-weight="800"
+          font-size="22"
+          fill="#e5471a"
+          letter-spacing="-0.6"
+        >
+          for Better Transit
+        </text>
+      </svg>
+    </div>
+    <div class="info">
+      <div class="lbl">F3 · Center bulb</div>
+      <h4>Bulb on the pole, inside diamond</h4>
+      <p>
+        The bulb sits where the post passes through the diamond center — like a light bulb mounted
+        on the structural pole, behind the sign panel. Visible inside the diamond's hollow interior.
+      </p>
+    </div>
+  </div>
+</div>
+
+<!-- ============== AT SCALE (F1 SHOWN) ============== -->
+
+<div class="frame" style="margin-top: 32px">
+  <div class="head">
+    <div class="title">F1 at scale</div>
+    <div class="sub">14 / 18 / 28 / 44px wordmark</div>
+  </div>
+  <div
+    style="
+      background: #f7f4ec;
+      padding: 36px 32px;
+      display: flex;
+      flex-direction: column;
+      gap: 36px;
+      align-items: flex-start;
+    "
+  >
+    <div style="display: flex; align-items: center; gap: 32px">
+      <span
+        style="
+          font-family: 'Public Sans Variable', system-ui, sans-serif;
+          font-size: 9px;
+          text-transform: uppercase;
+          letter-spacing: 0.14em;
+          color: #5c6068;
+          font-weight: 800;
+          width: 80px;
+        "
+        >14PX</span
+      >
+      <svg viewBox="0 0 290 54" xmlns="http://www.w3.org/2000/svg" style="height: 34px">
+        <line
+          x1="22"
+          y1="4"
+          x2="22"
+          y2="50"
+          stroke="#0f1115"
+          stroke-width="5"
+          stroke-linecap="butt"
+        />
+        <polygon
+          points="22,14 40,27 22,40 4,27"
+          fill="none"
+          stroke="#0f1115"
+          stroke-width="5"
+          stroke-linejoin="round"
+        />
+        <text
+          x="43"
+          y="24"
+          font-family="Public Sans Variable, system-ui, sans-serif"
+          font-weight="800"
+          font-size="22"
+          fill="#0f1115"
+          letter-spacing="-0.6"
+        >
+          Las Vegans
+        </text>
+        <text
+          x="43"
+          y="46"
+          font-family="Public Sans Variable, system-ui, sans-serif"
+          font-weight="800"
+          font-size="22"
+          fill="#e5471a"
+          letter-spacing="-0.6"
+        >
+          for Better Transit
+        </text>
+      </svg>
+    </div>
+
+    <div
+      style="
+        display: flex;
+        align-items: center;
+        gap: 32px;
+        padding-top: 24px;
+        border-top: 1px solid rgba(0, 0, 0, 0.08);
+        width: 100%;
+      "
+    >
+      <span
+        style="
+          font-family: 'Public Sans Variable', system-ui, sans-serif;
+          font-size: 9px;
+          text-transform: uppercase;
+          letter-spacing: 0.14em;
+          color: #5c6068;
+          font-weight: 800;
+          width: 80px;
+        "
+        >18PX</span
+      >
+      <svg viewBox="0 0 290 54" xmlns="http://www.w3.org/2000/svg" style="height: 44px">
+        <line
+          x1="22"
+          y1="4"
+          x2="22"
+          y2="50"
+          stroke="#0f1115"
+          stroke-width="5"
+          stroke-linecap="butt"
+        />
+        <polygon
+          points="22,14 40,27 22,40 4,27"
+          fill="none"
+          stroke="#0f1115"
+          stroke-width="5"
+          stroke-linejoin="round"
+        />
+        <text
+          x="43"
+          y="24"
+          font-family="Public Sans Variable, system-ui, sans-serif"
+          font-weight="800"
+          font-size="22"
+          fill="#0f1115"
+          letter-spacing="-0.6"
+        >
+          Las Vegans
+        </text>
+        <text
+          x="43"
+          y="46"
+          font-family="Public Sans Variable, system-ui, sans-serif"
+          font-weight="800"
+          font-size="22"
+          fill="#e5471a"
+          letter-spacing="-0.6"
+        >
+          for Better Transit
+        </text>
+      </svg>
+    </div>
+
+    <div
+      style="
+        display: flex;
+        align-items: center;
+        gap: 32px;
+        padding-top: 24px;
+        border-top: 1px solid rgba(0, 0, 0, 0.08);
+        width: 100%;
+      "
+    >
+      <span
+        style="
+          font-family: 'Public Sans Variable', system-ui, sans-serif;
+          font-size: 9px;
+          text-transform: uppercase;
+          letter-spacing: 0.14em;
+          color: #5c6068;
+          font-weight: 800;
+          width: 80px;
+        "
+        >28PX</span
+      >
+      <svg viewBox="0 0 290 54" xmlns="http://www.w3.org/2000/svg" style="height: 69px">
+        <line
+          x1="22"
+          y1="4"
+          x2="22"
+          y2="50"
+          stroke="#0f1115"
+          stroke-width="5"
+          stroke-linecap="butt"
+        />
+        <polygon
+          points="22,14 40,27 22,40 4,27"
+          fill="none"
+          stroke="#0f1115"
+          stroke-width="5"
+          stroke-linejoin="round"
+        />
+        <text
+          x="43"
+          y="24"
+          font-family="Public Sans Variable, system-ui, sans-serif"
+          font-weight="800"
+          font-size="22"
+          fill="#0f1115"
+          letter-spacing="-0.6"
+        >
+          Las Vegans
+        </text>
+        <text
+          x="43"
+          y="46"
+          font-family="Public Sans Variable, system-ui, sans-serif"
+          font-weight="800"
+          font-size="22"
+          fill="#e5471a"
+          letter-spacing="-0.6"
+        >
+          for Better Transit
+        </text>
+      </svg>
+    </div>
+
+    <div
+      style="
+        display: flex;
+        align-items: center;
+        gap: 32px;
+        padding-top: 24px;
+        border-top: 1px solid rgba(0, 0, 0, 0.08);
+        width: 100%;
+      "
+    >
+      <span
+        style="
+          font-family: 'Public Sans Variable', system-ui, sans-serif;
+          font-size: 9px;
+          text-transform: uppercase;
+          letter-spacing: 0.14em;
+          color: #5c6068;
+          font-weight: 800;
+          width: 80px;
+        "
+        >44PX</span
+      >
+      <svg viewBox="0 0 290 54" xmlns="http://www.w3.org/2000/svg" style="height: 108px">
+        <line
+          x1="22"
+          y1="4"
+          x2="22"
+          y2="50"
+          stroke="#0f1115"
+          stroke-width="5"
+          stroke-linecap="butt"
+        />
+        <polygon
+          points="22,14 40,27 22,40 4,27"
+          fill="none"
+          stroke="#0f1115"
+          stroke-width="5"
+          stroke-linejoin="round"
+        />
+        <text
+          x="43"
+          y="24"
+          font-family="Public Sans Variable, system-ui, sans-serif"
+          font-weight="800"
+          font-size="22"
+          fill="#0f1115"
+          letter-spacing="-0.6"
+        >
+          Las Vegans
+        </text>
+        <text
+          x="43"
+          y="46"
+          font-family="Public Sans Variable, system-ui, sans-serif"
+          font-weight="800"
+          font-size="22"
+          fill="#e5471a"
+          letter-spacing="-0.6"
+        >
+          for Better Transit
+        </text>
+      </svg>
+    </div>
+  </div>
+</div>
+
+<div style="margin-top: 32px; padding: 24px; background: #f7f4ec; border-left: 6px solid #0f1115">
+  <div
+    class="pub"
+    style="
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.14em;
+      font-weight: 800;
+      color: #5c6068;
+      margin-bottom: 10px;
+    "
+  >
+    Specifically what changed
+  </div>
+  <ul
+    style="
+      margin: 0;
+      padding-left: 18px;
+      font-family: 'Public Sans Variable', system-ui, sans-serif;
+      font-size: 13px;
+      line-height: 1.7;
+      color: #0f1115;
+    "
+  >
+    <li>
+      Stroke weight: <strong>2px → 5px</strong>. Now matches the visual stem weight of Public Sans
+      800 letterforms. Mark and wordmark feel like one type system.
+    </li>
+    <li>
+      Gap: <strong>8px → effectively 0–1px</strong>. The diamond's right vertex visually touches the
+      cap of "L." They read as one composition.
+    </li>
+    <li>
+      Diamond proportions: 36px wide × 26px tall (1.4:1 lozenge — matching the Welcome sign's actual
+      aspect, wider than tall).
+    </li>
+    <li>
+      Pole extends 10px above the diamond's top vertex and 10px below the bottom — the "through"
+      reading is unambiguous.
+    </li>
+  </ul>
+</div>
+
+<p class="subtitle" style="margin-top: 24px">
+  F1 / F2 / F3 — pick which feels right (clean, with right-vertex bulb, or with center bulb on the
+  pole). Or tell me to keep tightening.
+</p>

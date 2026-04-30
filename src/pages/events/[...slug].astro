@@ -1,0 +1,66 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { getCollection, render } from 'astro:content';
+
+export async function getStaticPaths() {
+  const events = await getCollection('events', (e) => !e.id.startsWith('_'));
+  return events.map((event) => ({
+    params: { slug: event.id },
+    props: { event },
+  }));
+}
+
+const { event } = Astro.props;
+const { Content } = await render(event);
+
+const dateLabel = new Intl.DateTimeFormat('en-US', {
+  weekday: 'long',
+  month: 'long',
+  day: 'numeric',
+  year: 'numeric',
+  timeZone: 'America/Los_Angeles',
+}).format(event.data.date);
+const timeLabel = new Intl.DateTimeFormat('en-US', {
+  hour: 'numeric',
+  minute: '2-digit',
+  timeZone: 'America/Los_Angeles',
+}).format(event.data.date);
+---
+
+<BaseLayout title={event.data.title} description={event.data.summary}>
+  <header class="container-page pt-20 pb-12 md:pt-28">
+    <p class="eyebrow"><a href="/events" class="no-underline hover:underline">← All events</a></p>
+    <h1 class="text-display-lg mt-6">{event.data.title}</h1>
+    <p class="lede mt-6 max-w-2xl">{event.data.summary}</p>
+    <dl class="mt-10 grid grid-cols-2 md:grid-cols-3 gap-x-8 gap-y-6 max-w-2xl">
+      <div>
+        <dt class="eyebrow">When</dt>
+        <dd class="mt-1 text-base font-semibold">{dateLabel} · {timeLabel}</dd>
+      </div>
+      <div>
+        <dt class="eyebrow">Where</dt>
+        <dd class="mt-1 text-base font-semibold">{event.data.location}</dd>
+      </div>
+      {
+        event.data.rsvpUrl && (
+          <div class="col-span-2 md:col-span-1">
+            <dt class="eyebrow">RSVP</dt>
+            <dd class="mt-1">
+              <a
+                href={event.data.rsvpUrl}
+                class="inline-flex items-center bg-accent text-paper px-4 py-2 text-sm font-bold uppercase tracking-wider no-underline"
+                rel="noopener"
+              >
+                RSVP →
+              </a>
+            </dd>
+          </div>
+        )
+      }
+    </dl>
+  </header>
+  <hr class="rule-thick container-page" />
+  <div class="container-prose py-16 prose-doc">
+    <Content />
+  </div>
+</BaseLayout>

@@ -1,0 +1,43 @@
+---
+interface Props {
+  href: string;
+  title: string;
+  date: Date;
+  endDate?: Date;
+  location: string;
+  summary: string;
+  featured?: boolean;
+}
+
+const { href, title, date, endDate, location, summary, featured = false } = Astro.props;
+
+const dateLabel = new Intl.DateTimeFormat('en-US', {
+  weekday: 'short',
+  month: 'short',
+  day: 'numeric',
+  year: 'numeric',
+  timeZone: 'America/Los_Angeles',
+}).format(date);
+
+const timeLabel = new Intl.DateTimeFormat('en-US', {
+  hour: 'numeric',
+  minute: '2-digit',
+  timeZone: 'America/Los_Angeles',
+}).format(date);
+---
+
+<a
+  href={href}
+  class:list={[
+    'lift block border border-ink no-underline',
+    featured
+      ? 'bg-ink text-paper p-8 md:p-12'
+      : 'bg-paper text-ink p-6 hover:bg-ink hover:text-paper',
+  ]}
+>
+  {featured && <p class="eyebrow text-accent-soft">Next event</p>}
+  <p class="eyebrow mt-2">{dateLabel} · {timeLabel}</p>
+  <h3 class:list={[featured ? 'text-display-md mt-4' : 'text-title-lg mt-2']}>{title}</h3>
+  <p class="mt-4 max-w-prose">{summary}</p>
+  <p class="mt-6 text-sm font-semibold">{location}</p>
+</a>

@@ -1,0 +1,19 @@
+---
+import DocLayout from '../layouts/DocLayout.astro';
+import { getEntry, render } from 'astro:content';
+import { requireEntry } from '../lib/content-guard';
+
+const vision = await getEntry('docs', 'vision');
+requireEntry(vision, 'docs', 'vision');
+const { Content } = await render(vision);
+---
+
+<DocLayout title={vision.data.title} summary={vision.data.summary} eyebrow="Why this matters">
+  <Content />
+  <hr class="rule-thin my-16" />
+  <p class="eyebrow">Keep reading</p>
+  <ul class="mt-4 not-prose flex flex-col gap-2">
+    <li><a href="/about/strategy" class="font-bold">→ How we'll win</a></li>
+    <li><a href="/projects" class="font-bold">→ The projects we're working on</a></li>
+  </ul>
+</DocLayout>

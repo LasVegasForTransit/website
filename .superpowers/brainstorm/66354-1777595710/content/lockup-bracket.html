@@ -1,0 +1,550 @@
+<h2>The structural lockup · post holds up wordmark</h2>
+<p class="subtitle">
+  Mark and wordmark are one lockup. The post-and-bracket on the left is the structural reference;
+  the wordmark is what gets held up. Four variants from "just a post" to "post + bracket + bulb."
+</p>
+
+<style>
+  .pub {
+    font-family: 'Public Sans Variable', system-ui, sans-serif;
+  }
+
+  .frame {
+    border: 1px solid #1f232b;
+    background: #fff;
+    margin-bottom: 14px;
+  }
+  .frame > .head {
+    padding: 16px 24px;
+    border-bottom: 1px solid #1f232b;
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 16px;
+  }
+  .frame > .head .title {
+    font-family: 'Public Sans Variable', system-ui, sans-serif;
+    font-weight: 800;
+    font-size: 16px;
+    color: #0f1115;
+    letter-spacing: -0.01em;
+  }
+  .frame > .head .sub {
+    font-family: 'Public Sans Variable', system-ui, sans-serif;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+    color: #5c6068;
+    font-weight: 700;
+  }
+  .frame > .body {
+    padding: 36px 32px;
+    background: #f7f4ec;
+  }
+  .lbl {
+    font-family: 'Public Sans Variable', system-ui, sans-serif;
+    font-size: 9px;
+    text-transform: uppercase;
+    letter-spacing: 0.16em;
+    color: #5c6068;
+    font-weight: 800;
+  }
+
+  /* ===== Lockup primitive ===== */
+  .lk {
+    display: inline-flex;
+    align-items: stretch;
+    gap: 14px;
+  }
+  .lk .mark {
+    display: flex;
+    align-items: stretch;
+  }
+  .lk .wm {
+    font-family: 'Public Sans Variable', system-ui, sans-serif;
+    font-weight: 800;
+    line-height: 0.92;
+    letter-spacing: -0.03em;
+  }
+  .lk .wm .accent {
+    color: #e5471a;
+  }
+
+  /* Sizes */
+  .lk-sm {
+    font-size: 14px;
+  }
+  .lk-sm .wm {
+    font-size: 14px;
+  }
+  .lk-sm .mark svg {
+    height: 30px;
+  }
+  .lk-md {
+    font-size: 18px;
+  }
+  .lk-md .wm {
+    font-size: 18px;
+  }
+  .lk-md .mark svg {
+    height: 36px;
+  }
+  .lk-lg {
+    font-size: 28px;
+  }
+  .lk-lg .wm {
+    font-size: 28px;
+  }
+  .lk-lg .mark svg {
+    height: 56px;
+  }
+  .lk-xl {
+    font-size: 44px;
+  }
+  .lk-xl .wm {
+    font-size: 44px;
+  }
+  .lk-xl .mark svg {
+    height: 88px;
+  }
+
+  /* Variant cards */
+  .stage-row {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 14px;
+    margin-top: 16px;
+  }
+  .stage {
+    border: 1px solid #1f232b;
+    background: #fff;
+    cursor: pointer;
+    transition:
+      transform 0.15s,
+      box-shadow 0.15s;
+    display: flex;
+    flex-direction: column;
+  }
+  .stage:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 0 #0f1115;
+  }
+  .stage.selected {
+    outline: 4px solid #e5471a;
+    outline-offset: -4px;
+  }
+  .stage .canvas {
+    background: #f7f4ec;
+    padding: 48px 36px;
+    min-height: 200px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+  }
+  .stage .canvas .badge {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    width: 30px;
+    height: 30px;
+    background: #0f1115;
+    color: #f7f4ec;
+    font-weight: 800;
+    font-size: 13px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Public Sans Variable', system-ui, sans-serif;
+  }
+  .stage .info {
+    padding: 18px 24px;
+    border-top: 1px solid #1f232b;
+  }
+  .stage .info h4 {
+    font-family: 'Public Sans Variable', system-ui, sans-serif;
+    font-size: 14px;
+    margin: 0 0 6px;
+    font-weight: 800;
+    color: #0f1115;
+    letter-spacing: -0.01em;
+    line-height: 1.2;
+  }
+  .stage .info p {
+    font-family: 'Public Sans Variable', system-ui, sans-serif;
+    font-size: 12px;
+    line-height: 1.5;
+    color: #3a3e46;
+    margin: 0;
+  }
+</style>
+
+<svg width="0" height="0" style="position: absolute" aria-hidden="true">
+  <defs>
+    <!-- LM1: just a post (most restrained) -->
+    <symbol id="lm1" viewBox="0 0 20 60" preserveAspectRatio="xMidYMid meet">
+      <line
+        x1="10"
+        y1="2"
+        x2="10"
+        y2="58"
+        stroke="#0f1115"
+        stroke-width="2.5"
+        stroke-linecap="round"
+      />
+    </symbol>
+
+    <!-- LM2: post + chevron opening right (user's sketch, refined) -->
+    <symbol id="lm2" viewBox="0 0 28 60" preserveAspectRatio="xMidYMid meet">
+      <line
+        x1="6"
+        y1="2"
+        x2="6"
+        y2="58"
+        stroke="#0f1115"
+        stroke-width="2.5"
+        stroke-linecap="round"
+      />
+      <path d="M6 30 L24 8" stroke="#0f1115" stroke-width="2.5" stroke-linecap="round" />
+      <path d="M6 30 L24 52" stroke="#0f1115" stroke-width="2.5" stroke-linecap="round" />
+    </symbol>
+
+    <!-- LM3: post + chevron + accent dot at apex (the bulb between post and panel) -->
+    <symbol id="lm3" viewBox="0 0 28 60" preserveAspectRatio="xMidYMid meet">
+      <line
+        x1="6"
+        y1="2"
+        x2="6"
+        y2="58"
+        stroke="#0f1115"
+        stroke-width="2.5"
+        stroke-linecap="round"
+      />
+      <path d="M11 30 L24 8" stroke="#0f1115" stroke-width="2.5" stroke-linecap="round" />
+      <path d="M11 30 L24 52" stroke="#0f1115" stroke-width="2.5" stroke-linecap="round" />
+      <circle cx="9" cy="30" r="3" fill="#e5471a" />
+    </symbol>
+
+    <!-- LM4: two posts (the actual sign has two), chevron between them holding wordmark out -->
+    <symbol id="lm4" viewBox="0 0 30 60" preserveAspectRatio="xMidYMid meet">
+      <line
+        x1="6"
+        y1="2"
+        x2="6"
+        y2="58"
+        stroke="#0f1115"
+        stroke-width="2.5"
+        stroke-linecap="round"
+      />
+      <line
+        x1="14"
+        y1="2"
+        x2="14"
+        y2="58"
+        stroke="#0f1115"
+        stroke-width="2.5"
+        stroke-linecap="round"
+      />
+      <path d="M14 30 L26 12" stroke="#0f1115" stroke-width="2.5" stroke-linecap="round" />
+      <path d="M14 30 L26 48" stroke="#0f1115" stroke-width="2.5" stroke-linecap="round" />
+    </symbol>
+  </defs>
+</svg>
+
+<!-- ============ THE 4 VARIANTS ============ -->
+
+<div class="frame">
+  <div class="head">
+    <div class="title">Four variants of the structural lockup</div>
+    <div class="sub">all shown at "header" scale (lk-md, ~18px wordmark)</div>
+  </div>
+  <div class="body">
+    <div class="stage-row">
+      <div class="stage" onclick="toggleSelect(this)" data-choice="lm1">
+        <div class="canvas">
+          <div class="badge">1</div>
+          <div class="lk lk-md">
+            <div class="mark">
+              <svg viewBox="0 0 20 60" preserveAspectRatio="xMidYMid meet"><use href="#lm1" /></svg>
+            </div>
+            <div class="wm">
+              <div>Las Vegans</div>
+              <div class="accent">for Better Transit</div>
+            </div>
+          </div>
+        </div>
+        <div class="info">
+          <h4>LM1 · Just a post</h4>
+          <p>
+            Most restrained. A single hairline post beside the wordmark. The "structure holds up the
+            sign" reading is implicit, not depicted.
+          </p>
+        </div>
+      </div>
+
+      <div class="stage" onclick="toggleSelect(this)" data-choice="lm2">
+        <div class="canvas">
+          <div class="badge">2</div>
+          <div class="lk lk-md">
+            <div class="mark">
+              <svg viewBox="0 0 28 60" preserveAspectRatio="xMidYMid meet"><use href="#lm2" /></svg>
+            </div>
+            <div class="wm">
+              <div>Las Vegans</div>
+              <div class="accent">for Better Transit</div>
+            </div>
+          </div>
+        </div>
+        <div class="info">
+          <h4>LM2 · Post + chevron (your sketch)</h4>
+          <p>
+            The literal interpretation: post on the left, chevron arms reaching out from the middle
+            to "present" the wordmark. The bracket physically holds it up.
+          </p>
+        </div>
+      </div>
+
+      <div class="stage" onclick="toggleSelect(this)" data-choice="lm3">
+        <div class="canvas">
+          <div class="badge">3</div>
+          <div class="lk lk-md">
+            <div class="mark">
+              <svg viewBox="0 0 28 60" preserveAspectRatio="xMidYMid meet"><use href="#lm3" /></svg>
+            </div>
+            <div class="wm">
+              <div>Las Vegans</div>
+              <div class="accent">for Better Transit</div>
+            </div>
+          </div>
+        </div>
+        <div class="info">
+          <h4>LM3 · Post + chevron + bulb</h4>
+          <p>
+            One earned ornament: a single accent dot where the chevron meets the post — the bulb.
+            Adds a Vegas tell without volume. Recommended.
+          </p>
+        </div>
+      </div>
+
+      <div class="stage" onclick="toggleSelect(this)" data-choice="lm4">
+        <div class="canvas">
+          <div class="badge">4</div>
+          <div class="lk lk-md">
+            <div class="mark">
+              <svg viewBox="0 0 30 60" preserveAspectRatio="xMidYMid meet"><use href="#lm4" /></svg>
+            </div>
+            <div class="wm">
+              <div>Las Vegans</div>
+              <div class="accent">for Better Transit</div>
+            </div>
+          </div>
+        </div>
+        <div class="info">
+          <h4>LM4 · Two posts + chevron</h4>
+          <p>
+            Most literal to the actual sign (which has two posts). The chevron is held between them,
+            then "presents" the wordmark. Risk: starts looking like a TV antenna.
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ SCALES OF THE RECOMMENDED LM3 ============ -->
+
+<div class="frame">
+  <div class="head">
+    <div class="title">LM3 (recommended) at every scale</div>
+    <div class="sub">lockup behavior from 14px to 44px wordmark</div>
+  </div>
+  <div class="body">
+    <div style="display: flex; flex-direction: column; gap: 32px; align-items: flex-start">
+      <div style="display: flex; align-items: center; gap: 24px">
+        <div class="lbl" style="width: 120px">FOOTER · 14px</div>
+        <div class="lk lk-sm">
+          <div class="mark">
+            <svg viewBox="0 0 28 60" preserveAspectRatio="xMidYMid meet"><use href="#lm3" /></svg>
+          </div>
+          <div class="wm">
+            <div>Las Vegans</div>
+            <div class="accent">for Better Transit</div>
+          </div>
+        </div>
+      </div>
+
+      <div
+        style="
+          display: flex;
+          align-items: center;
+          gap: 24px;
+          padding-top: 32px;
+          border-top: 1px solid rgba(0, 0, 0, 0.08);
+          width: 100%;
+        "
+      >
+        <div class="lbl" style="width: 120px">HEADER · 18px</div>
+        <div class="lk lk-md">
+          <div class="mark">
+            <svg viewBox="0 0 28 60" preserveAspectRatio="xMidYMid meet"><use href="#lm3" /></svg>
+          </div>
+          <div class="wm">
+            <div>Las Vegans</div>
+            <div class="accent">for Better Transit</div>
+          </div>
+        </div>
+      </div>
+
+      <div
+        style="
+          display: flex;
+          align-items: center;
+          gap: 24px;
+          padding-top: 32px;
+          border-top: 1px solid rgba(0, 0, 0, 0.08);
+          width: 100%;
+        "
+      >
+        <div class="lbl" style="width: 120px">SECTION · 28px</div>
+        <div class="lk lk-lg">
+          <div class="mark">
+            <svg viewBox="0 0 28 60" preserveAspectRatio="xMidYMid meet"><use href="#lm3" /></svg>
+          </div>
+          <div class="wm">
+            <div>Las Vegans</div>
+            <div class="accent">for Better Transit</div>
+          </div>
+        </div>
+      </div>
+
+      <div
+        style="
+          display: flex;
+          align-items: center;
+          gap: 24px;
+          padding-top: 32px;
+          border-top: 1px solid rgba(0, 0, 0, 0.08);
+          width: 100%;
+        "
+      >
+        <div class="lbl" style="width: 120px">HERO · 44px</div>
+        <div class="lk lk-xl">
+          <div class="mark">
+            <svg viewBox="0 0 28 60" preserveAspectRatio="xMidYMid meet"><use href="#lm3" /></svg>
+          </div>
+          <div class="wm">
+            <div>Las Vegans</div>
+            <div class="accent">for Better Transit</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ COMPARING LM2 AND LM3 IN HEADER ============ -->
+
+<div class="frame">
+  <div class="head">
+    <div class="title">In a header · LM2 vs LM3 side by side</div>
+    <div class="sub">does the bulb earn its place?</div>
+  </div>
+  <div style="background: #f7f4ec">
+    <div
+      style="
+        padding: 18px 24px;
+        border-bottom: 1px solid rgba(0, 0, 0, 0.18);
+        display: flex;
+        align-items: center;
+        gap: 16px;
+      "
+    >
+      <div class="lk lk-md">
+        <div class="mark">
+          <svg viewBox="0 0 28 60" preserveAspectRatio="xMidYMid meet"><use href="#lm2" /></svg>
+        </div>
+        <div class="wm">
+          <div>Las Vegans</div>
+          <div class="accent">for Better Transit</div>
+        </div>
+      </div>
+      <div
+        style="
+          margin-left: auto;
+          display: flex;
+          gap: 24px;
+          font-family: 'Public Sans Variable', system-ui, sans-serif;
+          font-size: 11px;
+          text-transform: uppercase;
+          letter-spacing: 0.12em;
+          font-weight: 700;
+          color: #5c6068;
+        "
+      >
+        <span>Vision</span><span>Issues</span><span>News</span><span>Join</span>
+      </div>
+      <span class="lbl" style="padding: 4px 8px; background: #fff; border: 1px solid #e5e7eb"
+        >LM2 · clean</span
+      >
+    </div>
+
+    <div style="padding: 18px 24px; display: flex; align-items: center; gap: 16px">
+      <div class="lk lk-md">
+        <div class="mark">
+          <svg viewBox="0 0 28 60" preserveAspectRatio="xMidYMid meet"><use href="#lm3" /></svg>
+        </div>
+        <div class="wm">
+          <div>Las Vegans</div>
+          <div class="accent">for Better Transit</div>
+        </div>
+      </div>
+      <div
+        style="
+          margin-left: auto;
+          display: flex;
+          gap: 24px;
+          font-family: 'Public Sans Variable', system-ui, sans-serif;
+          font-size: 11px;
+          text-transform: uppercase;
+          letter-spacing: 0.12em;
+          font-weight: 700;
+          color: #5c6068;
+        "
+      >
+        <span>Vision</span><span>Issues</span><span>News</span><span>Join</span>
+      </div>
+      <span class="lbl" style="padding: 4px 8px; background: #fff; border: 1px solid #e5e7eb"
+        >LM3 · with bulb</span
+      >
+    </div>
+  </div>
+</div>
+
+<div style="margin-top: 32px; padding: 24px; background: #f7f4ec; border-left: 6px solid #0f1115">
+  <div
+    class="pub"
+    style="
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.14em;
+      font-weight: 800;
+      color: #5c6068;
+      margin-bottom: 10px;
+    "
+  >
+    Read
+  </div>
+  <p class="pub" style="font-size: 14px; line-height: 1.6; margin: 0; color: #0f1115">
+    <strong>LM3</strong> is the strongest of the four — the bulb at the chevron apex is the one
+    earned ornament that quietly says "this references the Welcome sign" without any literal sign
+    element on the page. <strong>LM2</strong> is the right call if you want zero ornament and pure
+    structural geometry. <strong>LM4</strong> probably reads more "antenna" than "sign" once you
+    scale it down. <strong>LM1</strong> is too austere — it's just a divider line; the
+    structural-bracket idea disappears.
+  </p>
+</div>
+
+<p class="subtitle" style="margin-top: 24px">
+  Click your pick. Once chosen, this becomes the bold mark + integrated lockup. The bulb-letter LVBT
+  stays the fun mark. The wordmark itself is unchanged. I'll write the spec.
+</p>

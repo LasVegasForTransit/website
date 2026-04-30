@@ -1,0 +1,25 @@
+---
+interface Props {
+  href?: string;
+  external?: boolean;
+  pending?: boolean;
+}
+const { href, external = false, pending = false } = Astro.props;
+const Tag = href ? 'a' : 'div';
+const rel = external ? 'noopener noreferrer' : undefined;
+const target = external ? '_blank' : undefined;
+---
+
+<Tag
+  href={href}
+  rel={rel}
+  target={target}
+  class:list={[
+    'snap-start shrink-0 w-[18rem] md:w-[22rem] border p-6 md:p-8 no-underline',
+    pending ? 'border-dashed border-ink/40 bg-transparent text-mute' : 'border-ink bg-paper',
+    href && 'lift',
+    href && !pending && 'hover:bg-ink hover:text-paper',
+  ]}
+>
+  <slot />
+</Tag>

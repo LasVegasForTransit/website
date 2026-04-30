@@ -1,0 +1,399 @@
+<h2>Same stat, three levels of design discipline</h2>
+<p class="subtitle">
+  Same number ("1.7M people in the Vegas Valley"), three approaches. The argument is that Level 3
+  carries the brand without ever touching a literal sign element.
+</p>
+
+<style>
+  .pub {
+    font-family: 'Public Sans Variable', system-ui, sans-serif;
+  }
+
+  .triptych {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 14px;
+    margin-top: 20px;
+  }
+  @media (max-width: 1100px) {
+    .triptych {
+      grid-template-columns: 1fr;
+    }
+  }
+  .panel {
+    border: 1px solid #1f232b;
+    background: #fff;
+    display: flex;
+    flex-direction: column;
+    min-height: 480px;
+  }
+  .panel .stage {
+    background: #f7f4ec;
+    padding: 56px 40px;
+    min-height: 320px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex: 1;
+  }
+  .panel .meta {
+    padding: 20px 24px;
+    border-top: 1px solid #1f232b;
+  }
+  .panel .meta .lvl {
+    font-size: 9px;
+    text-transform: uppercase;
+    letter-spacing: 0.16em;
+    font-weight: 800;
+    color: #5c6068;
+    margin-bottom: 4px;
+  }
+  .panel .meta h4 {
+    font-family: 'Public Sans Variable', system-ui, sans-serif;
+    font-size: 16px;
+    margin: 0 0 8px;
+    font-weight: 800;
+    letter-spacing: -0.01em;
+    line-height: 1.2;
+    color: #0f1115;
+  }
+  .panel .meta p {
+    font-family: 'Public Sans Variable', system-ui, sans-serif;
+    font-size: 12px;
+    line-height: 1.55;
+    color: #3a3e46;
+    margin: 0 0 8px;
+  }
+  .panel .meta .verdict {
+    font-family: 'Public Sans Variable', system-ui, sans-serif;
+    font-size: 11px;
+    padding: 4px 8px;
+    display: inline-block;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+  }
+  .panel .meta .verdict.bad {
+    background: #fee2e2;
+    color: #991b1b;
+  }
+  .panel .meta .verdict.ok {
+    background: #fef3c7;
+    color: #78350f;
+  }
+  .panel .meta .verdict.good {
+    background: #dcfce7;
+    color: #14532d;
+  }
+
+  /* Level 1 (the rejected version, smaller) */
+  .l1-stat {
+    position: relative;
+    width: 220px;
+    height: 160px;
+  }
+  .l1-stat .face {
+    position: absolute;
+    inset: 0;
+    clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%);
+    background: #f7f4ec;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 0 30px;
+  }
+  .l1-stat .num {
+    font-family: 'Public Sans Variable', system-ui, sans-serif;
+    font-weight: 900;
+    font-size: 44px;
+    letter-spacing: -0.04em;
+    color: #e5471a;
+    line-height: 1;
+  }
+  .l1-stat .lbl {
+    font-family: 'Public Sans Variable', system-ui, sans-serif;
+    font-size: 9px;
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+    font-weight: 700;
+    color: #0f1115;
+    margin-top: 6px;
+    text-align: center;
+  }
+  .l1-stat svg {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+  }
+
+  /* Level 2: sign elements removed; existing brand applied */
+  .l2-stat {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+    max-width: 260px;
+  }
+  .l2-stat .num {
+    font-family: 'Public Sans Variable', system-ui, sans-serif;
+    font-weight: 900;
+    font-size: 92px;
+    letter-spacing: -0.045em;
+    color: #0f1115;
+    line-height: 0.92;
+  }
+  .l2-stat .num em {
+    font-style: normal;
+    color: #e5471a;
+  }
+  .l2-stat .lbl {
+    font-family: 'Public Sans Variable', system-ui, sans-serif;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.16em;
+    font-weight: 700;
+    color: #5c6068;
+  }
+  .l2-stat .rule {
+    width: 56px;
+    height: 6px;
+    background: #0f1115;
+  }
+
+  /* Level 3: existing brand + ONE earned sign-derived inflection */
+  .l3-stat {
+    display: flex;
+    gap: 24px;
+    align-items: flex-start;
+    max-width: 320px;
+  }
+  .l3-stat .marker {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    padding-top: 14px;
+  }
+  .l3-stat .marker .dot {
+    width: 4px;
+    height: 4px;
+    background: #0f1115;
+  }
+  .l3-stat .marker .line {
+    width: 1px;
+    height: 56px;
+    background: #0f1115;
+    opacity: 0.18;
+  }
+  .l3-stat .marker .micro-bulbs {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .l3-stat .marker .micro-bulbs span {
+    width: 3px;
+    height: 3px;
+    border-radius: 50%;
+    background: #0f1115;
+  }
+  .l3-stat .body {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .l3-stat .lbl {
+    font-family: 'Public Sans Variable', system-ui, sans-serif;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.18em;
+    font-weight: 800;
+    color: #5c6068;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .l3-stat .lbl::before {
+    content: '';
+    width: 4px;
+    height: 4px;
+    background: #0f1115;
+    transform: rotate(45deg);
+    display: inline-block;
+  }
+  .l3-stat .num {
+    font-family: 'Public Sans Variable', system-ui, sans-serif;
+    font-weight: 900;
+    font-size: 96px;
+    letter-spacing: -0.045em;
+    color: #0f1115;
+    line-height: 0.9;
+    display: flex;
+    align-items: baseline;
+    gap: 4px;
+  }
+  .l3-stat .num .unit {
+    font-size: 36px;
+    color: #e5471a;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+  }
+  .l3-stat .caption {
+    font-family: 'Public Sans Variable', system-ui, sans-serif;
+    font-size: 13px;
+    color: #0f1115;
+    line-height: 1.5;
+    max-width: 220px;
+  }
+  .l3-stat .caption strong {
+    font-weight: 800;
+  }
+</style>
+
+<svg width="0" height="0" style="position: absolute" aria-hidden="true">
+  <defs>
+    <symbol id="l1-bulbs" viewBox="0 0 220 160">
+      <polygon
+        points="110,4 216,80 110,156 4,80"
+        fill="none"
+        stroke="#fbbf24"
+        stroke-width="5"
+        stroke-linejoin="round"
+      />
+      <g fill="#fbbf24" stroke="#0f1115" stroke-width="0.6">
+        <circle cx="121" cy="12" r="2.2" />
+        <circle cx="135" cy="22" r="2.2" />
+        <circle cx="149" cy="32" r="2.2" />
+        <circle cx="163" cy="42" r="2.2" />
+        <circle cx="177" cy="52" r="2.2" />
+        <circle cx="191" cy="62" r="2.2" />
+        <circle cx="205" cy="72" r="2.2" />
+        <circle cx="208" cy="88" r="2.2" />
+        <circle cx="194" cy="98" r="2.2" />
+        <circle cx="180" cy="108" r="2.2" />
+        <circle cx="166" cy="118" r="2.2" />
+        <circle cx="152" cy="128" r="2.2" />
+        <circle cx="138" cy="138" r="2.2" />
+        <circle cx="124" cy="148" r="2.2" />
+        <circle cx="99" cy="148" r="2.2" />
+        <circle cx="85" cy="138" r="2.2" />
+        <circle cx="71" cy="128" r="2.2" />
+        <circle cx="57" cy="118" r="2.2" />
+        <circle cx="43" cy="108" r="2.2" />
+        <circle cx="29" cy="98" r="2.2" />
+        <circle cx="15" cy="88" r="2.2" />
+        <circle cx="15" cy="72" r="2.2" />
+        <circle cx="29" cy="62" r="2.2" />
+        <circle cx="43" cy="52" r="2.2" />
+        <circle cx="57" cy="42" r="2.2" />
+        <circle cx="71" cy="32" r="2.2" />
+        <circle cx="85" cy="22" r="2.2" />
+        <circle cx="99" cy="12" r="2.2" />
+      </g>
+    </symbol>
+  </defs>
+</svg>
+
+<div class="triptych">
+  <!-- LEVEL 1: rejected version -->
+  <div class="panel">
+    <div class="stage">
+      <div class="l1-stat">
+        <div class="face">
+          <div class="num">1.7M</div>
+          <div class="lbl">people in the<br />Vegas Valley</div>
+        </div>
+        <svg viewBox="0 0 220 160"><use href="#l1-bulbs" /></svg>
+      </div>
+    </div>
+    <div class="meta">
+      <div class="lvl">Level 1 · Skeuomorphic reference</div>
+      <h4>The sign, traced</h4>
+      <p>
+        Direct reproduction of sign decoration: diamond clip + yellow bulbs traced around the
+        perimeter. Two design languages competing on one element. Reads as costume.
+      </p>
+      <span class="verdict bad">Costume — reject</span>
+    </div>
+  </div>
+
+  <!-- LEVEL 2: existing brand applied -->
+  <div class="panel">
+    <div class="stage">
+      <div class="l2-stat">
+        <div class="rule"></div>
+        <div class="lbl">Vegas Valley population</div>
+        <div class="num"><em>1.7M</em></div>
+        <div class="lbl" style="color: #0f1115">Largest US metro without light rail</div>
+      </div>
+    </div>
+    <div class="meta">
+      <div class="lvl">Level 2 · Brand-baseline</div>
+      <h4>Existing brand reapplied</h4>
+      <p>
+        Sign elements removed entirely. Pure existing system: 6px ink rule, Public Sans 900 display,
+        letter-spaced uppercase label. Clean, professional, but says nothing about Vegas.
+      </p>
+      <span class="verdict ok">Safe — but no place</span>
+    </div>
+  </div>
+
+  <!-- LEVEL 3: translated -->
+  <div class="panel">
+    <div class="stage">
+      <div class="l3-stat">
+        <div class="marker">
+          <div class="micro-bulbs">
+            <span></span><span></span><span></span><span></span><span></span><span></span>
+          </div>
+        </div>
+        <div class="body">
+          <div class="lbl">VEGAS VALLEY</div>
+          <div class="num">1.7<span class="unit">M</span></div>
+          <div class="caption">
+            people. The largest US metro <strong>without light rail</strong>. RTC's funding cliff
+            hits in 2026.
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="meta">
+      <div class="lvl">Level 3 · Translated</div>
+      <h4>Sign grammar, system voice</h4>
+      <p>
+        Pure Public Sans + ink. The sign-derived inflection: a single column of six 3px ink dots as
+        a margin marker — the bulb idea, abstracted to data-grid punctuation, used once. The label
+        gets a tiny diamond glyph (4px). Earned ornament, sub-pixel craft, one voice.
+      </p>
+      <span class="verdict good">Silicon Valley</span>
+    </div>
+  </div>
+</div>
+
+<div style="margin-top: 32px; padding: 24px; background: #f7f4ec; border-left: 6px solid #0f1115">
+  <div
+    class="pub"
+    style="
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.14em;
+      font-weight: 800;
+      color: #5c6068;
+      margin-bottom: 10px;
+    "
+  >
+    The shift
+  </div>
+  <p class="pub" style="font-size: 14px; line-height: 1.6; margin: 0; color: #0f1115">
+    <strong>Level 1</strong> uses the sign's decoration as a frame.
+    <strong>Level 2</strong> abandons the sign entirely. <strong>Level 3</strong> uses the sign's
+    <em>grammar</em> — the rhythm of small bulb-dots as punctuation, the diamond as a 4px
+    label-marker, the typographic hierarchy of micro-label / huge display / small caption. Same
+    brand DNA, no costume.
+  </p>
+</div>
+
+<p class="subtitle" style="margin-top: 32px">
+  If Level 3 is the right framework, the next step is rewriting all the primitives I proposed
+  earlier through this lens — and saving everything literal-sign for one or two genuine hero moments
+  per project. Tell me to proceed and I'll consolidate.
+</p>
