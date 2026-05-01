@@ -8,10 +8,11 @@ import { requireEntry } from '../lib/content-guard';
 
 const aboutPage = await getEntry('pages', 'about');
 requireEntry(aboutPage, 'pages', 'about');
-const mission = await getEntry('docs', 'mission');
-requireEntry(mission, 'docs', 'mission');
 
 const { Content: OriginContent } = await render(aboutPage);
+
+const missionStatement =
+  'The mission of Las Vegans for Better Transit is to advocate for world-class public transportation and supportive land use policies in the Las\u00A0Vegas metropolitan area through public education, community outreach, and coalition building.';
 
 const pillars: Array<{ label: string; body: string }> = [
   {
@@ -30,9 +31,8 @@ const pillars: Array<{ label: string; body: string }> = [
 
 const orgRows: Array<{ label: string; value: string }> = [
   { label: 'Legal name', value: site.org.legalName },
-  { label: 'State', value: site.org.state },
+  { label: 'Address', value: site.org.address },
   { label: 'EIN', value: site.org.ein },
-  { label: 'IRS status', value: site.org.taxExemptStatus },
   { label: 'Founded', value: site.org.founded },
 ];
 
@@ -60,7 +60,7 @@ const contacts: Array<{ label: string; email: string; context: string }> = [
   <header class="container-page pt-20 pb-12 md:pt-28 md:pb-16">
     <SectionHeader
       title="Las Vegans for Better Transit"
-      lede="A grassroots advocacy organization fighting for world-class public transit and supportive land use in the Las Vegas Valley."
+      lede={'A grassroots advocacy organization fighting for world-class public transit and supportive land use in the Las\u00A0Vegas Valley.'}
     />
   </header>
   <hr class="rule-thick container-page" />
@@ -68,7 +68,7 @@ const contacts: Array<{ label: string; email: string; context: string }> = [
   {/* § 01 / Mission ----------------------------------------------------- */}
   <section class="container-page py-20 md:py-28">
     <p class="eyebrow">§ 01 / Mission</p>
-    <h2 class="text-headline-lg mt-4 max-w-4xl">{mission.data.summary}</h2>
+    <h2 class="text-headline-lg mt-4 max-w-4xl">{missionStatement}</h2>
 
     <div class="mt-16 grid gap-px bg-ink border border-ink md:grid-cols-3">
       {
@@ -83,22 +83,24 @@ const contacts: Array<{ label: string; email: string; context: string }> = [
   </section>
 
   {/* § 02 / Origin ------------------------------------------------------ */}
-  <section class="bg-ink text-paper">
-    <div class="container-page py-20 md:py-28">
-      <p class="eyebrow text-accent-soft">§ 02 / Origin</p>
-      <h2 class="text-headline-lg mt-4 max-w-3xl">
-        An organization that didn't exist until it had to.
-      </h2>
+  <section class="bg-ink text-paper min-h-screen flex flex-col justify-center">
+    <div
+      class="container-page py-20 md:py-28 grid gap-12 md:grid-cols-[1fr_1.5fr] md:gap-16 items-start"
+    >
+      <div>
+        <p class="eyebrow text-accent-soft">§ 02 / Origin</p>
+        <h2 class="text-headline-lg mt-4">An organization that didn't exist until it had to.</h2>
 
-      <div class="mt-12 max-w-3xl">
-        <PullQuote cite="RTC of Southern Nevada, March 2026">
-          "Without a new dedicated funding source, the RTC will be forced to eliminate fifteen
-          routes and reduce service across the network — affecting hundreds of thousands of riders
-          by 2028."
-        </PullQuote>
+        <div class="mt-10 max-w-md">
+          <PullQuote cite="RTC of Southern Nevada, March 2026">
+            "Without a new dedicated funding source, the RTC will be forced to eliminate fifteen
+            routes and reduce service across the network — affecting hundreds of thousands of riders
+            by 2028."
+          </PullQuote>
+        </div>
       </div>
 
-      <div class="container-prose px-0 mt-12 prose-doc text-paper">
+      <div class="prose-doc text-paper max-w-2xl">
         <OriginContent />
       </div>
     </div>
@@ -111,8 +113,8 @@ const contacts: Array<{ label: string; email: string; context: string }> = [
         <p class="eyebrow">§ 03 / The legal entity</p>
         <h2 class="text-headline-lg mt-4">A registered Nevada nonprofit.</h2>
         <p class="lede mt-6 max-w-md">
-          Federal tax-exempt status is in progress. Until the IRS recognizes our 501(c)(3),
-          contributions are not yet tax-deductible.
+          Incorporated in Nevada in April 2026. Our <span class="whitespace-nowrap">501(c)(3)</span> application
+          is under IRS review; contributions will become tax-deductible upon determination.
         </p>
       </div>
 
@@ -132,13 +134,14 @@ const contacts: Array<{ label: string; email: string; context: string }> = [
   {/* § 04 / Stay in touch ----------------------------------------------- */}
   <section class="container-page py-20 md:py-28 border-t-[6px] border-ink">
     <p class="eyebrow">§ 04 / Stay in touch</p>
-    <h2 class="text-headline-lg mt-4 max-w-3xl">We read every email.</h2>
+    <h2 class="text-headline-lg mt-4 max-w-3xl">Keep up with the work.</h2>
     <p class="lede mt-6 max-w-2xl">
-      Pick the address that fits, or follow along on
+      The newsletter goes out from <a href="/join" class="font-semibold text-accent">Get involved</a
+      >. Day-to-day, we post on
       <a href={site.social.instagram} rel="noopener" class="font-semibold text-accent">Instagram</a>
       and
       <a href={site.social.bluesky} rel="noopener" class="font-semibold text-accent">Bluesky</a>.
-      The newsletter lives on <a href="/join" class="font-semibold text-accent">Get involved</a>.
+      For anything more specific, the inboxes below all reach a real person.
     </p>
 
     <div class="mt-12 grid gap-px bg-ink border border-ink md:grid-cols-3">
