@@ -1,5 +1,8 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
+import StructuredData from '../../components/seo/StructuredData.astro';
+import { eventSchema } from '../../lib/structured-data';
+import { site } from '../../lib/site';
 import { getCollection, render } from 'astro:content';
 
 export async function getStaticPaths() {
@@ -12,6 +15,7 @@ export async function getStaticPaths() {
 
 const { event } = Astro.props;
 const { Content } = await render(event);
+const eventUrl = new URL(Astro.url.pathname, site.url).toString();
 
 const dateLabel = new Intl.DateTimeFormat('en-US', {
   weekday: 'long',
@@ -28,6 +32,7 @@ const timeLabel = new Intl.DateTimeFormat('en-US', {
 ---
 
 <BaseLayout title={event.data.title} description={event.data.summary}>
+  <StructuredData slot="head" data={eventSchema(event, eventUrl)} />
   <header class="container-page pt-20 pb-12 md:pt-28">
     <p class="eyebrow"><a href="/events" class="no-underline hover:underline">← All events</a></p>
     <h1 class="text-display-lg mt-6">{event.data.title}</h1>

@@ -13,3 +13,9 @@ peerDependencyRules:
     # tsconfck (transitive via astro) declares peer typescript@^5 but
     # works with TS 6. Drop this once upstream widens its peer range.
     tsconfck>typescript: '6'
+
+# lhci bundles intl-messageformat which CommonJS-requires tslib without
+# declaring it. Hoist tslib to the public node_modules root so the bundled
+# Lighthouse subprocess can resolve it.
+publicHoistPattern:
+  - 'tslib'

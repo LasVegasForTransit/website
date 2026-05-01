@@ -149,6 +149,24 @@
     border-radius: 2px;
   }
 
+  .skip-link {
+    position: absolute;
+    top: 0.5rem;
+    left: 0.5rem;
+    z-index: 100;
+    background: var(--color-ink);
+    color: var(--color-paper);
+    padding: 0.625rem 1rem;
+    font-weight: 700;
+    text-decoration: none;
+    transform: translateY(-150%);
+    transition: transform 150ms cubic-bezier(0, 0, 0.2, 1);
+  }
+  .skip-link:focus,
+  .skip-link:focus-visible {
+    transform: translateY(0);
+  }
+
   @media (prefers-reduced-motion: reduce) {
     *,
     *::before,

@@ -1,0 +1,23 @@
+# Lychee link checker config — used by .github/workflows/audit.yml.
+# Runs against built HTML in dist/ + markdown in docs/.
+
+cache = true
+max_cache_age = "1d"
+max_redirects = 5
+max_retries = 2
+retry_wait_time = 2
+timeout = 20
+
+accept = ["200", "204", "301", "302", "307", "308", "403", "429"]
+
+# Skip mailto:/tel: and localhost
+exclude = [
+  "^mailto:",
+  "^tel:",
+  "^https?://localhost",
+  "^https?://127\\.0\\.0\\.1",
+  "^https?://embeds\\.beehiiv\\.com/PLACEHOLDER",
+]
+
+# These hosts rate-limit aggressively or block link-checker UAs
+exclude_path = ["node_modules", ".astro", ".lighthouseci"]
