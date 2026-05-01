@@ -36,7 +36,6 @@ const otherUpcoming = featured ? upcoming.filter((e) => e.id !== featured.id) : 
           href={`/events/${featured.id}`}
           title={featured.data.title}
           date={featured.data.date}
-          endDate={featured.data.endDate}
           location={featured.data.location}
           summary={featured.data.summary}
           featured
@@ -70,7 +69,6 @@ const otherUpcoming = featured ? upcoming.filter((e) => e.id !== featured.id) : 
               href={`/events/${e.id}`}
               title={e.data.title}
               date={e.data.date}
-              endDate={e.data.endDate}
               location={e.data.location}
               summary={e.data.summary}
             />

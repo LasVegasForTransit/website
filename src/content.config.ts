@@ -1,5 +1,6 @@
-import { defineCollection, z } from 'astro:content';
+import { defineCollection } from 'astro:content';
 import { glob } from 'astro/loaders';
+import { z } from 'zod';
 
 const docs = defineCollection({
   loader: glob({ pattern: '**/*.{md,mdx}', base: './src/content/docs' }),
@@ -19,7 +20,7 @@ const events = defineCollection({
     endDate: z.coerce.date().optional(),
     location: z.string(),
     featured: z.boolean().default(false),
-    rsvpUrl: z.string().url().optional(),
+    rsvpUrl: z.url().optional(),
     summary: z.string(),
   }),
 });

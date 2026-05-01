@@ -6,7 +6,7 @@
  * empty field — validation should never block that path.
  */
 
-export function validateEmptyAllowed<T>(
+export function validateEmptyAllowed(
   raw: string | undefined,
   test: (trimmed: string) => string | undefined,
 ): string | undefined {

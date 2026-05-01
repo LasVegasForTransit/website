@@ -4,7 +4,7 @@ import { CAPABILITY_SPECS, type CapabilityConfig } from '../config/prerequisites
 import type { FollowUp, PhaseResult, SupportedOs } from '../lib/types.js';
 import { runCommand, summarizeOutputLine } from '../lib/shell.js';
 import { isVersionGte } from '../lib/os.js';
-import { promptConfirm, printToolTable, type ToolRow, type ToolRowStatus } from '../lib/ui.js';
+import { promptConfirm, printToolTable, type ToolRow } from '../lib/ui.js';
 import { markCapability, type ReadinessState } from '../state.js';
 
 export async function runInstallPhase(
