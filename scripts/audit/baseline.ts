@@ -1,0 +1,170 @@
+#!/usr/bin/env tsx
+/**
+ * Baseline audit orchestrator. Runs every read-only audit tool against the
+ * built site and writes a single timestamped markdown report to
+ * audits/baseline-YYYY-MM-DD.md (committed; track regressions via git).
+ *
+ * Sub-tools (each can also be invoked standalone):
+ *   - lighthouse:       lhci autorun (uses lighthouserc.json, static dist)
+ *   - axe:              playwright test --project=a11y (json reporter)
+ *   - html-validate:    pnpm exec html-validate dist/**\/*.html
+ *   - structured-data:  tsx scripts/audit/structured-data.ts --json
+ *   - third-party-scan: tsx scripts/audit/third-party-scan.ts --json
+ *   - pnpm audit:       pnpm audit --prod --audit-level=low --json
+ *
+ * Usage: pnpm audit:baseline [--skip-build] [--skip=lighthouse,axe,...]
+ *
+ * The script never throws on tool failure — it captures stdout/stderr +
+ * exit code per tool and writes them to the report. The whole point of a
+ * baseline is to surface problems, not gate the build.
+ */
+
+import { spawnSync } from 'node:child_process';
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { resolve } from 'node:path';
+
+const args = new Set(process.argv.slice(2));
+const skipBuild = args.has('--skip-build');
+const skipArg = [...args].find((a) => a.startsWith('--skip='));
+const skip = new Set(skipArg ? skipArg.replace('--skip=', '').split(',') : []);
+
+const ROOT = resolve(process.cwd());
+const DIST = resolve(ROOT, 'dist');
+const REPORT_DIR = resolve(ROOT, 'audits');
+
+interface ToolResult {
+  name: string;
+  exitCode: number | null;
+  durationMs: number;
+  stdout: string;
+  stderr: string;
+}
+
+// CSI escape sequences (colors, cursor positioning, screen erase) — clean
+// captured tool output so the markdown report stays human-readable.
+// eslint-disable-next-line no-control-regex
+const ANSI_RE = /\x1b\[[\d;]*[a-zA-Z]/g;
+
+function clean(s: string | null | undefined, name: string): string {
+  let out = (s ?? '').replace(ANSI_RE, '');
+  // Playwright pipes the dev/preview server's stdout into its own with
+  // a `[WebServer]` prefix on every line. For audit reports the build
+  // log is noise — strip those lines.
+  if (name === 'axe') {
+    out = out
+      .split('\n')
+      .filter((line) => !line.includes('[WebServer]'))
+      .join('\n');
+  }
+  return out.trim();
+}
+
+function run(name: string, cmd: string, cmdArgs: string[]): ToolResult {
+  const t0 = Date.now();
+  const r = spawnSync(cmd, cmdArgs, { encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 });
+  return {
+    name,
+    exitCode: r.status,
+    durationMs: Date.now() - t0,
+    stdout: clean(r.stdout, name),
+    stderr: clean(r.stderr, name),
+  };
+}
+
+function log(msg: string): void {
+  process.stdout.write(`[audit] ${msg}\n`);
+}
+
+if (!skipBuild) {
+  log('building site (pnpm build)...');
+  const b = run('build', 'pnpm', ['build']);
+  if (b.exitCode !== 0) {
+    process.stderr.write(b.stderr || b.stdout);
+    process.exit(b.exitCode ?? 1);
+  }
+}
+
+if (!existsSync(DIST)) {
+  process.stderr.write(`dist/ not found at ${DIST}. Run pnpm build or omit --skip-build.\n`);
+  process.exit(1);
+}
+
+const results: ToolResult[] = [];
+
+if (!skip.has('html-validate')) {
+  log('running html-validate...');
+  results.push(run('html-validate', 'pnpm', ['exec', 'html-validate', 'dist/**/*.html']));
+}
+if (!skip.has('structured-data')) {
+  log('running structured-data...');
+  results.push(
+    run('structured-data', 'pnpm', ['exec', 'tsx', 'scripts/audit/structured-data.ts', '--json']),
+  );
+}
+if (!skip.has('third-party-scan')) {
+  log('running third-party-scan...');
+  results.push(
+    run('third-party-scan', 'pnpm', ['exec', 'tsx', 'scripts/audit/third-party-scan.ts', '--json']),
+  );
+}
+if (!skip.has('deps-audit')) {
+  log('running pnpm audit (low+)...');
+  results.push(run('deps-audit', 'pnpm', ['audit', '--prod', '--audit-level=low', '--json']));
+}
+if (!skip.has('lighthouse')) {
+  log('running Lighthouse (lhci autorun)...');
+  results.push(run('lighthouse', 'pnpm', ['exec', 'lhci', 'autorun']));
+}
+if (!skip.has('axe')) {
+  log('running axe via Playwright (project=a11y)...');
+  results.push(
+    run('axe', 'pnpm', ['exec', 'playwright', 'test', '--project=a11y', '--reporter=line']),
+  );
+}
+
+const today = new Date().toISOString().slice(0, 10);
+mkdirSync(REPORT_DIR, { recursive: true });
+const reportPath = resolve(REPORT_DIR, `baseline-${today}.md`);
+
+const sections = results.map(renderTool).join('\n\n');
+const overall = results.every((r) => r.exitCode === 0)
+  ? 'all clean'
+  : `${results.filter((r) => r.exitCode !== 0).length} of ${results.length} tools reported issues`;
+
+const pkg = JSON.parse(readFileSync(resolve(ROOT, 'package.json'), 'utf8')) as { version?: string };
+
+const report = `# Baseline audit report — ${today}
+
+- Generated: ${new Date().toISOString()}
+- Site version: ${pkg.version ?? 'unknown'}
+- Status: **${overall}**
+
+This report is generated by \`pnpm audit:baseline\`. Each section below is the raw output of one tool. Failed tools have a non-zero exit code; their output is the most important place to look first.
+
+---
+
+${sections}
+`;
+
+writeFileSync(reportPath, report);
+log(`wrote ${reportPath}`);
+
+const failed = results.filter((r) => r.exitCode !== 0);
+if (failed.length > 0) {
+  process.stdout.write(
+    `\n${failed.length} tool(s) reported issues: ${failed.map((r) => r.name).join(', ')}\n`,
+  );
+  process.stdout.write(`See ${reportPath} for details.\n`);
+}
+
+function renderTool(r: ToolResult): string {
+  const status = r.exitCode === 0 ? '✓ ok' : `✗ exit=${r.exitCode}`;
+  const out = r.stdout.length > 0 ? r.stdout : '(no stdout)';
+  const err = r.stderr.length > 0 ? `\n\n_stderr:_\n\n\`\`\`\n${truncate(r.stderr)}\n\`\`\`` : '';
+  return `## ${r.name} — ${status} (${(r.durationMs / 1000).toFixed(1)}s)\n\n\`\`\`\n${truncate(out)}\n\`\`\`${err}`;
+}
+
+function truncate(s: string): string {
+  const max = 30_000;
+  return s.length > max ? s.slice(0, max) + `\n... [truncated ${s.length - max} chars]` : s;
+}

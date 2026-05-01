@@ -3,12 +3,15 @@ import BaseLayout from '../layouts/BaseLayout.astro';
 import StatBlock from '../components/StatBlock.astro';
 import PullQuote from '../components/PullQuote.astro';
 import NewsletterEmbed from '../components/NewsletterEmbed.astro';
+import StructuredData from '../components/seo/StructuredData.astro';
+import { websiteSchema } from '../lib/structured-data';
 ---
 
 <BaseLayout
   title="Building the public-transit movement Las Vegas has never had"
   description="Las Vegans for Better Transit is the grassroots advocacy group fighting for world-class public transit and supportive land use in the Las Vegas Valley."
 >
+  <StructuredData slot="head" data={websiteSchema()} />
   {/* HERO */}
   <section class="container-page py-16 md:py-28">
     <p class="eyebrow">Las Vegans for Better Transit</p>

@@ -57,7 +57,7 @@ jobs:
       url: ${{ steps.deploy.outputs.url }}
     env:
       CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
     outputs:
       url: ${{ steps.deploy.outputs.url }}
     steps:
@@ -77,6 +77,51 @@ jobs:
           # is the source branch (only set on pull_request events); fine for our
           # same-repo gate.
           branch: ${{ github.head_ref }}
+
+  headers-check:
+    name: Verify response headers
+    needs: deploy
+    if: needs.deploy.outputs.url != ''
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Wait for Cloudflare propagation, then assert headers
+        env:
+          PREVIEW_URL: ${{ needs.deploy.outputs.url }}
+        run: |
+          set -euo pipefail
+          # Cloudflare's edge can lag a few seconds behind wrangler returning;
+          # retry up to 6×5s before failing so transient propagation doesn't
+          # mark good deploys as bad.
+          headers=""
+          for attempt in 1 2 3 4 5 6; do
+            if headers=$(curl -sI --max-time 10 "$PREVIEW_URL" 2>/dev/null) && [ -n "$headers" ]; then
+              break
+            fi
+            echo "attempt $attempt: no response yet, sleeping 5s..."
+            sleep 5
+          done
+          if [ -z "$headers" ]; then
+            echo "::error::Could not fetch headers from $PREVIEW_URL"
+            exit 1
+          fi
+          echo "$headers"
+          missing=()
+          for h in \
+            'Content-Security-Policy' \
+            'Strict-Transport-Security' \
+            'X-Content-Type-Options' \
+            'Referrer-Policy' \
+            'Permissions-Policy'; do
+            if ! printf '%s' "$headers" | grep -qi "^$h:"; then
+              missing+=("$h")
+            fi
+          done
+          if [ "${#missing[@]}" -gt 0 ]; then
+            echo "::error::Missing required response headers: ${missing[*]}"
+            echo "::error::Check public/_headers — Cloudflare Pages may not be applying it."
+            exit 1
+          fi
 
   comment:
     name: Comment preview URL on PR

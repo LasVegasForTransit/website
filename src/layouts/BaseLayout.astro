@@ -2,7 +2,9 @@
 import '../styles/global.css';
 import Header from '../components/site/Header.astro';
 import Footer from '../components/site/Footer.astro';
+import StructuredData from '../components/seo/StructuredData.astro';
 import { site } from '../lib/site';
+import { organizationSchema } from '../lib/structured-data';
 
 interface Props {
   title?: string;
@@ -42,8 +44,11 @@ const canonical = new URL(Astro.url.pathname, site.url).toString();
     <meta name="twitter:card" content="summary_large_image" />
     {noindex && <meta name="robots" content="noindex,nofollow" />}
     <link rel="sitemap" href="/sitemap-index.xml" />
+    <StructuredData data={organizationSchema()} />
+    <slot name="head" />
   </head>
   <body class="min-h-screen flex flex-col">
+    <a href="#main" class="skip-link">Skip to content</a>
     <Header />
     <main id="main" class="flex-1">
       <slot />

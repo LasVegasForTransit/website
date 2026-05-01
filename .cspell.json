@@ -1,0 +1,25 @@
+{
+  "version": "0.2",
+  "language": "en",
+  "files": ["src/**/*.{md,mdx,astro}", "docs/**/*.md", "README.md"],
+  "ignorePaths": ["node_modules", "dist", ".astro", ".lvbt", ".wrangler", "tests/snapshots"],
+  "words": [
+    "Astro",
+    "beehiiv",
+    "Bluesky",
+    "givebutter",
+    "Lvbt",
+    "LVBT",
+    "Vegans",
+    "RTC",
+    "tnum",
+    "lnum",
+    "lvbt",
+    "Tailwind",
+    "MDX",
+    "JSON-LD",
+    "schema.org",
+    "Cloudflare",
+    "pnpm"
+  ]
+}
