@@ -26,7 +26,9 @@ const canonical = new URL(Astro.url.pathname, site.url).toString();
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <script is:inline>document.documentElement.classList.add('reveal-ready');</script>
+    <script is:inline>
+      document.documentElement.classList.add('reveal-ready');
+    </script>
     <meta name="viewport" content="width=device-width,initial-scale=1" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="canonical" href={canonical} />
