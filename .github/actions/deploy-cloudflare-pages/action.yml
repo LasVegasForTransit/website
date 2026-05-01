@@ -32,17 +32,20 @@ runs:
         name: dist-${{ github.sha }}
         path: dist/
 
+    # Job-level `env:` (set by the calling workflow) propagates into composite
+    # steps automatically. We deliberately do NOT re-export it here — the
+    # `${{ env.X }}` lookup in a composite step's env block doesn't see the
+    # caller's job env at evaluation time, so re-exporting overwrites the
+    # inherited value with empty.
     - name: Deploy
       id: deploy
       shell: bash
-      env:
-        # Re-export from the caller's env so wrangler picks them up. Composite
-        # actions inherit the caller's env automatically, but this makes the
-        # contract explicit.
-        CLOUDFLARE_API_TOKEN: ${{ env.CLOUDFLARE_API_TOKEN }}
-        CLOUDFLARE_ACCOUNT_ID: ${{ env.CLOUDFLARE_ACCOUNT_ID }}
       run: |
         set -euo pipefail
+        if [ -z "${CLOUDFLARE_API_TOKEN:-}" ] || [ -z "${CLOUDFLARE_ACCOUNT_ID:-}" ]; then
+          echo "::error::CLOUDFLARE_API_TOKEN / CLOUDFLARE_ACCOUNT_ID not set on the calling job's env block."
+          exit 1
+        fi
         out=$(pnpm exec wrangler pages deploy dist \
           --project-name='${{ inputs.project-name }}' \
           --branch='${{ inputs.branch }}' \
