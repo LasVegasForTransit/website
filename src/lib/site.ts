@@ -31,9 +31,9 @@ export const site = {
   },
   org: {
     legalName: 'Las Vegans for Better Transit',
-    state: 'Nevada',
+    // TODO: update to full PO box mailing address once secured.
+    address: 'Las\u00A0Vegas, Nevada',
     ein: '42-1995935',
-    taxExemptStatus: '501(c)(3) in progress',
     founded: 'April 17, 2026',
   },
 } as const;
