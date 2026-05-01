@@ -149,7 +149,6 @@ async function runPhaseById(
   if (!os) {
     log.error('Unsupported OS. LVBT bootstrap requires macOS or Linux.');
     process.exit(1);
-    throw new Error('unreachable');
   }
 
   switch (phaseId) {

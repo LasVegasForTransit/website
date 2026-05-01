@@ -3,13 +3,12 @@ interface Props {
   href: string;
   title: string;
   date: Date;
-  endDate?: Date;
   location: string;
   summary: string;
   featured?: boolean;
 }
 
-const { href, title, date, endDate, location, summary, featured = false } = Astro.props;
+const { href, title, date, location, summary, featured = false } = Astro.props;
 
 const dateLabel = new Intl.DateTimeFormat('en-US', {
   weekday: 'short',
