@@ -2,7 +2,7 @@ name: Build site
 description: >
   Run the canonical validation chain (typecheck, lint:check, check:docs) and
   build the static site to ./dist. Uploads the build as an artifact named
-  `dist-${{ github.sha }}` for downstream deploy jobs to download.
+  dist-<sha> for downstream deploy jobs to download.
 
   Assumes `setup-node-pnpm` has already run in the same job.
 
