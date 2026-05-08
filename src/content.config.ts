@@ -36,6 +36,19 @@ const projects = defineCollection({
     startDate: z.coerce.date(),
     endDate: z.coerce.date().optional(),
     order: z.number().optional(),
+    // Per-goal status so the public roadmap reads as live commitments, not
+    // static aspiration. Three statuses, one optional target date. Keep it
+    // simple — this is a public tracker, not a project-management system.
+    // Render via src/components/ProjectGoals.astro.
+    goals: z
+      .array(
+        z.object({
+          text: z.string(),
+          status: z.enum(['planned', 'in-progress', 'done']).default('planned'),
+          target: z.coerce.date().optional(),
+        }),
+      )
+      .default([]),
   }),
 });
 

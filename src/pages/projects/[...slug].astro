@@ -2,6 +2,7 @@
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import StatusPill from '../../components/StatusPill.astro';
 import InitiativeChip from '../../components/InitiativeChip.astro';
+import ProjectGoals from '../../components/ProjectGoals.astro';
 import { getCollection, render } from 'astro:content';
 
 export async function getStaticPaths() {
@@ -22,42 +23,60 @@ const dateFmt = new Intl.DateTimeFormat('en-US', {
   year: 'numeric',
 });
 
+const today = new Date();
+
 const startLabel = dateFmt.format(project.data.startDate);
+const startEyebrow = project.data.startDate <= today ? 'Started' : 'Starts';
+
 const endLabel = project.data.endDate ? dateFmt.format(project.data.endDate) : null;
+const endEyebrow =
+  project.data.endDate && project.data.endDate <= today ? 'Wrapped' : 'Wraps';
+
+// Default contact role; used to plural-ize the section eyebrow and to
+// suppress the redundant role subtitle on a contact whose role matches.
+const LEAD_ROLE = 'Project lead';
+const leadsEyebrow =
+  project.data.contacts.length > 1 ? `${LEAD_ROLE}s` : LEAD_ROLE;
 ---
 
 <BaseLayout title={project.data.title} description={project.data.tldr}>
-  <header class="container-page pt-20 pb-8 md:pt-28">
+  <header class="container-page pt-6 pb-6 md:pt-10">
     <p class="eyebrow">
       <a href="/projects" class="no-underline hover:underline">← All projects</a>
     </p>
-    <div class="mt-6 flex flex-wrap items-center gap-3">
-      <StatusPill status={project.data.status} />
+    <h1 class="text-display-md mt-7">{project.data.title}</h1>
+    <p class="lede mt-5 max-w-3xl">{project.data.tldr}</p>
+    <div class="mt-6 flex flex-wrap items-center gap-2">
       {
         project.data.initiatives.map((slug: string) => (
           <InitiativeChip title={initiativesById.get(slug)?.data.title ?? slug} />
         ))
       }
     </div>
-    <h1 class="text-display-lg mt-6">{project.data.title}</h1>
-    <p class="lede mt-6 max-w-3xl">{project.data.tldr}</p>
   </header>
 
   <hr class="rule-thick container-page" />
 
-  <div class="container-page py-12 grid gap-12 md:grid-cols-[2fr_1fr]">
+  <div class="container-page pt-8 pb-16 grid gap-12 md:grid-cols-[2fr_1fr]">
     <article class="prose-doc max-w-none">
       <Content />
+      <ProjectGoals goals={project.data.goals} />
     </article>
 
     <aside class="md:border-l md:pl-10 md:border-rule/20 space-y-8">
       <div>
-        <p class="eyebrow">Started</p>
+        <p class="eyebrow">Status</p>
+        <div class="mt-2">
+          <StatusPill status={project.data.status} />
+        </div>
+      </div>
+      <div>
+        <p class="eyebrow">{startEyebrow}</p>
         <p class="mt-2 text-lg font-semibold">{startLabel}</p>
         {
           endLabel && (
             <>
-              <p class="eyebrow mt-4">Wrapped</p>
+              <p class="eyebrow mt-4">{endEyebrow}</p>
               <p class="mt-2 text-lg font-semibold">{endLabel}</p>
             </>
           )
@@ -66,12 +85,14 @@ const endLabel = project.data.endDate ? dateFmt.format(project.data.endDate) : n
       {
         project.data.contacts.length > 0 && (
           <div>
-            <p class="eyebrow">Project leads</p>
+            <p class="eyebrow">{leadsEyebrow}</p>
             <ul class="mt-2 space-y-2">
               {project.data.contacts.map((c: { name: string; role: string }) => (
                 <li>
                   <p class="font-semibold">{c.name}</p>
-                  <p class="text-sm text-mute">{c.role}</p>
+                  {c.role.toLowerCase() !== LEAD_ROLE.toLowerCase() && (
+                    <p class="text-sm text-mute">{c.role}</p>
+                  )}
                 </li>
               ))}
             </ul>
