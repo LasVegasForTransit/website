@@ -151,20 +151,26 @@
 
   .skip-link {
     position: absolute;
-    top: 0.5rem;
-    left: 0.5rem;
+    top: 5rem; /* sits below the top app bar instead of overlapping the logo */
+    left: 50%;
     z-index: 100;
     background: var(--color-ink);
     color: var(--color-paper);
-    padding: 0.625rem 1rem;
+    padding: 0.625rem 1.25rem;
     font-weight: 700;
     text-decoration: none;
-    transform: translateY(-150%);
-    transition: transform 150ms cubic-bezier(0, 0, 0.2, 1);
+    transform: translate(-50%, -0.5rem);
+    opacity: 0;
+    pointer-events: none;
+    transition:
+      opacity 150ms,
+      transform 150ms cubic-bezier(0, 0, 0.2, 1);
   }
   .skip-link:focus,
   .skip-link:focus-visible {
-    transform: translateY(0);
+    transform: translate(-50%, 0);
+    opacity: 1;
+    pointer-events: auto;
   }
 
   @media (prefers-reduced-motion: reduce) {
@@ -250,7 +256,17 @@
     text-wrap: pretty;
   }
 
-  .prose-doc :is(p, ul, ol, blockquote) + :is(p, ul, ol, blockquote, h2, h3) {
+  /* The first thing in a prose-doc article has its top margin stripped so
+     it lines up with the top of any sibling column (e.g., the project
+     detail aside). The container is responsible for the visual gap above. */
+  .prose-doc > :first-child {
+    margin-top: 0;
+  }
+
+  /* Body content adjacency — only between text-block siblings. Headings get
+     their own uniform rem-based margin (below) so they look the same
+     wherever they land in the document. */
+  .prose-doc :is(p, ul, ol, blockquote) + :is(p, ul, ol, blockquote) {
     margin-top: 1.25em;
   }
 
@@ -259,7 +275,7 @@
     line-height: var(--text-headline-lg--line-height);
     letter-spacing: var(--text-headline-lg--letter-spacing);
     font-weight: var(--text-headline-lg--font-weight);
-    margin-top: 2.5em;
+    margin-top: 2rem;
     margin-bottom: 0.5em;
   }
 
@@ -268,8 +284,38 @@
     line-height: var(--text-headline-sm--line-height);
     letter-spacing: var(--text-headline-sm--letter-spacing);
     font-weight: var(--text-headline-sm--font-weight);
-    margin-top: 2em;
+    margin-top: 1.5rem;
     margin-bottom: 0.25em;
+  }
+
+  /* List markers — Tailwind preflight strips these by default. Without these
+     rules every bullet list in a project body or doc page renders flat. */
+  .prose-doc ul {
+    list-style-type: disc;
+    padding-inline-start: 1.5rem;
+  }
+
+  .prose-doc ol {
+    list-style-type: decimal;
+    padding-inline-start: 1.5rem;
+  }
+
+  .prose-doc li {
+    margin-block: 0.35em;
+  }
+
+  .prose-doc li::marker {
+    color: var(--color-mute);
+  }
+
+  .prose-doc li > p {
+    margin: 0;
+  }
+
+  .prose-doc ul ul,
+  .prose-doc ol ul {
+    list-style-type: circle;
+    margin-block: 0.4em;
   }
 
   .prose-doc a {
