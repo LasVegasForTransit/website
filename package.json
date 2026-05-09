@@ -7,8 +7,7 @@
   },
   "packageManager": "pnpm@10.33.0",
   "scripts": {
-    "dev": "portless run astro dev",
-    "dev:full": "astro build && wrangler pages dev --port 4322",
+    "dev": "wrangler pages dev --port 4321 --proxy 4320 -- astro dev --port 4320",
     "build": "astro build",
     "preview": "astro preview",
     "astro": "astro",
