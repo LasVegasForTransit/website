@@ -25,10 +25,6 @@ export const site = {
     label: 'Donate',
     url: pick('PUBLIC_LVBT_DONATE_URL', 'https://givebutter.com/lvbt'),
   },
-  newsletter: {
-    provider: 'beehiiv' as const,
-    embedUrl: pick('PUBLIC_LVBT_BEEHIIV_EMBED_URL', 'https://embeds.beehiiv.com/PLACEHOLDER'),
-  },
   org: {
     legalName: 'Las Vegans for Better Transit',
     // TODO: update to full PO box mailing address once secured.
@@ -43,6 +39,5 @@ export const navMain = [
   { href: '/vision', label: 'Vision' },
   { href: '/projects', label: 'Projects' },
   { href: '/events', label: 'Events' },
-  { href: '/join', label: 'Get involved' },
   { href: '/contact', label: 'Contact' },
 ] as const;
