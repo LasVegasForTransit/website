@@ -11,13 +11,18 @@ interface Env {
   LVBT_BEEHIIV_PUBLICATION_ID: string;
 }
 
+interface SubscribeBody {
+  email?: string;
+  name?: string;
+}
+
 export const onRequestPost: PagesFunction<Env> = async (context) => {
   const headers = {
     "Content-Type": "application/json",
     "Access-Control-Allow-Origin": "https://lasvegasfortransit.org",
   };
 
-  let body: { email?: string; name?: string };
+  let body: SubscribeBody;
   try {
     body = await context.request.json();
   } catch {

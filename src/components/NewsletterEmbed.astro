@@ -49,6 +49,11 @@ const { variant = 'light' } = Astro.props;
 </div>
 
 <script>
+  interface SubscribeResponse {
+    success?: boolean;
+    error?: string;
+  }
+
   const form = document.querySelector<HTMLFormElement>('[data-newsletter-form]');
   if (form) {
     const btn = form.querySelector<HTMLButtonElement>('[data-submit-btn]');
@@ -71,7 +76,7 @@ const { variant = 'light' } = Astro.props;
           body: JSON.stringify({ email }),
         });
 
-        const data = await res.json() as { success?: boolean; error?: string };
+        const data = await res.json() as SubscribeResponse;
 
         if (data.success) {
           form.reset();
