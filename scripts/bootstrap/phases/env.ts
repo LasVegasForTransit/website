@@ -17,16 +17,23 @@ interface EnvKeyConfig {
 }
 
 const PROMPTED_KEYS: Record<string, EnvKeyConfig> = {
-  PUBLIC_LVBT_BEEHIIV_EMBED_URL: {
-    prompt: 'Beehiiv newsletter embed URL',
-    hint: 'In Beehiiv: Settings → Embed Form → copy the iframe `src=` URL.',
-    example: 'https://embeds.beehiiv.com/<id>',
-    placeholderTokens: ['PLACEHOLDER'],
+  LVBT_BEEHIIV_API_KEY: {
+    prompt: 'Beehiiv API key',
+    hint: 'In Beehiiv: Settings → API → create a key scoped to Subscribers (write). Server-side only — never baked into HTML.',
+    example: 'sk_live_...',
+    placeholderTokens: [],
     required: false,
     validate: (v) =>
-      v && !v.startsWith('https://embeds.beehiiv.com/')
-        ? 'Expected a https://embeds.beehiiv.com/... URL.'
-        : undefined,
+      v && v.length < 20 ? 'That looks too short to be a valid API key.' : undefined,
+  },
+  LVBT_BEEHIIV_PUBLICATION_ID: {
+    prompt: 'Beehiiv publication ID',
+    hint: 'In Beehiiv: Settings → Publication → copy the ID (starts with pub_).',
+    example: 'pub_xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx',
+    placeholderTokens: ['pub_PLACEHOLDER'],
+    required: false,
+    validate: (v) =>
+      v && !v.startsWith('pub_') ? 'Expected a pub_... ID from the Beehiiv dashboard.' : undefined,
   },
   PUBLIC_LVBT_DONATE_URL: {
     prompt: 'Donation URL',
@@ -156,20 +163,37 @@ export async function runEnvPhase(
   }
 
   // Step 5: only ask about Cloudflare Pages env sync if something actually changed
-  if (updates.size > 0) {
-    const cap = state.capabilities['deploy-wrangler'];
-    if (cap?.status === 'ready' && cap.authStatus === 'ready') {
-      const sync = await promptConfirm(
-        'These vars get baked at build time. Add a follow-up reminder to push them to Cloudflare Pages too?',
-        true,
-      );
-      if (sync) {
-        followUpItems.push({
-          kind: 'remote',
-          message:
-            'Run `wrangler pages secret put <KEY> --project-name=<your-project>` for each PUBLIC_LVBT_* var, then redeploy so the new values bake in.',
-        });
-      }
+  const cap = state.capabilities['deploy-wrangler'];
+  if (updates.size === 0 || cap?.status !== 'ready' || cap.authStatus !== 'ready') {
+    return { success: true, followUpItems };
+  }
+
+  let hasPublicVars = false;
+  let hasSecretVars = false;
+  for (const k of updates.keys()) {
+    if (k.startsWith('PUBLIC_')) hasPublicVars = true;
+    else hasSecretVars = true;
+    if (hasPublicVars && hasSecretVars) break;
+  }
+
+  const lines: string[] = [];
+  if (hasSecretVars) {
+    lines.push(
+      'For LVBT_BEEHIIV_* vars: add them as Secrets in Cloudflare Pages → Settings → Environment Variables (type: Secret, both Production and Preview environments).',
+    );
+  }
+  if (hasPublicVars) {
+    lines.push(
+      'For PUBLIC_LVBT_* vars: run `wrangler pages secret put <KEY> --project-name=lvbt-website`, then redeploy so the new values bake into the static HTML.',
+    );
+  }
+  if (lines.length > 0) {
+    const sync = await promptConfirm(
+      'Add a follow-up reminder to sync these vars to Cloudflare Pages?',
+      true,
+    );
+    if (sync) {
+      followUpItems.push({ kind: 'remote', message: lines.join(' ') });
     }
   }
 

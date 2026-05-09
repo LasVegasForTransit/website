@@ -11,6 +11,11 @@ import { validatePagesProjectName, validateGitBranch } from '../lib/validators.j
 import { DEFAULT_PAGES_PROJECT, DEFAULT_PRODUCTION_BRANCH } from '../lib/defaults.js';
 import { CF_ERROR } from '../lib/cloudflare-api.js';
 
+interface PagesSecret {
+  key: string;
+  label: string;
+}
+
 export async function runDeployPhase(
   projectRoot: string,
   doctorMode: boolean,
@@ -167,6 +172,38 @@ export async function runDeployPhase(
   liveUrl = liveUrl ?? readLastDeploymentUrl(projectName);
   deployLog.success(
     liveUrl ? `Deployed to ${pc.cyan(liveUrl)}` : `Deployed to ${pc.cyan(projectName)}.`,
+  );
+
+  // Pages Functions secrets are runtime-only — never baked into static HTML,
+  // so they must be pushed separately from the deploy itself.
+  const PAGES_SECRETS: PagesSecret[] = [
+    { key: 'LVBT_BEEHIIV_API_KEY', label: 'Beehiiv API key' },
+    { key: 'LVBT_BEEHIIV_PUBLICATION_ID', label: 'Beehiiv publication ID' },
+  ];
+  await Promise.all(
+    PAGES_SECRETS.map(async ({ key, label }) => {
+      const value = process.env[key]?.trim();
+      if (!value) {
+        log.warn(`${label} not set in .env.local — skipping secret upload.`);
+        followUpItems.push({
+          kind: 'remote',
+          message: `Add ${key} as a Secret in Cloudflare Pages → Settings → Environment Variables, then redeploy.`,
+        });
+        return;
+      }
+      const secretResult = await runStreamingCommand(
+        `printf '%s' ${shellEscape(value)} | wrangler pages secret put ${shellEscape(key)} --project-name=${shellEscape(projectName)}`,
+      );
+      if (secretResult.ok) {
+        log.success(`Uploaded secret ${pc.cyan(key)}`);
+      } else {
+        log.warn(`Could not upload ${pc.cyan(key)} — add it manually in Cloudflare Pages.`);
+        followUpItems.push({
+          kind: 'remote',
+          message: `Run: printf '%s' "<value>" | wrangler pages secret put ${key} --project-name=${projectName}`,
+        });
+      }
+    }),
   );
 
   // Persist resolved values so domain phase + future runs reuse them.
