@@ -34,12 +34,16 @@ const initiativesById = new Map(initiatives.map((i) => [i.id, i]));
   <section class="container-page py-12">
     <p class="eyebrow">Initiatives</p>
     <div class="mt-4 flex flex-wrap gap-3">
-      {initiatives.map((i) => <InitiativeChip title={i.data.title} />)}
+      {
+        initiatives.map((i) => (
+          <InitiativeChip title={i.data.title} href={`/projects/initiative/${i.id}`} />
+        ))
+      }
     </div>
   </section>
 
   <section class="container-page pb-20 md:pb-28">
-    <div class="grid gap-6 md:grid-cols-2">
+    <div class="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
       {
         sorted.map((project) => (
           <ProjectCard
