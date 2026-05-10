@@ -38,23 +38,22 @@ const path = Astro.url.pathname;
       </ul>
     </nav>
     <a
-      href="/join"
+      href="/go"
       class="press hidden md:inline-flex items-center bg-ink text-paper px-4 py-2 text-sm font-bold no-underline hover:bg-accent"
     >
       Get involved →
     </a>
-    <a href="/join" class="md:hidden text-sm font-bold underline">Join →</a>
+    <a href="/go" class="md:hidden text-sm font-bold underline">Join →</a>
   </div>
 </header>
 
-<script is:inline>
-  (() => {
-    const sentinel = document.querySelector('[data-header-sentinel]');
-    const header = document.querySelector('[data-site-header]');
-    if (!sentinel || !header) return;
-    new IntersectionObserver(([entry]) => {
-      if (entry.isIntersecting) delete header.dataset.stuck;
-      else header.dataset.stuck = '';
-    }).observe(sentinel);
-  })();
-</script>
+{
+  /* Sourced from public/scripts/ rather than written inline because the
+     site's CSP is `script-src 'self'` (see public/_headers) — an inline
+     observer here would silently fail in production, leaving the header
+     without its bottom border on scroll and breaking the vision page's
+     transparent→cream color flip. Astro inlines short hoisted <script>
+     tags too, so going through public/ is the only reliable way to keep
+     the script same-origin and CSP-allowed. */
+}
+<script is:inline src="/scripts/header-stuck.js" defer></script>
