@@ -27,14 +27,25 @@ Task-oriented recipes for things you'll do repeatedly. (Diátaxis calls these "h
 
 Information you look up, not read.
 
+- [Local development](./reference/local-dev.md) — dev server ports, troubleshooting
 - [Content collections](./reference/content-collections.md) — schemas, folder layout, Zod
 - [Bootstrap CLI](./reference/bootstrap.md) — phases, flags, state file
 - [Deployment pipeline](./reference/deployment-pipeline.md) — how code gets from `git push` to lasvegasfortransit.org
 - [Key facts](./reference/key-facts.md) — verified numbers used across copy
+- [Newsletter operations](./reference/newsletter-ops.md) — Ghost(Pro) workflow, deliverability, send checklist
 
 ## Explanation
 
 The why behind decisions and conventions.
 
 - [Voice and tone](./explanation/voice-and-tone.md) — editorial north star
+- [Comms strategy](./explanation/comms-strategy.md) — surfaces, audiences, ladder of engagement, innovation pillars
+- [Innovation ideas registry](./explanation/innovation-ideas.md) — running list of tools, content formats, and media to consider
 - [Design decisions](./explanation/design-decisions.md) — load-bearing choices that look weird at first
+
+### Decision records
+
+Why we picked what we picked, and the alternatives considered.
+
+- [Newsletter platform](./explanation/decisions/newsletter-platform.md) — Ghost(Pro) over Substack/Beehiiv/email-only ESPs
+- [Staff publishing](./explanation/decisions/staff-publishing.md) — CMS deferred until 2nd contributor; criteria when the time comes

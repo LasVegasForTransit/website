@@ -56,5 +56,9 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
     return Response.json({ error: "subscription_failed" }, { status: 502, headers });
   }
 
+  // Workers runtime holds the TCP connection open until the body is consumed
+  // or cancelled; abandoning it silently exhausts the connection pool.
+  await beehiivRes.body?.cancel();
+
   return Response.json({ success: true }, { status: 200, headers });
 };

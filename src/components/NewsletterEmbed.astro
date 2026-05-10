@@ -54,10 +54,12 @@ const { variant = 'light' } = Astro.props;
     error?: string;
   }
 
-  const form = document.querySelector<HTMLFormElement>('[data-newsletter-form]');
-  if (form) {
+  // querySelectorAll so multiple instances on the same page each get a listener.
+  // Astro deduplicates identical <script> blocks — a single querySelector would
+  // silently bind only the first form and leave any others dead.
+  document.querySelectorAll<HTMLFormElement>('[data-newsletter-form]').forEach((form) => {
     const btn = form.querySelector<HTMLButtonElement>('[data-submit-btn]');
-    const status = document.getElementById('newsletter-status');
+    const status = form.querySelector<HTMLElement>('[data-form-status]');
 
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
@@ -81,9 +83,9 @@ const { variant = 'light' } = Astro.props;
         if (data.success) {
           form.reset();
           if (btn) btn.textContent = 'Done ✓';
-          if (status) status.textContent = "You’re subscribed. Check your inbox for a confirmation.";
+          if (status) status.textContent = "You're subscribed. Check your inbox for a confirmation.";
         } else if (data.error === 'invalid_email') {
-          if (status) status.textContent = "That doesn’t look like a valid email address.";
+          if (status) status.textContent = "That doesn't look like a valid email address.";
           if (btn) {
             btn.disabled = false;
             btn.textContent = 'Subscribe';
@@ -103,5 +105,5 @@ const { variant = 'light' } = Astro.props;
         }
       }
     });
-  }
+  });
 </script>
