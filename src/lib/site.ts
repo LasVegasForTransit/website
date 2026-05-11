@@ -19,6 +19,7 @@ export const site = {
   },
   social: {
     instagram: pick('PUBLIC_LVBT_INSTAGRAM', 'https://instagram.com/lasvegasfortransit'),
+    linkedin: pick('PUBLIC_LVBT_LINKEDIN', 'https://www.linkedin.com/company/lasvegasfortransit/'),
     bluesky: pick('PUBLIC_LVBT_BLUESKY', 'https://bsky.app/profile/lasvegasfortransit.org'),
   },
   donate: {

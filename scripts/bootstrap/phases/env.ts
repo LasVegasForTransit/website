@@ -50,6 +50,12 @@ const PROMPTED_KEYS: Record<string, EnvKeyConfig> = {
     example: 'https://instagram.com/lasvegasfortransit',
     required: false,
   },
+  PUBLIC_LVBT_LINKEDIN: {
+    prompt: 'LinkedIn organization URL',
+    hint: 'Full URL to the LVBT LinkedIn organization page.',
+    example: 'https://www.linkedin.com/company/lasvegasfortransit/',
+    required: false,
+  },
   PUBLIC_LVBT_BLUESKY: {
     prompt: 'Bluesky profile URL',
     hint: 'Full URL to the LVBT Bluesky profile.',
