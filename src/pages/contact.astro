@@ -14,7 +14,7 @@ const { Content } = await render(contactPage);
   <header class="container-page pt-20 pb-12 md:pt-28 md:pb-16">
     <SectionHeader
       title="Talk to us."
-      lede="Las Vegans for Better Transit is always open to hearing from residents, business owners, electeds, and journalists."
+      lede="We're an all-volunteer team. Every message reaches a real person — and we write back."
     />
   </header>
   <hr class="rule-thick container-page" />
@@ -28,20 +28,29 @@ const { Content } = await render(contactPage);
       <h2 class="text-title-md">Direct contact</h2>
       <ul class="mt-6 space-y-6">
         <li>
-          <p class="eyebrow">General</p>
-          <a href={`mailto:${site.email.general}`} class="block mt-1 text-lg font-bold underline">
+          <p class="eyebrow">Say hello</p>
+          <a
+            href={`mailto:${site.email.general}`}
+            class="contact-link block mt-1 text-lg font-bold underline"
+          >
             {site.email.general}
           </a>
         </li>
         <li>
-          <p class="eyebrow">Press</p>
-          <a href={`mailto:${site.email.press}`} class="block mt-1 text-lg font-bold underline">
+          <p class="eyebrow">Media</p>
+          <a
+            href={`mailto:${site.email.press}`}
+            class="contact-link block mt-1 text-lg font-bold underline"
+          >
             {site.email.press}
           </a>
         </li>
         <li>
-          <p class="eyebrow">Partnerships</p>
-          <a href={`mailto:${site.email.partners}`} class="block mt-1 text-lg font-bold underline">
+          <p class="eyebrow">Work together</p>
+          <a
+            href={`mailto:${site.email.partners}`}
+            class="contact-link block mt-1 text-lg font-bold underline"
+          >
             {site.email.partners}
           </a>
         </li>
@@ -49,8 +58,9 @@ const { Content } = await render(contactPage);
 
       <h2 class="text-title-md mt-10">Follow us</h2>
       <ul class="mt-4 space-y-2 text-sm font-semibold">
-        <li><a href={site.social.instagram} rel="noopener">Instagram →</a></li>
-        <li><a href={site.social.bluesky} rel="noopener">Bluesky →</a></li>
+        <li><a href={site.social.instagram} rel="noopener" class="contact-link">Instagram →</a></li>
+        <li><a href={site.social.linkedin} rel="noopener" class="contact-link">LinkedIn →</a></li>
+        <li><a href={site.social.bluesky} rel="noopener" class="contact-link">Bluesky →</a></li>
       </ul>
     </aside>
   </section>
