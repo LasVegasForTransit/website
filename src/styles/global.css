@@ -93,9 +93,26 @@
   --text-label-sm--font-weight: 600;
 }
 
+/* Typed custom property that powers smooth shadow interpolation on `.lift`.
+   Without @property a raw custom property has no declared type, so the
+   engine can only swap it discretely. Declared as a <number> it animates
+   linearly between hover and rest. */
+@property --lift-shadow-strength {
+  syntax: '<number>';
+  inherits: false;
+  initial-value: 0;
+}
+
 @layer base {
   :root {
     color-scheme: light;
+    /* Brand-paint native form controls (checkbox, radio, range, progress)
+       site-wide without per-component overrides. Universally supported. */
+    accent-color: var(--color-accent);
+    /* Permit transitioning to/from keyword lengths (`height: auto`, etc.)
+       for any future disclosure/accordion patterns. No-op in browsers
+       that don't yet support it. */
+    interpolate-size: allow-keywords;
     font-feature-settings:
       'tnum' 0,
       'cv11' 1;
@@ -183,17 +200,51 @@
       scroll-behavior: auto !important;
     }
   }
+
+  /* Modern engines (Chrome 115+, Safari 18+) drive the sticky header's
+     stuck-state visuals directly from root scroll position — no JS round
+     trip. This block applies the same backdrop blur and hairline rule
+     that the sentinel IntersectionObserver in Header.astro installs via
+     the [data-stuck] attribute. The JS path stays as the fallback for
+     browsers without scroll-driven animations AND as the source of
+     truth for the [data-stuck] attribute, which other styles may gate
+     behavior on. Both paths apply the same final values, so co-running
+     them in supporting browsers is idempotent. */
+  @supports (animation-timeline: scroll()) {
+    [data-site-header] {
+      animation: site-header-stuck linear both;
+      animation-timeline: scroll(root);
+      animation-range: 0 1px;
+    }
+    @keyframes site-header-stuck {
+      to {
+        backdrop-filter: blur(12px) saturate(1.5);
+        border-bottom-color: color-mix(in srgb, var(--color-rule) 15%, transparent);
+      }
+    }
+  }
 }
 
 @layer components {
   .lift {
-    transition-property: transform, box-shadow, background-color, color, border-color;
+    /* Always render the shadow shape; modulate its opacity via the typed
+       --lift-shadow-strength custom property so hover/rest interpolates
+       smoothly instead of snapping in and out. The mix mirrors
+       --shadow-lift at full strength. */
+    --lift-shadow-strength: 0;
+    box-shadow: 0 12px 30px -16px
+      color-mix(
+        in srgb,
+        var(--color-ink) calc(var(--lift-shadow-strength) * 25%),
+        transparent
+      );
+    transition-property: transform, --lift-shadow-strength, background-color, color, border-color;
     transition-duration: 200ms;
     transition-timing-function: cubic-bezier(0, 0, 0.2, 1);
   }
   .lift:hover {
     transform: translateY(-2px);
-    box-shadow: var(--shadow-lift);
+    --lift-shadow-strength: 1;
   }
   .lift:active {
     transform: translateY(0);
