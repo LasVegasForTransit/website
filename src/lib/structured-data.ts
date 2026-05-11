@@ -9,9 +9,9 @@ export function organizationSchema(): JsonLd {
     name: site.name,
     alternateName: site.shortName,
     url: site.url,
-    logo: new URL('/og-default.png', site.url).toString(),
+    logo: new URL('/logo.png', site.url).toString(),
     email: site.email.general,
-    sameAs: [site.social.instagram, site.social.bluesky],
+    sameAs: [site.social.instagram, site.social.linkedin, site.social.bluesky],
     foundingDate: '2026-04-17',
     foundingLocation: {
       '@type': 'Place',

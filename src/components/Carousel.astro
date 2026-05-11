@@ -6,12 +6,26 @@ interface Props {
 const { title, eyebrow } = Astro.props;
 ---
 
-<section class="container-page py-12">
-  {eyebrow && <p class="eyebrow">{eyebrow}</p>}
-  <h2 class="text-headline-lg mt-2 mb-8">{title}</h2>
-  <div class="-mx-5 md:mx-0 overflow-x-auto pb-4">
-    <div class="flex gap-5 px-5 md:px-0 snap-x snap-mandatory">
+<section class="py-12">
+  <div class="container-page">
+    {eyebrow && <p class="eyebrow">{eyebrow}</p>}
+    <h2 class="text-headline-lg mt-2 mb-8">{title}</h2>
+  </div>
+  <div class="carousel-scroll overflow-x-auto pb-4">
+    <div class="carousel-track flex gap-5 snap-x snap-mandatory">
       <slot />
     </div>
   </div>
 </section>
+
+<style>
+  /* Edge-to-edge scroll: cards start aligned with container-page's left content
+     edge, can pan into the page gutter when scrolled. Math mirrors
+     .container-page (max-width 80rem, padding-inline 1.25rem, centered). */
+  .carousel-track {
+    padding-inline: max(1.25rem, calc((100vw - 80rem) / 2 + 1.25rem));
+  }
+  .carousel-scroll {
+    scroll-padding-left: max(1.25rem, calc((100vw - 80rem) / 2 + 1.25rem));
+  }
+</style>
