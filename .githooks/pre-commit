@@ -1,6 +1,6 @@
 #!/usr/bin/env sh
-# Pre-commit checks. Each block runs only when the staged change touches
-# files it cares about. Add new checks below; keep them small and conditional.
+# Pre-commit checks. Each block runs only when the staged change touches files
+# it cares about. Add new checks below; keep them small and conditional.
 
 set -e
 
@@ -8,19 +8,57 @@ cd "$(git rev-parse --show-toplevel)"
 
 STAGED="$(git diff --cached --name-only --diff-filter=ACMR)"
 
+if [ -z "$STAGED" ]; then
+  exit 0
+fi
+
+# ----------------------------------------------------------------------------
+# Prettier via lint-staged. Auto-formats staged files in place and re-stages
+# them. Runs first so subsequent checks see the formatted output.
+# ----------------------------------------------------------------------------
+if ! NODE_OPTIONS="--max-old-space-size=4096" pnpm --silent exec lint-staged; then
+  printf '\n❌ Commit blocked: lint-staged failed. Fix the issues above and re-stage.\n\n' >&2
+  exit 1
+fi
+
+# ----------------------------------------------------------------------------
+# Shellcheck on staged .sh files. Soft-skip if shellcheck is not installed.
+# ----------------------------------------------------------------------------
+if printf '%s\n' "$STAGED" | grep -qE '\.sh$'; then
+  if command -v shellcheck >/dev/null 2>&1; then
+    sh_failed=0
+    printf '%s\n' "$STAGED" | grep -E '\.sh$' | while IFS= read -r file; do
+      [ -f "$file" ] || continue
+      shellcheck --severity=warning "$file" || sh_failed=1
+    done
+    if [ "$sh_failed" -ne 0 ]; then
+      printf '\n❌ Commit blocked: shellcheck warnings in staged scripts.\n\n' >&2
+      exit 1
+    fi
+  else
+    printf 'warn: shellcheck not installed; skipping shell-script lint.\n' >&2
+  fi
+fi
+
+# ----------------------------------------------------------------------------
 # Markdown / MDX / Astro link validation
+# ----------------------------------------------------------------------------
 if printf '%s\n' "$STAGED" | grep -qiE '\.(md|mdx|astro)$'; then
   pnpm --silent check:docs
 fi
 
+# ----------------------------------------------------------------------------
 # TypeScript typecheck (single canonical script — astro + scripts together)
+# ----------------------------------------------------------------------------
 if printf '%s\n' "$STAGED" | grep -qE '\.(ts|tsx|astro)$|^scripts/'; then
   pnpm --silent typecheck
 fi
 
+# ----------------------------------------------------------------------------
 # GitHub Actions workflow lint. actionlint validates schema, expression syntax,
 # job/output references, and runs shellcheck on inline `run:` blocks. Soft-skip
 # if not installed — `pnpm bootstrap` (or `pnpm preflight`) flags it.
+# ----------------------------------------------------------------------------
 if printf '%s\n' "$STAGED" | grep -qE '^\.github/(workflows|actions)/'; then
   if command -v actionlint >/dev/null 2>&1; then
     actionlint

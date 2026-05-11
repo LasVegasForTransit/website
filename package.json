@@ -30,6 +30,9 @@
     "test:install": "playwright install --with-deps chromium",
     "prepare": "git config --local core.hooksPath .githooks 2>/dev/null || true"
   },
+  "lint-staged": {
+    "*.{js,ts,tsx,astro,md,mdx,css,json,yml,yaml}": "prettier --write"
+  },
   "dependencies": {
     "@astrojs/mdx": "^5.0.4",
     "@astrojs/sitemap": "^3.7.2",
@@ -50,6 +53,7 @@
     "concurrently": "^9.2.1",
     "cspell": "^10.0.0",
     "html-validate": "^10.13.1",
+    "lint-staged": "^16.0.0",
     "picocolors": "^1.1.1",
     "portless": "^0.13.0",
     "prettier": "^3.4.2",

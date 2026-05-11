@@ -1,0 +1,18 @@
+#!/bin/bash
+#
+# commit-msg hook -- validates the commit message against the LVBT standard
+#
+# Delegates to scripts/validation/git/validate-commit-scope.ts, which enforces:
+#   - conventional-commits format
+#   - allowed type (style/diag retired)
+#   - allowed scope (from allowed-scopes.txt) or scopeless
+#   - body presence for feat/fix and for high-density other commits
+#   - body line length <= 72
+#
+# See docs/standards/commit-messages.md for the full spec.
+
+set -euo pipefail
+
+COMMIT_MSG_FILE="$1"
+
+exec pnpm exec tsx scripts/validation/git/validate-commit-scope.ts --file "$COMMIT_MSG_FILE"
