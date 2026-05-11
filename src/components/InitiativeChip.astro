@@ -6,12 +6,21 @@ interface Props {
 }
 const { title, href, active = false } = Astro.props;
 const Tag = href ? 'a' : 'span';
-const classes = [
-  'inline-flex items-center px-3 py-1 text-xs font-semibold uppercase tracking-wider border no-underline transition-colors',
-  active
-    ? 'bg-ink text-paper border-ink'
-    : 'bg-transparent text-ink border-ink/30 hover:border-ink',
-];
+const variant = active ? 'active' : 'default';
+
+const styles: Record<'active' | 'default', string> = {
+  active:
+    'bg-ink text-paper border-ink group-hover:bg-paper group-hover:text-ink group-hover:border-paper',
+  default: 'bg-transparent text-ink border-ink/30 hover:border-ink on-card-invert-soft',
+};
 ---
 
-<Tag href={href} class:list={classes}>{title}</Tag>
+<Tag
+  href={href}
+  class:list={[
+    'press inline-flex items-center px-3 py-1 text-xs font-semibold uppercase tracking-wider border no-underline transition-colors',
+    styles[variant],
+  ]}
+>
+  {title}
+</Tag>

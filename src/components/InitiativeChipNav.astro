@@ -1,0 +1,25 @@
+---
+import type { CollectionEntry } from 'astro:content';
+import InitiativeChip from './InitiativeChip.astro';
+import { paths } from '../lib/paths';
+
+interface Props {
+  initiatives: CollectionEntry<'initiatives'>[];
+  activeId?: string;
+}
+
+const { initiatives, activeId } = Astro.props;
+---
+
+<p class="eyebrow">Initiatives</p>
+<div class="mt-4 flex flex-wrap gap-3">
+  {
+    initiatives.map((i) => (
+      <InitiativeChip
+        title={i.data.title}
+        href={paths.initiative(i.id)}
+        active={i.id === activeId}
+      />
+    ))
+  }
+</div>

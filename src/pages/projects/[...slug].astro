@@ -4,6 +4,7 @@ import StatusPill from '../../components/StatusPill.astro';
 import InitiativeChip from '../../components/InitiativeChip.astro';
 import ProjectGoals from '../../components/ProjectGoals.astro';
 import { getCollection, render } from 'astro:content';
+import { paths } from '../../lib/paths';
 
 export async function getStaticPaths() {
   const projects = await getCollection('projects', (entry) => !entry.id.startsWith('_'));
@@ -29,14 +30,12 @@ const startLabel = dateFmt.format(project.data.startDate);
 const startEyebrow = project.data.startDate <= today ? 'Started' : 'Starts';
 
 const endLabel = project.data.endDate ? dateFmt.format(project.data.endDate) : null;
-const endEyebrow =
-  project.data.endDate && project.data.endDate <= today ? 'Wrapped' : 'Wraps';
+const endEyebrow = project.data.endDate && project.data.endDate <= today ? 'Wrapped' : 'Wraps';
 
 // Default contact role; used to plural-ize the section eyebrow and to
 // suppress the redundant role subtitle on a contact whose role matches.
 const LEAD_ROLE = 'Project lead';
-const leadsEyebrow =
-  project.data.contacts.length > 1 ? `${LEAD_ROLE}s` : LEAD_ROLE;
+const leadsEyebrow = project.data.contacts.length > 1 ? `${LEAD_ROLE}s` : LEAD_ROLE;
 ---
 
 <BaseLayout title={project.data.title} description={project.data.tldr}>
@@ -51,7 +50,7 @@ const leadsEyebrow =
         project.data.initiatives.map((slug: string) => (
           <InitiativeChip
             title={initiativesById.get(slug)?.data.title ?? slug}
-            href={`/projects/initiative/${slug}`}
+            href={paths.initiative(slug)}
           />
         ))
       }

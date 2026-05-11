@@ -2,20 +2,23 @@
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import SectionHeader from '../../components/SectionHeader.astro';
 import ProjectCard from '../../components/ProjectCard.astro';
-import InitiativeChip from '../../components/InitiativeChip.astro';
+import InitiativeChipNav from '../../components/InitiativeChipNav.astro';
 import { getCollection } from 'astro:content';
+import { byOrderThenTitle } from '../../lib/projects';
+import { paths } from '../../lib/paths';
 
 const projects = await getCollection('projects', (entry) => !entry.id.startsWith('_'));
 const initiatives = await getCollection('initiatives');
 
-const sorted = projects.sort((a, b) => {
-  const ao = a.data.order ?? 999;
-  const bo = b.data.order ?? 999;
-  if (ao !== bo) return ao - bo;
-  return a.data.title.localeCompare(b.data.title);
-});
-
+const sorted = [...projects].sort(byOrderThenTitle);
 const initiativesById = new Map(initiatives.map((i) => [i.id, i]));
+
+// Group sorted projects by initiative id. Cross-tagged projects appear in
+// every section they're tagged with — for a small roadmap this reads as a
+// feature, not duplication.
+const projectsByInitiative = new Map(
+  initiatives.map((i) => [i.id, sorted.filter((p) => p.data.initiatives.includes(i.id))]),
+);
 ---
 
 <BaseLayout
@@ -32,31 +35,35 @@ const initiativesById = new Map(initiatives.map((i) => [i.id, i]));
   <hr class="rule-thick container-page" />
 
   <section class="container-page py-12">
-    <p class="eyebrow">Initiatives</p>
-    <div class="mt-4 flex flex-wrap gap-3">
-      {
-        initiatives.map((i) => (
-          <InitiativeChip title={i.data.title} href={`/projects/initiative/${i.id}`} />
-        ))
-      }
-    </div>
+    <InitiativeChipNav initiatives={initiatives} />
   </section>
 
-  <section class="container-page pb-20 md:pb-28">
-    <div class="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-      {
-        sorted.map((project) => (
-          <ProjectCard
-            href={`/projects/${project.id}`}
-            title={project.data.title}
-            status={project.data.status}
-            tldr={project.data.tldr}
-            initiatives={project.data.initiatives.map((slug) => ({
-              title: initiativesById.get(slug)?.data.title ?? slug,
-            }))}
-          />
-        ))
-      }
-    </div>
-  </section>
+  {
+    initiatives.map((initiative) => {
+      const inInitiative = projectsByInitiative.get(initiative.id) ?? [];
+      if (inInitiative.length === 0) return null;
+      return (
+        <section id={initiative.id} class="container-page pb-16 md:pb-20 scroll-mt-24">
+          <div class="border-t border-rule/30 pt-10">
+            <p class="eyebrow">Initiative</p>
+            <h2 class="text-headline-lg mt-2">{initiative.data.title}</h2>
+            <p class="lede mt-3 max-w-3xl">{initiative.data.description}</p>
+          </div>
+          <div class="mt-8 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+            {inInitiative.map((project) => (
+              <ProjectCard
+                href={paths.project(project.id)}
+                title={project.data.title}
+                status={project.data.status}
+                tldr={project.data.tldr}
+                initiatives={project.data.initiatives.map((slug) => ({
+                  title: initiativesById.get(slug)?.data.title ?? slug,
+                }))}
+              />
+            ))}
+          </div>
+        </section>
+      );
+    })
+  }
 </BaseLayout>
