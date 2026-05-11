@@ -10,7 +10,7 @@ const path = Astro.url.pathname;
 <div data-header-sentinel aria-hidden="true" class="h-px"></div>
 <header
   data-site-header
-  class="sticky top-0 z-50 bg-paper/80 border-b border-transparent data-[stuck]:backdrop-blur-md data-[stuck]:backdrop-saturate-150 data-[stuck]:border-rule/15 transition-[border-color] duration-200 ease-out"
+  class="sticky top-0 z-50 bg-paper/80 border-b border-transparent data-[stuck]:backdrop-blur-md data-[stuck]:backdrop-saturate-150 data-[stuck]:border-rule/15 transition-[border-color] duration-200 ease-out [view-transition-name:site-header]"
 >
   <div class="container-page py-4 flex items-center justify-between gap-6">
     <a href="/" class="font-extrabold tracking-tight text-lg md:text-xl no-underline">
@@ -39,11 +39,13 @@ const path = Astro.url.pathname;
     </nav>
     <a
       href="/go"
-      class="press hidden md:inline-flex items-center bg-ink text-paper px-4 py-2 text-sm font-bold no-underline hover:bg-accent"
+      class="press hidden md:inline-flex items-center gap-1.5 bg-ink text-paper px-4 py-2 text-sm font-bold no-underline hover:bg-accent"
     >
-      Get involved →
+      Get involved <span class="arrow" aria-hidden="true">→</span>
     </a>
-    <a href="/go" class="md:hidden text-sm font-bold underline">Join →</a>
+    <a href="/go" class="press md:hidden text-sm font-bold underline">
+      Join <span class="arrow" aria-hidden="true">→</span>
+    </a>
   </div>
 </header>
 

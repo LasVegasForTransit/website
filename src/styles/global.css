@@ -17,7 +17,7 @@
      defaults to preserve the editorial feel; headline/title/body/label
      stay close to MD3 so the scale reads proportionally. */
 
-  --text-display-lg: clamp(2.75rem, 6vw + 1rem, 6.5rem);
+  --text-display-lg: clamp(2.5rem, 5vw + 1rem, 5.5rem);
   --text-display-lg--line-height: 0.95;
   --text-display-lg--letter-spacing: -0.03em;
   --text-display-lg--font-weight: 900;
@@ -93,9 +93,50 @@
   --text-label-sm--font-weight: 600;
 }
 
+/* Typed custom property that powers smooth shadow interpolation on `.lift`.
+   Declared as a <number> so the engine can animate it linearly; without
+   @property a raw custom property would snap discretely. */
+@property --lift-shadow-strength {
+  syntax: '<number>';
+  inherits: false;
+  initial-value: 0;
+}
+
+/* Cross-document view transitions, CSS-only. Chrome 126+ and Safari 18+
+   animate between same-origin navigations as if they were a single SPA;
+   no client router, no JavaScript. Non-supporting browsers (Firefox as
+   of early 2026) full-reload as before — pure progressive enhancement.
+   Named elements (`site-header`, `footer-stripe` — see Header.astro and
+   Footer.astro) persist visually across the transition; unnamed content
+   cross-fades through the default `root` group. */
+@view-transition {
+  navigation: auto;
+}
+
+/* Tune the default cross-fade to match the site's 200ms MD3 easing. The
+   `root` group is the body content; named groups (site-header, footer-
+   stripe) inherit this duration. Reduced-motion override below. */
+::view-transition-group(*) {
+  animation-duration: 200ms;
+  animation-timing-function: cubic-bezier(0, 0, 0.2, 1);
+}
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-group(*),
+  ::view-transition-old(*),
+  ::view-transition-new(*) {
+    animation: none !important;
+  }
+}
+
 @layer base {
   :root {
     color-scheme: light;
+    /* Brand-paint native form controls (checkbox, radio, range, progress)
+       site-wide without per-component overrides. Universally supported. */
+    accent-color: var(--color-accent);
+    /* Permit transitioning to/from keyword lengths (`height: auto`, etc.)
+       for future disclosure / accordion patterns. No-op elsewhere. */
+    interpolate-size: allow-keywords;
     font-feature-settings:
       'tnum' 0,
       'cv11' 1;
@@ -112,6 +153,47 @@
 
   body {
     min-height: 100vh;
+  }
+
+  /* Immersive-canvas opt-in. Pages set <BaseLayout canvas="dark">; we paint
+     the root surface ink so a transparent sticky header reads as part of the
+     hero rather than a cream stripe above it. The Header swaps back to the
+     standard cream-blur treatment once its sentinel scrolls off — that
+     transition is owned by the header's own data-stuck attribute and applies
+     to every page identically, so nothing here is page-specific. */
+  body[data-canvas='dark'] {
+    background: var(--color-ink);
+  }
+
+  body[data-canvas='dark'] [data-site-header] {
+    transition:
+      background-color 200ms ease,
+      color 200ms ease,
+      border-color 200ms ease;
+  }
+  body[data-canvas='dark'] [data-site-header]:not([data-stuck]) {
+    background-color: transparent;
+    border-bottom-color: transparent;
+  }
+  body[data-canvas='dark'] [data-site-header]:not([data-stuck]) a {
+    color: var(--color-paper);
+  }
+  body[data-canvas='dark'] [data-site-header]:not([data-stuck]) a:hover {
+    color: var(--color-accent);
+  }
+  body[data-canvas='dark'] [data-site-header]:not([data-stuck]) a[aria-current='page'] {
+    color: var(--color-accent);
+  }
+  body[data-canvas='dark'] [data-site-header]:not([data-stuck]) a span.text-accent {
+    color: var(--color-accent);
+  }
+  body[data-canvas='dark'] [data-site-header]:not([data-stuck]) .press {
+    background-color: var(--color-paper);
+    color: var(--color-ink);
+  }
+  body[data-canvas='dark'] [data-site-header]:not([data-stuck]) .press:hover {
+    background-color: var(--color-accent);
+    color: var(--color-paper);
   }
 
   ::selection {
@@ -183,17 +265,59 @@
       scroll-behavior: auto !important;
     }
   }
+
+  /* Sub-pixel ink hairline shadow on the stuck header — reads as physical
+     elevation (chrome floating above content) rather than just a blurred
+     band. The transition on box-shadow on [data-site-header] handles the
+     fade-in; matched in the scroll-driven keyframe below. */
+  [data-site-header] {
+    transition:
+      box-shadow 200ms cubic-bezier(0, 0, 0.2, 1),
+      border-color 200ms cubic-bezier(0, 0, 0.2, 1);
+  }
+  [data-site-header][data-stuck] {
+    box-shadow: 0 1px 0 color-mix(in srgb, var(--color-ink) 8%, transparent);
+  }
+
+  /* Modern engines (Chrome 115+, Safari 18+) drive the sticky header's
+     stuck-state visuals from root scroll position — no JS round trip.
+     Mirrors what header-stuck.js installs via [data-stuck]; the JS path
+     still runs as the fallback for browsers without scroll-driven
+     animations AND as the source of truth for the [data-stuck] attribute,
+     which the dark-canvas inversions above gate on. Both paths apply the
+     same final values, so co-running them is idempotent. */
+  @supports (animation-timeline: scroll()) {
+    [data-site-header] {
+      animation: site-header-stuck linear both;
+      animation-timeline: scroll(root);
+      animation-range: 0 1px;
+    }
+    @keyframes site-header-stuck {
+      to {
+        backdrop-filter: blur(12px) saturate(1.5);
+        border-bottom-color: color-mix(in srgb, var(--color-rule) 15%, transparent);
+        box-shadow: 0 1px 0 color-mix(in srgb, var(--color-ink) 8%, transparent);
+      }
+    }
+  }
 }
 
 @layer components {
   .lift {
-    transition-property: transform, box-shadow, background-color, color, border-color;
+    /* Always render the shadow shape; modulate opacity via the typed
+       --lift-shadow-strength custom property so hover/rest interpolates
+       smoothly instead of snapping in/out. Mirrors --shadow-lift at full
+       strength. */
+    --lift-shadow-strength: 0;
+    box-shadow: 0 12px 30px -16px
+      color-mix(in srgb, var(--color-ink) calc(var(--lift-shadow-strength) * 25%), transparent);
+    transition-property: transform, --lift-shadow-strength, background-color, color, border-color;
     transition-duration: 200ms;
     transition-timing-function: cubic-bezier(0, 0, 0.2, 1);
   }
   .lift:hover {
     transform: translateY(-2px);
-    box-shadow: var(--shadow-lift);
+    --lift-shadow-strength: 1;
   }
   .lift:active {
     transform: translateY(0);
@@ -209,6 +333,17 @@
   .press:active {
     transform: scale(0.97);
     transition-duration: 100ms;
+  }
+
+  /* Pills and chips that live inside a `.group` parent (e.g. ProjectCard)
+     invert to paper-on-dark when the parent darkens on hover. The soft
+     variant uses 50% paper border so muted-base styles read at half-
+     strength against the dark card. Inert outside a `.group` ancestor. */
+  .on-card-invert {
+    @apply group-hover:text-paper group-hover:border-paper;
+  }
+  .on-card-invert-soft {
+    @apply group-hover:text-paper group-hover:border-paper/50;
   }
 
   .nav-link {
@@ -230,6 +365,28 @@
   .nav-link[aria-current='page']::after {
     transform: scaleX(1);
   }
+  /* On first paint, the active page's underline arrives by scaling in
+     from the left edge — matches the hover gesture, so the page feels
+     "freshly landed" rather than statically marked. Browsers without
+     @starting-style render the final scaleX(1) immediately. */
+  @starting-style {
+    .nav-link[aria-current='page']::after {
+      transform: scaleX(0);
+    }
+  }
+
+  /* Arrow glyph nudge: any element with a `.arrow` span inside a `.lift`,
+     `.press`, or `.contact-link` ancestor gets a 3px translateX on hover.
+     Markup is `<span class="arrow">→</span>` after the label. Inline-block
+     so transform applies; rest-state has the natural typeset position. */
+  :where(.lift, .press, .contact-link) .arrow {
+    display: inline-block;
+    transition: transform 200ms cubic-bezier(0, 0, 0.2, 1);
+  }
+  :where(.lift, .press, .contact-link):hover .arrow,
+  :where(.lift, .press, .contact-link):focus-visible .arrow {
+    transform: translateX(3px);
+  }
 
   /* Compositional aliases over MD3 tokens. Markup uses these semantic
      classes; they bundle size + transform + color + tracking. */
@@ -248,12 +405,78 @@
     line-height: var(--text-body-lg--line-height);
     color: var(--color-mute);
     text-wrap: pretty;
+    --content-link-color: var(--color-ink);
+    --content-link-hover: var(--color-accent);
+    --content-link-decoration: color-mix(in srgb, var(--color-accent) 70%, transparent);
   }
 
   .prose-doc {
     font-size: var(--text-body-md);
     line-height: 1.7;
     text-wrap: pretty;
+    --content-link-color: inherit;
+    --content-link-hover: var(--color-accent);
+    --content-link-decoration: color-mix(in srgb, var(--color-accent) 70%, transparent);
+  }
+
+  :is(.lede, .prose-doc).text-paper,
+  .text-paper :is(.lede, .prose-doc) {
+    --content-link-color: var(--color-paper);
+    --content-link-hover: var(--color-accent-soft);
+    --content-link-decoration: color-mix(in srgb, var(--color-accent-soft) 82%, transparent);
+  }
+
+  :where(
+    .body-link,
+    .lede a,
+    .prose-doc a,
+    .vision-page .vision-prose a,
+    .vision-page .close-pointers li a
+  ) {
+    color: var(--content-link-color, inherit);
+    font-weight: 600;
+    text-decoration-line: underline;
+    text-decoration-color: var(--content-link-decoration, currentColor);
+    text-decoration-thickness: 0.12em;
+    text-underline-offset: 0.16em;
+    text-decoration-skip-ink: auto;
+    transition:
+      color 160ms cubic-bezier(0, 0, 0.2, 1),
+      text-decoration-color 160ms cubic-bezier(0, 0, 0.2, 1),
+      text-decoration-thickness 160ms cubic-bezier(0, 0, 0.2, 1);
+  }
+
+  :where(
+    .body-link,
+    .lede a,
+    .prose-doc a,
+    .vision-page .vision-prose a,
+    .vision-page .close-pointers li a
+  ):hover,
+  :where(
+    .body-link,
+    .lede a,
+    .prose-doc a,
+    .vision-page .vision-prose a,
+    .vision-page .close-pointers li a
+  ):focus-visible {
+    color: var(--content-link-hover, var(--color-accent));
+    text-decoration-color: currentColor;
+    text-decoration-thickness: 0.16em;
+  }
+
+  .contact-link {
+    transition:
+      color 160ms cubic-bezier(0, 0, 0.2, 1),
+      text-decoration-color 160ms cubic-bezier(0, 0, 0.2, 1),
+      text-decoration-thickness 160ms cubic-bezier(0, 0, 0.2, 1);
+  }
+
+  .contact-link:hover,
+  .contact-link:focus-visible {
+    color: var(--color-accent);
+    text-decoration-color: currentColor;
+    text-decoration-thickness: 0.16em;
   }
 
   /* The first thing in a prose-doc article has its top margin stripped so
@@ -318,10 +541,6 @@
     margin-block: 0.4em;
   }
 
-  .prose-doc a {
-    color: var(--color-accent);
-  }
-
   .prose-doc strong {
     font-weight: 700;
   }
@@ -344,11 +563,18 @@
   .container-page {
     max-width: 80rem;
     margin-inline: auto;
-    padding-inline: 1.25rem;
+    padding-inline: clamp(1.25rem, 4vw, 3rem);
   }
 
   .rule-thick {
     border-top: 6px solid var(--color-ink);
+  }
+
+  /* hr.border draws at the outer edge, not the content edge.
+     Subtract container padding so the line aligns with body text. */
+  hr.container-page {
+    padding-inline: 0;
+    max-width: calc(80rem - 2 * clamp(1.25rem, 4vw, 3rem));
   }
 
   .rule-thin {
@@ -404,5 +630,33 @@
       transform: none !important;
       clip-path: none !important;
     }
+  }
+
+  /* Newsletter input focus polish: a 4px accent strip rides the bottom of
+     the input when :focus-visible, layered as inset box-shadow so no DOM
+     wrapper is needed. The global :focus-visible outline still applies
+     on top — these compose rather than replace each other. */
+  [data-newsletter-form] input[type='email'] {
+    transition:
+      box-shadow 180ms cubic-bezier(0, 0, 0.2, 1),
+      border-color 180ms cubic-bezier(0, 0, 0.2, 1);
+  }
+  [data-newsletter-form] input[type='email']:focus-visible {
+    box-shadow: inset 0 -4px 0 var(--color-accent);
+  }
+
+  /* Status message slides + fades in once content arrives. Empty state
+     keeps it visually hidden so the layout doesn't shift before the
+     submit fires. */
+  [data-form-status] {
+    opacity: 0;
+    transform: translateY(6px);
+    transition:
+      opacity 240ms cubic-bezier(0, 0, 0.2, 1),
+      transform 240ms cubic-bezier(0, 0, 0.2, 1);
+  }
+  [data-form-status]:not(:empty) {
+    opacity: 1;
+    transform: none;
   }
 }
