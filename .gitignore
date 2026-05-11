@@ -21,6 +21,9 @@ pnpm-debug.log*
 # bootstrap CLI state
 .lvbt/
 
+# superpowers brainstorming mockups
+.superpowers/
+
 # wrangler cache
 .wrangler/
 
