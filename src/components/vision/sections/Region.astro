@@ -1,0 +1,126 @@
+---
+import PhotoPlaceholder from '../PhotoPlaceholder.astro';
+import VisionFigure from '../VisionFigure.astro';
+import SectionHead from '../SectionHead.astro';
+---
+
+<section class="band-ink section">
+  <SectionHead num="4 / 14 — How we get around" heading="Vegas as a node, not an island." />
+
+  <div class="container-page">
+    <PhotoPlaceholder
+      variant="ink"
+      description="Brightline West rendering, or a regional rail station with a train arriving — the Strip skyline in the background, the Spring Mountains beyond."
+    />
+  </div>
+
+  <div class="container-narrow">
+    <div class="vision-prose">
+      <p>
+        The first plausible regional-rail connection out of Las&nbsp;Vegas in any of our lifetimes —
+        Brightline West to Southern California — breaks ground this decade and is scheduled to open
+        in 2029. From a station near the I-15 corridor, a passenger should be able to reach the
+        Strip, downtown, or the airport without renting a car. That last part is the political
+        fight: the airport-to-Strip rail link the casino and taxi industries killed in the 1990s
+        would need to finally get built, against essentially the same opposition that killed it the
+        first time.
+      </p>
+    </div>
+  </div>
+
+  <div class="container-page">
+    <VisionFigure num="4" title="Vegas as a node, not an island">
+      <svg
+        class="region-map"
+        viewBox="0 0 600 360"
+        xmlns="http://www.w3.org/2000/svg"
+        role="img"
+        aria-label="Map of the Western US rail network with Las Vegas as a hub. A solid line connects Las Vegas to Los Angeles (under construction). Dashed lines run to Reno, Salt Lake, and Phoenix (future)."
+      >
+        <text class="region-axis" x="300" y="30" text-anchor="middle">The Western network</text>
+        <path class="region-line-built" d="M180 200 Q230 230, 280 250"></path>
+        <path class="region-line-future" d="M180 200 Q140 140, 100 90"></path>
+        <path class="region-line-future" d="M180 200 Q260 130, 380 90"></path>
+        <path class="region-line-future" d="M180 200 Q300 240, 420 280"></path>
+        <circle class="region-dot-vegas" cx="180" cy="200" r="9"></circle>
+        <text class="region-label-vegas" x="180" y="180" text-anchor="middle">Las&nbsp;Vegas</text>
+        <circle class="region-dot" cx="280" cy="250" r="6"></circle>
+        <text class="region-label" x="280" y="275" text-anchor="middle">Los Angeles</text>
+        <circle class="region-dot" cx="100" cy="90" r="6"></circle>
+        <text class="region-label" x="100" y="80" text-anchor="middle">Reno</text>
+        <circle class="region-dot" cx="380" cy="90" r="6"></circle>
+        <text class="region-label" x="380" y="80" text-anchor="middle">Salt Lake</text>
+        <circle class="region-dot" cx="420" cy="280" r="6"></circle>
+        <text class="region-label" x="420" y="305" text-anchor="middle">Phoenix</text>
+        <text class="region-legend" x="60" y="340">─── built / under construction</text>
+        <text class="region-legend" x="320" y="340">─ ─ future · the next decade-plus</text>
+      </svg>
+      <Fragment slot="caption">
+        Brightline West breaks ground this decade. Phoenix, Salt Lake, and Reno are slower work —
+        but a metro of 2.3 million should be planning for them, the same way California planned for
+        fifty years of Pacific corridor rail before it started laying track.
+      </Fragment>
+    </VisionFigure>
+  </div>
+
+  <div class="container-narrow">
+    <div class="vision-prose">
+      <p>
+        Look further out and a real Western network appears. Phoenix and Las&nbsp;Vegas should be
+        connected by passenger rail; both are growing past the carrying capacity of I-93 and I-10.
+        Salt Lake to Las&nbsp;Vegas is on the same map. Reno over the Sierra is harder but not
+        impossible. None of these will get built in the next five years. Some of them might within
+        twenty.
+      </p>
+      <p>
+        The point of including them in a vision document is not to promise them. It's to insist that
+        they belong in the picture, alongside the BRT we're already paying for and the highway
+        expansions we keep paying for. A metro of 2.3 million is not an island. We should stop
+        building like one.
+      </p>
+    </div>
+  </div>
+</section>
+
+<style>
+  .region-map {
+    display: block;
+    width: 100%;
+    height: auto;
+    max-height: 360px;
+  }
+  .region-map .region-dot {
+    fill: currentColor;
+  }
+  .region-map .region-dot-vegas {
+    fill: var(--color-accent);
+  }
+  .region-map .region-label {
+    font-size: 11px;
+    font-weight: 700;
+    fill: currentColor;
+  }
+  .region-map .region-label-vegas {
+    fill: var(--color-accent);
+    font-weight: 900;
+  }
+  .region-map .region-line-built {
+    fill: none;
+    stroke: var(--color-accent);
+    stroke-width: 2;
+  }
+  .region-map .region-line-future {
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.5;
+    stroke-dasharray: 3 4;
+    opacity: 0.45;
+  }
+  .region-map .region-axis,
+  .region-map .region-legend {
+    font-size: 9px;
+    letter-spacing: 0.06em;
+    font-weight: 600;
+    fill: var(--vp-text-muted);
+  }
+</style>

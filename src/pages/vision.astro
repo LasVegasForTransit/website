@@ -1,19 +1,50 @@
 ---
-import DocLayout from '../layouts/DocLayout.astro';
-import { getEntry, render } from 'astro:content';
-import { requireEntry } from '../lib/content-guard';
+import '../styles/vision.css';
+import BaseLayout from '../layouts/BaseLayout.astro';
+import StructuredData from '../components/seo/StructuredData.astro';
+import { websiteSchema } from '../lib/structured-data';
 
-const vision = await getEntry('docs', 'vision');
-requireEntry(vision, 'docs', 'vision');
-const { Content } = await render(vision);
+import Frame from '../components/vision/sections/Frame.astro';
+import Walk from '../components/vision/sections/Walk.astro';
+import Bike from '../components/vision/sections/Bike.astro';
+import Frequency from '../components/vision/sections/Frequency.astro';
+import Region from '../components/vision/sections/Region.astro';
+import Strip from '../components/vision/sections/Strip.astro';
+import Maryland from '../components/vision/sections/Maryland.astro';
+import PublicSpace from '../components/vision/sections/PublicSpace.astro';
+import Shrinks from '../components/vision/sections/Shrinks.astro';
+import Cost from '../components/vision/sections/Cost.astro';
+import Shift from '../components/vision/sections/Shift.astro';
+import Recreation from '../components/vision/sections/Recreation.astro';
+import Bowl from '../components/vision/sections/Bowl.astro';
+import Health from '../components/vision/sections/Health.astro';
+import Riders from '../components/vision/sections/Riders.astro';
+import Close from '../components/vision/sections/Close.astro';
+
+const title = 'Our vision';
+const description =
+  'A reference for the Las Vegas Valley LVBT is working toward — reliable, safe, and efficient public transportation, supportive land use, and a metro people are proud to live in. In fourteen pieces.';
 ---
 
-<DocLayout title={vision.data.title} summary={vision.data.summary} eyebrow="Why this matters">
-  <Content />
-  <hr class="rule-thin my-16" />
-  <p class="eyebrow">Keep reading</p>
-  <ul class="mt-4 not-prose flex flex-col gap-2">
-    <li><a href="/about/strategy" class="font-bold">→ How we'll win</a></li>
-    <li><a href="/projects" class="font-bold">→ The projects we're working on</a></li>
-  </ul>
-</DocLayout>
+<BaseLayout title={title} description={description} canvas="dark">
+  <StructuredData slot="head" data={websiteSchema()} />
+
+  <article class="vision-page">
+    <Frame />
+    <Walk />
+    <Bike />
+    <Frequency />
+    <Region />
+    <Strip />
+    <Maryland />
+    <PublicSpace />
+    <Shrinks />
+    <Cost />
+    <Shift />
+    <Recreation />
+    <Bowl />
+    <Health />
+    <Riders />
+    <Close />
+  </article>
+</BaseLayout>

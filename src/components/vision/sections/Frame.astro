@@ -1,0 +1,41 @@
+---
+import PhotoPlaceholder from '../PhotoPlaceholder.astro';
+---
+
+<section>
+  <!-- Panel 1: full-viewport dark hero -->
+  <div class="frame-hero band-ink">
+    <PhotoPlaceholder
+      fill
+      variant="ink"
+      description="Hero image — a Las Vegas streetscape in the won state. Shaded sidewalk, BRT bus pulling up, kids on bikes, the Spring Mountains beyond. Full-bleed, generous breathing room."
+    />
+    <div class="frame-hero__scrim" aria-hidden="true"></div>
+    <div class="frame-hero__text">
+      <h1 class="frame-heading">This is the Las&nbsp;Vegas Valley we're building.</h1>
+      <p class="hero-lede">
+        A neighborhood where you walk to the store. A household that doesn't spend a quarter of its
+        income on cars. A high-school kid who gets home from practice without calling for a ride.
+      </p>
+    </div>
+    <p class="frame-scroll-hint" aria-hidden="true">scroll ↓</p>
+  </div>
+
+  <!-- Panel 2: below-fold prose -->
+  <div class="band-cream section">
+    <div class="container-narrow">
+      <div class="vision-prose">
+        <p>
+          Streets where we stop killing people with the way we drew the lines. Schools and parks and
+          groceries inside a five-minute walk. A bus that comes often enough that you stop checking
+          the schedule. That's the concrete part.
+        </p>
+        <p>
+          A Valley people feel proud to live in, not just tolerant of. Transit that isn't something
+          you apologize for using. A Las&nbsp;Vegas that people move <em>to</em>, not just through.
+          That's the part the spreadsheet won't show you, and it matters as much.
+        </p>
+      </div>
+    </div>
+  </div>
+</section>

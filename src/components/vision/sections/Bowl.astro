@@ -1,0 +1,119 @@
+---
+import VisionFigure from '../VisionFigure.astro';
+import SectionHead from '../SectionHead.astro';
+---
+
+<section class="band-cream section">
+  <SectionHead num="12 / 14 — Context" heading="Bowl country." />
+
+  <div class="container-page">
+    <VisionFigure num="11" title="The Valley as a bowl">
+      <svg
+        class="basin"
+        viewBox="0 0 600 240"
+        xmlns="http://www.w3.org/2000/svg"
+        role="img"
+        aria-label="Cross-section of the Las Vegas Valley basin: mountains rise on both sides; the valley floor sits between them; sun shines from above; arrows show heat and pollution trapped in the bowl."
+      >
+        <circle class="basin-sun" cx="540" cy="50" r="14"></circle>
+        <text class="basin-axis" x="540" y="80" text-anchor="middle">Sun</text>
+        <path
+          class="basin-mts"
+          d="M0 240 L0 160 L80 80 L150 130 L220 90 L260 160 L340 110 L380 140 L440 100 L520 150 L580 90 L600 130 L600 240 Z"
+        ></path>
+        <line class="basin-floor" x1="220" y1="180" x2="440" y2="180" stroke-dasharray="3 4"></line>
+        <text class="basin-label" x="330" y="200" text-anchor="middle">Valley floor</text>
+        <text class="basin-axis" x="80" y="170">Spring Mts</text>
+        <text class="basin-axis" x="540" y="170">Sunrise · Eldorado</text>
+        <path class="basin-arrow" d="M280 60 L280 130" marker-end="url(#down-arrow)"></path>
+        <path class="basin-arrow" d="M310 80 L310 140"></path>
+        <path class="basin-arrow" d="M250 90 L250 130"></path>
+        <text class="basin-label" x="330" y="60" fill="var(--color-accent)"
+          >Heat &amp; air don't leave</text
+        >
+        <defs>
+          <marker
+            id="down-arrow"
+            markerWidth="10"
+            markerHeight="10"
+            refX="5"
+            refY="9"
+            orient="auto"
+          >
+            <path d="M0,0 L5,10 L10,0 Z" fill="var(--color-accent)"></path>
+          </marker>
+        </defs>
+      </svg>
+      <Fragment slot="caption">
+        Mountains on every side mean pollutants and summer heat get trapped over the Valley floor.
+        The basin doesn't move. What we put in it does.
+      </Fragment>
+    </VisionFigure>
+  </div>
+
+  <div class="container-narrow">
+    <div class="vision-prose">
+      <p>
+        The Las&nbsp;Vegas Valley sits in a literal geographic bowl. The Spring Mountains rise to
+        the west, the Sheep Range to the north, the Sunrise and Eldorado mountains to the east, the
+        McCullough range to the south. On most days of most months, air settles into the bowl and
+        stays there until the next weather front moves through. So does heat. So does whatever
+        leaves a tailpipe.
+      </p>
+      <p>
+        This is why air-quality alerts in the Valley aren't an occasional summer event but a routine
+        summer pattern. It's why ozone exceedance days are climbing and why pediatric asthma
+        diagnoses are climbing with them. It's why heat-illness call volume from bus stops without
+        shade is what it is. None of this is going to change because we wish it would. The basin
+        doesn't move. The mountains don't get shorter. The Mojave is what we have.
+      </p>
+      <p>
+        What can change is what we put in the basin. A bus running on hydrogen fuel cells replaces
+        the tailpipes of forty cars when it runs full. A BRT station with shade keeps a
+        twelve-minute wait from being a heat-illness call. Phoenix and Salt Lake — both hotter than
+        us, both built around cars — have already shown that great transit works in extreme heat.
+        The desert is not an excuse. It is the reason.
+      </p>
+    </div>
+    <p class="vision-tail">
+      A sustainable oasis in the desert. Made possible through public transportation.
+    </p>
+  </div>
+</section>
+
+<style>
+  .basin {
+    display: block;
+    width: 100%;
+    height: auto;
+    max-height: 280px;
+  }
+  .basin-mts {
+    fill: color-mix(in srgb, currentColor 14%, transparent);
+    stroke: currentColor;
+    stroke-width: 1;
+  }
+  .basin-floor {
+    stroke: currentColor;
+    stroke-width: 1;
+    opacity: 0.3;
+  }
+  .basin-arrow {
+    stroke: var(--color-accent);
+    stroke-width: 1.5;
+    fill: none;
+  }
+  .basin-sun {
+    fill: var(--color-accent);
+  }
+  .basin-label {
+    font-size: 11px;
+    font-weight: 600;
+    fill: currentColor;
+  }
+  .basin-axis {
+    font-size: 9px;
+    font-weight: 600;
+    fill: var(--vp-text-muted);
+  }
+</style>

@@ -1,0 +1,150 @@
+---
+import VisionFigure from '../VisionFigure.astro';
+import SectionHead from '../SectionHead.astro';
+---
+
+<section class="band-ink section">
+  <SectionHead num="6 / 14 — Place" heading="Maryland, after." />
+
+  <div class="container-page">
+    <VisionFigure num="7" title="The same arterial, before and after">
+      <div class="street-ba">
+        <div class="street-panel street-panel-now">
+          <span class="street-panel-label">Today</span>
+          <svg
+            viewBox="0 0 300 100"
+            preserveAspectRatio="none"
+            role="img"
+            aria-label="Today: a six-lane arterial posted at 45 mph, with two narrow sidewalks"
+          >
+            <rect class="st-sidewalk" x="0" y="40" width="20" height="40"></rect>
+            <rect class="st-car" x="20" y="40" width="40" height="40"></rect>
+            <rect class="st-car" x="60" y="40" width="40" height="40"></rect>
+            <rect class="st-car" x="100" y="40" width="40" height="40"></rect>
+            <rect class="st-car" x="140" y="40" width="40" height="40"></rect>
+            <rect class="st-car" x="180" y="40" width="40" height="40"></rect>
+            <rect class="st-car" x="220" y="40" width="40" height="40"></rect>
+            <rect class="st-car" x="260" y="40" width="20" height="40"></rect>
+            <rect class="st-sidewalk" x="280" y="40" width="20" height="40"></rect>
+            <text class="st-label" x="150" y="32" text-anchor="middle">6 lanes · 45 mph</text>
+          </svg>
+        </div>
+        <div class="street-panel street-panel-won">
+          <span class="street-panel-label">Won</span>
+          <svg
+            viewBox="0 0 300 100"
+            preserveAspectRatio="none"
+            role="img"
+            aria-label="Won: same width, redesigned with two bus lanes, two car lanes, two protected bike lanes, wider sidewalks, posted 25 to 35 mph"
+          >
+            <rect class="st-sidewalk" x="0" y="40" width="32" height="40"></rect>
+            <rect class="st-bike" x="32" y="40" width="20" height="40" opacity="0.85"></rect>
+            <rect class="st-buffer" x="52" y="40" width="8" height="40"></rect>
+            <rect class="st-bus" x="60" y="40" width="40" height="40"></rect>
+            <rect class="st-car" x="100" y="40" width="40" height="40"></rect>
+            <rect class="st-car" x="140" y="40" width="40" height="40"></rect>
+            <rect class="st-bus" x="180" y="40" width="40" height="40"></rect>
+            <rect class="st-buffer" x="220" y="40" width="8" height="40"></rect>
+            <rect class="st-bike" x="228" y="40" width="20" height="40" opacity="0.85"></rect>
+            <rect class="st-sidewalk" x="248" y="40" width="32" height="40"></rect>
+            <text class="st-label" x="150" y="32" text-anchor="middle"
+              >2 bus · 2 car · 2 bike · 25–35 mph</text
+            >
+          </svg>
+        </div>
+      </div>
+      <Fragment slot="caption">
+        The street width doesn't change. What's on it does. Bus lanes carry more people in less
+        space. Protected bike lanes save lives. Narrower drive lanes slow cars to speeds people
+        survive.
+      </Fragment>
+    </VisionFigure>
+  </div>
+
+  <div class="container-narrow">
+    <div class="vision-prose">
+      <p>
+        Las&nbsp;Vegas Boulevard, Maryland Parkway, Charleston, Sahara, Tropicana, Boulder Highway —
+        the Valley's major arterials are six to eight lanes wide and posted for 45 miles per hour.
+        They were built that way on purpose. The traffic engineering profession of the 1960s and 70s
+        designed these streets to move cars quickly between developments, at the cost of every other
+        use. People walking and biking were treated as failures of the model. They are still treated
+        that way. In Clark County, pedestrians and cyclists make up the majority of traffic deaths,
+        even though they are a small fraction of trips.
+      </p>
+      <p>
+        The won Valley does not make these streets narrower. It puts more on them. A six-lane
+        arterial becomes a four-lane arterial with two dedicated bus lanes, two protected bike
+        lanes, wider sidewalks with shade trees, and crosswalks every four hundred feet instead of
+        every quarter-mile. Posted speeds drop to a range that humans can survive being hit at — 25
+        to 35 in town, with 45-plus reserved for actual highways. Drivers complain about the extra
+        minute on their commute. They get used to it. The deaths fall.
+      </p>
+      <p>
+        This is not a theoretical claim. Cities from New York to Denver to Stockholm to Oslo have
+        done this redesign on streets just as wide as Maryland. None of them regretted it. The
+        political fight is the part we own. The engineering already exists.
+      </p>
+    </div>
+  </div>
+</section>
+
+<style>
+  .street-ba {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.5rem;
+  }
+  @media (max-width: 640px) {
+    .street-ba {
+      grid-template-columns: 1fr;
+      gap: 2rem;
+    }
+  }
+  .street-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+  .street-panel-label {
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.18em;
+    font-weight: 700;
+  }
+  .street-panel-now .street-panel-label {
+    color: var(--vp-text-muted);
+  }
+  .street-panel-won .street-panel-label {
+    color: var(--color-accent);
+  }
+  .street-panel svg {
+    display: block;
+    width: 100%;
+    height: auto;
+  }
+  .street-panel svg .st-label {
+    font-size: 9px;
+    font-weight: 600;
+    fill: currentColor;
+  }
+  .st-car {
+    fill: color-mix(in srgb, currentColor 14%, transparent);
+    stroke: currentColor;
+    stroke-width: 0.5;
+  }
+  .st-bus {
+    fill: color-mix(in srgb, var(--color-accent) 15%, transparent);
+    stroke: var(--color-accent);
+    stroke-width: 1;
+  }
+  .st-bike {
+    fill: var(--color-accent);
+  }
+  .st-sidewalk {
+    fill: color-mix(in srgb, currentColor 8%, transparent);
+  }
+  .st-buffer {
+    fill: color-mix(in srgb, currentColor 30%, transparent);
+  }
+</style>

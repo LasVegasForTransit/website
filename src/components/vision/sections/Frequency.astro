@@ -1,0 +1,129 @@
+---
+import VisionFigure from '../VisionFigure.astro';
+import SectionHead from '../SectionHead.astro';
+---
+
+<section class="band-ink section">
+  <SectionHead num="3 / 14 — How we get around" heading="Twelve minutes." />
+
+  <div class="container-page">
+    <VisionFigure num="3" title="The difference frequency makes">
+      <div class="freq-strip">
+        <div class="freq-row freq-row-today">
+          <div class="freq-label">Today<em>every 45 min on most routes</em></div>
+          <svg
+            viewBox="0 0 600 32"
+            preserveAspectRatio="none"
+            role="img"
+            aria-label="Three buses spaced 45 minutes apart over an hour"
+          >
+            <line class="freq-timeline" x1="0" y1="16" x2="600" y2="16"></line>
+            <rect class="freq-bus" x="40" y="8" width="14" height="16"></rect>
+            <rect class="freq-bus" x="240" y="8" width="14" height="16"></rect>
+            <rect class="freq-bus" x="440" y="8" width="14" height="16"></rect>
+          </svg>
+        </div>
+        <div class="freq-row freq-row-built">
+          <div class="freq-label">Built<em>every 12 min on the BRT spine</em></div>
+          <svg
+            viewBox="0 0 600 32"
+            preserveAspectRatio="none"
+            role="img"
+            aria-label="Ten buses spaced 12 minutes apart over the same hour"
+          >
+            <line class="freq-timeline" x1="0" y1="16" x2="600" y2="16"></line>
+            <rect class="freq-bus" x="20" y="8" width="14" height="16"></rect>
+            <rect class="freq-bus" x="80" y="8" width="14" height="16"></rect>
+            <rect class="freq-bus" x="140" y="8" width="14" height="16"></rect>
+            <rect class="freq-bus" x="200" y="8" width="14" height="16"></rect>
+            <rect class="freq-bus" x="260" y="8" width="14" height="16"></rect>
+            <rect class="freq-bus" x="320" y="8" width="14" height="16"></rect>
+            <rect class="freq-bus" x="380" y="8" width="14" height="16"></rect>
+            <rect class="freq-bus" x="440" y="8" width="14" height="16"></rect>
+            <rect class="freq-bus" x="500" y="8" width="14" height="16"></rect>
+            <rect class="freq-bus" x="560" y="8" width="14" height="16"></rect>
+          </svg>
+        </div>
+      </div>
+      <Fragment slot="caption">
+        When the bus comes every twelve minutes, you stop checking the schedule. You just go.
+        Transit planners call it the <em>frequency threshold</em>. Below it, ridership stays low.
+        Above it, transit becomes spontaneous.
+      </Fragment>
+    </VisionFigure>
+  </div>
+
+  <div class="container-narrow">
+    <div class="vision-prose">
+      <p>
+        There is a number transit planners think about more than any other: how often the bus comes.
+        Below a certain frequency — usually twelve to fifteen minutes — riders check the schedule
+        before going to the stop. They plan around the bus. They don't take it for short trips, only
+        for the trips it pays to plan for. Above that frequency, the schedule stops mattering.
+        Riders go to the stop and one shows up. Transit becomes spontaneous, the way a sidewalk is.
+        It becomes the default for the trips it serves.
+      </p>
+      <p>
+        Most of the RTC network in 2026 runs every thirty to forty-five minutes outside the Strip
+        corridor. That is the version of transit that gets used because riders have no other choice.
+        The version we're building runs every twelve minutes on the spine and every fifteen to
+        twenty in the next layer out. It runs all night where people work all night — the Strip,
+        downtown, the hospital corridor — because the alternative is asking dishwashers and
+        emergency-room nurses to spend a third of their paychecks on rideshares home.
+      </p>
+      <p>
+        The Maryland Parkway BRT is the first piece of that spine, opening in 2026. The Charleston
+        study is the next. Light rail comes later, on the corridors where the ridership numbers will
+        support it. None of this is fantasy: the 14th-busiest bus system in the country is already
+        in the Valley. The work is making it good enough that a much wider share of Las&nbsp;Vegans
+        use it by choice, not by necessity.
+      </p>
+    </div>
+    <p class="vision-tail">
+      When the bus comes every twelve minutes, you stop thinking about the bus. Most Las&nbsp;Vegans
+      have never had that. They should.
+    </p>
+  </div>
+</section>
+
+<style>
+  .freq-strip {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    margin-block: 1rem;
+  }
+  .freq-row {
+    display: grid;
+    grid-template-columns: 9rem 1fr;
+    gap: 1rem;
+    align-items: center;
+  }
+  .freq-label {
+    font-size: 0.8rem;
+    font-weight: 700;
+  }
+  .freq-label em {
+    display: block;
+    color: var(--vp-text-muted);
+    font-style: normal;
+    font-weight: 500;
+    font-size: 0.75rem;
+    margin-top: 0.25rem;
+  }
+  .freq-row svg {
+    width: 100%;
+    height: 32px;
+  }
+  .freq-row-today svg .freq-bus {
+    fill: color-mix(in srgb, currentColor 50%, transparent);
+  }
+  .freq-row-built svg .freq-bus {
+    fill: var(--color-accent);
+  }
+  .freq-row svg .freq-timeline {
+    stroke: currentColor;
+    stroke-width: 1;
+    opacity: 0.3;
+  }
+</style>

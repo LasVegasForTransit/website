@@ -1,0 +1,70 @@
+---
+import PhotoPlaceholder from '../PhotoPlaceholder.astro';
+import SectionHead from '../SectionHead.astro';
+---
+
+<section class="band-cream section">
+  <SectionHead num="10 / 14 — Context" heading="The shift change." />
+
+  <div class="container-page">
+    <figure class="photo-explanatory">
+      <PhotoPlaceholder
+        description="A line of hospitality workers boarding the bus on Las Vegas Boulevard at 6 a.m. or 2 a.m. The actual face of how the Strip moves — uniforms, lunch bags, name tags."
+      />
+      <figcaption class="long-caption">
+        <strong>The face of how Vegas actually moves.</strong> Tens of thousands of housekeepers, dishwashers,
+        line cooks, security officers, valet drivers, dealers, and engineers come off the Strip floor
+        at every shift change and head home. Most of them ride the bus. The same is true of every hospital,
+        every campus at UNLV and CSN, every downtown office, every active construction site. <em
+          >The 14th-busiest bus system in the country is in the Valley because Las&nbsp;Vegas's
+          economy literally runs on it.</em
+        >
+      </figcaption>
+    </figure>
+  </div>
+
+  <div class="container-narrow">
+    <div class="vision-prose">
+      <p>
+        The version of this that breaks is when the bus doesn't come. When the casino has to
+        schedule shifts around forty-five-minute headways. When the nurse can't take the job because
+        there's no late-night route. When the construction company loses crews because the corridor
+        they're working never had a bus stop. The cost of bad transit is paid by the businesses that
+        depend on workers showing up — and ultimately by the residents who depend on those
+        businesses staying open.
+      </p>
+      <p>
+        Transit is not a charity for people without cars. It is the infrastructure that lets a
+        workforce of two million people show up to a regional economy. We defend it. Then we build
+        the version that doesn't just barely hold the Valley together, but actively grows it — by
+        making it easy for the hospital, the campus, and the next downtown employer to expand on the
+        assumption that workers can get there.
+      </p>
+    </div>
+    <p class="vision-tail">
+      The Valley's economy already runs on transit. The work is making it run well.
+    </p>
+  </div>
+</section>
+
+<style>
+  .photo-explanatory {
+    margin-block: 3rem;
+    margin-inline: 0;
+  }
+  .long-caption {
+    margin-top: 1rem;
+    font-size: 0.95rem;
+    line-height: 1.55;
+    color: var(--vp-text-muted);
+    max-width: 42rem;
+    text-wrap: pretty;
+  }
+  .long-caption strong {
+    font-weight: 700;
+    color: var(--vp-text);
+  }
+  .long-caption em {
+    font-style: italic;
+  }
+</style>

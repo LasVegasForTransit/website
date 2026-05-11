@@ -1,0 +1,264 @@
+/*
+ * Vision page design system.
+ *
+ * Imported by src/pages/vision.astro. Marked global at the import so each
+ * section component under src/components/vision/sections/ can consume the
+ * shared classes (.band-cream, .vision-prose, .eyebrow override, etc.)
+ * without redefining them. Section-specific figure CSS stays scoped inside
+ * each section component.
+ *
+ * Color/intensity flips at the band boundary are driven by --vp-* custom
+ * properties so per-figure CSS can stay band-agnostic and reference
+ * var(--vp-text) / var(--vp-text-muted) / var(--vp-text-subtle) directly,
+ * eliminating per-section .band-ink overrides.
+ */
+
+/* ====== Containers ====== */
+.vision-page .container-narrow {
+  max-width: 42rem;
+  margin-inline: auto;
+  padding-inline: 1.5rem;
+}
+
+/* ====== Section + bands ====== */
+.vision-page .section {
+  padding-block: 5rem;
+}
+@media (min-width: 768px) {
+  .vision-page .section {
+    padding-block: 7.5rem;
+  }
+}
+
+/* Gap between sibling container blocks within non-hero sections */
+.vision-page .section > * + * {
+  margin-top: clamp(2.5rem, 4vw, 4rem);
+}
+
+/* ====== Frame hero panel ======
+   The hero starts below the in-flow sticky header. The transparent-over-dark
+   nav behaviour and the dark root canvas are page-agnostic — vision.astro
+   opts in via <BaseLayout canvas="dark">, see body[data-canvas='dark'] in
+   global.css. This file just lays out the frame itself. */
+.vision-page .frame-hero {
+  position: relative;
+  min-height: 100dvh;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+}
+.vision-page .frame-hero__scrim {
+  position: absolute;
+  inset: 0;
+  background: color-mix(in srgb, var(--color-ink) 62%, transparent);
+  pointer-events: none;
+}
+.vision-page .frame-hero__text {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  padding-inline: clamp(1.5rem, 6vw, 6rem);
+  padding-block: clamp(5rem, 10vh, 8rem);
+}
+.vision-page .frame-heading {
+  font-size: clamp(3.5rem, 6vw + 1.5rem, 8rem);
+  font-weight: 900;
+  letter-spacing: -0.035em;
+  line-height: 0.92;
+  color: var(--color-paper);
+  text-wrap: balance;
+}
+.vision-page .frame-hero__text .hero-lede {
+  margin-top: 2.5rem;
+  max-width: 44rem;
+  color: color-mix(in srgb, var(--color-paper) 72%, var(--color-ink));
+}
+.vision-page .frame-scroll-hint {
+  position: absolute;
+  bottom: 2.5rem;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 2;
+  color: var(--color-paper);
+  opacity: 0.45;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  animation: frame-bounce 2.4s ease-in-out infinite;
+  pointer-events: none;
+}
+@keyframes frame-bounce {
+  0%,
+  100% {
+    transform: translateX(-50%) translateY(0);
+  }
+  50% {
+    transform: translateX(-50%) translateY(7px);
+  }
+}
+
+.vision-page .band-cream {
+  background: var(--color-paper);
+  color: var(--color-ink);
+  --vp-text: var(--color-ink);
+  --vp-text-muted: var(--color-mute);
+  --vp-text-subtle: color-mix(in srgb, var(--color-ink) 18%, transparent);
+  --vp-eyebrow: var(--color-mute);
+  --vp-prose: var(--color-ink);
+  --vp-link: var(--color-accent);
+  --vp-cite: var(--color-mute);
+  --vp-rule: color-mix(in srgb, var(--color-ink) 18%, transparent);
+}
+.vision-page .band-ink {
+  background: var(--color-ink);
+  color: var(--color-paper);
+  --vp-text: var(--color-paper);
+  --vp-text-muted: color-mix(in srgb, var(--color-paper) 65%, var(--color-ink));
+  --vp-text-subtle: color-mix(in srgb, var(--color-paper) 18%, var(--color-ink));
+  --vp-eyebrow: color-mix(in srgb, var(--color-paper) 55%, var(--color-ink));
+  --vp-prose: color-mix(in srgb, var(--color-paper) 92%, var(--color-ink));
+  --vp-link: var(--color-accent-soft);
+  --vp-cite: color-mix(in srgb, var(--color-paper) 55%, var(--color-ink));
+  --vp-rule: color-mix(in srgb, var(--color-paper) 18%, transparent);
+}
+.vision-page .band-accent {
+  background: var(--color-accent);
+  color: var(--color-paper);
+  --vp-text: var(--color-paper);
+  --vp-text-muted: color-mix(in srgb, var(--color-paper) 75%, var(--color-accent));
+  --vp-text-subtle: color-mix(in srgb, var(--color-paper) 24%, transparent);
+  --vp-eyebrow: color-mix(in srgb, var(--color-paper) 70%, var(--color-accent));
+  --vp-prose: var(--color-paper);
+  --vp-link: var(--color-paper);
+  --vp-cite: color-mix(in srgb, var(--color-paper) 70%, var(--color-accent));
+  --vp-rule: color-mix(in srgb, var(--color-paper) 24%, transparent);
+}
+.vision-page .band-ink ::selection {
+  background: var(--color-paper);
+  color: var(--color-ink);
+}
+
+/* ====== Eyebrow override (global .eyebrow already exists) ====== */
+.vision-page .eyebrow {
+  color: var(--vp-eyebrow);
+  display: block;
+  margin-bottom: 1.25rem;
+}
+
+/* ====== Section heading + hero ====== */
+.vision-page .section-heading {
+  font-size: clamp(2rem, 1.4vw + 1.5rem, 2.75rem);
+  font-weight: 900;
+  letter-spacing: -0.025em;
+  line-height: 1.05;
+  text-wrap: balance;
+  max-width: 22ch;
+}
+.vision-page .hero-heading {
+  font-size: clamp(2.5rem, 4vw + 1.5rem, 4.5rem);
+  font-weight: 900;
+  letter-spacing: -0.035em;
+  line-height: 0.95;
+  text-wrap: balance;
+  max-width: 16ch;
+}
+.vision-page .hero-heading-close {
+  max-width: 22ch;
+}
+.vision-page .hero-lede {
+  font-size: clamp(1.2rem, 0.6vw + 1rem, 1.5rem);
+  line-height: 1.45;
+  color: var(--vp-text-muted);
+  text-wrap: pretty;
+  margin-top: 2.5rem;
+  max-width: 36rem;
+}
+
+/* ====== Substantive prose (renamed from .prose to avoid collision) ====== */
+.vision-page .vision-prose {
+  font-size: clamp(1.05rem, 0.3vw + 1rem, 1.18rem);
+  line-height: 1.65;
+  text-wrap: pretty;
+  font-weight: 400;
+  margin-block: 2.5rem;
+  color: var(--vp-prose);
+  --content-link-color: var(--vp-text);
+  --content-link-hover: var(--vp-link);
+  --content-link-decoration: color-mix(in srgb, var(--vp-link) 78%, transparent);
+}
+.vision-page .vision-prose p + p {
+  margin-top: 1.4em;
+}
+.vision-page .vision-prose em {
+  font-style: italic;
+  font-weight: 500;
+}
+.vision-page .vision-prose strong {
+  font-weight: 700;
+}
+
+/* ====== Inline accent highlight ====== */
+.vision-page .inline-highlight {
+  background: color-mix(in srgb, var(--color-accent) 18%, transparent);
+  padding: 0.05em 0.25em;
+}
+.vision-page .band-ink .inline-highlight {
+  background: color-mix(in srgb, var(--color-accent) 35%, transparent);
+}
+
+/* ====== Reader's note (frame) ====== */
+.vision-page .reader-note {
+  font-size: 0.95rem;
+  line-height: 1.6;
+  color: var(--vp-text-muted);
+  margin-top: 3.5rem !important;
+  padding-top: 2rem;
+  border-top: 1px solid var(--vp-rule);
+  max-width: 36rem;
+}
+.vision-page .reader-note strong {
+  color: var(--vp-text);
+  font-weight: 700;
+}
+.vision-page .reader-note em {
+  font-style: italic;
+}
+
+/* ====== Tail kicker (renamed from .tail) ====== */
+.vision-page .vision-tail {
+  font-size: clamp(1.4rem, 1.1vw + 1rem, 2rem);
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1.15;
+  text-wrap: balance;
+  max-width: 30ch;
+  margin-top: 3.5rem;
+  padding-top: 2rem;
+  border-top: 1px solid var(--vp-text-subtle);
+}
+
+/* ====== Close pointers ====== */
+.vision-page .close-pointers {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  margin: 2.5rem 0 0 0;
+  padding: 0;
+  --content-link-color: var(--color-paper);
+  --content-link-hover: var(--color-accent-soft);
+  --content-link-decoration: color-mix(in srgb, var(--color-accent-soft) 82%, transparent);
+}
+.vision-page .close-pointers li {
+  font-size: clamp(1.05rem, 0.3vw + 1rem, 1.2rem);
+  font-weight: 500;
+}
+.vision-page .close-pointers li em {
+  font-style: italic;
+  font-weight: 400;
+  opacity: 0.85;
+}
+.vision-page .close-pointers li a {
+  font-weight: 800;
+}

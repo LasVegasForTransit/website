@@ -1,0 +1,49 @@
+---
+interface Props {
+  /** Figure number, e.g. "1", "10". Rendered as "FIG. 1". */
+  num: string;
+  /** Human label after the dash, e.g. "What's within a 5-minute walk". */
+  title: string;
+}
+
+const { num, title } = Astro.props;
+---
+
+<figure class="vision-figure">
+  <p class="figure-eyebrow"><span class="num">FIG. {num}</span> — {title}</p>
+  <slot />
+  <figcaption class="figure-caption"><slot name="caption" /></figcaption>
+</figure>
+
+<style>
+  .vision-figure {
+    margin-block: 4rem;
+    padding-block: 2.5rem;
+    border-top: 1px solid color-mix(in srgb, currentColor 18%, transparent);
+    border-bottom: 1px solid color-mix(in srgb, currentColor 18%, transparent);
+  }
+  .figure-eyebrow {
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.22em;
+    font-weight: 700;
+    color: var(--vp-eyebrow, var(--color-mute));
+    margin-bottom: 1.5rem;
+  }
+  .num {
+    color: var(--color-accent);
+  }
+  .figure-caption {
+    margin-top: 1.5rem;
+    font-size: 0.9rem;
+    line-height: 1.5;
+    color: var(--vp-text-muted, var(--color-mute));
+    max-width: 42rem;
+    text-wrap: pretty;
+  }
+  .figure-caption :global(em) {
+    font-style: italic;
+    color: var(--vp-text, var(--color-ink));
+    font-weight: 600;
+  }
+</style>

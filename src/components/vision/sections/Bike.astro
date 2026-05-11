@@ -1,0 +1,121 @@
+---
+import PhotoPlaceholder from '../PhotoPlaceholder.astro';
+import VisionFigure from '../VisionFigure.astro';
+import SectionHead from '../SectionHead.astro';
+---
+
+<section class="band-cream section">
+  <SectionHead num="2 / 14 — How we get around" heading="The kid in the protected lane." />
+
+  <div class="container-page">
+    <PhotoPlaceholder
+      description="A protected bike lane on a redesigned arterial. A kid with a backpack, an adult on an e-bike. A concrete buffer between them and a calm 30-mph car lane."
+    />
+  </div>
+
+  <div class="container-narrow">
+    <div class="vision-prose">
+      <p>
+        Most American bike lanes are paint on a road. They are not protection. A four-thousand-pound
+        car going forty-five miles per hour through a stripe of paint is the same physics problem as
+        a four-thousand-pound car going forty-five miles per hour through nothing. This is why
+        parents in the Valley don't let their twelve-year-olds bike to school today, and they're
+        correct not to. They have done the math.
+      </p>
+    </div>
+  </div>
+
+  <div class="container-page">
+    <VisionFigure num="2" title={`What "protected" actually means`}>
+      <svg
+        class="bike-cs"
+        viewBox="0 0 600 140"
+        xmlns="http://www.w3.org/2000/svg"
+        role="img"
+        aria-label="Cross-section of a redesigned arterial: from outside in — sidewalk, protected bike lane, buffer, drive lane, bus lane, drive lane, bus lane, buffer, bike lane, sidewalk"
+      >
+        <rect class="bg" x="20" y="60" width="560" height="60"></rect>
+        <rect class="sidewalk" x="20" y="60" width="80" height="60"></rect>
+        <text class="cs-label" x="60" y="135" text-anchor="middle">Sidewalk</text>
+        <rect class="bike-fill" x="100" y="60" width="60" height="60" opacity="0.85"></rect>
+        <text class="cs-label" x="130" y="135" text-anchor="middle" fill="var(--color-accent)"
+          >Bike lane</text
+        >
+        <rect class="protect-buffer" x="160" y="60" width="20" height="60"></rect>
+        <text class="cs-label" x="170" y="135" text-anchor="middle">Buffer</text>
+        <rect class="car-lane" x="180" y="60" width="120" height="60"></rect>
+        <text class="cs-label" x="240" y="135" text-anchor="middle">Drive lane</text>
+        <rect class="bus-lane" x="300" y="60" width="120" height="60"></rect>
+        <text class="cs-label" x="360" y="135" text-anchor="middle">Bus lane</text>
+        <rect class="car-lane" x="420" y="60" width="80" height="60"></rect>
+        <text class="cs-label" x="460" y="135" text-anchor="middle">Drive lane</text>
+        <rect class="sidewalk" x="500" y="60" width="80" height="60"></rect>
+        <text class="cs-label" x="540" y="135" text-anchor="middle">Sidewalk</text>
+        <text class="cs-label" x="300" y="40" text-anchor="middle" fill="var(--vp-text-muted)"
+          >A redesigned arterial — Maryland, Charleston, Boulder Hwy</text
+        >
+      </svg>
+      <Fragment slot="caption">
+        A protected bike lane is concrete, planters, parked cars used as a buffer, or a curb —
+        anything that physically separates riders from traffic. It's the difference between an
+        infrastructure that asks for trust and one that earns it.
+      </Fragment>
+    </VisionFigure>
+  </div>
+
+  <div class="container-narrow">
+    <div class="vision-prose">
+      <p>
+        Built right, on the corridors people actually want to ride, a protected network changes who
+        can use the city by bike. It becomes the way a teenager gets to a friend's house, the way a
+        worker connects from her apartment to a BRT stop, the way a delivery rider makes a living.
+        E-bikes work in 110-degree heat. Bike-share lets people without their own bike make a real
+        trip. A connected protected network — not just isolated stretches of stripe — extends what
+        transit can reach by miles in every direction.
+      </p>
+      <p>
+        This is also the cheapest mobility infrastructure a city can build, per rider, per dollar,
+        per ton of carbon. It is also the most ignored. Every short trip on two wheels is a trip a
+        household doesn't need a fourth seat in the car for. Multiply that across a metro of two
+        million people and you start to see why the comparable cities that built it did not regret
+        the bill.
+      </p>
+    </div>
+  </div>
+</section>
+
+<style>
+  .bike-cs {
+    display: block;
+    width: 100%;
+    height: auto;
+    max-height: 200px;
+  }
+  .bike-cs .cs-label {
+    font-size: 9px;
+    font-weight: 600;
+    fill: currentColor;
+  }
+  .bike-cs .bg {
+    fill: color-mix(in srgb, currentColor 6%, transparent);
+    stroke: currentColor;
+    stroke-width: 1;
+  }
+  .bike-cs .bike-fill {
+    fill: var(--color-accent);
+  }
+  .bike-cs .car-lane {
+    fill: color-mix(in srgb, currentColor 14%, transparent);
+  }
+  .bike-cs .bus-lane {
+    fill: color-mix(in srgb, var(--color-accent) 15%, transparent);
+    stroke: var(--color-accent);
+    stroke-width: 1;
+  }
+  .bike-cs .protect-buffer {
+    fill: color-mix(in srgb, currentColor 30%, transparent);
+  }
+  .bike-cs .sidewalk {
+    fill: color-mix(in srgb, currentColor 8%, transparent);
+  }
+</style>

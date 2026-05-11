@@ -1,0 +1,145 @@
+---
+import PhotoPlaceholder from '../PhotoPlaceholder.astro';
+import VisionFigure from '../VisionFigure.astro';
+import SectionHead from '../SectionHead.astro';
+---
+
+<section class="band-ink section">
+  <SectionHead num="11 / 14 — Context" heading="We didn't move here for the traffic." />
+
+  <div class="container-page">
+    <PhotoPlaceholder
+      variant="ink"
+      description="Red Rock Canyon at sunset, or a packed downtown First Friday — a Vegas weekend that isn't on the Strip. People doing what they actually moved here for."
+    />
+  </div>
+
+  <div class="container-narrow">
+    <div class="vision-prose">
+      <p>
+        Most people who live in the Las&nbsp;Vegas Valley moved here for something. The mountains.
+        The summers, somehow. The desert. The Strip. The cost of living. The lack of state income
+        tax. None of those reasons are <em
+          >"I love driving forty-five minutes to a trailhead with a parking lot at the end."</em
+        > But that is the experience the Valley currently offers for almost any recreation that isn't
+        on the Strip itself.
+      </p>
+    </div>
+  </div>
+
+  <div class="container-page">
+    <VisionFigure num="10" title="A Valley you can leave the house for">
+      <svg
+        class="rec-map"
+        viewBox="0 0 600 360"
+        xmlns="http://www.w3.org/2000/svg"
+        role="img"
+        aria-label="Map of Valley recreation destinations: Red Rock, Mount Charleston, Lake Mead, Floyd Lamb Park, Springs Preserve, downtown, the Strip with Allegiant and T-Mobile arenas, Henderson trails"
+      >
+        <path
+          class="rec-bound"
+          d="M80 200 Q110 120, 200 90 Q320 70, 440 95 Q520 130, 530 220 Q525 290, 460 320 Q360 340, 250 330 Q140 320, 95 270 Z"
+        ></path>
+        <text class="rec-axis" x="80" y="80">Spring Mts</text>
+        <text class="rec-axis" x="500" y="120">Lake Mead Rec Area</text>
+        <circle class="rec-dot" cx="80" cy="190" r="6"></circle><text
+          class="rec-label"
+          x="92"
+          y="194">Red Rock</text
+        >
+        <circle class="rec-dot" cx="60" cy="100" r="6"></circle><text
+          class="rec-label"
+          x="72"
+          y="104">Mt. Charleston</text
+        >
+        <circle class="rec-dot" cx="510" cy="160" r="6"></circle><text
+          class="rec-label"
+          x="498"
+          y="148"
+          text-anchor="end">Lake Mead</text
+        >
+        <circle class="rec-dot" cx="240" cy="120" r="5"></circle><text
+          class="rec-label"
+          x="240"
+          y="108"
+          text-anchor="middle">Floyd Lamb Park</text
+        >
+        <circle class="rec-dot" cx="320" cy="160" r="5"></circle><text
+          class="rec-label"
+          x="320"
+          y="148"
+          text-anchor="middle">Springs Preserve</text
+        >
+        <circle class="rec-dot" cx="290" cy="200" r="6"></circle><text
+          class="rec-label"
+          x="290"
+          y="222"
+          text-anchor="middle">Downtown</text
+        >
+        <circle class="rec-dot" cx="320" cy="240" r="6"></circle><text
+          class="rec-label"
+          x="320"
+          y="262"
+          text-anchor="middle">Strip · Allegiant · T-Mobile</text
+        >
+        <circle class="rec-dot" cx="450" cy="290" r="5"></circle><text
+          class="rec-label"
+          x="450"
+          y="312"
+          text-anchor="middle">Henderson trails</text
+        >
+      </svg>
+      <Fragment slot="caption">
+        The Valley is full of places people moved here for. Most of them are unreachable today
+        without a car. The won Valley closes that gap.
+      </Fragment>
+    </VisionFigure>
+  </div>
+
+  <div class="container-narrow">
+    <div class="vision-prose">
+      <p>
+        Red Rock Canyon, Mount Charleston, Lake Mead, Floyd Lamb Park, the Springs Preserve,
+        downtown's First Friday, the hockey games at T-Mobile, the football games at Allegiant —
+        these are the things people moved here for, and they are all currently locked behind a car
+        ride. The won Valley unlocks them. That doesn't mean light rail to a trailhead. It means
+        transit to a station where a shuttle or a bike-share gets you the rest of the way. It means
+        biking distance to downtown culture. It means a real shuttle network from BRT stops to the
+        regional parks.
+      </p>
+      <p>
+        A Valley you can actually play in is a Valley worth growing up in. And it's a Valley people
+        keep choosing to move to — which is something Las Vegas has always wanted to be able to
+        count on.
+      </p>
+    </div>
+  </div>
+</section>
+
+<style>
+  .rec-map {
+    display: block;
+    width: 100%;
+    height: auto;
+    max-height: 360px;
+  }
+  .rec-bound {
+    fill: color-mix(in srgb, currentColor 4%, transparent);
+    stroke: color-mix(in srgb, currentColor 24%, transparent);
+    stroke-width: 1;
+    stroke-dasharray: 4 5;
+  }
+  .rec-dot {
+    fill: var(--color-accent);
+  }
+  .rec-label {
+    font-size: 10px;
+    font-weight: 700;
+    fill: currentColor;
+  }
+  .rec-axis {
+    font-size: 9px;
+    font-weight: 600;
+    fill: var(--vp-text-muted);
+  }
+</style>

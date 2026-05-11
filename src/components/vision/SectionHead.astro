@@ -1,0 +1,22 @@
+---
+interface Props {
+  /** Section number/pos label, e.g. "3 / 14 — How we get around". Omit to suppress the eyebrow. */
+  num?: string;
+  /** The visible section title — full sentence/phrase */
+  heading: string;
+  /** Heading level. Defaults to h2; the frame and close use h1/h2 with hero styling. */
+  as?: 'h1' | 'h2';
+  /** Visual treatment for the heading itself. Default sections use 'section'. */
+  variant?: 'section' | 'hero';
+}
+
+const props = Astro.props as Props;
+const { num, heading, as = 'h2', variant = 'section' } = props;
+const Tag = as;
+const headingClass = variant === 'hero' ? 'hero-heading' : 'section-heading';
+---
+
+<div class="container-narrow">
+  {num && <p class="eyebrow">{num}</p>}
+  <Tag class={headingClass} set:html={heading} />
+</div>
