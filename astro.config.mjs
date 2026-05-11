@@ -11,22 +11,29 @@ import tailwindcss from '@tailwindcss/vite';
 // build-timestamp lastmod is marginal. Crawlers re-fetch on each deploy anyway.
 // Path normalisation here mirrors scripts/audit/_shared.ts::sitemapPaths() —
 // keep both in sync if the sitemap URL shape changes.
+
+// /vision is hidden until the redesign ships — keep it out of the XML sitemap
+// so crawlers and AI overviews don't surface it. The page still renders on
+// direct hits (with `noindex` set) so collaborators can preview it.
+/** @param {string} page */
+const sitemapFilter = (page) => !/\/vision\/?$/.test(page);
+
 /**
  * @param {import('@astrojs/sitemap').SitemapItem} item
  * @returns {import('@astrojs/sitemap').SitemapItem}
  */
 const sitemapSerialize = (item) => {
-  // Astro emits sitemap URLs with trailing slashes (/about/, /vision/) — strip
-  // them before pattern matching, otherwise equality checks silently miss every
-  // page and fall through to the integration defaults.
+  // Astro emits sitemap URLs with trailing slashes (/about/, /projects/) —
+  // strip them before pattern matching, otherwise equality checks silently
+  // miss every page and fall through to the integration defaults.
   const rawPath = new URL(item.url).pathname;
   const path = rawPath === '/' ? '/' : rawPath.replace(/\/$/, '');
 
   if (path === '/') {
     return { ...item, changefreq: EnumChangefreq.WEEKLY, priority: 1.0 };
   }
-  // These three are the pages we expect search engines and AI overviews to feature.
-  if (path === '/vision' || path === '/projects' || path === '/about') {
+  // The two pages we expect search engines and AI overviews to feature.
+  if (path === '/projects' || path === '/about') {
     return { ...item, changefreq: EnumChangefreq.MONTHLY, priority: 0.8 };
   }
   // Match before the broader /projects/ prefix rule below.
@@ -58,6 +65,7 @@ export default defineConfig({
       changefreq: EnumChangefreq.MONTHLY,
       priority: 0.5,
       lastmod: new Date(),
+      filter: sitemapFilter,
       serialize: sitemapSerialize,
     }),
   ],

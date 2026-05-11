@@ -35,9 +35,12 @@ export const site = {
   },
 } as const;
 
+// /vision is intentionally absent — page is hidden until the redesign ships.
+// To restore: add `{ href: '/vision', label: 'Vision' }` here and undo the
+// matching omissions in Footer, index.astro, about.mdx, sitemap.astro, the
+// llms-*.txt sources, astro.config.mjs, and vision.astro's `noindex` flag.
 export const navMain = [
   { href: '/about', label: 'About' },
-  { href: '/vision', label: 'Vision' },
   { href: '/projects', label: 'Projects' },
   { href: '/events', label: 'Events' },
   { href: '/contact', label: 'Contact' },

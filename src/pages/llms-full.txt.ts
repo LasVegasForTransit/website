@@ -23,8 +23,12 @@ const pageRoutes: Record<string, string> = {
 };
 const docRoutes: Record<string, string> = {
   strategy: '/about/strategy',
-  vision: '/vision',
+  // vision: '/vision' — page hidden until redesign ships; see src/lib/site.ts.
 };
+
+// Docs to omit from the dump entirely while their public surfaces are hidden.
+// Keeps LLM-ingested content in sync with what visitors can actually browse.
+const hiddenDocIds = new Set(['vision']);
 
 const u = (path: string): string => new URL(path, site.url).toString();
 
@@ -77,7 +81,9 @@ export const GET: APIRoute = async () => {
   // Long-form organizational docs — strategy, vision, mission, etc.
   out.push('# Organizational documents');
   out.push('');
-  const sortedDocs = [...docs].sort((a, b) => (a.data.order ?? 999) - (b.data.order ?? 999));
+  const sortedDocs = [...docs]
+    .filter((d) => !hiddenDocIds.has(d.id))
+    .sort((a, b) => (a.data.order ?? 999) - (b.data.order ?? 999));
   for (const doc of sortedDocs) {
     out.push(`## ${doc.data.title}`);
     const route = docRoutes[doc.id];

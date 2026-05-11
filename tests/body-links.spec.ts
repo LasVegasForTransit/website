@@ -47,7 +47,9 @@ test.describe('body content links', () => {
     await page.waitForLoadState('networkidle');
     await page.evaluate(() => document.fonts.ready);
 
-    const storyLink = page.locator('.prose-doc a[href="/vision"]').first();
+    // The about-page prose link target tracks src/content/pages/about.mdx —
+    // /about/strategy is the surviving in-body link while /vision is hidden.
+    const storyLink = page.locator('.prose-doc a[href="/about/strategy"]').first();
     const ledeLink = page.locator('.lede a[href="/go"]').first();
 
     await expect(storyLink).toHaveCSS('text-decoration-line', 'underline');

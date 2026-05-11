@@ -18,7 +18,6 @@ ${site.name} is a Nevada nonprofit (EIN ${site.org.ein}, founded ${site.org.foun
 - [Home](${u('/')}): what we do, why now, and what's at stake for transit in Las Vegas
 - [About](${u('/about')}): who we are, why we incorporated, and how the work is organized into educate / organize / advocate
 - [Strategy](${u('/about/strategy')}): our theory of change — how we plan to win in Nevada
-- [Vision](${u('/vision')}): the Las Vegas we're arguing for — trains, walkable streets, neighborhoods that don't require a car
 
 ## Work
 - [Projects](${u('/projects')}): the public roadmap of active and planned projects
