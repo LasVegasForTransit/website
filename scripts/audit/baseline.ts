@@ -17,9 +17,13 @@
  * The script never throws on tool failure — it captures stdout/stderr +
  * exit code per tool and writes them to the report. The whole point of a
  * baseline is to surface problems, not gate the build.
+ *
+ * Concurrency: the four dist/lockfile readers run in parallel (Promise.all);
+ * Lighthouse and axe run after, serially, because each spawns its own
+ * Chromium and CPU contention would skew Lighthouse's performance score.
  */
 
-import { spawnSync } from 'node:child_process';
+import { spawn } from 'node:child_process';
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
@@ -45,8 +49,8 @@ interface ToolResult {
 // eslint-disable-next-line no-control-regex
 const ANSI_RE = /\x1b\[[\d;]*[a-zA-Z]/g;
 
-function clean(s: string | null | undefined, name: string): string {
-  let out = (s ?? '').replace(ANSI_RE, '');
+function clean(s: string, name: string): string {
+  let out = s.replace(ANSI_RE, '');
   // Playwright pipes the dev/preview server's stdout into its own with
   // a `[WebServer]` prefix on every line. For audit reports the build
   // log is noise — strip those lines.
@@ -59,25 +63,35 @@ function clean(s: string | null | undefined, name: string): string {
   return out.trim();
 }
 
-function run(name: string, cmd: string, cmdArgs: string[]): ToolResult {
-  const t0 = Date.now();
-  const r = spawnSync(cmd, cmdArgs, { encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 });
-  return {
-    name,
-    exitCode: r.status,
-    durationMs: Date.now() - t0,
-    stdout: clean(r.stdout, name),
-    stderr: clean(r.stderr, name),
-  };
+function runTool(name: string, cmd: string, cmdArgs: string[]): Promise<ToolResult> {
+  return new Promise((resolveResult) => {
+    const t0 = Date.now();
+    const child = spawn(cmd, cmdArgs, { stdio: ['ignore', 'pipe', 'pipe'] });
+    const outChunks: Buffer[] = [];
+    const errChunks: Buffer[] = [];
+    child.stdout.on('data', (chunk: Buffer) => outChunks.push(chunk));
+    child.stderr.on('data', (chunk: Buffer) => errChunks.push(chunk));
+    child.on('close', (exitCode) => {
+      resolveResult({
+        name,
+        exitCode,
+        durationMs: Date.now() - t0,
+        stdout: clean(Buffer.concat(outChunks).toString('utf8'), name),
+        stderr: clean(Buffer.concat(errChunks).toString('utf8'), name),
+      });
+    });
+  });
 }
 
-function log(msg: string): void {
+// Local logger named distinctly from clack's `log` so a future `import { log }
+// from '@clack/prompts'` can't silently collide.
+function auditLog(msg: string): void {
   process.stdout.write(`[audit] ${msg}\n`);
 }
 
 if (!skipBuild) {
-  log('building site (pnpm build)...');
-  const b = run('build', 'pnpm', ['build']);
+  auditLog('building site (pnpm build)...');
+  const b = await runTool('build', 'pnpm', ['build']);
   if (b.exitCode !== 0) {
     process.stderr.write(b.stderr || b.stdout);
     process.exit(b.exitCode ?? 1);
@@ -89,38 +103,50 @@ if (!existsSync(DIST)) {
   process.exit(1);
 }
 
-const results: ToolResult[] = [];
+// Wave A: four read-only tools, all touch dist/ or the lockfile only —
+// no port contention, no shared state. Parallelize for ~3 s wall-clock win.
+type Job = { name: string; cmd: string; args: string[] };
+const waveA: Job[] = [
+  { name: 'html-validate', cmd: 'pnpm', args: ['exec', 'html-validate', 'dist/**/*.html'] },
+  {
+    name: 'structured-data',
+    cmd: 'pnpm',
+    args: ['exec', 'tsx', 'scripts/audit/structured-data.ts', '--json'],
+  },
+  {
+    name: 'third-party-scan',
+    cmd: 'pnpm',
+    args: ['exec', 'tsx', 'scripts/audit/third-party-scan.ts', '--json'],
+  },
+  { name: 'deps-audit', cmd: 'pnpm', args: ['audit', '--prod', '--audit-level=low', '--json'] },
+];
 
-if (!skip.has('html-validate')) {
-  log('running html-validate...');
-  results.push(run('html-validate', 'pnpm', ['exec', 'html-validate', 'dist/**/*.html']));
-}
-if (!skip.has('structured-data')) {
-  log('running structured-data...');
-  results.push(
-    run('structured-data', 'pnpm', ['exec', 'tsx', 'scripts/audit/structured-data.ts', '--json']),
-  );
-}
-if (!skip.has('third-party-scan')) {
-  log('running third-party-scan...');
-  results.push(
-    run('third-party-scan', 'pnpm', ['exec', 'tsx', 'scripts/audit/third-party-scan.ts', '--json']),
-  );
-}
-if (!skip.has('deps-audit')) {
-  log('running pnpm audit (low+)...');
-  results.push(run('deps-audit', 'pnpm', ['audit', '--prod', '--audit-level=low', '--json']));
-}
+auditLog(`running wave A in parallel: ${waveA.map((j) => j.name).join(', ')}`);
+const waveAResults = await Promise.all(
+  waveA.filter((j) => !skip.has(j.name)).map((j) => runTool(j.name, j.cmd, j.args)),
+);
+
+// Wave B: each spawns Chromium. Serial so Lighthouse's perf score isn't
+// muddied by another browser pinning the CPU.
+const waveBResults: ToolResult[] = [];
 if (!skip.has('lighthouse')) {
-  log('running Lighthouse (lhci autorun)...');
-  results.push(run('lighthouse', 'pnpm', ['exec', 'lhci', 'autorun']));
+  auditLog('running Lighthouse (lhci autorun)...');
+  waveBResults.push(await runTool('lighthouse', 'pnpm', ['exec', 'lhci', 'autorun']));
 }
 if (!skip.has('axe')) {
-  log('running axe via Playwright (project=a11y)...');
-  results.push(
-    run('axe', 'pnpm', ['exec', 'playwright', 'test', '--project=a11y', '--reporter=line']),
+  auditLog('running axe via Playwright (project=a11y)...');
+  waveBResults.push(
+    await runTool('axe', 'pnpm', [
+      'exec',
+      'playwright',
+      'test',
+      '--project=a11y',
+      '--reporter=line',
+    ]),
   );
 }
+
+const results: ToolResult[] = [...waveAResults, ...waveBResults];
 
 const today = new Date().toISOString().slice(0, 10);
 mkdirSync(REPORT_DIR, { recursive: true });
@@ -147,7 +173,7 @@ ${sections}
 `;
 
 writeFileSync(reportPath, report);
-log(`wrote ${reportPath}`);
+auditLog(`wrote ${reportPath}`);
 
 const failed = results.filter((r) => r.exitCode !== 0);
 if (failed.length > 0) {

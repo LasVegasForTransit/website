@@ -155,7 +155,19 @@ function pickAnchorHost(target: { abs: string; isDir: boolean }): string | null 
 
 function main(): number {
   const root = process.cwd();
-  const files = walkMarkdown(root, root);
+  // `--files <abs|rel> [<abs|rel> ...]` lets the pre-commit hook hand us the
+  // staged docs and skip the full repo walk. Cross-file anchor checks still
+  // work because `headingsCache` reads target files lazily on demand.
+  const filesIdx = process.argv.indexOf('--files');
+  const explicit =
+    filesIdx !== -1
+      ? process.argv
+          .slice(filesIdx + 1)
+          .filter((a) => !a.startsWith('--'))
+          .map((p) => path.resolve(p))
+          .filter((p) => /\.(md|mdx)$/i.test(p) && existsSync(p))
+      : null;
+  const files = explicit && explicit.length > 0 ? explicit : walkMarkdown(root, root);
   const headingsCache = new Map<string, Set<string>>();
   const broken: Broken[] = [];
   let checked = 0;

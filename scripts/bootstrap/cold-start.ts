@@ -25,7 +25,7 @@ import { intro, log, note, outro } from '@clack/prompts';
 import pc from 'picocolors';
 import { detectOs } from './lib/os.js';
 import { loadEnvLocal } from './lib/load-env.js';
-import { mergeEnvFile } from './lib/env-file.js';
+import { clearCloudflareApiToken } from './lib/cloudflare.js';
 import type { FollowUp, FollowUpKind, PhaseId, PhaseResult } from './lib/types.js';
 import { COMMAND_CAPABILITY_MAP } from './config/prerequisites.js';
 import { loadReadiness, markPhase, saveReadiness } from './state.js';
@@ -39,38 +39,65 @@ import { runRepoPhase } from './phases/repo.js';
 import { runDeployPhase } from './phases/deploy.js';
 import { runDomainPhase } from './phases/domain.js';
 
-const PHASE_ORDER: PhaseId[] = ['install', 'auth', 'workspace', 'env', 'repo', 'deploy', 'domain'];
+interface PhaseSpec {
+  id: PhaseId;
+  title: string;
+  what: string;
+  local: boolean; // runs in --local-only mode (no remote auth required)
+}
 
-const PHASE_INFO: Record<PhaseId, { title: string; what: string }> = {
-  install: {
+// Single source of truth for the bootstrap phases. Order matters — phases
+// run in this sequence and downstream lookups (PHASE_BY_ID, PHASE_ORDER,
+// isLocalPhase) all derive from this array.
+const PHASES: readonly PhaseSpec[] = [
+  {
+    id: 'install',
     title: 'System tools',
     what: "Making sure Node, pnpm, gh, and wrangler are around. Anything missing, I'll offer to install.",
+    local: true,
   },
-  auth: {
+  {
+    id: 'auth',
     title: 'CLI authentication',
     what: 'Confirming gh and wrangler are logged in. You can skip either if today is local-only.',
+    local: false,
   },
-  workspace: {
+  {
+    id: 'workspace',
     title: 'Workspace + build smoke',
     what: "Installing deps and running a build to make sure nothing's broken before we touch anything remote.",
+    local: true,
   },
-  env: {
+  {
+    id: 'env',
     title: 'Site environment variables',
     what: 'Filling in your live newsletter, donate, and social URLs in .env.local. Placeholders are fine to start.',
+    local: true,
   },
-  repo: {
+  {
+    id: 'repo',
     title: 'GitHub repository',
     what: "Pushing the code to GitHub — creating the repo if it doesn't exist, or wiring up an existing one.",
+    local: false,
   },
-  deploy: {
+  {
+    id: 'deploy',
     title: 'Cloudflare Pages',
     what: "Provisioning the Pages project and pushing your first build. After this, you'll wire auto-deploys on push.",
+    local: false,
   },
-  domain: {
+  {
+    id: 'domain',
     title: 'Custom domain',
     what: 'Checking whether your domain points at the Pages project, and handing you the link to attach it if not.',
+    local: false,
   },
-};
+] as const;
+
+const PHASE_BY_ID: Record<PhaseId, PhaseSpec> = Object.fromEntries(
+  PHASES.map((p) => [p.id, p]),
+) as Record<PhaseId, PhaseSpec>;
+const PHASE_ORDER: readonly PhaseId[] = PHASES.map((p) => p.id);
 
 interface CliArgs {
   doctorMode: boolean;
@@ -170,7 +197,7 @@ async function runPhaseById(
 }
 
 function isLocalPhase(phaseId: PhaseId): boolean {
-  return phaseId === 'install' || phaseId === 'workspace' || phaseId === 'env';
+  return PHASE_BY_ID[phaseId].local;
 }
 
 function printOverview(args: CliArgs, runningPhases: PhaseId[]): void {
@@ -185,7 +212,7 @@ function printOverview(args: CliArgs, runningPhases: PhaseId[]): void {
   lines.push('');
   for (let i = 0; i < runningPhases.length; i++) {
     const id = runningPhases[i]!;
-    const info = PHASE_INFO[id];
+    const info = PHASE_BY_ID[id];
     lines.push(`  ${pc.dim(`${i + 1}.`)} ${pc.bold(id)} — ${info.title}`);
   }
   lines.push('');
@@ -243,8 +270,7 @@ function sanitizeCloudflareApiToken(projectRoot: string): void {
   if (!value) return;
   if (CF_TOKEN_CHARSET.test(value)) return;
   log.warn('CLOUDFLARE_API_TOKEN in env is malformed — clearing it.');
-  delete process.env.CLOUDFLARE_API_TOKEN;
-  mergeEnvFile(`${projectRoot}/.env.local`, new Map([['CLOUDFLARE_API_TOKEN', '']]));
+  clearCloudflareApiToken(projectRoot);
 }
 
 async function main(): Promise<void> {
@@ -274,11 +300,10 @@ async function main(): Promise<void> {
 
   // Single-phase mode
   if (args.phase) {
-    const info = PHASE_INFO[args.phase];
+    const info = PHASE_BY_ID[args.phase];
     note(info.what, `Phase: ${args.phase} — ${info.title}`);
     const result = await runPhaseById(args.phase, projectRoot, state, args);
     markPhase(state, args.phase, result.success ? 'complete' : 'partial');
-    saveReadiness(projectRoot, state);
     allFollowUp.push(...result.followUpItems);
     recomputeCommandReadiness(state);
     saveReadiness(projectRoot, state);
@@ -294,7 +319,7 @@ async function main(): Promise<void> {
   // Full or local-only flow
   for (let i = 0; i < runningPhases.length; i++) {
     const phaseId = runningPhases[i]!;
-    const info = PHASE_INFO[phaseId];
+    const info = PHASE_BY_ID[phaseId];
 
     const completed = shouldSkipPhase(phaseId, state, args.resume);
     if (completed) {

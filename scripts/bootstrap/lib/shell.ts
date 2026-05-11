@@ -51,8 +51,20 @@ export function commandOutput(result: CommandResult): string {
   return 'no output';
 }
 
+/**
+ * First line of `s`, trimmed, optionally truncated to `maxLen` with an
+ * ellipsis. Useful for compressing long subprocess output or stack-trace-
+ * style error messages into a single readable summary.
+ */
+export function firstLine(s: string, maxLen?: number): string {
+  const nl = s.indexOf('\n');
+  const head = (nl === -1 ? s : s.slice(0, nl)).trim();
+  if (maxLen === undefined || head.length <= maxLen) return head;
+  return `${head.slice(0, maxLen - 3)}...`;
+}
+
 export function summarizeOutputLine(result: CommandResult): string {
-  return commandOutput(result).split('\n')[0]!.trim();
+  return firstLine(commandOutput(result));
 }
 
 export function runInteractiveCommand(command: string, opts: ShellOptions = {}): boolean {
@@ -132,11 +144,12 @@ export async function runStreamingCommand(
   });
 }
 
-// Minimal ANSI scrub — wrangler emits color codes that look ugly when
-// re-rendered inside a clack taskLog box.
+// Strip CSI escape sequences (color, cursor moves, erase) — wrangler emits
+// all of them and they render as garbage inside a clack taskLog box. Matches
+// every `\x1b[ ... <letter>` sequence, not just the SGR (`m`) subset.
 function stripAnsi(s: string): string {
   // eslint-disable-next-line no-control-regex
-  return s.replace(/\u001b\[[0-9;]*m/g, '');
+  return s.replace(/\x1b\[[\d;]*[a-zA-Z]/g, '');
 }
 
 /** POSIX-shell single-quote a string so it survives `sh -c '<cmd>'` interpolation. */

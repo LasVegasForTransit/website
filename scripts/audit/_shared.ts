@@ -1,16 +1,15 @@
-import { readdirSync, readFileSync, statSync } from 'node:fs';
-import { join } from 'node:path';
+import { readdirSync, readFileSync } from 'node:fs';
+import { join, resolve } from 'node:path';
 
 const PROD_ORIGIN = 'https://lasvegasfortransit.org';
 
 export function distHtmlFiles(distDir: string): string[] {
   const out: string[] = [];
   function walk(dir: string): void {
-    for (const entry of readdirSync(dir)) {
-      const full = join(dir, entry);
-      const s = statSync(full);
-      if (s.isDirectory()) walk(full);
-      else if (full.endsWith('.html')) out.push(full);
+    for (const entry of readdirSync(dir, { withFileTypes: true })) {
+      const full = join(dir, entry.name);
+      if (entry.isDirectory()) walk(full);
+      else if (entry.isFile() && full.endsWith('.html')) out.push(full);
     }
   }
   walk(distDir);
@@ -31,4 +30,19 @@ export function relFromDist(distDir: string, file: string): string {
     .slice(distDir.length)
     .replace(/\/index\.html$/, '/')
     .replace(/\.html$/, '');
+}
+
+/**
+ * Shared CLI arg parser for the audit scripts. Honors `--dist=<path>` and the
+ * boolean `--json` flag, returning the resolved absolute dist directory.
+ */
+export function parseAuditArgs(argv: string[] = process.argv.slice(2)): {
+  distDir: string;
+  asJson: boolean;
+} {
+  const args = new Map(argv.map((a) => a.split('=') as [string, string | undefined]));
+  return {
+    distDir: resolve(args.get('--dist') ?? './dist'),
+    asJson: args.has('--json'),
+  };
 }

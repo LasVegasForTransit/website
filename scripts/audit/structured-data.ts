@@ -13,24 +13,20 @@
  */
 
 import { readFileSync } from 'node:fs';
-import { resolve } from 'node:path';
-import { distHtmlFiles, relFromDist } from './_shared.js';
+import { distHtmlFiles, parseAuditArgs, relFromDist } from './_shared.js';
 
 interface Finding {
   page: string;
   problem: string;
 }
 
-const args = new Map(
-  process.argv.slice(2).map((a) => a.split('=') as [string, string | undefined]),
-);
-const distDir = resolve(args.get('--dist') ?? './dist');
-const asJson = args.has('--json');
+const { distDir, asJson } = parseAuditArgs();
 
 const SCRIPT_RE = /<script[^>]*type=["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/g;
 const findings: Finding[] = [];
+const htmlFiles = distHtmlFiles(distDir);
 
-for (const file of distHtmlFiles(distDir)) {
+for (const file of htmlFiles) {
   const page = relFromDist(distDir, file);
   const html = readFileSync(file, 'utf8');
   const blocks = [...html.matchAll(SCRIPT_RE)].map((m) => m[1] ?? '');
@@ -72,7 +68,7 @@ for (const file of distHtmlFiles(distDir)) {
 if (asJson) {
   process.stdout.write(JSON.stringify({ ok: findings.length === 0, findings }, null, 2) + '\n');
 } else if (findings.length === 0) {
-  process.stdout.write(`structured-data: ok (${distHtmlFiles(distDir).length} pages checked)\n`);
+  process.stdout.write(`structured-data: ok (${htmlFiles.length} pages checked)\n`);
 } else {
   for (const f of findings) process.stderr.write(`  ${f.page}: ${f.problem}\n`);
   process.stderr.write(`structured-data: ${findings.length} problem(s)\n`);

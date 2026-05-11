@@ -12,14 +12,9 @@
  */
 
 import { readFileSync } from 'node:fs';
-import { resolve } from 'node:path';
-import { distHtmlFiles, relFromDist } from './_shared.js';
+import { distHtmlFiles, parseAuditArgs, relFromDist } from './_shared.js';
 
-const args = new Map(
-  process.argv.slice(2).map((a) => a.split('=') as [string, string | undefined]),
-);
-const distDir = resolve(args.get('--dist') ?? './dist');
-const asJson = args.has('--json');
+const { distDir, asJson } = parseAuditArgs();
 
 const ATTR_RE = /(?:src|href)=["'](https?:\/\/[^"']+)["']/g;
 const SELF_HOSTS = new Set(['lasvegasfortransit.org', 'www.lasvegasfortransit.org']);

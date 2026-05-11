@@ -2,7 +2,7 @@ import { log, spinner } from '@clack/prompts';
 import pc from 'picocolors';
 import { CAPABILITY_SPECS, type CapabilityConfig } from '../config/prerequisites.js';
 import type { FollowUp, PhaseResult, SupportedOs } from '../lib/types.js';
-import { runCommand, summarizeOutputLine } from '../lib/shell.js';
+import { firstLine, runCommand, summarizeOutputLine } from '../lib/shell.js';
 import { isVersionGte } from '../lib/os.js';
 import { promptConfirm, printToolTable, type ToolRow } from '../lib/ui.js';
 import { markCapability, type ReadinessState } from '../state.js';
@@ -150,11 +150,6 @@ export async function runInstallPhase(
 interface CapabilityCheck {
   installed: boolean;
   version?: string;
-}
-
-function firstLine(s: string): string {
-  const newline = s.indexOf('\n');
-  return (newline === -1 ? s : s.slice(0, newline)).trim();
 }
 
 function checkCapability(cap: CapabilityConfig): CapabilityCheck {

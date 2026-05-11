@@ -4,7 +4,7 @@
  * Commit the output — no build-time regen needed unless logo/copy changes.
  */
 import { chromium } from '@playwright/test';
-import { readFileSync, writeFileSync } from 'fs';
+import { writeFileSync } from 'fs';
 import { resolve, join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { tmpdir } from 'os';
@@ -12,11 +12,10 @@ import { tmpdir } from 'os';
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const OUT = join(ROOT, 'public', 'og-default.png');
 
-const fontPath = join(
-  ROOT,
-  'node_modules/@fontsource-variable/public-sans/files/public-sans-latin-wght-normal.woff2',
-);
-const fontB64 = readFileSync(fontPath).toString('base64');
+// The HTML lives in tmpdir() and Playwright loads it via file://, so the
+// browser has filesystem read access to siblings. A plain file:// URL in
+// @font-face works — no base64 inlining required.
+const fontUrl = `file://${join(ROOT, 'node_modules/@fontsource-variable/public-sans/files/public-sans-latin-wght-normal.woff2')}`;
 
 // On Dark variant: cream rings, lightened letter fills (readable on dark background)
 const logoSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="220" height="220" viewBox="0 0 260 260" fill="none">
@@ -42,7 +41,7 @@ const html = `<!DOCTYPE html>
   <style>
     @font-face {
       font-family: 'Public Sans';
-      src: url('data:font/woff2;base64,${fontB64}') format('woff2');
+      src: url('${fontUrl}') format('woff2');
       font-weight: 100 900;
     }
     * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -91,12 +90,14 @@ const tmpHtml = join(tmpdir(), 'lvbt-og-card.html');
 writeFileSync(tmpHtml, html, 'utf8');
 
 const browser = await chromium.launch();
-const page = await browser.newPage();
-await page.setViewportSize({ width: 1200, height: 630 });
-await page.goto(`file://${tmpHtml}`);
-await page.waitForTimeout(200); // let font render
-
-await page.screenshot({ path: OUT, clip: { x: 0, y: 0, width: 1200, height: 630 } });
-await browser.close();
+try {
+  const page = await browser.newPage();
+  await page.setViewportSize({ width: 1200, height: 630 });
+  await page.goto(`file://${tmpHtml}`);
+  await page.waitForTimeout(200); // let font render
+  await page.screenshot({ path: OUT, clip: { x: 0, y: 0, width: 1200, height: 630 } });
+} finally {
+  await browser.close();
+}
 
 console.log(`✓ og-default.png written to ${OUT}`);

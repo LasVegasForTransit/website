@@ -10,9 +10,13 @@ import {
   logSubline,
   type ToolRow,
 } from '../lib/ui.js';
-import { clearCloudflareAccount, ensureCloudflareAccount } from '../lib/cloudflare.js';
+import {
+  clearCloudflareAccount,
+  clearCloudflareApiToken,
+  ensureCloudflareAccount,
+} from '../lib/cloudflare.js';
 import { mergeEnvFile } from '../lib/env-file.js';
-import { tryOpenInBrowser } from '../lib/shell.js';
+import { firstLine, tryOpenInBrowser } from '../lib/shell.js';
 import { validateHostname, validatePagesProjectName } from '../lib/validators.js';
 import { DEFAULT_APEX_DOMAIN, DEFAULT_PAGES_PROJECT } from '../lib/defaults.js';
 import {
@@ -329,11 +333,12 @@ async function wireCnames(
   // requires user scope, which an account-scoped Zone.DNS:Edit token
   // legitimately lacks — it would falsely report `status: invalid` for
   // perfectly good tokens. The actual CNAME write is the only reliable check.
+  // `allowAuthRetry` bounds the loop: at most one auth-failure retry per
+  // host, then every subsequent failure path falls through `break`. No
+  // need for an iteration counter.
   let allowAuthRetry = true;
   for (const host of hosts) {
-    let attempt = 0;
     while (true) {
-      attempt++;
       log.message(`Writing CNAME ${pc.cyan(host)} → ${pc.cyan(target)} (proxied)…`);
       const r = await upsertCname(zoneId, host, target, apiToken, true);
       if (r.ok) {
@@ -369,16 +374,9 @@ async function wireCnames(
           ? `Re-create CLOUDFLARE_API_TOKEN with Zone.DNS:Edit on ${host}'s zone, then re-run.`
           : `Add CNAME ${host} → ${target} (proxied) at ${tokenDashboardUrl(accountId).replace('/api-tokens', `/${zoneId}/dns`)} and re-run.`,
       });
-      // attempt counter avoids infinite loop on a stable non-auth failure
-      void attempt;
       break;
     }
   }
-}
-
-function clearCloudflareApiToken(projectRoot: string): void {
-  delete process.env.CLOUDFLARE_API_TOKEN;
-  mergeEnvFile(path.join(projectRoot, '.env.local'), new Map([['CLOUDFLARE_API_TOKEN', '']]));
 }
 
 /**
@@ -759,16 +757,11 @@ async function tryFetch(url: string, timeoutMs: number): Promise<FetchProbeResul
       error: res.ok ? '' : `${res.status} ${res.statusText}`,
     };
   } catch (e) {
-    return { ok: false, status: 0, error: shortError((e as Error).message) };
+    // node:undici exception messages can be very long; keep just the first line.
+    return { ok: false, status: 0, error: firstLine((e as Error).message, 80) };
   } finally {
     clearTimeout(timer);
   }
-}
-
-function shortError(raw: string): string {
-  // node:undici exception messages can be very long; keep the first line.
-  const first = raw.split('\n')[0]!.trim();
-  return first.length > 80 ? `${first.slice(0, 77)}...` : first;
 }
 
 /** Order-insensitive string-list compare; we don't want a reorder to count as a change. */

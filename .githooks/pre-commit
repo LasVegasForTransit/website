@@ -14,23 +14,33 @@ fi
 
 # ----------------------------------------------------------------------------
 # Prettier via lint-staged. Auto-formats staged files in place and re-stages
-# them. Runs first so subsequent checks see the formatted output.
+# them. Skip when no staged file matches the lint-staged glob — avoids paying
+# the pnpm + lint-staged cold-start cost (~250 ms) on, e.g., a `.sh`-only or
+# `.txt`-only commit.
 # ----------------------------------------------------------------------------
-if ! NODE_OPTIONS="--max-old-space-size=4096" pnpm --silent exec lint-staged; then
-  printf '\n❌ Commit blocked: lint-staged failed. Fix the issues above and re-stage.\n\n' >&2
-  exit 1
+if printf '%s\n' "$STAGED" | grep -qE '\.(js|ts|tsx|astro|md|mdx|css|json|ya?ml)$'; then
+  if ! NODE_OPTIONS="--max-old-space-size=4096" pnpm --silent exec lint-staged; then
+    printf '\n❌ Commit blocked: lint-staged failed. Fix the issues above and re-stage.\n\n' >&2
+    exit 1
+  fi
 fi
 
 # ----------------------------------------------------------------------------
 # Shellcheck on staged .sh files. Soft-skip if shellcheck is not installed.
+# A here-doc (not a pipe) drives the while loop so `sh_failed=1` propagates
+# back to this shell — a pipe would run the loop in a subshell and silently
+# lose the failure flag.
 # ----------------------------------------------------------------------------
-if printf '%s\n' "$STAGED" | grep -qE '\.sh$'; then
+sh_files=$(printf '%s\n' "$STAGED" | grep -E '\.sh$' || true)
+if [ -n "$sh_files" ]; then
   if command -v shellcheck >/dev/null 2>&1; then
     sh_failed=0
-    printf '%s\n' "$STAGED" | grep -E '\.sh$' | while IFS= read -r file; do
+    while IFS= read -r file; do
       [ -f "$file" ] || continue
       shellcheck --severity=warning "$file" || sh_failed=1
-    done
+    done <<EOF
+$sh_files
+EOF
     if [ "$sh_failed" -ne 0 ]; then
       printf '\n❌ Commit blocked: shellcheck warnings in staged scripts.\n\n' >&2
       exit 1
@@ -41,17 +51,30 @@ if printf '%s\n' "$STAGED" | grep -qE '\.sh$'; then
 fi
 
 # ----------------------------------------------------------------------------
-# Markdown / MDX / Astro link validation
+# Markdown / MDX link validation. Pass the staged set with `--files` so the
+# script restricts outbound-link extraction to changed files (cross-file
+# anchor checks still work — target headings are read lazily on demand).
+# `.astro` files have no markdown links, so they're filtered out.
 # ----------------------------------------------------------------------------
-if printf '%s\n' "$STAGED" | grep -qiE '\.(md|mdx|astro)$'; then
-  pnpm --silent check:docs
+STAGED_DOCS=$(printf '%s\n' "$STAGED" | grep -iE '\.(md|mdx)$' || true)
+if [ -n "$STAGED_DOCS" ]; then
+  # shellcheck disable=SC2086  # intentional word-split into multiple --files args
+  pnpm --silent check:docs --files $STAGED_DOCS
 fi
 
 # ----------------------------------------------------------------------------
-# TypeScript typecheck (single canonical script — astro + scripts together)
+# TypeScript typecheck. Split into two independent gates so a scripts-only
+# commit doesn't pay for `astro check` cold-start, and a src-only commit
+# doesn't run `tsc -p scripts/tsconfig.json`.
 # ----------------------------------------------------------------------------
-if printf '%s\n' "$STAGED" | grep -qE '\.(ts|tsx|astro)$|^scripts/'; then
-  pnpm --silent typecheck
+ASTRO_STAGED=$(printf '%s\n' "$STAGED" | grep -E '^src/.*\.(ts|tsx|astro)$|^astro\.config\.(mjs|ts)$|^tsconfig\.json$' || true)
+SCRIPTS_STAGED=$(printf '%s\n' "$STAGED" | grep -E '^scripts/' || true)
+
+if [ -n "$ASTRO_STAGED" ]; then
+  pnpm --silent exec astro check
+fi
+if [ -n "$SCRIPTS_STAGED" ]; then
+  pnpm --silent exec tsc -p scripts/tsconfig.json
 fi
 
 # ----------------------------------------------------------------------------

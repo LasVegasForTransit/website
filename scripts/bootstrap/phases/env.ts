@@ -21,7 +21,9 @@ const PROMPTED_KEYS: Record<string, EnvKeyConfig> = {
     prompt: 'Beehiiv API key',
     hint: 'In Beehiiv: Settings → API → create a key scoped to Subscribers (write). Server-side only — never baked into HTML.',
     example: 'sk_live_...',
-    placeholderTokens: [],
+    // No placeholderTokens — .env.example ships this key empty, so the
+    // empty-value branch in `valueIsPlaceholder` handles "still pending".
+    // `validate` rejects anyone who pastes the literal `sk_live_...` example.
     required: false,
     validate: (v) =>
       v && v.length < 20 ? 'That looks too short to be a valid API key.' : undefined,

@@ -111,6 +111,17 @@ export function clearCloudflareAccount(projectRoot: string): void {
 }
 
 /**
+ * Clear the Cloudflare API token from the in-process env and from
+ * `.env.local`. Both have to go: wrangler 4 auto-loads `.env.local` on
+ * every invocation, so leaving the file value in place would re-poison
+ * the next subprocess.
+ */
+export function clearCloudflareApiToken(projectRoot: string): void {
+  delete process.env.CLOUDFLARE_API_TOKEN;
+  mergeEnvFile(path.join(projectRoot, '.env.local'), new Map([['CLOUDFLARE_API_TOKEN', '']]));
+}
+
+/**
  * Extract `{ name, id }` pairs from a `wrangler whoami` table.
  *
  * The whoami table renders rows like:

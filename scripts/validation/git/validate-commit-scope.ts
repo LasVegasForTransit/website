@@ -37,6 +37,11 @@ const SCOPES_FILE = resolve(REPO_ROOT, 'allowed-scopes.txt');
 // ---------------------------------------------------------------------------
 
 const ALLOWED_TYPES = ['feat', 'fix', 'docs', 'refactor', 'test', 'chore', 'perf'] as const;
+type AllowedType = (typeof ALLOWED_TYPES)[number];
+
+function isAllowedType(t: string): t is AllowedType {
+  return (ALLOWED_TYPES as readonly string[]).includes(t);
+}
 
 type RetiredEntry = { replacement: string; reason: string };
 const RETIRED_TYPES: ReadonlyMap<string, RetiredEntry> = new Map([
@@ -83,6 +88,11 @@ function stripInlineComment(line: string): string {
   return hashIdx === -1 ? line : line.slice(0, hashIdx);
 }
 
+function die(...lines: string[]): never {
+  for (const l of lines) console.error(l);
+  process.exit(1);
+}
+
 // ---------------------------------------------------------------------------
 // Scope loading
 // ---------------------------------------------------------------------------
@@ -90,7 +100,7 @@ function stripInlineComment(line: string): string {
 function loadAllowedScopes(): string[] {
   let raw: string;
   try {
-    raw = readFileSync(SCOPES_FILE, 'utf-8');
+    raw = readFileSync(SCOPES_FILE, 'utf8');
   } catch (err) {
     console.error(`Failed to read ${SCOPES_FILE}`);
     console.error(err instanceof Error ? err.message : String(err));
@@ -155,15 +165,13 @@ function suggestScopes(invalid: string, allowed: string[], limit = 3): string[] 
 
 function getStagedChangeDensity(): number {
   try {
-    const result = execSync('git diff --cached --numstat', { encoding: 'utf-8' });
+    const result = execSync('git diff --cached --numstat', { encoding: 'utf8' });
     let files = 0;
     let lines = 0;
     // numstat format: `<added>\t<deleted>\t<path>`. Binary files emit `-\t-`,
     // which parseInt rejects -> 0 contribution (intentional).
     for (const row of result.trim().split('\n').filter(Boolean)) {
-      const added = row.slice(0, row.indexOf('\t'));
-      const afterAdded = row.slice(row.indexOf('\t') + 1);
-      const deleted = afterAdded.slice(0, afterAdded.indexOf('\t'));
+      const [added = '', deleted = ''] = row.split('\t');
       if (added.length === 0 || deleted.length === 0) continue;
       const a = parseInt(added, 10);
       const d = parseInt(deleted, 10);
@@ -176,43 +184,34 @@ function getStagedChangeDensity(): number {
   }
 }
 
-function hasBlankSeparatorAndBody(messageLines: string[]): boolean {
-  // We need at least: title, blank, body. Iterate from index 1 onward so the
-  // loop variable types itself as `string` (entries() preserves element type).
-  let sawBlankAfterTitle = false;
-  let sawNonTrailerBody = false;
-  for (const [i, line] of messageLines.entries()) {
-    if (i === 0) continue;
-    if (i === 1) {
-      sawBlankAfterTitle = line.trim().length === 0;
-      continue;
-    }
-    if (line.trim().length === 0) continue;
-    if (TRAILER_PREFIXES.some((p) => line.startsWith(p))) continue;
-    sawNonTrailerBody = true;
-  }
-  return sawBlankAfterTitle && sawNonTrailerBody;
+function hasBlankSeparatorAndBody(lines: string[]): boolean {
+  // Body shape is: title, blank, then >=1 non-empty non-trailer line.
+  const blankAfterTitle = (lines[1] ?? '').trim().length === 0;
+  const bodyHasContent = lines
+    .slice(2)
+    .some((l) => l.trim().length > 0 && !TRAILER_PREFIXES.some((p) => l.startsWith(p)));
+  return blankAfterTitle && bodyHasContent;
 }
 
-function validateBodyPresent(message: string, commitType: string): void {
+function validateBodyPresent(message: string, commitType: AllowedType): void {
   const requiresAlways = commitType === 'feat' || commitType === 'fix';
   const required = requiresAlways || getStagedChangeDensity() > DENSITY_THRESHOLD;
   if (!required) return;
-
   if (hasBlankSeparatorAndBody(message.split('\n'))) return;
 
-  console.error('Commit blocked -- this commit needs a body explaining why.');
-  console.error('');
-  console.error('Add a blank line after the title, then 1-3 sentences:');
-  console.error('');
-  console.error('  feat: add Beehiiv newsletter subscribe Pages Function');
-  console.error('');
-  console.error('  Visitors can join the newsletter without leaving the site.');
-  console.error('  A serverless function forwards email + name to Beehiiv and');
-  console.error('  surfaces API errors inline.');
-  console.error('');
-  console.error('See: docs/standards/commit-messages.md');
-  process.exit(1);
+  die(
+    'Commit blocked -- this commit needs a body explaining why.',
+    '',
+    'Add a blank line after the title, then 1-3 sentences:',
+    '',
+    '  feat: add Beehiiv newsletter subscribe Pages Function',
+    '',
+    '  Visitors can join the newsletter without leaving the site.',
+    '  A serverless function forwards email + name to Beehiiv and',
+    '  surfaces API errors inline.',
+    '',
+    'See: docs/standards/commit-messages.md',
+  );
 }
 
 function validateBodyLineLength(message: string): void {
@@ -227,14 +226,13 @@ function validateBodyLineLength(message: string): void {
   }
   if (violations.length === 0) return;
 
-  console.error(`Commit blocked -- body lines must be <= ${MAX_BODY_LINE_LENGTH} characters`);
-  console.error('');
-  for (const v of violations) {
-    console.error(`  Line ${v.lineNum} (${v.length} chars): ${v.text}`);
-  }
-  console.error('');
-  console.error('  Title (line 1) is exempt. Wrap long body lines.');
-  process.exit(1);
+  die(
+    `Commit blocked -- body lines must be <= ${MAX_BODY_LINE_LENGTH} characters`,
+    '',
+    ...violations.map((v) => `  Line ${v.lineNum} (${v.length} chars): ${v.text}`),
+    '',
+    '  Title (line 1) is exempt. Wrap long body lines.',
+  );
 }
 
 // ---------------------------------------------------------------------------
@@ -262,92 +260,87 @@ function validate(message: string): void {
   const firstLine = firstLineOf(message).trim();
 
   if (!CONVENTIONAL_REGEX.test(firstLine)) {
-    console.error('Commit blocked -- invalid commit message format');
-    console.error('');
-    console.error(`  Got: ${firstLine}`);
-    console.error('');
-    console.error('  Required: type(scope)?: description');
-    console.error('');
-    console.error(`  Valid types: ${ALLOWED_TYPES.join(', ')}`);
-    console.error('');
-    console.error('  Examples:');
-    console.error('    feat: add newsletter form');
-    console.error('    fix(ci): pin pnpm-action-setup');
-    console.error('    docs(docs): add commit-messages standard');
-    console.error('');
-    console.error('See: docs/standards/commit-messages.md');
-    process.exit(1);
+    die(
+      'Commit blocked -- invalid commit message format',
+      '',
+      `  Got: ${firstLine}`,
+      '',
+      '  Required: type(scope)?: description',
+      '',
+      `  Valid types: ${ALLOWED_TYPES.join(', ')}`,
+      '',
+      '  Examples:',
+      '    feat: add newsletter form',
+      '    fix(ci): pin pnpm-action-setup',
+      '    docs(docs): add commit-messages standard',
+      '',
+      'See: docs/standards/commit-messages.md',
+    );
   }
 
   const header = parseHeader(firstLine);
   if (header === null) {
-    // The CONVENTIONAL_REGEX passed but the named-group regex didn't —
-    // this should never happen, but if it does, fail loudly.
-    console.error('Commit blocked -- could not parse commit type');
-    console.error(`  Got: ${firstLine}`);
-    process.exit(1);
+    // CONVENTIONAL_REGEX passed but the named-group regex didn't — shouldn't
+    // be reachable; if it is, fail loudly so we notice and fix the regex.
+    die('Commit blocked -- could not parse commit type', `  Got: ${firstLine}`);
   }
 
   const retired = RETIRED_TYPES.get(header.type);
   if (retired !== undefined) {
-    console.error(`Commit blocked -- "${header.type}" is not a valid commit type`);
-    console.error('');
-    console.error(`  ${retired.reason}`);
-    console.error('');
-    console.error(`  Use "${retired.replacement}" instead:`);
-    console.error(`  ${firstLine.replace(new RegExp(`^${header.type}`), retired.replacement)}`);
-    console.error('');
-    console.error('  Fix this commit:');
-    console.error('    git commit --amend');
-    console.error('');
-    console.error('See: docs/standards/commit-messages.md');
-    process.exit(1);
+    die(
+      `Commit blocked -- "${header.type}" is not a valid commit type`,
+      '',
+      `  ${retired.reason}`,
+      '',
+      `  Use "${retired.replacement}" instead:`,
+      `  ${firstLine.replace(new RegExp(`^${header.type}`), retired.replacement)}`,
+      '',
+      '  Fix this commit:',
+      '    git commit --amend',
+      '',
+      'See: docs/standards/commit-messages.md',
+    );
   }
 
-  if (!(ALLOWED_TYPES as readonly string[]).includes(header.type)) {
-    console.error(`Commit blocked -- "${header.type}" is not a recognized type`);
-    console.error('');
-    console.error(`  Valid types: ${ALLOWED_TYPES.join(', ')}`);
-    console.error('');
-    console.error('See: docs/standards/commit-messages.md');
-    process.exit(1);
+  if (!isAllowedType(header.type)) {
+    die(
+      `Commit blocked -- "${header.type}" is not a recognized type`,
+      '',
+      `  Valid types: ${ALLOWED_TYPES.join(', ')}`,
+      '',
+      'See: docs/standards/commit-messages.md',
+    );
   }
 
   // Body checks (before scope so missing-body is always surfaced)
   validateBodyPresent(message, header.type);
   validateBodyLineLength(message);
 
-  if (header.scope === null) {
-    process.exit(0); // scopeless is valid for cross-cutting changes
-  }
+  // Scopeless commits are valid for cross-cutting changes.
+  if (header.scope === null) return;
 
   const allowed = loadAllowedScopes();
-  if (allowed.includes(header.scope)) {
-    process.exit(0);
-  }
-
-  console.error(`Commit blocked -- "${header.scope}" is not a recognized scope`);
-  console.error('');
-  console.error(`  Commit: ${firstLine}`);
-  console.error('');
+  if (allowed.includes(header.scope)) return;
 
   const suggestions = suggestScopes(header.scope, allowed);
-  if (suggestions.length > 0) {
-    console.error('  Did you mean:');
-    for (const s of suggestions) console.error(`    - ${s}`);
-    console.error('');
-  }
-
-  console.error(`  Valid scopes: ${allowed.join(', ')}`);
-  console.error('');
-  console.error('  Or omit the scope for cross-cutting changes:');
-  console.error('    type: description');
-  console.error('');
-  console.error('  Fix this commit:');
-  console.error('    git commit --amend');
-  console.error('');
-  console.error('See: docs/standards/commit-scopes.md');
-  process.exit(1);
+  die(
+    `Commit blocked -- "${header.scope}" is not a recognized scope`,
+    '',
+    `  Commit: ${firstLine}`,
+    '',
+    ...(suggestions.length > 0
+      ? ['  Did you mean:', ...suggestions.map((s) => `    - ${s}`), '']
+      : []),
+    `  Valid scopes: ${allowed.join(', ')}`,
+    '',
+    '  Or omit the scope for cross-cutting changes:',
+    '    type: description',
+    '',
+    '  Fix this commit:',
+    '    git commit --amend',
+    '',
+    'See: docs/standards/commit-scopes.md',
+  );
 }
 
 // ---------------------------------------------------------------------------
@@ -363,7 +356,7 @@ function readMessageFromFlag(args: string[]): string | null {
     process.exit(1);
   }
   try {
-    return readFileSync(resolve(path), 'utf-8');
+    return readFileSync(resolve(path), 'utf8');
   } catch (err) {
     console.error(`Failed to read commit message file: ${path}`);
     console.error(err instanceof Error ? err.message : String(err));

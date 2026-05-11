@@ -124,12 +124,11 @@ hint "All commits must follow conventional-commits format."
 
 INVALID_COMMITS=0
 
-for commit in $(git rev-list "${BASE}..HEAD" 2>/dev/null); do
-    message=$(git log -1 --format=%B "$commit")
-    first_line=$(echo "$message" | head -1)
-    short_hash=$(git rev-parse --short "$commit")
-
-    if ! echo "$first_line" | grep -qE '^[a-z]+(\([a-z0-9._-]+\))?!?: .+'; then
+# Single `git log` call returns `<short-hash>\t<subject>` per commit, parsed
+# with `read`. Avoids the previous `for + git log -1 + git rev-parse` pattern
+# that spawned 2N git processes for an N-commit push.
+while IFS=$'\t' read -r short_hash first_line; do
+    if ! printf '%s' "$first_line" | grep -qE '^[a-z]+(\([a-z0-9._-]+\))?!?: .+'; then
         if [ "$INVALID_COMMITS" -eq 0 ]; then
             fail "One or more commit messages don't follow conventional format"
             echo ""
@@ -139,7 +138,7 @@ for commit in $(git rev-list "${BASE}..HEAD" 2>/dev/null); do
         printf "    ${YELLOW}%s${RESET}  %s\n" "$short_hash" "$first_line"
         INVALID_COMMITS=$((INVALID_COMMITS + 1))
     fi
-done
+done < <(git log --reverse --format='%h%x09%s' "${BASE}..HEAD" 2>/dev/null)
 
 if [ "$INVALID_COMMITS" -gt 0 ]; then
     echo ""
@@ -171,20 +170,30 @@ fi
 pass "Typecheck clean ($(step_time))"
 
 # ---------------------------------------------------------------------------
-# 4. Build
+# 4. Build (skipped when the push only touches paths that can't change output)
 # ---------------------------------------------------------------------------
 step 4 "Running pnpm build"
 hint "astro build"
 
-if ! pnpm build; then
+# Paths that never affect the built site: repo docs (.md, not .mdx — MDX is
+# rendered), hook scripts, the scope policy file, and the standards docs tree.
+# Anything outside this set means we must build.
+PUSH_FILES=$(git diff --name-only "${BASE}..HEAD" 2>/dev/null || echo "")
+BUILD_AFFECTING=$(printf '%s\n' "$PUSH_FILES" \
+    | grep -vE '^docs/|^\.githooks/|^allowed-scopes\.txt$|(^|/)[^/]+\.md$' \
+    | grep -v '^$' || true)
+
+if [ -z "$BUILD_AFFECTING" ]; then
+    pass "Build skipped -- push only touches docs/hooks/policy ($(step_time))"
+elif ! pnpm build; then
     fail "Build failed"
     echo ""
     cmd "pnpm build"
     echo ""
     exit 1
+else
+    pass "Build clean ($(step_time))"
 fi
-
-pass "Build clean ($(step_time))"
 
 # ---------------------------------------------------------------------------
 # Success
