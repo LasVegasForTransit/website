@@ -26,6 +26,11 @@ export default defineConfig({
   // one orientation in the wild.
   projects: [
     {
+      name: 'ui-contracts',
+      testMatch: /body-links\.spec\.ts$/,
+      use: { ...devices['Desktop Chrome'] },
+    },
+    {
       name: 'mobile-portrait',
       testMatch: /screenshots\.spec\.ts$/,
       use: { ...devices['iPhone 14'] }, // 390×844, DPR 3
