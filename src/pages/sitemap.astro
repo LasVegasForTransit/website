@@ -1,0 +1,292 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import StructuredData from '../components/seo/StructuredData.astro';
+import { getCollection } from 'astro:content';
+import { site } from '../lib/site';
+import { byOrderThenTitle } from '../lib/projects';
+
+type Entry = {
+  name: string;
+  href: string;
+  description: string;
+  external?: boolean;
+};
+
+type Group = {
+  label: string;
+  entries: Entry[];
+};
+
+// Top-of-site groups — three short topical columns covering the main nav.
+const topGroups: Group[] = [
+  {
+    label: 'About',
+    entries: [
+      {
+        name: 'Home',
+        href: '/',
+        description: "What we do, why now, and what's at stake for transit in Las Vegas.",
+      },
+      {
+        name: 'About',
+        href: '/about',
+        description: "Who we are, what we're fighting for, and how we're organized.",
+      },
+      {
+        name: 'Strategy',
+        href: '/about/strategy',
+        description: 'Our theory of change — how we plan to win in Nevada.',
+      },
+      {
+        name: 'Vision',
+        href: '/vision',
+        description:
+          "The Las Vegas we're arguing for — trains, walkable streets, neighborhoods that don't require a car.",
+      },
+    ],
+  },
+  {
+    label: 'Work',
+    entries: [
+      {
+        name: 'Projects',
+        href: '/projects',
+        description: 'The public roadmap of active and planned projects.',
+      },
+      {
+        name: 'Events',
+        href: '/events',
+        description: 'Upcoming events, talks, and organizing actions.',
+      },
+    ],
+  },
+  {
+    label: 'Take action',
+    entries: [
+      {
+        name: 'Get involved',
+        href: '/go',
+        description: 'Newsletter, volunteer signup, and ways to plug in.',
+      },
+      {
+        name: 'Donate',
+        href: site.donate.url,
+        description: 'One-time and recurring gifts on GiveButter.',
+        external: true,
+      },
+      {
+        name: 'Contact',
+        href: '/contact',
+        description: 'General, press, and partnership contacts.',
+      },
+    ],
+  },
+];
+
+// Off-site presences. Donate lives in "Take action" above (it's an action,
+// even if it leaves the site); these are the org's public profiles.
+const elsewhere: Entry[] = [
+  {
+    name: 'Instagram',
+    href: site.social.instagram,
+    description: '@lasvegasfortransit — organizing posts, photos, action calls.',
+    external: true,
+  },
+  {
+    name: 'LinkedIn',
+    href: site.social.linkedin,
+    description: 'Las Vegans for Better Transit — organization updates and public profile.',
+    external: true,
+  },
+  {
+    name: 'Bluesky',
+    href: site.social.bluesky,
+    description: '@lasvegasfortransit.org — longer-form posts and threads.',
+    external: true,
+  },
+  {
+    name: 'GitHub',
+    href: 'https://github.com/LasVegasForTransit/website',
+    description: 'The source of this website. We build in public.',
+    external: true,
+  },
+];
+
+const machineReadable: Entry[] = [
+  {
+    name: 'sitemap.xml',
+    href: '/sitemap-index.xml',
+    description: 'The crawler-readable index of every public URL on the site.',
+  },
+  {
+    name: 'robots.txt',
+    href: '/robots.txt',
+    description: 'Crawler directives and sitemap declaration.',
+  },
+];
+
+const projects = [...(await getCollection('projects'))].sort(byOrderThenTitle);
+
+const initiatives = (await getCollection('initiatives')).sort((a, b) =>
+  a.data.title.localeCompare(b.data.title),
+);
+
+const statusLabel: Record<string, string> = {
+  active: 'Active',
+  planned: 'Planned',
+  complete: 'Complete',
+  paused: 'Paused',
+};
+
+const navSchema = {
+  '@context': 'https://schema.org',
+  '@graph': [
+    ...topGroups
+      .flatMap((g) => g.entries)
+      .filter((e) => !e.external)
+      .map((e) => ({
+        '@type': 'SiteNavigationElement',
+        name: e.name,
+        url: new URL(e.href, site.url).toString(),
+      })),
+    ...projects.map((p) => ({
+      '@type': 'SiteNavigationElement',
+      name: p.data.title,
+      url: new URL(`/projects/${p.id}`, site.url).toString(),
+    })),
+  ],
+};
+---
+
+<BaseLayout title="Sitemap">
+  <StructuredData slot="head" data={navSchema} />
+
+  <section class="container-page pt-16 md:pt-24 pb-24 md:pb-32">
+    <h1 class="text-headline-lg">Sitemap</h1>
+
+    {/* TOP-LEVEL GROUPS */}
+    <div class="mt-12 md:mt-16 grid grid-cols-1 md:grid-cols-3 gap-x-12 gap-y-12">
+      {
+        topGroups.map((group) => (
+          <div>
+            <p class="eyebrow pb-3 border-b-2 border-ink">{group.label}</p>
+            <ul class="divide-y divide-ink/15">
+              {group.entries.map((entry) => (
+                <li>
+                  <a
+                    href={entry.href}
+                    rel={entry.external ? 'noopener' : undefined}
+                    class="group block py-5 no-underline"
+                  >
+                    <p class="font-semibold group-hover:text-accent transition-colors">
+                      {entry.name}
+                      {entry.external && (
+                        <span aria-hidden="true" class="text-[color:var(--color-mute)]">
+                          {' '}
+                          ↗
+                        </span>
+                      )}
+                    </p>
+                    <p class="text-body-sm mt-1 text-[color:var(--color-mute)]">
+                      {entry.description}
+                    </p>
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </div>
+        ))
+      }
+    </div>
+
+    {/* PROJECTS */}
+    <div class="mt-16 md:mt-20">
+      <div class="pb-3 border-b-2 border-ink flex items-baseline justify-between gap-4">
+        <p class="eyebrow">Projects</p>
+        <a
+          href="/projects"
+          class="text-body-sm text-[color:var(--color-mute)] hover:text-accent no-underline"
+        >
+          {projects.length} total · open the directory →
+        </a>
+      </div>
+      <ul class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-x-12 gap-y-0">
+        {
+          projects.map((p) => (
+            <li class="border-b border-ink/15">
+              <a href={`/projects/${p.id}`} class="group block py-3 no-underline">
+                <p class="font-semibold group-hover:text-accent transition-colors leading-snug">
+                  {p.data.title}
+                </p>
+                <p class="text-body-sm mt-0.5 text-[color:var(--color-mute)]">
+                  {statusLabel[p.data.status]}
+                </p>
+              </a>
+            </li>
+          ))
+        }
+      </ul>
+    </div>
+
+    {/* INITIATIVES */}
+    <div class="mt-16 md:mt-20">
+      <p class="eyebrow pb-3 border-b-2 border-ink">Initiatives</p>
+      <ul class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-12 gap-y-0">
+        {
+          initiatives.map((i) => (
+            <li class="border-b border-ink/15 py-5">
+              <p class="font-semibold">{i.data.title}</p>
+              <p class="text-body-sm mt-1 text-[color:var(--color-mute)]">{i.data.description}</p>
+            </li>
+          ))
+        }
+      </ul>
+    </div>
+
+    {/* ELSEWHERE */}
+    <div class="mt-16 md:mt-20">
+      <p class="eyebrow pb-3 border-b-2 border-ink">Elsewhere</p>
+      <ul class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-12 gap-y-0">
+        {
+          elsewhere.map((entry) => (
+            <li class="border-b border-ink/15">
+              <a
+                href={entry.href}
+                rel={entry.external ? 'noopener' : undefined}
+                class="group block py-5 no-underline"
+              >
+                <p class="font-semibold group-hover:text-accent transition-colors">
+                  {entry.name}
+                  <span aria-hidden="true" class="text-[color:var(--color-mute)]">
+                    {' '}
+                    ↗
+                  </span>
+                </p>
+                <p class="text-body-sm mt-1 text-[color:var(--color-mute)]">{entry.description}</p>
+              </a>
+            </li>
+          ))
+        }
+      </ul>
+    </div>
+
+    {/* MACHINE-READABLE */}
+    <div class="mt-16 md:mt-20">
+      <p class="eyebrow pb-3 border-b-2 border-ink">Machine-readable</p>
+      <ul class="grid grid-cols-1 sm:grid-cols-2 gap-x-12 gap-y-0">
+        {
+          machineReadable.map((entry) => (
+            <li class="border-b border-ink/15">
+              <a href={entry.href} class="group block py-5 no-underline">
+                <p class="font-semibold font-mono group-hover:text-accent transition-colors">
+                  {entry.name}
+                </p>
+                <p class="text-body-sm mt-1 text-[color:var(--color-mute)]">{entry.description}</p>
+              </a>
+            </li>
+          ))
+        }
+      </ul>
+    </div>
+  </section>
+</BaseLayout>

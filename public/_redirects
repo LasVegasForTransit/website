@@ -1,0 +1,8 @@
+# Cloudflare Pages redirect rules.
+# /sitemap.xml is the URL most humans (and some lazy crawlers) type;
+# @astrojs/sitemap publishes the index at /sitemap-index.xml. Astro emits a
+# build-time HTML meta-refresh redirect for this path, but a real 301 is
+# preferable for crawlers. This rule overrides the static HTML when deployed.
+/sitemap.xml    /sitemap-index.xml  301
+/join           /go                 301
+/get-involved   /go                 301

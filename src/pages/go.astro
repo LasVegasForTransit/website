@@ -1,0 +1,194 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import Carousel from '../components/Carousel.astro';
+import CarouselItem from '../components/CarouselItem.astro';
+import NewsletterEmbed from '../components/NewsletterEmbed.astro';
+import { getCollection } from 'astro:content';
+import { site } from '../lib/site';
+
+const events = await getCollection('events', (e) => !e.id.startsWith('_'));
+const now = new Date();
+const upcoming = events
+  .filter((e) => e.data.date >= now)
+  .sort((a, b) => a.data.date.getTime() - b.data.date.getTime())
+  .slice(0, 3);
+
+const sharePitchUrl =
+  'https://bsky.app/intent/compose?text=Las%20Vegas%20is%20the%20largest%20US%20metro%20without%20light%20rail.%20Our%20buses%20are%20about%20to%20be%20cut%20by%2042%25%20in%202028.%20%40lasvegasfortransit.org%20is%20organizing%20to%20stop%20it.%20https%3A%2F%2Flasvegasfortransit.org';
+---
+
+<BaseLayout
+  title="Get involved"
+  description="Concrete ways to help — for people with five minutes, five hours, or five years."
+>
+  <header class="container-page pt-20 pb-12 md:pt-28 md:pb-16">
+    <div class="max-w-4xl">
+      <h1 class="text-headline-lg">Help build the movement Las&nbsp;Vegas has never had.</h1>
+      <p class="lede mt-6 max-w-2xl">
+        Whether you've got five minutes, five hours, or five years, there's work below that fits.
+      </p>
+    </div>
+  </header>
+  <hr class="rule-thick container-page" />
+
+  {/* FIVE MINUTES — quick wins, low friction */}
+  <Carousel title="In five minutes">
+    <CarouselItem href="#newsletter">
+      <p class="text-title-lg">Subscribe.</p>
+      <p class="mt-4 leading-relaxed">
+        Legislative updates, project briefs, and ways to show up — straight to your inbox.
+      </p>
+      <p class="mt-6 text-sm font-bold uppercase tracking-wider">Form below ↓</p>
+    </CarouselItem>
+    <CarouselItem href={site.social.instagram} external>
+      <p class="eyebrow">Instagram</p>
+      <p class="text-title-lg mt-3">Follow @lasvegasfortransit.</p>
+      <p class="mt-4 leading-relaxed">
+        Visual storytelling from the Valley — project updates, event posts.
+      </p>
+    </CarouselItem>
+    <CarouselItem href={site.social.bluesky} external>
+      <p class="eyebrow">Bluesky</p>
+      <p class="text-title-lg mt-3">Where the urbanism conversation actually happens.</p>
+      <p class="mt-4 leading-relaxed">@lasvegasfortransit.org</p>
+    </CarouselItem>
+    <CarouselItem href={sharePitchUrl} external>
+      <p class="text-title-lg">Quote and share our pitch.</p>
+      <p class="mt-4 leading-relaxed">A pre-written post about the cuts, ready to send.</p>
+      <p class="mt-6 text-sm font-bold uppercase tracking-wider">Compose on Bluesky →</p>
+    </CarouselItem>
+    <CarouselItem pending>
+      <p class="text-title-lg">Tell one person about the 2028 cuts.</p>
+      <p class="mt-4 leading-relaxed">
+        Most Las Vegans don't know yet. Word of mouth still wins block by block.
+      </p>
+    </CarouselItem>
+  </Carousel>
+
+  {
+    /* Newsletter form — integrated into the Five Minutes group as the
+      highest-bandwidth five-minute action. Anchor target for the Subscribe card. */
+  }
+  <section id="newsletter" class="container-page pb-12">
+    <div class="border-t border-ink/15 pt-10 max-w-2xl">
+      <h3 class="text-title-lg">Or just hand us your email.</h3>
+      <p class="mt-3 leading-relaxed">
+        The newsletter is the highest-bandwidth way to stay current — and the easiest five-minute
+        action of all.
+      </p>
+      <div class="mt-6">
+        <NewsletterEmbed />
+      </div>
+    </div>
+  </section>
+
+  {/* FIVE HOURS — single sittings, real effort */}
+  <Carousel title="In five hours">
+    {
+      upcoming.length === 0 ? (
+        <CarouselItem href="/events" pending>
+          <p class="text-title-lg">First event in planning.</p>
+          <p class="mt-4 leading-relaxed">
+            Subscribe to hear about it first. Showing up at a meeting changes what's politically
+            possible.
+          </p>
+        </CarouselItem>
+      ) : (
+        upcoming.map((e) => (
+          <CarouselItem href={`/events/${e.id}`}>
+            <p class="eyebrow">
+              {new Intl.DateTimeFormat('en-US', {
+                month: 'short',
+                day: 'numeric',
+                timeZone: 'America/Los_Angeles',
+              }).format(e.data.date)}
+            </p>
+            <p class="text-title-lg mt-3">{e.data.title}</p>
+            <p class="mt-4 leading-relaxed">{e.data.summary}</p>
+          </CarouselItem>
+        ))
+      )
+    }
+    <CarouselItem pending>
+      <p class="text-title-lg">Write your legislator.</p>
+      <p class="mt-4 leading-relaxed">
+        About RTC funding, before the 2027 session opens. We'll publish a template you can adapt.
+      </p>
+    </CarouselItem>
+    <CarouselItem pending>
+      <p class="text-title-lg">Document your bus stop.</p>
+      <p class="mt-4 leading-relaxed">
+        Take a photo. Note the shade, the bench, the route board, the trash. We aggregate; the RTC
+        and the press read it.
+      </p>
+    </CarouselItem>
+  </Carousel>
+
+  {/* FIVE YEARS — long-haul roles */}
+  <Carousel title="In five years">
+    <CarouselItem pending>
+      <p class="text-title-lg">Become a member.</p>
+      <p class="mt-4 leading-relaxed">
+        A formal program — bylaws, voting rights, chapter participation — is being designed for a
+        2027 launch.
+      </p>
+    </CarouselItem>
+    <CarouselItem href={`mailto:${site.email.general}?subject=Project%20lead%20interest`} external>
+      <p class="text-title-lg">Lead a project.</p>
+      <p class="mt-4 leading-relaxed">
+        Project leads run our outreach work — at a college, a high school, a faith community, a
+        labor coalition. We train and back you up.
+      </p>
+      <p class="mt-6 text-sm font-bold uppercase tracking-wider">Email hello@ →</p>
+    </CarouselItem>
+    <CarouselItem pending>
+      <p class="text-title-lg">Run for something.</p>
+      <p class="mt-4 leading-relaxed">
+        The most durable transit wins start with transit advocates becoming the people who hold the
+        votes.
+      </p>
+    </CarouselItem>
+  </Carousel>
+
+  {/* IF YOU HAVE MONEY — not a time tier; kept distinct */}
+  <Carousel title="If you have money">
+    <CarouselItem href={site.donate.url} external>
+      <p class="text-title-lg">
+        Every dollar buys a sign, prints a report, fuels an hour of organizer time.
+      </p>
+      <p class="mt-4 leading-relaxed">
+        We're entirely volunteer-run. Donations make the difference between sending a letter to one
+        legislator and sending one to twenty.
+      </p>
+      <p class="mt-6 text-sm font-bold uppercase tracking-wider">Give on Givebutter →</p>
+    </CarouselItem>
+    <CarouselItem pending>
+      <p class="text-title-lg">Recurring giving.</p>
+      <p class="mt-4 leading-relaxed">
+        Monthly contributions and tax-deductibility ship with full incorporation.
+      </p>
+    </CarouselItem>
+    <CarouselItem pending>
+      <p class="text-title-lg">Stickers, shirts, pins.</p>
+      <p class="mt-4 leading-relaxed">
+        Wearable art that turns Valley streets into our advertising.
+      </p>
+    </CarouselItem>
+  </Carousel>
+
+  {/* IF YOU RUN AN ORGANIZATION — single-ask block, not a carousel */}
+  <section class="container-page py-16 md:py-24">
+    <h2 class="text-headline-lg max-w-3xl">If you run an organization.</h2>
+    <p class="lede mt-6 max-w-2xl">
+      We're actively building a coalition. If you represent a labor union, a faith community, a
+      business, a school, a healthcare system, or another nonprofit and want to talk partnership —
+      we want to hear from you.
+    </p>
+    <a
+      href={`mailto:${site.email.partners}?subject=Partnership%20inquiry`}
+      class="inline-block mt-8 font-bold uppercase tracking-wider underline underline-offset-4 decoration-2 decoration-accent"
+    >
+      Email partners@lasvegasfortransit.org →
+    </a>
+  </section>
+</BaseLayout>
