@@ -3,10 +3,12 @@ name: Audit
 # Site-quality gates: performance, accessibility, SEO, security, content.
 # Each tool is a separate job so the PR check list shows per-dimension status.
 #
-# Several tools start in soft-fail mode (continue-on-error) because the initial
-# baseline (audits/baseline-2026-05-01.md) found pre-existing issues we can't
-# fix in this PR. Each soft-fail job has a TODO marking what needs to land
-# before it can be promoted to a hard gate.
+# Most jobs are hard gates. The remaining soft-fails (continue-on-error)
+# are jobs that still need a real baseline before they can block merge —
+# lighthouse-mobile until a first clean run, visual-regression until linux
+# baselines are seeded, content-lint until one clean week (it surfaces
+# advisory findings that are judgment calls, not regressions). Each one
+# carries a TODO at its declaration.
 
 on:
   pull_request:
@@ -44,9 +46,6 @@ jobs:
     needs: build
     runs-on: ubuntu-latest
     timeout-minutes: 12
-    # TODO: remove once /projects/index.html accessibility score ≥ 0.95
-    # (baseline 2026-05-01: found 0.92 — color-contrast on project cards).
-    continue-on-error: true
     steps:
       - name: Checkout
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
@@ -118,9 +117,6 @@ jobs:
     needs: build
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    # TODO: remove once color-contrast violations resolved (homepage 22 nodes,
-    # about 5, contact/strategy 1 each per baseline 2026-05-01).
-    continue-on-error: true
     steps:
       - name: Checkout
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
@@ -268,9 +264,6 @@ jobs:
     needs: build
     runs-on: ubuntu-latest
     timeout-minutes: 5
-    # TODO: remove once baseline html-validate findings resolved
-    # (button type, MDX heading-id leading-digit, long titles).
-    continue-on-error: true
     steps:
       - name: Checkout
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
@@ -387,8 +380,9 @@ jobs:
     name: Dependency vulnerabilities
     runs-on: ubuntu-latest
     timeout-minutes: 5
-    # TODO: promote to hard gate once any high/critical findings cleared.
-    continue-on-error: true
+    # Gates on high/critical (--audit-level=high). Production tree is
+    # clean at that level today; a future intro of a high/critical
+    # transitive blocks merge until it's patched or accepted.
     steps:
       - name: Checkout
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
