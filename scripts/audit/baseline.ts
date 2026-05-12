@@ -128,6 +128,16 @@ const waveA: Job[] = [
     args: ['exec', 'tsx', 'scripts/audit/third-party-scan.ts', '--json'],
   },
   { name: 'deps-audit', cmd: 'pnpm', args: ['audit', '--prod', '--audit-level=low', '--json'] },
+  {
+    name: 'bundle-size',
+    cmd: 'pnpm',
+    args: ['exec', 'tsx', 'scripts/audit/bundle-size.ts', '--json'],
+  },
+  {
+    name: 'asset-budget',
+    cmd: 'pnpm',
+    args: ['exec', 'tsx', 'scripts/audit/asset-budget.ts', '--json'],
+  },
 ];
 
 auditLog(`running wave A in parallel: ${waveA.map((j) => j.name).join(', ')}`);
@@ -139,8 +149,16 @@ const waveAResults = await Promise.all(
 // muddied by another browser pinning the CPU.
 const waveBResults: ToolResult[] = [];
 if (!skip.has('lighthouse')) {
-  auditLog('running Lighthouse (lhci autorun)...');
+  auditLog('running Lighthouse desktop (lhci autorun)...');
   waveBResults.push(await runTool('lighthouse', 'pnpm', ['exec', 'lhci', 'autorun']));
+}
+if (!skip.has('lighthouse-mobile')) {
+  auditLog('running Lighthouse mobile (lhci autorun, LIGHTHOUSE_PRESET=mobile)...');
+  waveBResults.push(
+    await runTool('lighthouse-mobile', 'pnpm', ['exec', 'lhci', 'autorun'], {
+      LIGHTHOUSE_PRESET: 'mobile',
+    }),
+  );
 }
 if (!skip.has('axe')) {
   auditLog('running axe via Playwright (project=a11y)...');
