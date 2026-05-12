@@ -175,6 +175,21 @@
     --color-mute: #a8acb4;
   }
 
+  /* Re-claim the cream-canvas mute on any .bg-paper / .bg-accent-soft
+     surface that sits inside a dark ancestor — otherwise the dark mute
+     inherits down into cream cards and fails contrast on them. */
+  .bg-paper,
+  .bg-accent-soft {
+    --color-mute: #4a4e57;
+  }
+
+  /* The accent orange is too saturated for a muted gray to pass AA at any
+     value — eyebrows and similar muted labels on a .bg-accent surface use
+     ink instead (≈6.3:1 against #e5471a). */
+  .bg-accent {
+    --color-mute: var(--color-ink);
+  }
+
   body[data-canvas='dark'] [data-site-header] {
     transition:
       background-color 200ms ease,
