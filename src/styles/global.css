@@ -163,9 +163,15 @@
      to every page identically, so nothing here is page-specific. */
   body[data-canvas='dark'] {
     background: var(--color-ink);
-    /* Cream's #4a4e57 mute reads as ~3.8:1 against #0f1115 — fails AA for
-       small text. Lift the mute on dark surfaces so eyebrows and paused
-       StatusPills clear 4.5:1 on both canvases. */
+  }
+
+  /* Cream's #4a4e57 mute reads as ~3.8:1 against #0f1115 — fails AA for
+     small text. Lift the mute wherever a dark surface is in play: full
+     dark-canvas pages, local .bg-ink bands inside otherwise-cream pages,
+     and any element opting in via .on-dark-surface. */
+  body[data-canvas='dark'],
+  .bg-ink,
+  .on-dark-surface {
     --color-mute: #a8acb4;
   }
 
