@@ -29,6 +29,19 @@ const otherUpcoming = featured ? upcoming.filter((e) => e.id !== featured.id) : 
   <section class="container-page py-12">
     <h2 class="text-headline-lg">Upcoming</h2>
     {
+      /* Cadence hint — names the rhythm so a newcomer doesn't have to
+        scan eight cards to figure out we meet monthly. Static copy, no
+        schema.org recurring-event claim; that would need
+        Event.eventSchedule and a separate validation pass. */
+    }
+    {
+      upcoming.length > 0 && (
+        <p class="mt-3 text-sm text-[color:var(--color-mute)]">
+          General meetings — first Thursday of every month, 6:00 PM PT.
+        </p>
+      )
+    }
+    {
       upcoming.length === 0 ? (
         <div class="mt-8 max-w-2xl space-y-6">
           <p class="lede">
