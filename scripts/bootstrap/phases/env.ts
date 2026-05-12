@@ -64,6 +64,19 @@ const PROMPTED_KEYS: Record<string, EnvKeyConfig> = {
     example: 'https://bsky.app/profile/lasvegasfortransit.org',
     required: false,
   },
+  PUBLIC_CWA_TOKEN: {
+    prompt: 'Cloudflare Web Analytics site token',
+    hint: 'Cloudflare dashboard → Analytics → Web Analytics → your site → Token. Leave blank for local dev — no token means no beacon ships and the strict CSP holds.',
+    example: 'abcdef0123456789abcdef0123456789',
+    required: false,
+    // Tokens are 32-char hex strings in practice. Reject anything
+    // obviously smaller so paste mistakes (just the first few chars)
+    // don't silently end up baked into the static HTML.
+    validate: (v) =>
+      v && v.length < 16
+        ? 'That token looks too short — copy the full value from the CF dashboard.'
+        : undefined,
+  },
 };
 
 export async function runEnvPhase(

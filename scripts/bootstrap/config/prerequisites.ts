@@ -89,6 +89,25 @@ export const CAPABILITY_SPECS: CapabilityConfig[] = [
       'If actionlint is not detected after install, add `$HOME/.local/bin` (Linux) or the brew bin dir (macOS) to PATH.',
   },
   {
+    id: 'tool-pngquant',
+    label: 'pngquant',
+    category: 'core',
+    // Not strictly required for `pnpm dev`, but the asset-budget audit
+    // (scripts/audit/asset-budget.ts) flags any raster over 20 KB without
+    // a .webp companion. pngquant is the simplest tool for re-compressing
+    // the existing PNGs (logo, OG default) below that ceiling. Optional
+    // so a fresh clone without it still passes bootstrap; doctor mode
+    // flags absence with the brew/apt one-liner.
+    requiredFor: [],
+    requiredByDefault: false,
+    binaryCommand: 'command -v pngquant',
+    versionCommand: 'pngquant --version',
+    installCommands: {
+      macos: ['brew install pngquant'],
+      linux: ['sudo apt-get install -y pngquant'],
+    },
+  },
+  {
     id: 'deploy-gh',
     label: 'GitHub CLI',
     category: 'deploy',

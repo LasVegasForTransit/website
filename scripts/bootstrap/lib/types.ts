@@ -10,6 +10,7 @@ export type CapabilityId =
   | 'core-node'
   | 'core-pnpm'
   | 'core-actionlint'
+  | 'tool-pngquant'
   | 'deploy-gh'
   | 'deploy-wrangler'
   | 'deploy-dig';
