@@ -1,0 +1,24 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "_doc": "Performance budgets enforced by scripts/audit/{bundle-size,asset-budget,build-profile}.ts. Numbers are seeded from today's measurements (build on 2026-05-12) with headroom; tighten as the site stabilizes.",
+  "bundle": {
+    "_doc": "Gzipped sizes of dist/_astro/*.{css,js} + dist/scripts/*.js. Today CSS total is ~12.3 KB, JS is 528 B.",
+    "cssGzipKb": 20,
+    "jsGzipKb": 2,
+    "totalGzipKb": 22,
+    "individualFileGzipKb": 14
+  },
+  "assets": {
+    "_doc": "Raster files in public/. If a PNG/JPG exceeds the threshold, it must have a WebP companion of the same stem or be listed in webpExemptions. og-default.png and logo.png are slated for compression in a follow-up; the SVG variant of the logo already exists.",
+    "maxImageKbWithoutWebp": 20,
+    "webpExemptions": ["favicon.ico", "og-default.png", "logo.png"]
+  },
+  "build": {
+    "_doc": "Peak resident set size of pnpm build, in MB. null = report-only (seeded once a CI run measures real value).",
+    "peakRssMb": null
+  },
+  "runtime": {
+    "_doc": "performance.memory.usedJSHeapSize after page load + 5s settle, in MB. Chromium-only.",
+    "usedJsHeapMb": 30
+  }
+}
