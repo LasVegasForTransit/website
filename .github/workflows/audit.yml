@@ -74,6 +74,45 @@ jobs:
           if-no-files-found: ignore
           retention-days: 14
 
+  lighthouse-mobile:
+    name: Lighthouse (mobile)
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    # TODO: promote to hard gate once we've seen one clean run. Mobile
+    # CWV budgets in lighthouserc.cjs (LCP ≤ 4 s, TBT ≤ 300 ms) are
+    # generous for a static site but haven't been measured in CI yet.
+    continue-on-error: true
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+
+      - name: Setup Node + pnpm
+        uses: ./.github/actions/setup-node-pnpm
+
+      - name: Download dist
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: dist-${{ github.sha }}
+          path: dist/
+
+      - name: Run Lighthouse (mobile preset)
+        env:
+          LIGHTHOUSE_PRESET: mobile
+        run: pnpm exec lhci autorun
+
+      - name: Upload Lighthouse mobile reports
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: lighthouse-mobile-${{ github.sha }}
+          # outputDir for LIGHTHOUSE_PRESET=mobile in lighthouserc.cjs.
+          path: .lighthouseci-mobile/
+          if-no-files-found: ignore
+          retention-days: 14
+
   axe:
     name: Accessibility (axe)
     needs: build
@@ -115,6 +154,53 @@ jobs:
       - name: Run axe
         run: pnpm check:a11y
 
+  perf-memory:
+    name: Runtime memory
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    # GATING from day one. Budget is 30 MB usedJsHeapSize per page after a
+    # CDP-driven GC, against a baseline that lands far below that today.
+    # A breach means a new JS retainer slipped in.
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+
+      - name: Setup Node + pnpm
+        uses: ./.github/actions/setup-node-pnpm
+
+      - name: Download dist
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: dist-${{ github.sha }}
+          path: dist/
+
+      - name: Cache Playwright browsers
+        id: pw-cache
+        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
+
+      - name: Install Playwright Chromium
+        if: steps.pw-cache.outputs.cache-hit != 'true'
+        run: pnpm test:install
+
+      - name: Install system deps for headless Chromium
+        if: steps.pw-cache.outputs.cache-hit == 'true'
+        run: pnpm exec playwright install-deps chromium
+
+      - name: Run perf-memory spec
+        # AUDIT_SKIP_BUILD reuses the dist artifact downloaded above instead
+        # of triggering Playwright's webServer to rebuild — the perf-memory
+        # spec reads dist/sitemap-0.xml at module load and ENOENTs if a
+        # parallel worker rewrites it mid-import.
+        env:
+          AUDIT_SKIP_BUILD: '1'
+        run: pnpm exec playwright test --project=perf-memory --reporter=line
+
   html-validate:
     name: HTML validate
     needs: build
@@ -140,6 +226,51 @@ jobs:
 
       - name: Run html-validate
         run: pnpm check:html
+
+  bundle-size:
+    name: Bundle size budget
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    # GATING from day one. Budgets in perf-budgets.json are sized off the
+    # current build with headroom (~50% over today's gzipped totals); first
+    # breach is real signal, not noise.
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+
+      - name: Setup Node + pnpm
+        uses: ./.github/actions/setup-node-pnpm
+
+      - name: Download dist
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: dist-${{ github.sha }}
+          path: dist/
+
+      - name: Measure bundle sizes
+        run: pnpm exec tsx scripts/audit/bundle-size.ts
+
+  asset-budget:
+    name: Image asset budget
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    # GATING from day one. Reads public/ from the checkout — no need for
+    # the build artifact, no `needs: build`. Catches any raster image over
+    # 20 KB that ships without a .webp companion.
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+
+      - name: Setup Node + pnpm
+        uses: ./.github/actions/setup-node-pnpm
+
+      - name: Check image budgets
+        run: pnpm exec tsx scripts/audit/asset-budget.ts
 
   structured-data:
     name: Structured data
