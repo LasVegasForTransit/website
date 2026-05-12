@@ -22,7 +22,12 @@ export default defineConfig({
       animations: 'disabled',
     },
   },
-  snapshotPathTemplate: 'tests/snapshots/{projectName}/{arg}{ext}',
+  // {platform} expands to 'darwin' on macOS, 'linux' on Ubuntu CI runners,
+  // 'win32' on Windows. Pixel hinting differs across OSes — a baseline
+  // captured on macOS will diff against an identical render on linux even
+  // with no code change. Each platform keeps its own committed set; see
+  // tests/README.md for the seeding workflow on each OS.
+  snapshotPathTemplate: 'tests/snapshots/{platform}/{projectName}/{arg}{ext}',
   // One project per device band the site is designed to look good on.
   // Widths align to Tailwind's md (768) and lg (1024) breakpoints so each
   // project lands in a distinct layout band. Phones and tablets are

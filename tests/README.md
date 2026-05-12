@@ -47,12 +47,31 @@ pnpm exec playwright show-report   # open the HTML report (diffs included)
 
 ## CI status
 
-**Currently not run in CI.** Baselines are committed for darwin (the maintainer's
-machine); ubuntu runners would mass-fail on rendering deltas. To enable later,
-either commit per-OS baselines via `snapshotPathTemplate` and add a workflow
-under `.github/workflows/`, or run on `macos-latest` (~10× the GitHub Actions
-minutes cost). Tracked alongside the other deferred CI items in the project
-plan.
+`snapshotPathTemplate` includes `{platform}`, so each OS keeps its own
+committed baselines under `tests/snapshots/<platform>/`. The macOS set
+(`darwin/`) is committed today; the linux set has to be seeded on a
+matching runner before the `visual-regression` job in
+`.github/workflows/audit.yml` can go hard. Until then the job runs in
+soft-fail mode against `mobile-portrait` + `desktop` — useful as a
+warning channel, not a merge gate.
+
+### Seeding linux baselines
+
+The official Playwright Docker image matches the version of Chromium
+that ships in the ubuntu runner, so capturing there gives PNGs that
+won't drift on the first CI run:
+
+```sh
+docker run --rm -v "$PWD:/work" -w /work \
+  mcr.microsoft.com/playwright:v$(node -p "require('@playwright/test/package.json').version")-jammy \
+  bash -c "corepack enable && pnpm install --frozen-lockfile && \
+           AUDIT_PORT=4399 pnpm test --update-snapshots \
+             --project=mobile-portrait --project=desktop"
+```
+
+That writes PNGs under `tests/snapshots/linux/{mobile-portrait,desktop}/`.
+Commit them, then promote `visual-regression` by deleting its
+`continue-on-error: true` line in `audit.yml`.
 
 The Playwright config (`../playwright.config.ts`) starts `pnpm preview`
 on port 4321 automatically. If you already have it running locally it
@@ -75,38 +94,26 @@ tests/
 ├── README.md                 # this file
 ├── screenshots.spec.ts       # the test (one test per sitemap URL)
 └── snapshots/
-    ├── mobile-portrait/      # two PNGs per route: -viewport and -full
-    │   ├── root-viewport.png
-    │   ├── root-full.png
-    │   ├── about-viewport.png
-    │   ├── about-full.png
-    │   └── ...
-    ├── mobile-landscape/
-    ├── tablet-portrait/
-    ├── tablet-landscape/
-    ├── desktop/
-    └── desktop-xl/
+    ├── darwin/               # macOS baselines (current dev machine)
+    │   ├── mobile-portrait/  # two PNGs per route: -viewport and -full
+    │   │   ├── root-viewport.png
+    │   │   ├── root-full.png
+    │   │   ├── about-viewport.png
+    │   │   ├── about-full.png
+    │   │   └── ...
+    │   ├── mobile-landscape/
+    │   ├── tablet-portrait/
+    │   ├── tablet-landscape/
+    │   ├── desktop/
+    │   └── desktop-xl/
+    └── linux/                # seeded on a Playwright Docker runner; see
+                              # "Seeding linux baselines" above
 ```
 
-The path layout is set by `snapshotPathTemplate` in
-`../playwright.config.ts`.
-
-## Cross-platform caveat (read this before adding CI)
-
-Pixel-perfect baselines differ between macOS, Linux, and Windows because
-of font hinting and sub-pixel rendering. Baselines committed from a
-macOS dev machine **will diff in a Linux CI runner**, even with no code
-change. When wiring this into CI, pick one:
-
-- **Easiest:** run the suite inside `mcr.microsoft.com/playwright`
-  (the official image) both locally and in CI. Same OS, same
-  baselines.
-- **More flexible:** add `{platform}` to `snapshotPathTemplate` in
-  `playwright.config.ts` so each OS keeps its own set of baselines,
-  then update them on each platform you support.
-
-For local-only use right now, the `darwin` baselines are committed
-as-is.
+`{platform}` in `snapshotPathTemplate` (see `../playwright.config.ts`)
+expands to `darwin` on macOS and `linux` on the CI runner — so a
+`pnpm test` on either platform reads and writes the right tree without
+extra flags.
 
 ## Why visual regression and not just "produce screenshots"?
 
