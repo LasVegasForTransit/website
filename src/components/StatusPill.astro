@@ -5,7 +5,7 @@ interface Props {
 const { status } = Astro.props;
 
 const styles: Record<Props['status'], string> = {
-  active: 'bg-accent text-paper border-accent',
+  active: 'bg-accent text-ink border-accent',
   planned: 'bg-transparent text-ink border-ink on-card-invert',
   complete: 'bg-rule/15 text-mute border-mute/30 on-card-invert-soft',
   paused: 'bg-transparent text-mute border-dashed border-mute on-card-invert',
