@@ -1,0 +1,91 @@
+---
+// Single button that prefers the native Web Share API and falls back to
+// clipboard copy with a transient "Copied" affordance. Used in the event
+// detail action row; reusable on any future surface that wants a share
+// affordance (project pages, vision sections, etc.).
+//
+// CSP-safe: the inline <script> is hoisted by Astro into a bundled JS
+// asset served from /_astro/* — that passes the site's `script-src
+// 'self'` rule without needing 'unsafe-inline' or a nonce.
+interface Props {
+  url: string;
+  title: string;
+  text?: string;
+  // Optional class override so callers can match an action row's button
+  // shape (outlined vs ghost) without duplicating the script behaviour.
+  class?: string;
+}
+
+const { url, title, text, class: className } = Astro.props;
+---
+
+<button
+  type="button"
+  data-share-button
+  data-share-url={url}
+  data-share-title={title}
+  data-share-text={text ?? title}
+  class:list={[
+    'inline-flex items-center px-5 py-3 text-sm font-bold uppercase tracking-wider no-underline border-2 border-ink hover:bg-ink hover:text-paper transition-colors',
+    className,
+  ]}
+>
+  <span data-share-label>Share →</span>
+</button>
+
+<script>
+  // Idempotent wiring — the script may run multiple times under view
+  // transitions if Astro re-evaluates a partial page. `dataset.bound`
+  // gates each button so the listener attaches exactly once.
+  const COPIED_RESET_MS = 1800;
+
+  function wire() {
+    const buttons = document.querySelectorAll<HTMLButtonElement>('[data-share-button]');
+    for (const button of buttons) {
+      if (button.dataset.bound === 'true') continue;
+      button.dataset.bound = 'true';
+
+      const label = button.querySelector<HTMLSpanElement>('[data-share-label]');
+      const url = button.dataset.shareUrl ?? location.href;
+      const title = button.dataset.shareTitle ?? document.title;
+      const text = button.dataset.shareText ?? title;
+
+      button.addEventListener('click', async () => {
+        // Web Share is the right primary path on mobile (iOS Safari,
+        // Android Chrome). On desktop browsers it's typically absent
+        // and we fall through to clipboard copy.
+        if (navigator.share) {
+          try {
+            await navigator.share({ url, title, text });
+            return;
+          } catch (err) {
+            // AbortError = user dismissed the share sheet. Not a
+            // failure; do nothing.
+            if (err instanceof Error && err.name === 'AbortError') return;
+            // Any other error (NotAllowedError, etc.) falls through to
+            // the clipboard copy below as a graceful degradation.
+          }
+        }
+
+        try {
+          await navigator.clipboard.writeText(url);
+          if (label) {
+            label.textContent = 'Copied ✓';
+            setTimeout(() => {
+              label.textContent = 'Share →';
+            }, COPIED_RESET_MS);
+          }
+        } catch {
+          // Clipboard write was blocked (Safari without user gesture
+          // attribution, ancient browser). Last-resort: prompt the URL
+          // so the user can copy it manually.
+          window.prompt('Copy this link:', url);
+        }
+      });
+    }
+  }
+
+  wire();
+  // Re-wire after view-transitions swap content.
+  document.addEventListener('astro:page-load', wire);
+</script>

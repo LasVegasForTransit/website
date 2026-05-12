@@ -1,10 +1,12 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import StructuredData from '../../components/seo/StructuredData.astro';
+import ShareButton from '../../components/ShareButton.astro';
 import { eventSchema } from '../../lib/structured-data';
 import { site } from '../../lib/site';
 import { getCollection, render } from 'astro:content';
 import { whereLabel } from '../../lib/event-format';
+import { relativeLabel } from '../../lib/event-time';
 
 export async function getStaticPaths() {
   const events = await getCollection('events', (e) => !e.id.startsWith('_'));
@@ -29,6 +31,7 @@ const timeLabel = new Intl.DateTimeFormat('en-US', {
   hour: 'numeric',
   minute: '2-digit',
   timeZone: 'America/Los_Angeles',
+  timeZoneName: 'short',
 }).format(event.data.date);
 
 // CTA visibility is purely format-driven now — no URL pattern sniffing. A
@@ -37,6 +40,15 @@ const timeLabel = new Intl.DateTimeFormat('en-US', {
 // also gate attendance behind a separate registration.
 const showJoin = event.data.format !== 'in-person' && event.data.joinUrl !== undefined;
 const showRsvp = event.data.rsvpUrl !== undefined;
+
+// "Live now" / "Today" derive from the event's PT day — see lib/event-time.
+// Other relative kinds (Tomorrow / In N days / Next week) render inline
+// next to the When data rather than as a badge.
+const relative = relativeLabel(event.data);
+const isUrgent = relative?.kind === 'live' || relative?.kind === 'today';
+const inlineRelative = relative && !isUrgent ? relative.text : null;
+
+const icsHref = `/events/${event.id}.ics`;
 ---
 
 <BaseLayout title={event.data.title} description={event.data.summary}>
@@ -56,7 +68,36 @@ const showRsvp = event.data.rsvpUrl !== undefined;
         doesn't push the body content below the fold the way display-lg
         did (display-lg clamps to 5.5rem and ate the entire viewport). */
     }
-    <h1 class="text-headline-lg md:text-display-md mt-4 md:mt-5">{event.data.title}</h1>
+    {
+      /* Live now / Today badge — derived from the event's PT day vs
+        now. Renders only when the event is live or today; absent
+        otherwise so the badge isn't decorative chrome on every page. */
+    }
+    {
+      isUrgent && relative && (
+        <p class="mt-4 md:mt-5">
+          <span
+            class:list={[
+              'inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-bold uppercase tracking-wider',
+              relative.kind === 'live' ? 'bg-accent text-paper' : 'bg-accent-soft text-ink',
+            ]}
+          >
+            {relative.kind === 'live' && (
+              <span aria-hidden="true" class="size-1.5 rounded-full bg-paper animate-pulse" />
+            )}
+            {relative.text}
+          </span>
+        </p>
+      )
+    }
+    <h1
+      class:list={[
+        'text-headline-lg md:text-display-md',
+        isUrgent ? 'mt-3 md:mt-4' : 'mt-4 md:mt-5',
+      ]}
+    >
+      {event.data.title}
+    </h1>
     <p class="lede mt-4 md:mt-6 max-w-2xl">{event.data.summary}</p>
 
     {
@@ -68,7 +109,16 @@ const showRsvp = event.data.rsvpUrl !== undefined;
     <dl class="mt-8 md:mt-10 grid grid-cols-2 gap-x-8 gap-y-5 md:gap-y-6 max-w-2xl">
       <div>
         <dt class="eyebrow">When</dt>
-        <dd class="mt-1 text-base font-semibold">{dateLabel} · {timeLabel}</dd>
+        <dd class="mt-1 text-base font-semibold">
+          <time datetime={event.data.date.toISOString()}>{dateLabel} · {timeLabel}</time>
+          {
+            inlineRelative && (
+              <span class="ml-2 font-normal text-[color:var(--color-mute)]">
+                · {inlineRelative}
+              </span>
+            )
+          }
+        </dd>
       </div>
       <div>
         <dt class="eyebrow">Where</dt>
@@ -81,32 +131,40 @@ const showRsvp = event.data.rsvpUrl !== undefined;
         what the event is and where/when it's happening before being asked
         to commit. A definition list (dl) is for data — a button isn't
         data, so it lives outside the dl with no eyebrow restating the
-        button text. */
+        button text. Order: primary (Join) → registration (RSVP) →
+        utility (Add to calendar, Share). */
     }
-    {
-      (showJoin || showRsvp) && (
-        <div class="mt-8 md:mt-10 flex flex-wrap items-center gap-3">
-          {showJoin && (
-            <a
-              href={event.data.joinUrl}
-              class="inline-flex items-center bg-accent text-ink px-5 py-3 text-sm font-bold uppercase tracking-wider no-underline hover:bg-ink hover:text-paper"
-              rel="noopener"
-            >
-              Join →
-            </a>
-          )}
-          {showRsvp && (
-            <a
-              href={event.data.rsvpUrl}
-              class="inline-flex items-center border-2 border-ink px-5 py-3 text-sm font-bold uppercase tracking-wider no-underline hover:bg-ink hover:text-paper"
-              rel="noopener"
-            >
-              RSVP →
-            </a>
-          )}
-        </div>
-      )
-    }
+    <div class="mt-8 md:mt-10 flex flex-wrap items-center gap-3">
+      {
+        showJoin && (
+          <a
+            href={event.data.joinUrl}
+            class="inline-flex items-center bg-accent text-ink px-5 py-3 text-sm font-bold uppercase tracking-wider no-underline hover:bg-ink hover:text-paper"
+            rel="noopener"
+          >
+            Join →
+          </a>
+        )
+      }
+      {
+        showRsvp && (
+          <a
+            href={event.data.rsvpUrl}
+            class="inline-flex items-center border-2 border-ink px-5 py-3 text-sm font-bold uppercase tracking-wider no-underline hover:bg-ink hover:text-paper"
+            rel="noopener"
+          >
+            RSVP →
+          </a>
+        )
+      }
+      <a
+        href={icsHref}
+        class="inline-flex items-center border-2 border-ink px-5 py-3 text-sm font-bold uppercase tracking-wider no-underline hover:bg-ink hover:text-paper"
+      >
+        Add to calendar →
+      </a>
+      <ShareButton url={eventUrl} title={event.data.title} text={event.data.summary} />
+    </div>
   </header>
   <hr class="rule-thick container-page" />
   <div class="container-prose pt-8 pb-16 md:pt-10 md:pb-16 prose-doc">
