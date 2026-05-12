@@ -113,7 +113,7 @@ jobs:
         run: pnpm exec playwright install-deps chromium
 
       - name: Run axe
-        run: pnpm audit:a11y
+        run: pnpm check:a11y
 
   html-validate:
     name: HTML validate
@@ -139,7 +139,7 @@ jobs:
           path: dist/
 
       - name: Run html-validate
-        run: pnpm audit:html
+        run: pnpm check:html
 
   structured-data:
     name: Structured data
@@ -163,7 +163,7 @@ jobs:
           path: dist/
 
       - name: Validate JSON-LD
-        run: pnpm audit:structured-data
+        run: pnpm check:structured-data
 
   third-party-scan:
     name: Third-party scan
@@ -188,7 +188,7 @@ jobs:
           path: dist/
 
       - name: Scan
-        run: pnpm audit:third-party
+        run: pnpm check:third-party
 
   deps-audit:
     name: Dependency vulnerabilities
@@ -225,4 +225,4 @@ jobs:
         uses: ./.github/actions/setup-node-pnpm
 
       - name: Run alex + cspell
-        run: pnpm audit:content
+        run: pnpm check:content

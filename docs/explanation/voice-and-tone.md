@@ -52,6 +52,24 @@ Distilled from Willie's April 2026 founder letter — the canonical reference fo
 - **Pun-aware playfulness, used sparingly.** _"The road ahead (pun intended) is anything but simple."_ _"All aboard for Las Vegans for Better Transit."_ Light, not twee.
 - **Self-deprecating asides paired with anecdotes.** _"kind of insane, even for a regular transit user,"_ _"I confused myself into taking a train headed to Brooklyn."_ The founder voice is never above the reader.
 
+## Audience: organizer-friendly, not populist
+
+The reader of LVBT site copy is a fellow organizer, an allied policy staffer, a legislator's aide, a coalition partner, or a journalist tracking the work — not "the angry public." That audience expects:
+
+- **Power-aware language.** Name actual decision-makers, programs, and constraints. _"RTC board,"_ _"state interim committees,"_ _"FTA Capital Investment Grants"_ are credibility, not jargon, for this audience. Gloss once on first use; don't strip.
+- **Long-haul honesty.** Organizers know strategies don't always work. Saying so is a credibility move: _"Frankly, we don't know if this works on the timeline that matters. We're going to push for it anyway."_
+- **Named specifics.** Real coalitions get named — Culinary Workers Union Local 226, ATU Local 1637, Nevada Conservation League. Generic _"labor"_ or _"environmentalists"_ doesn't help.
+- **Practical verbs.** _"Build standing relationships,"_ _"show up at,"_ _"give legislators something to point to."_ Organizer vocabulary, not academic, not corporate.
+
+What this is **not** — populist shorthand. Populism would lose this audience by reading as performative:
+
+- **No generic class enemies.** _"Developers,"_ _"politicians,"_ _"the casino lobby,"_ _"the highway lobby"_ as undifferentiated villains. Real organizing names _which_ developer is fighting _which_ project — not the abstract class.
+- **No grievance shorthand.** _"They want us to drive,"_ _"the system is designed to keep us…"_ Even when partly true, this register doesn't build the coalition we need.
+- **No romanticizing "the people."** _"The people are demanding…"_ reads as performative. Organizer-honest is _"a constituency we don't currently have."_
+- **No vilifying opponents.** Differentiate via reframe, not via villain. Model: _"We are not anti-car. We are anti-car-dependence. The point is choice."_
+
+**Test:** would a Marshall Ganz–trained organizer recognize this as the work? Would a coalition partner (labor, faith, environmental) read it and feel LVBT understands the actual mechanics of building power? If yes, ship.
+
 ## Overselling vs. anchored opinion
 
 Distinct things — easy to confuse, but only one of them violates the voice.
