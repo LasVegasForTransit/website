@@ -83,6 +83,25 @@ async function settle(page: Page) {
       .querySelectorAll('.reveal, .reveal-stat, .reveal-quote')
       .forEach((el) => el.classList.add('is-visible'));
   });
+  // Wait for document height to stabilize. Pages with view-timeline-name /
+  // scroll-driven animations and lazy hydration can keep growing for a beat
+  // after networkidle; scrolling before they're done lands us at a clamped
+  // position. Poll scrollHeight; bail when it matches three samples in a row.
+  await page.waitForFunction(
+    () => {
+      const w = window as typeof window & { __h?: number; __stable?: number };
+      const h = document.documentElement.scrollHeight;
+      if (w.__h === h) {
+        w.__stable = (w.__stable ?? 0) + 1;
+      } else {
+        w.__h = h;
+        w.__stable = 0;
+      }
+      return (w.__stable ?? 0) >= 3;
+    },
+    null,
+    { polling: 100, timeout: 5000 },
+  );
 }
 
 const args = parseArgs(process.argv.slice(2));
@@ -103,8 +122,14 @@ try {
   await settle(page);
 
   if (args.scrolled != null) {
-    await page.evaluate((y) => window.scrollTo(0, y), args.scrolled);
-    await page.waitForTimeout(400);
+    // The site sets `html { scroll-behavior: smooth }` for anchor links.
+    // window.scrollTo(0, y) inherits that and animates over hundreds of ms,
+    // so a fixed waitForTimeout could screenshot mid-scroll. Use `instant`.
+    await page.evaluate(
+      (y) => window.scrollTo({ top: y, left: 0, behavior: 'instant' }),
+      args.scrolled,
+    );
+    await page.waitForTimeout(200);
   }
 
   await page.screenshot({ path: args.out, fullPage: args.full });

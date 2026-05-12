@@ -8,11 +8,11 @@ pnpm dev
 
 Runs three layers concurrently:
 
-| Layer | Port | Purpose |
-|---|---|---|
-| Astro dev (Vite) | 4320 | HMR, content changes |
-| Wrangler Pages | 4321 | Routes `/api/*` through Pages Functions; reads `.env.local` secrets |
-| portless proxy | 1355 | Serves everything at `https://lvbt.localhost:1355` |
+| Layer            | Port | Purpose                                                             |
+| ---------------- | ---- | ------------------------------------------------------------------- |
+| Astro dev (Vite) | 4320 | HMR, content changes                                                |
+| Wrangler Pages   | 4321 | Routes `/api/*` through Pages Functions; reads `.env.local` secrets |
+| portless proxy   | 1355 | Serves everything at `https://lvbt.localhost:1355`                  |
 
 **Use `https://lvbt.localhost:1355`** for local testing — it's the URL the `pnpm screenshot` script defaults to and the closest match to the production environment.
 

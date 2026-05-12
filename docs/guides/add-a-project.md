@@ -25,7 +25,6 @@
    ```
 
 4. **Body order is loosely standard.** Every project page reads:
-
    1. **`## Why this project`** — motivation. What problem this addresses, why it matters, why now. Two to four paragraphs. Lead with the reader's stake, not internal jargon.
    2. **`## Approach`** (or a project-specific context section like `## Priority partners`, `## Where we're starting`, `## Key dates`, `## What's in the report`, `## Target departments`) — context for the specific project: how it runs, who it touches, what it produces.
    3. **`## Updates`** — reverse-chronological progress entries, added as the work happens. Use `### YYYY-MM-DD — short label` for each entry.

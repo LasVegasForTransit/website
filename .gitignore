@@ -24,6 +24,9 @@ pnpm-debug.log*
 # superpowers brainstorming mockups
 .superpowers/
 
+# claude code session state (per-machine, not portable)
+.claude/
+
 # wrangler cache
 .wrangler/
 
