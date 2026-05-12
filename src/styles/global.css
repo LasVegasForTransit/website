@@ -8,7 +8,7 @@
   --color-paper: #f7f4ec;
   --color-accent: #e5471a;
   --color-accent-soft: #ffe9d6;
-  --color-mute: #5c6068;
+  --color-mute: #4a4e57;
   --color-rule: #1f232b;
 
   --shadow-lift: 0 12px 30px -16px color-mix(in srgb, var(--color-ink) 25%, transparent);
@@ -163,6 +163,10 @@
      to every page identically, so nothing here is page-specific. */
   body[data-canvas='dark'] {
     background: var(--color-ink);
+    /* Cream's #4a4e57 mute reads as ~3.8:1 against #0f1115 — fails AA for
+       small text. Lift the mute on dark surfaces so eyebrows and paused
+       StatusPills clear 4.5:1 on both canvases. */
+    --color-mute: #a8acb4;
   }
 
   body[data-canvas='dark'] [data-site-header] {
