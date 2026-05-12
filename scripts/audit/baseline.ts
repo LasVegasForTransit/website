@@ -98,13 +98,26 @@ function auditLog(msg: string): void {
   process.stdout.write(`[audit] ${msg}\n`);
 }
 
+// The build runs through scripts/audit/build-profile.ts so its peak RSS and
+// wall-clock land in audits/build-stats.jsonl on the same pass — no second
+// `pnpm build` is needed for the memory-trend signal. The captured stdout
+// holds the full build log followed by a one-line profile summary; we
+// surface the summary to the live audit log so a watching dev sees it
+// inline, and stash the whole ToolResult to render in the markdown report.
+let buildResult: ToolResult | null = null;
 if (!skipBuild) {
-  auditLog('building site (pnpm build)...');
-  const b = await runTool('build', 'pnpm', ['build']);
+  auditLog('building site (profiled via scripts/audit/build-profile.ts)...');
+  const b = await runTool('build', 'pnpm', ['exec', 'tsx', 'scripts/audit/build-profile.ts']);
   if (b.exitCode !== 0) {
     process.stderr.write(b.stderr || b.stdout);
     process.exit(b.exitCode ?? 1);
   }
+  const summary = b.stdout
+    .split('\n')
+    .reverse()
+    .find((line) => line.startsWith('build-profile:'));
+  if (summary) auditLog(summary);
+  buildResult = b;
 }
 
 if (!existsSync(DIST)) {
@@ -177,8 +190,11 @@ if (!skip.has('axe')) {
     ),
   );
 }
-
-const results: ToolResult[] = [...waveAResults, ...waveBResults];
+const results: ToolResult[] = [
+  ...(buildResult ? [buildResult] : []),
+  ...waveAResults,
+  ...waveBResults,
+];
 
 const today = new Date().toISOString().slice(0, 10);
 mkdirSync(REPORT_DIR, { recursive: true });
