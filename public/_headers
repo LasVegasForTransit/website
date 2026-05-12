@@ -5,7 +5,7 @@
   Permissions-Policy: camera=(), microphone=(), geolocation=(), interest-cohort=(), payment=(), usb=()
   X-Frame-Options: DENY
   Cross-Origin-Opener-Policy: same-origin
-  Content-Security-Policy: default-src 'self'; base-uri 'self'; frame-ancestors 'none'; img-src 'self' data: https:; style-src 'self' 'unsafe-inline'; font-src 'self' data:; script-src 'self'; frame-src 'self'; connect-src 'self'; form-action 'self' https://givebutter.com; object-src 'none'; upgrade-insecure-requests
+  Content-Security-Policy: default-src 'self'; base-uri 'self'; frame-ancestors 'none'; img-src 'self' data: https:; style-src 'self' 'unsafe-inline'; font-src 'self' data:; script-src 'self' https://static.cloudflareinsights.com; frame-src 'self'; connect-src 'self' https://cloudflareinsights.com; form-action 'self' https://givebutter.com; object-src 'none'; upgrade-insecure-requests
 
 /_astro/*
   Cache-Control: public, max-age=31536000, immutable
