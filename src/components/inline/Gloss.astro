@@ -131,6 +131,22 @@ const isExternal = isLink && /^https?:/.test(url!);
     if (window.__lvbtGlossInit) return;
     window.__lvbtGlossInit = true;
 
+    // Prettier reformats the trigger's <slot> onto its own line, which
+    // makes JSX preserve the surrounding indentation as text nodes
+    // inside the inline <a>/<button>. That manifests as a leading and
+    // trailing space inside every glossary link. Strip those text nodes
+    // at init — cheap and reliable, and the alternative (prettier-ignore
+    // directive) isn't honored in this Astro template position.
+    function trimGlossTrigger(el) {
+      while (el.firstChild && el.firstChild.nodeType === 3 && !el.firstChild.textContent.trim()) {
+        el.removeChild(el.firstChild);
+      }
+      while (el.lastChild && el.lastChild.nodeType === 3 && !el.lastChild.textContent.trim()) {
+        el.removeChild(el.lastChild);
+      }
+    }
+    document.querySelectorAll('.gloss-trigger').forEach(trimGlossTrigger);
+
     function getTrigger(popover) {
       var id = popover.id;
       return (
