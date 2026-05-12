@@ -175,11 +175,13 @@
     --color-mute: #a8acb4;
   }
 
-  /* Re-claim the cream-canvas mute on any .bg-paper / .bg-accent-soft
-     surface that sits inside a dark ancestor — otherwise the dark mute
-     inherits down into cream cards and fails contrast on them. */
+  /* Re-claim the cream-canvas mute on any .bg-paper / .bg-accent-soft /
+     vision's .band-cream surface that sits inside a dark ancestor —
+     otherwise the dark mute inherits down into cream cards and fails
+     contrast on them. */
   .bg-paper,
-  .bg-accent-soft {
+  .bg-accent-soft,
+  .band-cream {
     --color-mute: #4a4e57;
   }
 
@@ -197,8 +199,11 @@
       border-color 200ms ease;
   }
   body[data-canvas='dark'] [data-site-header]:not([data-stuck]) {
-    background-color: transparent;
-    border-bottom-color: transparent;
+    /* Tailwind's bg-paper/80 utility lives in a higher cascade layer than
+       this rule. Bump with !important so the dark hero shows through the
+       header instead of letting cream blur seep over ink. */
+    background-color: transparent !important;
+    border-bottom-color: transparent !important;
   }
   body[data-canvas='dark'] [data-site-header]:not([data-stuck]) a {
     color: var(--color-paper);

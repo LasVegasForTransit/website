@@ -33,6 +33,11 @@ const { num, title } = Astro.props;
   .num {
     color: var(--color-accent);
   }
+  /* Accent on cream is ~3.6:1 — under AA for the 11px figure label.
+     On dark bands accent clears 4.65:1, so the override is cream-only. */
+  :global(.band-cream) .num {
+    color: var(--color-ink);
+  }
   .figure-caption {
     margin-top: 1.5rem;
     font-size: 0.9rem;
