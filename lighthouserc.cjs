@@ -1,16 +1,23 @@
 /**
- * Lighthouse CI config. One file, two presets — `LIGHTHOUSE_PRESET=mobile`
- * picks the mobile preset, looser CWV thresholds, and an isolated output
- * dir; anything else (default) runs desktop.
+ * Lighthouse CI config. One file, three presets switched via
+ * `LIGHTHOUSE_PRESET`:
  *
- * URLs are the static index.html files in dist — `staticDistDir` makes
- * lhci spin up its own HTTP server and rewrite `http://localhost/<path>`
- * URLs to that server's port at runtime.
+ *   (unset)   desktop preset, dist/ as the source, tight CWV budgets
+ *   mobile    mobile preset, dist/ as the source, looser CWV budgets
+ *   prod      mobile preset, live production URLs (no staticDistDir);
+ *             same mobile thresholds — what's good enough for the CI
+ *             build artifact is the floor for production.
+ *
+ * URLs for the dist-mode presets are static index.html paths; lhci
+ * starts its own HTTP server on dist/ and rewrites them at runtime.
+ * The prod preset replaces them with absolute production URLs.
  */
 
-const isMobile = process.env.LIGHTHOUSE_PRESET === 'mobile';
+const preset = process.env.LIGHTHOUSE_PRESET ?? '';
+const isMobile = preset === 'mobile' || preset === 'prod';
+const isProd = preset === 'prod';
 
-const url = [
+const distUrl = [
   'http://localhost/index.html',
   'http://localhost/about/index.html',
   'http://localhost/about/strategy/index.html',
@@ -19,6 +26,20 @@ const url = [
   'http://localhost/events/index.html',
   'http://localhost/contact/index.html',
   'http://localhost/go/index.html',
+];
+
+// Production routes the live site actually exposes. Kept in sync with
+// distUrl manually — only an evergreen route should land here, since
+// the scheduled run is weekly and any drift is felt quickly.
+const prodUrl = [
+  'https://lasvegasfortransit.org/',
+  'https://lasvegasfortransit.org/about/',
+  'https://lasvegasfortransit.org/about/strategy/',
+  'https://lasvegasfortransit.org/vision/',
+  'https://lasvegasfortransit.org/projects/',
+  'https://lasvegasfortransit.org/events/',
+  'https://lasvegasfortransit.org/contact/',
+  'https://lasvegasfortransit.org/go/',
 ];
 
 const sharedAssertions = {
@@ -51,20 +72,32 @@ const mobileAssertions = {
   'speed-index': ['error', { maxNumericValue: 4500 }],
 };
 
-module.exports = {
-  ci: {
-    collect: {
+const collect = isProd
+  ? // No staticDistDir on prod: lhci hits the live origin directly. Two
+    // runs averaged out so a single noisy load doesn't tank the report.
+    { url: prodUrl, numberOfRuns: 2, settings: { preset: 'mobile' } }
+  : {
       staticDistDir: './dist',
-      url,
+      url: distUrl,
       numberOfRuns: 1,
       settings: { preset: isMobile ? 'mobile' : 'desktop' },
-    },
+    };
+
+const outputDir = isProd
+  ? '.lighthouseci-prod'
+  : isMobile
+    ? '.lighthouseci-mobile'
+    : '.lighthouseci';
+
+module.exports = {
+  ci: {
+    collect,
     assert: {
       assertions: isMobile ? mobileAssertions : desktopAssertions,
     },
     upload: {
       target: 'filesystem',
-      outputDir: isMobile ? '.lighthouseci-mobile' : '.lighthouseci',
+      outputDir,
     },
   },
 };
