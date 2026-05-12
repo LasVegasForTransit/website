@@ -21,13 +21,94 @@ import Health from '../components/vision/sections/Health.astro';
 import Riders from '../components/vision/sections/Riders.astro';
 import Close from '../components/vision/sections/Close.astro';
 
+import SectionProgressBar from '../components/vision/SectionProgressBar.astro';
+import VisionToc from '../components/vision/VisionToc.astro';
+
 const title = 'Our vision';
 const description =
   'A reference for the Las Vegas Valley LVBT is working toward — reliable, safe, and efficient public transportation, supportive land use, and a metro people are proud to live in. In fourteen pieces.';
+
+// The slugs below must match SectionHead's slugify(heading) output. The Intro
+// slug ("intro") is hardcoded on Frame's .frame-hero — Frame doesn't use
+// SectionHead. The Outro slug is auto-derived from Close's heading.
+type SectionEntry = { slug: string; short: string };
+const SECTIONS: ReadonlyArray<SectionEntry> = [
+  { slug: 'intro', short: 'Intro' },
+  { slug: 'walk-to-milk', short: 'Walk' },
+  { slug: 'the-kid-in-the-protected-lane', short: 'Bike' },
+  { slug: 'twelve-minutes', short: 'Frequency' },
+  { slug: 'vegas-as-a-node-not-an-island', short: 'Region' },
+  { slug: 'the-strip-is-a-rehearsal', short: 'Place' },
+  { slug: 'maryland-after', short: 'Streets' },
+  { slug: 'beyond-the-living-room', short: 'Public space' },
+  { slug: 'when-the-valley-shrinks', short: 'Riders' },
+  { slug: 'twenty-four-thousand-a-year', short: 'Cost' },
+  { slug: 'the-shift-change', short: 'Economy' },
+  { slug: 'we-didnt-move-here-for-the-traffic', short: 'Recreation' },
+  { slug: 'bowl-country', short: 'Climate' },
+  { slug: 'what-the-doctors-stop-seeing', short: 'Health' },
+  { slug: 'the-dishwasher-and-the-dean', short: 'Civic' },
+  {
+    slug: 'a-sustainable-oasis-in-the-desert-made-possible-through-public-transportation',
+    short: 'Outro',
+  },
+];
+
+const NAMED_SECTION_COUNT = 14;
+const tlSafe = (s: string) => s.replace(/[^a-z0-9]/g, '-');
+const introSlug = SECTIONS[0]!.slug;
+const outroSlug = SECTIONS[SECTIONS.length - 1]!.slug;
+
+// One inline <style> drives:
+//   1. view-timeline-name on each section element (via :has(#slug)). Frame is
+//      special-cased: it sets its own view-timeline-name inline because its
+//      hero panel — not the outer <section> — is the trackable surface.
+//   2. animation-timeline on each TOC item, so the active state lights up as
+//      the matching section crosses the viewport.
+//   3. The TOC's own visibility, driven by the Intro and Outro timelines:
+//      fade in once Intro has finished exiting, fade out once Outro starts
+//      entering. Wrapped in min-width: 1024px so it only applies where the
+//      TOC is visible at all.
+// Named view-timelines are only in scope of the declaring element's siblings
+// + descendants by default. The TOC lives outside the <article>, so it would
+// be unable to reference per-section timelines without help. `timeline-scope`
+// on <body> lifts all 16 timelines into the wider subtree so any element on
+// the page can reference them. Scoped via the inline <style> so it only
+// applies on /vision.
+const scopeNames = SECTIONS.map(({ slug }) => `--tl-${tlSafe(slug)}`).join(', ');
+const styleBlock = `
+body { timeline-scope: ${scopeNames}; }
+${SECTIONS.slice(1)
+  .map(
+    ({ slug }) =>
+      `section:has(#${slug}) { view-timeline-name: --tl-${tlSafe(slug)}; view-timeline-axis: block; }`,
+  )
+  .join('\n')}
+${SECTIONS.map(
+  ({ slug }) => `
+.vision-toc a[href="#${slug}"] {
+  animation: vision-toc-active linear both;
+  animation-timeline: --tl-${tlSafe(slug)};
+  animation-range: contain 0% cover 100%;
+}`,
+).join('')}
+@media (min-width: 1024px) {
+  .vision-toc {
+    animation:
+      vision-toc-show-after-hero linear both,
+      vision-toc-hide-before-close linear both;
+    animation-timeline: --tl-${tlSafe(introSlug)}, --tl-${tlSafe(outroSlug)};
+    animation-range: cover 95% cover 100%, cover 0% cover 5%;
+  }
+}
+`;
 ---
 
 <BaseLayout title={title} description={description} canvas="dark">
   <StructuredData slot="head" data={websiteSchema()} />
+  <style slot="head" is:inline set:html={styleBlock}></style>
+
+  <SectionProgressBar total={NAMED_SECTION_COUNT} />
 
   <article class="vision-page">
     <Frame />
@@ -47,4 +128,22 @@ const description =
     <Riders />
     <Close />
   </article>
+
+  <VisionToc sections={SECTIONS} />
+
+  <script is:inline>
+    document.addEventListener('click', (e) => {
+      const target = e.target;
+      const a = target instanceof Element ? target.closest('a[data-copy-anchor]') : null;
+      if (!a) return;
+      e.preventDefault();
+      const href = a.getAttribute('href');
+      if (!href) return;
+      const url = new URL(href, location.href).toString();
+      if (navigator.clipboard) navigator.clipboard.writeText(url).catch(() => {});
+      history.replaceState(null, '', href);
+      a.setAttribute('data-copied', '');
+      setTimeout(() => a.removeAttribute('data-copied'), 1400);
+    });
+  </script>
 </BaseLayout>

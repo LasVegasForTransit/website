@@ -3,8 +3,16 @@ import PhotoPlaceholder from '../PhotoPlaceholder.astro';
 ---
 
 <section>
-  <!-- Panel 1: full-viewport dark hero -->
-  <div class="frame-hero band-ink">
+  <!-- Panel 1: full-viewport dark hero. The id + view-timeline-name are set
+       here directly (rather than via the inline-style loop in vision.astro)
+       because Frame doesn't use SectionHead and we need the timeline on the
+       hero panel specifically — not the outer <section> that also wraps the
+       prose panel below the fold. -->
+  <div
+    id="intro"
+    class="frame-hero band-ink"
+    style="view-timeline-name: --tl-intro; view-timeline-axis: block;"
+  >
     <PhotoPlaceholder
       fill
       variant="ink"

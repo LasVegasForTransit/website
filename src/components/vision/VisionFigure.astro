@@ -9,7 +9,7 @@ interface Props {
 const { num, title } = Astro.props;
 ---
 
-<figure class="vision-figure">
+<figure class="vision-figure reveal">
   <p class="figure-eyebrow"><span class="num">FIG. {num}</span> — {title}</p>
   <slot />
   <figcaption class="figure-caption"><slot name="caption" /></figcaption>

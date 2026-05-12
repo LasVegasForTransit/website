@@ -1,0 +1,23 @@
+---
+/**
+ * Side TOC for /vision. Static markup; all visibility and active-item
+ * highlighting is CSS-driven via scroll-driven animations declared in the
+ * inline <style> emitted by vision.astro from the SECTIONS registry.
+ */
+interface Props {
+  sections: ReadonlyArray<{ slug: string; short: string }>;
+}
+const { sections } = Astro.props;
+---
+
+<nav class="vision-toc" aria-label="Sections">
+  <ol>
+    {
+      sections.map(({ slug, short }) => (
+        <li>
+          <a href={`#${slug}`}>{short}</a>
+        </li>
+      ))
+    }
+  </ol>
+</nav>

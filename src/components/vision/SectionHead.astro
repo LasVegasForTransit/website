@@ -2,7 +2,7 @@
 interface Props {
   /** Section number/pos label, e.g. "3 / 14 — How we get around". Omit to suppress the eyebrow. */
   num?: string;
-  /** The visible section title — full sentence/phrase */
+  /** The visible section title — full sentence/phrase. May contain HTML entities (e.g. &nbsp;). */
   heading: string;
   /** Heading level. Defaults to h2; the frame and close use h1/h2 with hero styling. */
   as?: 'h1' | 'h2';
@@ -14,9 +14,25 @@ const props = Astro.props as Props;
 const { num, heading, as = 'h2', variant = 'section' } = props;
 const Tag = as;
 const headingClass = variant === 'hero' ? 'hero-heading' : 'section-heading';
+
+// Heading→slug is the single source of truth for section ids, permalinks,
+// view-timeline names, and the SECTIONS registry in vision.astro. Decode
+// &nbsp; (the only entity in current headings) before slugifying so the
+// resulting id reads as it would if you typed it.
+const decoded = heading.replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&');
+const slug = decoded
+  .toLowerCase()
+  .replace(/['’]/g, '')
+  .replace(/[^a-z0-9]+/g, '-')
+  .replace(/^-+|-+$/g, '');
 ---
 
-<div class="container-narrow">
+<div id={slug} class="container-narrow reveal" data-vision-section-title={decoded}>
   {num && <p class="eyebrow">{num}</p>}
-  <Tag class={headingClass} set:html={heading} />
+  <Tag class={headingClass}>
+    <a href={`#${slug}`} class="section-anchor" data-copy-anchor>
+      <span class="section-anchor__text" set:html={heading} />
+      <span class="section-anchor__glyph" aria-hidden="true">§</span>
+    </a>
+  </Tag>
 </div>

@@ -17,7 +17,7 @@ const {
 ---
 
 <div
-  class:list={['photo-placeholder', `is-${variant}`, { 'is-fill': fill }]}
+  class:list={['photo-placeholder', `is-${variant}`, { 'is-fill': fill }, !fill && 'reveal']}
   role="img"
   aria-label={description}
 >

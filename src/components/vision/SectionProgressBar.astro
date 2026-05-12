@@ -1,0 +1,98 @@
+---
+/**
+ * Sticky sub-bar under the main header showing "§ N / total — Title."
+ *
+ * Observes every `[data-vision-section]` element on the page (the 14 named
+ * sections; Frame and Close are deliberately outside this set). Picks the
+ * section whose top has just crossed the upper half of the viewport as the
+ * current one. Hides itself anywhere outside that observed set.
+ */
+interface Props {
+  total: number;
+}
+const { total } = Astro.props;
+---
+
+<div data-section-progress hidden class="section-progress" aria-hidden="true">
+  <div class="section-progress__inner container-page">
+    <span class="section-progress__num">
+      § <span data-progress-index>1</span> / {total}
+    </span>
+    <span class="section-progress__sep">—</span>
+    <a class="section-progress__title" data-progress-link href="#">…</a>
+  </div>
+</div>
+
+<script is:inline>
+  // Defer to DOMContentLoaded: the bar markup is emitted BEFORE the
+  // <article> that contains [data-vision-section] elements, so at inline-
+  // script execution time querySelectorAll returns 0 and the IIFE would
+  // short-circuit. Waiting for DOMContentLoaded gives the parser time to
+  // attach the rest of the page first.
+  const init = () => {
+    const bar = document.querySelector('[data-section-progress]');
+    if (!bar) return;
+    const idxEl = bar.querySelector('[data-progress-index]');
+    const linkEl = bar.querySelector('[data-progress-link]');
+    const sections = Array.from(document.querySelectorAll('[data-vision-section]'));
+    if (!idxEl || !linkEl || sections.length === 0) return;
+
+    let current = -1;
+
+    const update = () => {
+      // The "current" section is the one whose top has scrolled just above
+      // the upper edge of the viewport — i.e., the largest negative top.
+      // Falls back to the first section if none have crossed (e.g. on first
+      // entry just after the hero).
+      let best = -1;
+      let bestTop = -Infinity;
+      for (let i = 0; i < sections.length; i++) {
+        const top = sections[i].getBoundingClientRect().top;
+        if (top <= window.innerHeight * 0.4 && top > bestTop) {
+          best = i;
+          bestTop = top;
+        }
+      }
+      if (best === current) return;
+      current = best;
+      if (current < 0) {
+        bar.setAttribute('hidden', '');
+        return;
+      }
+      bar.removeAttribute('hidden');
+      idxEl.textContent = String(current + 1);
+      const el = sections[current];
+      // SectionHead sets data-vision-section-title on its inner container
+      // (not the outer <section>), so check there first. The h2.textContent
+      // fallback pulls in the anchor "§" glyph and surrounding whitespace,
+      // so it gets normalized.
+      const titleEl = el.querySelector('[data-vision-section-title]');
+      const rawTitle =
+        (titleEl instanceof HTMLElement && titleEl.dataset.visionSectionTitle) ||
+        el.dataset.visionSectionTitle ||
+        el.querySelector('h2')?.textContent ||
+        '';
+      const title = rawTitle.replace(/\s*§\s*$/, '').trim();
+      // The slug id lives on SectionHead's inner container, not on the
+      // outer <section> itself. Fall back gracefully if neither exists.
+      const slugId = el.id || el.querySelector('[id]')?.id || '';
+      linkEl.textContent = title;
+      linkEl.setAttribute('href', slugId ? '#' + slugId : '#');
+    };
+
+    // IO catches structural enter/exit; scroll catches in-section drift.
+    const io = new IntersectionObserver(update, {
+      rootMargin: '0px 0px -50% 0px',
+      threshold: [0, 1],
+    });
+    sections.forEach((el) => io.observe(el));
+    window.addEventListener('scroll', update, { passive: true });
+    update();
+  };
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init, { once: true });
+  } else {
+    init();
+  }
+</script>
