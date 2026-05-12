@@ -278,7 +278,15 @@ import SectionHead from '../SectionHead.astro';
     text-align: center;
     line-height: 1.2;
   }
-  .typology-cell.is-current {
+  /* "Today" state is visually de-emphasized to mark the missing-middle
+     story. Opacity dimming the whole cell pulled the label to ~#969592
+     against cream (2.7:1, fails AA) — dimming via mute color on the
+     label plus opacity on the decorative icon keeps the hierarchy and
+     the contrast. */
+  .typology-cell.is-current .typology-label {
+    color: var(--color-mute);
+  }
+  .typology-cell.is-current svg {
     opacity: 0.42;
   }
   .typology-cell.is-current .typology-label::after {

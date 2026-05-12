@@ -124,15 +124,23 @@
 }
 .vision-page .band-accent {
   background: var(--color-accent);
-  color: var(--color-paper);
-  --vp-text: var(--color-paper);
-  --vp-text-muted: color-mix(in srgb, var(--color-paper) 75%, var(--color-accent));
-  --vp-text-subtle: color-mix(in srgb, var(--color-paper) 24%, transparent);
-  --vp-eyebrow: color-mix(in srgb, var(--color-paper) 70%, var(--color-accent));
-  --vp-prose: var(--color-paper);
-  --vp-link: var(--color-paper);
-  --vp-cite: color-mix(in srgb, var(--color-paper) 70%, var(--color-accent));
-  --vp-rule: color-mix(in srgb, var(--color-paper) 24%, transparent);
+  /* Accent + cream text bottoms out at 3.64:1 (paper on accent) and the
+     paper/accent mixes used to be ~2.5–3:1 — under AA at every label
+     size. Ink reads 6.35:1 on accent and the partial ink/accent mixes
+     hold up too, so band-accent palette flips to ink-derived tones. */
+  color: var(--color-ink);
+  --vp-text: var(--color-ink);
+  /* Even ink × 80% accent reads 4.12:1 on the accent surface — the
+     orange's luminance leaves no headroom. Drop the mix entirely; muted
+     text on accent shares the body color and relies on the surrounding
+     font-weight / size for hierarchy. */
+  --vp-text-muted: var(--color-ink);
+  --vp-text-subtle: color-mix(in srgb, var(--color-ink) 24%, transparent);
+  --vp-eyebrow: var(--color-ink);
+  --vp-prose: var(--color-ink);
+  --vp-link: var(--color-ink);
+  --vp-cite: var(--color-ink);
+  --vp-rule: color-mix(in srgb, var(--color-ink) 24%, transparent);
 }
 .vision-page .band-ink ::selection {
   background: var(--color-paper);
@@ -257,7 +265,9 @@
 .vision-page .close-pointers li em {
   font-style: italic;
   font-weight: 400;
-  opacity: 0.85;
+  /* Opacity 0.85 dropped ink/accent contrast from 6.35 → 4.12 on the
+     band-accent close section. Italic + lighter weight already mark the
+     em as supportive, so drop the opacity dim. */
 }
 .vision-page .close-pointers li a {
   font-weight: 800;

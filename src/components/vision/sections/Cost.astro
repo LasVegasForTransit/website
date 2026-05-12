@@ -163,6 +163,9 @@ import SectionHead from '../SectionHead.astro';
   }
   .cost-s-dep {
     background: var(--color-accent);
+    /* Paper on accent is 3.64:1 — under AA. Flip to ink only on the
+       lightest segment; the darker mixes keep paper text. */
+    color: var(--color-ink);
   }
   .cost-legend {
     display: flex;
