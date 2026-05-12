@@ -29,6 +29,14 @@ const timeLabel = new Intl.DateTimeFormat('en-US', {
   minute: '2-digit',
   timeZone: 'America/Los_Angeles',
 }).format(event.data.date);
+
+// Pick the CTA wording from the URL: a meet/zoom/teams link drops a visitor
+// straight into a call (so "Join" is honest), while an RSVP service like
+// lu.ma or Eventbrite is a registration step ("RSVP"). Defaults to "RSVP".
+const videoCallHost =
+  /\b(meet\.google\.com|zoom\.us|teams\.microsoft\.com|whereby\.com|hangouts\.google\.com)\b/i;
+const isVideoCall = event.data.rsvpUrl ? videoCallHost.test(event.data.rsvpUrl) : false;
+const ctaLabel = isVideoCall ? 'Join' : 'RSVP';
 ---
 
 <BaseLayout title={event.data.title} description={event.data.summary}>
@@ -49,14 +57,14 @@ const timeLabel = new Intl.DateTimeFormat('en-US', {
       {
         event.data.rsvpUrl && (
           <div class="col-span-2 md:col-span-1">
-            <dt class="eyebrow">RSVP</dt>
+            <dt class="eyebrow">{ctaLabel}</dt>
             <dd class="mt-1">
               <a
                 href={event.data.rsvpUrl}
                 class="inline-flex items-center bg-accent text-paper px-4 py-2 text-sm font-bold uppercase tracking-wider no-underline"
                 rel="noopener"
               >
-                RSVP →
+                {ctaLabel} →
               </a>
             </dd>
           </div>

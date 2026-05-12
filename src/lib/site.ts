@@ -39,11 +39,9 @@ export const site = {
 // - /vision — mid-redesign. Restore by adding back to the array and undoing
 //   the omissions in Footer, index.astro, about.mdx, sitemap.astro, the
 //   llms-*.txt sources, astro.config.mjs, and vision.astro's `noindex` flag.
-// - /events — no scheduled events yet. Restore by adding back here and in
-//   Footer once `src/content/events/` has at least one real entry. The page
-//   itself stays live with empty-state copy.
 export const navMain = [
   { href: '/about', label: 'About' },
   { href: '/projects', label: 'Projects' },
+  { href: '/events', label: 'Events' },
   { href: '/contact', label: 'Contact' },
 ] as const;
