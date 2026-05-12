@@ -63,10 +63,18 @@ function clean(s: string, name: string): string {
   return out.trim();
 }
 
-function runTool(name: string, cmd: string, cmdArgs: string[]): Promise<ToolResult> {
+function runTool(
+  name: string,
+  cmd: string,
+  cmdArgs: string[],
+  extraEnv?: Record<string, string>,
+): Promise<ToolResult> {
   return new Promise((resolveResult) => {
     const t0 = Date.now();
-    const child = spawn(cmd, cmdArgs, { stdio: ['ignore', 'pipe', 'pipe'] });
+    const child = spawn(cmd, cmdArgs, {
+      stdio: ['ignore', 'pipe', 'pipe'],
+      env: extraEnv ? { ...process.env, ...extraEnv } : process.env,
+    });
     const outChunks: Buffer[] = [];
     const errChunks: Buffer[] = [];
     child.stdout.on('data', (chunk: Buffer) => outChunks.push(chunk));
@@ -135,14 +143,16 @@ if (!skip.has('lighthouse')) {
 }
 if (!skip.has('axe')) {
   auditLog('running axe via Playwright (project=a11y)...');
+  // dist is already fresh from the build above; tell Playwright's webServer
+  // to skip its own `pnpm build` so workers don't race against sitemap-0.xml
+  // being rewritten mid-import.
   waveBResults.push(
-    await runTool('axe', 'pnpm', [
-      'exec',
-      'playwright',
-      'test',
-      '--project=a11y',
-      '--reporter=line',
-    ]),
+    await runTool(
+      'axe',
+      'pnpm',
+      ['exec', 'playwright', 'test', '--project=a11y', '--reporter=line'],
+      { AUDIT_SKIP_BUILD: '1' },
+    ),
   );
 }
 

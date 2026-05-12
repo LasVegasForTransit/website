@@ -67,7 +67,11 @@ export default defineConfig({
     },
   ],
   webServer: {
-    command: 'pnpm build && pnpm preview',
+    // AUDIT_SKIP_BUILD lets the baseline orchestrator (which already builds
+    // up front) reuse that dist instead of triggering a rebuild here. A
+    // mid-test rebuild rewrites dist/sitemap-0.xml under tests/a11y.spec.ts,
+    // which reads it at module load and ENOENTs across late-spawning workers.
+    command: process.env.AUDIT_SKIP_BUILD === '1' ? 'pnpm preview' : 'pnpm build && pnpm preview',
     url: BASE_URL,
     reuseExistingServer: !process.env.CI,
     timeout: 180_000,
