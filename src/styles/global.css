@@ -95,6 +95,14 @@
   --text-label-sm--font-weight: 600;
 }
 
+/* Page-edge padding. Same clamp used by .container-page; lifted to a
+   variable so the carousel can keep its first/last cards flush with
+   container-page's content edges without duplicating the expression.
+   Plain :root (not @theme) so Tailwind doesn't generate utilities for it. */
+:root {
+  --page-pad: clamp(1.25rem, 4vw, 3rem);
+}
+
 /* Typed custom property that powers smooth shadow interpolation on `.lift`.
    Declared as a <number> so the engine can animate it linearly; without
    @property a raw custom property would snap discretely. */
@@ -727,7 +735,43 @@ body[data-canvas='dark'] [data-site-header]:not([data-stuck]) .press:hover {
   .container-page {
     max-width: 80rem;
     margin-inline: auto;
-    padding-inline: clamp(1.25rem, 4vw, 3rem);
+    padding-inline: var(--page-pad);
+  }
+
+  /* Carousel — horizontally-scrollable card row used by
+     src/components/Carousel.astro. Lives here (not in the component's
+     <style> block) because the rules need to reach slotted CarouselItem
+     children, which carry their own data-astro-cid attribute that scoped
+     styles can't match. Class names are namespaced enough that global
+     scope is safe.
+
+     First card starts at container-page's left content edge; last card
+     ends at its right content edge. End-spacing comes from a real
+     sentinel <div class="carousel-track-end"> the component renders
+     after its slot — a real flex item is more reliable than a
+     :last-child selector that fights with Astro's slot scoping. */
+  .carousel-scroll {
+    scroll-padding-inline: max(var(--page-pad), calc((100vw - 80rem) / 2 + var(--page-pad)));
+    /* Hide horizontal scrollbar visually; scroll behavior preserved. */
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+  .carousel-scroll::-webkit-scrollbar {
+    display: none;
+    width: 0;
+    height: 0;
+  }
+  .carousel-track {
+    padding-inline-start: max(var(--page-pad), calc((100vw - 80rem) / 2 + var(--page-pad)));
+  }
+  .carousel-track-end {
+    /* Sentinel flex item providing the end-side spacing. Total trailing
+       space = flex-gap-between-it-and-last-card (1.25rem from Tailwind
+       gap-5) + this width. Subtract the gap so total end-spacing matches
+       the start padding. Clamped non-negative for narrow viewports where
+       the gap alone covers the required end-space. */
+    flex: 0 0
+      max(0px, calc(max(var(--page-pad), calc((100vw - 80rem) / 2 + var(--page-pad))) - 1.25rem));
   }
 
   .rule-thick {
@@ -738,7 +782,7 @@ body[data-canvas='dark'] [data-site-header]:not([data-stuck]) .press:hover {
      Subtract container padding so the line aligns with body text. */
   hr.container-page {
     padding-inline: 0;
-    max-width: calc(80rem - 2 * clamp(1.25rem, 4vw, 3rem));
+    max-width: calc(80rem - 2 * var(--page-pad));
   }
 
   .rule-thin {

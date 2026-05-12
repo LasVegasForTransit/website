@@ -14,18 +14,13 @@ const { title, eyebrow } = Astro.props;
   <div class="carousel-scroll overflow-x-auto pb-4">
     <div class="carousel-track flex gap-5 snap-x snap-mandatory">
       <slot />
+      {
+        /* Sentinel flex item providing reliable end-side spacing. See
+        .carousel-track-end in global.css. Using a real element rather than
+        a :last-child selector because the slotted children carry their own
+        data-astro-cid that scoped styles can't address. */
+      }
+      <div class="carousel-track-end" aria-hidden="true"></div>
     </div>
   </div>
 </section>
-
-<style>
-  /* Edge-to-edge scroll: cards start aligned with container-page's left content
-     edge, can pan into the page gutter when scrolled. Math mirrors
-     .container-page (max-width 80rem, padding-inline 1.25rem, centered). */
-  .carousel-track {
-    padding-inline: max(1.25rem, calc((100vw - 80rem) / 2 + 1.25rem));
-  }
-  .carousel-scroll {
-    scroll-padding-left: max(1.25rem, calc((100vw - 80rem) / 2 + 1.25rem));
-  }
-</style>
