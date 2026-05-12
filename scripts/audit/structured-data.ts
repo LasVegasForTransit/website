@@ -23,12 +23,19 @@ interface Finding {
 const { distDir, asJson } = parseAuditArgs();
 
 const SCRIPT_RE = /<script[^>]*type=["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/g;
+// Astro emits a meta-refresh stub for every entry in astro.config.mjs
+// `redirects` (e.g. /join → /go). Those pages exist only to bounce
+// visitors and are overridden by real 301s in production via
+// public/_redirects; they carry no content, so the JSON-LD requirement
+// doesn't apply.
+const REDIRECT_STUB_RE = /<meta\s+http-equiv=["']refresh["']/i;
 const findings: Finding[] = [];
 const htmlFiles = distHtmlFiles(distDir);
 
 for (const file of htmlFiles) {
   const page = relFromDist(distDir, file);
   const html = readFileSync(file, 'utf8');
+  if (REDIRECT_STUB_RE.test(html)) continue;
   const blocks = [...html.matchAll(SCRIPT_RE)].map((m) => m[1] ?? '');
 
   if (blocks.length === 0) {
@@ -55,10 +62,27 @@ for (const file of htmlFiles) {
       if (obj['@context'] !== 'https://schema.org') {
         findings.push({ page, problem: `block #${idx} missing @context=https://schema.org` });
       }
-      if (typeof obj['@type'] !== 'string') {
-        findings.push({ page, problem: `block #${idx} missing @type` });
+      // JSON-LD allows a wrapper object with @graph instead of a @type;
+      // each entry in the graph must then carry its own @type.
+      const graph = obj['@graph'];
+      if (Array.isArray(graph)) {
+        for (const [gi, raw] of graph.entries()) {
+          const node = raw as Record<string, unknown> | null;
+          if (!node || typeof node !== 'object') {
+            findings.push({ page, problem: `block #${idx} @graph[${gi}] not an object` });
+            continue;
+          }
+          if (typeof node['@type'] !== 'string') {
+            findings.push({ page, problem: `block #${idx} @graph[${gi}] missing @type` });
+          }
+          if (node['@type'] === 'Organization') hasOrg = true;
+        }
+      } else {
+        if (typeof obj['@type'] !== 'string') {
+          findings.push({ page, problem: `block #${idx} missing @type` });
+        }
+        if (obj['@type'] === 'Organization') hasOrg = true;
       }
-      if (obj['@type'] === 'Organization') hasOrg = true;
     }
   }
 
