@@ -41,3 +41,5 @@ playwright/.cache/
 # audit tooling output — Lighthouse raw runs are bulky JSON; the readable
 # report lives in audits/ and IS committed so improvements show up in git.
 .lighthouseci/
+.lighthouseci-mobile/
+.lighthouseci-prod/
