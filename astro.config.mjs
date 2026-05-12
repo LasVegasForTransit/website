@@ -13,11 +13,9 @@ import icon from 'astro-icon';
 // Path normalisation here mirrors scripts/audit/_shared.ts::sitemapPaths() —
 // keep both in sync if the sitemap URL shape changes.
 
-// /vision is hidden until the redesign ships — keep it out of the XML sitemap
-// so crawlers and AI overviews don't surface it. The page still renders on
-// direct hits (with `noindex` set) so collaborators can preview it.
-/** @param {string} page */
-const sitemapFilter = (page) => !/\/vision\/?$/.test(page);
+// No URL exclusions today; left in place as the hook for future hides.
+/** @param {string} _page */
+const sitemapFilter = (_page) => true;
 
 /**
  * @param {import('@astrojs/sitemap').SitemapItem} item
