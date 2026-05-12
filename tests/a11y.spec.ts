@@ -44,10 +44,16 @@ for (const path of paths) {
     );
     if (blocking.length > 0) {
       const summary = blocking
-        .map(
-          (v) =>
-            `  - [${v.impact}] ${v.id}: ${v.help} (${v.nodes.length} node${v.nodes.length === 1 ? '' : 's'})`,
-        )
+        .map((v) => {
+          const nodes = v.nodes
+            .slice(0, 3)
+            .map(
+              (n) =>
+                `      target=${JSON.stringify(n.target)} fg/bg=${n.any[0]?.data?.fgColor ?? '?'}/${n.any[0]?.data?.bgColor ?? '?'} ratio=${n.any[0]?.data?.contrastRatio ?? '?'}`,
+            )
+            .join('\n');
+          return `  - [${v.impact}] ${v.id}: ${v.help} (${v.nodes.length} node${v.nodes.length === 1 ? '' : 's'})\n${nodes}`;
+        })
         .join('\n');
       throw new Error(`axe found ${blocking.length} serious/critical violation(s):\n${summary}`);
     }
