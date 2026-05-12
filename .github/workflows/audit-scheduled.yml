@@ -62,23 +62,21 @@ jobs:
         uses: ./.github/actions/setup-node-pnpm
 
       - name: Run Lighthouse against production
-        run: |
-          pnpm exec lhci autorun \
-            --collect.staticDistDir= \
-            --collect.url=https://lasvegasfortransit.org/ \
-            --collect.url=https://lasvegasfortransit.org/about/ \
-            --collect.url=https://lasvegasfortransit.org/vision/ \
-            --collect.url=https://lasvegasfortransit.org/projects/ \
-            --collect.url=https://lasvegasfortransit.org/events/ \
-            --collect.url=https://lasvegasfortransit.org/join/ \
-            --collect.url=https://lasvegasfortransit.org/contact/
+        # LIGHTHOUSE_PRESET=prod (see lighthouserc.cjs) flips to mobile
+        # collection, drops staticDistDir, runs against the live origin
+        # twice, and asserts mobile CWV budgets. lhci exits non-zero on
+        # a breach — the notify-on-failure job below opens an issue.
+        env:
+          LIGHTHOUSE_PRESET: prod
+        run: pnpm exec lhci autorun
 
       - name: Upload reports
         if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: lighthouse-prod-${{ github.run_number }}
-          path: .lighthouseci/
+          # outputDir for LIGHTHOUSE_PRESET=prod in lighthouserc.cjs.
+          path: .lighthouseci-prod/
           if-no-files-found: ignore
           retention-days: 30
 
