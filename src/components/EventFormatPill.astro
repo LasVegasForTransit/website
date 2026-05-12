@@ -1,0 +1,41 @@
+---
+// Format-badge pill shared by EventCard, the event detail page, and the /go
+// carousel. Background + foreground are baked in so the badge clears WCAG AA
+// regardless of surrounding canvas — `text-accent-soft` text alone on the
+// paper canvas was the bug we're correcting here.
+//
+// `canvas` flips the pill into a dark-surface variant for use on the ink-
+// background featured card or any future dark surface. `size` lets the
+// detail page use a slightly larger pill where it has more vertical room.
+import { Icon } from 'astro-icon/components';
+import type { CollectionEntry } from 'astro:content';
+import { FORMAT_LABEL, FORMAT_ICON_NAME } from '../lib/event-format';
+
+interface Props {
+  format: CollectionEntry<'events'>['data']['format'];
+  canvas?: 'paper' | 'ink';
+  size?: 'sm' | 'md';
+}
+
+const { format, canvas = 'paper', size = 'sm' } = Astro.props;
+
+const surfaceClass = canvas === 'ink' ? 'bg-paper/10 text-paper' : 'bg-accent-soft text-ink';
+const iconColorClass = canvas === 'ink' ? 'text-accent-soft' : 'text-accent';
+const padClass = size === 'md' ? 'px-3 py-1.5 text-sm' : 'px-2.5 py-1 text-xs';
+const iconSizeClass = size === 'md' ? 'size-4' : 'size-3.5';
+---
+
+<span
+  class:list={[
+    'inline-flex items-center gap-1.5 self-start rounded-full font-bold uppercase tracking-wider',
+    surfaceClass,
+    padClass,
+  ]}
+>
+  <Icon
+    name={FORMAT_ICON_NAME[format]}
+    class:list={[iconSizeClass, iconColorClass]}
+    aria-hidden="true"
+  />
+  <span>{FORMAT_LABEL[format]}</span>
+</span>

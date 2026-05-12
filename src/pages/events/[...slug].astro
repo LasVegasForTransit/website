@@ -1,16 +1,11 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import StructuredData from '../../components/seo/StructuredData.astro';
+import EventFormatPill from '../../components/EventFormatPill.astro';
 import { eventSchema } from '../../lib/structured-data';
 import { site } from '../../lib/site';
-import { Icon } from 'astro-icon/components';
 import { getCollection, render } from 'astro:content';
-import {
-  FORMAT_LABEL,
-  FORMAT_ICON_NAME,
-  FORMAT_PILL_CLASS,
-  whereLabel,
-} from '../../lib/event-format';
+import { whereLabel } from '../../lib/event-format';
 
 export async function getStaticPaths() {
   const events = await getCollection('events', (e) => !e.id.startsWith('_'));
@@ -49,15 +44,9 @@ const showRsvp = event.data.rsvpUrl !== undefined;
   <StructuredData slot="head" data={eventSchema(event, eventUrl)} />
   <header class="container-page pt-20 pb-12 md:pt-28">
     <p class="eyebrow"><a href="/events" class="no-underline hover:underline">← All events</a></p>
-    <p
-      class:list={[
-        'eyebrow mt-6 inline-flex items-center gap-1.5',
-        FORMAT_PILL_CLASS[event.data.format],
-      ]}
-    >
-      <Icon name={FORMAT_ICON_NAME[event.data.format]} class="size-4" aria-hidden="true" />
-      <span>{FORMAT_LABEL[event.data.format]}</span>
-    </p>
+    <div class="mt-6">
+      <EventFormatPill format={event.data.format} size="md" />
+    </div>
     <h1 class="text-display-lg mt-4">{event.data.title}</h1>
     <p class="lede mt-6 max-w-2xl">{event.data.summary}</p>
     <dl class="mt-10 grid grid-cols-2 md:grid-cols-3 gap-x-8 gap-y-6 max-w-2xl">

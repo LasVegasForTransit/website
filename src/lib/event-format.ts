@@ -24,15 +24,6 @@ export const FORMAT_ICON_NAME: Record<EventFormat, string> = {
   hybrid: 'mdi:account-group-outline',
 };
 
-// Tailwind classes for the pill text + icon color. Chosen to read against
-// both the paper canvas (cards on /events) and the ink canvas (carousel on
-// /go, dark headers).
-export const FORMAT_PILL_CLASS: Record<EventFormat, string> = {
-  virtual: 'text-accent-soft',
-  'in-person': 'text-accent',
-  hybrid: 'text-accent',
-};
-
 // Composes the "Where" line: bare "Online" for virtual events, the venue
 // name for in-person (or 'TBD' while a venue is being secured), and both
 // joined for hybrid. Encapsulates the schema invariant that `venue` is

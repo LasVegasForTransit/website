@@ -2,11 +2,10 @@
 import BaseLayout from '../layouts/BaseLayout.astro';
 import Carousel from '../components/Carousel.astro';
 import CarouselItem from '../components/CarouselItem.astro';
+import EventFormatPill from '../components/EventFormatPill.astro';
 import NewsletterEmbed from '../components/NewsletterEmbed.astro';
 import { getCollection } from 'astro:content';
 import { site } from '../lib/site';
-import { Icon } from 'astro-icon/components';
-import { FORMAT_LABEL, FORMAT_ICON_NAME, FORMAT_PILL_CLASS } from '../lib/event-format';
 
 const events = await getCollection('events', (e) => !e.id.startsWith('_'));
 const now = new Date();
@@ -98,23 +97,16 @@ const sharePitchUrl =
       ) : (
         upcoming.map((e) => (
           <CarouselItem href={`/events/${e.id}`}>
-            <p
-              class:list={[
-                'eyebrow inline-flex items-center gap-1.5',
-                FORMAT_PILL_CLASS[e.data.format],
-              ]}
-            >
-              <Icon name={FORMAT_ICON_NAME[e.data.format]} class="size-4" aria-hidden="true" />
-              <span>{FORMAT_LABEL[e.data.format]}</span>
-            </p>
-            <p class="eyebrow mt-2">
+            <EventFormatPill format={e.data.format} />
+            <p class="mt-3 font-semibold">
               {new Intl.DateTimeFormat('en-US', {
+                weekday: 'short',
                 month: 'short',
                 day: 'numeric',
                 timeZone: 'America/Los_Angeles',
               }).format(e.data.date)}
             </p>
-            <p class="text-title-lg mt-3">{e.data.title}</p>
+            <p class="text-title-lg mt-1">{e.data.title}</p>
             <p class="mt-4 leading-relaxed">{e.data.summary}</p>
           </CarouselItem>
         ))

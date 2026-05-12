@@ -1,7 +1,7 @@
 ---
-import { Icon } from 'astro-icon/components';
 import type { CollectionEntry } from 'astro:content';
-import { FORMAT_LABEL, FORMAT_ICON_NAME, FORMAT_PILL_CLASS, whereLabel } from '../lib/event-format';
+import EventFormatPill from './EventFormatPill.astro';
+import { whereLabel } from '../lib/event-format';
 
 interface Props {
   event: CollectionEntry<'events'>;
@@ -12,6 +12,9 @@ const { event, featured = false } = Astro.props;
 const { title, date, summary, format } = event.data;
 const href = `/events/${event.id}`;
 
+// Mixed case, not all-caps. The date is the primary scannable anchor of an
+// event card ("when is this?"), so it gets a real label treatment rather
+// than an eyebrow. Year stays for cross-year clarity.
 const dateLabel = new Intl.DateTimeFormat('en-US', {
   weekday: 'short',
   month: 'short',
@@ -30,19 +33,39 @@ const timeLabel = new Intl.DateTimeFormat('en-US', {
 <a
   href={href}
   class:list={[
-    'lift block border border-ink no-underline',
+    // `flex flex-col h-full` lets the "where" line anchor to the card's
+    // footer via `mt-auto` so neighbouring cards align horizontally even
+    // when their summaries are different lengths.
+    'lift flex flex-col h-full border border-ink no-underline',
     featured
       ? 'bg-ink text-paper p-8 md:p-12'
       : 'bg-paper text-ink p-6 hover:bg-ink hover:text-paper',
   ]}
 >
   {featured && <p class="eyebrow text-accent-soft">Next event</p>}
-  <p class:list={['eyebrow mt-2 inline-flex items-center gap-1.5', FORMAT_PILL_CLASS[format]]}>
-    <Icon name={FORMAT_ICON_NAME[format]} class="size-4" aria-hidden="true" />
-    <span>{FORMAT_LABEL[format]}</span>
+
+  {
+    /* Format badge — secondary metadata. Pill carries its own surface so
+      it stays legible regardless of card hover state. */
+  }
+  <EventFormatPill format={format} canvas={featured ? 'ink' : 'paper'} />
+
+  {/* Date — KEY label. Mixed case, semibold, near-body size. */}
+  <p class:list={[featured ? 'mt-5 text-body-lg font-bold' : 'mt-4 font-semibold']}>
+    {dateLabel} · {timeLabel}
   </p>
-  <p class="eyebrow mt-2">{dateLabel} · {timeLabel}</p>
-  <h3 class:list={[featured ? 'text-display-md mt-4' : 'text-title-lg mt-2']}>{title}</h3>
-  <p class="mt-4 max-w-prose">{summary}</p>
-  <p class="mt-6 text-sm font-semibold">{whereLabel(event.data)}</p>
+
+  {/* Title — primary anchor. */}
+  <h3 class:list={[featured ? 'text-display-md mt-3' : 'text-title-lg mt-1']}>{title}</h3>
+
+  {/* Summary — flex-grows so the bottom row anchors via `mt-auto`. */}
+  <p class="mt-4 leading-relaxed flex-1">{summary}</p>
+
+  {
+    /* Where — tertiary, mute-colored. `mt-auto` pins to the bottom of the
+      card so it aligns with neighbouring cards in a grid row. */
+  }
+  <p class:list={['mt-6 text-sm', featured ? 'text-paper/70' : 'text-[color:var(--color-mute)]']}>
+    {whereLabel(event.data)}
+  </p>
 </a>
