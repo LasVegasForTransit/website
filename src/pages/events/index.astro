@@ -29,7 +29,24 @@ const otherUpcoming = featured ? upcoming.filter((e) => e.id !== featured.id) : 
     <h2 class="text-headline-lg">Upcoming</h2>
     {
       upcoming.length === 0 ? (
-        <p class="mt-6 max-w-2xl text-mute">No upcoming events at this time.</p>
+        <div class="mt-8 max-w-2xl space-y-6">
+          <p class="lede">
+            We're scheduling our first public events. Coalition meetings, neighborhood walks,
+            organizing teach-ins, and Carson&nbsp;City delegations will all land here.
+          </p>
+          <p class="leading-relaxed text-mute">
+            Subscribe and we'll send the first one to your inbox before it goes anywhere else. If
+            you'd like to host a meeting for your community — a faith group, labor local, school,
+            neighborhood — email{' '}
+            <a href="mailto:hello@lasvegasfortransit.org">hello@lasvegasfortransit.org</a>.
+          </p>
+          <a
+            href="/go#newsletter"
+            class="press inline-flex items-center bg-ink text-paper px-6 py-3 font-bold uppercase tracking-wider no-underline hover:bg-accent"
+          >
+            Subscribe →
+          </a>
+        </div>
       ) : (
         <div class="mt-8 space-y-12">
           {featured && (
