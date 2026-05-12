@@ -42,14 +42,60 @@ const showRsvp = event.data.rsvpUrl !== undefined;
 
 <BaseLayout title={event.data.title} description={event.data.summary}>
   <StructuredData slot="head" data={eventSchema(event, eventUrl)} />
-  <header class="container-page pt-20 pb-12 md:pt-28">
+  {
+    /* Header padding is intentionally aggressive on mobile so the body
+      content starts above the fold on short viewports — otherwise an
+      iPhone SE class device lands on what looks like a complete card with
+      no signal that there's more to scroll. Restore the wider rhythm at md+
+      where the viewport has room to breathe. */
+  }
+  <header class="container-page pt-10 pb-8 md:pt-28 md:pb-12">
     <p class="eyebrow"><a href="/events" class="no-underline hover:underline">← All events</a></p>
-    <div class="mt-6">
+    <div class="mt-5 md:mt-6">
       <EventFormatPill format={event.data.format} size="md" />
     </div>
-    <h1 class="text-display-lg mt-4">{event.data.title}</h1>
-    <p class="lede mt-6 max-w-2xl">{event.data.summary}</p>
-    <dl class="mt-10 grid grid-cols-2 md:grid-cols-3 gap-x-8 gap-y-6 max-w-2xl">
+    {
+      /* Display-lg clamps to 2.5rem on small viewports, which forces a
+        two-word title like "General Meeting" onto two lines and burns
+        ~80px of vertical space. Headline-lg fits one line at common
+        mobile widths; display-lg returns at md+ where it earns its size. */
+    }
+    <h1 class="text-headline-lg md:text-display-lg mt-3 md:mt-4">{event.data.title}</h1>
+    <p class="lede mt-4 md:mt-6 max-w-2xl">{event.data.summary}</p>
+
+    {
+      /* Action row sits between the summary and the when/where data so the
+        primary call-to-act is the next thing a visitor sees after reading
+        what the event is. A definition list (dl) is for data — a button
+        isn't data, so it shouldn't live inside the dl with a dt label
+        that just restates the button text. */
+    }
+    {
+      (showJoin || showRsvp) && (
+        <div class="mt-6 md:mt-8 flex flex-wrap items-center gap-3">
+          {showJoin && (
+            <a
+              href={event.data.joinUrl}
+              class="inline-flex items-center bg-accent text-paper px-5 py-3 text-sm font-bold uppercase tracking-wider no-underline hover:bg-ink"
+              rel="noopener"
+            >
+              Join →
+            </a>
+          )}
+          {showRsvp && (
+            <a
+              href={event.data.rsvpUrl}
+              class="inline-flex items-center border-2 border-ink px-5 py-3 text-sm font-bold uppercase tracking-wider no-underline hover:bg-ink hover:text-paper"
+              rel="noopener"
+            >
+              RSVP →
+            </a>
+          )}
+        </div>
+      )
+    }
+
+    <dl class="mt-8 md:mt-10 grid grid-cols-2 gap-x-8 gap-y-5 md:gap-y-6 max-w-2xl">
       <div>
         <dt class="eyebrow">When</dt>
         <dd class="mt-1 text-base font-semibold">{dateLabel} · {timeLabel}</dd>
@@ -58,42 +104,9 @@ const showRsvp = event.data.rsvpUrl !== undefined;
         <dt class="eyebrow">Where</dt>
         <dd class="mt-1 text-base font-semibold">{whereLabel(event.data)}</dd>
       </div>
-      {
-        showJoin && (
-          <div class="col-span-2 md:col-span-1">
-            <dt class="eyebrow">Join</dt>
-            <dd class="mt-1">
-              <a
-                href={event.data.joinUrl}
-                class="inline-flex items-center bg-accent text-paper px-4 py-2 text-sm font-bold uppercase tracking-wider no-underline"
-                rel="noopener"
-              >
-                Join →
-              </a>
-            </dd>
-          </div>
-        )
-      }
-      {
-        showRsvp && (
-          <div class="col-span-2 md:col-span-1">
-            <dt class="eyebrow">RSVP</dt>
-            <dd class="mt-1">
-              <a
-                href={event.data.rsvpUrl}
-                class="inline-flex items-center bg-accent text-paper px-4 py-2 text-sm font-bold uppercase tracking-wider no-underline"
-                rel="noopener"
-              >
-                RSVP →
-              </a>
-            </dd>
-          </div>
-        )
-      }
     </dl>
   </header>
-  <hr class="rule-thick container-page" />
-  <div class="container-prose py-16 prose-doc">
+  <div class="container-prose pt-10 pb-16 md:py-16 prose-doc">
     <Content />
   </div>
 </BaseLayout>

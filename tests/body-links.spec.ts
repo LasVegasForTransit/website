@@ -78,7 +78,10 @@ test.describe('body content links', () => {
     await page.goto('/events/2026-05-21-general-meeting');
     await page.waitForLoadState('networkidle');
 
-    const joinCta = page.locator('dd a', { hasText: /Join →/ });
+    // Scoped to <main> so the mobile site-header "Join" button (link to
+    // /go) doesn't false-positive. The event-detail Join CTA lives in the
+    // event header inside main; the site chrome lives outside main.
+    const joinCta = page.locator('main a', { hasText: /Join →/ });
     await expect(joinCta).toBeVisible();
   });
 
@@ -86,7 +89,10 @@ test.describe('body content links', () => {
     await page.goto('/events/2026-07-02-general-meeting');
     await page.waitForLoadState('networkidle');
 
-    const joinCta = page.locator('dd a', { hasText: /Join →/ });
+    // Scoped to <main> so the mobile site-header "Join" button (link to
+    // /go) doesn't false-positive. The event-detail Join CTA lives in the
+    // event header inside main; the site chrome lives outside main.
+    const joinCta = page.locator('main a', { hasText: /Join →/ });
     await expect(joinCta).toHaveCount(0);
   });
 });
