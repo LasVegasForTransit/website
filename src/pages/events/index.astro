@@ -3,6 +3,7 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
 import SectionHeader from '../../components/SectionHeader.astro';
 import EventCard from '../../components/EventCard.astro';
 import { getCollection } from 'astro:content';
+import { whereLabel } from '../../lib/event-format';
 
 const all = await getCollection('events', (e) => !e.id.startsWith('_'));
 const now = new Date();
@@ -49,26 +50,11 @@ const otherUpcoming = featured ? upcoming.filter((e) => e.id !== featured.id) : 
         </div>
       ) : (
         <div class="mt-8 space-y-12">
-          {featured && (
-            <EventCard
-              href={`/events/${featured.id}`}
-              title={featured.data.title}
-              date={featured.data.date}
-              location={featured.data.location}
-              summary={featured.data.summary}
-              featured
-            />
-          )}
+          {featured && <EventCard event={featured} featured />}
           {otherUpcoming.length > 0 && (
             <div class="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
               {otherUpcoming.map((e) => (
-                <EventCard
-                  href={`/events/${e.id}`}
-                  title={e.data.title}
-                  date={e.data.date}
-                  location={e.data.location}
-                  summary={e.data.summary}
-                />
+                <EventCard event={e} />
               ))}
             </div>
           )}
@@ -97,7 +83,7 @@ const otherUpcoming = featured ? upcoming.filter((e) => e.id !== featured.id) : 
                 >
                   <span class="eyebrow">{dateLabel}</span>
                   <span class="font-semibold">{e.data.title}</span>
-                  <span class="text-sm text-mute">{e.data.location}</span>
+                  <span class="text-sm text-mute">{whereLabel(e.data)}</span>
                 </a>
               </li>
             );

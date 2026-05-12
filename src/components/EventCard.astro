@@ -1,14 +1,16 @@
 ---
+import { Icon } from 'astro-icon/components';
+import type { CollectionEntry } from 'astro:content';
+import { FORMAT_LABEL, FORMAT_ICON_NAME, FORMAT_PILL_CLASS, whereLabel } from '../lib/event-format';
+
 interface Props {
-  href: string;
-  title: string;
-  date: Date;
-  location: string;
-  summary: string;
+  event: CollectionEntry<'events'>;
   featured?: boolean;
 }
 
-const { href, title, date, location, summary, featured = false } = Astro.props;
+const { event, featured = false } = Astro.props;
+const { title, date, summary, format } = event.data;
+const href = `/events/${event.id}`;
 
 const dateLabel = new Intl.DateTimeFormat('en-US', {
   weekday: 'short',
@@ -35,8 +37,12 @@ const timeLabel = new Intl.DateTimeFormat('en-US', {
   ]}
 >
   {featured && <p class="eyebrow text-accent-soft">Next event</p>}
+  <p class:list={['eyebrow mt-2 inline-flex items-center gap-1.5', FORMAT_PILL_CLASS[format]]}>
+    <Icon name={FORMAT_ICON_NAME[format]} class="size-4" aria-hidden="true" />
+    <span>{FORMAT_LABEL[format]}</span>
+  </p>
   <p class="eyebrow mt-2">{dateLabel} · {timeLabel}</p>
   <h3 class:list={[featured ? 'text-display-md mt-4' : 'text-title-lg mt-2']}>{title}</h3>
   <p class="mt-4 max-w-prose">{summary}</p>
-  <p class="mt-6 text-sm font-semibold">{location}</p>
+  <p class="mt-6 text-sm font-semibold">{whereLabel(event.data)}</p>
 </a>

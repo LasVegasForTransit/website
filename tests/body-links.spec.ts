@@ -69,4 +69,24 @@ test.describe('body content links', () => {
     await expect(closeoutLink).toHaveCSS('text-decoration-line', 'underline');
     await expect(closeoutLink).toHaveCSS('font-weight', '800');
   });
+
+  // Format-aware CTA: a virtual event's primary action invites the visitor to
+  // join a call ("Join"). An in-person event must not advertise a join URL —
+  // we'd be lying about the format. The contract guards the URL-regex hack
+  // from sneaking back as a "fix" if someone ever touches the CTA logic.
+  test('virtual event page shows the Join CTA', async ({ page }) => {
+    await page.goto('/events/2026-05-21-general-meeting');
+    await page.waitForLoadState('networkidle');
+
+    const joinCta = page.locator('dd a', { hasText: /Join →/ });
+    await expect(joinCta).toBeVisible();
+  });
+
+  test('in-person event page does not advertise a Join CTA', async ({ page }) => {
+    await page.goto('/events/2026-07-02-general-meeting');
+    await page.waitForLoadState('networkidle');
+
+    const joinCta = page.locator('dd a', { hasText: /Join →/ });
+    await expect(joinCta).toHaveCount(0);
+  });
 });

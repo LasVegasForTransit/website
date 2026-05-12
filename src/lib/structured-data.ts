@@ -31,20 +31,32 @@ export function websiteSchema(): JsonLd {
   };
 }
 
+// Mirror of the events Zod schema in src/content.config.ts. Kept narrow so this
+// helper doesn't import from astro:content (which would create a circular dep
+// between the content config and the structured-data utility).
 interface EventLike {
   data: {
     title: string;
     summary: string;
     date: Date;
     endDate?: Date;
-    location: string;
+    format: 'virtual' | 'in-person' | 'hybrid';
+    venue?: {
+      name: string;
+      streetAddress?: string;
+      addressLocality: string;
+      addressRegion: string;
+      addressCountry: string;
+    };
+    joinUrl?: string;
     rsvpUrl?: string;
+    image?: string;
   };
   id: string;
 }
 
 export function eventSchema(event: EventLike, canonicalUrl: string): JsonLd {
-  return {
+  const base: JsonLd = {
     '@context': 'https://schema.org',
     '@type': 'Event',
     name: event.data.title,
@@ -52,19 +64,9 @@ export function eventSchema(event: EventLike, canonicalUrl: string): JsonLd {
     startDate: event.data.date.toISOString(),
     ...(event.data.endDate && { endDate: event.data.endDate.toISOString() }),
     eventStatus: 'https://schema.org/EventScheduled',
-    eventAttendanceMode: 'https://schema.org/OfflineEventAttendanceMode',
-    location: {
-      '@type': 'Place',
-      name: event.data.location,
-      address: {
-        '@type': 'PostalAddress',
-        addressLocality: 'Las Vegas',
-        addressRegion: 'NV',
-        addressCountry: 'US',
-      },
-    },
     organizer: { '@type': 'Organization', name: site.name, url: site.url },
     url: canonicalUrl,
+    ...(event.data.image && { image: new URL(event.data.image, site.url).toString() }),
     ...(event.data.rsvpUrl && {
       offers: {
         '@type': 'Offer',
@@ -75,4 +77,41 @@ export function eventSchema(event: EventLike, canonicalUrl: string): JsonLd {
       },
     }),
   };
+
+  const virtualLoc = event.data.joinUrl && {
+    '@type': 'VirtualLocation' as const,
+    url: event.data.joinUrl,
+  };
+  const physicalLoc = event.data.venue && {
+    '@type': 'Place' as const,
+    name: event.data.venue.name,
+    address: {
+      '@type': 'PostalAddress' as const,
+      ...(event.data.venue.streetAddress && { streetAddress: event.data.venue.streetAddress }),
+      addressLocality: event.data.venue.addressLocality,
+      addressRegion: event.data.venue.addressRegion,
+      addressCountry: event.data.venue.addressCountry,
+    },
+  };
+
+  switch (event.data.format) {
+    case 'virtual':
+      return {
+        ...base,
+        eventAttendanceMode: 'https://schema.org/OnlineEventAttendanceMode',
+        location: virtualLoc,
+      };
+    case 'in-person':
+      return {
+        ...base,
+        eventAttendanceMode: 'https://schema.org/OfflineEventAttendanceMode',
+        location: physicalLoc,
+      };
+    case 'hybrid':
+      return {
+        ...base,
+        eventAttendanceMode: 'https://schema.org/MixedEventAttendanceMode',
+        location: [virtualLoc, physicalLoc],
+      };
+  }
 }

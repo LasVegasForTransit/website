@@ -1,10 +1,37 @@
 ---
+# Files starting with `_` are filtered out at load time — keep this as a
+# living example of every supported field. Copy to a real filename, then
+# delete the fields that don't apply for your event's format.
+
 title: 'Event title'
 date: 2026-12-31T18:00:00-08:00
 endDate: 2026-12-31T20:00:00-08:00
-location: 'Venue name, neighborhood'
+
+# Required: 'virtual' | 'in-person' | 'hybrid'. Drives the schema.org
+# eventAttendanceMode, the detail-page CTA, the format pill on every card,
+# and the "Where" label resolution.
+format: in-person
+
+# Required when `format !== 'virtual'`. `venue.name: 'TBD'` is the
+# placeholder while a venue is being secured.
+venue:
+  name: 'Venue name'
+  streetAddress: '123 Example St.'
+  # addressLocality / addressRegion / addressCountry default to Las Vegas, NV, US.
+
+# Required when `format !== 'in-person'`. The direct meeting-entry URL —
+# clicking it from the detail page joins the call. Distinct from `rsvpUrl`.
+# joinUrl: 'https://meet.google.com/abc-defg-hij'
+
+# Optional. Registration URL (lu.ma, Eventbrite, etc.) — surfaced as
+# `<Offer>` in the JSON-LD and an "RSVP →" button on the detail page.
+# rsvpUrl: 'https://lu.ma/example'
+
+# Optional. One-shot OG image override for this event. Path resolved
+# against site.url. Falls back to the site-wide og-default.png.
+# image: '/events/2026-12-31-og.png'
+
 featured: false
-rsvpUrl: 'https://lu.ma/example'
 summary: 'One- or two-sentence event summary.'
 ---
 
