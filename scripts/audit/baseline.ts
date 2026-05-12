@@ -145,13 +145,16 @@ if (!skip.has('axe')) {
   auditLog('running axe via Playwright (project=a11y)...');
   // dist is already fresh from the build above; tell Playwright's webServer
   // to skip its own `pnpm build` so workers don't race against sitemap-0.xml
-  // being rewritten mid-import.
+  // being rewritten mid-import. AUDIT_PORT puts the audit's preview server
+  // on a port that won't collide with a `pnpm dev` instance on 4321 —
+  // otherwise Playwright silently reuses the dev server and tests run
+  // against whatever checkout that server is serving.
   waveBResults.push(
     await runTool(
       'axe',
       'pnpm',
       ['exec', 'playwright', 'test', '--project=a11y', '--reporter=line'],
-      { AUDIT_SKIP_BUILD: '1' },
+      { AUDIT_SKIP_BUILD: '1', AUDIT_PORT: '4399' },
     ),
   );
 }

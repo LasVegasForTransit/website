@@ -2,7 +2,11 @@
 // baseline policy, and the cross-platform pixel-hinting caveat.
 import { defineConfig, devices } from '@playwright/test';
 
-const PORT = 4321;
+// AUDIT_PORT lets the baseline orchestrator pick a non-default port so it
+// doesn't collide with a `pnpm dev` server (which holds 4321) — that
+// collision silently reuses the dev server and tests run against whatever
+// checkout that server is serving, not the worktree's fresh dist.
+const PORT = Number(process.env.AUDIT_PORT ?? '4321');
 const BASE_URL = `http://localhost:${PORT}`;
 
 export default defineConfig({
@@ -71,7 +75,10 @@ export default defineConfig({
     // up front) reuse that dist instead of triggering a rebuild here. A
     // mid-test rebuild rewrites dist/sitemap-0.xml under tests/a11y.spec.ts,
     // which reads it at module load and ENOENTs across late-spawning workers.
-    command: process.env.AUDIT_SKIP_BUILD === '1' ? 'pnpm preview' : 'pnpm build && pnpm preview',
+    command:
+      process.env.AUDIT_SKIP_BUILD === '1'
+        ? `pnpm preview --port ${PORT}`
+        : `pnpm build && pnpm preview --port ${PORT}`,
     url: BASE_URL,
     reuseExistingServer: !process.env.CI,
     timeout: 180_000,
