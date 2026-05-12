@@ -72,15 +72,21 @@ const mobileAssertions = {
   'speed-index': ['error', { maxNumericValue: 4500 }],
 };
 
+// Lighthouse CI's `preset` setting only accepts `perf`, `experimental`,
+// or `desktop`. Mobile is the default form-factor (Moto G4 + slow 4G)
+// when no preset is set — so for mobile / prod presets we omit it
+// entirely and lhci picks up the mobile defaults.
+const settings = isMobile ? {} : { preset: 'desktop' };
+
 const collect = isProd
   ? // No staticDistDir on prod: lhci hits the live origin directly. Two
     // runs averaged out so a single noisy load doesn't tank the report.
-    { url: prodUrl, numberOfRuns: 2, settings: { preset: 'mobile' } }
+    { url: prodUrl, numberOfRuns: 2, settings }
   : {
       staticDistDir: './dist',
       url: distUrl,
       numberOfRuns: 1,
-      settings: { preset: isMobile ? 'mobile' : 'desktop' },
+      settings,
     };
 
 const outputDir = isProd
