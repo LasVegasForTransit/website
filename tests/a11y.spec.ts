@@ -25,6 +25,14 @@ for (const path of paths) {
     await page.goto(path);
     await page.waitForLoadState('networkidle');
     await page.evaluate(() => document.fonts.ready);
+    // Kill animations + transitions so toggling .is-visible below jumps to
+    // the final state instantly. Without this, axe samples during the
+    // 600–700 ms reveal transition and reads in-flight blended colors
+    // (e.g. `--color-mute` × 0.3 over cream) as contrast violations.
+    await page.addStyleTag({
+      content:
+        '*, *::before, *::after { animation: none !important; transition: none !important; }',
+    });
     // Force scroll-triggered reveals to their final state so axe sees real
     // contrast/structure, not the hidden initial state.
     await page.evaluate(() => {
