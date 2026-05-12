@@ -27,10 +27,7 @@ const path = Astro.url.pathname;
                 <a
                   href={item.href}
                   aria-current={active ? 'page' : undefined}
-                  class:list={[
-                    'nav-link no-underline hover:text-accent',
-                    active && 'underline decoration-accent decoration-2 underline-offset-4',
-                  ]}
+                  class="nav-link no-underline hover:text-accent"
                 >
                   {item.label}
                 </a>
