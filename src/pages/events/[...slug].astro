@@ -1,7 +1,6 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import StructuredData from '../../components/seo/StructuredData.astro';
-import EventFormatPill from '../../components/EventFormatPill.astro';
 import { eventSchema } from '../../lib/structured-data';
 import { site } from '../../lib/site';
 import { getCollection, render } from 'astro:content';
@@ -43,36 +42,50 @@ const showRsvp = event.data.rsvpUrl !== undefined;
 <BaseLayout title={event.data.title} description={event.data.summary}>
   <StructuredData slot="head" data={eventSchema(event, eventUrl)} />
   {
-    /* Header padding is intentionally aggressive on mobile so the body
-      content starts above the fold on short viewports — otherwise an
-      iPhone SE class device lands on what looks like a complete card with
-      no signal that there's more to scroll. Restore the wider rhythm at md+
-      where the viewport has room to breathe. */
+    /* Header padding is intentionally compact on every viewport so the
+      first paragraphs of the body peek below the fold — a visitor
+      landing on /events/<id> needs a visible signal that there's more
+      to read. The rule-thick separator below ends the header section,
+      matching the brand motif used across every other page. */
   }
-  <header class="container-page pt-10 pb-8 md:pt-28 md:pb-12">
+  <header class="container-page pt-6 pb-8 md:pt-14 md:pb-10">
     <p class="eyebrow"><a href="/events" class="no-underline hover:underline">← All events</a></p>
-    <div class="mt-5 md:mt-6">
-      <EventFormatPill format={event.data.format} size="md" />
-    </div>
     {
-      /* Display-lg clamps to 2.5rem on small viewports, which forces a
-        two-word title like "General Meeting" onto two lines and burns
-        ~80px of vertical space. Headline-lg fits one line at common
-        mobile widths; display-lg returns at md+ where it earns its size. */
+      /* Headline-lg on mobile keeps "General Meeting" on one line;
+        display-md on desktop is large enough to anchor the page but
+        doesn't push the body content below the fold the way display-lg
+        did (display-lg clamps to 5.5rem and ate the entire viewport). */
     }
-    <h1 class="text-headline-lg md:text-display-lg mt-3 md:mt-4">{event.data.title}</h1>
+    <h1 class="text-headline-lg md:text-display-md mt-4 md:mt-5">{event.data.title}</h1>
     <p class="lede mt-4 md:mt-6 max-w-2xl">{event.data.summary}</p>
 
     {
-      /* Action row sits between the summary and the when/where data so the
-        primary call-to-act is the next thing a visitor sees after reading
-        what the event is. A definition list (dl) is for data — a button
-        isn't data, so it shouldn't live inside the dl with a dt label
-        that just restates the button text. */
+      /* When/Where carries the format affordance now — "Online" tells the
+        visitor it's virtual, a venue name tells them it's in-person. The
+        format pill above the title was redundant with this dl and has
+        been removed. */
+    }
+    <dl class="mt-8 md:mt-10 grid grid-cols-2 gap-x-8 gap-y-5 md:gap-y-6 max-w-2xl">
+      <div>
+        <dt class="eyebrow">When</dt>
+        <dd class="mt-1 text-base font-semibold">{dateLabel} · {timeLabel}</dd>
+      </div>
+      <div>
+        <dt class="eyebrow">Where</dt>
+        <dd class="mt-1 text-base font-semibold">{whereLabel(event.data)}</dd>
+      </div>
+    </dl>
+
+    {
+      /* Action row sits AFTER the When/Where data so the visitor has read
+        what the event is and where/when it's happening before being asked
+        to commit. A definition list (dl) is for data — a button isn't
+        data, so it lives outside the dl with no eyebrow restating the
+        button text. */
     }
     {
       (showJoin || showRsvp) && (
-        <div class="mt-6 md:mt-8 flex flex-wrap items-center gap-3">
+        <div class="mt-8 md:mt-10 flex flex-wrap items-center gap-3">
           {showJoin && (
             <a
               href={event.data.joinUrl}
@@ -94,19 +107,9 @@ const showRsvp = event.data.rsvpUrl !== undefined;
         </div>
       )
     }
-
-    <dl class="mt-8 md:mt-10 grid grid-cols-2 gap-x-8 gap-y-5 md:gap-y-6 max-w-2xl">
-      <div>
-        <dt class="eyebrow">When</dt>
-        <dd class="mt-1 text-base font-semibold">{dateLabel} · {timeLabel}</dd>
-      </div>
-      <div>
-        <dt class="eyebrow">Where</dt>
-        <dd class="mt-1 text-base font-semibold">{whereLabel(event.data)}</dd>
-      </div>
-    </dl>
   </header>
-  <div class="container-prose pt-10 pb-16 md:py-16 prose-doc">
+  <hr class="rule-thick container-page" />
+  <div class="container-prose pt-8 pb-16 md:pt-10 md:pb-16 prose-doc">
     <Content />
   </div>
 </BaseLayout>

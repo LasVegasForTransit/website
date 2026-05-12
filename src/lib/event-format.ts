@@ -25,16 +25,18 @@ export const FORMAT_ICON_NAME: Record<EventFormat, string> = {
 };
 
 // Composes the "Where" line: bare "Online" for virtual events, the venue
-// name for in-person (or 'TBD' while a venue is being secured), and both
-// joined for hybrid. Encapsulates the schema invariant that `venue` is
-// always present when format is not 'virtual'.
+// name for in-person, and both joined for hybrid. While a venue is still
+// being secured, the placeholder reads "Venue TBD" rather than a bare
+// "TBD" — without that prefix the string is contextless on the event-card
+// footer (no preceding "Where" label to anchor it). The schema's
+// superRefine guarantees `venue` is present when format is not 'virtual',
+// so the nullish fallback below is defensive: it converges the missing-
+// venue path on the same "Venue TBD" output rather than throwing.
 export function whereLabel(event: EventData): string {
-  switch (event.format) {
-    case 'virtual':
-      return 'Online';
-    case 'in-person':
-      return event.venue!.name;
-    case 'hybrid':
-      return `${event.venue!.name} · also online`;
-  }
+  if (event.format === 'virtual') return 'Online';
+
+  const name = event.venue?.name ?? 'TBD';
+  const venuePart = name === 'TBD' ? 'Venue TBD' : name;
+
+  return event.format === 'hybrid' ? `${venuePart} · also online` : venuePart;
 }
