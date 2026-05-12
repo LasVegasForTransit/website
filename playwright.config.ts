@@ -69,6 +69,17 @@ export default defineConfig({
       testMatch: /a11y\.spec\.ts$/,
       use: { ...devices['Desktop Chrome'] },
     },
+    {
+      // Chromium-only — performance.memory and the CDP HeapProfiler hook
+      // the spec uses don't exist in Firefox or WebKit. Sampling after
+      // CDP-driven GC + scroll-to-end takes a few seconds per page, so
+      // give this project a more generous per-test timeout than the
+      // default 30 s.
+      name: 'perf-memory',
+      testMatch: /perf-memory\.spec\.ts$/,
+      timeout: 60_000,
+      use: { ...devices['Desktop Chrome'] },
+    },
   ],
   webServer: {
     // AUDIT_SKIP_BUILD lets the baseline orchestrator (which already builds

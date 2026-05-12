@@ -190,6 +190,21 @@ if (!skip.has('axe')) {
     ),
   );
 }
+if (!skip.has('perf-memory')) {
+  auditLog('running runtime memory check via Playwright (project=perf-memory)...');
+  // Same isolation trick as axe (skip rebuild, port 4399). Each test does
+  // a CDP-driven GC then samples performance.memory; a clean retained heap
+  // stays well under the 30 MB budget in perf-budgets.json.
+  waveBResults.push(
+    await runTool(
+      'perf-memory',
+      'pnpm',
+      ['exec', 'playwright', 'test', '--project=perf-memory', '--reporter=line'],
+      { AUDIT_SKIP_BUILD: '1', AUDIT_PORT: '4399' },
+    ),
+  );
+}
+
 const results: ToolResult[] = [
   ...(buildResult ? [buildResult] : []),
   ...waveAResults,
