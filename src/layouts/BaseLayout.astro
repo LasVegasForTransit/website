@@ -58,11 +58,29 @@ const canonical = new URL(Astro.url.pathname, site.url).toString();
     <slot name="head" />
   </head>
   <body class="min-h-screen flex flex-col" data-canvas={canvas}>
+    {
+      /* Scroll-progress indicator. Real element (not body::before) because
+        Tailwind v4's Lightning CSS pipeline strips class-less pseudo-element
+        rules from inside @supports blocks. Class-based selector survives
+        purging; @supports gates the actual scroll-driven animation. */
+    }
+    <div class="site-scroll-progress" aria-hidden="true"></div>
     <a href="#main" class="skip-link">Skip to content</a>
-    <Header />
-    <main id="main" class="flex-1">
-      <slot />
-    </main>
+    {
+      /* Wrapper reserves exactly one dynamic viewport for header + main
+        content. Header counts against the budget instead of being
+        additional to it, so the footer sits flush at the next viewport
+        boundary on first load — no over-scroll, no calc() math that
+        breaks if the header height changes. Sticky positioning still
+        anchors to the viewport top inside this block; when the wrapper
+        scrolls past, sticky releases and the footer takes over. */
+    }
+    <div class="min-h-dvh flex flex-col">
+      <Header />
+      <main id="main" class="flex-1">
+        <slot />
+      </main>
+    </div>
     <Footer />
     <script is:inline>
       (() => {
@@ -82,5 +100,26 @@ const canonical = new URL(Astro.url.pathname, site.url).toString();
         targets.forEach((el) => obs.observe(el));
       })();
     </script>
+    {
+      /* Cloudflare Web Analytics. Real-user CWV + page-view counts to
+         complement the synthetic Lighthouse runs in CI. Gated on
+         PUBLIC_CWA_TOKEN so local dev (no token in .env.local) ships
+         no beacon and the CSP stays tight. The token is baked into
+         the static HTML — that's how CWA is designed; the dashboard
+         tokens are not secret credentials. `defer` (not `async`) so
+         the beacon never competes with first-paint work. */
+    }
+    {
+      import.meta.env.PUBLIC_CWA_TOKEN && (
+        <script
+          is:inline
+          defer
+          src="https://static.cloudflareinsights.com/beacon.min.js"
+          data-cf-beacon={JSON.stringify({
+            token: import.meta.env.PUBLIC_CWA_TOKEN,
+          })}
+        />
+      )
+    }
   </body>
 </html>
