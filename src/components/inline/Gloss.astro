@@ -1,0 +1,333 @@
+---
+// Inline term-definition tooltip with optional external link.
+//
+// Usage in MDX:
+//   <Gloss term="iija" />                                   ← canonical term + glossary definition
+//   <Gloss term="iija">the infrastructure bill</Gloss>      ← override visible text
+//   <Gloss def="One-off explanation">term</Gloss>           ← inline definition (no glossary lookup)
+//   <Gloss term="rtc" href="…">RTC</Gloss>                  ← inline href override
+//
+// Behavior:
+//   - Hover or focus shows the popover (200ms close delay so cursor can
+//     travel from trigger to popover).
+//   - Click on a button-variant trigger toggles the popover.
+//   - Click on a link-variant trigger (when glossary `url` is set, or the
+//     inline `href` prop is provided) navigates to the source — Wikipedia-
+//     style. Popover still appears on hover/focus.
+//   - Native HTML popover API handles dismissal: Escape, click-outside,
+//     scroll, and resize all close. Top-layer rendering, no z-index fights.
+//   - Falls through to plain text if neither glossary entry nor inline def
+//     resolves — broken refs never make copy disappear.
+
+import { getEntry } from 'astro:content';
+
+interface Props {
+  /** Glossary collection key (filename without extension) */
+  term?: string;
+  /** Inline definition; overrides glossary lookup */
+  def?: string;
+  /** External link; overrides glossary `url` */
+  href?: string;
+}
+
+const { term, def, href: hrefProp } = Astro.props;
+
+let definition: string | undefined = def;
+let displayTerm: string | undefined;
+let url: string | undefined = hrefProp;
+
+if (term && !def) {
+  const entry = await getEntry('glossary', term);
+  if (entry) {
+    definition = entry.data.short;
+    displayTerm = entry.data.term;
+    if (!url && entry.data.url) url = entry.data.url;
+  } else if (import.meta.env.DEV) {
+    console.warn(`[Gloss] term "${term}" not found in glossary collection`);
+  }
+}
+
+const id = `gloss-${Math.random().toString(36).slice(2, 11)}`;
+const isLink = Boolean(url);
+const isExternal = isLink && /^https?:/.test(url!);
+---
+
+{
+  definition ? (
+    <span class="gloss-wrap">
+      {isLink ? (
+        <a
+          href={url}
+          target={isExternal ? '_blank' : undefined}
+          rel={isExternal ? 'noopener noreferrer' : undefined}
+          class="gloss-trigger gloss-trigger-link"
+          data-popovertarget={id}
+          aria-describedby={id}
+        >
+          <slot>{displayTerm}</slot>
+        </a>
+      ) : (
+        <button type="button" class="gloss-trigger" data-popovertarget={id} aria-describedby={id}>
+          <slot>{displayTerm}</slot>
+        </button>
+      )}
+      <span popover="auto" id={id} class="gloss-popover" role="tooltip">
+        {definition}
+      </span>
+    </span>
+  ) : (
+    <slot>{displayTerm}</slot>
+  )
+}
+
+<style>
+  .gloss-wrap {
+    display: inline;
+  }
+  .gloss-trigger {
+    display: inline;
+    background: transparent;
+    border: 0;
+    padding: 0;
+    margin: 0;
+    color: inherit;
+    font: inherit;
+    cursor: help;
+    text-decoration: underline dotted;
+    text-decoration-color: color-mix(in srgb, currentColor 55%, transparent);
+    text-decoration-thickness: 1px;
+    text-underline-offset: 0.2em;
+  }
+  .gloss-trigger-link {
+    cursor: pointer;
+    text-decoration-style: solid;
+    text-decoration-color: var(--color-accent);
+  }
+  .gloss-trigger:hover,
+  .gloss-trigger:focus-visible {
+    text-decoration-color: var(--color-accent);
+    outline: none;
+  }
+  .gloss-trigger:focus-visible {
+    text-decoration-thickness: 2px;
+  }
+  .gloss-popover {
+    /* Reset UA defaults; JS sets fixed position relative to trigger on open. */
+    margin: 0;
+    inset: auto;
+    padding: 0.875rem 1.05rem;
+    border: 1px solid var(--color-ink);
+    background: var(--color-ink);
+    color: var(--color-paper);
+    max-width: 22rem;
+    font-size: 0.9375rem;
+    line-height: 1.55;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18);
+  }
+</style>
+
+<script is:inline>
+  (function () {
+    if (window.__lvbtGlossInit) return;
+    window.__lvbtGlossInit = true;
+
+    function getTrigger(popover) {
+      var id = popover.id;
+      return (
+        document.querySelector('[data-popovertarget="' + id + '"]') ||
+        document.querySelector('[popovertarget="' + id + '"]')
+      );
+    }
+    function getPopover(trigger) {
+      var id = trigger.getAttribute('data-popovertarget') || trigger.getAttribute('popovertarget');
+      return id ? document.getElementById(id) : null;
+    }
+    function isGlossPopover(el) {
+      return el && el.classList && el.classList.contains('gloss-popover');
+    }
+
+    function positionPopover(popover) {
+      var trigger = getTrigger(popover);
+      if (!trigger) return;
+      popover.style.position = 'fixed';
+      popover.style.inset = 'auto';
+      popover.style.margin = '0';
+
+      var t = trigger.getBoundingClientRect();
+      var p = popover.getBoundingClientRect();
+      var vw = window.innerWidth;
+      var vh = window.innerHeight;
+      var gap = 6;
+      var margin = 12;
+
+      var top = t.bottom + gap;
+      var left = t.left;
+
+      if (top + p.height > vh - margin) top = t.top - p.height - gap;
+      if (left + p.width > vw - margin) left = vw - p.width - margin;
+      if (left < margin) left = margin;
+
+      popover.style.top = top + 'px';
+      popover.style.left = left + 'px';
+    }
+
+    // Position on open. The popover `toggle` event's bubbling behavior is
+    // inconsistent across browsers — listen during the capture phase to be
+    // safe, and also register a bubble-phase listener as a belt-and-braces
+    // fallback. Idempotent if called twice.
+    function onToggle(e) {
+      if (!isGlossPopover(e.target)) return;
+      if (e.newState !== 'open') return;
+      positionPopover(e.target);
+    }
+    document.addEventListener('toggle', onToggle, true);
+    document.addEventListener('toggle', onToggle, false);
+
+    // Hover-to-show with a small dismiss delay so the cursor can travel from
+    // the trigger into the popover without it slamming shut. Single shared
+    // timer; if the cursor re-enters either the trigger or the popover before
+    // it fires, the close is cancelled.
+    var closeTimer = null;
+
+    function tryShow(popover) {
+      if (closeTimer) {
+        clearTimeout(closeTimer);
+        closeTimer = null;
+      }
+      if (popover.matches(':popover-open')) return;
+      try {
+        popover.showPopover();
+      } catch (err) {
+        /* race with state transitions — ignore */
+      }
+    }
+
+    function scheduleHide(popover) {
+      if (closeTimer) clearTimeout(closeTimer);
+      closeTimer = setTimeout(function () {
+        if (popover.matches(':hover')) return;
+        var trigger = getTrigger(popover);
+        if (trigger && trigger.matches(':hover')) return;
+        try {
+          popover.hidePopover();
+        } catch (err) {
+          /* ignore */
+        }
+      }, 200);
+    }
+
+    // mouseover/mouseout bubble (unlike mouseenter/mouseleave), so delegation
+    // from document works. relatedTarget tells us if the cursor moved into
+    // the popover from the trigger or vice versa — that should NOT close.
+    document.addEventListener('mouseover', function (e) {
+      var target = e.target;
+      if (!target || !target.closest) return;
+      var trigger = target.closest('.gloss-trigger');
+      if (trigger) {
+        var popover = getPopover(trigger);
+        if (popover) tryShow(popover);
+        return;
+      }
+      var hovered = target.closest('.gloss-popover');
+      if (hovered && closeTimer) {
+        clearTimeout(closeTimer);
+        closeTimer = null;
+      }
+    });
+
+    document.addEventListener('mouseout', function (e) {
+      var target = e.target;
+      var related = e.relatedTarget;
+      if (!target || !target.closest) return;
+
+      var trigger = target.closest('.gloss-trigger');
+      if (trigger) {
+        var popover = getPopover(trigger);
+        if (!popover) return;
+        if (related && popover.contains(related)) return;
+        scheduleHide(popover);
+        return;
+      }
+
+      var left = target.closest('.gloss-popover');
+      if (left) {
+        if (related) {
+          if (left.contains(related)) return;
+          var trig = getTrigger(left);
+          if (trig && (trig === related || trig.contains(related))) return;
+        }
+        scheduleHide(left);
+      }
+    });
+
+    // Keyboard: show on focus, hide on blur. Tabbing through inline triggers
+    // surfaces glosses naturally.
+    document.addEventListener('focusin', function (e) {
+      var t = e.target;
+      if (!t || !t.closest) return;
+      var trigger = t.closest('.gloss-trigger');
+      if (!trigger) return;
+      var popover = getPopover(trigger);
+      if (popover) tryShow(popover);
+    });
+    document.addEventListener('focusout', function (e) {
+      var t = e.target;
+      if (!t || !t.closest) return;
+      var trigger = t.closest('.gloss-trigger');
+      if (!trigger) return;
+      var popover = getPopover(trigger);
+      if (popover) scheduleHide(popover);
+    });
+
+    // Button variant click toggles the popover. (Link variant: let the click
+    // navigate.)
+    document.addEventListener('click', function (e) {
+      var t = e.target;
+      if (!t || !t.closest) return;
+      var trigger = t.closest('.gloss-trigger');
+      if (!trigger) return;
+      if (trigger.tagName === 'A') return; // navigate
+      e.preventDefault();
+      var popover = getPopover(trigger);
+      if (!popover) return;
+      if (popover.matches(':popover-open')) {
+        try {
+          popover.hidePopover();
+        } catch (err) {
+          /* ignore */
+        }
+      } else {
+        tryShow(popover);
+      }
+    });
+
+    // Close on scroll/resize — popover is fixed to viewport coordinates, so
+    // when the trigger moves the popover ends up disconnected. Closing on
+    // movement is the lesser evil compared to a stranded tooltip.
+    var scrollDebounce = null;
+    function closeAll() {
+      var open = document.querySelectorAll('.gloss-popover');
+      for (var i = 0; i < open.length; i++) {
+        if (open[i].matches(':popover-open')) {
+          try {
+            open[i].hidePopover();
+          } catch (err) {
+            /* ignore */
+          }
+        }
+      }
+    }
+    window.addEventListener(
+      'scroll',
+      function () {
+        if (scrollDebounce) return;
+        scrollDebounce = setTimeout(function () {
+          scrollDebounce = null;
+          closeAll();
+        }, 40);
+      },
+      { passive: true },
+    );
+    window.addEventListener('resize', closeAll);
+  })();
+</script>

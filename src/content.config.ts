@@ -113,4 +113,22 @@ const pages = defineCollection({
   }),
 });
 
-export const collections = { docs, events, projects, initiatives, pages };
+// Inline-tooltip glossary. One JSON file per term, keyed by filename. Looked up
+// by <Gloss term="…" /> in MDX (src/components/inline/Gloss.astro). `term` is
+// the canonical display form; `short` is the popover-sized definition.
+const glossary = defineCollection({
+  loader: glob({ pattern: '**/*.json', base: './src/content/glossary' }),
+  schema: z.object({
+    term: z.string(),
+    short: z.string(),
+    // Optional long-form definition. Not rendered by the default <Gloss>;
+    // available for a future /glossary index page or expanded popover.
+    long: z.string().optional(),
+    // Wikipedia-style intertextuality. When present, the <Gloss> trigger
+    // renders as an external <a> instead of a <button>: click navigates to the
+    // canonical source; the popover still shows on hover/focus.
+    url: z.url().optional(),
+  }),
+});
+
+export const collections = { docs, events, projects, initiatives, pages, glossary };
