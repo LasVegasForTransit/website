@@ -66,6 +66,16 @@ const events = defineCollection({
           message: '`joinUrl` is required when format is `virtual` or `hybrid`',
         });
       }
+      // `endDate` is optional but, when present, must come strictly after
+      // `date`. The .ics builder and the Live-now check otherwise emit
+      // negative-duration events or never-live windows.
+      if (data.endDate && data.endDate.getTime() <= data.date.getTime()) {
+        ctx.addIssue({
+          code: 'custom',
+          path: ['endDate'],
+          message: '`endDate` must be strictly after `date`',
+        });
+      }
     }),
 });
 

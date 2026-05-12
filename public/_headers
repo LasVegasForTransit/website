@@ -24,3 +24,10 @@
 
 /*.webp
   Cache-Control: public, max-age=86400
+
+# Per-event calendar feed. Pin the MIME explicitly so Cloudflare Pages
+# serves it as text/calendar with X-Content-Type-Options: nosniff in
+# effect — without the pin, nosniff would block the file from being
+# interpreted as a calendar invite by the OS handler.
+/events/*.ics
+  Content-Type: text/calendar; charset=utf-8

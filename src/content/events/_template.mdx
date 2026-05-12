@@ -5,6 +5,8 @@
 
 title: 'Event title'
 date: 2026-12-31T18:00:00-08:00
+# `endDate` must be strictly after `date` (enforced in content.config.ts).
+# Used by the .ics builder for DTEND and by the "Live now" derivation.
 endDate: 2026-12-31T20:00:00-08:00
 
 # Required: 'virtual' | 'in-person' | 'hybrid'. Drives the schema.org

@@ -95,4 +95,20 @@ test.describe('body content links', () => {
     const joinCta = page.locator('main a', { hasText: /Join →/ });
     await expect(joinCta).toHaveCount(0);
   });
+
+  // Per-event Add-to-calendar download. Static .ics file served from
+  // /events/<id>.ics. Guards two things at once: (a) the route still
+  // emits at build time; (b) the file is RFC 5545 enough that the OS
+  // calendar handler will recognise it.
+  test('virtual event publishes a valid .ics feed', async ({ request }) => {
+    const response = await request.get('/events/2026-05-21-general-meeting.ics');
+    expect(response.status()).toBe(200);
+    const body = await response.text();
+    expect(body).toContain('BEGIN:VCALENDAR');
+    expect(body).toContain('BEGIN:VEVENT');
+    expect(body).toContain('SUMMARY:General Meeting');
+    expect(body).toMatch(/DTSTART:\d{8}T\d{6}Z/);
+    expect(body).toMatch(/DTEND:\d{8}T\d{6}Z/);
+    expect(body).toContain('LOCATION:https://meet.google.com/');
+  });
 });
