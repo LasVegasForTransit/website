@@ -2,64 +2,162 @@
 import { site } from '../../lib/site';
 ---
 
-<footer class="relative z-[60] min-h-dvh bg-ink text-paper flex flex-col">
+{
+  /* ============================================================
+    FOOTER CONTRACT — read before changing layout.
+    History: this footer has been redesigned several times in
+    ways that broke either the desktop dvh budget or the mobile
+    empty-middle. The rules below are load-bearing.
+
+    HEIGHT
+      ALWAYS EXACTLY 1dvh, every viewport, no exceptions. The
+      footer is the immersive close — taking the full viewport
+      is the entire point. `h-dvh` on <footer> + the flex-1
+      centering region + a meta row pinned to the bottom is
+      what holds the budget.
+        • Do NOT switch to md:h-dvh / min-h-dvh / h-screen.
+        • Do NOT add py-* that pushes total content past 1dvh.
+        • Do NOT "fix" empty mobile middle by removing h-dvh.
+          If the middle reads as empty on a narrow viewport,
+          fill it with content (show the mission band there,
+          enlarge the wordmark, etc.) — never by shrinking the
+          footer.
+
+    STRUCTURE (three siblings inside <footer>, in order)
+      1. orange stripe (.reveal-stripe)
+      2. flex-1 wrapper with `justify-center` — holds the nav
+         grid and the mission band, centered vertically in the
+         remaining space.
+      3. meta row (border-t) — attribution / sitemap / source.
+
+      The meta row is OUTSIDE the flex-1 wrapper on purpose. Do
+      not merge them. Do not switch the flex-1 wrapper to
+      `justify-between` — it pins the mission band to the
+      bottom and opens a visible gap on desktop.
+
+    META ROW ITEMS
+      Each link is wrapped in its own grid-cell <div> with
+      `md:text-{left,center,right}`. The inline <a> shrinks to
+      text width so :focus-visible outlines hug the link text,
+      not the full 33% column. Do not unwrap.
+
+    LINK STYLING
+      One style everywhere: `nav-link no-underline hover:text-accent`.
+      `.nav-link` provides the scaleX underline reveal. Do not
+      introduce a second link style; the consistency is the point.
+
+    WORDMARK SIZING
+      `text-[clamp(2.5rem,7vw,4.5rem)]` — ONE fluid clamp, no
+      breakpoint modifier. The wordmark is the brand's loudest
+      gesture: bold, visionary, takes up space. It must only grow
+      with viewport; it must never shrink.
+        • 40px floor on small phones (substantial at 360px)
+        • ramps through ~54px around the md transition where the
+          row goes from stacked to inline-with-columns
+        • caps at 72px (4.5rem) on wide desktops — same ceiling as
+          the original display-md, so "for Better Transit" fits
+          inside col-span-7 at the 1280px container max.
+      DO NOT reintroduce a `md:` size modifier (e.g. text-display-lg
+      md:text-display-md). A discrete step DOWN at the breakpoint
+      contradicts "bold throughout" and has been explicitly rejected
+      by the owner. Tune via the clamp's floor or vw coefficient.
+
+    MISSION BAND
+      Gated twice: `hidden md:block` AND a `max-height: 650px`
+      media rule in the <style> block that hides it on short
+      viewports so the footer can stay under 1dvh on small
+      laptops. Keep both gates.
+
+      No eyebrow label. The mission band is the footer's closing
+      pitch, not a labelled section — the border-top + whitespace
+      above already frame it. DO NOT reintroduce a "§ The work" /
+      "Mission" / pilcrow-prefixed label; those read as AI template.
+
+      Copy is evergreen. No session dates, no year references, no
+      "before the 2027 Nevada session …". The why-now timeline
+      lives on /why-now; the chrome ships on every page and must
+      not date itself.
+
+    ATTRIBUTION
+      "Website made with love by Willie Chalmers III" links to
+      https://williecubed.me. This is creator attribution, not
+      site or org metadata. Do not replace with "A nonprofit
+      in …" or similar.
+
+    MOTION
+      translateY + opacity only. No `scale()` transforms in the
+      footer — they read as low-effort AI motion. The site's
+      vocabulary is depth + opacity, not scale.
+    ============================================================ */
+}
+<footer class="relative z-[60] bg-ink text-paper h-dvh flex flex-col">
   {
-    /* Named for the View Transitions API. Latent on this site today —
-      a follow-up will enable @view-transition { navigation: auto } in
-      global.css; once it lands, the orange stripe persists visually
-      across page navigations instead of cross-fading with body content.
-      Harmless as a bare property until then. */
+    /* Named for the View Transitions API. Latent until @view-transition
+      enables cross-document transitions in global.css — harmless as a
+      bare property until then. */
   }
-  <div class="h-2 bg-accent [view-transition-name:footer-stripe]"></div>
+  <div class="reveal-stripe h-2 bg-accent [view-transition-name:footer-stripe]"></div>
 
   {
-    /* Link grid + mission band centered vertically as a group within the
-      dvh-tall footer. Wrapping them in a single `flex-1 + justify-center`
-      container is what pushes them off the top edge — without it, the
-      link grid pins to the orange bar and the mission band's own flex-1
-      eats the rest of the space, leaving the top cramped and the middle
-      yawning. */
+    /* Footer is locked to exactly one dynamic viewport height (h-dvh on
+      <footer>) — not a pixel taller. Stripe at top, meta row at bottom,
+      and this flex-1 region centers the wordmark/link grid/mission band
+      between them. overflow-hidden so any overflow on small viewports
+      clips rather than stretching the footer past 1dvh. */
   }
-  <div class="flex-1 flex flex-col justify-center w-full">
+  <div class="flex-1 flex flex-col justify-center w-full overflow-hidden">
     <div
-      class="container-page w-full pt-12 pb-10 md:py-[clamp(2.5rem,5vh,4.5rem)] grid grid-cols-2 md:grid-cols-12 gap-10 md:gap-12"
+      class="reveal-stagger container-page w-full pt-12 pb-10 md:py-[clamp(2.5rem,5vh,4.5rem)] grid grid-cols-2 md:grid-cols-12 gap-10 md:gap-12"
     >
-      <div class="col-span-2 md:col-span-7">
-        <a href="/" class="text-display-sm md:text-display-md tracking-tight no-underline block">
+      {
+        /* ONE fluid clamp, no breakpoint switch. The wordmark only
+          grows with viewport; it never shrinks. See FOOTER CONTRACT
+          → WORDMARK SIZING at the top of this file. */
+      }
+      <div class="reveal col-span-2 md:col-span-7">
+        <a
+          href="/"
+          class="text-[clamp(2.5rem,7vw,4.5rem)] font-extrabold tracking-tight no-underline block"
+        >
           <span class="block leading-[0.9]">Las Vegans</span>
           <span class="block leading-[0.9] text-accent">for Better Transit</span>
         </a>
       </div>
-      <div class="md:col-span-3">
+      <div class="reveal md:col-span-3">
         <p class="eyebrow text-accent-soft">Organization</p>
         <ul class="mt-5 space-y-3 text-base font-semibold">
-          <li><a href="/about" class="no-underline hover:text-accent">About</a></li>
-          <li><a href="/projects" class="no-underline hover:text-accent">Projects</a></li>
-          <li><a href="/events" class="no-underline hover:text-accent">Events</a></li>
-          <li><a href="/contact" class="no-underline hover:text-accent">Contact</a></li>
+          <li><a href="/about" class="nav-link no-underline hover:text-accent">About</a></li>
+          <li><a href="/projects" class="nav-link no-underline hover:text-accent">Projects</a></li>
+          <li><a href="/events" class="nav-link no-underline hover:text-accent">Events</a></li>
+          <li><a href="/contact" class="nav-link no-underline hover:text-accent">Contact</a></li>
         </ul>
       </div>
-      <div class="md:col-span-2">
+      <div class="reveal md:col-span-2">
         <p class="eyebrow text-accent-soft">Get involved</p>
         <ul class="mt-5 space-y-3 text-base font-semibold">
-          <li><a href="/go" class="no-underline hover:text-accent">Join us</a></li>
+          <li><a href="/go" class="nav-link no-underline hover:text-accent">Join us</a></li>
           <li>
-            <a href={site.donate.url} rel="noopener" class="no-underline hover:text-accent"
+            <a href={site.donate.url} rel="noopener" class="nav-link no-underline hover:text-accent"
               >Donate</a
             >
           </li>
           <li>
-            <a href={site.social.instagram} rel="noopener" class="no-underline hover:text-accent"
-              >Instagram</a
+            <a
+              href={site.social.instagram}
+              rel="noopener"
+              class="nav-link no-underline hover:text-accent">Instagram</a
             >
           </li>
           <li>
-            <a href={site.social.linkedin} rel="noopener" class="no-underline hover:text-accent"
-              >LinkedIn</a
+            <a
+              href={site.social.linkedin}
+              rel="noopener"
+              class="nav-link no-underline hover:text-accent">LinkedIn</a
             >
           </li>
           <li>
-            <a href={`mailto:${site.email.general}`} class="no-underline hover:text-accent">Email</a
+            <a href={`mailto:${site.email.general}`} class="nav-link no-underline hover:text-accent"
+              >Email</a
             >
           </li>
         </ul>
@@ -69,28 +167,59 @@ import { site } from '../../lib/site';
     <div
       class="footer-mission container-page w-full py-[clamp(2rem,5vh,4rem)] border-t border-paper/15 hidden md:block"
     >
-      <p class="eyebrow text-accent-soft">§ The work</p>
-      <p class="text-headline-lg mt-5 max-w-4xl">
+      {
+        /* No eyebrow. No "§ The work" / "Mission" / pilcrow label.
+          The mission band is the footer's closing pitch, not a
+          labelled section. Copy is evergreen — no session dates,
+          no year references. See FOOTER CONTRACT → MISSION BAND
+          at the top of this file. */
+      }
+      {
+        /* reveal-stat gives the headline a heavier 24px-rise entrance —
+          punches in with more force than the link columns above. */
+      }
+      <p class="reveal-stat text-headline-lg max-w-4xl">
         14th-busiest bus system in the country. <span class="text-accent">Zero miles of rail.</span> We're
-        organizing the people who can change that — before the 2027 Nevada session closes the window.
+        organizing the Las&nbsp;Vegans who can change that.
       </p>
     </div>
   </div>
 
-  <div
-    class="container-page w-full py-6 border-t border-paper/15 mt-auto grid grid-cols-1 md:grid-cols-3 items-baseline gap-3 text-xs uppercase tracking-wider text-paper/80"
-  >
-    <span class="md:text-left">A nonprofit in Las&nbsp;Vegas, Nevada.</span>
-    <a href="/sitemap" class="md:text-center underline underline-offset-4 hover:text-accent"
-      >Sitemap</a
+  {
+    /* META row — structurally separate from the flex-centering region
+      above. Each link is wrapped in its own grid-item <div> so the cell
+      holds the column width and the inline <a> inside shrinks to text
+      width. :focus-visible outlines therefore wrap the actual link text,
+      not the full 33% column.
+
+      text-sm text-paper/60 on ink blends to ~#9a9996 / 6.4:1 — passes
+      AA for normal text. The earlier audit pass bumped this to /80 at
+      text-xs, but the redesign's larger text-sm doesn't need the bump. */
+  }
+  <div class="footer-meta border-t border-paper/15">
+    <div
+      class="container-page w-full py-6 grid grid-cols-1 md:grid-cols-3 items-baseline gap-3 text-sm text-paper/60"
     >
-    <a
-      href="https://github.com/LasVegasForTransit/website"
-      rel="noopener"
-      class="md:text-right underline underline-offset-4 hover:text-accent"
-    >
-      Built in public — GitHub
-    </a>
+      <div class="md:text-left">
+        Website made with love by <a
+          href="https://williecubed.me"
+          rel="noopener"
+          class="nav-link no-underline hover:text-accent">Willie&nbsp;Chalmers&nbsp;III</a
+        >
+      </div>
+      <div class="md:text-center">
+        <a href="/sitemap" class="nav-link no-underline hover:text-accent">Sitemap</a>
+      </div>
+      <div class="md:text-right">
+        <a
+          href="https://github.com/LasVegasForTransit/website"
+          rel="noopener"
+          class="nav-link no-underline hover:text-accent"
+        >
+          Source on GitHub
+        </a>
+      </div>
+    </div>
   </div>
 </footer>
 
