@@ -2,10 +2,10 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "_doc": "Performance budgets enforced by scripts/audit/{bundle-size,asset-budget,build-profile}.ts. Numbers are seeded from today's measurements (build on 2026-05-12) with headroom; tighten as the site stabilizes.",
   "bundle": {
-    "_doc": "Gzipped sizes of dist/_astro/*.{css,js} + dist/scripts/*.js. Today CSS total is ~12.3 KB, JS is 528 B.",
+    "_doc": "Gzipped sizes of dist/_astro/*.{css,js} + dist/scripts/*.js. Today CSS total ~13.4 KB, JS ~2.3 KB (across three small public scripts).",
     "cssGzipKb": 20,
-    "jsGzipKb": 2,
-    "totalGzipKb": 22,
+    "jsGzipKb": 4,
+    "totalGzipKb": 24,
     "individualFileGzipKb": 14
   },
   "assets": {

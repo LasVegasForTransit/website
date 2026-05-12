@@ -20,6 +20,7 @@
     "audit:structured-data": "tsx scripts/audit/structured-data.ts",
     "audit:third-party": "tsx scripts/audit/third-party-scan.ts",
     "audit:a11y": "playwright test --project=a11y",
+    "audit:bundle-size": "tsx scripts/audit/bundle-size.ts",
     "screenshot": "tsx scripts/screenshot.ts",
     "audit:content": "alex src/content && cspell --no-progress --no-summary 'src/**/*.{md,mdx,astro}'",
     "typecheck": "astro check && tsc -p scripts/tsconfig.json",
