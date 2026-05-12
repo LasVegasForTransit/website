@@ -7,11 +7,13 @@
   --color-ink: #0f1115;
   --color-paper: #f7f4ec;
   --color-accent: #e5471a;
+  /* Warm mid-stop between the saturated CTA accent and the very pale
+     accent-soft. Reads as a softened terracotta — same family as the
+     brand orange, less aggressive against ink-on-dark surfaces. */
+  --color-accent-warm: #ec7049;
   --color-accent-soft: #ffe9d6;
   --color-mute: #4a4e57;
   --color-rule: #1f232b;
-
-  --shadow-lift: 0 12px 30px -16px color-mix(in srgb, var(--color-ink) 25%, transparent);
 
   /* MD3 type-token series. Display sizes are bumped well above MD3
      defaults to preserve the editorial feel; headline/title/body/label
@@ -102,6 +104,81 @@
   initial-value: 0;
 }
 
+/* Custom @keyframes live at the top level so Lightning CSS doesn't prune
+   them when nested inside @supports. Only the actually-consumed keyframes
+   are here; reveal animations are transition-based (see @layer components). */
+@keyframes scroll-progress {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+@keyframes rule-draw-in {
+  from {
+    clip-path: inset(0 100% 0 0);
+  }
+  to {
+    clip-path: inset(0 0 0 0);
+  }
+}
+
+/* Scroll-progress hairline. Pinned to the top of the viewport above the
+   sticky header. Default state (transform: scaleX(0)) keeps it invisible
+   in browsers without scroll-driven animations; the @supports block ties
+   it to root scroll. The real DOM element lives in BaseLayout.astro. */
+.site-scroll-progress {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: var(--color-accent);
+  z-index: 55;
+  transform: scaleX(0);
+  transform-origin: left;
+  pointer-events: none;
+}
+@supports (animation-timeline: scroll()) {
+  .site-scroll-progress {
+    animation: scroll-progress linear both;
+    animation-timeline: scroll(root);
+  }
+}
+
+/* First-paint entrance on the page's main content. @starting-style fires
+   once per element creation: on initial page load the new `<main>` starts
+   slightly translated + transparent, then transitions to rest. View
+   transitions still drive cross-route navigation — this only fires when
+   there's no previous document state (first visit, hard refresh). */
+main {
+  transition:
+    opacity 400ms var(--ease-out),
+    transform 400ms var(--ease-out);
+}
+@starting-style {
+  main {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+}
+
+/* Single reduced-motion override for the new top-level animated elements.
+   The global wildcard in @layer base already caps animation- and
+   transition-durations at 0.01ms, but `animation: none` is more decisive
+   for the scroll-progress bar (otherwise it'd snap to scaleX(1) at the
+   end of a 0.01ms animation and stay there). */
+@media (prefers-reduced-motion: reduce) {
+  .site-scroll-progress {
+    animation: none !important;
+    transform: scaleX(0) !important;
+  }
+  main {
+    transition: none !important;
+  }
+}
+
 /* Cross-document view transitions, CSS-only. Chrome 126+ and Safari 18+
    animate between same-origin navigations as if they were a single SPA;
    no client router, no JavaScript. Non-supporting browsers (Firefox as
@@ -118,7 +195,7 @@
    stripe) inherit this duration. Reduced-motion override below. */
 ::view-transition-group(*) {
   animation-duration: 200ms;
-  animation-timing-function: cubic-bezier(0, 0, 0.2, 1);
+  animation-timing-function: var(--ease-out);
 }
 @media (prefers-reduced-motion: reduce) {
   ::view-transition-group(*),
@@ -140,6 +217,11 @@
     font-feature-settings:
       'tnum' 0,
       'cv11' 1;
+    /* Sticky-offset anchor for elements that pin below the site header.
+       Single source of truth — vision.css and the projects-page sticky
+       initiative bar both read this. Matches Header.astro's py-4 + the
+       two-line logo. */
+    --lvbt-header-h: 4.5rem;
   }
 
   html {
@@ -237,6 +319,14 @@
     text-underline-offset: 0.18em;
   }
 
+  /* Auto-grow `<textarea>` with its content. Chrome 123+ ships this; older
+     engines ignore the property and fall back to manual resize. No textareas
+     exist on the site yet — this is forward-looking infrastructure so any
+     future contact form / project intake field gets the behavior for free. */
+  textarea {
+    field-sizing: content;
+  }
+
   h1,
   h2,
   h3,
@@ -276,7 +366,7 @@
     pointer-events: none;
     transition:
       opacity 150ms,
-      transform 150ms cubic-bezier(0, 0, 0.2, 1);
+      transform 150ms var(--ease-out);
   }
   .skip-link:focus,
   .skip-link:focus-visible {
@@ -302,8 +392,8 @@
      fade-in; matched in the scroll-driven keyframe below. */
   [data-site-header] {
     transition:
-      box-shadow 200ms cubic-bezier(0, 0, 0.2, 1),
-      border-color 200ms cubic-bezier(0, 0, 0.2, 1);
+      box-shadow 200ms var(--ease-out),
+      border-color 200ms var(--ease-out);
   }
   [data-site-header][data-stuck] {
     box-shadow: 0 1px 0 color-mix(in srgb, var(--color-ink) 8%, transparent);
@@ -322,31 +412,82 @@
       animation-timeline: scroll(root);
       animation-range: 0 1px;
     }
-    @keyframes site-header-stuck {
-      to {
-        backdrop-filter: blur(12px) saturate(1.5);
-        border-bottom-color: color-mix(in srgb, var(--color-rule) 15%, transparent);
-        box-shadow: 0 1px 0 color-mix(in srgb, var(--color-ink) 8%, transparent);
-      }
-    }
   }
+}
+
+/* Top-level keyframe for the scroll-driven header — survives Lightning
+   CSS purging here because the @supports block above references it via
+   the `animation:` shorthand. */
+@keyframes site-header-stuck {
+  to {
+    backdrop-filter: blur(12px) saturate(1.5);
+    border-bottom-color: color-mix(in srgb, var(--color-rule) 15%, transparent);
+    box-shadow: 0 1px 0 color-mix(in srgb, var(--color-ink) 8%, transparent);
+  }
+}
+
+/* Immersive-canvas opt-in. Pages set <BaseLayout canvas="dark">; we paint
+   the root surface ink so a transparent sticky header reads as part of the
+   hero rather than a cream stripe above it. The Header swaps back to the
+   standard cream-blur treatment once its sentinel scrolls off — owned by
+   the data-stuck attribute and applies to every page identically.
+
+   Lives at top level (unlayered) so it outranks Tailwind's utility-layer
+   `bg-paper/80`, `border-b`, and similar classes on [data-site-header].
+   Inside @layer base, utilities would win regardless of specificity. */
+body[data-canvas='dark'] {
+  background: var(--color-ink);
+}
+body[data-canvas='dark'] [data-site-header] {
+  transition:
+    background-color 200ms ease,
+    color 200ms ease,
+    border-color 200ms ease;
+}
+body[data-canvas='dark'] [data-site-header]:not([data-stuck]) {
+  background-color: transparent;
+  border-bottom-color: transparent;
+}
+body[data-canvas='dark'] [data-site-header]:not([data-stuck]) a {
+  color: var(--color-paper);
+}
+body[data-canvas='dark'] [data-site-header]:not([data-stuck]) a:hover {
+  color: var(--color-accent);
+}
+body[data-canvas='dark'] [data-site-header]:not([data-stuck]) a[aria-current='page'] {
+  color: var(--color-accent);
+}
+body[data-canvas='dark'] [data-site-header]:not([data-stuck]) a span.text-accent {
+  color: var(--color-accent);
+}
+body[data-canvas='dark'] [data-site-header]:not([data-stuck]) .press {
+  background-color: var(--color-paper);
+  color: var(--color-ink);
+}
+body[data-canvas='dark'] [data-site-header]:not([data-stuck]) .press:hover {
+  background-color: var(--color-accent);
+  color: var(--color-paper);
 }
 
 @layer components {
   .lift {
     /* Always render the shadow shape; modulate opacity via the typed
        --lift-shadow-strength custom property so hover/rest interpolates
-       smoothly instead of snapping in/out. Mirrors --shadow-lift at full
-       strength. */
+       smoothly instead of snapping in/out. */
     --lift-shadow-strength: 0;
     box-shadow: 0 12px 30px -16px
       color-mix(in srgb, var(--color-ink) calc(var(--lift-shadow-strength) * 25%), transparent);
     transition-property: transform, --lift-shadow-strength, background-color, color, border-color;
     transition-duration: 200ms;
-    transition-timing-function: cubic-bezier(0, 0, 0.2, 1);
+    transition-timing-function: var(--ease-out);
   }
-  .lift:hover {
-    transform: translateY(-2px);
+  /* Hover and keyboard-focus share the same lift gesture so tabbing
+     through cards feels as tactile as mousing over them. Depth comes
+     from the translate + shadow alone; no scale, since scale on hover
+     reads as template-default rather than a considered gesture. */
+  .lift:hover,
+  .lift:focus-visible {
+    transform: translateY(-4px);
     --lift-shadow-strength: 1;
   }
   .lift:active {
@@ -356,24 +497,17 @@
 
   .press {
     transition:
-      transform 200ms cubic-bezier(0, 0, 0.2, 1),
-      background-color 200ms cubic-bezier(0, 0, 0.2, 1),
-      color 200ms cubic-bezier(0, 0, 0.2, 1);
+      transform 200ms var(--ease-out),
+      background-color 200ms var(--ease-out),
+      color 200ms var(--ease-out);
   }
+  /* Click feedback: button pushes down 1px into the page surface rather
+     than scaling. The press reads as a physical depression — the gesture
+     a real button would make — instead of a UI element shrinking, which
+     is the generic AI-template tell. */
   .press:active {
-    transform: scale(0.97);
+    transform: translateY(1px);
     transition-duration: 100ms;
-  }
-
-  /* Pills and chips that live inside a `.group` parent (e.g. ProjectCard)
-     invert to paper-on-dark when the parent darkens on hover. The soft
-     variant uses 50% paper border so muted-base styles read at half-
-     strength against the dark card. Inert outside a `.group` ancestor. */
-  .on-card-invert {
-    @apply group-hover:text-paper group-hover:border-paper;
-  }
-  .on-card-invert-soft {
-    @apply group-hover:text-paper group-hover:border-paper/50;
   }
 
   .nav-link {
@@ -389,7 +523,7 @@
     background: currentColor;
     transform: scaleX(0);
     transform-origin: left;
-    transition: transform 200ms cubic-bezier(0, 0, 0.2, 1);
+    transition: transform 200ms var(--ease-out);
   }
   .nav-link:hover::after,
   .nav-link[aria-current='page']::after {
@@ -411,7 +545,7 @@
      so transform applies; rest-state has the natural typeset position. */
   :where(.lift, .press, .contact-link) .arrow {
     display: inline-block;
-    transition: transform 200ms cubic-bezier(0, 0, 0.2, 1);
+    transition: transform 200ms var(--ease-out);
   }
   :where(.lift, .press, .contact-link):hover .arrow,
   :where(.lift, .press, .contact-link):focus-visible .arrow {
@@ -471,9 +605,9 @@
     text-underline-offset: 0.16em;
     text-decoration-skip-ink: auto;
     transition:
-      color 160ms cubic-bezier(0, 0, 0.2, 1),
-      text-decoration-color 160ms cubic-bezier(0, 0, 0.2, 1),
-      text-decoration-thickness 160ms cubic-bezier(0, 0, 0.2, 1);
+      color 160ms var(--ease-out),
+      text-decoration-color 160ms var(--ease-out),
+      text-decoration-thickness 160ms var(--ease-out);
   }
 
   :where(
@@ -497,9 +631,9 @@
 
   .contact-link {
     transition:
-      color 160ms cubic-bezier(0, 0, 0.2, 1),
-      text-decoration-color 160ms cubic-bezier(0, 0, 0.2, 1),
-      text-decoration-thickness 160ms cubic-bezier(0, 0, 0.2, 1);
+      color 160ms var(--ease-out),
+      text-decoration-color 160ms var(--ease-out),
+      text-decoration-thickness 160ms var(--ease-out);
   }
 
   .contact-link:hover,
@@ -612,24 +746,54 @@
     opacity: 0.18;
   }
 
+  /* Bold flourish: horizontal stripes and section dividers draw themselves
+     across the page on first paint via @starting-style. The default state
+     is FULLY VISIBLE — if @starting-style isn't supported or the animation
+     is skipped for any reason, the element is still there. Only the
+     transition-in is animated, no JS dependency. Targets:
+       - <hr class="rule-thick"> section breaks on every major page
+       - <hr class="rule-thin"> finer horizontal rules
+       - .reveal-stripe — the footer's orange brand stripe
+     Trade-off vs IntersectionObserver: for elements far below the fold,
+     the 800ms transition completes before the user scrolls there, so
+     they're seen fully drawn rather than mid-draw. Acceptable — the
+     animation is for first-paint character; the rules' job is to be
+     visible. */
+  hr.rule-thick,
+  hr.rule-thin,
+  .reveal-stripe {
+    transition: clip-path 800ms var(--ease-out);
+  }
+  @starting-style {
+    hr.rule-thick,
+    hr.rule-thin,
+    .reveal-stripe {
+      clip-path: inset(0 100% 0 0);
+    }
+  }
+
   .reveal-ready .reveal {
     opacity: 0;
     transform: translateY(16px);
     transition:
-      opacity 600ms cubic-bezier(0, 0, 0.2, 1),
-      transform 600ms cubic-bezier(0, 0, 0.2, 1);
+      opacity 600ms var(--ease-out),
+      transform 600ms var(--ease-out);
   }
   .reveal-ready .reveal.is-visible {
     opacity: 1;
     transform: none;
   }
 
+  /* Stats rise from 24px below their resting position (longer than
+     .reveal's 16px) and ease in over 700ms — a slightly heavier, more
+     deliberate entrance than surrounding prose, which suits punchy
+     numerical data. No scale: emphasis comes from distance + timing. */
   .reveal-ready .reveal-stat {
     opacity: 0;
-    transform: scale(0.94);
+    transform: translateY(24px);
     transition:
-      opacity 700ms cubic-bezier(0, 0, 0.2, 1),
-      transform 700ms cubic-bezier(0, 0, 0.2, 1);
+      opacity 700ms var(--ease-out),
+      transform 700ms var(--ease-out);
   }
   .reveal-ready .reveal-stat.is-visible {
     opacity: 1;
@@ -638,7 +802,7 @@
 
   .reveal-ready .reveal-quote {
     clip-path: inset(0 0 100% 0);
-    transition: clip-path 700ms cubic-bezier(0, 0, 0.2, 1);
+    transition: clip-path 700ms var(--ease-out);
   }
   .reveal-ready .reveal-quote.is-visible {
     clip-path: inset(0 0 0 0);
@@ -654,11 +818,26 @@
     transition-delay: 240ms;
   }
 
+  /* No @supports (animation-timeline) upgrade path here. An earlier
+     attempt to drive the reveal animations from view-timeline silently
+     broke them: the `animation:` shorthand resets `animation-timeline`
+     to `auto` and `animation-duration` to `0s`, so every reveal element
+     would jump instantly to its final state via fill-mode:both, dead-
+     ending the IntersectionObserver path. The transition-based reveal
+     works in every browser today; the scroll-driven variant needs a
+     careful longhand-only rewrite if we ever want it back. */
+
   @media (prefers-reduced-motion: reduce) {
     .reveal-ready :is(.reveal, .reveal-stat, .reveal-quote) {
       opacity: 1 !important;
       transform: none !important;
       clip-path: none !important;
+      transition: none !important;
+    }
+    hr.rule-thick,
+    hr.rule-thin,
+    .reveal-stripe {
+      transition: none !important;
     }
   }
 
@@ -668,8 +847,8 @@
      on top — these compose rather than replace each other. */
   [data-newsletter-form] input[type='email'] {
     transition:
-      box-shadow 180ms cubic-bezier(0, 0, 0.2, 1),
-      border-color 180ms cubic-bezier(0, 0, 0.2, 1);
+      box-shadow 180ms var(--ease-out),
+      border-color 180ms var(--ease-out);
   }
   [data-newsletter-form] input[type='email']:focus-visible {
     box-shadow: inset 0 -4px 0 var(--color-accent);
@@ -682,8 +861,8 @@
     opacity: 0;
     transform: translateY(6px);
     transition:
-      opacity 240ms cubic-bezier(0, 0, 0.2, 1),
-      transform 240ms cubic-bezier(0, 0, 0.2, 1);
+      opacity 240ms var(--ease-out),
+      transform 240ms var(--ease-out);
   }
   [data-form-status]:not(:empty) {
     opacity: 1;

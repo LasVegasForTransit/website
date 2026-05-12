@@ -2,7 +2,6 @@
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import SectionHeader from '../../components/SectionHeader.astro';
 import ProjectCard from '../../components/ProjectCard.astro';
-import InitiativeChipNav from '../../components/InitiativeChipNav.astro';
 import { getCollection } from 'astro:content';
 import { byOrderThenTitle } from '../../lib/projects';
 import { paths } from '../../lib/paths';
@@ -19,35 +18,83 @@ const initiativesById = new Map(initiatives.map((i) => [i.id, i]));
 const projectsByInitiative = new Map(
   initiatives.map((i) => [i.id, sorted.filter((p) => p.data.initiatives.includes(i.id))]),
 );
+
+// Filtered list drives the rendered sections; stable index lets us skip
+// the negative-margin overlap on the very first section (no previous
+// section to overlap with).
+const renderedInitiatives = initiatives.filter(
+  (i) => (projectsByInitiative.get(i.id) ?? []).length > 0,
+);
 ---
 
 <BaseLayout
   title="Projects"
   description="The work we're doing right now to build a transit constituency in the Las Vegas Valley."
 >
-  <header class="container-page pt-20 pb-12 md:pt-28 md:pb-16">
+  {
+    /* Top padding scales with viewport height (dvh handles mobile URL-bar
+       collapse) so the title sits above the fold on ~700–900px laptops
+       and still breathes on tall monitors. Clamped to a 3rem floor and
+       7rem ceiling so it doesn't go either claustrophobic or absurd. */
+  }
+  <header class="container-page pt-[clamp(3rem,10dvh,7rem)] pb-12 md:pb-16">
     <SectionHeader
-      eyebrow="The work, in public"
       title="Our projects"
-      lede="What we're working on, who's leading it, and how it's going. This page is the public-facing version of our internal tracker."
+      lede="Buses every ten minutes. Safe streets to reach them. A Legislature that funds both. None of it happens without organized people."
     />
   </header>
   <hr class="rule-thick container-page" />
 
-  <section class="container-page py-12">
-    <InitiativeChipNav initiatives={initiatives} />
-  </section>
-
   {
-    initiatives.map((initiative) => {
+    /* Each initiative's inline header IS the sticky element — same DOM
+       node morphs from expanded (eyebrow + display title + lede) to a
+       compact label-row when it pins below the site header. A 1px
+       sentinel placed just above the header drives the morph via an
+       IntersectionObserver in /scripts/projects-initiative-stuck.js
+       (CSP-safe — script-src 'self' rejects inline scripts).
+       Non-first sections overlap the previous section's pb via negative
+       margin so the next sticky pins before the previous releases —
+       without this, there's a brief un-pinned window during the natural-
+       position transition and the user perceives it as a gap below the
+       site header. */
+  }
+  {
+    renderedInitiatives.map((initiative, index) => {
       const inInitiative = projectsByInitiative.get(initiative.id) ?? [];
-      if (inInitiative.length === 0) return null;
       return (
-        <section id={initiative.id} class="container-page pb-16 md:pb-20 scroll-mt-24">
-          <div class="border-t border-rule/30 pt-10">
-            <p class="eyebrow">Initiative</p>
-            <h2 class="text-headline-lg mt-2">{initiative.data.title}</h2>
-            <p class="lede mt-3 max-w-3xl">{initiative.data.description}</p>
+        <section
+          id={initiative.id}
+          class:list={[
+            'container-page pb-16 md:pb-20 scroll-mt-24',
+            index > 0 && '-mt-16 md:-mt-20',
+          ]}
+        >
+          <div data-initiative-sentinel aria-hidden="true" class="h-px" />
+          <div
+            data-initiative-header
+            class="group/init sticky top-[var(--lvbt-header-h)] z-40 bg-paper border-t border-rule/30 pt-10 pb-8 transition-[padding,border-color] duration-200 ease-out data-[stuck]:pt-3 data-[stuck]:pb-3 data-[stuck]:border-t-rule/15 data-[stuck]:border-b data-[stuck]:border-b-rule/15"
+          >
+            <p class="eyebrow group-data-[stuck]/init:hidden">Initiative</p>
+            <h2 class="text-headline-lg mt-2 transition-[font-size,line-height,letter-spacing] duration-200 ease-out group-data-[stuck]/init:text-title-lg group-data-[stuck]/init:mt-0">
+              <a
+                href={`#${initiative.id}`}
+                data-initiative-permalink
+                aria-label={`Copy link to ${initiative.data.title}`}
+                class="group/perm inline-flex items-baseline gap-3 no-underline"
+              >
+                <span>{initiative.data.title}</span>
+                <span
+                  aria-hidden="true"
+                  class="text-mute text-[0.5em] font-normal tracking-normal opacity-0 transition-opacity duration-150 group-hover/perm:opacity-100 group-focus-visible/perm:opacity-100 group-data-[copied]/perm:opacity-100 group-data-[copied]/perm:text-accent"
+                >
+                  <span class="group-data-[copied]/perm:hidden">#</span>
+                  <span class="hidden group-data-[copied]/perm:inline">Copied</span>
+                </span>
+              </a>
+            </h2>
+            <p class="lede mt-3 max-w-3xl group-data-[stuck]/init:hidden">
+              {initiative.data.description}
+            </p>
           </div>
           <div class="mt-8 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
             {inInitiative.map((project) => (
@@ -66,4 +113,7 @@ const projectsByInitiative = new Map(
       );
     })
   }
+
+  <script is:inline src="/scripts/projects-initiative-stuck.js" defer></script>
+  <script is:inline src="/scripts/projects-initiative-permalink.js" defer></script>
 </BaseLayout>

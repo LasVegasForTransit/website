@@ -4,11 +4,21 @@ interface Props {
 }
 const { status } = Astro.props;
 
+// `group-hover:` utilities ride alongside the base color so they land in
+// the same Tailwind layer and order beats the dark base on hover — when
+// the parent .group card flips to bg-ink, pill text/border flip to paper.
+// `active` keeps its accent fill unchanged; it reads fine against ink.
 const styles: Record<Props['status'], string> = {
+  // Active uses ink-on-accent for AA contrast (paper-on-accent fails at
+  // 3.64:1). Other states adopt the redesign's group-hover pattern so
+  // pills track the parent card's hover-flip without the on-card-invert
+  // utility classes the old approach relied on.
   active: 'bg-accent text-ink border-accent',
-  planned: 'bg-transparent text-ink border-ink on-card-invert',
-  complete: 'bg-rule/15 text-mute border-mute/30 on-card-invert-soft',
-  paused: 'bg-transparent text-mute border-dashed border-mute on-card-invert',
+  planned: 'bg-transparent text-ink border-ink group-hover:text-paper group-hover:border-paper',
+  complete:
+    'bg-rule/15 text-mute border-mute/30 group-hover:text-paper group-hover:border-paper/50',
+  paused:
+    'bg-transparent text-mute border-dashed border-mute group-hover:text-paper group-hover:border-paper',
 };
 
 const label: Record<Props['status'], string> = {

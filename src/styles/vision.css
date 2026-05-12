@@ -98,6 +98,180 @@
   }
 }
 
+/* ====== Section anchor (heading is a self-link, glyph on hover/focus) ====== */
+.vision-page .section-anchor {
+  color: inherit;
+  text-decoration: none;
+  display: inline;
+}
+.vision-page .section-anchor__glyph {
+  margin-inline-start: 0.35em;
+  font-weight: 700;
+  color: var(--vp-text-subtle);
+  opacity: 0;
+  transition: opacity 150ms ease;
+  font-variant-numeric: lining-nums;
+}
+.vision-page .section-anchor:hover .section-anchor__glyph,
+.vision-page .section-anchor:focus-visible .section-anchor__glyph {
+  opacity: 1;
+}
+.vision-page .section-anchor[data-copied] .section-anchor__glyph {
+  color: var(--color-accent);
+  opacity: 1;
+}
+.vision-page .section-anchor[data-copied] .section-anchor__glyph::after {
+  content: ' copied';
+  font-size: 0.55em;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  margin-inline-start: 0.4em;
+}
+
+/* ====== Sticky section progress sub-bar ======
+   Lives under the main header. Reveals once the IO logic picks a current
+   section out of [data-vision-section] (i.e. once the reader is past the
+   hero); hides automatically when the reader is in Frame or Close. */
+.section-progress {
+  position: fixed;
+  top: var(--lvbt-header-h, 4.5rem);
+  inset-inline: 0;
+  z-index: 40;
+  background: color-mix(in srgb, var(--color-paper) 80%, transparent);
+  backdrop-filter: blur(8px) saturate(150%);
+  -webkit-backdrop-filter: blur(8px) saturate(150%);
+  border-bottom: 1px solid color-mix(in srgb, var(--color-rule) 15%, transparent);
+  transition:
+    opacity 200ms ease,
+    transform 200ms ease;
+}
+.section-progress[hidden] {
+  display: block;
+  opacity: 0;
+  transform: translateY(-100%);
+  pointer-events: none;
+}
+.section-progress__inner {
+  padding-block: 0.625rem;
+  display: flex;
+  gap: 0.75rem;
+  align-items: baseline;
+  font-size: 0.85rem;
+  color: var(--color-ink);
+}
+.section-progress__num {
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  flex: 0 0 auto;
+}
+.section-progress__sep {
+  color: var(--color-mute);
+  flex: 0 0 auto;
+}
+.section-progress__title {
+  color: inherit;
+  text-decoration: none;
+  flex: 1 1 auto;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.section-progress__title:hover {
+  color: var(--color-accent);
+}
+
+/* ====== Side TOC (desktop only). Visibility + per-item active state are
+   driven by the inline-generated <style> block in vision.astro — those rules
+   reference per-section view-timeline names that the registry owns. */
+.vision-toc {
+  display: none;
+}
+@media (min-width: 1024px) {
+  .vision-toc {
+    display: block;
+    position: fixed;
+    right: clamp(1.5rem, 2.5vw, 2.5rem);
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 30;
+    width: 13rem;
+    opacity: 0;
+    pointer-events: none;
+  }
+  .vision-toc ol {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.55rem;
+  }
+  .vision-toc a {
+    display: block;
+    color: var(--color-ink);
+    opacity: 0.55;
+    font-size: 0.7rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.16em;
+    text-decoration: none;
+    line-height: 1.2;
+    transition:
+      opacity 120ms ease,
+      color 120ms ease;
+  }
+  .vision-toc a:hover {
+    opacity: 1;
+    color: var(--color-accent);
+  }
+}
+
+@keyframes vision-toc-show-after-hero {
+  to {
+    opacity: 1;
+    pointer-events: auto;
+  }
+}
+@keyframes vision-toc-hide-before-close {
+  to {
+    opacity: 0;
+    pointer-events: none;
+  }
+}
+@keyframes vision-toc-active {
+  50% {
+    color: var(--color-accent);
+    opacity: 1;
+    font-weight: 700;
+    text-transform: none;
+    letter-spacing: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .section-progress {
+    transition: none;
+  }
+  .vision-toc,
+  .vision-toc a {
+    transition: none;
+  }
+}
+
+/* Scroll-driven animations fallback. Without view-timelines, leave the TOC
+   visible all the time with no active highlighting; the page still works as
+   a static jump menu. */
+@supports not (animation-timeline: view()) {
+  @media (min-width: 1024px) {
+    .vision-toc {
+      opacity: 1;
+      pointer-events: auto;
+    }
+  }
+}
+
 .vision-page .band-cream {
   background: var(--color-paper);
   color: var(--color-ink);

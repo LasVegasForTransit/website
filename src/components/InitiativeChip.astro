@@ -11,7 +11,8 @@ const variant = active ? 'active' : 'default';
 const styles: Record<'active' | 'default', string> = {
   active:
     'bg-ink text-paper border-ink group-hover:bg-paper group-hover:text-ink group-hover:border-paper',
-  default: 'bg-transparent text-ink border-ink/30 hover:border-ink on-card-invert-soft',
+  default:
+    'bg-transparent text-ink border-ink/30 hover:border-ink group-hover:text-paper group-hover:border-paper/50',
 };
 ---
 
