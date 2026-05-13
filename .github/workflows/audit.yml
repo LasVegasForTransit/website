@@ -78,10 +78,6 @@ jobs:
     needs: build
     runs-on: ubuntu-latest
     timeout-minutes: 12
-    # TODO: promote to hard gate once we've seen one clean run. Mobile
-    # CWV budgets in lighthouserc.cjs (LCP ≤ 4 s, TBT ≤ 300 ms) are
-    # generous for a static site but haven't been measured in CI yet.
-    continue-on-error: true
     steps:
       - name: Checkout
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
