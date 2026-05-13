@@ -13,7 +13,16 @@ const path = Astro.url.pathname;
   class="sticky top-0 z-50 bg-paper/80 border-b border-transparent data-[stuck]:backdrop-blur-md data-[stuck]:backdrop-saturate-150 data-[stuck]:border-rule/15 transition-[border-color] duration-200 ease-out [view-transition-name:site-header]"
 >
   <div class="container-page py-4 flex items-center justify-between gap-6">
-    <a href="/" class="font-extrabold tracking-tight text-lg md:text-xl no-underline">
+    {
+      /* Wordmark sits at text-xl across breakpoints: at 18px (text-lg)
+        the accent "for Better Transit" reads 3.64:1 on cream, which
+        passes WCAG large-text (3:1) but fails normal-text (4.5:1).
+        font-extrabold qualifies as large only at ≥18.66px, so dropping
+        to text-lg on mobile flipped the threshold and tanked mobile
+        a11y on every paper-canvas page. text-xl (20px) clears it on
+        every viewport. */
+    }
+    <a href="/" class="font-extrabold tracking-tight text-xl no-underline">
       <span class="block leading-none">Las Vegans</span>
       <span class="block leading-none text-accent">for Better Transit</span>
     </a>
