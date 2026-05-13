@@ -9,13 +9,13 @@
     "individualFileGzipKb": 14
   },
   "assets": {
-    "_doc": "Raster files in public/. If a PNG/JPG exceeds the threshold, it must have a WebP companion of the same stem or be listed in webpExemptions. og-default.png and logo.png are slated for compression in a follow-up; the SVG variant of the logo already exists.",
+    "_doc": "Raster files in public/. If a PNG/JPG exceeds the threshold, it must have a WebP companion of the same stem or be listed in webpExemptions.",
     "maxImageKbWithoutWebp": 20,
-    "webpExemptions": ["favicon.ico", "og-default.png", "logo.png"]
+    "webpExemptions": ["favicon.ico"]
   },
   "build": {
-    "_doc": "Peak resident set size of pnpm build, in MB. null = report-only (seeded once a CI run measures real value).",
-    "peakRssMb": null
+    "_doc": "Peak resident set size of pnpm build, in MB. Seeded from seven audits/build-stats.jsonl rows landing 78–94 MB on this hardware; 140 covers the high end with room for normal build-to-build variance, low enough that a doubling of memory usage trips it.",
+    "peakRssMb": 140
   },
   "runtime": {
     "_doc": "performance.memory.usedJSHeapSize after page load + 5s settle, in MB. Chromium-only.",
