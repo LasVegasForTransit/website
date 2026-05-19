@@ -2,6 +2,7 @@
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import SectionHeader from '../../components/SectionHeader.astro';
 import ProjectCard from '../../components/ProjectCard.astro';
+import { Icon } from 'astro-icon/components';
 import { getCollection } from 'astro:content';
 import { byOrderThenTitle } from '../../lib/projects';
 import { paths } from '../../lib/paths';
@@ -80,15 +81,28 @@ const renderedInitiatives = initiatives.filter(
                 href={`#${initiative.id}`}
                 data-initiative-permalink
                 aria-label={`Copy link to ${initiative.data.title}`}
-                class="group/perm inline-flex items-baseline gap-3 no-underline"
+                class="group/perm relative inline-flex items-baseline gap-3 no-underline"
               >
+                {/* Copy-success indicator lives in the left gutter,
+                    absolute-positioned so it doesn't shift the title
+                    when it appears. `right-full` parks it against the
+                    title's left edge; `mr-3` adds breathing room.
+                    Sized + colored to match the `#` affordance on the
+                    right when active. */}
+                <Icon
+                  name="mdi:check"
+                  aria-hidden="true"
+                  class="absolute right-full top-1/2 -translate-y-1/2 mr-2 size-[0.6em] text-accent opacity-0 transition-opacity duration-150 group-data-[copied]/perm:opacity-100"
+                />
                 <span>{initiative.data.title}</span>
+                {/* `#` permalink affordance on the right — visible on
+                    hover/focus. Stays muted on copy; the accent check
+                    on the left carries the success-state signal. */}
                 <span
                   aria-hidden="true"
-                  class="text-mute text-[0.5em] font-normal tracking-normal opacity-0 transition-opacity duration-150 group-hover/perm:opacity-100 group-focus-visible/perm:opacity-100 group-data-[copied]/perm:opacity-100 group-data-[copied]/perm:text-accent"
+                  class="text-mute text-[0.5em] font-normal tracking-normal opacity-0 transition-opacity duration-150 group-hover/perm:opacity-100 group-focus-visible/perm:opacity-100"
                 >
-                  <span class="group-data-[copied]/perm:hidden">#</span>
-                  <span class="hidden group-data-[copied]/perm:inline">Copied</span>
+                  #
                 </span>
               </a>
             </h2>
