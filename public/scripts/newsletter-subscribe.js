@@ -19,7 +19,9 @@
       form.dataset.bound = 'true';
 
       const btn = form.querySelector('[data-submit-btn]');
-      const status = form.querySelector('[data-form-status]');
+      // [data-form-status] is a sibling of the form, not a descendant —
+      // walk up to the embed wrapper to find it.
+      const status = form.parentElement?.querySelector('[data-form-status]') ?? null;
       const originalLabel = btn ? btn.textContent : 'Subscribe';
 
       form.addEventListener('submit', async (e) => {
