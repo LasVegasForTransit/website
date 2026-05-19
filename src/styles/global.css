@@ -507,7 +507,8 @@ body[data-canvas='dark'] [data-site-header]:not([data-stuck]) .press:hover {
     transition:
       transform 200ms var(--ease-out),
       background-color 200ms var(--ease-out),
-      color 200ms var(--ease-out);
+      color 200ms var(--ease-out),
+      padding 200ms var(--ease-out);
   }
   /* Click feedback: button pushes down 1px into the page surface rather
      than scaling. The press reads as a physical depression — the gesture

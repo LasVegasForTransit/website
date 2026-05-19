@@ -92,7 +92,7 @@ const otherUpcoming = featured ? upcoming.filter((e) => e.id !== featured.id) : 
               <li>
                 <a
                   href={`/events/${e.id}`}
-                  class="grid grid-cols-[10rem_1fr_auto] gap-6 items-baseline py-5 no-underline hover:bg-ink hover:text-paper hover:px-3 transition-all"
+                  class="press grid grid-cols-[10rem_1fr_auto] gap-6 items-baseline py-5 no-underline hover:bg-ink hover:text-paper hover:px-3"
                 >
                   <span class="eyebrow">{dateLabel}</span>
                   <span class="font-semibold">{e.data.title}</span>

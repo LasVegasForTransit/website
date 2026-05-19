@@ -27,7 +27,11 @@ const { url, title, text, class: className } = Astro.props;
   data-share-title={title}
   data-share-text={text ?? title}
   class:list={[
-    'inline-flex items-center px-5 py-3 text-sm font-bold uppercase tracking-wider no-underline border-2 border-ink hover:bg-ink hover:text-paper transition-colors',
+    // No bespoke transition here — the consumer passes `.press` for the
+    // sitewide 200ms ease-out color/transform timing. Standalone usage
+    // (without `.press`) flips colors immediately; pair it with the
+    // utility for the consistent gesture.
+    'inline-flex items-center px-5 py-3 text-sm font-bold uppercase tracking-wider no-underline border-2 border-ink hover:bg-ink hover:text-paper',
     className,
   ]}
 >

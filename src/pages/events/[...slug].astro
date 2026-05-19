@@ -134,12 +134,18 @@ const icsHref = `/events/${event.id}.ics`;
         button text. Order: primary (Join) → registration (RSVP) →
         utility (Add to calendar, Share). */
     }
+    {
+      /* `.press` (global.css) is the sitewide button gesture — 200ms
+        ease-out color transition + 1px press-down on :active. Every
+        action button uses it so hover/active feel uniform with the
+        Subscribe / Donate CTAs elsewhere on the site. */
+    }
     <div class="mt-8 md:mt-10 flex flex-wrap items-center gap-3">
       {
         showJoin && (
           <a
             href={event.data.joinUrl}
-            class="inline-flex items-center bg-accent text-ink px-5 py-3 text-sm font-bold uppercase tracking-wider no-underline hover:bg-ink hover:text-paper"
+            class="press inline-flex items-center bg-accent text-ink px-5 py-3 text-sm font-bold uppercase tracking-wider no-underline hover:bg-ink hover:text-paper"
             rel="noopener"
           >
             Join →
@@ -150,7 +156,7 @@ const icsHref = `/events/${event.id}.ics`;
         showRsvp && (
           <a
             href={event.data.rsvpUrl}
-            class="inline-flex items-center border-2 border-ink px-5 py-3 text-sm font-bold uppercase tracking-wider no-underline hover:bg-ink hover:text-paper"
+            class="press inline-flex items-center border-2 border-ink px-5 py-3 text-sm font-bold uppercase tracking-wider no-underline hover:bg-ink hover:text-paper"
             rel="noopener"
           >
             RSVP →
@@ -159,11 +165,16 @@ const icsHref = `/events/${event.id}.ics`;
       }
       <a
         href={icsHref}
-        class="inline-flex items-center border-2 border-ink px-5 py-3 text-sm font-bold uppercase tracking-wider no-underline hover:bg-ink hover:text-paper"
+        class="press inline-flex items-center border-2 border-ink px-5 py-3 text-sm font-bold uppercase tracking-wider no-underline hover:bg-ink hover:text-paper"
       >
         Add to calendar →
       </a>
-      <ShareButton url={eventUrl} title={event.data.title} text={event.data.summary} />
+      <ShareButton
+        url={eventUrl}
+        title={event.data.title}
+        text={event.data.summary}
+        class="press"
+      />
     </div>
   </header>
   <hr class="rule-thick container-page" />
