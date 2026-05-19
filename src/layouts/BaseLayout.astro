@@ -34,12 +34,30 @@ const canonical = new URL(Astro.url.pathname, site.url).toString();
 ---
 
 <!doctype html>
-<html lang="en">
+{
+  /* `reveal-ready` is rendered server-side so the `.reveal-ready .reveal`
+    cascade in global.css applies before any reveal element paints — no
+    FOUC. Previously this was an inline <head> <script>, which the site's
+    CSP `script-src 'self'` blocked in production, leaving every reveal
+    permanently in its default-visible state. The <noscript> override
+    below restores graceful degradation for visitors without JS: reveals
+    snap to visible instead of getting stuck hidden. */
+}
+<html lang="en" class="reveal-ready">
   <head>
     <meta charset="UTF-8" />
-    <script is:inline>
-      document.documentElement.classList.add('reveal-ready');
-    </script>
+    <noscript>
+      <style>
+        .reveal-ready .reveal,
+        .reveal-ready .reveal-stat,
+        .reveal-ready .reveal-quote {
+          opacity: 1 !important;
+          transform: none !important;
+          clip-path: none !important;
+          transition: none !important;
+        }
+      </style>
+    </noscript>
     <meta name="viewport" content="width=device-width,initial-scale=1" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="apple-touch-icon" href="/logo.png" />
