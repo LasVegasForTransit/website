@@ -82,24 +82,13 @@ const canonical = new URL(Astro.url.pathname, site.url).toString();
       </main>
     </div>
     <Footer />
-    <script is:inline>
-      (() => {
-        const targets = document.querySelectorAll('.reveal, .reveal-stat, .reveal-quote');
-        if (!targets.length) return;
-        const obs = new IntersectionObserver(
-          (entries) => {
-            for (const entry of entries) {
-              if (entry.isIntersecting) {
-                entry.target.classList.add('is-visible');
-                obs.unobserve(entry.target);
-              }
-            }
-          },
-          { threshold: 0.15, rootMargin: '0px 0px -40px 0px' },
-        );
-        targets.forEach((el) => obs.observe(el));
-      })();
-    </script>
+    {
+      /* Behaviour lives at /scripts/reveal-on-scroll.js (public/) so it
+        satisfies the site's CSP `script-src 'self'` — an inline block
+        here would be rejected in production, leaving every reveal
+        element stuck hidden. Same pattern as ShareButton / Header. */
+    }
+    <script is:inline src="/scripts/reveal-on-scroll.js" defer></script>
     {
       /* Cloudflare Web Analytics. Real-user CWV + page-view counts to
          complement the synthetic Lighthouse runs in CI. Gated on
