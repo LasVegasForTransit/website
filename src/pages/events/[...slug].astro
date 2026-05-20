@@ -17,11 +17,19 @@ export async function getStaticPaths() {
 }
 
 const { event } = Astro.props;
-// Body content lives in a sibling collection keyed by slug. Optional —
-// many events ship with just the header (when/where/CTAs); only events
-// with deeper context get a fragment in src/content/event-bodies/.
-const body = await getEntry('eventBodies', event.id);
-const BodyContent = body ? (await render(body)).Content : null;
+// Two possible body sources, in priority order:
+//
+//   1. An MDX fragment under src/content/event-bodies/<slug>.mdx —
+//      authored explicitly when an event needs MDX features (components,
+//      typed links).
+//   2. event.data.body — the HTML the loader extracted from everything
+//      after the first paragraph of the GCal description.
+//
+// Most events ship with just the header; a body only renders when one
+// of these sources is present.
+const fragment = await getEntry('eventBodies', event.id);
+const FragmentContent = fragment ? (await render(fragment)).Content : null;
+const calendarBodyHtml = !FragmentContent && event.data.body ? event.data.body : null;
 const eventUrl = new URL(Astro.url.pathname, site.url).toString();
 
 const dateLabel = new Intl.DateTimeFormat('en-US', {
@@ -182,11 +190,11 @@ const icsHref = `/events/${event.id}.ics`;
     </div>
   </header>
   {
-    BodyContent && (
+    (FragmentContent || calendarBodyHtml) && (
       <>
         <hr class="rule-thick container-page" />
         <div class="container-prose pt-8 pb-16 md:pt-10 md:pb-16 prose-doc">
-          <BodyContent />
+          {FragmentContent ? <FragmentContent /> : <div set:html={calendarBodyHtml!} />}
         </div>
       </>
     )

@@ -1,6 +1,6 @@
 # Events pipeline
 
-Events on the site come from a public Google Calendar. The site rebuilds against the calendar on a schedule; the calendar is the source of truth for metadata. Rich body content for a small subset of events lives in MDX fragments under [`src/content/event-bodies/`](../../src/content/event-bodies/).
+Events on the site come from a public Google Calendar. The site rebuilds against the calendar on a schedule; the calendar is the source of truth for both event metadata (title, time, location, join URL) and event body copy (the rich-text description). MDX fragments under [`src/content/event-bodies/`](../../src/content/event-bodies/) are an optional override for events that need MDX features (components, typed links) — most events ship as just GCal.
 
 ## The flow
 
@@ -25,20 +25,26 @@ events/index.astro · events/[...slug].astro · events/[...slug].ics.ts · go.as
 1. Open the LVBT calendar (the only one).
 2. Create an event with these fields:
 
-| GCal field  | Becomes                                                             | Notes                                                                                                 |
-| ----------- | ------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------- |
-| Title       | `title`                                                             | Trimmed; surfaces on cards and detail page.                                                           |
-| Date / time | `date`, `endDate`                                                   | Always set an end time — the `.ics` builder needs one, and the "Live now" check needs the end window. |
-| Location    | `joinUrl` if URL, else `venue.name`                                 | Put a meeting URL here for a virtual event, a physical address for an in-person event.                |
-| Description | `summary` (first paragraph), optional `joinUrl`, optional `rsvpUrl` | See conventions below.                                                                                |
+| GCal field  | Becomes                                                                                                    | Notes                                                                                                 |
+| ----------- | ---------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------- |
+| Title       | `title`                                                                                                    | Trimmed; surfaces on cards and detail page.                                                           |
+| Date / time | `date`, `endDate`                                                                                          | Always set an end time — the `.ics` builder needs one, and the "Live now" check needs the end window. |
+| Location    | `joinUrl` if URL, else `venue.name`                                                                        | Put a meeting URL here for a virtual event, a physical address for an in-person event.                |
+| Description | `summary` (first paragraph) + `body` (everything after, as HTML) + optional `joinUrl` + optional `rsvpUrl` | See conventions below.                                                                                |
 
 3. (Optional) Add long-form body copy under `src/content/event-bodies/<slug>.mdx`. The slug is `<YYYY-MM-DD>-<slugified-title>` using the Pacific-time date. `pnpm event:new` walks through this.
 
 ### Description conventions
 
-The description is mostly free-form. Three patterns the build looks for:
+The description is two pieces of content in one field, separated by paragraph breaks:
 
-- **First non-empty paragraph** becomes the event `summary` (shown on cards and meta tags). Keep it one sentence. Lines that look like Google Meet auto-boilerplate (`Join with Google Meet:`, `Or dial:`, `More phone numbers:`, etc.) are stripped before the first paragraph is chosen. If you write no description, the summary falls back to the title — that's ugly on cards; write one sentence.
+- **First paragraph** → `summary`. Plain text, stripped of any inline formatting, used on event cards and as the detail-page lede. One sentence is ideal. If you write nothing, the summary falls back to the title — that's ugly on cards.
+- **Everything after** → `body`. Rendered as HTML below the event header on the detail page, with whatever rich formatting (lists, bold, links) you applied in Google Calendar's description editor.
+
+Google Calendar's auto-appended footer ("Join with Google Meet: …", phone numbers, "Learn more about Meet at: …") is detected by its boundary and dropped before either field is derived — you never have to scrub it manually.
+
+Two other conventions the build watches for:
+
 - **A Meet / Zoom / Teams / Webex / Whereby URL on its own line** is picked up as `joinUrl` if the Location field is a physical address. Use this for hybrid events.
 - **A line starting with `RSVP:`** registers an `rsvpUrl`. Example: `RSVP: https://lu.ma/abc-def`.
 

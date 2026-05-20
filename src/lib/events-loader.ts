@@ -30,6 +30,7 @@ type EventData = {
   rsvpUrl?: string;
   featured: boolean;
   summary: string;
+  body?: string;
 };
 
 const CONFERENCE_HOST_RE =
@@ -72,27 +73,62 @@ function findRsvpUrl(description: string): string | undefined {
   return m?.[1];
 }
 
-// Google Calendar auto-appends conference info to event descriptions when a
-// Meet/conference is attached. That boilerplate is never the intended card
-// summary; strip those lines before picking the first real paragraph. If
-// nothing's left (the operator wrote no description in GCal), fall back to
-// the title — ugly but loud, and documented as "write a one-sentence
-// description in GCal" in events-pipeline.md.
-const MEET_BOILERPLATE_RE =
-  /^(Join with Google Meet:|Or dial:|More phone numbers:|Video call link:|Learn more about Meet at:|\(US\) \+\d|\(Hangout)/i;
+// Google Calendar's web editor saves rich-text descriptions as HTML — paragraph
+// tags, lists, bold runs. The ICS feed delivers that HTML verbatim. We split it
+// into two pieces:
+//
+//   summary  →  first paragraph, plain text (used on cards + detail-page lede)
+//   body     →  HTML for everything after the first paragraph (rendered as the
+//                long-form section on the detail page when no MDX fragment is
+//                present)
+//
+// Anything after the Google-Meet auto-boilerplate footer ("Join with Google
+// Meet: …", phone numbers, "Learn more about Meet at: …") is dropped before
+// splitting. Authors write their content; we never show GCal's plumbing.
+const MEET_BOILERPLATE_BOUNDARY_RE = /\n\s*(?:Join with Google Meet:|Video call link:)/i;
 
-function deriveSummary(description: string, title: string): string {
-  const cleaned = description
-    .split(/\r?\n/)
-    .filter((line) => !MEET_BOILERPLATE_RE.test(line.trim()))
-    .join('\n');
+function stripHtml(html: string): string {
+  return decodeEntities(html.replace(/<[^>]+>/g, ' '))
+    .replace(/\s+/g, ' ')
+    .trim();
+}
 
-  const paragraphs = cleaned
-    .split(/\r?\n\s*\r?\n/)
-    .map((p) => p.trim())
-    .filter((p) => p.length > 0 && !/^RSVP:/i.test(p));
+function decodeEntities(s: string): string {
+  return s
+    .replace(/&nbsp;/g, ' ')
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&#39;/g, "'")
+    .replace(/&quot;/g, '"');
+}
 
-  return paragraphs[0] ?? title;
+function parseDescription(
+  rawDescription: string,
+  title: string,
+): { summary: string; body: string | undefined } {
+  const boundary = rawDescription.search(MEET_BOILERPLATE_BOUNDARY_RE);
+  const authored = (boundary >= 0 ? rawDescription.slice(0, boundary) : rawDescription).trim();
+
+  if (!authored) {
+    return { summary: title, body: undefined };
+  }
+
+  const firstP = authored.match(/<p[^>]*>([\s\S]*?)<\/p>/i);
+  if (firstP && firstP.index !== undefined) {
+    const summaryText = stripHtml(firstP[1]) || title;
+    const rest = (
+      authored.slice(0, firstP.index) + authored.slice(firstP.index + firstP[0].length)
+    ).trim();
+    return { summary: summaryText, body: rest || undefined };
+  }
+
+  // Plain-text description (no <p> wrapping). Split on blank lines.
+  const [first, ...rest] = authored.split(/\r?\n\s*\r?\n/).map((p) => p.trim());
+  return {
+    summary: first || title,
+    body: rest.filter(Boolean).join('\n\n') || undefined,
+  };
 }
 
 export function calendarEventsLoader(): Loader {
@@ -158,6 +194,7 @@ export function calendarEventsLoader(): Loader {
           : undefined;
 
         const slug = `${ptDateSlug(startDate)}-${slugifyTitle(title)}`;
+        const { summary, body } = parseDescription(description, title);
 
         const data: EventData = {
           title,
@@ -168,7 +205,8 @@ export function calendarEventsLoader(): Loader {
           joinUrl,
           rsvpUrl: findRsvpUrl(description),
           featured: false,
-          summary: deriveSummary(description, title),
+          summary,
+          body,
         };
 
         entries.push({

@@ -55,9 +55,11 @@ async function run() {
       `  • ${pc.bold('Date / time')} — in Pacific Time. Always set an end time; the .ics builder needs it.`,
       `  • ${pc.bold('Location')} — either a meeting URL (virtual) or a physical address (in-person).`,
       `       If both, put the address in Location and the meeting URL on its own line in Description.`,
+      `  • ${pc.bold('Description')} — first paragraph = the one-sentence summary shown on cards.`,
+      `       Everything after = the body rendered on the detail page (lists, bold, links all work).`,
       '',
       'Optional:',
-      `  • ${pc.bold('RSVP')} — add a line ${pc.cyan('RSVP: https://…')} in the description.`,
+      `  • ${pc.bold('RSVP')} — add a line ${pc.cyan('RSVP: https://…')} anywhere in the description.`,
       '',
       pc.dim(
         'The build maps these fields to title / date / endDate / format / venue / joinUrl / rsvpUrl.\n' +

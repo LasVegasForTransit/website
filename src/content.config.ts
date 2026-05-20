@@ -40,6 +40,11 @@ const events = defineCollection({
       rsvpUrl: z.url().optional(),
       featured: z.boolean().default(false),
       summary: z.string(),
+      // HTML body, derived from everything in the GCal description after
+      // the first paragraph. Rendered via `set:html` on the detail page
+      // when no MDX body fragment exists. Source is the LVBT-controlled
+      // calendar; treated as trusted.
+      body: z.string().optional(),
       image: z.string().optional(),
     })
     .superRefine((data, ctx) => {

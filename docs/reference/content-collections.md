@@ -29,7 +29,8 @@ Events come from the public LVBT Google Calendar; there is no MDX frontmatter to
   joinUrl?: URL;                 // Meet/Zoom/Teams/etc. URL
   rsvpUrl?: URL;                 // from a `RSVP: <url>` line in the GCal description
   featured: boolean;             // auto: nearest upcoming event wins
-  summary: string;               // first non-boilerplate paragraph of the GCal description, fallback to title
+  summary: string;               // first paragraph of the GCal description (HTML stripped); fallback to title
+  body?: string;                 // HTML for everything after the first paragraph; rendered on the detail page when no MDX fragment exists
 }
 ```
 
