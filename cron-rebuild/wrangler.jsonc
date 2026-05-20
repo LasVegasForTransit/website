@@ -17,6 +17,6 @@
   "triggers": {
     // Hourly. The Pages build itself is what re-fetches the calendar; this
     // is just the kick.
-    "crons": ["0 * * * *"]
-  }
+    "crons": ["0 * * * *"],
+  },
 }

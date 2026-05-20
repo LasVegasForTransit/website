@@ -1,22 +1,35 @@
 # Add an event
 
-1. Open `src/content/events/_template.mdx` for the canonical shape.
-2. Create `src/content/events/<slug>.mdx`. Slug is the URL fragment — kebab-case, no spaces.
-3. Fill in the frontmatter:
+Events live in the LVBT Google Calendar, not in the repo. The site rebuilds against the calendar on a schedule.
 
-   ```yaml
-   ---
-   title: 'Event title'
-   date: 2026-05-15T18:00:00-07:00 # ISO 8601 with -07:00 (PDT) or -08:00 (PST)
-   endDate: 2026-05-15T20:00:00-07:00 # optional
-   location: 'Venue name, neighborhood'
-   featured: true # optional, defaults false. Sets the hero slot on /events
-   rsvpUrl: 'https://lu.ma/example' # optional
-   summary: 'One- or two-sentence event summary.'
-   ---
-   ```
+## The fast path
 
-4. Body of the MDX file is the long-form description.
-5. Commit. Push to `main`. Cloudflare Pages deploys in ~60 seconds.
+1. Open the LVBT public calendar in Google Calendar.
+2. Create the event:
+   - **Title** — what should show on the events page (e.g. "General Meeting").
+   - **Date / time** — in Pacific Time. Always set an end time.
+   - **Location** — a meeting URL (virtual), a physical address (in-person), or both (hybrid — put the address in Location and the meeting URL in Description).
+   - **Description** — start with a one-sentence summary (this becomes the card blurb). Add an `RSVP: https://…` line if registration is via an external form.
+3. Save. The next scheduled rebuild (within ~1 hour) picks it up. To rush it, trigger a redeploy from the Cloudflare Pages dashboard.
 
-The schema is enforced by Zod in `src/content.config.ts` — fields that don't match the shape will fail the build.
+## When an event needs more than a card
+
+Some events warrant long-form copy on their detail page — an agenda, a briefing, a recap. That copy lives in `src/content/event-bodies/<slug>.mdx`.
+
+The slug is `<YYYY-MM-DD>-<slugified-title>` using the event's Pacific-time start date. For "General Meeting" on 2026-05-28 → `2026-05-28-general-meeting`.
+
+```
+pnpm event:new
+```
+
+walks you through it: it prints the GCal field checklist, then optionally scaffolds the body fragment for you.
+
+## Common failures
+
+- **Build fails: "neither a join URL nor a venue"** — the event in GCal has no Location and no meeting link in the Description. Add one.
+- **Build fails: "No upcoming events in the Google Calendar feed"** — every event in the calendar is in the past. Add an upcoming one.
+- **Card summary says "LVBT General Meeting" twice** — the event has no human-written description in GCal, so the summary fell back to the title. Open the event in GCal and write one sentence.
+
+## Full reference
+
+[`docs/explanation/events-pipeline.md`](../explanation/events-pipeline.md) — schema mapping, slug rules, rebuild cadence, the cron Worker.

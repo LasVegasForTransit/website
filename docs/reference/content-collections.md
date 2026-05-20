@@ -4,27 +4,44 @@ All site content lives under `src/content/`. Schemas are enforced by Zod in `src
 
 ## Folder layout
 
-| Folder                     | Type | Drives                                                                                                        |
-| -------------------------- | ---- | ------------------------------------------------------------------------------------------------------------- |
-| `src/content/docs/`        | MDX  | Long-form essays (vision, mission, why-now, problems, strategy). Rendered at `/vision` and `/about/strategy`. |
-| `src/content/pages/`       | MDX  | Body copy for individual site pages (about, contact, get-involved).                                           |
-| `src/content/projects/`    | MDX  | One per project. Drives `/projects` and `/projects/[slug]`.                                                   |
-| `src/content/events/`      | MDX  | One per event. Drives `/events` and `/events/[slug]`.                                                         |
-| `src/content/initiatives/` | JSON | Project tags. Drives the chips on `/projects`.                                                                |
+| Folder                      | Type            | Drives                                                                                                                                             |
+| --------------------------- | --------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `src/content/docs/`         | MDX             | Long-form essays (vision, mission, why-now, problems, strategy). Rendered at `/vision` and `/about/strategy`.                                      |
+| `src/content/pages/`        | MDX             | Body copy for individual site pages (about, contact, get-involved).                                                                                |
+| `src/content/projects/`     | MDX             | One per project. Drives `/projects` and `/projects/[slug]`.                                                                                        |
+| _(events)_                  | Google Calendar | Event metadata. Pulled at build time by the custom loader in `src/lib/events-loader.ts`. See [events pipeline](../explanation/events-pipeline.md). |
+| `src/content/event-bodies/` | MDX             | Optional long-form body for a specific event, keyed by slug. Rendered below the event header on `/events/[slug]`.                                  |
+| `src/content/initiatives/`  | JSON            | Project tags. Drives the chips on `/projects`.                                                                                                     |
 
 ## Frontmatter shapes
 
 ### Event
 
-```yaml
-title: string
-date: ISO 8601 datetime # required, with timezone
-endDate: ISO 8601 datetime # optional
-location: string # required
-featured: boolean # optional, default false
-rsvpUrl: URL # optional
-summary: string # required
+Events come from the public LVBT Google Calendar; there is no MDX frontmatter to author. The custom loader in `src/lib/events-loader.ts` maps calendar fields to this validated shape:
+
+```ts
+{
+  title: string;                 // from GCal SUMMARY
+  date: Date;                    // from GCal DTSTART
+  endDate?: Date;                // from GCal DTEND
+  format: 'virtual' | 'in-person' | 'hybrid';  // derived from location / join URL
+  venue?: { name; addressLocality; addressRegion; addressCountry };
+  joinUrl?: URL;                 // Meet/Zoom/Teams/etc. URL
+  rsvpUrl?: URL;                 // from a `RSVP: <url>` line in the GCal description
+  featured: boolean;             // auto: nearest upcoming event wins
+  summary: string;               // first non-boilerplate paragraph of the GCal description, fallback to title
+}
 ```
+
+Authoring lives in Google Calendar — see [`docs/guides/add-an-event.md`](../guides/add-an-event.md) and [`docs/explanation/events-pipeline.md`](../explanation/events-pipeline.md).
+
+### Event body (optional)
+
+```yaml
+slug: string # must match the event's derived slug (<YYYY-MM-DD>-<slugified-title>, PT date)
+```
+
+MDX body renders below the event header on `/events/[slug]`. Use sparingly — most events ship as header-only.
 
 ### Project
 
@@ -60,4 +77,4 @@ Front-matter is `{ title, summary }` plus an MDX body. Slug is the filename.
 
 ## Templates
 
-Each collection has a `_template.mdx` (or `_template.json`) showing the canonical shape. Copy it when adding new content.
+Each MDX/JSON-backed collection has a `_template.mdx` (or `_template.json`) showing the canonical shape. Copy it when adding new content. Events have no template — they're created in Google Calendar; `pnpm event:new` scaffolds an optional body fragment.

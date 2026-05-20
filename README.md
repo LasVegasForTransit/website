@@ -73,13 +73,9 @@ The full docs live in [`docs/`](./docs/), structured by [Diátaxis](https://diat
 - [Voice and tone](./docs/explanation/voice-and-tone.md) — read before drafting
 - [Content collections reference](./docs/reference/content-collections.md)
 
-### Adding an event in five steps
+### Adding an event
 
-1. Open the repo on [GitHub](https://github.com/) or pull it locally.
-2. Copy `src/content/events/_template.mdx` to a new file like `src/content/events/2026-05-15-launch-mixer.mdx`.
-3. Edit the frontmatter — title, ISO 8601 date with timezone, location, summary.
-4. Write the event description.
-5. Commit to `main`. Cloudflare Pages auto-deploys in ~60–90 seconds.
+Events live in the LVBT Google Calendar, not in this repo. Create the event there; the site rebuilds against the calendar hourly. For events that need long-form copy on their detail page, scaffold an optional MDX body fragment with `pnpm event:new`. Full reference: [docs/explanation/events-pipeline.md](./docs/explanation/events-pipeline.md).
 
 ## Project structure
 
@@ -88,7 +84,7 @@ src/
   content/                  # All editable content (MDX + JSON)
     docs/                   # Long-form essays
     pages/                  # Page body copy
-    events/                 # Events
+    event-bodies/           # Optional long-form body per event (events themselves live in Google Calendar)
     projects/               # Project briefs
     initiatives/            # Project tags (JSON)
   layouts/                  # BaseLayout, DocLayout
