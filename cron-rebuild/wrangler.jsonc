@@ -1,0 +1,22 @@
+{
+  // Separate Cloudflare Worker (not Pages) that runs on a cron schedule and
+  // POSTs to the Pages Deploy Hook so the site rebuilds against the latest
+  // Google Calendar feed. Deploy from this directory:
+  //
+  //   pnpm dlx wrangler deploy
+  //
+  // Set the secret once after deploy:
+  //
+  //   pnpm dlx wrangler secret put PAGES_DEPLOY_HOOK_URL
+  //
+  // The hook URL itself is created in the Cloudflare Pages dashboard:
+  //   Pages → lvbt-website → Settings → Builds & deployments → Deploy hooks.
+  "name": "lvbt-rebuild-cron",
+  "main": "src/index.ts",
+  "compatibility_date": "2025-01-01",
+  "triggers": {
+    // Hourly. The Pages build itself is what re-fetches the calendar; this
+    // is just the kick.
+    "crons": ["0 * * * *"]
+  }
+}

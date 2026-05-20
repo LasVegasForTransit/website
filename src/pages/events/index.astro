@@ -4,8 +4,9 @@ import SectionHeader from '../../components/SectionHeader.astro';
 import EventCard from '../../components/EventCard.astro';
 import { getCollection } from 'astro:content';
 import { whereLabel } from '../../lib/event-format';
+import { site } from '../../lib/site';
 
-const all = await getCollection('events', (e) => !e.id.startsWith('_'));
+const all = await getCollection('events');
 const now = new Date();
 
 const upcoming = all
@@ -41,6 +42,17 @@ const otherUpcoming = featured ? upcoming.filter((e) => e.id !== featured.id) : 
         </p>
       )
     }
+    {
+      /* The Google Calendar is the source of truth for event metadata —
+        the page rebuilds against it on a schedule. Surfacing the link
+        gives readers a one-click subscribe path and a fallback if a
+        rebuild lags behind a recent change. */
+    }
+    <p class="mt-2 text-sm text-[color:var(--color-mute)]">
+      Subscribe in{' '}
+      <a href={site.calendar.url} rel="noopener" target="_blank"> Google Calendar </a>{' '}
+      — that's where event details are kept up to date.
+    </p>
     {
       upcoming.length === 0 ? (
         <div class="mt-8 max-w-2xl space-y-6">

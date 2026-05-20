@@ -106,6 +106,7 @@ Pre-approval to commit applies only when the user has explicitly said "commit" /
 - `scripts/audit/` is the CI/release audit baseline
 - `scripts/validation/git/` is the commit-message validator
 - `src/lib/site.ts` is the runtime config object (org name, URLs, social handles)
+- Events are sourced from a public Google Calendar at build time — see [`docs/explanation/events-pipeline.md`](./docs/explanation/events-pipeline.md). To add an event, create it in GCal; for long-form body copy, scaffold a fragment under `src/content/event-bodies/` via `pnpm event:new`.
 
 ---
 
@@ -114,4 +115,5 @@ Pre-approval to commit applies only when the user has explicitly said "commit" /
 - [`docs/standards/commit-messages.md`](./docs/standards/commit-messages.md)
 - [`docs/standards/commit-scopes.md`](./docs/standards/commit-scopes.md)
 - [`docs/standards/git-guidelines.md`](./docs/standards/git-guidelines.md)
+- [`docs/explanation/events-pipeline.md`](./docs/explanation/events-pipeline.md)
 - [`README.md`](./README.md)

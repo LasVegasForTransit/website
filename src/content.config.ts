@@ -1,6 +1,7 @@
 import { defineCollection } from 'astro:content';
 import { glob } from 'astro/loaders';
 import { z } from 'zod';
+import { calendarEventsLoader } from './lib/events-loader';
 
 const docs = defineCollection({
   loader: glob({ pattern: '**/*.{md,mdx}', base: './src/content/docs' }),
@@ -12,24 +13,14 @@ const docs = defineCollection({
   }),
 });
 
-// Events carry a structured `format` (virtual / in-person / hybrid) that drives
-// every downstream surface: the schema.org `eventAttendanceMode`, the detail-
-// page CTA wording, the card pill, the carousel pill, the "Where" label. No
-// surface parses the location string or sniffs the URL to infer format.
-//
-// Field shape per format (enforced by the superRefine below):
-//
-//   virtual   → `joinUrl` required; `venue` omitted.
-//   in-person → `venue` required (`venue.name: 'TBD'` is the placeholder while
-//               a venue is being secured); `joinUrl` omitted.
-//   hybrid    → both `venue` and `joinUrl` required.
-//
-// `rsvpUrl` is independent of format — any event may register attendees via
-// a separate URL (lu.ma, Eventbrite, etc.). Separating join-URL from RSVP-URL
-// is what lets the CTA say "Join" for a virtual event and "RSVP" for an
-// in-person event without sniffing the URL host.
+// Events are sourced from the public Google Calendar feed (see
+// docs/explanation/events-pipeline.md). The custom loader in
+// src/lib/events-loader.ts fetches the ICS, derives `format` and the
+// per-event slug, auto-features the nearest upcoming event, and emits
+// entries that satisfy the schema below. The schema's job here is now
+// validation, not user-facing authoring shape.
 const events = defineCollection({
-  loader: glob({ pattern: '**/*.{md,mdx}', base: './src/content/events' }),
+  loader: calendarEventsLoader(),
   schema: z
     .object({
       title: z.string(),
@@ -77,6 +68,18 @@ const events = defineCollection({
         });
       }
     }),
+});
+
+// Optional long-form MDX body for an event. File name = event slug
+// (e.g. 2026-05-28-general-meeting.mdx matches the calendar event whose
+// derived slug is 2026-05-28-general-meeting). When a fragment is
+// present, the detail page renders it below the header; otherwise the
+// header is the full page. Frontmatter is intentionally minimal.
+const eventBodies = defineCollection({
+  loader: glob({ pattern: '**/*.{md,mdx}', base: './src/content/event-bodies' }),
+  schema: z.object({
+    slug: z.string(),
+  }),
 });
 
 const projects = defineCollection({
@@ -141,4 +144,4 @@ const glossary = defineCollection({
   }),
 });
 
-export const collections = { docs, events, projects, initiatives, pages, glossary };
+export const collections = { docs, events, eventBodies, projects, initiatives, pages, glossary };

@@ -7,7 +7,7 @@ import { getCollection } from 'astro:content';
 import { buildIcs } from '../../lib/event-ics';
 
 export const getStaticPaths: GetStaticPaths = async () => {
-  const events = await getCollection('events', (e) => !e.id.startsWith('_'));
+  const events = await getCollection('events');
   return events.map((event) => ({
     params: { slug: event.id },
     props: { event },

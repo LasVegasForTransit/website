@@ -4,12 +4,12 @@ import StructuredData from '../../components/seo/StructuredData.astro';
 import ShareButton from '../../components/ShareButton.astro';
 import { eventSchema } from '../../lib/structured-data';
 import { site } from '../../lib/site';
-import { getCollection, render } from 'astro:content';
+import { getCollection, getEntry, render } from 'astro:content';
 import { whereLabel } from '../../lib/event-format';
 import { relativeLabel } from '../../lib/event-time';
 
 export async function getStaticPaths() {
-  const events = await getCollection('events', (e) => !e.id.startsWith('_'));
+  const events = await getCollection('events');
   return events.map((event) => ({
     params: { slug: event.id },
     props: { event },
@@ -17,7 +17,11 @@ export async function getStaticPaths() {
 }
 
 const { event } = Astro.props;
-const { Content } = await render(event);
+// Body content lives in a sibling collection keyed by slug. Optional —
+// many events ship with just the header (when/where/CTAs); only events
+// with deeper context get a fragment in src/content/event-bodies/.
+const body = await getEntry('eventBodies', event.id);
+const BodyContent = body ? (await render(body)).Content : null;
 const eventUrl = new URL(Astro.url.pathname, site.url).toString();
 
 const dateLabel = new Intl.DateTimeFormat('en-US', {
@@ -177,8 +181,14 @@ const icsHref = `/events/${event.id}.ics`;
       />
     </div>
   </header>
-  <hr class="rule-thick container-page" />
-  <div class="container-prose pt-8 pb-16 md:pt-10 md:pb-16 prose-doc">
-    <Content />
-  </div>
+  {
+    BodyContent && (
+      <>
+        <hr class="rule-thick container-page" />
+        <div class="container-prose pt-8 pb-16 md:pt-10 md:pb-16 prose-doc">
+          <BodyContent />
+        </div>
+      </>
+    )
+  }
 </BaseLayout>

@@ -26,6 +26,16 @@ export const site = {
     label: 'Donate',
     url: pick('PUBLIC_LVBT_DONATE_URL', 'https://givebutter.com/lvbt'),
   },
+  // Public Google Calendar. Canonical source for event metadata (when /
+  // where / how to join). The site rebuilds against this calendar on a
+  // schedule; see docs/explanation/events-pipeline.md. `url` is the
+  // human-facing embed view; `icsUrl` is the machine-readable feed the
+  // build pulls.
+  calendar: {
+    url: 'https://calendar.google.com/calendar/embed?src=c_dd8ea3396a62c41b5ae5fd659d7901cd11b45bc470832cacdf79b00884bf671b%40group.calendar.google.com&ctz=America%2FLos_Angeles',
+    icsUrl:
+      'https://calendar.google.com/calendar/ical/c_dd8ea3396a62c41b5ae5fd659d7901cd11b45bc470832cacdf79b00884bf671b%40group.calendar.google.com/public/basic.ics',
+  },
   org: {
     legalName: 'Las Vegans for Better Transit',
     // TODO: update to full PO box mailing address once secured.
