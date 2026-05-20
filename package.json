@@ -32,7 +32,7 @@
     "prepare": "git config --local core.hooksPath .githooks 2>/dev/null || true"
   },
   "lint-staged": {
-    "*.{js,ts,tsx,astro,md,mdx,css,json,yml,yaml}": "prettier --write"
+    "*": "prettier --write --ignore-unknown"
   },
   "dependencies": {
     "@astrojs/mdx": "^5.0.6",

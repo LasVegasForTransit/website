@@ -13,16 +13,15 @@ if [ -z "$STAGED" ]; then
 fi
 
 # ----------------------------------------------------------------------------
-# Prettier via lint-staged. Auto-formats staged files in place and re-stages
-# them. Skip when no staged file matches the lint-staged glob — avoids paying
-# the pnpm + lint-staged cold-start cost (~250 ms) on, e.g., a `.sh`-only or
-# `.txt`-only commit.
+# Prettier via lint-staged. Auto-formats every staged file prettier can handle
+# (the lint-staged config uses `*` + `--ignore-unknown`, so prettier decides
+# what's formattable). Runs unconditionally — the ~250ms cold-start is the
+# price of never letting an unformatted file slip through and fail
+# `prettier --check` in CI.
 # ----------------------------------------------------------------------------
-if printf '%s\n' "$STAGED" | grep -qE '\.(js|ts|tsx|astro|md|mdx|css|json|ya?ml)$'; then
-  if ! NODE_OPTIONS="--max-old-space-size=4096" pnpm --silent exec lint-staged; then
-    printf '\n❌ Commit blocked: lint-staged failed. Fix the issues above and re-stage.\n\n' >&2
-    exit 1
-  fi
+if ! NODE_OPTIONS="--max-old-space-size=4096" pnpm --silent exec lint-staged; then
+  printf '\n❌ Commit blocked: lint-staged failed. Fix the issues above and re-stage.\n\n' >&2
+  exit 1
 fi
 
 # ----------------------------------------------------------------------------

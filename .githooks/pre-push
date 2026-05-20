@@ -6,8 +6,11 @@
 #   1. Working tree must be clean (checks build from your working tree, not
 #      from the commits you're pushing).
 #   2. Every commit between BASE..HEAD must follow conventional format.
-#   3. pnpm typecheck (astro check + tsc -p scripts/tsconfig.json).
-#   4. pnpm build (astro build).
+#   3. pnpm lint (prettier --write .) and bail if it produces a diff. CI
+#      runs `prettier --check .` which can hard-fail the deploy, so this
+#      gate makes sure formatting drift is fixed locally first.
+#   4. pnpm typecheck (astro check + tsc -p scripts/tsconfig.json).
+#   5. pnpm build (astro build).
 #
 # Adapted from lovelace/.githooks/pre-push, trimmed to this repo's stack
 # (Astro + pnpm + Cloudflare Pages; no Vercel env reconciliation, no Rust,
@@ -30,7 +33,7 @@ if [ -n "${NO_COLOR:-}" ] || [ ! -t 1 ]; then
     BOLD='' DIM='' RED='' GREEN='' YELLOW='' CYAN='' RESET=''
 fi
 
-TOTAL_STEPS=4
+TOTAL_STEPS=5
 STEP_START=0
 
 step() {
@@ -154,9 +157,43 @@ fi
 pass "All commit messages follow conventional format ($(step_time))"
 
 # ---------------------------------------------------------------------------
-# 3. TypeScript / Astro check
+# 3. Prettier formatting -- auto-fixes drift instead of failing. CI runs
+# `prettier --check .` and a hard fail there blocks the production deploy,
+# so the local pre-push runs `prettier --write .` and stops the push only
+# if it produces a non-empty diff (which it shouldn't, because pre-commit
+# already formatted everything).
 # ---------------------------------------------------------------------------
-step 3 "Running pnpm typecheck"
+step 3 "Auto-formatting (prettier --write)"
+hint "Running prettier --write across the repo; never fail on fixable drift."
+
+if ! pnpm --silent lint; then
+    fail "Prettier crashed"
+    echo ""
+    cmd "pnpm lint"
+    echo ""
+    exit 1
+fi
+
+PRETTIER_DIFF=$(git diff --name-only 2>/dev/null || true)
+if [ -n "$PRETTIER_DIFF" ]; then
+    fail "Prettier reformatted files; commit them before pushing"
+    echo ""
+    printf "  ${BOLD}Reformatted${RESET}\n"
+    echo "$PRETTIER_DIFF" | filelist
+    echo ""
+    printf "  ${BOLD}Fix:${RESET}\n"
+    cmd "git add ${PRETTIER_DIFF}"
+    cmd "git commit --amend --no-edit  # or a new commit"
+    echo ""
+    exit 1
+fi
+
+pass "Formatting clean ($(step_time))"
+
+# ---------------------------------------------------------------------------
+# 4. TypeScript / Astro check
+# ---------------------------------------------------------------------------
+step 4 "Running pnpm typecheck"
 hint "astro check + tsc -p scripts/tsconfig.json"
 
 if ! pnpm typecheck; then
@@ -170,9 +207,9 @@ fi
 pass "Typecheck clean ($(step_time))"
 
 # ---------------------------------------------------------------------------
-# 4. Build (skipped when the push only touches paths that can't change output)
+# 5. Build (skipped when the push only touches paths that can't change output)
 # ---------------------------------------------------------------------------
-step 4 "Running pnpm build"
+step 5 "Running pnpm build"
 hint "astro build"
 
 # Paths that never affect the built site: repo docs (.md, not .mdx — MDX is
