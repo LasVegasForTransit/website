@@ -78,14 +78,18 @@ const mobileAssertions = {
 // entirely and lhci picks up the mobile defaults.
 const settings = isMobile ? {} : { preset: 'desktop' };
 
+// Three runs per URL, median-aggregated. Single-run Lighthouse on the
+// GH Actions runner has ±5–10% score variance under 4x mobile CPU
+// throttling; one bad run was tanking TBT and the perf score. lhci
+// asserts against the median of N>1 runs, so three is the smallest
+// sample size that's stable. ~2 extra minutes of CI for a budget gate
+// that doesn't flap.
 const collect = isProd
-  ? // No staticDistDir on prod: lhci hits the live origin directly. Two
-    // runs averaged out so a single noisy load doesn't tank the report.
-    { url: prodUrl, numberOfRuns: 2, settings }
+  ? { url: prodUrl, numberOfRuns: 3, settings }
   : {
       staticDistDir: './dist',
       url: distUrl,
-      numberOfRuns: 1,
+      numberOfRuns: 3,
       settings,
     };
 
