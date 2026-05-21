@@ -73,19 +73,15 @@ If you rename a calendar event, the URL changes. That's working as intended — 
 
 ## Rebuild cadence
 
-Pages doesn't natively run cron triggers, so a small separate Cloudflare Worker under [`cron-rebuild/`](../../cron-rebuild/) runs hourly and POSTs the Pages Deploy Hook. The Pages build re-fetches the calendar.
+A GitHub Actions scheduled workflow at [`.github/workflows/cron-rebuild.yml`](../../.github/workflows/cron-rebuild.yml) fires every 2 hours and dispatches the `Deploy production` workflow. The Pages build re-fetches the calendar on its way through.
 
-Setup:
+Why every 2 hours: Cloudflare Pages' Free plan allows 500 builds/month. Every 2 hours = 360/month, comfortably under the cap. Bump the cron to `0 * * * *` (hourly) if the project upgrades to Pro.
 
-1. Cloudflare Pages dashboard → Settings → Builds & deployments → **create a Deploy Hook** for production.
-2. From `cron-rebuild/`:
-   ```
-   pnpm dlx wrangler deploy
-   pnpm dlx wrangler secret put PAGES_DEPLOY_HOOK_URL
-   # paste the hook URL when prompted
-   ```
+Why GitHub Actions and not a Cloudflare Worker: the trigger needs zero long-lived credentials this way. The workflow uses the auto-issued `GITHUB_TOKEN`, scope-limited to `actions: write` on this repo. No PATs, no Worker secrets, no API token rotation. Logs surface in the Actions UI alongside every other deploy.
 
-Worst-case staleness is ~1 hour (cron tick) + however long Google's ICS edge cache holds (often near-instant, can be ~hours for public calendars). For a same-day correction, trigger a redeploy manually from the Pages dashboard.
+For a same-day correction, push a commit or click **Run workflow** on the `cron-rebuild` (or `Deploy production`) workflow page — both trigger an immediate redeploy.
+
+Worst-case staleness: ~2 hours (cron tick) + however long Google's ICS edge cache holds (typically near-instant, can be a few hours for public calendars).
 
 ## Failure modes the build will surface
 

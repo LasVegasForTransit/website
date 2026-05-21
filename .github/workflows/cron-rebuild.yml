@@ -1,0 +1,32 @@
+name: cron-rebuild
+
+# Periodic redeploy so the events page picks up Google Calendar changes
+# without anyone having to push. Triggers `Deploy production` via
+# workflow_dispatch — that workflow re-fetches the public LVBT calendar
+# during its build.
+#
+# Cadence: every 2 hours = 12 runs/day = 360/month, under Cloudflare Pages
+# Free's 500-builds/month ceiling. Bump to "0 * * * *" if upgraded to Pro.
+#
+# Pipeline doc: docs/explanation/events-pipeline.md
+
+on:
+  schedule:
+    - cron: '0 */2 * * *'
+  # Manual button in the Actions UI for ad-hoc rebuilds (e.g. after a
+  # same-day calendar correction that can't wait two hours).
+  workflow_dispatch:
+
+permissions:
+  # Only what's needed to dispatch another workflow.
+  actions: write
+  contents: read
+
+jobs:
+  dispatch:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Dispatch Deploy production
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh workflow run deploy-production.yml --ref main --repo ${{ github.repository }}
