@@ -73,15 +73,15 @@ If you rename a calendar event, the URL changes. That's working as intended — 
 
 ## Rebuild cadence
 
-A GitHub Actions scheduled workflow at [`.github/workflows/cron-rebuild.yml`](../../.github/workflows/cron-rebuild.yml) fires every 2 hours and dispatches the `Deploy production` workflow. The Pages build re-fetches the calendar on its way through.
+A GitHub Actions scheduled workflow at [`.github/workflows/cron-rebuild.yml`](../../.github/workflows/cron-rebuild.yml) fires twice a day (roughly morning and evening PT) and dispatches the `Deploy production` workflow. The Pages build re-fetches the calendar on its way through.
 
-Why every 2 hours: Cloudflare Pages' Free plan allows 500 builds/month. Every 2 hours = 360/month, comfortably under the cap. Bump the cron to `0 * * * *` (hourly) if the project upgrades to Pro.
+Why twice a day: event metadata changes a few times a week at most; a morning and an evening rebuild keep the site current without burning Cloudflare Pages Free's 500-builds/month budget (twice daily = 60/month). Tighten the cron in the workflow file if events start moving faster than that.
 
 Why GitHub Actions and not a Cloudflare Worker: the trigger needs zero long-lived credentials this way. The workflow uses the auto-issued `GITHUB_TOKEN`, scope-limited to `actions: write` on this repo. No PATs, no Worker secrets, no API token rotation. Logs surface in the Actions UI alongside every other deploy.
 
 For a same-day correction, push a commit or click **Run workflow** on the `cron-rebuild` (or `Deploy production`) workflow page — both trigger an immediate redeploy.
 
-Worst-case staleness: ~2 hours (cron tick) + however long Google's ICS edge cache holds (typically near-instant, can be a few hours for public calendars).
+Worst-case staleness: ~12 hours (gap between the morning and evening rebuilds) + however long Google's ICS edge cache holds (typically near-instant, can be a few hours for public calendars). For anything time-sensitive, hit **Run workflow** in the Actions UI rather than wait.
 
 ## Failure modes the build will surface
 

@@ -5,14 +5,17 @@ name: cron-rebuild
 # workflow_dispatch — that workflow re-fetches the public LVBT calendar
 # during its build.
 #
-# Cadence: every 2 hours = 12 runs/day = 360/month, under Cloudflare Pages
-# Free's 500-builds/month ceiling. Bump to "0 * * * *" if upgraded to Pro.
+
+# Cadence: twice daily at 02:00 and 14:00 UTC — roughly 7am and 7pm PT
+# during PDT, 6am and 6pm during PST. 60 builds/month, well under
+# Cloudflare Pages Free's 500/month ceiling. Tighten the cron if events
+# start changing more often than morning/evening.
 #
 # Pipeline doc: docs/explanation/events-pipeline.md
 
 on:
   schedule:
-    - cron: '0 */2 * * *'
+    - cron: '0 2,14 * * *'
   # Manual button in the Actions UI for ad-hoc rebuilds (e.g. after a
   # same-day calendar correction that can't wait two hours).
   workflow_dispatch:
