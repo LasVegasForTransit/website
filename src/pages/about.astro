@@ -138,9 +138,24 @@ const contacts: Array<{ label: string; email: string; context: string }> = [
     <p class="lede mt-6 max-w-2xl">
       The newsletter goes out from <a href="/go" class="body-link">Get involved</a>. Day-to-day, we
       post on
-      <a href={site.social.instagram} rel="noopener" class="body-link">Instagram</a>
-      and <a href={site.social.bluesky} rel="noopener" class="body-link">Bluesky</a>. For anything
-      more specific, the inboxes below all reach a real person.
+      {
+        site.social.instagram ? (
+          <a href={site.social.instagram} rel="noopener" class="body-link">
+            Instagram
+          </a>
+        ) : (
+          'Instagram'
+        )
+      }
+      and {
+        site.social.bluesky ? (
+          <a href={site.social.bluesky} rel="noopener" class="body-link">
+            Bluesky
+          </a>
+        ) : (
+          'Bluesky'
+        )
+      }. For anything more specific, the inboxes below all reach a real person.
     </p>
 
     <div class="mt-12 grid gap-px bg-ink border border-ink md:grid-cols-3">

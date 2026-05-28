@@ -58,9 +58,42 @@ const { Content } = await render(contactPage);
 
       <h2 class="text-title-md mt-10">Follow us</h2>
       <ul class="mt-4 space-y-2 text-sm font-semibold">
-        <li><a href={site.social.instagram} rel="noopener" class="contact-link">Instagram →</a></li>
-        <li><a href={site.social.linkedin} rel="noopener" class="contact-link">LinkedIn →</a></li>
-        <li><a href={site.social.bluesky} rel="noopener" class="contact-link">Bluesky →</a></li>
+        {
+          site.social.instagram && (
+            <li>
+              <a href={site.social.instagram} rel="noopener" class="contact-link">
+                Instagram →
+              </a>
+            </li>
+          )
+        }
+        {
+          site.social.linkedin && (
+            <li>
+              <a href={site.social.linkedin} rel="noopener" class="contact-link">
+                LinkedIn →
+              </a>
+            </li>
+          )
+        }
+        {
+          site.social.bluesky && (
+            <li>
+              <a href={site.social.bluesky} rel="noopener" class="contact-link">
+                Bluesky →
+              </a>
+            </li>
+          )
+        }
+        {
+          site.social.discord && (
+            <li>
+              <a href={site.social.discord} rel="noopener" class="contact-link">
+                Discord →
+              </a>
+            </li>
+          )
+        }
       </ul>
     </aside>
   </section>

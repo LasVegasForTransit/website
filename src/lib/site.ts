@@ -2,9 +2,17 @@ type EnvLike = Record<string, string | undefined>;
 
 const env: EnvLike = (import.meta as unknown as { env?: EnvLike }).env ?? {};
 
-function pick(key: string, fallback: string): string {
+// Deployment config — social profiles, the Discord invite, and the donation
+// URL — comes exclusively from PUBLIC_LVBT_* env vars (`.env.local` in dev,
+// the Cloudflare Pages dashboard in prod). There are deliberately NO fallback
+// literals: an unset var resolves to `undefined`, consumers skip rendering
+// that link rather than ship a stale URL, and we warn at build so the gap is
+// visible in the logs instead of silent. See .env.example for the full list.
+function urlFromEnv(key: string): string | undefined {
   const value = env[key];
-  return value && value.trim() ? value : fallback;
+  if (value && value.trim()) return value;
+  console.warn(`[site config] ${key} is unset — its link will be hidden.`);
+  return undefined;
 }
 
 export const site = {
@@ -18,13 +26,14 @@ export const site = {
     partners: 'partners@lasvegasfortransit.org',
   },
   social: {
-    instagram: pick('PUBLIC_LVBT_INSTAGRAM', 'https://instagram.com/lasvegasfortransit'),
-    linkedin: pick('PUBLIC_LVBT_LINKEDIN', 'https://www.linkedin.com/company/lasvegasfortransit/'),
-    bluesky: pick('PUBLIC_LVBT_BLUESKY', 'https://bsky.app/profile/lasvegasfortransit.org'),
+    instagram: urlFromEnv('PUBLIC_LVBT_INSTAGRAM'),
+    linkedin: urlFromEnv('PUBLIC_LVBT_LINKEDIN'),
+    bluesky: urlFromEnv('PUBLIC_LVBT_BLUESKY'),
+    discord: urlFromEnv('PUBLIC_LVBT_DISCORD'),
   },
   donate: {
     label: 'Donate',
-    url: pick('PUBLIC_LVBT_DONATE_URL', 'https://givebutter.com/lvbt'),
+    url: urlFromEnv('PUBLIC_LVBT_DONATE_URL'),
   },
   // Public Google Calendar. Canonical source for event metadata (when /
   // where / how to join). The site rebuilds against this calendar on a

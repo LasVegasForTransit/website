@@ -62,12 +62,16 @@ const topGroups: Group[] = [
         href: '/go',
         description: 'Newsletter, volunteer signup, and ways to plug in.',
       },
-      {
-        name: 'Donate',
-        href: site.donate.url,
-        description: 'One-time and recurring gifts on GiveButter.',
-        external: true,
-      },
+      ...(site.donate.url
+        ? [
+            {
+              name: 'Donate',
+              href: site.donate.url,
+              description: 'One-time and recurring gifts on GiveButter.',
+              external: true,
+            },
+          ]
+        : []),
       {
         name: 'Contact',
         href: '/contact',
@@ -80,24 +84,36 @@ const topGroups: Group[] = [
 // Off-site presences. Donate lives in "Take action" above (it's an action,
 // even if it leaves the site); these are the org's public profiles.
 const elsewhere: Entry[] = [
-  {
-    name: 'Instagram',
-    href: site.social.instagram,
-    description: '@lasvegasfortransit — organizing posts, photos, action calls.',
-    external: true,
-  },
-  {
-    name: 'LinkedIn',
-    href: site.social.linkedin,
-    description: 'Las Vegans for Better Transit — organization updates and public profile.',
-    external: true,
-  },
-  {
-    name: 'Bluesky',
-    href: site.social.bluesky,
-    description: '@lasvegasfortransit.org — longer-form posts and threads.',
-    external: true,
-  },
+  ...(site.social.instagram
+    ? [
+        {
+          name: 'Instagram',
+          href: site.social.instagram,
+          description: '@lasvegasfortransit — organizing posts, photos, action calls.',
+          external: true,
+        },
+      ]
+    : []),
+  ...(site.social.linkedin
+    ? [
+        {
+          name: 'LinkedIn',
+          href: site.social.linkedin,
+          description: 'Las Vegans for Better Transit — organization updates and public profile.',
+          external: true,
+        },
+      ]
+    : []),
+  ...(site.social.bluesky
+    ? [
+        {
+          name: 'Bluesky',
+          href: site.social.bluesky,
+          description: '@lasvegasfortransit.org — longer-form posts and threads.',
+          external: true,
+        },
+      ]
+    : []),
   {
     name: 'GitHub',
     href: 'https://github.com/LasVegasForTransit/website',

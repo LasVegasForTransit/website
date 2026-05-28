@@ -136,25 +136,58 @@ import { site } from '../../lib/site';
         <p class="eyebrow text-accent-soft">Get involved</p>
         <ul class="mt-5 space-y-3 text-base font-semibold">
           <li><a href="/go" class="nav-link no-underline hover:text-accent">Join us</a></li>
-          <li>
-            <a href={site.donate.url} rel="noopener" class="nav-link no-underline hover:text-accent"
-              >Donate</a
-            >
-          </li>
-          <li>
-            <a
-              href={site.social.instagram}
-              rel="noopener"
-              class="nav-link no-underline hover:text-accent">Instagram</a
-            >
-          </li>
-          <li>
-            <a
-              href={site.social.linkedin}
-              rel="noopener"
-              class="nav-link no-underline hover:text-accent">LinkedIn</a
-            >
-          </li>
+          {
+            site.donate.url && (
+              <li>
+                <a
+                  href={site.donate.url}
+                  rel="noopener"
+                  class="nav-link no-underline hover:text-accent"
+                >
+                  Donate
+                </a>
+              </li>
+            )
+          }
+          {
+            site.social.instagram && (
+              <li>
+                <a
+                  href={site.social.instagram}
+                  rel="noopener"
+                  class="nav-link no-underline hover:text-accent"
+                >
+                  Instagram
+                </a>
+              </li>
+            )
+          }
+          {
+            site.social.linkedin && (
+              <li>
+                <a
+                  href={site.social.linkedin}
+                  rel="noopener"
+                  class="nav-link no-underline hover:text-accent"
+                >
+                  LinkedIn
+                </a>
+              </li>
+            )
+          }
+          {
+            site.social.discord && (
+              <li>
+                <a
+                  href={site.social.discord}
+                  rel="noopener"
+                  class="nav-link no-underline hover:text-accent"
+                >
+                  Discord
+                </a>
+              </li>
+            )
+          }
           <li>
             <a href={`mailto:${site.email.general}`} class="nav-link no-underline hover:text-accent"
               >Email</a

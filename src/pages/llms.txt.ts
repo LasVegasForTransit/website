@@ -14,6 +14,27 @@ export const prerender = true;
 
 const u = (path: string): string => new URL(path, site.url).toString();
 
+// Lines whose URL comes from env (donate, socials) drop out entirely when the
+// corresponding PUBLIC_LVBT_* var is unset — no dead links in the LLM index.
+const takeAction = [
+  `- [Get involved](${u('/go')}): newsletter,\n  volunteer signup, and ways to plug in`,
+  site.donate.url &&
+    `- [Donate](${site.donate.url}): one-time and recurring\n  gifts on GiveButter`,
+  `- [Contact](${u('/contact')}): general, press,\n  and partnership contacts`,
+]
+  .filter(Boolean)
+  .join('\n');
+
+const offSite = [
+  site.social.instagram && `- [Instagram](${site.social.instagram}):\n  @lasvegasfortransit`,
+  site.social.linkedin &&
+    `- [LinkedIn](${site.social.linkedin}): Las\n  Vegans for Better Transit organization page`,
+  site.social.bluesky && `- [Bluesky](${site.social.bluesky}):\n  @lasvegasfortransit.org`,
+  `- [GitHub](https://github.com/LasVegasForTransit/website): the source\n  of this website; we build in public`,
+]
+  .filter(Boolean)
+  .join('\n');
+
 const body = `# ${site.name}
 
 > ${site.tagline}
@@ -67,22 +88,10 @@ The work runs across five initiatives:
   talks, and organizing actions
 
 ## Take action
-- [Get involved](${u('/go')}): newsletter,
-  volunteer signup, and ways to plug in
-- [Donate](${site.donate.url}): one-time and recurring
-  gifts on GiveButter
-- [Contact](${u('/contact')}): general, press,
-  and partnership contacts
+${takeAction}
 
 ## Off-site
-- [Instagram](${site.social.instagram}):
-  @lasvegasfortransit
-- [LinkedIn](${site.social.linkedin}): Las
-  Vegans for Better Transit organization page
-- [Bluesky](${site.social.bluesky}):
-  @lasvegasfortransit.org
-- [GitHub](https://github.com/LasVegasForTransit/website): the source
-  of this website; we build in public
+${offSite}
 
 ## Optional
 - [Full content](${u('/llms-full.txt')}): every

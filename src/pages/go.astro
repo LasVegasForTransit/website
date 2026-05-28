@@ -39,18 +39,37 @@ const sharePitchUrl =
       </p>
       <p class="mt-6 text-sm font-bold uppercase tracking-wider">Form below ↓</p>
     </CarouselItem>
-    <CarouselItem href={site.social.instagram} external>
-      <p class="eyebrow">Instagram</p>
-      <p class="text-title-lg mt-3">Follow @lasvegasfortransit.</p>
-      <p class="mt-4 leading-relaxed">
-        Visual storytelling from the Valley — project updates, event posts.
-      </p>
-    </CarouselItem>
-    <CarouselItem href={site.social.bluesky} external>
-      <p class="eyebrow">Bluesky</p>
-      <p class="text-title-lg mt-3">Where the urbanism conversation actually happens.</p>
-      <p class="mt-4 leading-relaxed">@lasvegasfortransit.org</p>
-    </CarouselItem>
+    {
+      site.social.instagram && (
+        <CarouselItem href={site.social.instagram} external>
+          <p class="eyebrow">Instagram</p>
+          <p class="text-title-lg mt-3">Follow @lasvegasfortransit.</p>
+          <p class="mt-4 leading-relaxed">
+            Visual storytelling from the Valley — project updates, event posts.
+          </p>
+        </CarouselItem>
+      )
+    }
+    {
+      site.social.bluesky && (
+        <CarouselItem href={site.social.bluesky} external>
+          <p class="eyebrow">Bluesky</p>
+          <p class="text-title-lg mt-3">Where the urbanism conversation actually happens.</p>
+          <p class="mt-4 leading-relaxed">@lasvegasfortransit.org</p>
+        </CarouselItem>
+      )
+    }
+    {
+      site.social.discord && (
+        <CarouselItem href={site.social.discord} external>
+          <p class="eyebrow">Discord</p>
+          <p class="text-title-lg mt-3">Where the organizing actually happens.</p>
+          <p class="mt-4 leading-relaxed">
+            Meet the volunteers, jump into a working group, and help plan the next push.
+          </p>
+        </CarouselItem>
+      )
+    }
     <CarouselItem href={sharePitchUrl} external>
       <p class="text-title-lg">Quote and share our pitch.</p>
       <p class="mt-4 leading-relaxed">A pre-written post about the cuts, ready to send.</p>
@@ -188,16 +207,20 @@ const sharePitchUrl =
 
   {/* IF YOU HAVE MONEY — not a time tier; kept distinct */}
   <Carousel title="If you have money">
-    <CarouselItem href={site.donate.url} external>
-      <p class="text-title-lg">
-        Every dollar buys a sign, prints a report, fuels an hour of organizer time.
-      </p>
-      <p class="mt-4 leading-relaxed">
-        We're entirely volunteer-run. Donations make the difference between sending a letter to one
-        legislator and sending one to twenty.
-      </p>
-      <p class="mt-6 text-sm font-bold uppercase tracking-wider">Give on Givebutter →</p>
-    </CarouselItem>
+    {
+      site.donate.url && (
+        <CarouselItem href={site.donate.url} external>
+          <p class="text-title-lg">
+            Every dollar buys a sign, prints a report, fuels an hour of organizer time.
+          </p>
+          <p class="mt-4 leading-relaxed">
+            We're entirely volunteer-run. Donations make the difference between sending a letter to
+            one legislator and sending one to twenty.
+          </p>
+          <p class="mt-6 text-sm font-bold uppercase tracking-wider">Give on Givebutter →</p>
+        </CarouselItem>
+      )
+    }
     {
       /* TODO: RESTORE WHEN READY — monthly contributions and tax-
         deductibility require full 501(c)(3) incorporation. Flip the
