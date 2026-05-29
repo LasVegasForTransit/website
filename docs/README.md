@@ -32,6 +32,7 @@ Information you look up, not read.
 - [Bootstrap CLI](./reference/bootstrap.md) — phases, flags, state file
 - [Deployment pipeline](./reference/deployment-pipeline.md) — how code gets from `git push` to lasvegasfortransit.org
 - [Key facts](./reference/key-facts.md) — verified numbers used across copy
+- [Newsletter signup & verification](./reference/newsletter-signup.md) — the on-site subscribe form, Beehiiv config, double opt-in
 - [Newsletter operations](./reference/newsletter-ops.md) — Ghost(Pro) workflow, deliverability, send checklist
 
 ## Explanation

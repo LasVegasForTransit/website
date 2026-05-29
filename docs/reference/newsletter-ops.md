@@ -2,6 +2,8 @@
 
 How to publish, send, and maintain the LVBT newsletter on Ghost(Pro). For strategic framing, see [comms-strategy.md](../explanation/comms-strategy.md). For why we picked Ghost, see [decisions/newsletter-platform.md](../explanation/decisions/newsletter-platform.md).
 
+> **Platform note.** The on-site subscribe form currently submits to **Beehiiv**, not Ghost — see [newsletter-signup.md](./newsletter-signup.md). This ops guide (and the decision record) still describe Ghost(Pro). Reconcile the platform choice; until then, treat the Ghost authoring/send workflow below as aspirational, and Beehiiv as the live signup system.
+
 ## Surface
 
 - **Domain:** `journal.lasvegasfortransit.org` (Cloudflare CNAME → Ghost(Pro) alias domain)
