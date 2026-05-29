@@ -29,8 +29,18 @@ runs:
       shell: bash
       run: pnpm check:docs
 
+    # Deployment config (social/donate/Discord URLs) is sourced from env at
+    # build time — see src/lib/site.ts. The values live as repository variables
+    # so an unset one is loud (the build warns) rather than silently shipping a
+    # stale literal. A missing var hides its link; it does not fail the build.
     - name: Build
       shell: bash
+      env:
+        PUBLIC_LVBT_INSTAGRAM: ${{ vars.PUBLIC_LVBT_INSTAGRAM }}
+        PUBLIC_LVBT_LINKEDIN: ${{ vars.PUBLIC_LVBT_LINKEDIN }}
+        PUBLIC_LVBT_BLUESKY: ${{ vars.PUBLIC_LVBT_BLUESKY }}
+        PUBLIC_LVBT_DISCORD: ${{ vars.PUBLIC_LVBT_DISCORD }}
+        PUBLIC_LVBT_DONATE_URL: ${{ vars.PUBLIC_LVBT_DONATE_URL }}
       run: pnpm build
 
     - name: Upload dist artifact
