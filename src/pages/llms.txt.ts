@@ -26,6 +26,8 @@ const takeAction = [
   .join('\n');
 
 const offSite = [
+  site.social.discord &&
+    `- [Discord](${site.social.discord}): community chat\n  where volunteers coordinate and the organizing happens`,
   site.social.instagram && `- [Instagram](${site.social.instagram}):\n  @lasvegasfortransit`,
   site.social.linkedin &&
     `- [LinkedIn](${site.social.linkedin}): Las\n  Vegans for Better Transit organization page`,

@@ -150,6 +150,19 @@ import { site } from '../../lib/site';
             )
           }
           {
+            site.social.discord && (
+              <li>
+                <a
+                  href={site.social.discord}
+                  rel="noopener"
+                  class="nav-link no-underline hover:text-accent"
+                >
+                  Discord
+                </a>
+              </li>
+            )
+          }
+          {
             site.social.instagram && (
               <li>
                 <a
@@ -171,19 +184,6 @@ import { site } from '../../lib/site';
                   class="nav-link no-underline hover:text-accent"
                 >
                   LinkedIn
-                </a>
-              </li>
-            )
-          }
-          {
-            site.social.discord && (
-              <li>
-                <a
-                  href={site.social.discord}
-                  rel="noopener"
-                  class="nav-link no-underline hover:text-accent"
-                >
-                  Discord
                 </a>
               </li>
             )

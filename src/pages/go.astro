@@ -40,6 +40,17 @@ const sharePitchUrl =
       <p class="mt-6 text-sm font-bold uppercase tracking-wider">Form below ↓</p>
     </CarouselItem>
     {
+      site.social.discord && (
+        <CarouselItem href={site.social.discord} external>
+          <p class="eyebrow">Discord</p>
+          <p class="text-title-lg mt-3">Where the organizing actually happens.</p>
+          <p class="mt-4 leading-relaxed">
+            Meet the volunteers, jump into a working group, and help plan the next push.
+          </p>
+        </CarouselItem>
+      )
+    }
+    {
       site.social.instagram && (
         <CarouselItem href={site.social.instagram} external>
           <p class="eyebrow">Instagram</p>
@@ -56,17 +67,6 @@ const sharePitchUrl =
           <p class="eyebrow">Bluesky</p>
           <p class="text-title-lg mt-3">Where the urbanism conversation actually happens.</p>
           <p class="mt-4 leading-relaxed">@lasvegasfortransit.org</p>
-        </CarouselItem>
-      )
-    }
-    {
-      site.social.discord && (
-        <CarouselItem href={site.social.discord} external>
-          <p class="eyebrow">Discord</p>
-          <p class="text-title-lg mt-3">Where the organizing actually happens.</p>
-          <p class="mt-4 leading-relaxed">
-            Meet the volunteers, jump into a working group, and help plan the next push.
-          </p>
         </CarouselItem>
       )
     }

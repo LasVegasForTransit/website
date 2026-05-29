@@ -59,6 +59,15 @@ const { Content } = await render(contactPage);
       <h2 class="text-title-md mt-10">Follow us</h2>
       <ul class="mt-4 space-y-2 text-sm font-semibold">
         {
+          site.social.discord && (
+            <li>
+              <a href={site.social.discord} rel="noopener" class="contact-link">
+                Discord →
+              </a>
+            </li>
+          )
+        }
+        {
           site.social.instagram && (
             <li>
               <a href={site.social.instagram} rel="noopener" class="contact-link">
@@ -81,15 +90,6 @@ const { Content } = await render(contactPage);
             <li>
               <a href={site.social.bluesky} rel="noopener" class="contact-link">
                 Bluesky →
-              </a>
-            </li>
-          )
-        }
-        {
-          site.social.discord && (
-            <li>
-              <a href={site.social.discord} rel="noopener" class="contact-link">
-                Discord →
               </a>
             </li>
           )

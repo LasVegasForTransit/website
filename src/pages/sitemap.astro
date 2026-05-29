@@ -84,6 +84,17 @@ const topGroups: Group[] = [
 // Off-site presences. Donate lives in "Take action" above (it's an action,
 // even if it leaves the site); these are the org's public profiles.
 const elsewhere: Entry[] = [
+  ...(site.social.discord
+    ? [
+        {
+          name: 'Discord',
+          href: site.social.discord,
+          description:
+            'The community chat — where volunteers coordinate and the organizing happens.',
+          external: true,
+        },
+      ]
+    : []),
   ...(site.social.instagram
     ? [
         {
