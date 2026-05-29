@@ -63,6 +63,12 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
       email,
       reactivate_existing: true,
       send_welcome_email: true,
+      // Force Beehiiv's double opt-in regardless of the publication setting:
+      // the subscriber is created as pending and Beehiiv emails a confirmation
+      // link. Without this, API-created subscriptions land as `active` with no
+      // verification email at all. The welcome email (above) follows once they
+      // confirm.
+      double_opt_override: 'on',
     }),
   });
 

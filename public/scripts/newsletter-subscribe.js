@@ -46,9 +46,10 @@
 
           if (data && data.success) {
             form.reset();
-            if (btn) btn.textContent = 'Done ✓';
+            if (btn) btn.textContent = 'Check your inbox ✓';
             if (status)
-              status.textContent = "You're subscribed. Check your inbox for a confirmation.";
+              status.textContent =
+                'Almost there — check your inbox and click the link to confirm your subscription.';
             return;
           }
 
