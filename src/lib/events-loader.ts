@@ -131,6 +131,89 @@ function parseDescription(
   };
 }
 
+// Cap RRULE expansion at 1 year from build time so infinite recurrences don't
+// loop forever.
+const HORIZON_MS = 365 * 24 * 60 * 60 * 1000;
+
+// Build a single loader entry from a resolved event instance. `recurrenceKey`
+// is the RRULE-generated time string for the occurrence; it makes each
+// occurrence's digest unique so Astro's incremental cache invalidates correctly
+// when a specific instance is moved without changing the rest of the series.
+function buildEventEntry(
+  uid: string,
+  event: ICAL.Event,
+  startDate: Date,
+  endDate: Date | undefined,
+  recurrenceKey: string,
+): { slug: string; data: EventData; digestInput: string } | null {
+  const title = event.summary?.trim() ?? '';
+  if (!title) return null;
+
+  const description = event.description?.trim() ?? '';
+  const rawLocation = event.location?.trim() ?? '';
+
+  let joinUrl: string | undefined;
+  let venueName: string | undefined;
+  if (rawLocation && isUrl(rawLocation)) {
+    joinUrl = rawLocation;
+  } else if (rawLocation) {
+    venueName = rawLocation;
+  }
+  if (!joinUrl) {
+    const fromDesc = findConferenceUrl(description);
+    if (fromDesc) joinUrl = fromDesc;
+  }
+
+  let format: EventFormat;
+  if (joinUrl && venueName) format = 'hybrid';
+  else if (joinUrl) format = 'virtual';
+  else if (venueName) format = 'in-person';
+  else {
+    throw new Error(
+      `Calendar event "${title}" (${startDate.toISOString()}) has neither a join URL nor a venue. Add a Meet/Zoom URL or a physical address.`,
+    );
+  }
+
+  const venue = venueName
+    ? {
+        name: venueName,
+        addressLocality: 'Las Vegas',
+        addressRegion: 'NV',
+        addressCountry: 'US',
+      }
+    : undefined;
+
+  const slug = `${ptDateSlug(startDate)}-${slugifyTitle(title)}`;
+  const { summary, body } = parseDescription(description, title);
+
+  const data: EventData = {
+    title,
+    date: startDate,
+    endDate,
+    format,
+    venue,
+    joinUrl,
+    rsvpUrl: findRsvpUrl(description),
+    featured: false,
+    summary,
+    body,
+  };
+
+  return {
+    slug,
+    data,
+    digestInput: [
+      uid,
+      recurrenceKey,
+      title,
+      startDate.toISOString(),
+      endDate?.toISOString() ?? '',
+      rawLocation,
+      description,
+    ].join('|'),
+  };
+}
+
 export function calendarEventsLoader(): Loader {
   return {
     name: 'calendar-events-loader',
@@ -149,78 +232,80 @@ export function calendarEventsLoader(): Loader {
       store.clear();
 
       const now = Date.now();
+      const horizonMs = now + HORIZON_MS;
       const entries: Array<{ slug: string; data: EventData; digestInput: string }> = [];
 
+      // Google Calendar expresses a rescheduled instance of a recurring event
+      // as a second VEVENT with the same UID and a RECURRENCE-ID property. The
+      // naive approach of iterating all VEVENTs produces two entries — one from
+      // the master's DTSTART (the original date) and one from the exception's
+      // DTSTART (the new date). The master's entry wins as nearest-upcoming and
+      // the site shows the wrong date.
+      //
+      // Fix: group by UID, register exceptions via relateException(), then
+      // expand the master through iterator() + getOccurrenceDetails() so each
+      // occurrence resolves to its correct (post-exception) start time.
+      const mastersByUid = new Map<string, ICAL.Component>();
+      const exceptionsByUid = new Map<string, ICAL.Component[]>();
+
       for (const ve of vevents) {
-        const event = new ICAL.Event(ve);
-        const title = event.summary?.trim() ?? '';
-        if (!title) continue;
-        if (!event.startDate) continue;
-
-        const startDate = event.startDate.toJSDate();
-        const endDate = event.endDate?.toJSDate();
-        const description = event.description?.trim() ?? '';
-        const rawLocation = event.location?.trim() ?? '';
-
-        let joinUrl: string | undefined;
-        let venueName: string | undefined;
-        if (rawLocation && isUrl(rawLocation)) {
-          joinUrl = rawLocation;
-        } else if (rawLocation) {
-          venueName = rawLocation;
+        const uid = (ve.getFirstPropertyValue('uid') as string | null) ?? '';
+        if (!uid) continue;
+        if (ve.getFirstProperty('recurrence-id')) {
+          const list = exceptionsByUid.get(uid) ?? [];
+          list.push(ve);
+          exceptionsByUid.set(uid, list);
+        } else {
+          mastersByUid.set(uid, ve);
         }
-        if (!joinUrl) {
-          const fromDesc = findConferenceUrl(description);
-          if (fromDesc) joinUrl = fromDesc;
+      }
+
+      for (const [uid, masterVe] of mastersByUid) {
+        const masterEvent = new ICAL.Event(masterVe);
+
+        for (const exVe of exceptionsByUid.get(uid) ?? []) {
+          masterEvent.relateException(exVe);
         }
 
-        let format: EventFormat;
-        if (joinUrl && venueName) format = 'hybrid';
-        else if (joinUrl) format = 'virtual';
-        else if (venueName) format = 'in-person';
-        else {
-          throw new Error(
-            `Calendar event "${title}" (${startDate.toISOString()}) has neither a join URL nor a venue. Add a Meet/Zoom URL or a physical address.`,
+        if (masterEvent.isRecurring()) {
+          const iter = masterEvent.iterator();
+          let nextTime: ICAL.Time | null;
+          while ((nextTime = iter.next())) {
+            if (nextTime.toJSDate().getTime() > horizonMs) break;
+            const details = masterEvent.getOccurrenceDetails(nextTime);
+            // details.item is the exception VEVENT when one exists; the master otherwise.
+            const instance = details.item as ICAL.Event;
+            const startDate = details.startDate.toJSDate();
+            const endDate = details.endDate?.toJSDate();
+            const entry = buildEventEntry(uid, instance, startDate, endDate, nextTime.toString());
+            if (entry) entries.push(entry);
+          }
+        } else {
+          const startDate = masterEvent.startDate.toJSDate();
+          const endDate = masterEvent.endDate?.toJSDate();
+          const entry = buildEventEntry(
+            uid,
+            masterEvent,
+            startDate,
+            endDate,
+            masterEvent.startDate.toString(),
           );
+          if (entry) entries.push(entry);
         }
+      }
 
-        const venue = venueName
-          ? {
-              name: venueName,
-              addressLocality: 'Las Vegas',
-              addressRegion: 'NV',
-              addressCountry: 'US',
-            }
-          : undefined;
-
-        const slug = `${ptDateSlug(startDate)}-${slugifyTitle(title)}`;
-        const { summary, body } = parseDescription(description, title);
-
-        const data: EventData = {
-          title,
-          date: startDate,
-          endDate,
-          format,
-          venue,
-          joinUrl,
-          rsvpUrl: findRsvpUrl(description),
-          featured: false,
-          summary,
-          body,
-        };
-
-        entries.push({
-          slug,
-          data,
-          digestInput: [
-            event.uid,
-            title,
-            startDate.toISOString(),
-            endDate?.toISOString() ?? '',
-            rawLocation,
-            description,
-          ].join('|'),
-        });
+      // Orphaned exceptions: master series deleted but exception VEVENT remains.
+      for (const [uid, exVes] of exceptionsByUid) {
+        if (mastersByUid.has(uid)) continue;
+        for (const exVe of exVes) {
+          const event = new ICAL.Event(exVe);
+          if (!event.startDate) continue;
+          const startDate = event.startDate.toJSDate();
+          const endDate = event.endDate?.toJSDate();
+          const recKey = event.recurrenceId?.toString() ?? startDate.toISOString();
+          const entry = buildEventEntry(uid, event, startDate, endDate, recKey);
+          if (entry) entries.push(entry);
+        }
       }
 
       // Sort ascending; auto-feature the nearest upcoming event so the
