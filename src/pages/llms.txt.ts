@@ -72,8 +72,8 @@ The work runs across five initiatives:
   annual State of Transit publication on how the Valley's transit
   system actually performs.
 - Youth engagement — connecting high school and college students to
-  transit advocacy, both as the immediate beneficiaries of better
-  mobility and as the long-term political base for the work.
+  transit advocacy, as the people with the most to gain from better
+  mobility and the longest stake in the work.
 
 ## About
 - [Home](${u('/')}): what we do, why it matters,
