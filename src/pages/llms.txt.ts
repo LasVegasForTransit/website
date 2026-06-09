@@ -45,10 +45,10 @@ ${site.name} is a Nevada nonprofit (founded ${site.org.founded})
 organizing the public constituency that transit and land-use fights
 in the Las Vegas Valley have never had. We educate Las Vegans on how
 the regional transit system works, organize riders and supporters
-into a coalition, and advocate at the Regional Transportation
-Commission of Southern Nevada and in the Nevada Legislature for
-world-class public transit and the land-use policy that makes
-transit useful.
+into a coalition, and build an advocacy presence at the Regional
+Transportation Commission of Southern Nevada and, in the 2027
+session, the Nevada Legislature — for world-class public transit
+and the land-use policy that makes transit useful.
 
 The Valley is the 14th-busiest bus network in the country with no
 light rail, no dedicated transit funding source, and historically no
@@ -64,9 +64,10 @@ The work runs across five initiatives:
 - Coalition building — connecting riders, labor, faith communities,
   students, businesses, and allied organizations into a constituency
   legislators have to answer to.
-- Legislative advocacy — direct work with state and federal
-  legislators, the RTC board, and municipal bodies on funding,
-  policy, and specific transit and land-use projects.
+- Legislative advocacy — building relationships with state and
+  federal legislators and showing up at the RTC board and municipal
+  bodies on funding, policy, and specific transit and land-use
+  projects.
 - Research and accountability — data, reporting, ride audits, and an
   annual State of Transit publication on how the Valley's transit
   system actually performs.
