@@ -6,3 +6,5 @@
 /sitemap.xml    /sitemap-index.xml  301
 /join           /go                 301
 /get-involved   /go                 301
+# Street interviews on transit was folded into Bus Buddies.
+/projects/social-media-just-talking   /projects/bus-buddies   301
