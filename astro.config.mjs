@@ -78,7 +78,6 @@ export default defineConfig({
   // production a real 301 is also pinned in public/_redirects.
   redirects: {
     '/sitemap.xml': '/sitemap-index.xml',
-    '/join': '/go',
     '/get-involved': '/go',
   },
   vite: {

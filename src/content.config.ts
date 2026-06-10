@@ -149,4 +149,24 @@ const glossary = defineCollection({
   }),
 });
 
-export const collections = { docs, events, eventBodies, projects, initiatives, pages, glossary };
+const roles = defineCollection({
+  loader: glob({ pattern: '**/*.{md,mdx}', base: './src/content/roles' }),
+  schema: z.object({
+    title: z.string(),
+    summary: z.string(),
+    commitment: z.string(),
+    team: z.string().optional(),
+    order: z.number().optional(),
+  }),
+});
+
+export const collections = {
+  docs,
+  events,
+  eventBodies,
+  projects,
+  initiatives,
+  pages,
+  glossary,
+  roles,
+};

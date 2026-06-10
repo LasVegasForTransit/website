@@ -684,6 +684,17 @@ body[data-canvas='dark'] [data-site-header]:not([data-stuck]) .press:hover {
     margin-bottom: 0.25em;
   }
 
+  /* Role/job-posting pages: the page <h1> (the role title) owns the top of the
+     hierarchy, so the in-body section headings ("About the role", "What you'll
+     do") step down from the default doc scale. At the doc default they share
+     --text-headline-lg with the <h1> and read as peers, flattening the page. */
+  .prose-doc.prose-posting h2 {
+    font-size: var(--text-headline-sm);
+    line-height: var(--text-headline-sm--line-height);
+    letter-spacing: var(--text-headline-sm--letter-spacing);
+    font-weight: var(--text-headline-sm--font-weight);
+  }
+
   /* List markers — Tailwind preflight strips these by default. Without these
      rules every bullet list in a project body or doc page renders flat. */
   .prose-doc ul {

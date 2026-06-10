@@ -1,0 +1,100 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { getCollection, render } from 'astro:content';
+import { roleApplicationMailto } from '../../lib/role-mailto';
+
+export async function getStaticPaths() {
+  const roles = await getCollection('roles');
+  return roles.map((role) => ({
+    params: { role: role.id },
+    props: { role },
+  }));
+}
+
+const { role } = Astro.props;
+const { Content } = await render(role);
+const mailtoHref = roleApplicationMailto(role.data.title);
+---
+
+<BaseLayout title={role.data.title} description={role.data.summary}>
+  {
+    /* Condensed CTA that pins beneath the site header once the hero scrolls
+      out of view. `top` is set from the live site-header height by
+      role-sticky-bar.js; aria-hidden + tabindex=-1 keep it out of the AT
+      tree and tab order since it only duplicates the hero/footer actions. */
+  }
+  <div
+    data-role-bar
+    aria-hidden="true"
+    style="top: var(--site-header-h, 64px)"
+    class="fixed inset-x-0 z-40 bg-paper/80 backdrop-blur-md backdrop-saturate-150 border-b border-rule/15 opacity-0 -translate-y-2 pointer-events-none transition duration-200 ease-out data-[visible]:opacity-100 data-[visible]:translate-y-0 data-[visible]:pointer-events-auto motion-reduce:transition-none motion-reduce:translate-y-0"
+  >
+    <div class="container-page py-2.5 flex items-center justify-between gap-4">
+      <span class="min-w-0 leading-tight">
+        <span class="block text-title-md truncate">{role.data.title}</span>
+        {
+          role.data.team && (
+            <span class="block text-body-sm opacity-60 truncate">{role.data.team}</span>
+          )
+        }
+      </span>
+      <a
+        href={mailtoHref}
+        tabindex="-1"
+        class="press shrink-0 inline-flex items-center bg-accent text-ink px-4 py-2 text-sm font-bold no-underline hover:bg-ink hover:text-paper"
+      >
+        Express interest →
+      </a>
+    </div>
+  </div>
+
+  <header data-role-hero class="container-page pt-12 pb-12 md:pt-16 md:pb-16">
+    <a
+      href="/join"
+      class="text-sm font-bold uppercase tracking-wider underline underline-offset-4 decoration-2 decoration-accent"
+    >
+      ← Open roles
+    </a>
+    <h1 class="text-headline-lg mt-6">{role.data.title}</h1>
+    <p class="mt-4 text-sm font-bold uppercase tracking-wider opacity-60">
+      {role.data.team && <span>{role.data.team} · </span>}{role.data.commitment}
+    </p>
+    <a
+      href={mailtoHref}
+      class="press inline-flex items-center mt-8 bg-accent text-ink px-6 py-3 font-bold no-underline hover:bg-ink hover:text-paper"
+    >
+      Express interest →
+    </a>
+  </header>
+  <hr class="rule-thick container-page" />
+  <section class="container-page py-12 md:py-16">
+    <div class="prose-doc prose-posting max-w-2xl">
+      <h2>About Las Vegans for Better Transit</h2>
+      <p>
+        Las Vegans for Better Transit is a member-based advocacy organization building the movement
+        for better public transit in the Las Vegas Valley. Las Vegas is the largest US metro without
+        light rail, and our bus network faces 42% service cuts in 2028. We're organizing to stop it
+        — and to fight for a transit system this city actually deserves.
+      </p>
+      <Content />
+    </div>
+    <div class="mt-16 border-t border-ink/15 pt-10 max-w-2xl">
+      <h2 class="text-title-lg">Ready to contribute?</h2>
+      <p class="mt-3 leading-relaxed">
+        Send a short note — where you're coming from, what draws you to this role, and anything
+        relevant about your background.
+      </p>
+      <a
+        href={mailtoHref}
+        class="press inline-flex items-center mt-6 bg-accent text-ink px-6 py-3 font-bold no-underline hover:bg-ink hover:text-paper"
+      >
+        Express interest →
+      </a>
+    </div>
+  </section>
+  {
+    /* public/scripts/ to satisfy CSP `script-src 'self'` — same pattern as
+      the site header's stuck observer. */
+  }
+  <script is:inline src="/scripts/role-sticky-bar.js" defer></script>
+</BaseLayout>
