@@ -43,6 +43,10 @@ pnpm-debug.log*
 test-results/
 playwright-report/
 playwright/.cache/
+# playwright-mcp scratch output (ad-hoc screenshots / driven sessions)
+.playwright-mcp/
+# ad-hoc screenshots dropped in the repo root during local verification
+/*.png
 
 # audit tooling output — Lighthouse raw runs are bulky JSON; the readable
 # report lives in audits/ and IS committed so improvements show up in git.
