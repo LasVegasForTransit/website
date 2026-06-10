@@ -6,23 +6,39 @@
 // page "refreshes". Same pattern as Header.astro / ShareButton.astro.
 interface Props {
   variant?: 'light' | 'dark';
+  // `compact` drops the box framing and the internal eyebrow/heading/pitch,
+  // rendering just the form. Use it where the surrounding section already
+  // supplies the heading and the pitch (e.g. the /join membership section)
+  // so the form doesn't read as a second, competing call to action.
+  compact?: boolean;
 }
-const { variant = 'light' } = Astro.props;
+const { variant = 'light', compact = false } = Astro.props;
 ---
 
 <div
   class:list={[
-    'border p-6 md:p-8',
-    variant === 'dark' ? 'bg-ink text-paper border-ink' : 'bg-paper text-ink border-ink',
+    !compact && 'border p-6 md:p-8',
+    variant === 'dark' ? 'bg-ink text-paper border-ink' : 'text-ink',
+    !compact && (variant === 'dark' ? 'border-ink' : 'bg-paper border-ink'),
   ]}
 >
-  <p class="eyebrow">Newsletter</p>
-  <h3 class="text-title-lg mt-3">Updates from the front lines.</h3>
-  <p class="mt-4 max-w-md">
-    The 2027 session is the moment. Subscribe for legislative updates, project briefs, and ways to
-    show up.
-  </p>
-  <form class="mt-6 flex flex-col sm:flex-row gap-3" data-newsletter-form novalidate>
+  {
+    !compact && (
+      <>
+        <p class="eyebrow">Newsletter</p>
+        <h3 class="text-title-lg mt-3">Updates from the front lines.</h3>
+        <p class="mt-4 max-w-md">
+          The 2027 session is the moment. Subscribe for legislative updates, project briefs, and
+          ways to show up.
+        </p>
+      </>
+    )
+  }
+  <form
+    class:list={['flex flex-col sm:flex-row gap-3', !compact && 'mt-6']}
+    data-newsletter-form
+    novalidate
+  >
     <input
       type="email"
       name="email"
