@@ -1,8 +1,45 @@
-import { expect, test } from '@playwright/test';
+import { expect, test, type Page } from '@playwright/test';
 
 const LINKEDIN_URL = 'https://www.linkedin.com/company/lasvegasfortransit/';
 
+async function firstVirtualEventPath(page: Page): Promise<string> {
+  await page.goto('/events');
+  await page.waitForLoadState('networkidle');
+
+  const eventPaths = [
+    ...new Set(
+      await page
+        .locator('main a[href^="/events/"]')
+        .evaluateAll((links) =>
+          links
+            .map((link) => new URL((link as HTMLAnchorElement).href).pathname.replace(/\/$/, ''))
+            .filter((path) => /^\/events\/[^/]+$/.test(path)),
+        ),
+    ),
+  ];
+
+  for (const eventPath of eventPaths) {
+    await page.goto(eventPath);
+    await page.waitForLoadState('networkidle');
+
+    if ((await page.locator('main a', { hasText: /Join →/ }).count()) > 0) {
+      return eventPath;
+    }
+  }
+
+  throw new Error('No current virtual event with a Join CTA was found from /events.');
+}
+
 test.describe('body content links', () => {
+  test('exposes the Join page from persistent site chrome', async ({ page }) => {
+    await page.goto('/about');
+    await page.waitForLoadState('networkidle');
+
+    await expect(page.locator('nav[aria-label="Primary"] a[href="/join"]')).toHaveText('Join');
+    await expect(page.locator('header a.md\\:hidden[href="/join"]')).toContainText('Join');
+    await expect(page.locator('footer a[href="/join"]', { hasText: 'Join us' })).toBeVisible();
+  });
+
   test('renders LinkedIn in contact and footer social surfaces', async ({ page }) => {
     await page.goto('/contact');
     await page.waitForLoadState('networkidle');
@@ -75,12 +112,11 @@ test.describe('body content links', () => {
   // we'd be lying about the format. The contract guards the URL-regex hack
   // from sneaking back as a "fix" if someone ever touches the CTA logic.
   test('virtual event page shows the Join CTA', async ({ page }) => {
-    await page.goto('/events/2026-05-21-general-meeting');
-    await page.waitForLoadState('networkidle');
+    await page.goto(await firstVirtualEventPath(page));
 
-    // Scoped to <main> so the mobile site-header "Join" button (link to
-    // /go) doesn't false-positive. The event-detail Join CTA lives in the
-    // event header inside main; the site chrome lives outside main.
+    // Scoped to <main> so the mobile site-header "Join" button doesn't
+    // false-positive. The event-detail Join CTA lives in the event header
+    // inside main; the site chrome lives outside main.
     const joinCta = page.locator('main a', { hasText: /Join →/ });
     await expect(joinCta).toBeVisible();
   });
@@ -89,9 +125,9 @@ test.describe('body content links', () => {
     await page.goto('/events/2026-07-02-general-meeting');
     await page.waitForLoadState('networkidle');
 
-    // Scoped to <main> so the mobile site-header "Join" button (link to
-    // /go) doesn't false-positive. The event-detail Join CTA lives in the
-    // event header inside main; the site chrome lives outside main.
+    // Scoped to <main> so the mobile site-header "Join" button doesn't
+    // false-positive. The event-detail Join CTA lives in the event header
+    // inside main; the site chrome lives outside main.
     const joinCta = page.locator('main a', { hasText: /Join →/ });
     await expect(joinCta).toHaveCount(0);
   });
@@ -100,13 +136,14 @@ test.describe('body content links', () => {
   // /events/<id>.ics. Guards two things at once: (a) the route still
   // emits at build time; (b) the file is RFC 5545 enough that the OS
   // calendar handler will recognise it.
-  test('virtual event publishes a valid .ics feed', async ({ request }) => {
-    const response = await request.get('/events/2026-05-21-general-meeting.ics');
+  test('virtual event publishes a valid .ics feed', async ({ page, request }) => {
+    const eventPath = await firstVirtualEventPath(page);
+    const response = await request.get(`${eventPath}.ics`);
     expect(response.status()).toBe(200);
     const body = await response.text();
     expect(body).toContain('BEGIN:VCALENDAR');
     expect(body).toContain('BEGIN:VEVENT');
-    expect(body).toContain('SUMMARY:General Meeting');
+    expect(body).toContain('SUMMARY:LVBT General Meeting');
     expect(body).toMatch(/DTSTART:\d{8}T\d{6}Z/);
     expect(body).toMatch(/DTEND:\d{8}T\d{6}Z/);
     expect(body).toContain('LOCATION:https://meet.google.com/');

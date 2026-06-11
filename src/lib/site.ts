@@ -62,5 +62,6 @@ export const navMain = [
   { href: '/about', label: 'About' },
   { href: '/projects', label: 'Projects' },
   { href: '/events', label: 'Events' },
+  { href: '/join', label: 'Join' },
   { href: '/contact', label: 'Contact' },
 ] as const;
