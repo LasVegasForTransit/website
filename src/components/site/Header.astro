@@ -52,14 +52,123 @@ const path = Astro.url.pathname;
     >
       Get involved <span class="arrow" aria-hidden="true">→</span>
     </a>
-    <a
-      href="/join"
-      class="press md:hidden inline-flex items-center gap-1.5 bg-ink text-paper px-4 py-2 text-sm font-bold no-underline hover:bg-accent"
-    >
-      Join <span class="arrow" aria-hidden="true">→</span>
-    </a>
+    {/* Mobile controls: Join CTA (hidden when nav open) + hamburger toggle */}
+    <div class="md:hidden flex items-center gap-3">
+      <a
+        href="/join"
+        data-mobile-join
+        class="press inline-flex items-center gap-1.5 bg-ink text-paper px-4 py-2 text-sm font-bold no-underline hover:bg-accent"
+      >
+        Join <span class="arrow" aria-hidden="true">→</span>
+      </a>
+      <button
+        data-nav-toggle
+        aria-label="Open menu"
+        aria-expanded="false"
+        aria-controls="mobile-nav-overlay"
+        class="flex items-center justify-center p-2 -mr-2"
+      >
+        <svg
+          data-nav-icon="open"
+          width="20"
+          height="14"
+          viewBox="0 0 20 14"
+          fill="none"
+          aria-hidden="true"
+        >
+          <line
+            x1="0"
+            y1="1"
+            x2="20"
+            y2="1"
+            stroke="currentColor"
+            stroke-width="1.5"
+            stroke-linecap="round"></line>
+          <line
+            x1="0"
+            y1="7"
+            x2="20"
+            y2="7"
+            stroke="currentColor"
+            stroke-width="1.5"
+            stroke-linecap="round"></line>
+          <line
+            x1="0"
+            y1="13"
+            x2="20"
+            y2="13"
+            stroke="currentColor"
+            stroke-width="1.5"
+            stroke-linecap="round"></line>
+        </svg>
+        <svg
+          data-nav-icon="close"
+          width="16"
+          height="16"
+          viewBox="0 0 16 16"
+          fill="none"
+          aria-hidden="true"
+        >
+          <line
+            x1="1"
+            y1="1"
+            x2="15"
+            y2="15"
+            stroke="currentColor"
+            stroke-width="1.5"
+            stroke-linecap="round"></line>
+          <line
+            x1="15"
+            y1="1"
+            x2="1"
+            y2="15"
+            stroke="currentColor"
+            stroke-width="1.5"
+            stroke-linecap="round"></line>
+        </svg>
+      </button>
+    </div>
   </div>
 </header>
+
+{/* Full-screen mobile nav overlay — sits beneath the sticky header */}
+<nav
+  id="mobile-nav-overlay"
+  data-nav-overlay
+  aria-label="Mobile navigation"
+  inert
+  class="md:hidden fixed left-0 right-0 bottom-0 bg-paper z-40 flex flex-col overflow-y-auto"
+  style="top: var(--lvbt-header-h)"
+>
+  <ul class="flex-1 list-none m-0 px-6 py-2">
+    {
+      navMain
+        .filter((item) => item.href !== '/join')
+        .map((item) => {
+          const active = path.startsWith(item.href);
+          return (
+            <li class="border-b border-rule/15">
+              <a
+                href={item.href}
+                aria-current={active ? 'page' : undefined}
+                class="flex items-center py-5 text-2xl font-extrabold tracking-tight no-underline hover:text-accent aria-[current=page]:text-accent"
+              >
+                {item.label}
+              </a>
+            </li>
+          );
+        })
+    }
+  </ul>
+  <div class="px-6 pb-8 pt-4">
+    <a
+      href="/go"
+      class="press flex items-center justify-center gap-1.5 bg-ink text-paper py-4 text-sm font-bold no-underline hover:bg-accent"
+    >
+      Get involved <span class="arrow" aria-hidden="true">→</span>
+    </a>
+  </div>
+</nav>
 
 {
   /* Sourced from public/scripts/ rather than written inline because the
@@ -71,3 +180,4 @@ const path = Astro.url.pathname;
      the script same-origin and CSP-allowed. */
 }
 <script is:inline src="/scripts/header-stuck.js" defer></script>
+<script is:inline src="/scripts/mobile-nav.js" defer></script>

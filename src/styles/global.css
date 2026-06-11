@@ -288,30 +288,35 @@ main {
       color 200ms ease,
       border-color 200ms ease;
   }
-  body[data-canvas='dark'] [data-site-header]:not([data-stuck]) {
+  body[data-canvas='dark'] [data-site-header]:not([data-stuck]):not([data-nav-open]) {
     /* Tailwind's bg-paper/80 utility lives in a higher cascade layer than
        this rule. Bump with !important so the dark hero shows through the
        header instead of letting cream blur seep over ink. */
     background-color: transparent !important;
     border-bottom-color: transparent !important;
   }
-  body[data-canvas='dark'] [data-site-header]:not([data-stuck]) a {
+  body[data-canvas='dark'] [data-site-header]:not([data-stuck]):not([data-nav-open]) a {
     color: var(--color-paper);
   }
-  body[data-canvas='dark'] [data-site-header]:not([data-stuck]) a:hover {
+  body[data-canvas='dark'] [data-site-header]:not([data-stuck]):not([data-nav-open]) a:hover {
     color: var(--color-accent);
   }
-  body[data-canvas='dark'] [data-site-header]:not([data-stuck]) a[aria-current='page'] {
+  body[data-canvas='dark']
+    [data-site-header]:not([data-stuck]):not([data-nav-open])
+    a[aria-current='page'] {
     color: var(--color-accent);
   }
-  body[data-canvas='dark'] [data-site-header]:not([data-stuck]) a span.text-accent {
+  body[data-canvas='dark']
+    [data-site-header]:not([data-stuck]):not([data-nav-open])
+    a
+    span.text-accent {
     color: var(--color-accent);
   }
-  body[data-canvas='dark'] [data-site-header]:not([data-stuck]) .press {
+  body[data-canvas='dark'] [data-site-header]:not([data-stuck]):not([data-nav-open]) .press {
     background-color: var(--color-paper);
     color: var(--color-ink);
   }
-  body[data-canvas='dark'] [data-site-header]:not([data-stuck]) .press:hover {
+  body[data-canvas='dark'] [data-site-header]:not([data-stuck]):not([data-nav-open]) .press:hover {
     background-color: var(--color-accent);
     color: var(--color-paper);
   }
@@ -421,6 +426,40 @@ main {
       animation-range: 0 1px;
     }
   }
+
+  /* ─── Mobile navigation overlay ──────────────────────────────────── */
+
+  /* Icon swap inside the toggle button: hamburger ↔ close */
+  [data-nav-icon='close'] {
+    display: none;
+  }
+  [data-nav-toggle][aria-expanded='true'] [data-nav-icon='open'] {
+    display: none;
+  }
+  [data-nav-toggle][aria-expanded='true'] [data-nav-icon='close'] {
+    display: flex;
+  }
+
+  /* Hide the Join CTA while the overlay is open */
+  [data-site-header][data-nav-open] [data-mobile-join] {
+    display: none;
+  }
+
+  /* Overlay fades in beneath the sticky header */
+  [data-nav-overlay] {
+    opacity: 0;
+    visibility: hidden;
+    transition:
+      opacity 150ms ease-out,
+      visibility 0s 150ms;
+  }
+  [data-site-header][data-nav-open] + [data-nav-overlay] {
+    opacity: 1;
+    visibility: visible;
+    transition:
+      opacity 150ms ease-out,
+      visibility 0s;
+  }
 }
 
 /* Top-level keyframe for the scroll-driven header — survives Lightning
@@ -452,27 +491,32 @@ body[data-canvas='dark'] [data-site-header] {
     color 200ms ease,
     border-color 200ms ease;
 }
-body[data-canvas='dark'] [data-site-header]:not([data-stuck]) {
+body[data-canvas='dark'] [data-site-header]:not([data-stuck]):not([data-nav-open]) {
   background-color: transparent;
   border-bottom-color: transparent;
 }
-body[data-canvas='dark'] [data-site-header]:not([data-stuck]) a {
+body[data-canvas='dark'] [data-site-header]:not([data-stuck]):not([data-nav-open]) a {
   color: var(--color-paper);
 }
-body[data-canvas='dark'] [data-site-header]:not([data-stuck]) a:hover {
+body[data-canvas='dark'] [data-site-header]:not([data-stuck]):not([data-nav-open]) a:hover {
   color: var(--color-accent);
 }
-body[data-canvas='dark'] [data-site-header]:not([data-stuck]) a[aria-current='page'] {
+body[data-canvas='dark']
+  [data-site-header]:not([data-stuck]):not([data-nav-open])
+  a[aria-current='page'] {
   color: var(--color-accent);
 }
-body[data-canvas='dark'] [data-site-header]:not([data-stuck]) a span.text-accent {
+body[data-canvas='dark']
+  [data-site-header]:not([data-stuck]):not([data-nav-open])
+  a
+  span.text-accent {
   color: var(--color-accent);
 }
-body[data-canvas='dark'] [data-site-header]:not([data-stuck]) .press {
+body[data-canvas='dark'] [data-site-header]:not([data-stuck]):not([data-nav-open]) .press {
   background-color: var(--color-paper);
   color: var(--color-ink);
 }
-body[data-canvas='dark'] [data-site-header]:not([data-stuck]) .press:hover {
+body[data-canvas='dark'] [data-site-header]:not([data-stuck]):not([data-nav-open]) .press:hover {
   background-color: var(--color-accent);
   color: var(--color-paper);
 }

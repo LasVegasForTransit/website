@@ -36,7 +36,7 @@ test.describe('body content links', () => {
     await page.waitForLoadState('networkidle');
 
     await expect(page.locator('nav[aria-label="Primary"] a[href="/join"]')).toHaveText('Join');
-    await expect(page.locator('header a.md\\:hidden[href="/join"]')).toContainText('Join');
+    await expect(page.locator('header a[data-mobile-join]')).toContainText('Join');
     await expect(page.locator('footer a[href="/join"]', { hasText: 'Join us' })).toBeVisible();
   });
 
