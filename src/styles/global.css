@@ -429,15 +429,29 @@ main {
 
   /* ─── Mobile navigation overlay ──────────────────────────────────── */
 
-  /* Icon swap inside the toggle button: hamburger ↔ close */
-  [data-nav-icon='close'] {
-    display: none;
+  /* Hamburger bars: smooth morph to × on expand.
+     Gap between bars is 5px; bar height is 1.5px.
+     Bar 1 center → bar 2 center = 1.5 + 5 = 6.5px, same for bar 3. */
+  [data-nav-toggle] span {
+    transition:
+      transform 220ms ease,
+      opacity 220ms ease;
   }
-  [data-nav-toggle][aria-expanded='true'] [data-nav-icon='open'] {
-    display: none;
+  [data-nav-toggle][aria-expanded='true'] span:nth-child(1) {
+    transform: translateY(6.5px) rotate(45deg);
   }
-  [data-nav-toggle][aria-expanded='true'] [data-nav-icon='close'] {
-    display: flex;
+  [data-nav-toggle][aria-expanded='true'] span:nth-child(2) {
+    opacity: 0;
+  }
+  [data-nav-toggle][aria-expanded='true'] span:nth-child(3) {
+    transform: translateY(-6.5px) rotate(-45deg);
+  }
+
+  /* Dark canvas: bars should be paper-colored when header is transparent */
+  body[data-canvas='dark']
+    [data-site-header]:not([data-stuck]):not([data-nav-open])
+    [data-nav-toggle] {
+    color: var(--color-paper);
   }
 
   /* Hide the Join CTA while the overlay is open */
@@ -445,19 +459,19 @@ main {
     display: none;
   }
 
-  /* Overlay fades in beneath the sticky header */
+  /* Overlay expands down from the header edge */
   [data-nav-overlay] {
-    opacity: 0;
+    clip-path: inset(0 0 100% 0);
     visibility: hidden;
     transition:
-      opacity 150ms ease-out,
-      visibility 0s 150ms;
+      clip-path 260ms ease,
+      visibility 0s 260ms;
   }
   [data-site-header][data-nav-open] + [data-nav-overlay] {
-    opacity: 1;
+    clip-path: inset(0 0 0% 0);
     visibility: visible;
     transition:
-      opacity 150ms ease-out,
+      clip-path 260ms ease,
       visibility 0s;
   }
 }
