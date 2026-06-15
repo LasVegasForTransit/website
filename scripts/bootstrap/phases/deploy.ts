@@ -179,6 +179,9 @@ export async function runDeployPhase(
   const PAGES_SECRETS: PagesSecret[] = [
     { key: 'LVBT_BEEHIIV_API_KEY', label: 'Beehiiv API key' },
     { key: 'LVBT_BEEHIIV_PUBLICATION_ID', label: 'Beehiiv publication ID' },
+    { key: 'LVBT_MEMBERSHIP_INTAKE_SECRET', label: 'Membership intake shared secret' },
+    { key: 'LVBT_NOTION_API_KEY', label: 'Notion API key' },
+    { key: 'LVBT_NOTION_DATA_SOURCE_ID', label: 'Notion intake data source ID' },
   ];
   await Promise.all(
     PAGES_SECRETS.map(async ({ key, label }) => {

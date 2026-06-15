@@ -1,4 +1,5 @@
 import { existsSync, copyFileSync } from 'node:fs';
+import { randomBytes } from 'node:crypto';
 import path from 'node:path';
 import { log, text } from '@clack/prompts';
 import pc from 'picocolors';
@@ -14,6 +15,12 @@ interface EnvKeyConfig {
   placeholderTokens?: string[];
   validate?: (raw: string) => string | undefined;
   required: boolean;
+  // When set, bootstrap mints the value itself instead of prompting (used for
+  // the membership intake shared secret, which has no dashboard to copy from).
+  generate?: () => string;
+  // Extra line printed after the value is set — e.g. where to mirror a
+  // generated secret that bootstrap can't reach (Apps Script script property).
+  postFill?: string;
 }
 
 const PROMPTED_KEYS: Record<string, EnvKeyConfig> = {
@@ -36,6 +43,38 @@ const PROMPTED_KEYS: Record<string, EnvKeyConfig> = {
     required: false,
     validate: (v) =>
       v && !v.startsWith('pub_') ? 'Expected a pub_... ID from the Beehiiv dashboard.' : undefined,
+  },
+  LVBT_MEMBERSHIP_INTAKE_SECRET: {
+    prompt: 'Membership intake shared secret',
+    hint: 'Random bearer token shared by Google Apps Script and the Cloudflare Pages Function. Server-side only.',
+    required: false,
+    // Minted here rather than prompted: there is no dashboard to copy it from,
+    // and both sides just need the same opaque value.
+    generate: () => randomBytes(32).toString('hex'),
+    postFill:
+      'Paste this same value into Apps Script → Project Settings → Script properties as LVBT_MEMBERSHIP_INTAKE_SECRET.',
+  },
+  LVBT_NOTION_API_KEY: {
+    prompt: 'Notion API key',
+    hint: 'Internal Notion integration secret with Insert Content access to the membership intake data source.',
+    example: 'ntn_...',
+    required: false,
+    validate: (v) =>
+      v && v.length < 20 ? 'That looks too short to be a valid Notion API key.' : undefined,
+  },
+  LVBT_NOTION_DATA_SOURCE_ID: {
+    prompt: 'Notion membership intake data source ID',
+    hint: 'The Notion data source ID (not the database ID) where intake pages are created. See docs/reference/membership-intake.md.',
+    example: 'xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx',
+    required: false,
+  },
+  PUBLIC_LVBT_MEMBERSHIP_FORM_URL: {
+    prompt: 'Membership form URL',
+    hint: 'Public Google Form for new members — the forms.gle short link (Send → link → Shorten URL). Drives the /join CTA and the QR slide.',
+    example: 'https://forms.gle/xxxxxxxxxxxx',
+    required: false,
+    validate: (v) =>
+      v && !/^https?:\/\//.test(v) ? 'Use an absolute URL starting with https://' : undefined,
   },
   PUBLIC_LVBT_DONATE_URL: {
     prompt: 'Donation URL',
@@ -160,6 +199,19 @@ export async function runEnvPhase(
   const updates = new Map<string, string>();
   for (const key of placeholderKeys) {
     const config = PROMPTED_KEYS[key]!;
+
+    // Generated keys (the intake shared secret) are minted, not prompted, then
+    // echoed so the same value can be pasted into the system bootstrap can't
+    // reach (Apps Script).
+    if (config.generate) {
+      const generated = config.generate();
+      updates.set(key, generated);
+      log.success(`${config.prompt}: generated.`);
+      log.info(pc.dim(`  ${generated}`));
+      if (config.postFill) log.info(pc.dim(`  ${config.postFill}`));
+      continue;
+    }
+
     // Hint is surrounding context (where to find the value, what blank means).
     log.info(pc.dim(config.hint));
     const value = await promptOrExit(
@@ -184,6 +236,11 @@ export async function runEnvPhase(
 
   if (updates.size > 0) {
     mergeEnvFile(envLocalPath, updates);
+    // Also hydrate the live process env so a deploy phase later in this same
+    // run pushes the just-entered values instead of the stale startup snapshot.
+    for (const [key, value] of updates) {
+      process.env[key] = value;
+    }
     log.success(`Wrote ${updates.size} value(s) to ${pc.dim('.env.local')}.`);
   } else {
     log.info(pc.dim('Nothing changed.'));
@@ -206,7 +263,7 @@ export async function runEnvPhase(
   const lines: string[] = [];
   if (hasSecretVars) {
     lines.push(
-      'For LVBT_BEEHIIV_* vars: add them as Secrets in Cloudflare Pages → Settings → Environment Variables (type: Secret, both Production and Preview environments).',
+      'For server-side LVBT_* vars (non-PUBLIC): `pnpm bootstrap --phase deploy` pushes them as Production secrets. For the Preview environment, add them as Secrets in Cloudflare Pages → Settings → Environment Variables.',
     );
   }
   if (hasPublicVars) {
