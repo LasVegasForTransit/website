@@ -1,4 +1,5 @@
 ---
+import { Icon } from 'astro-icon/components';
 import { site } from '../../lib/site';
 ---
 
@@ -107,23 +108,23 @@ import { site } from '../../lib/site';
   }
   <div class="flex-1 flex flex-col justify-center w-full overflow-hidden">
     <div
-      class="reveal-stagger container-page w-full pt-12 pb-10 md:py-[clamp(2.5rem,5vh,4.5rem)] grid grid-cols-2 md:grid-cols-12 gap-10 md:gap-12"
+      class="reveal-stagger container-page w-full pt-12 pb-10 md:py-[clamp(2.5rem,5vh,4.5rem)] grid grid-cols-2 xl:grid-cols-12 gap-10 xl:gap-12"
     >
       {
         /* ONE fluid clamp, no breakpoint switch. The wordmark only
           grows with viewport; it never shrinks. See FOOTER CONTRACT
           → WORDMARK SIZING at the top of this file. */
       }
-      <div class="reveal col-span-2 md:col-span-7">
+      <div class="reveal col-span-2 xl:col-span-7">
         <a
           href="/"
           class="text-[clamp(2.5rem,7vw,4.5rem)] font-extrabold tracking-tight no-underline block"
         >
-          <span class="block leading-[0.9]">Las Vegans</span>
-          <span class="block leading-[0.9] text-accent">for Better Transit</span>
+          <span class="block whitespace-nowrap leading-[0.9]">Las Vegans</span>
+          <span class="block whitespace-nowrap leading-[0.9] text-accent">for Better Transit</span>
         </a>
       </div>
-      <div class="reveal md:col-span-3">
+      <div class="reveal xl:col-span-3">
         <p class="eyebrow text-accent-soft">Organization</p>
         <ul class="mt-5 space-y-3 text-base font-semibold">
           <li><a href="/about" class="nav-link no-underline hover:text-accent">About</a></li>
@@ -132,7 +133,7 @@ import { site } from '../../lib/site';
           <li><a href="/contact" class="nav-link no-underline hover:text-accent">Contact</a></li>
         </ul>
       </div>
-      <div class="reveal md:col-span-2">
+      <div class="reveal xl:col-span-2">
         <p class="eyebrow text-accent-soft">Get involved</p>
         <ul class="mt-5 space-y-3 text-base font-semibold">
           <li><a href="/join" class="nav-link no-underline hover:text-accent">Join us</a></li>
@@ -211,9 +212,9 @@ import { site } from '../../lib/site';
         /* reveal-stat gives the headline a heavier 24px-rise entrance —
           punches in with more force than the link columns above. */
       }
-      <p class="reveal-stat text-headline-lg max-w-4xl">
-        14th-busiest bus system in the country. <span class="text-accent">Zero miles of rail.</span> We're
-        here to show Las&nbsp;Vegans what better looks like.
+      <p class="reveal-stat text-headline-lg max-w-[55ch] text-balance">
+        14th-busiest bus system in the country. <span class="text-accent">Zero miles of rail.</span>
+        Las&nbsp;Vegans deserve better. We're organizing to build it.
       </p>
     </div>
   </div>
@@ -230,26 +231,53 @@ import { site } from '../../lib/site';
       text-xs, but the redesign's larger text-sm doesn't need the bump. */
   }
   <div class="footer-meta border-t border-paper/15">
+    {
+      /* Flex-wrap, not a fixed column grid: the attribution holds the left
+        edge (mr-auto) and the utility links cluster at the right, each sized
+        to its own content and wrapping to the next line when space is tight.
+        Per-item <div>s are kept so :focus-visible outlines hug the link text.
+        The QR button is icon-only, so it takes just the glyph's width rather
+        than an equal share of the row. */
+    }
     <div
-      class="container-page w-full py-6 grid grid-cols-1 md:grid-cols-3 items-baseline gap-3 text-sm text-paper/60"
+      class="container-page w-full py-6 flex flex-wrap items-center gap-x-8 gap-y-2 text-sm text-paper/60"
     >
-      <div class="md:text-left">
+      <div class="mr-auto">
         Website made with love by <a
           href="https://williecubed.me"
           rel="noopener"
           class="nav-link no-underline hover:text-accent">Willie&nbsp;Chalmers&nbsp;III</a
         >
       </div>
-      <div class="md:text-center">
+      <div>
         <a href="/sitemap" class="nav-link no-underline hover:text-accent">Sitemap</a>
       </div>
-      <div class="md:text-right">
+      <div>
         <a
           href="https://github.com/LasVegasForTransit/website"
           rel="noopener"
           class="nav-link no-underline hover:text-accent"
         >
           Source on GitHub
+        </a>
+      </div>
+      {
+        /* Opens the QR presenter (/qr) — a chromeless deck of scan cards for
+          tabling and events. Icon-only utility; the page itself is noindex. */
+      }
+      {
+        /* `.qr-portal` shares a view-transition-name with the first code on /qr
+          during a `to-qr` navigation only (see global.css + route-transition.js),
+          so this glyph container-transforms into the live code on the way in. */
+      }
+      <div class="inline-flex">
+        <a
+          href="/qr"
+          class="qr-portal inline-flex items-center hover:text-accent"
+          aria-label="Scan cards"
+          title="Scan cards"
+        >
+          <Icon name="mdi:qrcode-scan" class="size-5" aria-hidden="true" />
         </a>
       </div>
     </div>

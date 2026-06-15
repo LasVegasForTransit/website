@@ -205,6 +205,58 @@ main {
   animation-duration: 200ms;
   animation-timing-function: var(--ease-out);
 }
+
+/* Give the page body (`root`) a directional cross-fade instead of a flat
+   opacity dissolve: the incoming page settles up into place while the
+   outgoing one fades. Depth + opacity only — no scale — matching the site's
+   motion vocabulary. Named groups (site-header, footer-stripe) keep morphing
+   in place; only the unnamed `root` snapshot uses these. The reduced-motion
+   block below already disables all view-transition animations. */
+@keyframes route-fade-out {
+  to {
+    opacity: 0;
+  }
+}
+@keyframes route-rise-in {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+::view-transition-old(root) {
+  animation: 180ms var(--ease-out) both route-fade-out;
+}
+::view-transition-new(root) {
+  animation: 260ms var(--ease-out) both route-rise-in;
+}
+
+/* QR presenter shared element. The footer's Scan-cards glyph and the first code
+   on /qr both carry `.qr-portal`, but the name is only assigned during a
+   navigation INTO /qr (type `to-qr`, tagged by /scripts/route-transition.js) —
+   so the glyph container-transforms into the live code on the way in. Every
+   other navigation, including Exit, skips the morph: the destination glyph is
+   normally below the fold, so morphing to it would fling the code off-screen. */
+html:active-view-transition-type(to-qr) .qr-portal {
+  view-transition-name: qr-launch;
+}
+
+/* Leaving /qr (type `from-qr`): the presenter sinks away while the destination
+   rises in via the default `route-rise-in` above — a clear reverse rather than
+   a flat cut. */
+@keyframes route-sink-out {
+  to {
+    opacity: 0;
+    transform: translateY(24px);
+  }
+}
+html:active-view-transition-type(from-qr)::view-transition-old(root) {
+  animation: 220ms var(--ease-out) both route-sink-out;
+}
+
 @media (prefers-reduced-motion: reduce) {
   ::view-transition-group(*),
   ::view-transition-old(*),
