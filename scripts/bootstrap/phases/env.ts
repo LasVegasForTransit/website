@@ -55,19 +55,22 @@ const PROMPTED_KEYS: Record<string, EnvKeyConfig> = {
       'Paste this same value into Apps Script → Project Settings → Script properties as LVBT_MEMBERSHIP_INTAKE_SECRET.',
   },
   LVBT_NOTION_API_KEY: {
-    prompt: 'Notion API key',
-    hint: 'Internal Notion integration secret with Insert Content access to the membership intake data source.',
+    prompt: 'Notion access token',
+    hint: 'notion.so/my-integrations → create an internal connection (Access token) with Insert + Update content capability, then copy its token from the Configuration tab.',
     example: 'ntn_...',
     required: false,
     validate: (v) =>
-      v && v.length < 20 ? 'That looks too short to be a valid Notion API key.' : undefined,
+      v && v.length < 20 ? 'That looks too short to be a valid Notion access token.' : undefined,
   },
-  LVBT_NOTION_DATA_SOURCE_ID: {
-    prompt: 'Notion membership intake data source ID',
-    hint: 'The Notion data source ID (not the database ID) where intake pages are created. See docs/reference/membership-intake.md.',
+  LVBT_NOTION_PARENT_PAGE_ID: {
+    prompt: 'Notion parent page ID',
+    hint: 'The page `pnpm setup:notion` creates the intake database under. Make a Notion page, share it with your connection (••• → Connections), and copy the 32-character ID from its URL.',
     example: 'xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx',
     required: false,
   },
+  // LVBT_NOTION_DATA_SOURCE_ID is intentionally NOT prompted here — it is
+  // created and written to .env.local by `pnpm setup:notion`, and pushed to
+  // Cloudflare by the deploy phase. Nothing to type by hand.
   PUBLIC_LVBT_MEMBERSHIP_FORM_URL: {
     prompt: 'Membership form URL',
     hint: 'Public Google Form for new members — the forms.gle short link (Send → link → Shorten URL). Drives the /join CTA and the QR slide.',
@@ -244,6 +247,25 @@ export async function runEnvPhase(
     log.success(`Wrote ${updates.size} value(s) to ${pc.dim('.env.local')}.`);
   } else {
     log.info(pc.dim('Nothing changed.'));
+  }
+
+  // Once the Notion token and parent page exist, the data source ID is created
+  // by the provisioner — point the user at it instead of leaving them to hunt
+  // for an ID that does not exist yet.
+  const effective = (key: string) => (updates.get(key) ?? env.get(key) ?? '').trim();
+  if (
+    effective('LVBT_NOTION_API_KEY') &&
+    effective('LVBT_NOTION_PARENT_PAGE_ID') &&
+    !effective('LVBT_NOTION_DATA_SOURCE_ID')
+  ) {
+    log.info(
+      pc.dim('Notion token and page set. Next: `pnpm setup:notion` to create the intake database.'),
+    );
+    followUpItems.push({
+      kind: 'local',
+      message:
+        'Run `pnpm setup:notion` to create the Notion intake database and fill in LVBT_NOTION_DATA_SOURCE_ID.',
+    });
   }
 
   // Step 5: only ask about Cloudflare Pages env sync if something actually changed
