@@ -11,6 +11,7 @@ interface Props {
   description?: string;
   ogImage?: string;
   noindex?: boolean;
+  chrome?: 'site' | 'none';
   /**
    * Root canvas color. 'paper' (default) is the standard cream surface every
    * page uses. 'dark' paints the body ink and asks the header to render
@@ -26,6 +27,7 @@ const {
   description = 'Las Vegans for Better Transit is the grassroots advocacy group fighting for world-class public transit and supportive land use in the Las Vegas Valley.',
   ogImage = '/og-default.png',
   noindex = false,
+  chrome = 'site',
   canvas = 'paper',
 } = Astro.props;
 
@@ -72,6 +74,12 @@ const canonical = new URL(Astro.url.pathname, site.url).toString();
     <meta name="twitter:card" content="summary_large_image" />
     {noindex && <meta name="robots" content="noindex,nofollow" />}
     <link rel="sitemap" href="/sitemap-index.xml" />
+    {
+      /* Render-blocking (no defer) so its `pagereveal` listener is registered
+        before the event fires on an inbound cross-document view transition.
+        Tiny; tags navigations to/from /qr with a view-transition type. */
+    }
+    <script is:inline src="/scripts/route-transition.js"></script>
     <StructuredData data={organizationSchema()} />
     <slot name="head" />
   </head>
@@ -82,8 +90,14 @@ const canonical = new URL(Astro.url.pathname, site.url).toString();
         rules from inside @supports blocks. Class-based selector survives
         purging; @supports gates the actual scroll-driven animation. */
     }
-    <div class="site-scroll-progress" aria-hidden="true"></div>
-    <a href="#main" class="skip-link">Skip to content</a>
+    {chrome === 'site' && <div class="site-scroll-progress" aria-hidden="true" />}
+    {
+      chrome === 'site' && (
+        <a href="#main" class="skip-link">
+          Skip to content
+        </a>
+      )
+    }
     {
       /* Wrapper reserves exactly one dynamic viewport for header + main
         content. Header counts against the budget instead of being
@@ -94,19 +108,19 @@ const canonical = new URL(Astro.url.pathname, site.url).toString();
         scrolls past, sticky releases and the footer takes over. */
     }
     <div class="min-h-dvh flex flex-col">
-      <Header />
+      {chrome === 'site' && <Header />}
       <main id="main" class="flex-1">
         <slot />
       </main>
     </div>
-    <Footer />
+    {chrome === 'site' && <Footer />}
     {
       /* Behaviour lives at /scripts/reveal-on-scroll.js (public/) so it
         satisfies the site's CSP `script-src 'self'` — an inline block
         here would be rejected in production, leaving every reveal
         element stuck hidden. Same pattern as ShareButton / Header. */
     }
-    <script is:inline src="/scripts/reveal-on-scroll.js" defer></script>
+    {chrome === 'site' && <script is:inline src="/scripts/reveal-on-scroll.js" defer />}
     {
       /* Cloudflare Web Analytics. Real-user CWV + page-view counts to
          complement the synthetic Lighthouse runs in CI. Gated on

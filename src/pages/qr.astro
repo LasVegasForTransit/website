@@ -1,0 +1,335 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { qrSvg } from '../lib/qr-svg';
+import { site } from '../lib/site';
+
+type QrSlide = {
+  id: string;
+  label: string;
+  title: string;
+  url: string;
+  hint: string;
+};
+
+const socialSlides: QrSlide[] = [
+  site.social.instagram && {
+    id: 'instagram',
+    label: 'Instagram',
+    title: '@lasvegasfortransit',
+    url: site.social.instagram,
+    hint: 'Posts, photos, and action calls from the Valley.',
+  },
+  site.social.discord && {
+    id: 'discord',
+    label: 'Discord',
+    title: 'Join the organizing chat',
+    url: site.social.discord,
+    hint: 'Where volunteers coordinate the work.',
+  },
+  site.social.linkedin && {
+    id: 'linkedin',
+    label: 'LinkedIn',
+    title: 'LVBT on LinkedIn',
+    url: site.social.linkedin,
+    hint: 'Organization updates and public profile.',
+  },
+  site.social.bluesky && {
+    id: 'bluesky',
+    label: 'Bluesky',
+    title: '@lasvegasfortransit.org',
+    url: site.social.bluesky,
+    hint: 'Longer posts, threads, and transit conversation.',
+  },
+].filter((slide): slide is QrSlide => Boolean(slide));
+
+const slides: QrSlide[] = [
+  {
+    id: 'website',
+    label: 'Website',
+    title: site.name,
+    url: site.url,
+    hint: 'Scan to open the LVBT website.',
+  },
+  ...socialSlides,
+];
+---
+
+<BaseLayout
+  title="QR Presenter"
+  description="Scan cards for Las Vegans for Better Transit."
+  noindex
+  canvas="dark"
+  chrome="none"
+>
+  <section class="qr-deck" aria-label="LVBT scan cards" data-qr-deck>
+    {
+      slides.map((slide, index) => (
+        <article
+          id={`qr-${slide.id}`}
+          class="qr-slide"
+          aria-label={`${slide.label} QR code`}
+          data-qr-slide
+          data-qr-url={slide.url}
+          data-qr-index={index}
+        >
+          <div class="qr-shell">
+            <div class="qr-copy">
+              <p class="qr-kicker">{slide.label}</p>
+              <h1>{slide.title}</h1>
+              <p>{slide.hint}</p>
+            </div>
+
+            {/* The first card's code carries `.qr-portal`, shared with the
+                footer's Scan-cards glyph, so the glyph container-transforms into
+                this code when entering /qr (see global.css + route-transition.js).
+                Only slide 0 — a view-transition-name must be unique per document. */}
+            <div class:list={['qr-code', index === 0 && 'qr-portal']} set:html={qrSvg(slide.url)} />
+
+            <div class="qr-link-row">
+              <a href={slide.url} rel={slide.url.startsWith(site.url) ? undefined : 'noopener'}>
+                {slide.url.replace(/^https?:\/\//, '')}
+              </a>
+            </div>
+          </div>
+        </article>
+      ))
+    }
+  </section>
+
+  <a class="qr-exit" href="/">Exit</a>
+
+  <nav class="qr-pagination" aria-label="QR slides">
+    {
+      slides.map((slide, index) => (
+        <a
+          href={`#qr-${slide.id}`}
+          class="qr-dot"
+          aria-label={`Show ${slide.label} QR code`}
+          data-qr-dot
+          data-qr-index={index}
+          aria-current={index === 0 ? 'true' : undefined}
+        />
+      ))
+    }
+  </nav>
+
+  <p class="qr-swipe-cue" aria-hidden="true">Swipe</p>
+  <script is:inline src="/scripts/qr-deck.js" defer></script>
+</BaseLayout>
+
+<style>
+  :global(body[data-canvas='dark']) {
+    background:
+      radial-gradient(circle at top left, rgb(229 71 26 / 0.24), transparent 20rem),
+      linear-gradient(135deg, #0f1115 0%, #191511 48%, #0f1115 100%);
+    color: var(--color-paper);
+    overflow: hidden;
+  }
+
+  .qr-deck {
+    height: 100dvh;
+    overflow-x: auto;
+    overflow-y: hidden;
+    display: flex;
+    scroll-snap-type: x mandatory;
+    scroll-behavior: smooth;
+    scrollbar-width: none;
+  }
+
+  .qr-deck::-webkit-scrollbar {
+    display: none;
+  }
+
+  .qr-slide {
+    /* Reserve clearance at the top (Exit pill) and bottom (pagination dots +
+       Swipe cue) so the shell's content — including the URL link — is never
+       hidden underneath the fixed overlays. */
+    --qr-zone: 3.75rem;
+    min-width: 100vw;
+    height: 100dvh;
+    scroll-snap-align: start;
+    display: grid;
+    place-items: center;
+    padding: calc(var(--qr-zone) + env(safe-area-inset-top)) 1rem
+      calc(var(--qr-zone) + env(safe-area-inset-bottom));
+  }
+
+  .qr-shell {
+    width: min(100%, 31rem);
+    min-height: min(
+      44rem,
+      calc(100dvh - var(--qr-zone) * 2 - env(safe-area-inset-top) - env(safe-area-inset-bottom))
+    );
+    display: grid;
+    grid-template-rows: minmax(0, 1fr) auto auto;
+    gap: 1rem;
+    align-items: center;
+    padding: 1.125rem;
+    border: 1px solid rgb(247 244 236 / 0.2);
+    background: rgb(15 17 21 / 0.7);
+    box-shadow: 0 1.5rem 4rem rgb(0 0 0 / 0.32);
+    backdrop-filter: blur(18px);
+  }
+
+  .qr-copy {
+    align-self: end;
+  }
+
+  .qr-kicker {
+    margin: 0 0 0.75rem;
+    font-size: 0.75rem;
+    font-weight: 800;
+    line-height: 1.2;
+    letter-spacing: 0;
+    text-transform: uppercase;
+    color: var(--color-accent-warm);
+  }
+
+  h1 {
+    max-width: 16ch;
+    margin: 0;
+    font-size: 2rem;
+    font-weight: 900;
+    line-height: 0.98;
+    letter-spacing: 0;
+  }
+
+  .qr-copy p:last-child {
+    max-width: 26rem;
+    margin: 0.85rem 0 0;
+    color: rgb(247 244 236 / 0.74);
+    line-height: 1.45;
+  }
+
+  .qr-code {
+    width: min(84vw, 24rem, 48dvh);
+    aspect-ratio: 1;
+    justify-self: center;
+    padding: 0.75rem;
+    background: var(--color-paper);
+    color: var(--color-ink);
+  }
+
+  .qr-code :global(svg) {
+    display: block;
+    width: 100%;
+    height: 100%;
+  }
+
+  .qr-link-row {
+    min-width: 0;
+    padding-top: 0.125rem;
+    text-align: center;
+    font-size: 0.875rem;
+    line-height: 1.3;
+  }
+
+  .qr-link-row a {
+    color: var(--color-paper);
+    overflow-wrap: anywhere;
+    text-decoration-thickness: 2px;
+    text-underline-offset: 0.25em;
+  }
+
+  .qr-pagination {
+    position: fixed;
+    z-index: 20;
+    left: 50%;
+    bottom: calc(1rem + env(safe-area-inset-bottom));
+    transform: translateX(-50%);
+    display: flex;
+    gap: 0.55rem;
+    padding: 0.55rem 0.7rem;
+    background: rgb(15 17 21 / 0.62);
+    border: 1px solid rgb(247 244 236 / 0.18);
+    backdrop-filter: blur(16px);
+  }
+
+  .qr-dot {
+    width: 0.72rem;
+    height: 0.72rem;
+    border-radius: 999px;
+    background: rgb(247 244 236 / 0.42);
+    outline-offset: 0.25rem;
+  }
+
+  .qr-dot[aria-current='true'] {
+    background: var(--color-accent);
+  }
+
+  .qr-swipe-cue {
+    position: fixed;
+    right: 1rem;
+    bottom: calc(1rem + env(safe-area-inset-bottom));
+    margin: 0;
+    font-size: 0.75rem;
+    font-weight: 800;
+    letter-spacing: 0;
+    text-transform: uppercase;
+    color: rgb(247 244 236 / 0.58);
+  }
+
+  /* Back to the main site. Matches the pagination/swipe chrome — translucent
+     ink, blur, sharp corners — and clears the notch via safe-area insets. */
+  .qr-exit {
+    position: fixed;
+    z-index: 20;
+    top: calc(1rem + env(safe-area-inset-top));
+    right: calc(1rem + env(safe-area-inset-right));
+    padding: 0.45rem 0.85rem;
+    font-size: 0.75rem;
+    font-weight: 800;
+    letter-spacing: 0;
+    text-transform: uppercase;
+    text-decoration: none;
+    color: var(--color-paper);
+    background: rgb(15 17 21 / 0.62);
+    border: 1px solid rgb(247 244 236 / 0.18);
+    backdrop-filter: blur(16px);
+  }
+
+  .qr-exit:hover {
+    color: var(--color-accent);
+  }
+
+  @media (min-width: 48rem) {
+    .qr-slide {
+      padding-left: 2rem;
+      padding-right: 2rem;
+    }
+
+    .qr-shell {
+      width: min(72rem, calc(100vw - 4rem));
+      min-height: min(
+        40rem,
+        calc(100dvh - var(--qr-zone) * 2 - env(safe-area-inset-top) - env(safe-area-inset-bottom))
+      );
+      grid-template-columns: minmax(0, 1fr) auto;
+      grid-template-rows: 1fr auto;
+      column-gap: 3rem;
+      padding: 2rem;
+    }
+
+    .qr-code {
+      grid-row: 1 / 3;
+      grid-column: 2;
+      width: min(40vw, 28rem, 70dvh);
+    }
+
+    .qr-link-row {
+      grid-column: 1;
+      align-self: start;
+      text-align: left;
+    }
+
+    h1 {
+      font-size: 3rem;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .qr-deck {
+      scroll-behavior: auto;
+    }
+  }
+</style>
