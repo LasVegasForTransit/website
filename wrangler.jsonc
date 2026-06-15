@@ -1,5 +1,9 @@
 {
   "name": "lvbt-website",
-  "pages_build_output_dir": "dist",
+  // No `pages_build_output_dir`: setting it makes `wrangler pages dev` serve
+  // that static directory and ignore `--proxy`, shadowing live Astro (HMR) with
+  // a stale build. `pnpm dev` proxies to Astro on :4320 instead; deploys pass
+  // the directory explicitly (`wrangler pages deploy ./dist`, see
+  // scripts/bootstrap/phases/deploy.ts).
   "compatibility_date": "2025-01-01",
 }
