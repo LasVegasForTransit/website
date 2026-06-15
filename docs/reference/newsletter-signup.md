@@ -2,6 +2,8 @@
 
 How the on-site subscribe form captures an email and how to configure it so a **verification (double opt-in) email** is actually sent.
 
+> **Newsletter ≠ membership.** This inline box is the lighter, email-only path (homepage and `/go`). Becoming a _member_ goes through the Google Form — a separate flow that collects more and feeds Beehiiv + Notion. See [membership-intake.md](./membership-intake.md). Don't re-merge the two by dropping this box back onto `/join`.
+
 > **Platform note.** This documents the _signup capture_ that ships in the site today, which submits to **Beehiiv**. The authoring/send workflow in [newsletter-ops.md](./newsletter-ops.md) and the [platform decision record](../explanation/decisions/newsletter-platform.md) describe **Ghost(Pro)**. Those are out of sync with the running code — reconcile the platform choice before relying on the Ghost docs.
 
 ## How it works
@@ -70,6 +72,7 @@ curl -fsS "https://api.beehiiv.com/v2/publications/$PUB/subscriptions?limit=5&or
 
 ## Related
 
+- [Membership intake automation](./membership-intake.md) — Google Forms submissions that subscribe members and sync Notion
 - [Newsletter operations](./newsletter-ops.md) — authoring/send workflow (currently Ghost-oriented; see platform note above)
 - [Decision: newsletter platform](../explanation/decisions/newsletter-platform.md)
 - [Local development](./local-dev.md) — env vars, dev server

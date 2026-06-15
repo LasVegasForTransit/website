@@ -39,6 +39,20 @@ LVBT_BEEHIIV_PUBLICATION_ID=pub_...
 
 Run `pnpm preflight` to check the current state of all config values.
 
+### `/api/membership-intake` returns an error locally
+
+Wrangler reads the intake, Beehiiv, and Notion secrets from `.env.local`:
+
+```
+LVBT_MEMBERSHIP_INTAKE_SECRET=...
+LVBT_BEEHIIV_API_KEY=...
+LVBT_BEEHIIV_PUBLICATION_ID=pub_...
+LVBT_NOTION_API_KEY=...
+LVBT_NOTION_DATA_SOURCE_ID=...
+```
+
+See [membership intake automation](./membership-intake.md) for the endpoint contract and Google Forms setup.
+
 ### HMR not reflecting changes
 
 Astro's HMR runs on port 4320, not 1355. If you're hitting 4320 directly, Pages Functions (`/api/*`) won't be available. Use 1355 instead.
