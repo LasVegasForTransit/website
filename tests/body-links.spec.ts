@@ -1,6 +1,8 @@
 import { expect, test, type Page } from '@playwright/test';
 
 const LINKEDIN_URL = 'https://www.linkedin.com/company/lasvegasfortransit/';
+const SITE_URL = 'https://lasvegasfortransit.org';
+const MEMBERSHIP_FORM_URL = 'https://forms.gle/mcLd4EQrGwRPA3bv7';
 
 async function firstVirtualEventPath(page: Page): Promise<string> {
   await page.goto('/events');
@@ -31,6 +33,41 @@ async function firstVirtualEventPath(page: Page): Promise<string> {
 }
 
 test.describe('body content links', () => {
+  test('renders the QR presenter deck with only concrete scan targets', async ({ page }) => {
+    await page.goto('/qr');
+    await page.waitForLoadState('networkidle');
+
+    await expect(page.locator('meta[name="robots"]')).toHaveAttribute(
+      'content',
+      'noindex,nofollow',
+    );
+
+    const slides = page.locator('[data-qr-slide]');
+    await expect(slides.first()).toHaveAttribute('data-qr-url', SITE_URL);
+    await expect(slides.first().locator('svg')).toBeVisible();
+    await expect(slides.first().locator('a[href="https://lasvegasfortransit.org"]')).toBeVisible();
+
+    const destinations = await slides.evaluateAll((items) =>
+      items.map((item) => (item as HTMLElement).dataset.qrUrl ?? ''),
+    );
+
+    expect(destinations.length).toBeGreaterThanOrEqual(1);
+    expect(destinations[0]).toBe(SITE_URL);
+    expect(destinations).not.toContain('');
+    expect(destinations).not.toContain('undefined');
+
+    // The membership form slide, when configured, sits immediately after the
+    // website slide so it reads as the primary call to action.
+    if (destinations.includes(MEMBERSHIP_FORM_URL)) {
+      expect(destinations[1]).toBe(MEMBERSHIP_FORM_URL);
+      await expect(slides.nth(1).locator(`a[href="${MEMBERSHIP_FORM_URL}"]`)).toBeVisible();
+    }
+
+    await expect(page.locator(`a[href="${LINKEDIN_URL}"]`)).toHaveCount(
+      destinations.includes(LINKEDIN_URL) ? 1 : 0,
+    );
+  });
+
   test('exposes the Join page from persistent site chrome', async ({ page }) => {
     await page.goto('/about');
     await page.waitForLoadState('networkidle');

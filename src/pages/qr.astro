@@ -42,6 +42,16 @@ const socialSlides: QrSlide[] = [
   },
 ].filter((slide): slide is QrSlide => Boolean(slide));
 
+const joinSlide: QrSlide | undefined = site.membership.formUrl
+  ? {
+      id: 'join',
+      label: 'Join',
+      title: 'Become a member',
+      url: site.membership.formUrl,
+      hint: 'Scan to fill out the membership form.',
+    }
+  : undefined;
+
 const slides: QrSlide[] = [
   {
     id: 'website',
@@ -50,6 +60,7 @@ const slides: QrSlide[] = [
     url: site.url,
     hint: 'Scan to open the LVBT website.',
   },
+  ...(joinSlide ? [joinSlide] : []),
   ...socialSlides,
 ];
 ---

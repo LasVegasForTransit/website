@@ -1,6 +1,5 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
-import NewsletterEmbed from '../components/NewsletterEmbed.astro';
 import { getCollection } from 'astro:content';
 import { site } from '../lib/site';
 import { generalInterestMailto } from '../lib/role-mailto';
@@ -43,7 +42,9 @@ const roles = (await getCollection('roles')).sort(
   <section id="membership" class="container-page py-16 md:py-24">
     <h2 class="text-headline-md max-w-3xl">Become a member.</h2>
     <div class="mt-6 max-w-2xl space-y-4 leading-relaxed">
-      <p>Membership is free. Add your email below and you're in.</p>
+      <p>
+        Membership is free and takes a minute. Fill out the membership form and you're on the rolls.
+      </p>
       <p>
         You'll get our newsletter — the easiest way to keep up with the 2028 service cuts, the 2027
         legislative session, and the times we need people to show up. And the more members we have,
@@ -51,8 +52,33 @@ const roles = (await getCollection('roles')).sort(
         part of the argument.
       </p>
     </div>
-    <div class="mt-8 max-w-xl">
-      <NewsletterEmbed compact />
+    <div class="mt-8">
+      {
+        site.membership.formUrl ? (
+          <a
+            href={site.membership.formUrl}
+            target="_blank"
+            rel="noopener"
+            class="press inline-flex items-center gap-1.5 bg-ink text-paper px-6 py-3 font-bold no-underline hover:bg-accent"
+          >
+            Become a member{' '}
+            <span class="arrow" aria-hidden="true">
+              →
+            </span>
+          </a>
+        ) : (
+          <p class="leading-relaxed">
+            Our membership form isn't available right now. Email{' '}
+            <a
+              href={generalInterestMailto()}
+              class="font-bold underline underline-offset-4 decoration-2 decoration-accent"
+            >
+              {site.email.general}
+            </a>{' '}
+            and we'll add you.
+          </p>
+        )
+      }
     </div>
   </section>
 

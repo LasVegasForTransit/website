@@ -13,9 +13,11 @@ import icon from 'astro-icon';
 // Path normalisation here mirrors scripts/audit/_shared.ts::sitemapPaths() —
 // keep both in sync if the sitemap URL shape changes.
 
-// No URL exclusions today; left in place as the hook for future hides.
-/** @param {string} _page */
-const sitemapFilter = (_page) => true;
+/** @param {string} page */
+const sitemapFilter = (page) => {
+  const path = new URL(page).pathname.replace(/\/$/, '') || '/';
+  return path !== '/qr';
+};
 
 /**
  * @param {import('@astrojs/sitemap').SitemapItem} item

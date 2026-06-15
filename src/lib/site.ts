@@ -35,6 +35,13 @@ export const site = {
     label: 'Donate',
     url: urlFromEnv('PUBLIC_LVBT_DONATE_URL'),
   },
+  // Membership intake Google Form — the canonical front door for new members
+  // (feeds the Beehiiv + Notion pipeline via its Apps Script submit trigger).
+  // Stored as the forms.gle short link so the same value drives the /join CTA
+  // and the QR presenter slide, whose encoder caps at 84 bytes.
+  membership: {
+    formUrl: urlFromEnv('PUBLIC_LVBT_MEMBERSHIP_FORM_URL'),
+  },
   // Public Google Calendar. Canonical source for event metadata (when /
   // where / how to join). The site rebuilds against this calendar on a
   // schedule; see docs/explanation/events-pipeline.md. `url` is the
