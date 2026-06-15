@@ -22,27 +22,42 @@ The inline newsletter box (`NewsletterEmbed` → `/api/subscribe`) is a separate
 
 ## Required Cloudflare Pages secrets
 
-The fastest path is `pnpm bootstrap --phase env`: it prompts for the Beehiiv and Notion values, mints `LVBT_MEMBERSHIP_INTAKE_SECRET` for you (and echoes it so you can paste the same value into Apps Script), and writes everything to `.env.local`. A later `pnpm bootstrap --phase deploy` pushes them to Cloudflare Pages as **Production** secrets. The **Preview** environment still needs them set by hand in the dashboard.
+The fastest path is `pnpm bootstrap --phase env`: it prompts for the Beehiiv keys and your Notion access token, mints `LVBT_MEMBERSHIP_INTAKE_SECRET` (and echoes it so you can paste the same value into Apps Script), and writes everything to `.env.local`. The remaining secret, `LVBT_NOTION_DATA_SOURCE_ID`, is created for you by `pnpm setup:notion` (see [Notion setup](#notion-setup)). Then `pnpm bootstrap --phase deploy` pushes all five to Cloudflare Pages as **Production** secrets; the **Preview** environment still needs them set by hand in the dashboard.
 
-The five secrets:
+The five runtime secrets:
 
 | Key                             | Purpose                                                                  |
 | ------------------------------- | ------------------------------------------------------------------------ |
 | `LVBT_MEMBERSHIP_INTAKE_SECRET` | Shared bearer token used by Apps Script when calling the intake endpoint |
 | `LVBT_BEEHIIV_API_KEY`          | Beehiiv API key with subscriber write access                             |
 | `LVBT_BEEHIIV_PUBLICATION_ID`   | Beehiiv publication ID, starting with `pub_`                             |
-| `LVBT_NOTION_API_KEY`           | Internal Notion integration secret                                       |
-| `LVBT_NOTION_DATA_SOURCE_ID`    | Notion **data source** ID for the intake table (see note below)          |
+| `LVBT_NOTION_API_KEY`           | Notion connection access token (starts with `ntn_`)                      |
+| `LVBT_NOTION_DATA_SOURCE_ID`    | Notion data source ID — created by `pnpm setup:notion`                   |
 
 To set the intake secret without bootstrap, generate one with `openssl rand -hex 32` and use the same value in both Cloudflare Pages and the Apps Script script property.
 
 ## Notion setup
 
-Create a Notion database for membership intake and share it with the internal integration. The integration needs Insert Content access.
+Two parts: a one-time manual setup the Notion API can't do for you (creating the connection and sharing a page), then a script that builds the database with the right schema. `pnpm bootstrap --phase env` prompts for both values below.
 
-The endpoint creates pages under a **data source**, not a database directly (the post-2025-09 Notion API splits the two). Copy the data source ID — not the database ID — into `LVBT_NOTION_DATA_SOURCE_ID`. Retrieve it by calling the API's retrieve-a-database endpoint, or from the database's `•••` menu under Manage data sources; for a single-source database it is distinct from the database ID you see in the page URL.
+### 1. Connection and parent page (manual)
 
-The endpoint writes these properties:
+1. At <https://www.notion.so/my-integrations>, create an internal **connection** (authentication method **Access token**) with the **Insert content** capability — that is what lets it create the database and pages. Copy its access token (starts with `ntn_`) into `LVBT_NOTION_API_KEY`.
+2. Create a Notion page to hold the intake database (e.g. "LVBT Ops").
+3. Share that page with the connection: open the page → `•••` → **Connections** → add your connection.
+4. Copy the page's 32-character ID from its URL into `LVBT_NOTION_PARENT_PAGE_ID`.
+
+> The new Notion Developer Platform (May 2026) adds an `ntn` CLI and hosted Workers, but a server that writes to Notion — our Cloudflare Pages Function — still authenticates with a connection access token, so these steps don't change.
+
+### 2. Provision the database
+
+```sh
+pnpm setup:notion
+```
+
+This creates a **Membership intake** database under your parent page with the columns below, reads back the **data source ID** (the post-2025-09 API splits databases from data sources — this is the ID the endpoint writes to, not the database ID in the page URL), and writes `LVBT_NOTION_DATA_SOURCE_ID` into `.env.local`. Re-running reuses the existing database instead of duplicating it. Push the value to production with `pnpm bootstrap --phase deploy`.
+
+The schema lives in one place — `functions/api/_intake-schema.ts` — which both the endpoint and the provisioner import, so the columns can't drift from what the code writes. The endpoint writes these properties:
 
 | Property name  | Type  | Value                                          |
 | -------------- | ----- | ---------------------------------------------- |

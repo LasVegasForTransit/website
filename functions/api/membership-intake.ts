@@ -1,7 +1,8 @@
 /// <reference types="@cloudflare/workers-types" />
 
+import { INTAKE_PROPERTIES as PROP, NOTION_VERSION } from './_intake-schema';
+
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-const NOTION_VERSION = '2026-03-11';
 
 interface Env {
   LVBT_BEEHIIV_API_KEY: string;
@@ -161,13 +162,13 @@ async function syncToNotion(
     body: JSON.stringify({
       parent: { data_source_id: env.LVBT_NOTION_DATA_SOURCE_ID },
       properties: {
-        Name: titleProperty(displayName),
-        Email: { email },
-        Discord: plainTextProperty(body.discord?.trim()),
-        Source: plainTextProperty(source),
-        'Submitted at': submittedAt ? { date: { start: submittedAt } } : { date: null },
-        'Raw response': rawResponse ? { url: rawResponse } : { url: null },
-        'Response ID': plainTextProperty(responseId),
+        [PROP.name.label]: titleProperty(displayName),
+        [PROP.email.label]: { email },
+        [PROP.discord.label]: plainTextProperty(body.discord?.trim()),
+        [PROP.source.label]: plainTextProperty(source),
+        [PROP.submittedAt.label]: submittedAt ? { date: { start: submittedAt } } : { date: null },
+        [PROP.rawResponse.label]: rawResponse ? { url: rawResponse } : { url: null },
+        [PROP.responseId.label]: plainTextProperty(responseId),
       },
       children: answerBlocks(body.answers),
     }),

@@ -13,6 +13,7 @@
     "astro": "astro",
     "bootstrap": "tsx scripts/bootstrap/cold-start.ts",
     "preflight": "tsx scripts/bootstrap/cold-start.ts --doctor",
+    "setup:notion": "tsx scripts/notion/provision-intake-db.ts",
     "event:new": "tsx scripts/event-new.ts",
     "check:docs": "tsx scripts/check-docs-links.ts",
     "check:baseline": "tsx scripts/audit/baseline.ts",
