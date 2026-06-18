@@ -3,6 +3,10 @@
     "beehiiv": {
       "type": "http",
       "url": "https://mcp.beehiiv.com/mcp"
+    },
+    "notion": {
+      "type": "http",
+      "url": "https://mcp.notion.com/mcp"
     }
   }
 }
