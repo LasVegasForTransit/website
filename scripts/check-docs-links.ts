@@ -7,7 +7,7 @@
  * links from MDX, and verifies:
  *   - the target path resolves to an existing file or directory
  *   - if the link has an `#anchor`, that the anchor exists in the target
- *     (matched against GitHub's heading-slug rules)
+ *     (GitHub heading-slug rules, plus explicit `<a id="…">`/`name` anchors)
  *
  * External links (http(s)://, mailto:, tel:, ftp:, bare #frag) are skipped.
  * Site-absolute routes (starting with `/`) are skipped — those are validated
@@ -117,8 +117,15 @@ function slugify(heading: string): string {
     .replace(/^-+|-+$/g, '');
 }
 
-function extractHeadingSlugs(content: string): Set<string> {
-  const slugs = new Set<string>();
+const ANCHOR_ID_RE = /<a\b[^>]*\b(?:id|name)\s*=\s*(?:"([^"]+)"|'([^']+)')/gi;
+
+/**
+ * Collect every anchor a `#fragment` link can target in a doc: GitHub-style
+ * heading slugs plus explicit `<a id="…">` / `<a name="…">` anchors (used by the
+ * glossary so each term is deep-linkable without a heading per term).
+ */
+function extractAnchors(content: string): Set<string> {
+  const anchors = new Set<string>();
   let inFence = false;
   for (const line of content.split('\n')) {
     if (line.startsWith('```')) {
@@ -127,9 +134,14 @@ function extractHeadingSlugs(content: string): Set<string> {
     }
     if (inFence) continue;
     const m = line.match(/^#{1,6}\s+(.+?)\s*#*\s*$/);
-    if (m) slugs.add(slugify(m[1]!));
+    if (m) anchors.add(slugify(m[1]!));
+    ANCHOR_ID_RE.lastIndex = 0;
+    let a: RegExpExecArray | null;
+    while ((a = ANCHOR_ID_RE.exec(line)) !== null) {
+      anchors.add(a[1] ?? a[2] ?? '');
+    }
   }
-  return slugs;
+  return anchors;
 }
 
 function resolveTarget(
@@ -157,7 +169,7 @@ function main(): number {
   const root = process.cwd();
   // `--files <abs|rel> [<abs|rel> ...]` lets the pre-commit hook hand us the
   // staged docs and skip the full repo walk. Cross-file anchor checks still
-  // work because `headingsCache` reads target files lazily on demand.
+  // work because `anchorsCache` reads target files lazily on demand.
   const filesIdx = process.argv.indexOf('--files');
   const explicit =
     filesIdx !== -1
@@ -168,16 +180,16 @@ function main(): number {
           .filter((p) => /\.(md|mdx)$/i.test(p) && existsSync(p))
       : null;
   const files = explicit && explicit.length > 0 ? explicit : walkMarkdown(root, root);
-  const headingsCache = new Map<string, Set<string>>();
+  const anchorsCache = new Map<string, Set<string>>();
   const broken: Broken[] = [];
   let checked = 0;
 
   for (const abs of files) {
     const content = readFileSync(abs, 'utf8');
-    // Pre-populate the cache with this file's own headings so a self-anchor
+    // Pre-populate the cache with this file's own anchors so a self-anchor
     // link like `[see below](#section)` doesn't trigger a redundant re-read.
-    if (!headingsCache.has(abs)) {
-      headingsCache.set(abs, extractHeadingSlugs(content));
+    if (!anchorsCache.has(abs)) {
+      anchorsCache.set(abs, extractAnchors(content));
     }
     const links = extractLinks(abs, root, content);
     for (const link of links) {
@@ -204,12 +216,12 @@ function main(): number {
         continue;
       }
 
-      let slugs = headingsCache.get(host);
-      if (!slugs) {
-        slugs = extractHeadingSlugs(readFileSync(host, 'utf8'));
-        headingsCache.set(host, slugs);
+      let anchors = anchorsCache.get(host);
+      if (!anchors) {
+        anchors = extractAnchors(readFileSync(host, 'utf8'));
+        anchorsCache.set(host, anchors);
       }
-      if (!slugs.has(anchor)) {
+      if (!anchors.has(anchor)) {
         broken.push({
           link,
           reason: `anchor "#${anchor}" not found in ${path.relative(root, host)}`,
