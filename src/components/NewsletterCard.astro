@@ -1,0 +1,36 @@
+---
+import type { CollectionEntry } from 'astro:content';
+
+interface Props {
+  post: CollectionEntry<'newsletter'>;
+}
+
+const { post } = Astro.props;
+const { title, link, pubDate, excerpt } = post.data;
+
+const dateLabel = new Intl.DateTimeFormat('en-US', {
+  month: 'short',
+  day: 'numeric',
+  year: 'numeric',
+  timeZone: 'America/Los_Angeles',
+}).format(pubDate);
+---
+
+{
+  /* Each card links OUT to the Beehiiv-hosted issue — the site lists issues
+    but never hosts their content. External target, so noopener + a label that
+    names the destination. */
+}
+<a
+  href={link}
+  target="_blank"
+  rel="noopener"
+  class="lift flex flex-col h-full border border-ink bg-paper text-ink p-6 no-underline hover:bg-ink hover:text-paper"
+>
+  <p class="eyebrow">
+    <time datetime={pubDate.toISOString()}>{dateLabel}</time>
+  </p>
+  <h3 class="text-title-lg mt-2">{title}</h3>
+  <p class="mt-4 leading-relaxed flex-1">{excerpt}</p>
+  <p class="mt-6 text-sm font-bold uppercase tracking-wider">Read on Beehiiv →</p>
+</a>

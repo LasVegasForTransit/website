@@ -43,6 +43,7 @@
     "@tailwindcss/vite": "^4.3.0",
     "astro": "^6.3.5",
     "astro-icon": "^1.1.5",
+    "fast-xml-parser": "^5.9.2",
     "ical.js": "^2.2.1",
     "sitemap": "^9.0.1",
     "tailwindcss": "^4.3.0",

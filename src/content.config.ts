@@ -2,6 +2,7 @@ import { defineCollection } from 'astro:content';
 import { glob } from 'astro/loaders';
 import { z } from 'zod';
 import { calendarEventsLoader } from './lib/events-loader';
+import { beehiivNewsletterLoader } from './lib/newsletter-loader';
 
 const docs = defineCollection({
   loader: glob({ pattern: '**/*.{md,mdx}', base: './src/content/docs' }),
@@ -87,6 +88,22 @@ const eventBodies = defineCollection({
   }),
 });
 
+// Newsletter issues sourced from the Beehiiv RSS feed (see
+// src/lib/newsletter-loader.ts). The loader fetches the feed at build, derives
+// a plain-text excerpt, and emits entries whose `link` points at the
+// Beehiiv-hosted post — the site lists issues but does not host them. An empty
+// feed is valid (no first issue yet); the page handles the empty state.
+const newsletter = defineCollection({
+  loader: beehiivNewsletterLoader(),
+  schema: z.object({
+    title: z.string(),
+    link: z.url(),
+    pubDate: z.coerce.date(),
+    excerpt: z.string(),
+    image: z.string().optional(),
+  }),
+});
+
 const projects = defineCollection({
   loader: glob({ pattern: '**/*.{md,mdx}', base: './src/content/projects' }),
   schema: z.object({
@@ -164,6 +181,7 @@ export const collections = {
   docs,
   events,
   eventBodies,
+  newsletter,
   projects,
   initiatives,
   pages,

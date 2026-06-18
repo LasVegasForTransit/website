@@ -109,6 +109,7 @@ Pre-approval to commit applies only when the user has explicitly said "commit" /
 - `scripts/validation/git/` is the commit-message validator
 - `src/lib/site.ts` is the runtime config object (org name, URLs, social handles)
 - Events are sourced from a public Google Calendar at build time — see [`docs/explanation/events-pipeline.md`](./docs/explanation/events-pipeline.md). To add an event, create it in GCal; for long-form body copy, scaffold a fragment under `src/content/event-bodies/` via `pnpm event:new`.
+- Newsletter issues are pulled from the Beehiiv RSS feed at build time and listed on `/newsletter`, linking out to Beehiiv (issues are not hosted here) — see [`src/lib/newsletter-loader.ts`](./src/lib/newsletter-loader.ts). Feed and home URLs come from `PUBLIC_LVBT_NEWSLETTER_FEED_URL` / `PUBLIC_LVBT_NEWSLETTER_URL`.
 - Membership intake: Google Form → Cloudflare Pages Function → Beehiiv + Notion — see [`docs/reference/membership-intake.md`](./docs/reference/membership-intake.md).
 - Transit news intake: three ways to push articles into a Notion database (pnpm script, Claude Code skill, public Notion form + Cloudflare enrichment) — see [`docs/guides/add-transit-news.md`](./docs/guides/add-transit-news.md) and [`docs/reference/transit-news-pipeline.md`](./docs/reference/transit-news-pipeline.md).
 

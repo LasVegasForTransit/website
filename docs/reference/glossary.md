@@ -129,6 +129,9 @@ bug — please add it (see [writing-docs.md](../standards/writing-docs.md)).
   through (via its API).
 - **Ghost(Pro)** <a id="ghost"></a> — the hosted publishing/newsletter platform
   chosen for the long-form journal. See the [decision record](../explanation/decisions/newsletter-platform.md).
+- **RSS** <a id="rss"></a> — "Really Simple Syndication": a standard XML feed a
+  site or newsletter publishes to list its recent posts. We read Beehiiv's RSS
+  feed at build time to list recent issues on `/newsletter`.
 - **double opt-in** <a id="double-opt-in"></a> — requiring a new subscriber to click
   a confirmation link in an email before they're fully subscribed. Confirms the
   address is real and consenting.

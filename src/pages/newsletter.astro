@@ -1,0 +1,67 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import SectionHeader from '../components/SectionHeader.astro';
+import NewsletterCard from '../components/NewsletterCard.astro';
+import NewsletterEmbed from '../components/NewsletterEmbed.astro';
+import { getCollection } from 'astro:content';
+import { site } from '../lib/site';
+
+// Issues come from the Beehiiv RSS feed (see src/lib/newsletter-loader.ts).
+// The feed re-pulls on the twice-daily production rebuild, so new issues land
+// within ~12h of publishing. We list issues here but link out to Beehiiv —
+// nothing is hosted on this domain.
+const posts = (await getCollection('newsletter')).sort(
+  (a, b) => b.data.pubDate.getTime() - a.data.pubDate.getTime(),
+);
+---
+
+<BaseLayout
+  title="Newsletter"
+  description="Legislative updates, project briefs, and ways to show up — straight to your inbox."
+>
+  <header class="container-page pt-20 pb-12 md:pt-28 md:pb-16">
+    <SectionHeader
+      title="Newsletter"
+      lede="Legislative updates, project briefs, and ways to show up. Published on Beehiiv — read every issue or subscribe below."
+    />
+    {
+      site.newsletter.url && (
+        <p class="mt-6">
+          <a href={site.newsletter.url} rel="noopener" target="_blank" class="press">
+            Read every issue on Beehiiv →
+          </a>
+        </p>
+      )
+    }
+  </header>
+  <hr class="rule-thick container-page" />
+
+  <section class="container-page py-12">
+    {
+      posts.length === 0 ? (
+        <div class="max-w-2xl space-y-6">
+          <p class="lede">
+            Our first issue is on the way. Subscribe and we'll send it to your inbox before it goes
+            anywhere else.
+          </p>
+          <NewsletterEmbed />
+          {site.newsletter.url && (
+            <p class="leading-relaxed text-mute">
+              You can also{' '}
+              <a href={site.newsletter.url} rel="noopener" target="_blank">
+                follow along on Beehiiv
+              </a>
+              .
+            </p>
+          )}
+        </div>
+      ) : (
+        <div class="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+          {posts.map((post) => (
+            <NewsletterCard post={post} />
+          ))}
+        </div>
+      )
+    }
+  </section>
+</BaseLayout>

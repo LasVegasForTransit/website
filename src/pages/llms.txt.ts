@@ -18,6 +18,7 @@ const u = (path: string): string => new URL(path, site.url).toString();
 // corresponding PUBLIC_LVBT_* var is unset — no dead links in the LLM index.
 const takeAction = [
   `- [Get involved](${u('/go')}): newsletter,\n  volunteer signup, and ways to plug in`,
+  `- [Newsletter](${u('/newsletter')}): recent\n  issues and the link to subscribe on Beehiiv`,
   site.donate.url &&
     `- [Donate](${site.donate.url}): one-time and recurring\n  gifts on GiveButter`,
   `- [Contact](${u('/contact')}): general, press,\n  and partnership contacts`,

@@ -88,6 +88,22 @@ const PROMPTED_KEYS: Record<string, EnvKeyConfig> = {
     validate: (v) =>
       v && !/^https?:\/\//.test(v) ? 'Use an absolute URL starting with https://' : undefined,
   },
+  PUBLIC_LVBT_NEWSLETTER_URL: {
+    prompt: 'Newsletter home URL',
+    hint: 'Public Beehiiv home (archive + subscribe). Surfaced on /newsletter. In Beehiiv: your publication URL, e.g. https://mail.yourdomain.org/.',
+    example: 'https://mail.lasvegasfortransit.org/',
+    required: false,
+    validate: (v) =>
+      v && !/^https?:\/\//.test(v) ? 'Use an absolute URL starting with https://' : undefined,
+  },
+  PUBLIC_LVBT_NEWSLETTER_FEED_URL: {
+    prompt: 'Newsletter RSS feed URL',
+    hint: 'Beehiiv RSS feed, pulled at build to list recent issues on /newsletter. In Beehiiv: Settings → search "RSS" for the feed URL (https://rss.beehiiv.com/feeds/....xml).',
+    example: 'https://rss.beehiiv.com/feeds/xxxxxxxxxx.xml',
+    required: false,
+    validate: (v) =>
+      v && !/^https?:\/\//.test(v) ? 'Use an absolute URL starting with https://' : undefined,
+  },
   PUBLIC_LVBT_INSTAGRAM: {
     prompt: 'Instagram profile URL',
     hint: 'Full URL to the LVBT Instagram profile.',

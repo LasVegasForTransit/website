@@ -8,14 +8,15 @@ A _content collection_ is Astro's name for a folder of content files that all sh
 
 Most collections are authored in MDX (Markdown with the ability to drop in interactive components — see [glossary](./glossary.md#mdx)).
 
-| Folder                      | Type            | Drives                                                                                                                                             |
-| --------------------------- | --------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `src/content/docs/`         | MDX             | Long-form essays (vision, mission, why-now, problems, strategy). Rendered at `/vision` and `/about/strategy`.                                      |
-| `src/content/pages/`        | MDX             | Body copy for individual site pages (about, contact, get-involved).                                                                                |
-| `src/content/projects/`     | MDX             | One per project. Drives `/projects` and `/projects/[slug]`.                                                                                        |
-| _(events)_                  | Google Calendar | Event metadata. Pulled at build time by the custom loader in `src/lib/events-loader.ts`. See [events pipeline](../explanation/events-pipeline.md). |
-| `src/content/event-bodies/` | MDX             | Optional long-form body for a specific event, keyed by slug. Rendered below the event header on `/events/[slug]`.                                  |
-| `src/content/initiatives/`  | JSON            | Project tags. Drives the chips on `/projects`.                                                                                                     |
+| Folder                      | Type            | Drives                                                                                                                                                                                                                                            |
+| --------------------------- | --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `src/content/docs/`         | MDX             | Long-form essays (vision, mission, why-now, problems, strategy). Rendered at `/vision` and `/about/strategy`.                                                                                                                                     |
+| `src/content/pages/`        | MDX             | Body copy for individual site pages (about, contact, get-involved).                                                                                                                                                                               |
+| `src/content/projects/`     | MDX             | One per project. Drives `/projects` and `/projects/[slug]`.                                                                                                                                                                                       |
+| _(events)_                  | Google Calendar | Event metadata. Pulled at build time by the custom loader in `src/lib/events-loader.ts`. See [events pipeline](../explanation/events-pipeline.md).                                                                                                |
+| `src/content/event-bodies/` | MDX             | Optional long-form body for a specific event, keyed by slug. Rendered below the event header on `/events/[slug]`.                                                                                                                                 |
+| _(newsletter)_              | Beehiiv RSS     | Newsletter issues. Pulled at build time by the loader in `src/lib/newsletter-loader.ts` from the feed at `PUBLIC_LVBT_NEWSLETTER_FEED_URL`. Drives `/newsletter`; each card links out to the Beehiiv post (issues are never hosted on this site). |
+| `src/content/initiatives/`  | JSON            | Project tags. Drives the chips on `/projects`.                                                                                                                                                                                                    |
 
 ## Frontmatter shapes
 
@@ -47,6 +48,22 @@ slug: string # must match the event's derived slug (<YYYY-MM-DD>-<slugified-titl
 ```
 
 MDX body renders below the event header on `/events/[slug]`. Use sparingly — most events ship as header-only.
+
+### Newsletter issue
+
+Newsletter issues come from the Beehiiv RSS feed (an XML feed of recent issues — see [glossary](./glossary.md#rss)); there is no MDX to author. Set `PUBLIC_LVBT_NEWSLETTER_FEED_URL` (and `PUBLIC_LVBT_NEWSLETTER_URL` for the "Read on Beehiiv" links) — see [`.env.example`](../../.env.example). The loader in `src/lib/newsletter-loader.ts` maps each feed `<item>` to this validated shape:
+
+```ts
+{
+  title: string;     // <title>
+  link: URL;         // <link> — the Beehiiv post; the site links out, never hosts the issue
+  pubDate: Date;     // <pubDate>
+  excerpt: string;   // first ~220 chars of <description>/<content:encoded>, HTML stripped
+  image?: string;    // <enclosure> or <media:content> thumbnail, if the feed includes one
+}
+```
+
+When the feed URL is unset (e.g. local dev with no `.env.local`) or the feed has no published items yet, the collection is empty and `/newsletter` shows a subscribe-only state instead of a list.
 
 ### Project
 

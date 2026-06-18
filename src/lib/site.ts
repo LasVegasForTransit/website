@@ -42,6 +42,16 @@ export const site = {
   membership: {
     formUrl: urlFromEnv('PUBLIC_LVBT_MEMBERSHIP_FORM_URL'),
   },
+  // Newsletter. Published on Beehiiv; the site links out to it rather than
+  // hosting issues. `url` is the public Beehiiv home (archive + subscribe);
+  // `feedUrl` is the RSS feed pulled at build to list recent issues on
+  // /newsletter. Both come from PUBLIC_LVBT_* env vars (like the socials);
+  // when unset, the loader emits no issues and the page hides the Beehiiv
+  // links. See src/lib/newsletter-loader.ts.
+  newsletter: {
+    url: urlFromEnv('PUBLIC_LVBT_NEWSLETTER_URL'),
+    feedUrl: urlFromEnv('PUBLIC_LVBT_NEWSLETTER_FEED_URL'),
+  },
   // Public Google Calendar. Canonical source for event metadata (when /
   // where / how to join). The site rebuilds against this calendar on a
   // schedule; see docs/explanation/events-pipeline.md. `url` is the
