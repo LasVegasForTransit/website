@@ -2,49 +2,52 @@
 
 The website for **Las Vegans for Better Transit**, a grassroots advocacy organization fighting for world-class public transit and supportive land use in the Las Vegas Valley.
 
+> **New contributor?** You don't need to know our stack to help. Start at
+> [`docs/tutorials/start-here.md`](./docs/tutorials/start-here.md), and keep the
+> [glossary](./docs/reference/glossary.md) open for any unfamiliar term.
+
 ## Stack
 
-- [Astro](https://astro.build) (static output)
-- MDX content collections with Zod-typed frontmatter
-- Tailwind CSS v4 (via `@tailwindcss/vite`)
+New to any of these? Each links to its [glossary](./docs/reference/glossary.md) entry.
+
+- [Astro](./docs/reference/glossary.md#astro) — the framework that builds the site into fast [static](./docs/reference/glossary.md#static-site) HTML
+- [MDX](./docs/reference/glossary.md#mdx) [content collections](./docs/reference/glossary.md#content-collection) (Markdown-plus-components content) with [Zod](./docs/reference/glossary.md#zod)-validated [frontmatter](./docs/reference/glossary.md#frontmatter), so a typo fails the build instead of shipping
+- [Tailwind](./docs/reference/glossary.md#tailwind) CSS v4 (via `@tailwindcss/vite`)
 - [Public Sans](https://public-sans.digital.gov/) (USWDS font, via `@fontsource-variable/public-sans`)
-- Hosted on [Cloudflare Pages](https://pages.cloudflare.com/) — fully portable to any static host (Netlify, GitHub Pages, S3+CloudFront).
+- Hosted on [Cloudflare Pages](./docs/reference/glossary.md#cloudflare-pages) — fully portable to any static host (Netlify, GitHub Pages, S3+CloudFront).
 
 ---
 
-## First-time setup: `pnpm bootstrap`
+## Getting started
 
-The `bootstrap` CLI is a single-command, multi-phase setup script. It walks you through everything you need to get from an empty checkout to a deployed site:
-
-```sh
-pnpm install            # one-time: install workspace deps
-pnpm bootstrap          # full interactive setup
-```
-
-It runs seven phases, in order:
-
-| Phase       | What it does                                                                                                          |
-| ----------- | --------------------------------------------------------------------------------------------------------------------- |
-| `install`   | Verifies Node ≥ 22, pnpm ≥ 10, GitHub CLI, Cloudflare Wrangler, dig — offers to install missing tools                 |
-| `auth`      | Ensures `gh` and `wrangler` are logged in                                                                             |
-| `workspace` | Runs `pnpm install --frozen-lockfile` and a `pnpm build` smoke test                                                   |
-| `env`       | Creates `.env.local` from `.env.example`, prompts for the live Beehiiv embed URL, donate URL, and social profile URLs |
-| `repo`      | If no `origin` is set, creates a GitHub repo via `gh repo create` and pushes                                          |
-| `deploy`    | If no Cloudflare Pages project exists, creates one with `wrangler pages project create` and runs the first deploy     |
-| `domain`    | Verifies `lasvegasfortransit.org` and `www.…` resolve to your Pages project; prints registrar instructions if not     |
-
-State is persisted to `.lvbt/dev-readiness.json` so re-runs can resume cleanly.
-
-Useful flags:
+To preview the site on your own computer — all most contributors ever need:
 
 ```sh
-pnpm preflight                       # read-only readiness check, no changes
-pnpm bootstrap --resume           # skip phases that already completed
-pnpm bootstrap --local-only       # run only install/workspace/env (no GitHub or Cloudflare)
-pnpm bootstrap --phase env        # run a single phase by id
+pnpm install   # one-time: install dependencies
+pnpm dev       # start the local site at http://localhost:4321
 ```
 
-The bootstrap implementation lives at `scripts/bootstrap/`. Each phase is a small TypeScript module returning `{ success, followUpItems[] }`. Add a new phase by adding a module to `scripts/bootstrap/phases/`, registering it in `scripts/bootstrap/cold-start.ts`, and adding its id to `PhaseId` in `scripts/bootstrap/lib/types.ts`.
+That's it: edit a file, see it update live. New to the project or our tools?
+[`docs/tutorials/start-here.md`](./docs/tutorials/start-here.md) walks through
+this from scratch, and the [glossary](./docs/reference/glossary.md) defines any
+unfamiliar term.
+
+### Full setup (deploying your own copy)
+
+`pnpm bootstrap` is a single command that takes an empty checkout all the way to a
+deployed site. It runs seven phases in order — `install` → `auth` → `workspace` →
+`env` → `repo` → `deploy` → `domain` — saving progress so an interrupted run
+resumes cleanly:
+
+```sh
+pnpm install
+pnpm bootstrap   # full interactive setup; add --local-only to skip GitHub/Cloudflare
+```
+
+For what each phase does, the other flags, and how to add a phase, see the
+[bootstrap reference](./docs/reference/bootstrap.md); the
+[first-time-setup tutorial](./docs/tutorials/first-time-setup.md) is the
+hand-held version.
 
 ---
 
@@ -65,8 +68,10 @@ The bootstrap implementation lives at `scripts/bootstrap/`. Each phase is a smal
 
 ## Editing content
 
-The full docs live in [`docs/`](./docs/), structured by [Diátaxis](https://diataxis.fr/) — start at [`docs/README.md`](./docs/README.md). Common entry points:
+The full docs live in [`docs/`](./docs/), organized so you can find things by what you're trying to do (the [Diátaxis](https://diataxis.fr/) system). New here? Begin at [**Start here**](./docs/tutorials/start-here.md); for everything else, the [docs index](./docs/README.md) lists it all. Common entry points:
 
+- [Start here](./docs/tutorials/start-here.md) — the new-contributor on-ramp
+- [Glossary](./docs/reference/glossary.md) — plain-English definitions of every tool and acronym
 - [Add an event](./docs/guides/add-an-event.md)
 - [Add a project](./docs/guides/add-a-project.md)
 - [Edit a long-form doc](./docs/guides/edit-a-long-form-doc.md)

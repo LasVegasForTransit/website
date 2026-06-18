@@ -2,7 +2,9 @@
 
 > **The four scopes valid for commits in this repo, and why nothing else qualifies.**
 
-This is a single Astro site, not a platform. Only true architectural boundaries get a scope; everything else stays scopeless. The list is short on purpose — if a scope wouldn't appear on at least five future commits, it shouldn't exist.
+The **scope** is the optional part in parentheses in a commit title — the `content` in `fix(content): …`. It names which part of the project a commit touches. This page lists the only four scopes you may use here, and why the list is so short.
+
+Why only four? This is a single Astro (the framework that builds the site — see [glossary](../reference/glossary.md#astro)) site, not a sprawling platform with many independent subsystems. Only true architectural boundaries — parts that change on their own, over and over — get a scope; everything else stays scopeless. The list is short on purpose: if a scope wouldn't appear on at least five future commits, it isn't a real boundary and shouldn't exist. A long scope list just becomes noise nobody can keep straight.
 
 ## Allowed scopes
 
@@ -15,7 +17,7 @@ This is a single Astro site, not a platform. Only true architectural boundaries 
 
 Source of truth: [`../../allowed-scopes.txt`](../../allowed-scopes.txt). The commit‑msg hook reads that file at validation time.
 
-Empty scope is valid: `feat: add Beehiiv newsletter subscribe Pages Function`. Use it whenever none of the four fit.
+Empty scope is valid — and it's the common case. Just leave the parentheses off entirely: `feat: add Beehiiv newsletter subscribe Pages Function`. Use an empty scope whenever none of the four above fit, which is most of the time (anything touching the actual site pages, components, or features). Reach for one of the four only when the change really is confined to that boundary.
 
 ## What does **not** become a scope
 
@@ -32,7 +34,7 @@ Adding a fifth scope is a deliberate act. Don't slip one in alongside a feature 
 
 ## Cross‑cutting changes
 
-If a commit spans two of the four scopes (e.g., a hook change that also edits a workflow), pick the dominant one or omit the scope entirely.
+Sometimes one commit touches two of the four boundaries at once — say, a hook change (`dx`) that also edits a CI workflow (`ci`). When that happens, the tie-break is: **pick the scope where most of the change lives** (the dominant one), or, if it's a genuine even split, **omit the scope entirely**. Don't stack two scopes in one title — there's no `feat(ci,dx):` form.
 
 ## Examples
 

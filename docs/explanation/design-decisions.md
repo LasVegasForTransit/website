@@ -1,12 +1,12 @@
 # Design decisions
 
-Choices that look weird at first but are deliberate. Documented here so future contributors know they're load-bearing, not oversights.
+Choices that look weird at first but are deliberate. Documented here so future contributors know they're load-bearing, not oversights. Most of these are about the **bootstrap CLI** — the one-command setup script (`pnpm bootstrap`) that wires up a fresh checkout: creating the GitHub repo, the Cloudflare deploy, and the domain in a fixed sequence of "phases."
 
 ## Cross-phase coupling via `.env.local`
 
 The bootstrap CLI's `domain` phase reads `process.env.CLOUDFLARE_PAGES_PROJECT` to recover values that the `deploy` phase set. This looks like sloppy global state.
 
-**Why it's deliberate:** `.env.local` is the explicit persistence layer between phases. `cold-start.ts` hydrates `process.env` from it at startup, so individual phases stay decoupled — they don't need to know which earlier phase wrote a value, or to be invoked through a typed state container.
+**Why it's deliberate:** `.env.local` is the explicit persistence layer between phases. `cold-start.ts` hydrates `process.env` from it at startup (that is, it loads the saved settings into the program's live environment variables — see [glossary](../reference/glossary.md#env-var)), so individual phases stay decoupled — they don't need to know which earlier phase wrote a value, or to be invoked through a typed state container.
 
 The alternative (passing a typed state object through the orchestrator into every phase) was considered. For a 7-phase one-shot CLI it's over-engineered. If the bootstrap grows another five phases or starts running concurrently, revisit.
 
@@ -14,7 +14,7 @@ Inline reminder: top of `runDomainPhase` in `scripts/bootstrap/phases/domain.ts`
 
 ## Synchronous `spawnSync` in `runDigCheck`
 
-`runDigCheck` makes three sequential `spawnSync` calls (`command -v dig` + two `dig +short` lookups) inside what is otherwise an async/await flow.
+`runDigCheck` makes three sequential `spawnSync` calls (`command -v dig` + two `dig +short` lookups) inside what is otherwise an async/await flow. (`dig` is a command-line tool that looks up DNS records — it's how we check a domain points where it should.)
 
 **Why it's deliberate:** This is a one-shot CLI on a finished spinner. Three blocking calls total a few hundred milliseconds — the user's eye can't tell the difference between async and sync at that scale, and the simpler control flow is worth keeping. If we ever need to run the bootstrap as a long-lived service or under heavy concurrent load, revisit.
 
@@ -22,7 +22,7 @@ Inline reminder: top of `runDigCheck` in `scripts/bootstrap/phases/domain.ts`.
 
 ## Don't scrape English error messages
 
-When detecting specific failures from `gh`, `wrangler`, or any external CLI, we never match on English error text. Two reasons:
+When detecting specific failures from `gh` (GitHub's command-line tool), `wrangler` (Cloudflare's command-line tool — see [glossary](../reference/glossary.md#wrangler)), or any external CLI, we never match on English error text. Two reasons:
 
 1. Locale-dependent — `LANG=de_DE` breaks our detection.
 2. Unstable — vendors rephrase error messages between minor versions without warning.
@@ -39,6 +39,6 @@ The deploy phase's "already exists" branch is one place where we still match a n
 
 `gh repo create` is invoked without `--source/--remote/--push` so the bootstrap can wire `origin` to the SSH URL (`git@github.com:owner/repo.git`) ourselves. For existing repos, we use `gh repo view --json sshUrl` and add the SSH URL as `origin`.
 
-**Why:** This matches the user's GitHub auth pattern (SSH key, not HTTPS token). HTTPS would either prompt for credentials or rely on `gh`'s token, neither of which fits a pushed-from-CLI workflow. If SSH push fails (no key on GitHub), the raw error gets surfaced — we don't silently fall back to HTTPS.
+**Why:** This matches the user's GitHub auth pattern (SSH key, not HTTPS token). Git can talk to GitHub two ways: over SSH, which authenticates with a key file you've added to your account, or over HTTPS, which authenticates with a username/token. HTTPS would either prompt for credentials or rely on `gh`'s token, neither of which fits a pushed-from-CLI workflow. If SSH push fails (no key on GitHub), the raw error gets surfaced — we don't silently fall back to HTTPS.
 
 Also documented at the user-global level in `~/.claude/CLAUDE.md` under "Git remotes."

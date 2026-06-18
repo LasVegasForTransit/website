@@ -2,6 +2,10 @@
 
 These numbers anchor the home page, the vision, the why-now case, and the objection-rebuttal reference. **Verify them before changing.** They're time-sensitive — they will drift.
 
+Acronyms used below: **RTC** (Regional Transportation Commission of Southern Nevada — the agency that runs Las Vegas's buses; see [glossary](./glossary.md#rtc)), **APTA** (American Public Transportation Association, an industry group that publishes ridership rankings; see [glossary](./glossary.md#apta)), **FTA** (Federal Transit Administration, the U.S. agency that funds transit projects; see [glossary](./glossary.md#fta)), and **BRT** (Bus Rapid Transit — faster bus service with dedicated lanes and fewer stops; see [glossary](./glossary.md#brt)).
+
+Fact discipline matters because these figures appear on public-facing pages and in advocacy materials: a single wrong number, repeated across files, undermines the case and is hard to chase down later. So treat this table as the single source, verify against the cited source, and update every place the fact appears (below) in the same change.
+
 | Fact                                       | Value                            | Source                                            |
 | ------------------------------------------ | -------------------------------- | ------------------------------------------------- |
 | RTC of Southern Nevada annual bus trips    | ~57.9M                           | RTC ridership reports                             |
@@ -27,4 +31,4 @@ When you change a fact here, update every file below that mentions it:
 - `src/content/docs/vision.mdx`
 - `docs/reference/transit-objection-rebuttals.md`
 
-A change-log entry in your commit message ("updated RTC ridership to FY26 figures") helps future maintainers.
+A change-log entry — a short note in your commit message saying which fact changed and to what, e.g. "updated RTC ridership to FY26 figures" — helps future maintainers trace when and why a number moved.

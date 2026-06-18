@@ -1,5 +1,7 @@
 # Decision: Staff publishing for site content
 
+This record is about how non-technical staff will eventually edit the website without learning git. A **CMS** (content management system) is the admin tool that lets someone write and edit site content through a friendly web interface instead of editing code files by hand. Two flavors come up below: a **git-backed CMS** keeps the content as files in our code repository and saves edits as git commits (so the content stays in the repo, just with a nicer editor on top), while a **headless CMS** stores the content in the vendor's own database and the site fetches it over an API at build time (more convenient to edit, but the content no longer lives in our repo).
+
 **Decision:** Deferred. Founder authors MDX directly in v0. Pick a CMS path when the second contributor joins.
 
 **Date:** 2026-05-01 (decision deferred)
@@ -16,13 +18,13 @@ The newsletter side of this is solved by Ghost(Pro)'s native auth and editor (se
 
 Content stays as MDX in repo. CMS provides a WYSIWYG editor in the browser; saves commit through git.
 
-| Tool                                 | Notes                                                                                                                                                 |
-| ------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Keystatic**                        | Open-source by Thinkmill, designed for Astro, free. Modern block-based editor. Auth via GitHub OAuth — every contributor needs a free GitHub account. |
-| **Sveltia CMS**                      | Actively-maintained successor to Decap. Framework-agnostic. Same git-backed model and same auth constraint.                                           |
-| **Decap CMS** (formerly Netlify CMS) | Same shape. Less actively maintained; Sveltia is the better current choice.                                                                           |
-| **TinaCMS**                          | Visual editing on top of MDX. Hosted backend ($29/mo team) or self-hostable. Slickest editor of this group.                                           |
-| **Pages CMS**                        | Cloudflare-Pages-native, lightweight. GitHub-auth-based. Newer, less mature.                                                                          |
+| Tool                                 | Notes                                                                                                                                                                                                                                                                                |
+| ------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **Keystatic**                        | Open-source by Thinkmill, designed for Astro, free. Modern block-based editor. Auth via GitHub OAuth (the standard "sign in with GitHub" flow — OAuth, "Open Authorization," lets one app log you in using your account on another) — every contributor needs a free GitHub account. |
+| **Sveltia CMS**                      | Actively-maintained successor to Decap. Framework-agnostic. Same git-backed model and same auth constraint.                                                                                                                                                                          |
+| **Decap CMS** (formerly Netlify CMS) | Same shape. Less actively maintained; Sveltia is the better current choice.                                                                                                                                                                                                          |
+| **TinaCMS**                          | Visual editing on top of MDX. Hosted backend ($29/mo team) or self-hostable. Slickest editor of this group.                                                                                                                                                                          |
+| **Pages CMS**                        | Cloudflare-Pages-native, lightweight. GitHub-auth-based. Newer, less mature.                                                                                                                                                                                                         |
 
 **Key constraint:** all of these auth via GitHub. Each contributor needs a free GitHub account (~5 min one-time signup using their Workspace email, added to a `lasvegasfortransit` GitHub org).
 
@@ -34,7 +36,7 @@ Content stays as MDX in repo. CMS provides a WYSIWYG editor in the browser; save
 
 ### Custom admin gated by Cloudflare Access
 
-Build a thin admin route at `admin.lasvegasfortransit.org`, gated by Cloudflare Access (Google Workspace SSO, free up to 50 users). Contributors sign in with their Workspace identity. The admin commits to git via a service-account PAT — git authorship shows "LVBT-bot" with the actual editor captured in the commit body.
+Build a thin admin route at `admin.lasvegasfortransit.org`, gated by Cloudflare Access (Google Workspace SSO, free up to 50 users). Contributors sign in with their Workspace identity. The admin commits to git via a service-account PAT (personal access token — a secret, password-like string that lets a script act on GitHub on a "bot" account's behalf) — git authorship shows "LVBT-bot" with the actual editor captured in the commit body.
 
 **Pros:** No GitHub accounts needed. Leverages existing Cloudflare + Workspace stack. Maintains MDX-in-repo.
 **Cons:** Custom plumbing — Keystatic and similar CMSes don't ship this mode out-of-the-box. Real engineering investment.

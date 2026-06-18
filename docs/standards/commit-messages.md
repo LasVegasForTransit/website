@@ -2,7 +2,7 @@
 
 > **Authoritative reference for writing commit messages in the LVBT website repo.** Adapted from the lovelace platform standards, scaled down to a single Astro site.
 
-Commit messages are the permanent record of why code exists. The diff shows the mechanics; the message explains everything else. Someone reading `git log` a year from now has nothing else to go on.
+This page is the rulebook for what to type after `git commit`. It exists because commit messages are the permanent record of why code exists: the diff shows the mechanics (the exact lines that changed); the message explains everything else. Someone reading `git log` (the running history of every commit) a year from now has nothing else to go on.
 
 ---
 
@@ -29,14 +29,14 @@ Optional footer (issue refs, co-authors, BREAKING CHANGE).
 
 ### Title (required)
 
-`type(scope): description` — the only required part. Conventional Commits format, validated by the commit‑msg hook.
+`type(scope): description` — the only required part. This is the **Conventional Commits** format: a widely-used convention where every commit title starts with a `type` (like `feat` or `fix`), an optional `(scope)`, then a short summary — e.g. `feat(content): add about page`. It's validated by the commit‑msg hook: a script Git runs automatically when you commit, which rejects the commit if the message breaks the rules below (see [git-guidelines.md](./git-guidelines.md#hook-overview)).
 
 ### Body (required for `feat` and `fix`; conditional otherwise)
 
 Separated from title by a blank line, wrapped at 72 characters. This is where context lives — _why_ the change was necessary, what alternatives existed, what trade‑offs were made.
 
 - **`feat` and `fix` commits:** Always include a body. The hook enforces this.
-- **Other types (`chore`, `refactor`, `docs`, `test`, `perf`):** Body required when the change density `(files × 2) + (lines × 0.1)` exceeds 10. Single‑line fixes are exempt.
+- **Other types (`chore`, `refactor`, `docs`, `test`, `perf`):** Body required when the change density `(files × 2) + (lines × 0.1)` exceeds 10. This formula is just a rough "how big is this change?" score — bigger changes (more files, more lines) need a sentence of explanation; a one-line tweak doesn't. Single‑line fixes are exempt.
 - Body lines ≤72 chars. Trailers (`Co-Authored-By:`, `Signed-off-by:`, `Reviewed-by:`, `Acked-by:`) are exempt from the length cap.
 
 ### Footer (optional)
@@ -82,7 +82,7 @@ Before mentioning any technical detail in a commit message, ask:
 
 **"If I'm reading this commit in `git log` a year from now, can I do something different because of this information?"**
 
-- ✅ YES → it's behavior, capability, or breakage. Include it.
+- ✅ YES → it's behavior, capability, or breakage. Include it. (**Behavior** = something the site or a tool now does differently; **capability** = something it can now do that it couldn't; **breakage** = something that used to work and no longer does, or an interface other code depended on that changed.)
 - ❌ NO → it's refactor mechanics, internal identifiers, or a story about how the author got there. Cut it.
 
 ### Don't write a refactor diary

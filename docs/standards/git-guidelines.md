@@ -8,9 +8,11 @@ If anything here conflicts with `commit-messages.md`, the commit message guide w
 
 ## Staging discipline
 
-- **Never** use `git add -A`, `git add .`, or `git add *`. Stage explicit paths.
-- Run `git status` (or `git diff --staged`) before every commit. Confirm exactly what's going in.
-- For partial-file changes, use `git add -p`.
+"Staging" is choosing which changes go into the next commit (you stage a file with `git add`, then `git commit` records exactly what's staged). Getting this right matters because the commit message describes what you staged — stage the wrong files and the message lies about what changed.
+
+- **Never** use `git add -A`, `git add .`, or `git add *`. Stage explicit paths. (Those forms grab _everything_ changed in the repo, including files you didn't mean to touch.)
+- Run `git status` (or `git diff --staged`, which shows the exact staged changes) before every commit. Confirm exactly what's going in.
+- For partial-file changes, use `git add -p` — the `-p` ("patch") flag walks you through each chunk of a file and asks whether to stage it, so you can commit part of a file and leave the rest.
 
 The hooks run on whatever you staged. Staging too much is the easiest way to produce a commit that doesn't match its message.
 
@@ -18,7 +20,7 @@ The hooks run on whatever you staged. Staging too much is the easiest way to pro
 
 ## The atomic pattern
 
-The harness requires `git commit` to be preceded by `git restore --staged .` in the same command chain. The canonical shape:
+"Atomic" here means the whole sequence — unstage, stage, commit — runs as **one** command joined by `&&`, so it either fully succeeds or fully fails, with no half-done state left behind. The harness requires `git commit` to be preceded by `git restore --staged .` (which un-stages everything first, clearing any leftover staged files) in the same command chain. The canonical shape:
 
 ```bash
 git restore --staged . \
@@ -47,11 +49,11 @@ For multi-paragraph messages, write the message to a file first (e.g. `/tmp/msg.
 
 ## Don't bypass hooks
 
-`git commit --no-verify` bypasses both the pre-commit and commit-msg hooks. It is **not the right answer** to a hook failure. Fix the underlying issue and re-run the atomic command.
+`git commit --no-verify` is a flag that tells Git to **skip the hooks** (the automated checks) entirely. It bypasses both the pre-commit and commit-msg hooks. It is **not the right answer** to a hook failure — the hooks are catching a real problem; silencing them just hides it. Fix the underlying issue and re-run the atomic command.
 
 The two legitimate uses of `--no-verify` in this repo:
 
-1. **History rewrites** where the hook context wouldn't apply (e.g. running `git rebase -i --root` to reword pre-existing messages — the commit-msg hook runs on each reword, but the pre-commit hook re-running its full pipeline against unrelated historical states is noise). For that case use `git -c core.hookspath=/tmp/empty-dir rebase -i --root` instead, so commit-msg still validates but pre-commit doesn't fire against unrelated history.
+1. **History rewrites** — editing commits that already exist, rather than making a new one (e.g. fixing the wording of old commit messages). Here the hook context wouldn't apply (e.g. running `git rebase -i --root` to reword pre-existing messages — the commit-msg hook runs on each reword, but the pre-commit hook re-running its full pipeline against unrelated historical states is noise). For that case use `git -c core.hookspath=/tmp/empty-dir rebase -i --root` instead, so commit-msg still validates but pre-commit doesn't fire against unrelated history.
 2. Genuine emergencies you can articulate. There aren't any of these in this repo.
 
 ---
@@ -68,6 +70,8 @@ The two legitimate uses of `--no-verify` in this repo:
 ---
 
 ## Hook overview
+
+**Git hooks** are scripts Git runs automatically at certain moments — here, right before a commit is recorded (`pre-commit`), as the message is checked (`commit-msg`), and before you push (`pre-push`). They're the project's automatic gatekeepers: they catch formatting, type, and message mistakes for you instead of relying on you to remember every rule.
 
 ### `commit-msg`
 
@@ -119,14 +123,14 @@ Heavier gates that run once per push:
 
 ## Discard / undo, the safe way
 
-| Goal                                             | Command                                     |
-| ------------------------------------------------ | ------------------------------------------- |
-| Drop one file's working-tree changes             | `git restore --source=HEAD -- path/to/file` |
-| Drop everything uncommitted (with backup)        | `git stash --include-untracked`             |
-| Undo the last commit but keep the changes staged | `git reset --soft HEAD~1`                   |
-| Undo the last commit and unstage                 | `git reset HEAD~1`                          |
-| Rewrite the last commit message                  | `git commit --amend`                        |
-| Discard a stash                                  | `git stash drop stash@{0}`                  |
+| Goal                                             | Command                                     | What it does                                                                                    |
+| ------------------------------------------------ | ------------------------------------------- | ----------------------------------------------------------------------------------------------- |
+| Drop one file's working-tree changes             | `git restore --source=HEAD -- path/to/file` | Resets that one file back to its last-committed state; other files untouched.                   |
+| Drop everything uncommitted (with backup)        | `git stash --include-untracked`             | Tucks all uncommitted changes (including new files) into a saved stash you can restore later.   |
+| Undo the last commit but keep the changes staged | `git reset --soft HEAD~1`                   | Removes the commit but leaves its changes staged, ready to re-commit (e.g. with a new message). |
+| Undo the last commit and unstage                 | `git reset HEAD~1`                          | Removes the commit and un-stages its changes, but keeps the edits in your files.                |
+| Rewrite the last commit message                  | `git commit --amend`                        | Replaces the most recent commit with a new one (use to fix the message or add a staged file).   |
+| Discard a stash                                  | `git stash drop stash@{0}`                  | Permanently deletes a saved stash you no longer need.                                           |
 
 If you have to do anything more invasive than these, branch first: `git branch backup/$(date +%s)`.
 

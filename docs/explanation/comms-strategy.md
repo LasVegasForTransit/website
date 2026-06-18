@@ -4,14 +4,14 @@ What LVBT publishes, where it lives, and why each surface exists. Read before ad
 
 ## The hybrid surface model
 
-The website is not a publication. The newsletter is not on the website. Each surface does one job.
+**The problem:** an advocacy org has several different jobs to do — host reference material and interactive tools, publish a serial newsletter, and post quick updates to social media. Cramming all of that into one platform forces painful tradeoffs (a website bent into a newsletter tool, or a newsletter platform that owns your URLs and SEO). The **hybrid surface model** is our answer: instead of one all-in-one platform, we run a few distinct "surfaces" (places content lives — the website, the newsletter, social), and each does exactly one job. The website is not a publication. The newsletter is not on the website. Each surface does one job.
 
-| Surface                                       | Role                                                                                                                                                     |
-| --------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `lasvegasfortransit.org`                      | Reference + tools + data + journalism. Project pages, About, fact sheets, glossary, scrollytelling explainers, interactive tools, public data dashboard. |
-| `journal.lasvegasfortransit.org` (Ghost(Pro)) | Serial newsletter — long-form analysis, monthly/bi-weekly org updates.                                                                                   |
-| Instagram + Bluesky                           | Daily/weekly visual storytelling. Drives traffic to site pieces and newsletter signups.                                                                  |
-| Earned / press                                | Site analyses become journalist ammunition. LVBT becomes a citation source.                                                                              |
+| Surface                                       | Role                                                                                                                                                                                                              |
+| --------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `lasvegasfortransit.org`                      | Reference + tools + data + journalism. Project pages, About, fact sheets, glossary, scrollytelling explainers (long reads where charts and maps animate as you scroll), interactive tools, public data dashboard. |
+| `journal.lasvegasfortransit.org` (Ghost(Pro)) | Serial newsletter — long-form analysis, monthly/bi-weekly org updates.                                                                                                                                            |
+| Instagram + Bluesky                           | Daily/weekly visual storytelling. Drives traffic to site pieces and newsletter signups.                                                                                                                           |
+| Earned / press                                | Site analyses become journalist ammunition. LVBT becomes a citation source.                                                                                                                                       |
 
 **Comms loop:** Site release (scrollytelling piece, tool launch, data update) → newsletter dispatches it with framing → social drives traffic → readers convert to subscribers → repeat.
 
@@ -20,8 +20,8 @@ The website is not a publication. The newsletter is not on the website. Each sur
 The newsletter and site serve different priority audiences with different needs. Order matters when making editorial choices.
 
 1. **Engaged supporters** — already know LVBT, want depth. Newsletter is the primary surface for them. Tone: direct, substantive, treats them as insiders.
-2. **Curious newcomers** — Google "Las Vegas transit" or "RTC budget cuts" and find LVBT. Site is their entry point; we want them to convert to newsletter subscribers. Tone: explanatory but never condescending.
-3. **Decision-makers / journalists** — looking for citable analysis. Site is what they bookmark and quote. SEO and URL permanence on our own domain are load-bearing. Tone: rigorous, sourced, quotable.
+2. **Curious newcomers** — Google "Las Vegas transit" or "RTC ([Regional Transportation Commission](../reference/glossary.md#rtc), the agency that runs the buses) budget cuts" and find LVBT. Site is their entry point; we want them to convert to newsletter subscribers. Tone: explanatory but never condescending.
+3. **Decision-makers / journalists** — looking for citable analysis. Site is what they bookmark and quote. SEO (search engine optimization — showing up in Google results) and URL permanence on our own domain are load-bearing. Tone: rigorous, sourced, quotable.
 4. **Cross-movement allies** — adjacent civic orgs, transit advocates in other cities. Site's open-source movement infrastructure is for them (long-term). Tone: peer-to-peer, generous with what we've learned.
 
 ## Ladder of engagement
@@ -39,7 +39,7 @@ Don't expect any single surface to do all of it. Editorial choices for each surf
 
 Where new readers come from, in priority order:
 
-1. **SEO** — Google searches for transit topics specific to Vegas. Most leveraged by canonical content on `lasvegasfortransit.org` (project pages, scrollytelling explainers, fact sheets). Cuts against publishing on third-party platforms (Substack, Beehiiv) that fragment our domain authority.
+1. **SEO** — Google searches for transit topics specific to Vegas. Most leveraged by canonical content on `lasvegasfortransit.org` (project pages, scrollytelling explainers, fact sheets). Cuts against publishing on third-party platforms (Substack and Beehiiv — popular hosted newsletter services that put your content on _their_ domain; see [Beehiiv glossary](../reference/glossary.md#beehiiv)) that fragment our domain authority.
 2. **Press / earned media** — journalists citing LVBT analyses. Same canonical-on-our-domain incentive applies — reporters link to a stable, branded URL.
 3. **Cross-promotion with adjacent civic orgs** — local, plays well at any scale.
 4. **Direct sharing** — supporters forwarding the newsletter or sharing site pieces. Each surface optimized for shareability (clean URLs, OG images, social cards).
@@ -60,9 +60,9 @@ Three editorial/product directions LVBT will invest in. The site reserves URL sl
 
 ### 1. Data journalism / scrollytelling — `/explainers/`
 
-Pudding-style narrative explainers. First piece (working title): "The Valley We Could Build" — paint urgency for the LVBT vision. Story arc: Valley today (sprawl, transit-dependence) → the threat (42% RTC route cuts looming without 2027 NV funding action) → what we lose → what's possible (Maryland Pkwy BRT, Charleston LRT, Brightline West, valley-wide network) → comparisons (Phoenix, Denver, Portland) → the ask.
+Pudding-style narrative explainers. First piece (working title): "The Valley We Could Build" — paint urgency for the LVBT vision. Story arc: Valley today (sprawl, transit-dependence) → the threat (42% RTC route cuts looming without 2027 NV funding action) → what we lose → what's possible (Maryland Pkwy [BRT](../reference/glossary.md#brt), Charleston [LRT](../reference/glossary.md#lrt), Brightline West, valley-wide network) → comparisons (Phoenix, Denver, Portland) → the ask.
 
-Tech when built: scrollama for scroll triggers, Observable Plot for charts, MapLibre GL JS for maps. Heavy assets via R2.
+Tech when built: scrollama for scroll triggers, Observable Plot (a JavaScript charting library) for charts, MapLibre GL JS (an open-source library for interactive vector maps) for maps. Heavy assets via R2 (Cloudflare's object storage — see the D1/KV/R2 note below).
 
 Effort estimate when built: ~2–3 focused weeks. Content (data gathering, story arc, writing) is 50%+ of the work — line up sources before any visualization code.
 
@@ -74,7 +74,7 @@ Effort estimate when built: ~1–2 weeks for the first tool. Becomes the anchor 
 
 ### 3. Public data dashboard — `/data/`
 
-Live RTC ridership, on-time performance, route changes. Updated nightly via Cloudflare Worker cron pulling GTFS / RTC public data into D1. Goal: become the citation reflex for every journalist writing about Vegas transit. Build the dashboard RTC should have built.
+Live RTC ridership, on-time performance, route changes. Updated nightly via Cloudflare Worker cron pulling GTFS (General Transit Feed Specification — the standard format agencies publish routes and schedules in; see [glossary](../reference/glossary.md#gtfs)) / RTC public data into D1. Goal: become the citation reflex for every journalist writing about Vegas transit. Build the dashboard RTC should have built.
 
 Effort estimate when built: ~3–4 weeks. Highest engineering investment of the three.
 
@@ -96,7 +96,7 @@ $9/mo. Custom domain. Modern editor, hosted email, members system. We own and ca
 
 ### Site stack: Astro + Cloudflare full-stack
 
-Already locked: Astro 5 + MDX + Tailwind v4 + TypeScript (strict) on Cloudflare Pages. Extends to Workers + cron, D1, KV, R2, and Access for Google Workspace SSO on any future internal admin URLs (free up to 50 users).
+Already locked: Astro 5 + MDX + Tailwind v4 + TypeScript (strict) on Cloudflare Pages. Extends to Workers + cron, and Cloudflare's storage trio — **D1** (a SQL database), **KV** (a simple key-value store for small fast lookups), and **R2** (file/object storage for large media) — plus Access for Google Workspace SSO (single sign-on — staff log in once with their Workspace account) on any future internal admin URLs (free up to 50 users).
 
 The pillar builds use this stack — Worker crons for data ingestion, D1 for structured data, R2 for heavy assets, Access for any admin tools that need staff identity. Nothing exotic to add when the time comes.
 
@@ -104,7 +104,7 @@ The pillar builds use this stack — Worker crons for data ingestion, D1 for str
 
 v0 has no contributor CMS. Founder authors MDX directly. When a second contributor joins, two paths to evaluate:
 
-- **Keystatic with GitHub OAuth.** Each contributor creates a free GitHub account using their Workspace email. Simplest setup. ~5 min one-time per person.
+- **Keystatic with GitHub OAuth.** Keystatic is an open-source content editor that gives non-technical staff a friendly browser UI while keeping the content as files in our repo; OAuth ("Open Authorization") is the standard "sign in with GitHub" flow. Each contributor creates a free GitHub account using their Workspace email. Simplest setup. ~5 min one-time per person.
 - **Cloudflare-Access-gated custom admin** with service-account commits. Contributors sign in via Workspace SSO; commits go through a shared bot account (authorship in commit body). No GitHub needed; more custom plumbing.
 
 Decide based on contributor count and tech comfort when the moment arrives.

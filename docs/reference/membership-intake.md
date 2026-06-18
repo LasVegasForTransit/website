@@ -1,6 +1,8 @@
 # Membership intake automation
 
-How Google Forms submissions become newsletter subscribers and Notion intake records.
+How Google Forms submissions become newsletter subscribers and Notion intake records. Read this when you're setting up the intake pipeline, changing what gets stored, or debugging a submission that didn't go through.
+
+> **Before you start.** You'll need: edit access to the membership Google Form (and its Apps Script editor), a [Beehiiv](./glossary.md#beehiiv) (our newsletter platform) account with an API key, a Notion workspace where you can create a connection, and access to the Cloudflare Pages project to set secrets. The fastest setup path (`pnpm bootstrap --phase env`) is described under [Required Cloudflare Pages secrets](#required-cloudflare-pages-secrets).
 
 ## System boundary
 
@@ -11,6 +13,8 @@ Google Form
   -> Beehiiv subscription
   -> Notion intake page
 ```
+
+Apps Script is Google's built-in JavaScript automation attached to a Form or Sheet; here a _form-submit trigger_ runs our script every time someone submits the form, and it POSTs the answers to our endpoint.
 
 For v1, the Google Form response sheet remains the canonical full-response record. The Cloudflare Pages Function is the owned pipeline boundary: it validates the request, subscribes the person in Beehiiv, and creates an operational Notion page for follow-up.
 
@@ -26,15 +30,15 @@ The fastest path is `pnpm bootstrap --phase env`: it prompts for the Beehiiv key
 
 The five runtime secrets:
 
-| Key                             | Purpose                                                                  |
-| ------------------------------- | ------------------------------------------------------------------------ |
-| `LVBT_MEMBERSHIP_INTAKE_SECRET` | Shared bearer token used by Apps Script when calling the intake endpoint |
-| `LVBT_BEEHIIV_API_KEY`          | Beehiiv API key with subscriber write access                             |
-| `LVBT_BEEHIIV_PUBLICATION_ID`   | Beehiiv publication ID, starting with `pub_`                             |
-| `LVBT_NOTION_API_KEY`           | Notion connection access token (starts with `ntn_`)                      |
-| `LVBT_NOTION_DATA_SOURCE_ID`    | Notion data source ID — created by `pnpm setup:notion`                   |
+| Key                             | Purpose                                                                                                                                                                                                                      |
+| ------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `LVBT_MEMBERSHIP_INTAKE_SECRET` | Shared bearer token (a secret string sent in the request's `Authorization: Bearer …` header to prove the caller is allowed; see [glossary](./glossary.md#bearer-token)) used by Apps Script when calling the intake endpoint |
+| `LVBT_BEEHIIV_API_KEY`          | Beehiiv API key with subscriber write access                                                                                                                                                                                 |
+| `LVBT_BEEHIIV_PUBLICATION_ID`   | Beehiiv publication ID, starting with `pub_`                                                                                                                                                                                 |
+| `LVBT_NOTION_API_KEY`           | Notion connection access token (starts with `ntn_`)                                                                                                                                                                          |
+| `LVBT_NOTION_DATA_SOURCE_ID`    | Notion data source ID (a data source is the actual table of rows inside a Notion database; the API writes to its ID, not the database ID — see [glossary](./glossary.md#data-source)) — created by `pnpm setup:notion`       |
 
-To set the intake secret without bootstrap, generate one with `openssl rand -hex 32` and use the same value in both Cloudflare Pages and the Apps Script script property.
+To set the intake secret without bootstrap, generate one with `openssl rand -hex 32` (`openssl` is a command-line crypto tool; this prints a random 64-character hex string to use as the secret) and use the same value in both Cloudflare Pages and the Apps Script script property.
 
 ## Notion setup
 
@@ -55,7 +59,7 @@ Two parts: a one-time manual setup the Notion API can't do for you (creating the
 pnpm setup:notion
 ```
 
-This creates a **Membership intake** database under your parent page with the columns below, reads back the **data source ID** (the post-2025-09 API splits databases from data sources — this is the ID the endpoint writes to, not the database ID in the page URL), and writes `LVBT_NOTION_DATA_SOURCE_ID` into `.env.local`. Re-running reuses the existing database instead of duplicating it. Push the value to production with `pnpm bootstrap --phase deploy`.
+This creates a **Membership intake** database under your parent page with the columns below, reads back its [data source ID](./glossary.md#data-source) (the ID the endpoint writes to), and writes `LVBT_NOTION_DATA_SOURCE_ID` into `.env.local`. Re-running reuses the existing database instead of duplicating it. Push the value to production with `pnpm bootstrap --phase deploy`.
 
 The schema lives in one place — `functions/api/_intake-schema.ts` — which both the endpoint and the provisioner import, so the columns can't drift from what the code writes. The endpoint writes these properties:
 
@@ -121,7 +125,7 @@ Expected body:
 }
 ```
 
-Responses:
+Responses. The **Status** column is the [HTTP status code](./glossary.md#status-code) (`2xx` = success, `4xx`/`5xx` = failure):
 
 | Status | Body                                 | Meaning                             |
 | ------ | ------------------------------------ | ----------------------------------- |
@@ -137,7 +141,7 @@ Responses:
 
 1. Submit a test response from the live Google Form.
 2. Confirm the Apps Script execution succeeded.
-3. Confirm Beehiiv shows the subscriber as `validating`.
+3. Confirm Beehiiv shows the subscriber as `validating` (its status for someone who's been sent the confirmation email but hasn't clicked it yet — the [double opt-in](./glossary.md#double-opt-in) step; this is the expected success state, not an error).
 4. Confirm a Notion page was created with the expected properties.
 5. Confirm the complete response remains available in the Google Sheet.
 
@@ -161,4 +165,4 @@ Recover from the Google Sheet, which stays canonical for the full response:
 1. Open the failed execution in Apps Script (**Extensions → Apps Script → Executions**) to confirm which submission failed.
 2. Create the Notion intake page by hand from the matching Sheet row.
 
-Prefer manual Notion entry over re-running the execution. A re-run re-POSTs the whole payload: Beehiiv is idempotent (`reactivate_existing: true`), but Notion has no dedupe and would create a **second** page for the same person.
+Prefer manual Notion entry over re-running the execution. A re-run re-POSTs the whole payload: the Beehiiv step is idempotent (safe to run more than once — re-subscribing the same person changes nothing; see [glossary](./glossary.md#idempotent), here via `reactivate_existing: true`), but Notion has no dedupe and would create a **second** page for the same person.

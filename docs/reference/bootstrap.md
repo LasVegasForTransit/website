@@ -1,8 +1,23 @@
 # Bootstrap CLI reference
 
-A multi-phase TypeScript CLI that walks the LVBT website from a fresh checkout to a deployed site. Source: `scripts/bootstrap/`.
+The bootstrap CLI is the one command that sets up the whole project for you. It exists so a new contributor doesn't have to run a dozen manual steps (install tools, create accounts, wire up GitHub and Cloudflare) by hand and in the right order — it does them in sequence and remembers what's already done. It's a multi-phase CLI (command-line tool, run in your terminal) written in TypeScript (JavaScript with type labels — see [glossary](./glossary.md#typescript)) that walks the LVBT website from a fresh checkout to a deployed site. Source: `scripts/bootstrap/`.
 
 For the narrative walk-through, see [tutorials/first-time-setup.md](../tutorials/first-time-setup.md).
+
+## Before you start
+
+The full setup (through the `deploy` and `domain` phases) needs a few accounts and
+tools. The `install` and `auth` phases check these for you, but it's smoother to
+have them ready:
+
+- A **GitHub account** with an [SSH key set up](./glossary.md#ssh) — the `repo`
+  phase pushes over SSH.
+- A **Cloudflare account** — the `deploy` and `domain` phases use it.
+- [`gh`](./glossary.md#gh) (GitHub's CLI) and [`wrangler`](./glossary.md#wrangler)
+  (Cloudflare's CLI), installed and logged in.
+
+Just want to run the site locally? `pnpm bootstrap --local-only` skips everything
+above (no GitHub or Cloudflare needed).
 
 ## Commands
 
@@ -14,21 +29,25 @@ pnpm bootstrap --local-only # run only install/workspace/env (no GitHub or Cloud
 pnpm bootstrap --phase <id> # run a single phase
 ```
 
+**`--resume` vs `--phase`:** use `--resume` to continue a setup that stopped partway — it runs every phase _except_ the ones already marked complete in the state file (below). Use `--phase <id>` when you want to re-run exactly one named phase (e.g. `--phase deploy`), regardless of whether it already completed.
+
 ## Phases (in order)
 
-| Phase       | What it does                                                                                        |
-| ----------- | --------------------------------------------------------------------------------------------------- |
-| `install`   | Verifies Node ≥22, pnpm ≥10, GitHub CLI, Cloudflare Wrangler, dig — offers to install missing tools |
-| `auth`      | Confirms `gh auth status` and `wrangler whoami`                                                     |
-| `workspace` | Runs `pnpm install --frozen-lockfile` and a `pnpm build` smoke test                                 |
-| `env`       | Creates `.env.local` from `.env.example`; prompts for live `PUBLIC_LVBT_*` URLs                     |
-| `repo`      | Creates a GitHub repo via `gh repo create` and wires `origin` to the SSH URL                        |
-| `deploy`    | Provisions a Cloudflare Pages project and deploys `./dist`                                          |
-| `domain`    | Attaches apex + www to the Pages project; auto-creates DNS via the Cloudflare API                   |
+The setup runs as a sequence of _phases_ — self-contained steps that each get you closer to a live site, from checking your tools (`install`) through installing dependencies (`workspace`), writing config (`env`), and finally creating the GitHub repo and Cloudflare deployment. They run top to bottom; later phases assume earlier ones succeeded.
+
+| Phase       | What it does                                                                                                                                                                       |
+| ----------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `install`   | Verifies Node ≥22, pnpm ≥10, [GitHub CLI](./glossary.md#gh), [Cloudflare Wrangler](./glossary.md#wrangler), [`dig`](./glossary.md#dig) — offers to install missing tools           |
+| `auth`      | Confirms `gh auth status` and `wrangler whoami`                                                                                                                                    |
+| `workspace` | Runs `pnpm install --frozen-lockfile` (installs the exact pinned versions from the [lockfile](./glossary.md#lockfile); fails instead of updating it) and a `pnpm build` smoke test |
+| `env`       | Creates `.env.local` from `.env.example`; prompts for live `PUBLIC_LVBT_*` URLs                                                                                                    |
+| `repo`      | Creates a GitHub repo via `gh repo create` and wires `origin` to the [SSH URL](./glossary.md#ssh)                                                                                  |
+| `deploy`    | Provisions a Cloudflare Pages project and deploys `./dist`                                                                                                                         |
+| `domain`    | Attaches [apex](./glossary.md#apex-domain) + www to the Pages project; auto-creates [DNS](./glossary.md#dns) via the Cloudflare API                                                |
 
 ## State file
 
-`.lvbt/dev-readiness.json` tracks per-phase status (`complete | partial | failed | skipped`) and per-tool readiness. `--resume` reads this file and skips phases marked `complete`.
+The bootstrap remembers its progress in a small file so it can pick up where it left off. `.lvbt/dev-readiness.json` (a local, git-ignored file in the `.lvbt/` folder) tracks per-phase status (`complete | partial | failed | skipped`) and per-tool readiness. `--resume` reads this file and skips phases marked `complete`.
 
 `.env.local` doubles as the cross-phase persistence layer for values that need to survive between phases (e.g. `CLOUDFLARE_PAGES_PROJECT`, `CLOUDFLARE_ACCOUNT_ID`). `cold-start.ts` hydrates `process.env` from it at startup.
 

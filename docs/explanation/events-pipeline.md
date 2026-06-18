@@ -1,8 +1,12 @@
 # Events pipeline
 
-Events on the site come from a public Google Calendar. The site rebuilds against the calendar on a schedule; the calendar is the source of truth for both event metadata (title, time, location, join URL) and event body copy (the rich-text description). MDX fragments under [`src/content/event-bodies/`](../../src/content/event-bodies/) are an optional override for events that need MDX features (components, typed links) — most events ship as just GCal.
+This page explains how events get onto the site — for anyone adding an event or touching the events code. The short version: you create events in Google Calendar, and the site pulls them in automatically when it rebuilds.
+
+Events on the site come from a public Google Calendar. The site rebuilds against the calendar on a schedule; the calendar is the source of truth for both event metadata (title, time, location, join URL) and event body copy (the rich-text description). MDX fragments (Markdown files that can embed interactive components — see [glossary](../reference/glossary.md#mdx)) under [`src/content/event-bodies/`](../../src/content/event-bodies/) are an optional override for events that need MDX features (components, typed links) — most events ship as just GCal.
 
 ## The flow
+
+The diagram below traces how a calendar entry becomes a page. An ICS feed is the standard file format calendars publish their events in; a slug is the short, URL-friendly id at the end of a page's address (e.g. `2026-05-28-general-meeting`). `getCollection` and `getEntry` are Astro functions that read content at build time — `getCollection` loads every item in a group, `getEntry` loads one by its slug.
 
 ```
 Google Calendar (public ICS feed)
@@ -73,7 +77,7 @@ If you rename a calendar event, the URL changes. That's working as intended — 
 
 ## Rebuild cadence
 
-A GitHub Actions scheduled workflow at [`.github/workflows/cron-rebuild.yml`](../../.github/workflows/cron-rebuild.yml) fires twice a day (roughly morning and evening PT) and dispatches the `Deploy production` workflow. The Pages build re-fetches the calendar on its way through.
+A GitHub Actions (GitHub's built-in automation that runs scripts on a schedule or on each push) scheduled workflow — a "cron" job, meaning it runs on a fixed timetable — at [`.github/workflows/cron-rebuild.yml`](../../.github/workflows/cron-rebuild.yml) fires twice a day (roughly morning and evening PT) and dispatches the `Deploy production` workflow. The Pages build re-fetches the calendar on its way through.
 
 Why twice a day: event metadata changes a few times a week at most; a morning and an evening rebuild keep the site current without burning Cloudflare Pages Free's 500-builds/month budget (twice daily = 60/month). Tighten the cron in the workflow file if events start moving faster than that.
 

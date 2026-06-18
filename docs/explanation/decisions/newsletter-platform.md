@@ -1,5 +1,7 @@
 # Decision: Newsletter platform
 
+This decision record explains which service we send the newsletter through and why — read it before proposing a platform change. The names below are competing newsletter/publishing services; **Ghost(Pro)** is the hosted version of the open-source Ghost publishing platform, **Substack** and **Beehiiv** are popular hosted newsletter platforms, and the rest are email-sending services.
+
 **Decision:** Ghost(Pro) Starter ($9/mo) on `journal.lasvegasfortransit.org`. Hybrid model — site is canonical for everything else (reference, tools, data, journalism); Ghost is canonical for the serial newsletter.
 
 **Date:** 2026-05-01
@@ -56,7 +58,7 @@ The path the analysis took, in order — useful so future-you can spot when an a
 
 **Ghost — headless feeding Astro** — Ghost as backend (content + email), Astro renders via Content API. Coherent but: content lives in Ghost's database (loses MDX-in-repo portability), adds a second system, costs scale by staff seat ($9/$25/$50 for 1/2/5 staff). **Considered, not picked** — too much added complexity for the gain.
 
-**Self-hosted Ghost** — $5–12/mo VPS (Fly.io ~$5–10/mo, Hetzner €4–5/mo, DigitalOcean $6–12/mo with 1-click droplet, Pikapods ~$5/mo managed-self-hosted) + $0–15/mo Mailgun. Note: Ghost has a hardcoded Mailgun integration for **bulk** newsletter sends; other SMTP providers work for transactional only. **Ruled out for v0:** founder bandwidth is the binding constraint; ~2–4 hours/month ops is the wrong trade vs. $9/mo for zero ops. Documented as a future option — see "Trigger conditions" below.
+**Self-hosted Ghost** — running Ghost yourself on a rented server instead of paying Ghost to host it. $5–12/mo VPS (a "virtual private server" — a rented Linux machine you manage; Fly.io and Hetzner are two such server hosts, ~$5–10/mo and €4–5/mo, plus DigitalOcean $6–12/mo with 1-click droplet and Pikapods ~$5/mo managed-self-hosted) + $0–15/mo Mailgun (a service that does the actual bulk email delivery). Note: Ghost has a hardcoded Mailgun integration for **bulk** newsletter sends; other SMTP (the email-sending protocol) providers work for transactional only. **Ruled out for v0:** founder bandwidth is the binding constraint; ~2–4 hours/month ops is the wrong trade vs. $9/mo for zero ops. Documented as a future option — see "Trigger conditions" below.
 
 **Ghost(Pro) Starter — selected.**
 

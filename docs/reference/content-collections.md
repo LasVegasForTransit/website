@@ -1,8 +1,12 @@
 # Content collections reference
 
-All site content lives under `src/content/`. Schemas are enforced by Zod in `src/content.config.ts` — content that doesn't match the shape will fail the build.
+What lives in each content folder and the exact shape each file must follow. Reach for this when you're adding or editing a page, project, event, or initiative and need to know which fields are required.
+
+A _content collection_ is Astro's name for a folder of content files that all share the same shape (see [glossary](./glossary.md#content-collection)). All site content lives under `src/content/`. Schemas (the rules for what fields a file must have) are enforced by Zod (a tool that checks data matches an expected shape — see [glossary](./glossary.md#zod)) in `src/content.config.ts` — content that doesn't match the shape will fail the build. That's deliberate: a typo in a content file stops the build with a clear message instead of shipping a broken page.
 
 ## Folder layout
+
+Most collections are authored in MDX (Markdown with the ability to drop in interactive components — see [glossary](./glossary.md#mdx)).
 
 | Folder                      | Type            | Drives                                                                                                                                             |
 | --------------------------- | --------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -17,7 +21,7 @@ All site content lives under `src/content/`. Schemas are enforced by Zod in `src
 
 ### Event
 
-Events come from the public LVBT Google Calendar; there is no MDX frontmatter to author. The custom loader in `src/lib/events-loader.ts` maps calendar fields to this validated shape:
+Events come from the public LVBT Google Calendar (GCal); there is no MDX frontmatter (the settings block at the top of an MDX file — see [glossary](./glossary.md#frontmatter)) to author. The custom loader in `src/lib/events-loader.ts` maps calendar fields to this validated shape:
 
 ```ts
 {
@@ -74,8 +78,8 @@ Front-matter is `{ title, summary }` plus an MDX body. Slug is the filename.
 
 ## Where the schema is
 
-`src/content.config.ts`. When in doubt, read it — it's the source of truth, not this page.
+`src/content.config.ts` lists every collection's exact fields and types (this page summarizes them, but that file is what the build actually checks). When in doubt, read it — it's the source of truth, not this page.
 
 ## Templates
 
-Each MDX/JSON-backed collection has a `_template.mdx` (or `_template.json`) showing the canonical shape. Copy it when adding new content. Events have no template — they're created in Google Calendar; `pnpm event:new` scaffolds an optional body fragment.
+Each MDX/JSON-backed collection has a `_template.mdx` (or `_template.json`) showing the canonical shape. Copy it when adding new content. The leading underscore is a convention that tells Astro to ignore the file as content — so the template itself never becomes a published page. Events have no template — they're created in Google Calendar; `pnpm event:new` scaffolds an optional body fragment.

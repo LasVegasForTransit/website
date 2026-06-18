@@ -1,15 +1,22 @@
 # Performance monitoring
 
-The site has two complementary signals: **synthetic** runs in CI against
-a build artifact, and **real-user** measurement (RUM) from visitors via
-Cloudflare Web Analytics. Synthetic gives a controlled, repeatable
-number that catches regressions before merge. RUM gives the only number
-that matters in the end — what visitors actually experience.
+This page explains how we measure whether the site is fast — what we track, where the limits live, and how the automated checks enforce them. It matters because a slow site loses visitors, and a college-student volunteer team can't eyeball speed by hand; the numbers have to be measured and guarded automatically.
+
+We watch speed two complementary ways:
+
+- **Synthetic monitoring** — speed measured in a controlled lab: a test tool loads the site in a fixed, repeatable environment and times it. We run this in CI (Continuous Integration — automation that runs on every push, see [glossary](../reference/glossary.md#ci)) against a build artifact (the finished site files produced by a build). It gives a stable number that catches regressions (speed getting worse) before they merge.
+- **Real-user monitoring (RUM)** — speed measured from actual visitors' browsers as they use the live site, via Cloudflare Web Analytics. It's noisier (every visitor's device and network differ) but it's the only number that matters in the end — what visitors actually experience.
 
 ## Budgets
 
-All numeric ceilings live in [`perf-budgets.json`](../../perf-budgets.json) at the
-repo root:
+A "budget" here is a hard upper limit on some performance number — exceed it and a check fails. They keep the site from slowly getting heavier over time. All numeric ceilings live in [`perf-budgets.json`](../../perf-budgets.json) at the
+repo root.
+
+A few terms used in the table below:
+
+- **Gzipped** — the file size after compression. Servers send files compressed (gzip is the common method) and browsers unzip them, so the gzipped size is what visitors actually download. It's smaller than the raw file on disk.
+- **Build peak RSS** — RSS (Resident Set Size) is how much memory a program is using; "peak" is the most it used at any moment. Here it's the high-water memory mark while building the site. Report-only means we record it but don't fail on it.
+- **usedJsHeapSize** — how much memory the page's JavaScript is holding in the browser while the page is open. A runaway number means a memory leak that can make the page sluggish.
 
 | Bucket                                           | Budget             | Enforced by                      |
 | ------------------------------------------------ | ------------------ | -------------------------------- |
@@ -22,13 +29,19 @@ repo root:
 | Runtime usedJsHeapSize per page                  | 30 MB              | `tests/perf-memory.spec.ts`      |
 
 Trend data lands in `audits/build-stats.jsonl` (one row per successful
-audit run) so memory and wall-clock drift is visible without git
-archaeology.
+audit run) so memory and wall-clock (real elapsed time) drift is visible
+without git archaeology. JSONL = "JSON Lines": a plain-text file with one
+self-contained JSON record per line, easy to append to and scan.
 
 ## Synthetic checks (CI)
 
+This is the lab side: automated speed and size checks that run on every code change, before it ships. **Lighthouse** is Google's open-source tool that loads a page and scores its performance; **Core Web Vitals (CWV)** are Google's headline speed metrics — most notably **LCP (Largest Contentful Paint)**, the time until the biggest piece of content (usually the hero image or heading) appears on screen. Lower LCP = the page feels like it loaded sooner.
+
+A "hard gate" below means the check must pass or the build fails; a "soft-fail" reports problems without blocking.
+
 [`.github/workflows/audit.yml`](../../.github/workflows/audit.yml) runs on every
-PR and push to `main`. The performance-relevant jobs:
+PR (pull request — a proposed change opened on GitHub) and push to `main`. The
+performance-relevant jobs:
 
 - **Lighthouse (desktop)** — `lighthouserc.cjs` default preset; CWV
   thresholds tuned for the build artifact. Hard gate.
@@ -36,7 +49,9 @@ PR and push to `main`. The performance-relevant jobs:
   Moto G4 on slow 4G. Soft-fail at first; promoted once one clean run
   is in.
 - **Runtime memory** — Playwright Chromium project; navigates every
-  sitemap URL, scrolls bottom-to-top, triggers a CDP GC, asserts
+  sitemap URL, scrolls bottom-to-top, triggers a CDP GC (forces the
+  browser to garbage-collect — free unused memory — via the Chrome
+  DevTools Protocol, the API for controlling Chrome), then asserts
   `performance.memory.usedJSHeapSize` under the budget. Hard gate.
 - **Bundle size budget** — gzips `dist/_astro` and `dist/scripts`
   assets, checks each bucket. Hard gate.
@@ -56,19 +71,19 @@ URLs (no `staticDistDir`). Regressions trigger
 
 ## Real-user monitoring (CWA)
 
-Cloudflare Web Analytics — a privacy-respecting RUM beacon (no cookies,
-no fingerprinting). The site ships `beacon.min.js` from
-`static.cloudflareinsights.com` and POSTs CWV samples to
-`cloudflareinsights.com`. Both origins are allow-listed in
-[`public/_headers`](../../public/_headers) under `script-src` and
-`connect-src` respectively.
+This is the field side: speed measured from real visitors. CWA = Cloudflare Web Analytics, a privacy-respecting RUM tool (no cookies, no fingerprinting — it doesn't track individuals). It works via a **beacon**: a tiny script that quietly sends measurements back to a server. The site ships `beacon.min.js` from
+`static.cloudflareinsights.com` and POSTs (sends) CWV samples to
+`cloudflareinsights.com`. Both origins are **allow-listed** (explicitly permitted) in
+[`public/_headers`](../../public/_headers) under our CSP (Content Security Policy — a security header that whitelists which outside servers the page may talk to, see [glossary](../reference/glossary.md#csp)): `script-src` lists where scripts may load from, `connect-src` lists where the page may send data. Without these two entries, the browser would block the beacon.
 
 Activation:
 
 - Get the site token from the Cloudflare dashboard (Analytics → Web
   Analytics → your site → "Token").
-- Add it as `PUBLIC_CWA_TOKEN` in Cloudflare Pages env vars (production
-  _and_ preview).
+- Add it as `PUBLIC_CWA_TOKEN` in Cloudflare Pages env vars (environment
+  variables — named settings kept outside the code, see
+  [glossary](../reference/glossary.md#env-var)), for production _and_
+  preview.
 - For local dev, `pnpm bootstrap --phase env` prompts for the value and
   writes it to `.env.local`.
 
@@ -76,12 +91,15 @@ Activation:
 `<script>` tag on `import.meta.env.PUBLIC_CWA_TOKEN`. No token, no
 beacon — the strict default CSP holds.
 
-Token rotation: rotate yearly or sooner if a leak is suspected. Generate
+Token rotation (replacing the secret token with a fresh one and retiring
+the old): rotate yearly or sooner if a leak is suspected. Generate
 a new token in the dashboard, swap the Pages env var, redeploy; old
 beacons stop reporting within minutes. The token is not a credential,
 so a leak is low-impact, but visible inflated traffic is worth catching.
 
 ## Why both?
+
+Neither signal alone is enough — each is blind to things the other catches, so we run both and cross-check them.
 
 Synthetic alone misses:
 
@@ -105,6 +123,8 @@ Together: CI catches what visitors would feel, RUM confirms what they
 actually felt.
 
 ## When numbers diverge
+
+When the lab (synthetic) and the field (RUM) disagree, this section is how to read which one to trust and where to look first.
 
 If synthetic stays green but RUM regresses, the cause is usually
 infrastructure — Cloudflare edge cache, image-format negotiation, a

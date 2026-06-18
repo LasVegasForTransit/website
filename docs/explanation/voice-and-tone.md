@@ -68,20 +68,20 @@ What this is **not** — populist shorthand. Populism would lose this audience b
 - **No romanticizing "the people."** _"The people are demanding…"_ reads as performative. Organizer-honest is _"a constituency we don't currently have."_
 - **No vilifying opponents.** Differentiate via reframe, not via villain. Model: _"We are not anti-car. We are anti-car-dependence. The point is choice."_
 
-**Test:** would a Marshall Ganz–trained organizer recognize this as the work? Would a coalition partner (labor, faith, environmental) read it and feel LVBT understands the actual mechanics of building power? If yes, ship.
+**Test:** would a Marshall Ganz–trained organizer (Ganz is a Harvard lecturer and longtime community organizer whose framework — public narrative, relational organizing — is foundational to modern grassroots campaigns) recognize this as the work? Would a coalition partner (labor, faith, environmental) read it and feel LVBT understands the actual mechanics of building power? If yes, ship.
 
 ## Overselling vs. anchored opinion
 
 Distinct things — easy to confuse, but only one of them violates the voice.
 
 - **Overselling is vague hyperbole with no anchor.** _"the moment,"_ _"the time is now,"_ _"closes the window,"_ _"transformational change"_ used as filler, _"we're rewriting the rules,"_ _"the most ambitious effort ever undertaken."_ Drop these.
-- **Positional opinion grounded in measurable standards is on-voice.** _"world-class public transportation,"_ _"the safest place to bike in the Southwest,"_ _"a system Phoenix or Salt Lake City would recognize as functional."_ These name a target measurable against external benchmarks (peer cities, frequency, mode share, fatality rates). They state a normative position the org will defend — not a vague feel-good claim.
+- **Positional opinion grounded in measurable standards is on-voice.** _"world-class public transportation,"_ _"the safest place to bike in the Southwest,"_ _"a system Phoenix or Salt Lake City would recognize as functional."_ These name a target measurable against external benchmarks (peer cities, frequency, mode share — the share of trips taken by each travel mode, e.g. what percentage of commutes are by bus vs. car — fatality rates). They state a normative position the org will defend — not a vague feel-good claim.
 
 **Test:** can the claim be checked against an external standard? If yes, it's anchored opinion — keep it. If no, it's overselling — replace with something specific.
 
 ## Specific patterns to avoid
 
-- **Technocratic urbanism vocab as the lead.** Mixed-use, mode share, TOD, VMT, frequency hours — these belong in body text or captions, never in headlines or ledes.
+- **Technocratic urbanism vocab as the lead.** Mixed-use, mode share, TOD (Transit-Oriented Development: dense housing and shops clustered around transit stops — see [glossary](../reference/glossary.md#tod)), VMT (Vehicle Miles Traveled: total miles driven, a measure of car dependence — see [glossary](../reference/glossary.md#vmt)), frequency hours — these belong in body text or captions, never in headlines or ledes.
 - **We-believe / we-are-committed boilerplate.** State what we'll do, not what we feel about doing it.
 - **Abstractions without specific examples following.** Every general claim should be followed by a named instance within two sentences.
 - **Generic CTAs as button labels.** _Get involved_, _Take action_, _Learn more_ are lazy. Use specific verbs: Subscribe, RSVP, Donate, Read the brief.

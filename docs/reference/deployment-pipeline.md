@@ -1,8 +1,10 @@
 # Deployment pipeline
 
-How code gets from a `git push` to `lasvegasfortransit.org`.
+How code gets from a `git push` to `lasvegasfortransit.org`. Read this when you want to understand what happens after you push, set up production env vars, or roll back a bad deploy.
 
-For one-time provisioning (creating the Pages project, attaching the domain, wiring DNS), see [bootstrap.md](./bootstrap.md) and [tutorials/first-time-setup.md](../tutorials/first-time-setup.md).
+The whole flow is CI/CD (Continuous Integration / Delivery — automation that builds and ships the site every time you push, with no manual steps; see [glossary](./glossary.md#ci)). Cloudflare watches the GitHub repo and rebuilds the site for you.
+
+For one-time provisioning (creating the Pages project, attaching the domain, wiring DNS — the system that maps the domain name to a server; see [glossary](./glossary.md#dns)), see [bootstrap.md](./bootstrap.md) and [tutorials/first-time-setup.md](../tutorials/first-time-setup.md).
 
 ## At a glance
 
@@ -29,7 +31,7 @@ lasvegasfortransit.org      <hash>.lvbt-website.pages.dev
 | Production hostname      | `lasvegasfortransit.org` (+ `www.…`) | Attached by `pnpm bootstrap --phase domain`                                                                           |
 | Build runner             | Cloudflare Pages CI                  | Runs `pnpm build` in a clean container                                                                                |
 
-The Git connection itself is set up once in the Cloudflare dashboard, not via CLI — wrangler doesn't expose this. The bootstrap's `deploy` phase prints a deep link to the right settings page after the first manual `wrangler pages deploy`.
+The Git connection itself is set up once in the Cloudflare dashboard, not via CLI — wrangler (Cloudflare's command-line tool — see [glossary](./glossary.md#wrangler)) doesn't expose this. The bootstrap's `deploy` phase prints a deep link to the right settings page after the first manual `wrangler pages deploy`.
 
 ## Build settings (Cloudflare Pages → Settings → Builds)
 
@@ -42,7 +44,7 @@ The Git connection itself is set up once in the Cloudflare dashboard, not via CL
 
 ## Environment variables in production
 
-The site uses build-time `PUBLIC_LVBT_*` env vars (newsletter URL, donate URL, social URLs). For Cloudflare Pages to bake these into the production build, they need to be set on the Pages project:
+The site uses build-time `PUBLIC_LVBT_*` env vars (environment variables — named settings kept outside the code; see [glossary](./glossary.md#env-var)) for the newsletter URL, donate URL, and social URLs. Your `.env.local` only exists on your laptop and is never committed (see [glossary](./glossary.md#env-files)) — the production build runs on Cloudflare's servers, which can't see your laptop, so the same values must also be set on the Pages project. For Cloudflare Pages to bake these into the production build, they need to be set on the Pages project:
 
 1. Cloudflare dashboard → Pages → `lvbt-website` → Settings → Environment variables.
 2. Add each `PUBLIC_LVBT_*` from your local `.env.local` to the **Production** environment.
@@ -69,10 +71,10 @@ This is what `pnpm bootstrap --phase deploy` runs under the hood. Useful for tes
 
 ## Cache and invalidation
 
-Cloudflare Pages serves static assets with aggressive cache headers; HTML is revalidated on every request. After a deploy, new HTML is visible immediately; static assets at hashed URLs (Astro adds content hashes) are versioned automatically. There's no cache-purge step needed for normal deploys.
+Cloudflare Pages serves static assets with aggressive cache headers; HTML is revalidated on every request. After a deploy, new HTML is visible immediately; static assets at hashed URLs (Astro adds _content hashes_ — a code in each filename derived from the file's contents, like `app.4f2a1b.js`, so any change produces a new filename) are versioned automatically. Because the filename changes whenever the content changes, browsers fetch the new file instead of a stale cached copy, so there's no cache-purge step needed for normal deploys.
 
 ## DNS propagation
 
-The custom domain attaches via the Cloudflare API and (when the zone lives in the same Cloudflare account) auto-creates CNAME records pointing at `lvbt-website.pages.dev`. Propagation typically takes a few minutes; `pnpm bootstrap --phase domain` runs `dig` afterwards so you can see the live state.
+The custom domain attaches via the Cloudflare API and (when the zone lives in the same Cloudflare account — a _zone_ is a domain Cloudflare manages plus its DNS records; see [glossary](./glossary.md#zone)) auto-creates CNAME records (a DNS record that points one domain name at another; see [glossary](./glossary.md#cname)) pointing at `lvbt-website.pages.dev`. Propagation typically takes a few minutes; `pnpm bootstrap --phase domain` runs `dig` (a command-line tool that looks up a domain's live DNS records) afterwards so you can see the live state.
 
 If your DNS zone is at a different registrar, the bootstrap leaves a follow-up with the exact CNAME records to add manually.

@@ -1,5 +1,7 @@
 # Transit objection rebuttals (reference)
 
+A bank of short answers to the most common objections people raise about funding transit. It isn't published as its own page — instead, designers pull these rebuttals into the Vision and other site pages (for example as an accordion or aside), and writers reuse them in social posts and pamphlets.
+
 **This is reference material, not site content.** It used to live as `src/content/docs/quick-pitch.mdx` and render at `/vision/quick-pitch`, but that route was always meant to be source material for designing an objection-rebuttal experience inside the main pages — not its own dumping-ground page.
 
 Use these answers to:
@@ -22,7 +24,7 @@ Sometimes it is. That's a problem we can fix — through better lighting, freque
 
 ## "But the construction"
 
-Remember when the I-15 widening took three years and cost more than a billion dollars and traffic still got worse? Roads need that kind of work over and over again, every couple of decades, because adding lanes always induces more driving. Rail and BRT, once built, last for generations. If you need to move more people on a rail line, you don't widen the line — you just buy more trains.
+Remember when the I-15 widening (the recent expansion of Interstate 15, the main freeway through the Las Vegas Valley) took three years and cost more than a billion dollars and traffic still got worse? Roads need that kind of work over and over again, every couple of decades, because adding lanes always induces more driving. Rail and BRT (Bus Rapid Transit — faster bus service with dedicated lanes and fewer stops, more like light rail; see [glossary](./glossary.md#brt)), once built, last for generations. If you need to move more people on a rail line, you don't widen the line — you just buy more trains.
 
 ## "But I have a car"
 
@@ -38,7 +40,7 @@ The opposite, actually. The vast majority of trips Las Vegans take are short —
 
 ## "But no one will use it"
 
-That's what every analyst said about the Brightline Florida service before it opened. It's now exceeding its ridership forecasts. Same story with Salt Lake's TRAX, Phoenix's light rail, the Maryland MARC expansion, and every recent Amtrak corridor. Latent demand for transit in the West is real. The Valley is no exception.
+That's what every analyst said about the Brightline Florida service before it opened. It's now exceeding its ridership forecasts. Same story with Salt Lake's TRAX, Phoenix's light rail, the Maryland MARC expansion (MARC is Maryland's regional commuter rail system serving the Baltimore–Washington area), and every recent Amtrak corridor (Amtrak is the national U.S. passenger rail operator; a "corridor" is a single intercity route, like Los Angeles–Las Vegas). Latent demand for transit in the West is real. The Valley is no exception.
 
 ## "But Amtrak tried Las Vegas before and failed"
 

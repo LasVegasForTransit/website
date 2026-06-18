@@ -1,18 +1,18 @@
 # Newsletter operations
 
-How to publish, send, and maintain the LVBT newsletter on Ghost(Pro). For strategic framing, see [comms-strategy.md](../explanation/comms-strategy.md). For why we picked Ghost, see [decisions/newsletter-platform.md](../explanation/decisions/newsletter-platform.md).
+How to publish, send, and maintain the LVBT newsletter on Ghost(Pro) (the hosted publishing/newsletter platform chosen for the long-form journal; see [glossary](./glossary.md#ghost)). Reach for this when you're sending an issue or setting up email deliverability. For strategic framing, see [comms-strategy.md](../explanation/comms-strategy.md). For why we picked Ghost, see [decisions/newsletter-platform.md](../explanation/decisions/newsletter-platform.md).
 
-> **Platform note.** The on-site subscribe form currently submits to **Beehiiv**, not Ghost — see [newsletter-signup.md](./newsletter-signup.md). This ops guide (and the decision record) still describe Ghost(Pro). Reconcile the platform choice; until then, treat the Ghost authoring/send workflow below as aspirational, and Beehiiv as the live signup system.
+> **Platform note.** The on-site subscribe form currently submits to **Beehiiv** (a different newsletter platform; see [glossary](./glossary.md#beehiiv)), not Ghost — see [newsletter-signup.md](./newsletter-signup.md). This ops guide (and the decision record) still describe Ghost(Pro). Reconcile the platform choice; until then, treat the Ghost authoring/send workflow below as aspirational, and Beehiiv as the live signup system.
 
 ## Surface
 
 - **Domain:** `journal.lasvegasfortransit.org` (Cloudflare CNAME → Ghost(Pro) alias domain)
 - **Platform:** Ghost(Pro) Starter ($9/mo, 1 staff user, up to 500 members)
-- **Sender domain:** `@lasvegasfortransit.org` — must be authenticated via SPF, DKIM, DMARC
+- **Sender domain:** `@lasvegasfortransit.org` — must be authenticated via SPF, DKIM, DMARC (three DNS records that prove your email really comes from your domain so it lands in inboxes instead of spam; see [glossary](./glossary.md#email-auth))
 
 ## Authoring/send workflow
 
-The agreed pattern is **hand-sent with RSS auto-import**: site content is canonical (MDX in repo); Ghost auto-creates a draft from the latest site post; the sender adds a 1–2 sentence framing intro and clicks send. Workflow per issue:
+The agreed pattern is **hand-sent with RSS auto-import** (Ghost watches the site's RSS feed — an auto-generated list of recent posts — and turns each new post into a draft email automatically, so you don't copy-paste content): site content is canonical (MDX in repo); Ghost auto-creates a draft from the latest site post; the sender adds a 1–2 sentence framing intro and clicks send. Workflow per issue:
 
 1. **Site post (if any) goes live** via the normal MDX-in-repo workflow. Verify it renders correctly on the live site.
 2. **Ghost's RSS automation picks up the post** and creates a draft campaign in Ghost's admin.
@@ -38,7 +38,7 @@ DMARC aggregate reports arrive weekly at the `rua=` mailbox. Configure that mail
 
 ## CAN-SPAM compliance
 
-US law requires the following in every commercial/advocacy email. Ghost handles most automatically; verify after any theme change.
+CAN-SPAM is the US anti-spam law governing commercial and advocacy email; it requires the following in every such email. Ghost handles most automatically; verify after any theme change.
 
 - ✅ **Unsubscribe link** in every email (Ghost auto-includes; verify after theme tuning)
 - ✅ **Sender identity** (Ghost auto-includes from publication settings)
@@ -47,14 +47,14 @@ US law requires the following in every commercial/advocacy email. Ghost handles 
 
 ## Subscriber data
 
-- **Ownership:** LVBT owns the list. Ghost is a data processor under the publication's terms.
+- **Ownership:** LVBT owns the list. Ghost is a data processor (a company that stores and handles the data on our behalf but doesn't own it — a privacy-law term) under the publication's terms.
 - **Export:** Ghost admin → Members → Export. CSV with email, name, subscription state, signup source, last-seen.
 - **Unsubscribe and bounce handling:** Ghost auto-flags hard bounces and processes unsubscribes; no manual intervention.
 - **Migration off Ghost(Pro):** see [decisions/newsletter-platform.md](../explanation/decisions/newsletter-platform.md) "Migration paths."
 
 ## Subscribe form on the main site
 
-Native HTML form posting to Ghost's `/members/api/send-magic-link` endpoint (no third-party JS embed — fits the minimalist aesthetic, no extra runtime).
+Native HTML form posting to Ghost's `/members/api/send-magic-link` endpoint (a magic link is a one-time sign-in/confirm link emailed to the user, so there's no password to set; no third-party JS embed — fits the minimalist aesthetic, no extra runtime).
 
 - **Component:** `src/components/SubscribeForm.astro` (when built — see v0 plan)
 - **Footer slot:** every page on the site
@@ -68,6 +68,8 @@ The site's `/privacy` page must mention:
 - How to unsubscribe (link in every email + member account settings)
 
 ## Cost ladder
+
+Ghost(Pro) is sold in _tiers_ — pricing plans that raise the member cap and number of staff seats as you pay more. We start on the cheapest and move up only when a limit forces it:
 
 | Tier    | Monthly | Members | Staff seats | When                                        |
 | ------- | ------- | ------- | ----------- | ------------------------------------------- |

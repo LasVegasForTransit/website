@@ -15,20 +15,20 @@ This file is a memory aid, not a roadmap. Don't delete entries — promote/demot
 
 Most advocacy CTAs are generic. LVBT's are personal — they know your address, commute, and reps. This is the most distinctive angle vs. typical advocacy orgs.
 
-- 📋 **Find-your-reps + take action** — ZIP → RTC board rep, county commissioner, state legislator + current transit voting record + pre-drafted email/call template. First tool to build. Becomes the anchor for every newsletter CTA.
-- 💭 **Comment-period mobilizer** — when NDOT/RTC/county opens public input, drafts a personalized comment from the user's stance and submits it.
+- 📋 **Find-your-reps + take action** — ZIP → RTC (Regional Transportation Commission of Southern Nevada, the agency that runs Las Vegas's buses — see [glossary](../reference/glossary.md#rtc)) board rep, county commissioner, state legislator + current transit voting record + pre-drafted email/call template. First tool to build. Becomes the anchor for every newsletter CTA.
+- 💭 **Comment-period mobilizer** — when NDOT (the Nevada Department of Transportation, the state's road and highway agency), RTC, or the county opens public input, drafts a personalized comment from the user's stance and submits it.
 - 💭 **Route-impact calculator** — input home + work → see your commute today vs. post-route-cut scenario. Personal stakes via personalization.
 - 💭 **"Build your transit budget" simulator** — slider/allocation tool. See what $X M does for routes/frequency/coverage. Educational and persuasive.
 - 💭 **Commute time compare** — your trip by car vs. transit, today and 10 years from now if X happens. Visceral.
 - 💭 **RTC meeting tracker** — upcoming agenda items, past votes, calendar export, comment-period alerts, reminder signup.
 - 💭 **Petition / pledge tools** — built into the site; one-click sign; share back to social.
-- ❄️ **AI-assisted civic engagement** — LLM-powered "help me write to my council member about the RTC funding bill" generator, grounded in LVBT's fact sheets, with transparency about what's auto vs. manually edited. Risks if it goes wrong (hallucination, misrepresentation); revisit when grounding/citation tooling is more mature.
+- ❄️ **AI-assisted civic engagement** — LLM-powered "help me write to my council member about the RTC funding bill" generator, grounded in LVBT's fact sheets, with transparency about what's auto vs. manually edited. (An LLM, or large language model, is the kind of AI behind tools like ChatGPT.) Risks if it goes wrong — **hallucination** (the model confidently states facts that aren't true) and **misrepresentation** (it puts words in a constituent's mouth or distorts LVBT's position); revisit when grounding/citation tooling is more mature.
 
 ## Public data infrastructure 🎯 (pillar 3 — `/data/`)
 
 Build the dashboards and data access RTC should have built. Become the citation reflex for journalists. Open-source so other small-city advocates can fork.
 
-- 📋 **Live RTC ridership dashboard** — updated nightly via Cloudflare Worker cron pulling GTFS / RTC public data into D1. First dashboard to build.
+- 📋 **Live RTC ridership dashboard** — updated nightly via Cloudflare Worker cron pulling GTFS (General Transit Feed Specification, the standard format agencies publish routes and schedules in — see [glossary](../reference/glossary.md#gtfs)) / RTC public data into D1. First dashboard to build.
 - 💭 **On-time performance tracker** — by route, by stop, with historical trend.
 - 💭 **Funding visualizer** — where transit dollars come from (federal, state, local, fares), where they go. Comparison to highway spending.
 - 💭 **Scorecards** — RTC board members, state legislators, council members, with voting records on transit. Updated regularly.

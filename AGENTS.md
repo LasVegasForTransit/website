@@ -4,6 +4,8 @@ Guidance for AI agents (Claude Code, Codex, Gemini, etc.) working in this repo.
 
 This is a single Astro site for Las Vegans for Better Transit, deployed to Cloudflare Pages. Solo project, no PR workflow, no force-push expectations — just careful local commits.
 
+New to the project (human or agent)? [`docs/tutorials/start-here.md`](./docs/tutorials/start-here.md) orients you, and the [`glossary`](./docs/reference/glossary.md) defines every tool and acronym used across these docs. Contributors here are often students and junior devs — keep docs and explanations accessible (see [`docs/standards/writing-docs.md`](./docs/standards/writing-docs.md)).
+
 ---
 
 ## Read these first
@@ -107,11 +109,16 @@ Pre-approval to commit applies only when the user has explicitly said "commit" /
 - `scripts/validation/git/` is the commit-message validator
 - `src/lib/site.ts` is the runtime config object (org name, URLs, social handles)
 - Events are sourced from a public Google Calendar at build time — see [`docs/explanation/events-pipeline.md`](./docs/explanation/events-pipeline.md). To add an event, create it in GCal; for long-form body copy, scaffold a fragment under `src/content/event-bodies/` via `pnpm event:new`.
+- Membership intake: Google Form → Cloudflare Pages Function → Beehiiv + Notion — see [`docs/reference/membership-intake.md`](./docs/reference/membership-intake.md).
+- Transit news intake: three ways to push articles into a Notion database (pnpm script, Claude Code skill, public Notion form + Cloudflare enrichment) — see [`docs/guides/add-transit-news.md`](./docs/guides/add-transit-news.md) and [`docs/reference/transit-news-pipeline.md`](./docs/reference/transit-news-pipeline.md).
 
 ---
 
 ## Related
 
+- [`docs/tutorials/start-here.md`](./docs/tutorials/start-here.md) — new-contributor on-ramp
+- [`docs/reference/glossary.md`](./docs/reference/glossary.md) — tools & acronyms defined
+- [`docs/standards/writing-docs.md`](./docs/standards/writing-docs.md) — keep docs accessible
 - [`docs/standards/commit-messages.md`](./docs/standards/commit-messages.md)
 - [`docs/standards/commit-scopes.md`](./docs/standards/commit-scopes.md)
 - [`docs/standards/git-guidelines.md`](./docs/standards/git-guidelines.md)
