@@ -19,64 +19,11 @@ import process from 'node:process';
 import { parseEnvFile, mergeEnvFile } from '../bootstrap/lib/env-file.js';
 import {
   INTAKE_PROPERTIES,
-  NOTION_VERSION,
   intakeDataSourceProperties,
 } from '../../functions/api/_intake-schema.js';
+import { notionFetch, getString, getArray, notionErrorMessage } from './lib/notion-client.js';
 
-const NOTION_API = 'https://api.notion.com/v1';
 const DB_TITLE = 'Membership intake';
-
-interface NotionResponse {
-  ok: boolean;
-  status: number;
-  json: unknown;
-}
-
-async function notion(
-  token: string,
-  method: string,
-  pathname: string,
-  body?: unknown,
-): Promise<NotionResponse> {
-  const res = await fetch(`${NOTION_API}/${pathname}`, {
-    method,
-    headers: {
-      Authorization: `Bearer ${token}`,
-      'Notion-Version': NOTION_VERSION,
-      'Content-Type': 'application/json',
-    },
-    body: body === undefined ? undefined : JSON.stringify(body),
-  });
-  let json: unknown = null;
-  try {
-    json = await res.json();
-  } catch {
-    json = null;
-  }
-  return { ok: res.ok, status: res.status, json };
-}
-
-// Notion responses come back as `unknown`; these read one field safely so the
-// callers below stay free of repeated object/null/typeof narrowing.
-function getString(obj: unknown, key: string): string | undefined {
-  if (typeof obj === 'object' && obj !== null) {
-    const value = (obj as Record<string, unknown>)[key];
-    if (typeof value === 'string') return value;
-  }
-  return undefined;
-}
-
-function getArray(obj: unknown, key: string): unknown[] | undefined {
-  if (typeof obj === 'object' && obj !== null) {
-    const value = (obj as Record<string, unknown>)[key];
-    if (Array.isArray(value)) return value;
-  }
-  return undefined;
-}
-
-function notionErrorMessage(json: unknown): string {
-  return getString(json, 'message') ?? 'unknown Notion API error';
-}
 
 /** Pull a plain-text title off a data source (or database) search result. */
 function resultTitle(result: unknown): string {
@@ -124,13 +71,13 @@ async function main(): Promise<void> {
   }
 
   // 1. Verify the token.
-  const me = await notion(token, 'GET', 'users/me');
+  const me = await notionFetch(token, 'GET', 'users/me');
   if (!me.ok) {
     die(`Notion rejected LVBT_NOTION_API_KEY (HTTP ${me.status}): ${notionErrorMessage(me.json)}`);
   }
 
   // 2. Verify the integration can see the parent page.
-  const page = await notion(token, 'GET', `pages/${parentPageId}`);
+  const page = await notionFetch(token, 'GET', `pages/${parentPageId}`);
   if (!page.ok) {
     die(
       `The integration cannot access the parent page (HTTP ${page.status}): ${notionErrorMessage(page.json)}\n` +
@@ -139,7 +86,7 @@ async function main(): Promise<void> {
   }
 
   // 3. Reuse an existing intake data source if one is already there.
-  const search = await notion(token, 'POST', 'search', {
+  const search = await notionFetch(token, 'POST', 'search', {
     query: DB_TITLE,
     filter: { value: 'data_source', property: 'object' },
   });
@@ -153,7 +100,7 @@ async function main(): Promise<void> {
   }
 
   // 4. Create the database, its first data source, and the schema in one call.
-  const created = await notion(token, 'POST', 'databases', {
+  const created = await notionFetch(token, 'POST', 'databases', {
     parent: { type: 'page_id', page_id: parentPageId },
     title: [{ type: 'text', text: { content: DB_TITLE } }],
     initial_data_source: { properties: intakeDataSourceProperties() },

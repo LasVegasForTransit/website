@@ -1,0 +1,34 @@
+{
+  "name": "transit-news-sync",
+  "description": "Syncs Las Vegas transit news articles from Google News RSS into the Notion Transit News database. Also exposes an on-demand tool callable by Notion AI.",
+  "entrypoint": "src/index.ts",
+  "capabilities": {
+    "syncs": [
+      {
+        "id": "weekly-rss",
+        "description": "Pulls Las Vegas transit news headlines from Google News RSS every week.",
+        "schedule": "weekly"
+      }
+    ],
+    "tools": [
+      {
+        "id": "add-articles",
+        "name": "add_transit_articles",
+        "description": "Add specific Las Vegas transit news article URLs to the Notion database. Use this when a team member shares a link they want tracked.",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "urls": {
+              "type": "array",
+              "items": { "type": "string", "format": "uri" },
+              "description": "One or more article URLs to fetch and add.",
+              "minItems": 1,
+              "maxItems": 20
+            }
+          },
+          "required": ["urls"]
+        }
+      }
+    ]
+  }
+}
