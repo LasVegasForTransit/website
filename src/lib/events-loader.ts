@@ -14,6 +14,7 @@ import ICAL from 'ical.js';
 import { site } from './site';
 
 import type { EventLocation } from './event-format';
+import { TIMEZONE } from './event-time';
 
 type EventData = {
   title: string;
@@ -34,7 +35,7 @@ const ptDateFmt = new Intl.DateTimeFormat('en-CA', {
   year: 'numeric',
   month: '2-digit',
   day: '2-digit',
-  timeZone: 'America/Los_Angeles',
+  timeZone: TIMEZONE,
 });
 
 function ptDateSlug(d: Date): string {

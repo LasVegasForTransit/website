@@ -5,6 +5,7 @@ import CarouselItem from '../components/CarouselItem.astro';
 import EventFormatPill from '../components/EventFormatPill.astro';
 import NewsletterEmbed from '../components/NewsletterEmbed.astro';
 import { getCollection } from 'astro:content';
+import { TIMEZONE } from '../lib/event-time';
 import { site } from '../lib/site';
 
 const events = await getCollection('events', (e) => !e.id.startsWith('_'));
@@ -120,7 +121,7 @@ const sharePitchUrl =
                 weekday: 'short',
                 month: 'short',
                 day: 'numeric',
-                timeZone: 'America/Los_Angeles',
+                timeZone: TIMEZONE,
               }).format(e.data.date)}
             </p>
             <p class="text-title-lg mt-1">{e.data.title}</p>

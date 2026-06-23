@@ -5,8 +5,9 @@ import ShareButton from '../../components/ShareButton.astro';
 import { eventSchema } from '../../lib/structured-data';
 import { site } from '../../lib/site';
 import { getCollection, getEntry, render } from 'astro:content';
+import EventBadgePill from '../../components/EventBadgePill.astro';
 import { whereLabel } from '../../lib/event-format';
-import { relativeLabel } from '../../lib/event-time';
+import { relativeLabel, formatEventTime, TIMEZONE } from '../../lib/event-time';
 
 export async function getStaticPaths() {
   const events = await getCollection('events');
@@ -37,14 +38,9 @@ const dateLabel = new Intl.DateTimeFormat('en-US', {
   month: 'long',
   day: 'numeric',
   year: 'numeric',
-  timeZone: 'America/Los_Angeles',
+  timeZone: TIMEZONE,
 }).format(event.data.date);
-const timeLabel = new Intl.DateTimeFormat('en-US', {
-  hour: 'numeric',
-  minute: '2-digit',
-  timeZone: 'America/Los_Angeles',
-  timeZoneName: 'short',
-}).format(event.data.date);
+const timeLabel = formatEventTime(event.data.date);
 
 // CTA visibility is driven by the location union — no URL pattern sniffing.
 // A virtual or hybrid location carries a joinUrl, so it shows "Join"; any event
@@ -100,20 +96,7 @@ const icsHref = `/events/${event.id}.ics`;
         time, so a page built days ago doesn't keep reading "Today". */
     }
     <p data-event-badge hidden={!isUrgent} class="mt-4 md:mt-5">
-      <span
-        data-event-badge-pill
-        class:list={[
-          'inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-bold uppercase tracking-wider',
-          relative?.kind === 'live' ? 'bg-accent text-paper' : 'bg-accent-soft text-ink',
-        ]}
-      >
-        <span
-          data-event-badge-dot
-          aria-hidden="true"
-          hidden={relative?.kind !== 'live'}
-          class="size-1.5 rounded-full bg-paper animate-pulse"></span>
-        <span data-event-badge-text>{isUrgent && relative ? relative.text : ''}</span>
-      </span>
+      <EventBadgePill relative={relative} />
     </p>
     <h1
       class:list={[

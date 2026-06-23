@@ -1,5 +1,5 @@
 import { site } from './site';
-import type { EventLocation } from './event-format';
+import type { EventLocation, EventVenue } from './event-format';
 
 type JsonLd = Record<string, unknown>;
 
@@ -77,43 +77,37 @@ export function eventSchema(event: EventLike, canonicalUrl: string): JsonLd {
   // fills in once the calendar event has a venue or join URL.
   if (!loc) return base;
 
-  const virtualLoc =
-    loc.format === 'virtual' || loc.format === 'hybrid'
-      ? { '@type': 'VirtualLocation' as const, url: loc.joinUrl }
-      : undefined;
-  const physicalLoc =
-    loc.format === 'in-person' || loc.format === 'hybrid'
-      ? {
-          '@type': 'Place' as const,
-          name: loc.venue.name,
-          address: {
-            '@type': 'PostalAddress' as const,
-            ...(loc.venue.streetAddress && { streetAddress: loc.venue.streetAddress }),
-            addressLocality: loc.venue.addressLocality,
-            addressRegion: loc.venue.addressRegion,
-            addressCountry: loc.venue.addressCountry,
-          },
-        }
-      : undefined;
+  const virtualLocation = (url: string) => ({ '@type': 'VirtualLocation' as const, url });
+  const placeLocation = (venue: EventVenue) => ({
+    '@type': 'Place' as const,
+    name: venue.name,
+    address: {
+      '@type': 'PostalAddress' as const,
+      ...(venue.streetAddress && { streetAddress: venue.streetAddress }),
+      addressLocality: venue.addressLocality,
+      addressRegion: venue.addressRegion,
+      addressCountry: venue.addressCountry,
+    },
+  });
 
   switch (loc.format) {
     case 'virtual':
       return {
         ...base,
         eventAttendanceMode: 'https://schema.org/OnlineEventAttendanceMode',
-        location: virtualLoc,
+        location: virtualLocation(loc.joinUrl),
       };
     case 'in-person':
       return {
         ...base,
         eventAttendanceMode: 'https://schema.org/OfflineEventAttendanceMode',
-        location: physicalLoc,
+        location: placeLocation(loc.venue),
       };
     case 'hybrid':
       return {
         ...base,
         eventAttendanceMode: 'https://schema.org/MixedEventAttendanceMode',
-        location: [virtualLoc, physicalLoc],
+        location: [virtualLocation(loc.joinUrl), placeLocation(loc.venue)],
       };
   }
 }

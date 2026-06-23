@@ -12,7 +12,9 @@
 // (see src/scripts/event-relative.ts) so a card built days ago stays accurate.
 type EventTiming = { date: Date; endDate?: Date };
 
-const TIMEZONE = 'America/Los_Angeles';
+// The Valley is in PT; "Today" / displayed times are always in this zone
+// regardless of the visitor's locale. Shared by every event surface.
+export const TIMEZONE = 'America/Los_Angeles';
 const DAY_MS = 24 * 60 * 60 * 1000;
 // Fallback duration when an event omits endDate. Matches the implicit
 // "about an hour" of the general-meeting template; revisit if the
@@ -29,6 +31,18 @@ function ymdInZone(d: Date): string {
     month: '2-digit',
     day: '2-digit',
   }).format(d);
+}
+
+// The event time-of-day label ("7:00 PM PDT"), identical across the card and
+// the detail page. Formatter hoisted so it's built once, not per render.
+const timeFmt = new Intl.DateTimeFormat('en-US', {
+  hour: 'numeric',
+  minute: '2-digit',
+  timeZone: TIMEZONE,
+  timeZoneName: 'short',
+});
+export function formatEventTime(date: Date): string {
+  return timeFmt.format(date);
 }
 
 export function isToday(date: Date, now: Date = new Date()): boolean {

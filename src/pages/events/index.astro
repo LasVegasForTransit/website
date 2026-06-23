@@ -4,6 +4,7 @@ import SectionHeader from '../../components/SectionHeader.astro';
 import EventCard from '../../components/EventCard.astro';
 import { getCollection } from 'astro:content';
 import { whereLabel } from '../../lib/event-format';
+import { TIMEZONE } from '../../lib/event-time';
 import { site } from '../../lib/site';
 
 const all = await getCollection('events');
@@ -98,7 +99,7 @@ const otherUpcoming = featured ? upcoming.filter((e) => e.id !== featured.id) : 
               month: 'short',
               day: 'numeric',
               year: 'numeric',
-              timeZone: 'America/Los_Angeles',
+              timeZone: TIMEZONE,
             }).format(e.data.date);
             return (
               <li>

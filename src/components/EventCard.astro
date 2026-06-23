@@ -1,8 +1,9 @@
 ---
 import type { CollectionEntry } from 'astro:content';
 import EventFormatPill from './EventFormatPill.astro';
+import EventBadgePill from './EventBadgePill.astro';
 import { whereLabel } from '../lib/event-format';
-import { relativeLabel } from '../lib/event-time';
+import { relativeLabel, formatEventTime, TIMEZONE } from '../lib/event-time';
 
 interface Props {
   event: CollectionEntry<'events'>;
@@ -22,15 +23,10 @@ const dateLabel = new Intl.DateTimeFormat('en-US', {
   month: 'short',
   day: 'numeric',
   year: 'numeric',
-  timeZone: 'America/Los_Angeles',
+  timeZone: TIMEZONE,
 }).format(date);
 
-const timeLabel = new Intl.DateTimeFormat('en-US', {
-  hour: 'numeric',
-  minute: '2-digit',
-  timeZone: 'America/Los_Angeles',
-  timeZoneName: 'short',
-}).format(date);
+const timeLabel = formatEventTime(date);
 
 // Relative-time label (Live now / Today / Tomorrow / In N days / Next week).
 // `live` and `today` render as a small badge near the top of the card;
@@ -74,20 +70,7 @@ const inlineRelative = relative && !isUrgent ? relative.text : null;
       view time so a card built days ago doesn't keep saying "Today". */
   }
   <span data-event-badge hidden={!isUrgent} class="self-start">
-    <span
-      data-event-badge-pill
-      class:list={[
-        'inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-bold uppercase tracking-wider',
-        relative?.kind === 'live' ? 'bg-accent text-paper' : 'bg-accent-soft text-ink',
-      ]}
-    >
-      <span
-        data-event-badge-dot
-        aria-hidden="true"
-        hidden={relative?.kind !== 'live'}
-        class="size-1.5 rounded-full bg-paper animate-pulse"></span>
-      <span data-event-badge-text>{isUrgent && relative ? relative.text : ''}</span>
-    </span>
+    <EventBadgePill relative={relative} />
   </span>
   {
     featured ? (
