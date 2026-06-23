@@ -114,7 +114,7 @@ const sharePitchUrl =
       ) : (
         upcoming.map((e) => (
           <CarouselItem href={`/events/${e.id}`}>
-            <EventFormatPill format={e.data.format} />
+            <EventFormatPill format={e.data.location?.format} />
             <p class="mt-3 font-semibold">
               {new Intl.DateTimeFormat('en-US', {
                 weekday: 'short',

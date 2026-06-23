@@ -46,11 +46,14 @@ const timeLabel = new Intl.DateTimeFormat('en-US', {
   timeZoneName: 'short',
 }).format(event.data.date);
 
-// CTA visibility is purely format-driven now — no URL pattern sniffing. A
-// virtual or hybrid event with a joinUrl shows "Join"; any event with an
-// rsvpUrl shows "RSVP". Both can be shown together for hybrid events that
-// also gate attendance behind a separate registration.
-const showJoin = event.data.format !== 'in-person' && event.data.joinUrl !== undefined;
+// CTA visibility is driven by the location union — no URL pattern sniffing.
+// A virtual or hybrid location carries a joinUrl, so it shows "Join"; any event
+// with an rsvpUrl shows "RSVP". Both can appear together for a hybrid event
+// that also gates attendance behind a separate registration.
+const location = event.data.location;
+const joinUrl =
+  location?.format === 'virtual' || location?.format === 'hybrid' ? location.joinUrl : undefined;
+const showJoin = joinUrl !== undefined;
 const showRsvp = event.data.rsvpUrl !== undefined;
 
 // "Live now" / "Today" derive from the event's PT day — see lib/event-time.
@@ -75,6 +78,7 @@ const icsHref = `/events/${event.id}.ics`;
   <header
     class="container-page pt-6 pb-8 md:pt-14 md:pb-10"
     data-event-when
+    data-format={location?.format}
     data-start={event.data.date.toISOString()}
     data-end={event.data.endDate ? event.data.endDate.toISOString() : undefined}
   >
@@ -142,7 +146,7 @@ const icsHref = `/events/${event.id}.ics`;
       </div>
       <div>
         <dt class="eyebrow">Where</dt>
-        <dd class="mt-1 text-base font-semibold">{whereLabel(event.data)}</dd>
+        <dd class="mt-1 text-base font-semibold">{whereLabel(location)}</dd>
       </div>
     </dl>
 
@@ -164,7 +168,7 @@ const icsHref = `/events/${event.id}.ics`;
       {
         showJoin && (
           <a
-            href={event.data.joinUrl}
+            href={joinUrl}
             class="press inline-flex items-center bg-accent text-ink px-5 py-3 text-sm font-bold uppercase tracking-wider no-underline hover:bg-ink hover:text-paper"
             rel="noopener"
           >

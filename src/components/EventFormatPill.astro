@@ -8,16 +8,26 @@
 // background featured card or any future dark surface. `size` lets the
 // detail page use a slightly larger pill where it has more vertical room.
 import { Icon } from 'astro-icon/components';
-import type { CollectionEntry } from 'astro:content';
-import { FORMAT_LABEL, FORMAT_ICON_NAME } from '../lib/event-format';
+import {
+  FORMAT_LABEL,
+  FORMAT_ICON_NAME,
+  PENDING_FORMAT_LABEL,
+  PENDING_FORMAT_ICON_NAME,
+  type EventFormat,
+} from '../lib/event-format';
 
 interface Props {
-  format: CollectionEntry<'events'>['data']['format'];
+  // Optional: an event whose attendance details aren't set yet has no format,
+  // and the pill falls back to the "details to come" presentation.
+  format?: EventFormat;
   canvas?: 'paper' | 'ink';
   size?: 'sm' | 'md';
 }
 
 const { format, canvas = 'paper', size = 'sm' } = Astro.props;
+
+const iconName = format ? FORMAT_ICON_NAME[format] : PENDING_FORMAT_ICON_NAME;
+const label = format ? FORMAT_LABEL[format] : PENDING_FORMAT_LABEL;
 
 const surfaceClass = canvas === 'ink' ? 'bg-paper/10 text-paper' : 'bg-accent-soft text-ink';
 const iconColorClass = canvas === 'ink' ? 'text-accent-soft' : 'text-accent';
@@ -32,10 +42,6 @@ const iconSizeClass = size === 'md' ? 'size-4' : 'size-3.5';
     padClass,
   ]}
 >
-  <Icon
-    name={FORMAT_ICON_NAME[format]}
-    class:list={[iconSizeClass, iconColorClass]}
-    aria-hidden="true"
-  />
-  <span>{FORMAT_LABEL[format]}</span>
+  <Icon name={iconName} class:list={[iconSizeClass, iconColorClass]} aria-hidden="true" />
+  <span>{label}</span>
 </span>

@@ -108,7 +108,7 @@ const otherUpcoming = featured ? upcoming.filter((e) => e.id !== featured.id) : 
                 >
                   <span class="eyebrow">{dateLabel}</span>
                   <span class="font-semibold">{e.data.title}</span>
-                  <span class="text-sm text-mute">{whereLabel(e.data)}</span>
+                  <span class="text-sm text-mute">{whereLabel(e.data.location)}</span>
                 </a>
               </li>
             );

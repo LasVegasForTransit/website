@@ -31,21 +31,22 @@ function escapeIcsText(s: string): string {
 // the lower-level lib).
 const ASSUMED_DURATION_MS = 60 * 60 * 1000;
 
-function composeLocation(event: CollectionEntry<'events'>['data']): string {
-  if (event.format === 'virtual') {
-    return event.joinUrl ?? '';
+function composeLocation(location: CollectionEntry<'events'>['data']['location']): string {
+  // No location yet — emit no LOCATION line (it's optional per RFC 5545).
+  if (!location) return '';
+  if (location.format === 'virtual') return location.joinUrl;
+
+  const { venue } = location;
+  const parts = [
+    venue.name,
+    venue.streetAddress,
+    `${venue.addressLocality}, ${venue.addressRegion}`,
+  ].filter((part): part is string => Boolean(part));
+  let text = parts.join(', ');
+  if (location.format === 'hybrid') {
+    text += text ? ` (also online: ${location.joinUrl})` : location.joinUrl;
   }
-  const parts: string[] = [];
-  if (event.venue) {
-    parts.push(event.venue.name);
-    if (event.venue.streetAddress) parts.push(event.venue.streetAddress);
-    parts.push(`${event.venue.addressLocality}, ${event.venue.addressRegion}`);
-  }
-  let location = parts.filter(Boolean).join(', ');
-  if (event.format === 'hybrid' && event.joinUrl) {
-    location += location ? ` (also online: ${event.joinUrl})` : event.joinUrl;
-  }
-  return location;
+  return text;
 }
 
 export function buildIcs(event: CollectionEntry<'events'>): string {
@@ -55,7 +56,7 @@ export function buildIcs(event: CollectionEntry<'events'>): string {
     event.data.endDate ?? new Date(event.data.date.getTime() + ASSUMED_DURATION_MS),
   );
   const dtStamp = icsDateUtc(new Date());
-  const location = composeLocation(event.data);
+  const location = composeLocation(event.data.location);
 
   // PRODID identifies the calendar generator. Format is `-//OWNER//PRODUCT
   // VERSION//LANG` per RFC 5545. Lang token stays EN until we localise.

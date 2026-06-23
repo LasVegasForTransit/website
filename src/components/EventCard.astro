@@ -10,7 +10,8 @@ interface Props {
 }
 
 const { event, featured = false } = Astro.props;
-const { title, date, endDate, summary, format } = event.data;
+const { title, date, endDate, summary, location } = event.data;
+const format = location?.format;
 const href = `/events/${event.id}`;
 
 // Mixed case, not all-caps. The date is the primary scannable anchor of an
@@ -42,6 +43,7 @@ const inlineRelative = relative && !isUrgent ? relative.text : null;
 <a
   href={href}
   data-event-when
+  data-format={format}
   data-start={date.toISOString()}
   data-end={endDate ? endDate.toISOString() : undefined}
   class:list={[
@@ -154,11 +156,11 @@ const inlineRelative = relative && !isUrgent ? relative.text : null;
       footer here adds nothing. */
   }
   {
-    (featured || format !== 'virtual') && (
+    (featured || (format != null && format !== 'virtual')) && (
       <p
         class:list={['mt-6 text-sm', featured ? 'text-paper/70' : 'text-[color:var(--color-mute)]']}
       >
-        {whereLabel(event.data)}
+        {whereLabel(location)}
       </p>
     )
   }

@@ -13,20 +13,14 @@ import type { Loader } from 'astro/loaders';
 import ICAL from 'ical.js';
 import { site } from './site';
 
-type EventFormat = 'virtual' | 'in-person' | 'hybrid';
+import type { EventLocation } from './event-format';
 
 type EventData = {
   title: string;
   date: Date;
   endDate?: Date;
-  format: EventFormat;
-  venue?: {
-    name: string;
-    addressLocality: string;
-    addressRegion: string;
-    addressCountry: string;
-  };
-  joinUrl?: string;
+  // Undefined when the event has no arranged join URL or venue yet.
+  location?: EventLocation;
   rsvpUrl?: string;
   featured: boolean;
   summary: string;
@@ -164,16 +158,6 @@ function buildEventEntry(
     if (fromDesc) joinUrl = fromDesc;
   }
 
-  let format: EventFormat;
-  if (joinUrl && venueName) format = 'hybrid';
-  else if (joinUrl) format = 'virtual';
-  else if (venueName) format = 'in-person';
-  else {
-    throw new Error(
-      `Calendar event "${title}" (${startDate.toISOString()}) has neither a join URL nor a venue. Add a Meet/Zoom URL or a physical address.`,
-    );
-  }
-
   const venue = venueName
     ? {
         name: venueName,
@@ -183,6 +167,17 @@ function buildEventEntry(
       }
     : undefined;
 
+  // Resolve the location union from what the calendar gave us. An event with
+  // neither a join URL nor a venue is still a real, dated event — it just
+  // hasn't had its attendance details arranged yet (e.g. a board meeting whose
+  // location is pending). It gets no `location` (the absence of the union, not
+  // a sentinel) rather than being dropped, so the calendar stays the source of
+  // truth and the surfaces render a pending state.
+  let location: EventLocation | undefined;
+  if (joinUrl && venue) location = { format: 'hybrid', joinUrl, venue };
+  else if (joinUrl) location = { format: 'virtual', joinUrl };
+  else if (venue) location = { format: 'in-person', venue };
+
   const slug = `${ptDateSlug(startDate)}-${slugifyTitle(title)}`;
   const { summary, body } = parseDescription(description, title);
 
@@ -190,9 +185,7 @@ function buildEventEntry(
     title,
     date: startDate,
     endDate,
-    format,
-    venue,
-    joinUrl,
+    location,
     rsvpUrl: findRsvpUrl(description),
     featured: false,
     summary,
@@ -234,26 +227,6 @@ export function calendarEventsLoader(): Loader {
       const now = Date.now();
       const horizonMs = now + HORIZON_MS;
       const entries: Array<{ slug: string; data: EventData; digestInput: string }> = [];
-
-      // A single malformed calendar entry (e.g. one missing both a venue and a
-      // join URL) shouldn't take down the entire build. buildEventEntry still
-      // throws to describe the problem; we log it and skip that occurrence so
-      // the rest of the feed — and the site — keeps building. The event simply
-      // won't appear until it's fixed in Google Calendar.
-      const safeBuild = (
-        uid: string,
-        ev: ICAL.Event,
-        start: Date,
-        end: Date | undefined,
-        recKey: string,
-      ): ReturnType<typeof buildEventEntry> => {
-        try {
-          return buildEventEntry(uid, ev, start, end, recKey);
-        } catch (err) {
-          logger.warn(err instanceof Error ? err.message : `Skipped a calendar event: ${err}`);
-          return null;
-        }
-      };
 
       // Google Calendar expresses a rescheduled instance of a recurring event
       // as a second VEVENT with the same UID and a RECURRENCE-ID property. The
@@ -297,13 +270,13 @@ export function calendarEventsLoader(): Loader {
             const instance = details.item as ICAL.Event;
             const startDate = details.startDate.toJSDate();
             const endDate = details.endDate?.toJSDate();
-            const entry = safeBuild(uid, instance, startDate, endDate, nextTime.toString());
+            const entry = buildEventEntry(uid, instance, startDate, endDate, nextTime.toString());
             if (entry) entries.push(entry);
           }
         } else {
           const startDate = masterEvent.startDate.toJSDate();
           const endDate = masterEvent.endDate?.toJSDate();
-          const entry = safeBuild(
+          const entry = buildEventEntry(
             uid,
             masterEvent,
             startDate,
@@ -323,7 +296,7 @@ export function calendarEventsLoader(): Loader {
           const startDate = event.startDate.toJSDate();
           const endDate = event.endDate?.toJSDate();
           const recKey = event.recurrenceId?.toString() ?? startDate.toISOString();
-          const entry = safeBuild(uid, event, startDate, endDate, recKey);
+          const entry = buildEventEntry(uid, event, startDate, endDate, recKey);
           if (entry) entries.push(entry);
         }
       }

@@ -3,6 +3,7 @@ import { glob } from 'astro/loaders';
 import { z } from 'zod';
 import { calendarEventsLoader } from './lib/events-loader';
 import { beehiivNewsletterLoader } from './lib/newsletter-loader';
+import { eventLocationSchema } from './lib/event-format';
 
 const docs = defineCollection({
   loader: glob({ pattern: '**/*.{md,mdx}', base: './src/content/docs' }),
@@ -27,17 +28,10 @@ const events = defineCollection({
       title: z.string(),
       date: z.coerce.date(),
       endDate: z.coerce.date().optional(),
-      format: z.enum(['virtual', 'in-person', 'hybrid']),
-      venue: z
-        .object({
-          name: z.string(),
-          streetAddress: z.string().optional(),
-          addressLocality: z.string().default('Las Vegas'),
-          addressRegion: z.string().default('NV'),
-          addressCountry: z.string().default('US'),
-        })
-        .optional(),
-      joinUrl: z.url().optional(),
+      // How to attend, as a discriminated union (`format` is its discriminant).
+      // Omitted when the event's details aren't arranged yet — confirmed and
+      // dated, but join URL / venue still pending. See lib/event-format.ts.
+      location: eventLocationSchema.optional(),
       rsvpUrl: z.url().optional(),
       featured: z.boolean().default(false),
       summary: z.string(),
@@ -49,20 +43,6 @@ const events = defineCollection({
       image: z.string().optional(),
     })
     .superRefine((data, ctx) => {
-      if (data.format !== 'virtual' && !data.venue) {
-        ctx.addIssue({
-          code: 'custom',
-          path: ['venue'],
-          message: '`venue` is required when format is `in-person` or `hybrid`',
-        });
-      }
-      if (data.format !== 'in-person' && !data.joinUrl) {
-        ctx.addIssue({
-          code: 'custom',
-          path: ['joinUrl'],
-          message: '`joinUrl` is required when format is `virtual` or `hybrid`',
-        });
-      }
       // `endDate` is optional but, when present, must come strictly after
       // `date`. The .ics builder and the Live-now check otherwise emit
       // negative-duration events or never-live windows.

@@ -1,4 +1,5 @@
 import { site } from './site';
+import type { EventLocation } from './event-format';
 
 type JsonLd = Record<string, unknown>;
 
@@ -40,15 +41,7 @@ interface EventLike {
     summary: string;
     date: Date;
     endDate?: Date;
-    format: 'virtual' | 'in-person' | 'hybrid';
-    venue?: {
-      name: string;
-      streetAddress?: string;
-      addressLocality: string;
-      addressRegion: string;
-      addressCountry: string;
-    };
-    joinUrl?: string;
+    location?: EventLocation;
     rsvpUrl?: string;
     image?: string;
   };
@@ -78,23 +71,32 @@ export function eventSchema(event: EventLike, canonicalUrl: string): JsonLd {
     }),
   };
 
-  const virtualLoc = event.data.joinUrl && {
-    '@type': 'VirtualLocation' as const,
-    url: event.data.joinUrl,
-  };
-  const physicalLoc = event.data.venue && {
-    '@type': 'Place' as const,
-    name: event.data.venue.name,
-    address: {
-      '@type': 'PostalAddress' as const,
-      ...(event.data.venue.streetAddress && { streetAddress: event.data.venue.streetAddress }),
-      addressLocality: event.data.venue.addressLocality,
-      addressRegion: event.data.venue.addressRegion,
-      addressCountry: event.data.venue.addressCountry,
-    },
-  };
+  const loc = event.data.location;
+  // No location yet (details pending) — emit the event without a `location` or
+  // `eventAttendanceMode` rather than a placeholder. Valid JSON-LD; the markup
+  // fills in once the calendar event has a venue or join URL.
+  if (!loc) return base;
 
-  switch (event.data.format) {
+  const virtualLoc =
+    loc.format === 'virtual' || loc.format === 'hybrid'
+      ? { '@type': 'VirtualLocation' as const, url: loc.joinUrl }
+      : undefined;
+  const physicalLoc =
+    loc.format === 'in-person' || loc.format === 'hybrid'
+      ? {
+          '@type': 'Place' as const,
+          name: loc.venue.name,
+          address: {
+            '@type': 'PostalAddress' as const,
+            ...(loc.venue.streetAddress && { streetAddress: loc.venue.streetAddress }),
+            addressLocality: loc.venue.addressLocality,
+            addressRegion: loc.venue.addressRegion,
+            addressCountry: loc.venue.addressCountry,
+          },
+        }
+      : undefined;
+
+  switch (loc.format) {
     case 'virtual':
       return {
         ...base,
