@@ -159,8 +159,23 @@ test.describe('body content links', () => {
     await expect(joinCta).toBeVisible();
   });
 
-  test('in-person event page does not advertise a Join CTA', async ({ page }) => {
-    await page.goto('/events/2026-07-02-general-meeting');
+  test('an event without join info advertises no Join CTA', async ({ page }) => {
+    await page.goto('/events');
+    await page.waitForLoadState('networkidle');
+
+    // Find an event with no join URL — in-person, or one whose details aren't
+    // set yet (no format attribute at all). Derived from the card's data-format
+    // rather than a hardcoded slug, so it survives the live calendar changing.
+    const noJoin = page.locator(
+      'main a[data-event-when]:not([data-format="virtual"]):not([data-format="hybrid"])',
+    );
+    test.skip(
+      (await noJoin.count()) === 0,
+      'No in-person or TBA event in the feed to assert against.',
+    );
+    const href = await noJoin.first().getAttribute('href');
+
+    await page.goto(href!);
     await page.waitForLoadState('networkidle');
 
     // Scoped to <main> so the mobile site-header "Join" button doesn't
@@ -175,15 +190,26 @@ test.describe('body content links', () => {
   // emits at build time; (b) the file is RFC 5545 enough that the OS
   // calendar handler will recognise it.
   test('virtual event publishes a valid .ics feed', async ({ page, request }) => {
+    // firstVirtualEventPath leaves the page on the chosen event's detail view,
+    // so the title and join URL come from the rendered page rather than
+    // hardcoded calendar strings that drift when the event is renamed.
     const eventPath = await firstVirtualEventPath(page);
+    const title = (await page.locator('main h1').first().textContent())?.trim() ?? '';
+    const joinUrl = await page
+      .locator('main a', { hasText: /Join →/ })
+      .first()
+      .getAttribute('href');
+
     const response = await request.get(`${eventPath}.ics`);
     expect(response.status()).toBe(200);
     const body = await response.text();
     expect(body).toContain('BEGIN:VCALENDAR');
     expect(body).toContain('BEGIN:VEVENT');
-    expect(body).toContain('SUMMARY:LVBT General Meeting');
+    expect(title.length).toBeGreaterThan(0);
+    expect(body).toContain(`SUMMARY:${title}`);
     expect(body).toMatch(/DTSTART:\d{8}T\d{6}Z/);
     expect(body).toMatch(/DTEND:\d{8}T\d{6}Z/);
-    expect(body).toContain('LOCATION:https://meet.google.com/');
+    expect(joinUrl).toBeTruthy();
+    expect(body).toContain(`LOCATION:${joinUrl}`);
   });
 });
