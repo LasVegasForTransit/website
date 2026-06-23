@@ -10,7 +10,7 @@ interface Props {
 }
 
 const { event, featured = false } = Astro.props;
-const { title, date, summary, format } = event.data;
+const { title, date, endDate, summary, format } = event.data;
 const href = `/events/${event.id}`;
 
 // Mixed case, not all-caps. The date is the primary scannable anchor of an
@@ -41,6 +41,9 @@ const inlineRelative = relative && !isUrgent ? relative.text : null;
 
 <a
   href={href}
+  data-event-when
+  data-start={date.toISOString()}
+  data-end={endDate ? endDate.toISOString() : undefined}
   class:list={[
     // `flex flex-col h-full` lets the "where" line anchor to the card's
     // footer via `mt-auto` so neighbouring cards align horizontally even
@@ -63,26 +66,36 @@ const inlineRelative = relative && !isUrgent ? relative.text : null;
   }
   {
     /* Live now / Today badge supersedes the static label on featured
-      cards and stacks above the format pill on grid cards. Renders
-      only when the event is urgent (live or today). */
+      cards and stacks above the format pill on grid cards. Both the badge
+      and the fallback are rendered; `hidden` picks one. The server sets it
+      from the build-time relative kind; event-relative.ts re-derives it at
+      view time so a card built days ago doesn't keep saying "Today". */
   }
-  {
-    isUrgent && relative ? (
+  <span data-event-badge hidden={!isUrgent} class="self-start">
+    <span
+      data-event-badge-pill
+      class:list={[
+        'inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-bold uppercase tracking-wider',
+        relative?.kind === 'live' ? 'bg-accent text-paper' : 'bg-accent-soft text-ink',
+      ]}
+    >
       <span
-        class:list={[
-          'inline-flex items-center gap-1.5 self-start rounded-full px-2.5 py-1 text-xs font-bold uppercase tracking-wider',
-          relative.kind === 'live' ? 'bg-accent text-paper' : 'bg-accent-soft text-ink',
-        ]}
-      >
-        {relative.kind === 'live' && (
-          <span aria-hidden="true" class="size-1.5 rounded-full bg-paper animate-pulse" />
-        )}
-        {relative.text}
-      </span>
-    ) : featured ? (
-      <p class="eyebrow text-accent-soft">Next event</p>
+        data-event-badge-dot
+        aria-hidden="true"
+        hidden={relative?.kind !== 'live'}
+        class="size-1.5 rounded-full bg-paper animate-pulse"></span>
+      <span data-event-badge-text>{isUrgent && relative ? relative.text : ''}</span>
+    </span>
+  </span>
+  {
+    featured ? (
+      <p data-event-fallback hidden={isUrgent} class="eyebrow text-accent-soft">
+        Next event
+      </p>
     ) : (
-      <EventFormatPill format={format} canvas="paper" />
+      <span data-event-fallback hidden={isUrgent}>
+        <EventFormatPill format={format} canvas="paper" />
+      </span>
     )
   }
 
@@ -93,18 +106,14 @@ const inlineRelative = relative && !isUrgent ? relative.text : null;
   }
   <p class:list={[featured ? 'mt-4 md:mt-5 text-body-lg font-bold' : 'mt-4 font-semibold']}>
     <time datetime={date.toISOString()}>{dateLabel} · {timeLabel}</time>
-    {
-      inlineRelative && (
-        <span
-          class:list={[
-            'ml-2 font-normal',
-            featured ? 'text-paper/70' : 'text-[color:var(--color-mute)]',
-          ]}
-        >
-          · {inlineRelative}
-        </span>
-      )
-    }
+    <span
+      data-event-inline
+      hidden={!inlineRelative}
+      class:list={[
+        'ml-2 font-normal',
+        featured ? 'text-paper/70' : 'text-[color:var(--color-mute)]',
+      ]}>· <span data-event-inline-text>{inlineRelative ?? ''}</span></span
+    >
   </p>
 
   {
@@ -154,3 +163,7 @@ const inlineRelative = relative && !isUrgent ? relative.text : null;
     )
   }
 </a>
+
+<script>
+  import '../scripts/event-relative';
+</script>

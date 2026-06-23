@@ -72,7 +72,12 @@ const icsHref = `/events/${event.id}.ics`;
       to read. The rule-thick separator below ends the header section,
       matching the brand motif used across every other page. */
   }
-  <header class="container-page pt-6 pb-8 md:pt-14 md:pb-10">
+  <header
+    class="container-page pt-6 pb-8 md:pt-14 md:pb-10"
+    data-event-when
+    data-start={event.data.date.toISOString()}
+    data-end={event.data.endDate ? event.data.endDate.toISOString() : undefined}
+  >
     <p class="eyebrow"><a href="/events" class="no-underline hover:underline">← All events</a></p>
     {
       /* Headline-lg on mobile keeps "General Meeting" on one line;
@@ -86,22 +91,26 @@ const icsHref = `/events/${event.id}.ics`;
         otherwise so the badge isn't decorative chrome on every page. */
     }
     {
-      isUrgent && relative && (
-        <p class="mt-4 md:mt-5">
-          <span
-            class:list={[
-              'inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-bold uppercase tracking-wider',
-              relative.kind === 'live' ? 'bg-accent text-paper' : 'bg-accent-soft text-ink',
-            ]}
-          >
-            {relative.kind === 'live' && (
-              <span aria-hidden="true" class="size-1.5 rounded-full bg-paper animate-pulse" />
-            )}
-            {relative.text}
-          </span>
-        </p>
-      )
+      /* Both states ship; `hidden` picks one. The server sets it from the
+        build-time relative kind and event-relative.ts re-derives it at view
+        time, so a page built days ago doesn't keep reading "Today". */
     }
+    <p data-event-badge hidden={!isUrgent} class="mt-4 md:mt-5">
+      <span
+        data-event-badge-pill
+        class:list={[
+          'inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-bold uppercase tracking-wider',
+          relative?.kind === 'live' ? 'bg-accent text-paper' : 'bg-accent-soft text-ink',
+        ]}
+      >
+        <span
+          data-event-badge-dot
+          aria-hidden="true"
+          hidden={relative?.kind !== 'live'}
+          class="size-1.5 rounded-full bg-paper animate-pulse"></span>
+        <span data-event-badge-text>{isUrgent && relative ? relative.text : ''}</span>
+      </span>
+    </p>
     <h1
       class:list={[
         'text-headline-lg md:text-display-md',
@@ -123,13 +132,12 @@ const icsHref = `/events/${event.id}.ics`;
         <dt class="eyebrow">When</dt>
         <dd class="mt-1 text-base font-semibold">
           <time datetime={event.data.date.toISOString()}>{dateLabel} · {timeLabel}</time>
-          {
-            inlineRelative && (
-              <span class="ml-2 font-normal text-[color:var(--color-mute)]">
-                · {inlineRelative}
-              </span>
-            )
-          }
+          <span
+            data-event-inline
+            hidden={!inlineRelative}
+            class="ml-2 font-normal text-[color:var(--color-mute)]"
+            >· <span data-event-inline-text>{inlineRelative ?? ''}</span></span
+          >
         </dd>
       </div>
       <div>
@@ -199,4 +207,8 @@ const icsHref = `/events/${event.id}.ics`;
       </>
     )
   }
+
+  <script>
+    import '../../scripts/event-relative';
+  </script>
 </BaseLayout>

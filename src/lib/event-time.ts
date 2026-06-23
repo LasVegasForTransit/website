@@ -6,9 +6,11 @@
 // All comparisons run in America/Los_Angeles. The Valley is in PT, the
 // audience is local, and a visitor opening the page from another zone
 // still expects "Today" to mean the event's local day — not theirs.
-import type { CollectionEntry } from 'astro:content';
-
-type EventData = CollectionEntry<'events'>['data'];
+// Structural timing shape — only the fields the relative-label logic reads.
+// Deliberately free of astro:content types so this module is safe to import
+// from a browser <script>; the labels are recomputed client-side at view time
+// (see src/scripts/event-relative.ts) so a card built days ago stays accurate.
+type EventTiming = { date: Date; endDate?: Date };
 
 const TIMEZONE = 'America/Los_Angeles';
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -37,7 +39,7 @@ export function isToday(date: Date, now: Date = new Date()): boolean {
 // present; falls back to a one-hour window when absent so a meeting
 // without an explicit endDate still surfaces "Live now" while in
 // progress instead of jumping straight to "ended".
-export function isHappeningNow(event: EventData, now: Date = new Date()): boolean {
+export function isHappeningNow(event: EventTiming, now: Date = new Date()): boolean {
   if (event.date > now) return false;
   const end = event.endDate ?? new Date(event.date.getTime() + ASSUMED_DURATION_MS);
   return end >= now;
@@ -54,7 +56,7 @@ export type RelativeLabel =
   | { kind: 'week'; text: 'Next week' } // 8–14 days out
   | null;
 
-export function relativeLabel(event: EventData, now: Date = new Date()): RelativeLabel {
+export function relativeLabel(event: EventTiming, now: Date = new Date()): RelativeLabel {
   if (isHappeningNow(event, now)) return { kind: 'live', text: 'Live now' };
   if (event.date < now) return null; // past events: absolute date suffices
 
