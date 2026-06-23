@@ -40,6 +40,7 @@ Information you look up, not read.
 - [Bootstrap CLI](./reference/bootstrap.md) — phases, flags, state file
 - [Deployment pipeline](./reference/deployment-pipeline.md) — how code gets from `git push` to lasvegasfortransit.org
 - [Key facts](./reference/key-facts.md) — verified numbers used across copy
+- [Design tokens](./reference/design-tokens.md) — color + type tokens, canvas/band system
 - [Newsletter signup & verification](./reference/newsletter-signup.md) — the on-site subscribe form, Beehiiv config, double opt-in
 - [Membership intake automation](./reference/membership-intake.md) — Google Forms to Beehiiv and Notion
 - [Transit news pipeline](./reference/transit-news-pipeline.md) — schema, extraction logic, and the Cloudflare enrichment function
@@ -65,6 +66,7 @@ The why behind decisions and conventions.
 - [Membership program](./explanation/membership-program.md) — the program design (a plan, not yet a built system)
 - [Innovation ideas registry](./explanation/innovation-ideas.md) — running list of tools, content formats, and media to consider
 - [Design decisions](./explanation/design-decisions.md) — load-bearing choices that look weird at first
+- [Design system](./explanation/design-system.md) — brand palette, color-usage rules, reserved colors, brand-kit notes
 
 ### Decision records
 
