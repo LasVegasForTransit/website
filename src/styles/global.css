@@ -12,6 +12,11 @@
      brand orange, less aggressive against ink-on-dark surfaces. */
   --color-accent-warm: #ec7049;
   --color-accent-soft: #ffe9d6;
+  /* Darkened accent for accent-as-text on light surfaces. The bright accent
+     is ~3.5:1 on paper — below AA for body copy — so links and inline accent
+     text use this (~4.9:1) while fills, buttons, and large display keep the
+     bright accent. */
+  --color-accent-ink: #bf3a10;
   --color-mute: #4a4e57;
   --color-rule: #1f232b;
 
@@ -689,8 +694,8 @@ body[data-canvas='dark'] [data-site-header]:not([data-stuck]):not([data-nav-open
     color: var(--color-mute);
     text-wrap: pretty;
     --content-link-color: var(--color-ink);
-    --content-link-hover: var(--color-accent);
-    --content-link-decoration: color-mix(in srgb, var(--color-accent) 70%, transparent);
+    --content-link-hover: var(--color-accent-ink);
+    --content-link-decoration: color-mix(in srgb, var(--color-accent-ink) 70%, transparent);
   }
 
   .prose-doc {
@@ -698,8 +703,8 @@ body[data-canvas='dark'] [data-site-header]:not([data-stuck]):not([data-nav-open
     line-height: 1.7;
     text-wrap: pretty;
     --content-link-color: inherit;
-    --content-link-hover: var(--color-accent);
-    --content-link-decoration: color-mix(in srgb, var(--color-accent) 70%, transparent);
+    --content-link-hover: var(--color-accent-ink);
+    --content-link-decoration: color-mix(in srgb, var(--color-accent-ink) 70%, transparent);
   }
 
   :is(.lede, .prose-doc).text-paper,
@@ -743,7 +748,7 @@ body[data-canvas='dark'] [data-site-header]:not([data-stuck]):not([data-nav-open
     .vision-page .vision-prose a,
     .vision-page .close-pointers li a
   ):focus-visible {
-    color: var(--content-link-hover, var(--color-accent));
+    color: var(--content-link-hover, var(--color-accent-ink));
     text-decoration-color: currentColor;
     text-decoration-thickness: 0.16em;
   }
@@ -757,7 +762,7 @@ body[data-canvas='dark'] [data-site-header]:not([data-stuck]):not([data-nav-open
 
   .contact-link:hover,
   .contact-link:focus-visible {
-    color: var(--color-accent);
+    color: var(--color-accent-ink);
     text-decoration-color: currentColor;
     text-decoration-thickness: 0.16em;
   }

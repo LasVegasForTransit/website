@@ -87,7 +87,8 @@ test.describe('body content links', () => {
 
     await expect(contactLinkedIn).toBeVisible();
     await contactLinkedIn.hover();
-    await expect(contactLinkedIn).toHaveCSS('color', 'rgb(229, 71, 26)');
+    // accent-ink (#bf3a10) — the AA-safe accent for text on the cream surface
+    await expect(contactLinkedIn).toHaveCSS('color', 'rgb(191, 58, 16)');
 
     await expect(footerLinkedIn).toBeVisible();
     await footerLinkedIn.hover();
@@ -102,7 +103,7 @@ test.describe('body content links', () => {
     const ledeLink = page.locator('.lede a[href="/go"]').first();
 
     await ledeLink.hover();
-    await expect(ledeLink).toHaveCSS('color', 'rgb(229, 71, 26)');
+    await expect(ledeLink).toHaveCSS('color', 'rgb(191, 58, 16)');
   });
 
   test('gives direct contact email links visible hover feedback', async ({ page }) => {
@@ -113,7 +114,7 @@ test.describe('body content links', () => {
     const emailLink = page.locator('a[href^="mailto:"]').first();
 
     await emailLink.hover();
-    await expect(emailLink).toHaveCSS('color', 'rgb(229, 71, 26)');
+    await expect(emailLink).toHaveCSS('color', 'rgb(191, 58, 16)');
   });
 
   test('uses an inline editorial treatment in prose and lede copy', async ({ page }) => {

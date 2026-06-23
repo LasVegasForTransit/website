@@ -280,7 +280,7 @@
   --vp-text-subtle: color-mix(in srgb, var(--color-ink) 18%, transparent);
   --vp-eyebrow: var(--color-mute);
   --vp-prose: var(--color-ink);
-  --vp-link: var(--color-accent);
+  --vp-link: var(--color-accent-ink);
   --vp-cite: var(--color-mute);
   --vp-rule: color-mix(in srgb, var(--color-ink) 18%, transparent);
 }
