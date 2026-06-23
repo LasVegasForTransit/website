@@ -235,6 +235,26 @@ export function calendarEventsLoader(): Loader {
       const horizonMs = now + HORIZON_MS;
       const entries: Array<{ slug: string; data: EventData; digestInput: string }> = [];
 
+      // A single malformed calendar entry (e.g. one missing both a venue and a
+      // join URL) shouldn't take down the entire build. buildEventEntry still
+      // throws to describe the problem; we log it and skip that occurrence so
+      // the rest of the feed — and the site — keeps building. The event simply
+      // won't appear until it's fixed in Google Calendar.
+      const safeBuild = (
+        uid: string,
+        ev: ICAL.Event,
+        start: Date,
+        end: Date | undefined,
+        recKey: string,
+      ): ReturnType<typeof buildEventEntry> => {
+        try {
+          return buildEventEntry(uid, ev, start, end, recKey);
+        } catch (err) {
+          logger.warn(err instanceof Error ? err.message : `Skipped a calendar event: ${err}`);
+          return null;
+        }
+      };
+
       // Google Calendar expresses a rescheduled instance of a recurring event
       // as a second VEVENT with the same UID and a RECURRENCE-ID property. The
       // naive approach of iterating all VEVENTs produces two entries — one from
@@ -277,13 +297,13 @@ export function calendarEventsLoader(): Loader {
             const instance = details.item as ICAL.Event;
             const startDate = details.startDate.toJSDate();
             const endDate = details.endDate?.toJSDate();
-            const entry = buildEventEntry(uid, instance, startDate, endDate, nextTime.toString());
+            const entry = safeBuild(uid, instance, startDate, endDate, nextTime.toString());
             if (entry) entries.push(entry);
           }
         } else {
           const startDate = masterEvent.startDate.toJSDate();
           const endDate = masterEvent.endDate?.toJSDate();
-          const entry = buildEventEntry(
+          const entry = safeBuild(
             uid,
             masterEvent,
             startDate,
@@ -303,7 +323,7 @@ export function calendarEventsLoader(): Loader {
           const startDate = event.startDate.toJSDate();
           const endDate = event.endDate?.toJSDate();
           const recKey = event.recurrenceId?.toString() ?? startDate.toISOString();
-          const entry = buildEventEntry(uid, event, startDate, endDate, recKey);
+          const entry = safeBuild(uid, event, startDate, endDate, recKey);
           if (entry) entries.push(entry);
         }
       }
