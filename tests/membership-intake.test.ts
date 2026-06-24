@@ -81,7 +81,7 @@ test('subscribes a valid form response and creates a Notion intake page', async 
     email: 'rider@example.com',
     reactivate_existing: true,
     send_welcome_email: true,
-    double_opt_override: 'on',
+    double_opt_override: 'off',
   });
 
   const notion = calls[1];

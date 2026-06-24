@@ -136,7 +136,11 @@ async function subscribeToBeehiiv(env: Env, email: string): Promise<Response> {
       email,
       reactivate_existing: true,
       send_welcome_email: true,
-      double_opt_override: 'on',
+      // Single opt-in: the email comes from Google's verified "Collect email
+      // addresses" (the respondent's signed-in account), so it's already
+      // confirmed. Create the member as `active` with no extra confirmation
+      // click — forcing double opt-in here stranded real signups as `pending`.
+      double_opt_override: 'off',
     }),
   });
 }

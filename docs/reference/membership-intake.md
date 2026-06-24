@@ -141,7 +141,7 @@ Responses. The **Status** column is the [HTTP status code](./glossary.md#status-
 
 1. Submit a test response from the live Google Form.
 2. Confirm the Apps Script execution succeeded.
-3. Confirm Beehiiv shows the subscriber as `validating` (its status for someone who's been sent the confirmation email but hasn't clicked it yet — the [double opt-in](./glossary.md#double-opt-in) step; this is the expected success state, not an error).
+3. Confirm Beehiiv shows the subscriber as `active`. Membership intake uses single opt-in (`double_opt_override: 'off'`): the email is read from Google's verified "Collect email addresses" setting, so it is already a confirmed address and the member joins the list immediately — there is no separate confirmation-click step.
 4. Confirm a Notion page was created with the expected properties.
 5. Confirm the complete response remains available in the Google Sheet.
 
