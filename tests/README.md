@@ -32,9 +32,16 @@ baseline PNGs**.
 
 ## First-time setup
 
+The baseline PNGs are stored in **Git LFS** (`tests/snapshots/**/*.png`) so they
+stay out of the git pack. Install git-lfs before the baselines will materialize —
+without it a clone gets pointer files instead of images and `pnpm test` can't
+compare. `pnpm bootstrap` installs it; manually:
+
 ```sh
-pnpm install         # picks up @playwright/test
-pnpm test:install    # downloads chromium (~150 MB, one-time)
+brew install git-lfs && git lfs install   # macOS (apt-get install git-lfs on Linux)
+git lfs pull                              # materialize the baseline images
+pnpm install                              # picks up @playwright/test
+pnpm test:install                         # downloads chromium (~150 MB, one-time)
 ```
 
 ## Day-to-day

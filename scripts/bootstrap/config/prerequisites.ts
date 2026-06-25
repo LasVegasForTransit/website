@@ -60,6 +60,24 @@ export const CAPABILITY_SPECS: CapabilityConfig[] = [
     },
   },
   {
+    id: 'core-git-lfs',
+    label: 'Git LFS',
+    category: 'core',
+    // Visual-regression baselines (tests/snapshots/**/*.png) are stored in
+    // Git LFS so they don't bloat the git pack. Without git-lfs a clone gets
+    // pointer files instead of real PNGs and `pnpm test` can't compare.
+    requiredFor: [],
+    requiredByDefault: true,
+    binaryCommand: 'command -v git-lfs',
+    versionCommand: 'git lfs version',
+    installCommands: {
+      macos: ['brew install git-lfs', 'git lfs install'],
+      linux: ['sudo apt-get install -y git-lfs', 'git lfs install'],
+    },
+    postInstallHint:
+      'After installing, run `git lfs install` then `git lfs pull` to materialize the baseline PNGs.',
+  },
+  {
     id: 'core-actionlint',
     label: 'actionlint',
     category: 'core',

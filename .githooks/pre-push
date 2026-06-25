@@ -33,7 +33,7 @@ if [ -n "${NO_COLOR:-}" ] || [ ! -t 1 ]; then
     BOLD='' DIM='' RED='' GREEN='' YELLOW='' CYAN='' RESET=''
 fi
 
-TOTAL_STEPS=5
+TOTAL_STEPS=6
 STEP_START=0
 
 step() {
@@ -230,6 +230,21 @@ elif ! pnpm build; then
     exit 1
 else
     pass "Build clean ($(step_time))"
+fi
+
+# ---------------------------------------------------------------------------
+# 6. Git LFS upload. `core.hooksPath=.githooks` suppresses git-lfs's own
+# pre-push hook, so its objects would never reach the remote. Run it here,
+# after the gates pass, so LFS-tracked files (tests/snapshots/**/*.png) upload
+# before the refs land. Reads the ref list from stdin, which the steps above
+# never consume. Soft-skip if git-lfs isn't installed.
+# ---------------------------------------------------------------------------
+step 6 "Uploading Git LFS objects"
+if command -v git-lfs >/dev/null 2>&1; then
+    git lfs pre-push "$@"
+    pass "LFS objects uploaded ($(step_time))"
+else
+    hint "git-lfs not installed; skipping LFS upload. Run \`pnpm bootstrap\`."
 fi
 
 # ---------------------------------------------------------------------------

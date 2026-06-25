@@ -9,6 +9,7 @@ export interface CommandResult {
 export type CapabilityId =
   | 'core-node'
   | 'core-pnpm'
+  | 'core-git-lfs'
   | 'core-actionlint'
   | 'tool-pngquant'
   | 'deploy-gh'
