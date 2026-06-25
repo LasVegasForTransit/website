@@ -1,293 +1,267 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
-import Carousel from '../components/Carousel.astro';
-import CarouselItem from '../components/CarouselItem.astro';
-import EventFormatPill from '../components/EventFormatPill.astro';
 import NewsletterEmbed from '../components/NewsletterEmbed.astro';
-import { getCollection } from 'astro:content';
-import { TIMEZONE } from '../lib/event-time';
+import { Icon } from 'astro-icon/components';
 import { site } from '../lib/site';
+import { handleFromUrl } from '../lib/social';
 
-const events = await getCollection('events', (e) => !e.id.startsWith('_'));
-const now = new Date();
-const upcoming = events
-  .filter((e) => e.data.date >= now)
-  .sort((a, b) => a.data.date.getTime() - b.data.date.getTime())
-  .slice(0, 3);
+const instagramHandle = handleFromUrl(site.social.instagram);
+const blueskyHandle = handleFromUrl(site.social.bluesky);
 
-const sharePitchUrl =
-  'https://bsky.app/intent/compose?text=Las%20Vegas%20is%20the%20largest%20US%20metro%20without%20light%20rail.%20Our%20buses%20are%20about%20to%20be%20cut%20by%2042%25%20in%202028.%20%40lasvegasfortransit.org%20is%20organizing%20to%20stop%20it.%20https%3A%2F%2Flasvegasfortransit.org';
+// Membership is the page's primary conversion: link straight to the intake
+// form when configured, falling back to the /join membership section (an
+// always-valid internal route) rather than a stale literal.
+const membershipUrl = site.membership.formUrl;
+const membershipHref = membershipUrl ?? '/join#membership';
+
+const leadProjectMailto = `mailto:${site.email.general}?subject=Project%20lead%20interest`;
+const partnerMailto = `mailto:${site.email.partners}?subject=Partnership%20inquiry`;
 ---
 
-<BaseLayout title="Get involved" description="Concrete ways to help — sized to what you can give.">
+<BaseLayout
+  title="Get involved"
+  description="Follow our progress, become a member, or support the work."
+>
   <header class="container-page pt-20 pb-12 md:pt-28 md:pb-16">
     <div class="max-w-4xl">
-      <h1 class="text-headline-lg">Help build the movement Las&nbsp;Vegas has never had.</h1>
-      <p class="lede mt-6 max-w-2xl">
-        Whether you've got five minutes, five hours, or a real role to take on, there's work below
-        that fits.
-      </p>
+      <h1 class="text-display-md">Get involved.</h1>
+      <p class="lede mt-6 max-w-2xl">However much you can give, there's a way to help below.</p>
     </div>
   </header>
   <hr class="rule-thick container-page" />
 
-  {/* FIVE MINUTES — quick wins, low friction */}
-  <Carousel title="In five minutes">
-    <CarouselItem href="#newsletter">
-      <p class="text-title-lg">Subscribe.</p>
-      <p class="mt-4 leading-relaxed">
-        Legislative updates, project briefs, and ways to show up — straight to your inbox.
-      </p>
-      <p class="mt-6 text-sm font-bold uppercase tracking-wider">Form below ↓</p>
-    </CarouselItem>
-    {
-      site.social.discord && (
-        <CarouselItem href={site.social.discord} external>
-          <p class="eyebrow">Discord</p>
-          <p class="text-title-lg mt-3">Where the organizing actually happens.</p>
-          <p class="mt-4 leading-relaxed">
-            Meet the volunteers, jump into a working group, and help plan the next push.
-          </p>
-        </CarouselItem>
-      )
-    }
-    {
-      site.social.instagram && (
-        <CarouselItem href={site.social.instagram} external>
-          <p class="eyebrow">Instagram</p>
-          <p class="text-title-lg mt-3">Follow @lasvegasfortransit.</p>
-          <p class="mt-4 leading-relaxed">
-            Visual storytelling from the Valley — project updates, event posts.
-          </p>
-        </CarouselItem>
-      )
-    }
-    {
-      site.social.bluesky && (
-        <CarouselItem href={site.social.bluesky} external>
-          <p class="eyebrow">Bluesky</p>
-          <p class="text-title-lg mt-3">Where the urbanism conversation actually happens.</p>
-          <p class="mt-4 leading-relaxed">@lasvegasfortransit.org</p>
-        </CarouselItem>
-      )
-    }
-    <CarouselItem href={sharePitchUrl} external>
-      <p class="text-title-lg">Quote and share our pitch.</p>
-      <p class="mt-4 leading-relaxed">A pre-written post about the cuts, ready to send.</p>
-      <p class="mt-6 text-sm font-bold uppercase tracking-wider">Compose on Bluesky →</p>
-    </CarouselItem>
-    <CarouselItem pending>
-      <p class="text-title-lg">Tell one person about the 2028 cuts.</p>
-      <p class="mt-4 leading-relaxed">
-        Most Las Vegans don't know yet. Word of mouth still wins block by block.
-      </p>
-    </CarouselItem>
-  </Carousel>
+  {/* FOLLOW — the channels we actually run lead; Bluesky and LinkedIn trail */}
+  <section class="container-page py-12 md:py-16">
+    <h2 class="text-headline-md">Follow our progress.</h2>
+    <p class="mt-3 max-w-2xl leading-relaxed text-pretty">
+      Following along is the easiest way to keep up with the campaign and to hear when we need
+      people to show up.
+    </p>
 
-  {
-    /* Newsletter form — integrated into the Five Minutes group as the
-      highest-bandwidth five-minute action. Anchor target for the Subscribe card. */
-  }
-  <section id="newsletter" class="container-page pb-12">
-    <div class="border-t border-ink/15 pt-10 max-w-2xl">
-      <h3 class="text-title-lg">Or just hand us your email.</h3>
-      <p class="mt-3 leading-relaxed">
-        The newsletter is the highest-bandwidth way to stay current — and the easiest five-minute
-        action of all.
-      </p>
-      <div class="mt-6">
-        <NewsletterEmbed />
+    <div class="mt-8 grid gap-4 lg:grid-cols-3">
+      {
+        site.social.instagram && (
+          <a
+            href={site.social.instagram}
+            target="_blank"
+            rel="noopener noreferrer"
+            class="group flex flex-col border border-ink bg-paper p-6 no-underline transition-colors hover:bg-ink hover:text-paper focus-visible:bg-ink focus-visible:text-paper"
+          >
+            <Icon
+              name="mdi:instagram"
+              class="size-10 text-accent-ink group-hover:text-accent-soft group-focus-visible:text-accent-soft"
+              aria-hidden="true"
+            />
+            <p class="text-title-lg mt-3">Instagram</p>
+            {instagramHandle && (
+              <p class="mt-1 text-sm font-semibold text-accent-ink group-hover:text-accent-soft group-focus-visible:text-accent-soft">
+                {instagramHandle}
+              </p>
+            )}
+            <p class="mt-2 text-sm text-mute leading-relaxed text-pretty group-hover:text-paper/80 group-focus-visible:text-paper/80">
+              Our main place for updates and event news. We post here most days.
+            </p>
+            <span class="mt-auto pt-4 text-sm font-bold uppercase tracking-wider">Follow us →</span>
+          </a>
+        )
+      }
+      {
+        site.social.discord && (
+          <a
+            href={site.social.discord}
+            target="_blank"
+            rel="noopener noreferrer"
+            class="group flex flex-col border border-ink bg-paper p-6 no-underline transition-colors hover:bg-ink hover:text-paper focus-visible:bg-ink focus-visible:text-paper"
+          >
+            <Icon
+              name="mdi:discord"
+              class="size-10 text-accent-ink group-hover:text-accent-soft group-focus-visible:text-accent-soft"
+              aria-hidden="true"
+            />
+            <p class="text-title-lg mt-3">Discord</p>
+            <p class="mt-2 text-sm text-mute leading-relaxed text-pretty group-hover:text-paper/80 group-focus-visible:text-paper/80">
+              Where members talk and we plan the work. Pop in anytime.
+            </p>
+            <span class="mt-auto pt-4 text-sm font-bold uppercase tracking-wider">
+              Join the server →
+            </span>
+          </a>
+        )
+      }
+      <div id="newsletter" class="flex flex-col border border-ink bg-paper p-6 scroll-mt-24">
+        <Icon name="mdi:email-outline" class="size-10 text-accent-ink" aria-hidden="true" />
+        <p class="text-title-lg mt-3">Newsletter</p>
+        <p class="mt-2 text-sm text-mute leading-relaxed text-pretty">
+          Updates and ways to show up, sent to your inbox.
+        </p>
+        <div class="mt-auto pt-4">
+          <NewsletterEmbed compact stack />
+        </div>
+      </div>
+    </div>
+
+    {
+      (site.social.bluesky || site.social.linkedin) && (
+        <div class="mt-4 flex flex-wrap gap-3">
+          {site.social.bluesky && (
+            <a
+              href={site.social.bluesky}
+              target="_blank"
+              rel="noopener noreferrer"
+              class="group inline-flex w-full items-center gap-3 border border-ink bg-paper px-4 py-3 no-underline transition-colors hover:bg-ink hover:text-paper focus-visible:bg-ink focus-visible:text-paper sm:w-[280px]"
+            >
+              <Icon
+                name="bluesky"
+                class="size-6 text-mute group-hover:text-accent-soft group-focus-visible:text-accent-soft"
+                aria-hidden="true"
+              />
+              <span class="flex flex-col">
+                <span class="font-bold leading-tight">Bluesky</span>
+                {blueskyHandle && (
+                  <span class="text-xs text-mute group-hover:text-paper/70 group-focus-visible:text-paper/70">
+                    {blueskyHandle}
+                  </span>
+                )}
+              </span>
+            </a>
+          )}
+          {site.social.linkedin && (
+            <a
+              href={site.social.linkedin}
+              target="_blank"
+              rel="noopener noreferrer"
+              class="group inline-flex w-full items-center gap-3 border border-ink bg-paper px-4 py-3 no-underline transition-colors hover:bg-ink hover:text-paper focus-visible:bg-ink focus-visible:text-paper sm:w-[280px]"
+            >
+              <Icon
+                name="mdi:linkedin"
+                class="size-6 text-mute group-hover:text-accent-soft group-focus-visible:text-accent-soft"
+                aria-hidden="true"
+              />
+              <span class="flex flex-col">
+                <span class="font-bold leading-tight">LinkedIn</span>
+                <span class="text-xs text-mute group-hover:text-paper/70 group-focus-visible:text-paper/70">
+                  Company page
+                </span>
+              </span>
+            </a>
+          )}
+        </div>
+      )
+    }
+  </section>
+
+  {/* BECOME A MEMBER — the primary conversion, given the dark band for weight */}
+  <section class="bg-ink text-paper">
+    <div class="container-page py-32 md:py-48">
+      <div class="grid gap-8 md:grid-cols-[1fr_auto] md:items-center">
+        <div>
+          <h2 class="text-headline-md">Become a member.</h2>
+          <p class="mt-4 max-w-xl text-paper/80 leading-relaxed text-pretty">
+            Join the community pushing for better transit and better neighborhoods in the
+            Las&nbsp;Vegas area. Becoming a member strengthens the case we make to public servants
+            and elected officials, since the number of people behind us is part of that case. LVBT
+            holds virtual general meetings on the second Thursday of each month at 6&nbsp;p.m.
+          </p>
+          <p class="mt-4 max-w-xl text-paper/80 leading-relaxed text-pretty">
+            LVBT membership is free and only takes a minute.
+          </p>
+        </div>
+        <div class="md:justify-self-end">
+          <a
+            href={membershipHref}
+            target={membershipUrl ? '_blank' : undefined}
+            rel={membershipUrl ? 'noopener noreferrer' : undefined}
+            class="press inline-flex items-center gap-2 bg-accent text-ink px-7 py-4 font-bold no-underline"
+          >
+            Sign up
+            <Icon name="mdi:arrow-right" class="size-4" aria-hidden="true" />
+          </a>
+        </div>
       </div>
     </div>
   </section>
 
-  {/* FIVE HOURS — single sittings, real effort */}
-  <Carousel title="In five hours">
-    {
-      upcoming.length === 0 ? (
-        <CarouselItem href="/events" pending>
-          <p class="text-title-lg">First event in planning.</p>
-          <p class="mt-4 leading-relaxed">
-            Subscribe to hear about it first. Showing up at a meeting changes what's politically
-            possible.
-          </p>
-        </CarouselItem>
-      ) : (
-        upcoming.map((e) => (
-          <CarouselItem href={`/events/${e.id}`}>
-            <EventFormatPill format={e.data.location?.format} />
-            <p class="mt-3 font-semibold">
-              {new Intl.DateTimeFormat('en-US', {
-                weekday: 'short',
-                month: 'short',
-                day: 'numeric',
-                timeZone: TIMEZONE,
-              }).format(e.data.date)}
+  {/* SUPPORT — give time or money; partnerships and project leads sit beneath */}
+  <section class="container-page py-16 md:py-24">
+    <h2 class="text-headline-md">Support our work.</h2>
+    <p class="mt-3 max-w-2xl leading-relaxed text-pretty">
+      We are entirely volunteer-run. Support our mission by giving your time or money.
+    </p>
+
+    <div class="mt-8 grid gap-4 sm:grid-cols-2">
+      <a
+        href="/join#team"
+        class="group flex flex-col gap-2 border border-ink bg-paper p-6 no-underline transition-colors hover:bg-ink hover:text-paper focus-visible:bg-ink focus-visible:text-paper"
+      >
+        <Icon
+          name="mdi:account-group-outline"
+          class="size-10 text-accent-ink group-hover:text-accent-soft group-focus-visible:text-accent-soft"
+          aria-hidden="true"
+        />
+        <p class="text-title-lg">Volunteer</p>
+        <p
+          class="text-mute leading-relaxed text-pretty group-hover:text-paper/80 group-focus-visible:text-paper/80"
+        >
+          Take on a real role on the team. We train you and have your back.
+        </p>
+        <span
+          class="mt-auto pt-4 text-sm font-bold uppercase tracking-wider underline underline-offset-4 decoration-2 decoration-accent"
+        >
+          See open roles →
+        </span>
+      </a>
+      {
+        site.donate.url && (
+          <a
+            href={site.donate.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            class="group flex flex-col gap-2 border border-ink bg-paper p-6 no-underline transition-colors hover:bg-ink hover:text-paper focus-visible:bg-ink focus-visible:text-paper"
+          >
+            <Icon
+              name="mdi:hand-heart-outline"
+              class="size-10 text-accent-ink group-hover:text-accent-soft group-focus-visible:text-accent-soft"
+              aria-hidden="true"
+            />
+            <p class="text-title-lg">Donate</p>
+            <p class="text-mute leading-relaxed text-pretty group-hover:text-paper/80 group-focus-visible:text-paper/80">
+              Your donations pay for yard signs, printed reports, and organizer time.
             </p>
-            <p class="text-title-lg mt-1">{e.data.title}</p>
-            <p class="mt-4 leading-relaxed">{e.data.summary}</p>
-          </CarouselItem>
-        ))
-      )
-    }
-    {
-      /* TODO: RESTORE WHEN READY — legislator-letter template not yet
-        published. When it ships (likely under /go/legislator-template or
-        a /resources route), flip `false` to `true` and add the href.
-        Note: a plain {/* … <JSX/> … *_/} comment does NOT work in Astro —
-        the parser still renders the JSX inside. Use the false-gate. */
-    }
-    {
-      false && (
-        <CarouselItem pending>
-          <p class="text-title-lg">Write your legislator.</p>
-          <p class="mt-4 leading-relaxed">
-            About RTC funding, before the 2027 session opens. We'll publish a template you can
-            adapt.
-          </p>
-        </CarouselItem>
-      )
-    }
-    {
-      /* TODO: RESTORE WHEN READY — no bus-stop aggregation tool yet.
-        When the stop-by-stop audit project (src/content/projects/
-        stop-by-stop-audit.mdx) ships a submission form, flip the gate. */
-    }
-    {
-      false && (
-        <CarouselItem pending>
-          <p class="text-title-lg">Document your bus stop.</p>
-          <p class="mt-4 leading-relaxed">
-            Take a photo. Note the shade, the bench, the route board, the trash. We aggregate; the
-            RTC and the press read it.
-          </p>
-        </CarouselItem>
-      )
-    }
-  </Carousel>
+            <span class="mt-auto pt-4 text-sm font-bold uppercase tracking-wider underline underline-offset-4 decoration-2 decoration-accent">
+              Give on Givebutter →
+            </span>
+          </a>
+        )
+      }
+    </div>
 
-  {
-    /* TODO: RENAMED / FOLDED — the "In five years" carousel was dropped:
-      the time-budget framing didn't fit what the section actually
-      contained (leadership roles, not five-year time commitments). Of
-      its three cards, "Lead a project" became the single-block "If you
-      can lead something." section further down. The other two cards
-      are preserved (false-gated) until their underlying programs exist.
-
-      "Become a member" — pending: formal membership program (bylaws,
-      voting rights, chapter participation) is being designed for a 2027
-      launch. When it ships, decide whether to restore as its own
-      section or fold into the leadership section.
-
-      "Run for something" — pending: no candidate-pipeline program yet.
-      May never get a dedicated card; could become a /strategy section
-      instead. */
-  }
-  {
-    false && (
-      <CarouselItem pending>
-        <p class="text-title-lg">Become a member.</p>
-        <p class="mt-4 leading-relaxed">
-          A formal program — bylaws, voting rights, chapter participation — is being designed for a
-          2027 launch.
+    <div class="mt-10 grid gap-8 border-t border-ink/15 pt-8 sm:grid-cols-2">
+      <div>
+        <h3 class="text-title-lg">Lead a project</h3>
+        <p class="mt-1 text-mute leading-relaxed text-pretty">
+          Project leads run outreach in one community they know well. Email us if that's you.
         </p>
-      </CarouselItem>
-    )
-  }
-  {
-    false && (
-      <CarouselItem pending>
-        <p class="text-title-lg">Run for something.</p>
-        <p class="mt-4 leading-relaxed">
-          The most durable transit wins start with transit advocates becoming the people who hold
-          the votes.
+        <a
+          href={leadProjectMailto}
+          class="mt-3 inline-block text-sm font-bold uppercase tracking-wider underline underline-offset-4 decoration-2 decoration-accent"
+        >
+          Email us →
+        </a>
+      </div>
+      <div>
+        <h3 class="text-title-lg">Partner with us</h3>
+        <p class="mt-1 text-mute leading-relaxed text-pretty">
+          LVBT welcomes opportunities to build a coalition with other community organizations. If
+          you represent a union, a business, a school, or a nonprofit, we would love to build a
+          relationship with you.
         </p>
-      </CarouselItem>
-    )
-  }
-
-  {/* IF YOU HAVE MONEY — not a time tier; kept distinct */}
-  <Carousel title="If you have money">
-    {
-      site.donate.url && (
-        <CarouselItem href={site.donate.url} external>
-          <p class="text-title-lg">
-            Every dollar buys a sign, prints a report, fuels an hour of organizer time.
-          </p>
-          <p class="mt-4 leading-relaxed">
-            We're entirely volunteer-run. Donations make the difference between sending a letter to
-            one legislator and sending one to twenty.
-          </p>
-          <p class="mt-6 text-sm font-bold uppercase tracking-wider">Give on Givebutter →</p>
-        </CarouselItem>
-      )
-    }
-    {
-      /* TODO: RESTORE WHEN READY — monthly contributions and tax-
-        deductibility require full 501(c)(3) incorporation. Flip the
-        gate once incorporation closes. */
-    }
-    {
-      false && (
-        <CarouselItem pending>
-          <p class="text-title-lg">Recurring giving.</p>
-          <p class="mt-4 leading-relaxed">
-            Monthly contributions and tax-deductibility ship with full incorporation.
-          </p>
-        </CarouselItem>
-      )
-    }
-    {
-      /* TODO: RESTORE WHEN READY — merch: no store yet. When merch ships
-        (Printful, Cottonbureau, or another fulfillment vendor), add a
-        working href and flip the gate. */
-    }
-    {
-      false && (
-        <CarouselItem pending>
-          <p class="text-title-lg">Stickers, shirts, pins.</p>
-          <p class="mt-4 leading-relaxed">
-            Wearable art that turns Valley streets into our advertising.
-          </p>
-        </CarouselItem>
-      )
-    }
-  </Carousel>
-
-  {/* IF YOU CAN LEAD SOMETHING — single-block; mirrors the Organizations section below */}
-  <section class="container-page py-16 md:py-24">
-    <h2 class="text-headline-lg max-w-3xl">If you can lead something.</h2>
-    <p class="lede mt-6 max-w-2xl">
-      Project leads run our outreach work — at a college, a high school, a faith community, a labor
-      coalition. We train you and back you up.
-    </p>
-    <a
-      href={`mailto:${site.email.general}?subject=Project%20lead%20interest`}
-      class="inline-block mt-8 font-bold uppercase tracking-wider underline underline-offset-4 decoration-2 decoration-accent"
-    >
-      Email hello@lasvegasfortransit.org →
-    </a>
-    <a
-      href="/join#team"
-      class="inline-block mt-4 font-bold uppercase tracking-wider underline underline-offset-4 decoration-2 decoration-accent"
-    >
-      See open team roles →
-    </a>
-  </section>
-
-  {/* IF YOU RUN AN ORGANIZATION — single-ask block, not a carousel */}
-  <section class="container-page py-16 md:py-24">
-    <h2 class="text-headline-lg max-w-3xl">If you run an organization.</h2>
-    <p class="lede mt-6 max-w-2xl">
-      We're actively building a coalition. If you represent a labor union, a faith community, a
-      business, a school, a healthcare system, or another nonprofit and want to talk partnership —
-      we want to hear from you.
-    </p>
-    <a
-      href={`mailto:${site.email.partners}?subject=Partnership%20inquiry`}
-      class="inline-block mt-8 font-bold uppercase tracking-wider underline underline-offset-4 decoration-2 decoration-accent"
-    >
-      Email partners@lasvegasfortransit.org →
-    </a>
+        <a
+          href={partnerMailto}
+          class="mt-3 inline-block text-sm font-bold uppercase tracking-wider underline underline-offset-4 decoration-2 decoration-accent"
+        >
+          Get in touch →
+        </a>
+      </div>
+    </div>
   </section>
 </BaseLayout>

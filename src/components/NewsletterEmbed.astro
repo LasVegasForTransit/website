@@ -11,8 +11,12 @@ interface Props {
   // supplies the heading and the pitch (e.g. the /join membership section)
   // so the form doesn't read as a second, competing call to action.
   compact?: boolean;
+  // `stack` keeps the form vertical (input above button) even on wide
+  // viewports. Use it inside narrow containers (e.g. the /go Newsletter card)
+  // where the side-by-side row crowds the field or overflows.
+  stack?: boolean;
 }
-const { variant = 'light', compact = false } = Astro.props;
+const { variant = 'light', compact = false, stack = false } = Astro.props;
 ---
 
 <div
@@ -28,14 +32,17 @@ const { variant = 'light', compact = false } = Astro.props;
         <p class="eyebrow">Newsletter</p>
         <h3 class="text-title-lg mt-3">Updates from the front lines.</h3>
         <p class="mt-4 max-w-md">
-          The 2027 session is the moment. Subscribe for legislative updates, project briefs, and
-          ways to show up.
+          We're building a lasting movement for better transit in the Valley. Subscribe for
+          legislative updates, project briefs, and ways to show up.
         </p>
       </>
     )
   }
   <form
-    class:list={['flex flex-col sm:flex-row gap-3', !compact && 'mt-6']}
+    class:list={[
+      stack ? 'flex flex-col gap-3' : 'flex flex-col sm:flex-row gap-3',
+      !compact && 'mt-6',
+    ]}
     data-newsletter-form
     novalidate
   >
@@ -46,12 +53,17 @@ const { variant = 'light', compact = false } = Astro.props;
       autocomplete="email"
       placeholder="you@example.com"
       aria-describedby="newsletter-status"
-      class="flex-1 px-4 py-3 border-2 border-current bg-transparent placeholder:opacity-80 focus:outline-none"
+      class="flex-1 min-w-0 px-4 py-3 border-2 border-current bg-transparent placeholder:opacity-80 focus:outline-none"
     />
     <button
       type="submit"
       data-submit-btn
-      class="px-6 py-3 font-bold uppercase tracking-wider bg-accent text-ink border-2 border-accent hover:bg-transparent hover:text-current transition-colors"
+      class:list={[
+        'font-bold uppercase tracking-wider bg-accent text-ink border-2 border-accent hover:bg-transparent hover:text-current transition-colors',
+        // In stacked layout the button sizes to its label (smaller padding,
+        // left-aligned) instead of stretching full width and reading oversized.
+        stack ? 'self-start px-4 py-2 text-sm' : 'px-6 py-3',
+      ]}
     >
       Subscribe
     </button>

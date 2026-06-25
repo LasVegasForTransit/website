@@ -1,100 +1,126 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
-import SectionHeader from '../components/SectionHeader.astro';
+import { Icon } from 'astro-icon/components';
 import { site } from '../lib/site';
+import { handleFromUrl } from '../lib/social';
 import { getEntry, render } from 'astro:content';
 import { requireEntry } from '../lib/content-guard';
 
 const contactPage = await getEntry('pages', 'contact');
 requireEntry(contactPage, 'pages', 'contact');
 const { Content } = await render(contactPage);
+
+// Email channels, each routed to the right inbox. Mirrors the /go card style.
+const channels = [
+  {
+    eyebrow: 'Say hello',
+    icon: 'mdi:email-outline',
+    email: site.email.general,
+    blurb: 'Not sure where to send it? Start here.',
+  },
+  {
+    eyebrow: 'Press and media',
+    icon: 'mdi:bullhorn-outline',
+    email: site.email.press,
+    blurb: 'For reporters working on a transit story.',
+  },
+  {
+    eyebrow: 'Work together',
+    icon: 'mdi:handshake-outline',
+    email: site.email.partners,
+    blurb: 'For organizations that want to team up on a campaign or event.',
+  },
+];
+
+// Socials in the same order and iconography as /go. Each renders only when its
+// env-configured URL is present; handles are derived from the URL, not hardcoded.
+const socials = [
+  {
+    name: 'Instagram',
+    icon: 'mdi:instagram',
+    url: site.social.instagram,
+    label: handleFromUrl(site.social.instagram) ?? 'Follow us',
+  },
+  { name: 'Discord', icon: 'mdi:discord', url: site.social.discord, label: 'Join the server' },
+  {
+    name: 'Bluesky',
+    icon: 'bluesky',
+    url: site.social.bluesky,
+    label: handleFromUrl(site.social.bluesky) ?? 'Follow us',
+  },
+  { name: 'LinkedIn', icon: 'mdi:linkedin', url: site.social.linkedin, label: 'Company page' },
+].filter((s) => s.url);
 ---
 
 <BaseLayout title="Contact" description="Get in touch with Las Vegans for Better Transit.">
   <header class="container-page pt-20 pb-12 md:pt-28 md:pb-16">
-    <SectionHeader
-      title="Talk to us."
-      lede="We're an all-volunteer team. Every message reaches a real person — and we write back."
-    />
+    <div class="max-w-4xl">
+      <h1 class="text-display-md">Talk to us.</h1>
+      <p class="lede mt-6 max-w-2xl">
+        We're all volunteers, and we answer every message ourselves.
+      </p>
+    </div>
   </header>
   <hr class="rule-thick container-page" />
 
-  <section class="container-page py-16 md:py-20 grid gap-12 md:grid-cols-[3fr_2fr]">
-    <div class="prose-doc max-w-none">
+  {/* EMAIL — intro copy, then a card per inbox */}
+  <section class="container-page py-12 md:py-16">
+    <div class="prose-doc max-w-2xl">
       <Content />
     </div>
 
-    <aside class="border border-ink p-8 self-start">
-      <h2 class="text-title-md">Direct contact</h2>
-      <ul class="mt-6 space-y-6">
-        <li>
-          <p class="eyebrow">Say hello</p>
+    <div class="mt-10 grid gap-4 lg:grid-cols-3">
+      {
+        channels.map((c) => (
           <a
-            href={`mailto:${site.email.general}`}
-            class="contact-link block mt-1 text-lg font-bold underline"
+            href={`mailto:${c.email}`}
+            class="group flex flex-col border border-ink bg-paper p-6 no-underline transition-colors hover:bg-ink hover:text-paper focus-visible:bg-ink focus-visible:text-paper"
           >
-            {site.email.general}
+            <Icon
+              name={c.icon}
+              class="size-10 text-accent-ink group-hover:text-accent-soft group-focus-visible:text-accent-soft"
+              aria-hidden="true"
+            />
+            <p class="text-title-lg mt-3">{c.eyebrow}</p>
+            <p class="mt-2 text-sm text-mute leading-relaxed text-pretty group-hover:text-paper/80 group-focus-visible:text-paper/80">
+              {c.blurb}
+            </p>
+            <span class="mt-auto pt-4 text-sm font-semibold tracking-wide">{c.email} →</span>
           </a>
-        </li>
-        <li>
-          <p class="eyebrow">Media</p>
-          <a
-            href={`mailto:${site.email.press}`}
-            class="contact-link block mt-1 text-lg font-bold underline"
-          >
-            {site.email.press}
-          </a>
-        </li>
-        <li>
-          <p class="eyebrow">Work together</p>
-          <a
-            href={`mailto:${site.email.partners}`}
-            class="contact-link block mt-1 text-lg font-bold underline"
-          >
-            {site.email.partners}
-          </a>
-        </li>
-      </ul>
-
-      <h2 class="text-title-md mt-10">Follow us</h2>
-      <ul class="mt-4 space-y-2 text-sm font-semibold">
-        {
-          site.social.discord && (
-            <li>
-              <a href={site.social.discord} rel="noopener" class="contact-link">
-                Discord →
-              </a>
-            </li>
-          )
-        }
-        {
-          site.social.instagram && (
-            <li>
-              <a href={site.social.instagram} rel="noopener" class="contact-link">
-                Instagram →
-              </a>
-            </li>
-          )
-        }
-        {
-          site.social.linkedin && (
-            <li>
-              <a href={site.social.linkedin} rel="noopener" class="contact-link">
-                LinkedIn →
-              </a>
-            </li>
-          )
-        }
-        {
-          site.social.bluesky && (
-            <li>
-              <a href={site.social.bluesky} rel="noopener" class="contact-link">
-                Bluesky →
-              </a>
-            </li>
-          )
-        }
-      </ul>
-    </aside>
+        ))
+      }
+    </div>
   </section>
+
+  {/* FOLLOW — same iconography as /go */}
+  {
+    socials.length > 0 && (
+      <section class="container-page pb-16 md:pb-24">
+        <h2 class="text-headline-md">Follow along.</h2>
+        <p class="mt-3 max-w-2xl leading-relaxed text-pretty">
+          Instagram and Discord are where we're most active.
+        </p>
+        <div class="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          {socials.map((s) => (
+            <a
+              href={s.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              class="group flex flex-col border border-ink bg-paper p-6 no-underline transition-colors hover:bg-ink hover:text-paper focus-visible:bg-ink focus-visible:text-paper"
+            >
+              <Icon
+                name={s.icon}
+                class="size-10 text-accent-ink group-hover:text-accent-soft group-focus-visible:text-accent-soft"
+                aria-hidden="true"
+              />
+              <p class="text-title-lg mt-3">{s.name}</p>
+              <p class="mt-1 text-sm text-mute group-hover:text-paper/80 group-focus-visible:text-paper/80">
+                {s.label}
+              </p>
+            </a>
+          ))}
+        </div>
+      </section>
+    )
+  }
 </BaseLayout>
