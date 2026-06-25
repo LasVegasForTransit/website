@@ -235,45 +235,36 @@ import { site } from '../../lib/site';
   }
   <div class="footer-meta border-t border-paper/15">
     {
-      /* Flex-wrap, not a fixed column grid: the attribution holds the left
-        edge (mr-auto) and the utility links cluster at the right, each sized
-        to its own content and wrapping to the next line when space is tight.
-        Per-item <div>s are kept so :focus-visible outlines hug the link text.
-        The QR button is icon-only, so it takes just the glyph's width rather
-        than an equal share of the row. */
+      /* Two groups, not a loose wrap row: the attribution sits on one side and
+        the utility links cluster as a unit on the other (justify-between on
+        wide viewports; stacked on narrow). Keeping the links in one <nav> means
+        they stay together and wrap as a block instead of scattering. Each link
+        is the focusable element so :focus-visible outlines hug the link text. */
     }
     <div
-      class="container-page w-full py-6 flex flex-wrap items-center gap-x-8 gap-y-2 text-sm text-paper/60"
+      class="container-page w-full py-6 flex flex-col gap-4 text-sm text-paper/60 sm:flex-row sm:items-center sm:justify-between"
     >
-      <div class="mr-auto">
+      <p class="m-0">
         Website made with love by <a
           href="https://williecubed.me"
           rel="noopener"
           class="nav-link no-underline hover:text-accent">Willie&nbsp;Chalmers&nbsp;III</a
         >
-      </div>
-      <div>
+      </p>
+      <nav class="flex flex-wrap items-center gap-x-6 gap-y-2" aria-label="Site utilities">
         <a href="/sitemap" class="nav-link no-underline hover:text-accent">Sitemap</a>
-      </div>
-      <div>
         <a
           href="https://github.com/LasVegasForTransit/website"
           rel="noopener"
-          class="nav-link no-underline hover:text-accent"
+          class="nav-link no-underline hover:text-accent">Source on GitHub</a
         >
-          Source on GitHub
-        </a>
-      </div>
-      {
-        /* Opens the QR presenter (/qr) — a chromeless deck of scan cards for
-          tabling and events. Icon-only utility; the page itself is noindex. */
-      }
-      {
-        /* `.qr-portal` shares a view-transition-name with the first code on /qr
-          during a `to-qr` navigation only (see global.css + route-transition.js),
-          so this glyph container-transforms into the live code on the way in. */
-      }
-      <div class="inline-flex">
+        {
+          /* Opens the QR presenter (/qr) — a chromeless deck of scan cards for
+            tabling and events. Icon-only utility; the page itself is noindex.
+            `.qr-portal` shares a view-transition-name with the first code on /qr
+            during a `to-qr` navigation only (see global.css + route-transition.js),
+            so this glyph container-transforms into the live code on the way in. */
+        }
         <a
           href="/qr"
           class="qr-portal inline-flex items-center hover:text-accent"
@@ -282,7 +273,7 @@ import { site } from '../../lib/site';
         >
           <Icon name="mdi:qrcode-scan" class="size-5" aria-hidden="true" />
         </a>
-      </div>
+      </nav>
     </div>
   </div>
 </footer>
