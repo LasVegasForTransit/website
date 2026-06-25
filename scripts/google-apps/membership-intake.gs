@@ -74,6 +74,13 @@ function stringAnswer(answers, title) {
 }
 
 function spreadsheetUrl() {
-  const destinationId = FormApp.getActiveForm().getDestinationId();
-  return destinationId ? 'https://docs.google.com/spreadsheets/d/' + destinationId : '';
+  // getDestinationId() throws ("The form currently has no response
+  // destination") when the form isn't linked to a spreadsheet, so we can't
+  // call it speculatively — treat "no destination" as an empty URL.
+  try {
+    const destinationId = FormApp.getActiveForm().getDestinationId();
+    return destinationId ? 'https://docs.google.com/spreadsheets/d/' + destinationId : '';
+  } catch (err) {
+    return '';
+  }
 }
