@@ -79,7 +79,7 @@ The raw answers are added to the Notion page body for staff context. The Google 
 
 1. Open the membership Google Form. In its settings, confirm **Collect email addresses** is on — the email is read via `getRespondentEmail()`, not a form question, so without this the pipeline has no email to subscribe.
 2. Open Extensions -> Apps Script.
-3. Paste `scripts/google-apps/membership-intake.gs` into the Apps Script editor.
+3. Paste `scripts/google-apps/membership-intake.gs` into the Apps Script editor and **save** (Cmd/Ctrl+S). The trigger setup below only lists functions from _saved_ code.
 4. Edit `FIELD_TITLES` so the values exactly match the form's question titles. The defaults match the current "Membership Sign-Up" form: name is `What is your preferred name?` and discord is `What's your Discord username?`. (Email is not listed here — it comes from the collected-email setting above.)
 5. In Apps Script, open Project Settings -> Script properties and set:
 
@@ -88,11 +88,21 @@ The raw answers are added to the Notion page body for staff context. The Google 
    | `LVBT_MEMBERSHIP_INTAKE_URL`    | `https://lasvegasfortransit.org/api/membership-intake` |
    | `LVBT_MEMBERSHIP_INTAKE_SECRET` | same value as the Cloudflare Pages secret              |
 
-6. Open Triggers -> Add Trigger.
-7. Choose `onMembershipFormSubmit`.
-8. Event source: From form.
-9. Event type: On form submit.
-10. Save and authorize the script.
+6. Open **Triggers** (clock icon) → **Add Trigger** and set:
+
+   | Field                              | Value                                                                     |
+   | ---------------------------------- | ------------------------------------------------------------------------- |
+   | Choose which function to run       | `onMembershipFormSubmit`                                                  |
+   | Choose which deployment should run | **Head** — runs your latest saved code; no published deployment is needed |
+   | Select event source                | **From form**                                                             |
+   | Select event type                  | **On form submit** — the dialog defaults to "On open", so change it       |
+   | Failure notification settings      | **Notify me immediately**, so a broken submission surfaces fast           |
+
+7. **Save**, then authorize when prompted — review the scopes (external request + forms access) and allow.
+
+> If "Choose which function to run" is empty and Apps Script says it "cannot create a trigger without a target function," the script wasn't saved — save it in the editor (step 3) and reopen the dialog.
+
+> Use this installable trigger, not a _simple_ trigger (a function named `onFormSubmit`). The script makes an external request and reads the respondent's email — actions a simple trigger isn't authorized to do, so it would silently fail.
 
 If the endpoint returns a non-2xx response, the script throws. Apps Script records the failed execution and sends the trigger owner the standard failure email.
 
@@ -158,7 +168,7 @@ Use `node --import tsx`, not `pnpm exec tsx`, in restricted sandboxes where the 
 
 The endpoint subscribes the person in Beehiiv first, then creates the Notion page. The two steps are not transactional, so one partial-failure mode is worth knowing:
 
-- **Beehiiv succeeds, Notion fails.** The person is already a (pending) subscriber, but no intake page exists. The endpoint returns `502 notion_sync_failed`, the Apps Script execution throws, and the trigger owner gets Apps Script's standard failure email.
+- **Beehiiv succeeds, Notion fails.** The person is already an active subscriber, but no intake page exists. The endpoint returns `502 notion_sync_failed`, the Apps Script execution throws, and the trigger owner gets Apps Script's standard failure email.
 
 Recover from the Google Sheet, which stays canonical for the full response:
 
