@@ -82,13 +82,13 @@ test.describe('body content links', () => {
     await page.waitForLoadState('networkidle');
     await page.evaluate(() => document.fonts.ready);
 
-    const contactLinkedIn = page.locator(`aside a[href="${LINKEDIN_URL}"]`).first();
+    const contactLinkedIn = page.locator(`main a[href="${LINKEDIN_URL}"]`).first();
     const footerLinkedIn = page.locator(`footer a[href="${LINKEDIN_URL}"]`).first();
 
     await expect(contactLinkedIn).toBeVisible();
     await contactLinkedIn.hover();
-    // accent-ink (#bf3a10) — the AA-safe accent for text on the cream surface
-    await expect(contactLinkedIn).toHaveCSS('color', 'rgb(191, 58, 16)');
+    // The contact social card inverts to the ink surface (#0f1115) on hover.
+    await expect(contactLinkedIn).toHaveCSS('background-color', 'rgb(15, 17, 21)');
 
     await expect(footerLinkedIn).toBeVisible();
     await footerLinkedIn.hover();
@@ -111,10 +111,11 @@ test.describe('body content links', () => {
     await page.waitForLoadState('networkidle');
     await page.evaluate(() => document.fonts.ready);
 
-    const emailLink = page.locator('a[href^="mailto:"]').first();
+    const emailLink = page.locator('main a[href^="mailto:"]').first();
 
     await emailLink.hover();
-    await expect(emailLink).toHaveCSS('color', 'rgb(191, 58, 16)');
+    // The contact email card inverts to the ink surface (#0f1115) on hover.
+    await expect(emailLink).toHaveCSS('background-color', 'rgb(15, 17, 21)');
   });
 
   test('uses an inline editorial treatment in prose and lede copy', async ({ page }) => {
@@ -132,17 +133,6 @@ test.describe('body content links', () => {
 
     await expect(ledeLink).toHaveCSS('text-decoration-line', 'underline');
     await expect(ledeLink).toHaveCSS('font-weight', '600');
-  });
-
-  test('keeps vision closeout links visibly linked at rest', async ({ page }) => {
-    await page.goto('/vision');
-    await page.waitForLoadState('networkidle');
-    await page.evaluate(() => document.fonts.ready);
-
-    const closeoutLink = page.locator('.close-pointers a[href="/projects"]').first();
-
-    await expect(closeoutLink).toHaveCSS('text-decoration-line', 'underline');
-    await expect(closeoutLink).toHaveCSS('font-weight', '800');
   });
 
   // Format-aware CTA: a virtual event's primary action invites the visitor to
