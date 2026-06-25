@@ -24,11 +24,9 @@ pnpm-debug.log*
 # superpowers brainstorming mockups
 .superpowers/
 
-# claude code session state (per-machine, not portable)
-.claude/
-
-# codex cli config (per-machine, not portable)
-.codex/
+# claude code: ignore only the per-machine local settings; shared
+# .claude config (settings.json, commands, agents) can be committed
+.claude/settings.local.json
 
 # antigravity (gemini ide) project link — symlinks to ~/.gemini, per-machine
 .antigravitycli/
