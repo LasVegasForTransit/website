@@ -13,7 +13,7 @@ New to any of these? Each links to its [glossary](./docs/reference/glossary.md) 
 - [Astro](./docs/reference/glossary.md#astro) — the framework that builds the site into fast [static](./docs/reference/glossary.md#static-site) HTML
 - [MDX](./docs/reference/glossary.md#mdx) [content collections](./docs/reference/glossary.md#content-collection) (Markdown-plus-components content) with [Zod](./docs/reference/glossary.md#zod)-validated [frontmatter](./docs/reference/glossary.md#frontmatter), so a typo fails the build instead of shipping
 - [Tailwind](./docs/reference/glossary.md#tailwind) CSS v4 (via `@tailwindcss/vite`)
-- [Public Sans](https://public-sans.digital.gov/) (USWDS font, via `@fontsource-variable/public-sans`)
+- [Public Sans](https://public-sans.digital.gov/) (USWDS font, self-hosted; Latin woff2 vendored from `@fontsource-variable/public-sans`)
 - Hosted on [Cloudflare Pages](./docs/reference/glossary.md#cloudflare-pages) — fully portable to any static host (Netlify, GitHub Pages, S3+CloudFront).
 
 ---
