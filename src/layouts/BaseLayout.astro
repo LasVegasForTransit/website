@@ -11,6 +11,7 @@ interface Props {
   description?: string;
   ogImage?: string;
   noindex?: boolean;
+  searchIndex?: boolean;
   chrome?: 'site' | 'none';
   /**
    * Root canvas color. 'paper' (default) is the standard cream surface every
@@ -27,6 +28,7 @@ const {
   description = 'Las Vegans for Better Transit is the grassroots advocacy group fighting for world-class public transit and supportive land use in the Las Vegas Valley.',
   ogImage = '/og-default.png',
   noindex = false,
+  searchIndex = !noindex,
   chrome = 'site',
   canvas = 'paper',
 } = Astro.props;
@@ -61,6 +63,13 @@ const canonical = new URL(Astro.url.pathname, site.url).toString();
       </style>
     </noscript>
     <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <link
+      rel="preload"
+      href="/fonts/public-sans-latin.woff2"
+      as="font"
+      type="font/woff2"
+      crossorigin
+    />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="apple-touch-icon" href="/logo.png" />
     <link rel="canonical" href={canonical} />
@@ -109,7 +118,7 @@ const canonical = new URL(Astro.url.pathname, site.url).toString();
     }
     <div class="min-h-dvh flex flex-col">
       {chrome === 'site' && <Header />}
-      <main id="main" class="flex-1">
+      <main id="main" class="flex-1" data-pagefind-body={searchIndex ? '' : undefined}>
         <slot />
       </main>
     </div>

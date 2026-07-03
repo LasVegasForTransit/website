@@ -1,5 +1,22 @@
 @import 'tailwindcss';
-@import '@fontsource-variable/public-sans';
+
+/* Public Sans (variable) — vendored from @fontsource-variable/public-sans@5.2.7,
+   latin subset only (files/public-sans-latin-wght-normal.woff2). Served from the
+   stable /fonts/ path (immutable-cached in public/_headers) so BaseLayout can
+   preload it without Astro's content-hash rotating the URL. `optional` renders
+   the fallback and never swaps if the font misses the first-paint window — the
+   preload almost always lets it make the window. To trade zero-shift for always
+   showing the brand font, change `optional` to `swap`. */
+@font-face {
+  font-family: 'Public Sans Variable';
+  font-style: normal;
+  font-display: optional;
+  font-weight: 100 900;
+  src: url('/fonts/public-sans-latin.woff2') format('woff2-variations');
+  unicode-range:
+    U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329,
+    U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
 
 @theme {
   --font-sans: 'Public Sans Variable', ui-sans-serif, system-ui, sans-serif;

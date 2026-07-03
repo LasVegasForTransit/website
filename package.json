@@ -8,7 +8,7 @@
   "packageManager": "pnpm@11.9.0",
   "scripts": {
     "dev": "concurrently -k -n astro,wrangler -c blue,yellow 'kill -9 $(lsof -ti:4320 -sTCP:LISTEN) 2>/dev/null; astro dev --port 4320' 'kill -9 $(lsof -ti:4321 -sTCP:LISTEN) 2>/dev/null; portless run --force --app-port 4321 wrangler pages dev --proxy 4320 --port 4321'",
-    "build": "astro build",
+    "build": "astro build && pagefind --site dist --output-subdir pagefind",
     "preview": "astro preview",
     "astro": "astro",
     "bootstrap": "tsx scripts/bootstrap/cold-start.ts",
@@ -39,7 +39,6 @@
   "dependencies": {
     "@astrojs/mdx": "^5.0.6",
     "@astrojs/sitemap": "^3.7.2",
-    "@fontsource-variable/public-sans": "^5.2.7",
     "@tailwindcss/vite": "^4.3.0",
     "astro": "^6.3.5",
     "astro-icon": "^1.1.5",
@@ -63,6 +62,7 @@
     "cspell": "^10.0.0",
     "html-validate": "^11.2.0",
     "lint-staged": "^17.0.5",
+    "pagefind": "^1.5.2",
     "picocolors": "^1.1.1",
     "portless": "^0.13.0",
     "prettier": "^3.8.3",
