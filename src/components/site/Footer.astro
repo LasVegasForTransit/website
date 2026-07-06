@@ -29,18 +29,15 @@ import { site } from '../../lib/site';
       2. flex-1 wrapper with `justify-center` — holds the nav
          grid and the mission band, centered vertically in the
          remaining space.
-      3. meta row (border-t) — attribution / sitemap / source.
+      3. meta row (border-t) — compact utility nav.
 
       The meta row is OUTSIDE the flex-1 wrapper on purpose. Do
-      not merge them. Do not switch the flex-1 wrapper to
-      `justify-between` — it pins the mission band to the
-      bottom and opens a visible gap on desktop.
+      not merge them.
 
     META ROW ITEMS
-      Each link is wrapped in its own grid-cell <div> with
-      `md:text-{left,center,right}`. The inline <a> shrinks to
-      text width so :focus-visible outlines hug the link text,
-      not the full 33% column. Do not unwrap.
+      A single utility nav keeps colophon on the left and
+      sitemap/source/QR grouped on the right. Keep the row slim;
+      it should read as a utility strip, not another content band.
 
     LINK STYLING
       One style everywhere: `nav-link no-underline hover:text-accent`.
@@ -48,26 +45,16 @@ import { site } from '../../lib/site';
       introduce a second link style; the consistency is the point.
 
     WORDMARK SIZING
-      `text-[clamp(2.5rem,7vw,4.5rem)]` — ONE fluid clamp, no
-      breakpoint modifier. The wordmark is the brand's loudest
-      gesture: bold, visionary, takes up space. It must only grow
-      with viewport; it must never shrink.
-        • 40px floor on small phones (substantial at 360px)
-        • ramps through ~54px around the md transition where the
-          row goes from stacked to inline-with-columns
-        • caps at 72px (4.5rem) on wide desktops — same ceiling as
-          the original display-md, so "for Better Transit" fits
-          inside col-span-7 at the 1280px container max.
-      DO NOT reintroduce a `md:` size modifier (e.g. text-display-lg
-      md:text-display-md). A discrete step DOWN at the breakpoint
-      contradicts "bold throughout" and has been explicitly rejected
-      by the owner. Tune via the clamp's floor or vw coefficient.
+      The wordmark is the brand's loudest gesture, but it may shrink
+      on short or narrow viewports so the footer remains usable. Tune
+      the local .footer-wordmark clamp and height rules below; do not
+      add breakpoint-only text utilities that fight the footer's
+      measured height budget.
 
     MISSION BAND
-      Gated twice: `hidden md:block` AND a `max-height: 650px`
-      media rule in the <style> block that hides it on short
-      viewports so the footer can stay under 1dvh on small
-      laptops. Keep both gates.
+      Visible on every viewport, including mobile. It can and
+      should scale down on narrow or short screens; do not hide
+      it to solve overflow.
 
       No eyebrow label. The mission band is the footer's closing
       pitch, not a labelled section — the border-top + whitespace
@@ -79,11 +66,10 @@ import { site } from '../../lib/site';
       lives on /why-now; the chrome ships on every page and must
       not date itself.
 
-    ATTRIBUTION
-      "Website made with love by Willie Chalmers III" links to
-      https://williecubed.me. This is creator attribution, not
-      site or org metadata. Do not replace with "A nonprofit
-      in …" or similar.
+    COLOPHON
+      Creator attribution and build details live on /colophon. Keep
+      the footer meta row as a compact utility nav; long sentences
+      wrap poorly at small widths and make the footer feel careless.
 
     MOTION
       translateY + opacity only. No `scale()` transforms in the
@@ -103,39 +89,37 @@ import { site } from '../../lib/site';
     /* Footer is locked to exactly one dynamic viewport height (h-dvh on
       <footer>) — not a pixel taller. Stripe at top, meta row at bottom,
       and this flex-1 region centers the wordmark/link grid/mission band
-      between them. overflow-hidden so any overflow on small viewports
-      clips rather than stretching the footer past 1dvh. */
+      between them. overflow-hidden clips any overflow on small viewports
+      rather than stretching the footer past 1dvh. */
   }
-  <div class="flex-1 flex flex-col justify-center w-full overflow-hidden">
-    <div
-      class="reveal-stagger container-page w-full pt-12 pb-10 md:py-[clamp(2.5rem,5vh,4.5rem)] grid grid-cols-2 xl:grid-cols-12 gap-10 xl:gap-12"
-    >
+  <div data-footer-middle class="flex-1 flex flex-col justify-center w-full overflow-hidden">
+    <div class="footer-primary reveal-stagger container-page w-full">
       {
-        /* ONE fluid clamp, no breakpoint switch. The wordmark only
-          grows with viewport; it never shrinks. See FOOTER CONTRACT
-          → WORDMARK SIZING at the top of this file. */
+        /* The wordmark can shrink on constrained viewports. See FOOTER
+          CONTRACT → WORDMARK SIZING and the local CSS below. */
       }
-      <div class="reveal col-span-2 xl:col-span-7">
+      <div class="footer-brand reveal">
         <a
+          data-footer-wordmark
           href="/"
-          class="text-[clamp(2.5rem,7vw,4.5rem)] font-extrabold tracking-tight no-underline block"
+          class="footer-wordmark font-extrabold tracking-tight no-underline block"
         >
           <span class="block whitespace-nowrap leading-[0.9]">Las Vegans</span>
           <span class="block whitespace-nowrap leading-[0.9] text-accent">for Better Transit</span>
         </a>
       </div>
-      <div class="reveal xl:col-span-3">
+      <div class="footer-nav reveal" data-footer-nav="organization">
         <p class="eyebrow text-accent-soft">Organization</p>
-        <ul class="mt-5 space-y-3 text-base font-semibold">
+        <ul class="footer-nav-list text-base font-semibold">
           <li><a href="/about" class="nav-link no-underline hover:text-accent">About</a></li>
           <li><a href="/projects" class="nav-link no-underline hover:text-accent">Projects</a></li>
           <li><a href="/events" class="nav-link no-underline hover:text-accent">Events</a></li>
           <li><a href="/contact" class="nav-link no-underline hover:text-accent">Contact</a></li>
         </ul>
       </div>
-      <div class="reveal xl:col-span-2">
+      <div class="footer-nav reveal" data-footer-nav="get-involved">
         <p class="eyebrow text-accent-soft">Get involved</p>
-        <ul class="mt-5 space-y-3 text-base font-semibold">
+        <ul class="footer-nav-list text-base font-semibold">
           <li><a href="/join" class="nav-link no-underline hover:text-accent">Join us</a></li>
           <li>
             <a href="/newsletter" class="nav-link no-underline hover:text-accent">Newsletter</a>
@@ -201,9 +185,7 @@ import { site } from '../../lib/site';
       </div>
     </div>
 
-    <div
-      class="footer-mission container-page w-full py-[clamp(2rem,5vh,4rem)] border-t border-paper/15 hidden md:block"
-    >
+    <div class="footer-mission container-page w-full border-t border-paper/15">
       {
         /* No eyebrow. No "§ The work" / "Mission" / pilcrow label.
           The mission band is the footer's closing pitch, not a
@@ -224,39 +206,28 @@ import { site } from '../../lib/site';
 
   {
     /* META row — structurally separate from the flex-centering region
-      above. Each link is wrapped in its own grid-item <div> so the cell
-      holds the column width and the inline <a> inside shrinks to text
-      width. :focus-visible outlines therefore wrap the actual link text,
-      not the full 33% column.
-
-      text-sm text-paper/60 on ink blends to ~#9a9996 / 6.4:1 — passes
-      AA for normal text. The earlier audit pass bumped this to /80 at
-      text-xs, but the redesign's larger text-sm doesn't need the bump. */
+      above. The colophon carries creator/build attribution; this row
+      stays a compact utility surface so narrow viewports do not get
+      an ugly wrapped sentence beside the QR icon. */
   }
   <div class="footer-meta border-t border-paper/15">
     {
-      /* Two groups, not a loose wrap row: the attribution sits on one side and
-        the utility links cluster as a unit on the other (justify-between on
-        wide viewports; stacked on narrow). Keeping the links in one <nav> means
-        they stay together and wrap as a block instead of scattering. Each link
-        is the focusable element so :focus-visible outlines hug the link text. */
+      /* Single utility nav. Each link remains the focusable element so
+        :focus-visible outlines hug the link text or QR glyph. */
     }
-    <div
-      class="container-page w-full py-6 flex flex-col gap-4 text-sm text-paper/60 sm:flex-row sm:items-center sm:justify-between"
+    <nav
+      class="footer-utilities container-page w-full text-sm text-paper/60"
+      aria-label="Site utilities"
     >
-      <p class="m-0">
-        Website made with love by <a
-          href="https://williecubed.me"
-          rel="noopener"
-          class="nav-link no-underline hover:text-accent">Willie&nbsp;Chalmers&nbsp;III</a
-        >
-      </p>
-      <nav class="flex flex-wrap items-center gap-x-6 gap-y-2" aria-label="Site utilities">
+      <span class="footer-utility-group">
+        <a href="/colophon" class="nav-link no-underline hover:text-accent">Colophon</a>
+      </span>
+      <span class="footer-utility-group">
         <a href="/sitemap" class="nav-link no-underline hover:text-accent">Sitemap</a>
         <a
           href="https://github.com/LasVegasForTransit/website"
           rel="noopener"
-          class="nav-link no-underline hover:text-accent">Source on GitHub</a
+          class="nav-link no-underline hover:text-accent">Source</a
         >
         {
           /* Opens the QR presenter (/qr) — a chromeless deck of scan cards for
@@ -273,19 +244,136 @@ import { site } from '../../lib/site';
         >
           <Icon name="mdi:qrcode-scan" class="size-5" aria-hidden="true" />
         </a>
-      </nav>
-    </div>
+      </span>
+    </nav>
   </div>
 </footer>
 
 <style>
+  .footer-primary {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: start;
+    column-gap: clamp(2rem, 5vw, 4rem);
+    row-gap: clamp(1.75rem, 4vh, 2.5rem);
+    padding-block: clamp(2rem, 5vh, 4.5rem);
+  }
+
+  .footer-brand {
+    grid-column: 1 / -1;
+    container-type: inline-size;
+  }
+
+  .footer-wordmark {
+    font-size: clamp(2rem, min(5vw, 9dvh), 4.5rem);
+  }
+
+  @supports (font-size: 1cqi) {
+    .footer-wordmark {
+      font-size: clamp(2rem, min(10cqi, 9dvh), 4.5rem);
+    }
+  }
+
+  .footer-nav {
+    width: auto;
+    max-width: 100%;
+  }
+
+  .footer-nav-list {
+    margin-top: 1.25rem;
+  }
+
+  .footer-nav-list > * + * {
+    margin-top: 0.75rem;
+  }
+
+  @media (min-width: 48rem) {
+    .footer-primary {
+      grid-template-columns: minmax(0, 1fr) repeat(2, minmax(11rem, max-content));
+      column-gap: clamp(2.5rem, 6vw, 5rem);
+    }
+
+    .footer-brand {
+      grid-column: auto;
+    }
+  }
+
+  .footer-mission {
+    padding-block: clamp(1.25rem, var(--page-pad), 3rem);
+  }
+
+  .footer-mission p {
+    font-size: clamp(1.25rem, min(4.75vw, 4.75dvh), 2.75rem);
+    line-height: 1.08;
+    letter-spacing: -0.02em;
+  }
+
+  .footer-utilities {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.875rem clamp(1.25rem, 5vw, 2rem);
+    padding-block: 0.75rem;
+    line-height: 1.25;
+  }
+
+  .footer-utility-group {
+    display: inline-flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.875rem clamp(1.25rem, 4vw, 2rem);
+  }
+
+  .footer-utilities .qr-portal {
+    margin-inline-start: 0.125rem;
+  }
+
   /* The mission band is only visible on viewports tall enough to fit it
      alongside the nav grid + meta row without forcing the footer past
      the viewport height. The threshold was tuned to match the natural
      height of the rest of the footer content. */
   @media (max-height: 650px) {
+    .footer-primary {
+      row-gap: clamp(1rem, 4dvh, 1.5rem);
+      padding-block: clamp(0.75rem, 2.5dvh, 1.5rem);
+    }
+
+    .footer-wordmark {
+      font-size: clamp(1.75rem, min(5vw, 7.75dvh), 4.5rem);
+    }
+
+    @supports (font-size: 1cqi) {
+      .footer-wordmark {
+        font-size: clamp(1.75rem, min(10cqi, 7.75dvh), 4.5rem);
+      }
+    }
+
+    .footer-nav-list {
+      margin-top: 0.75rem;
+    }
+
+    .footer-nav-list > * + * {
+      margin-top: 0.45rem;
+    }
+
     .footer-mission {
-      display: none !important;
+      padding-block: clamp(0.75rem, 1.7dvh, 1rem);
+    }
+
+    .footer-mission p {
+      font-size: clamp(1rem, min(3.75vw, 4.5dvh), 1.5rem);
+      line-height: 1.05;
+    }
+
+    .footer-utilities {
+      padding-block: 0.625rem;
+    }
+  }
+
+  @media (max-width: 47.999rem) {
+    .footer-mission p {
+      max-width: 42rem;
     }
   }
 </style>

@@ -1,0 +1,64 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { site } from '../lib/site';
+---
+
+<BaseLayout
+  title="Colophon"
+  description="How the Las Vegans for Better Transit website is built, hosted, maintained, and credited."
+>
+  <header class="container-page pt-20 pb-12 md:pt-28 md:pb-16">
+    <div class="max-w-4xl">
+      <h1 class="text-display-md">Colophon</h1>
+      <p class="lede mt-6 max-w-2xl">How this website is produced and maintained</p>
+    </div>
+  </header>
+  <hr class="rule-thick container-page" />
+
+  <section class="container-page py-12 md:py-16">
+    <div class="grid gap-10 md:grid-cols-[minmax(0,1fr)_minmax(16rem,24rem)] md:gap-16">
+      <div class="prose-doc max-w-2xl">
+        <p>
+          This website was designed and built by
+          <a href="https://williecubed.me" rel="noopener">Willie Chalmers III</a>
+          for Las Vegans for Better Transit.
+        </p>
+        <p>
+          The site is intentionally lightweight: static pages, plain links, and public source code
+          where possible. Event data comes from the organization's public Google Calendar, and
+          newsletter issues link out to Beehiiv.
+        </p>
+        <p>
+          Found a typo, broken link, or accessibility issue? Send a note to
+          <a href={`mailto:${site.email.general}`}>{site.email.general}</a>.
+        </p>
+      </div>
+
+      <aside class="border-t-2 border-ink pt-5 md:border-t-0 md:border-l-2 md:pl-6 md:pt-0">
+        <h2 class="text-headline-sm">Build details</h2>
+        <dl class="mt-5 space-y-5">
+          <div>
+            <dt class="text-title-sm text-mute">Framework</dt>
+            <dd class="text-body-md mt-1 font-semibold">Astro</dd>
+          </div>
+          <div>
+            <dt class="text-title-sm text-mute">Hosting</dt>
+            <dd class="text-body-md mt-1 font-semibold">Cloudflare Pages</dd>
+          </div>
+          <div>
+            <dt class="text-title-sm text-mute">Source</dt>
+            <dd class="text-body-md mt-1">
+              <a
+                href="https://github.com/LasVegasForTransit/website"
+                rel="noopener"
+                class="font-semibold underline underline-offset-4 decoration-2 decoration-accent"
+              >
+                GitHub repository
+              </a>
+            </dd>
+          </div>
+        </dl>
+      </aside>
+    </div>
+  </section>
+</BaseLayout>
