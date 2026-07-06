@@ -1,6 +1,12 @@
 ---
 import { navMain } from '../../lib/site';
-const path = Astro.url.pathname;
+
+const normalizePath = (value: string) => {
+  const normalized = value.replace(/\/$/, '');
+  return normalized || '/';
+};
+
+const path = normalizePath(Astro.url.pathname);
 ---
 
 {
@@ -30,7 +36,7 @@ const path = Astro.url.pathname;
       <ul class="flex items-center gap-7 text-sm font-semibold">
         {
           navMain.map((item) => {
-            const active = path.startsWith(item.href);
+            const active = path === normalizePath(item.href);
             return (
               <li>
                 <a
@@ -62,6 +68,7 @@ const path = Astro.url.pathname;
         Join <span class="arrow" aria-hidden="true">→</span>
       </a>
       <button
+        type="button"
         data-nav-toggle
         aria-label="Open menu"
         aria-expanded="false"
@@ -90,7 +97,7 @@ const path = Astro.url.pathname;
       navMain
         .filter((item) => item.href !== '/join')
         .map((item) => {
-          const active = path.startsWith(item.href);
+          const active = path === normalizePath(item.href);
           return (
             <li class="border-b border-rule/15">
               <a
