@@ -84,7 +84,6 @@
   font-size: 0.7rem;
   font-weight: 700;
   letter-spacing: 0.2em;
-  text-transform: uppercase;
   animation: frame-bounce 2.4s ease-in-out infinite;
   pointer-events: none;
 }
@@ -125,7 +124,6 @@
   font-size: 0.55em;
   font-weight: 700;
   letter-spacing: 0.12em;
-  text-transform: uppercase;
   margin-inline-start: 0.4em;
 }
 
@@ -214,7 +212,6 @@
     opacity: 0.55;
     font-size: 0.7rem;
     font-weight: 600;
-    text-transform: uppercase;
     letter-spacing: 0.16em;
     text-decoration: none;
     line-height: 1.2;

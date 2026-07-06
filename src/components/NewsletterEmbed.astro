@@ -59,7 +59,7 @@ const { variant = 'light', compact = false, stack = false } = Astro.props;
       type="submit"
       data-submit-btn
       class:list={[
-        'font-bold uppercase tracking-wider bg-accent text-ink border-2 border-accent hover:bg-transparent hover:text-current transition-colors',
+        'font-bold bg-accent text-ink border-2 border-accent hover:bg-transparent hover:text-current transition-colors',
         // In stacked layout the button sizes to its label (smaller padding,
         // left-aligned) instead of stretching full width and reading oversized.
         stack ? 'self-start px-4 py-2 text-sm' : 'px-6 py-3',

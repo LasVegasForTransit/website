@@ -350,8 +350,8 @@ html:active-view-transition-type(from-qr)::view-transition-old(root) {
   }
 
   /* The accent orange is too saturated for a muted gray to pass AA at any
-     value — eyebrows and similar muted labels on a .bg-accent surface use
-     ink instead (≈6.3:1 against #e5471a). */
+     value — muted labels on a .bg-accent surface use ink instead (≈6.3:1
+     against #e5471a). */
   .bg-accent {
     --color-mute: var(--color-ink);
   }
@@ -700,11 +700,10 @@ body[data-canvas='dark'] [data-site-header]:not([data-stuck]):not([data-nav-open
      classes; they bundle size + transform + color + tracking. */
 
   .eyebrow {
-    font-size: var(--text-label-md);
-    line-height: var(--text-label-md--line-height);
-    letter-spacing: var(--text-label-md--letter-spacing);
-    font-weight: var(--text-label-md--font-weight);
-    text-transform: uppercase;
+    font-size: var(--text-title-sm);
+    line-height: var(--text-title-sm--line-height);
+    letter-spacing: var(--text-title-sm--letter-spacing);
+    font-weight: var(--text-title-sm--font-weight);
     color: var(--color-mute);
   }
 

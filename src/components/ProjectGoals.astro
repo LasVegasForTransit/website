@@ -30,9 +30,7 @@ const monthYear = new Intl.DateTimeFormat('en-US', { month: 'short', year: 'nume
               <p class="text-base leading-snug">{goal.text}</p>
             </div>
             {goal.target && (
-              <p class="mt-1.5 text-[0.7rem] text-mute uppercase tracking-wider">
-                Target {monthYear.format(goal.target)}
-              </p>
+              <p class="mt-1.5 text-[0.7rem] text-mute">Target {monthYear.format(goal.target)}</p>
             )}
           </li>
         ))}

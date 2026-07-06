@@ -153,7 +153,7 @@ const icsHref = `/events/${event.id}.ics`;
         showJoin && (
           <a
             href={joinUrl}
-            class="press inline-flex items-center bg-accent text-ink px-5 py-3 text-sm font-bold uppercase tracking-wider no-underline hover:bg-ink hover:text-paper"
+            class="press inline-flex items-center bg-accent text-ink px-5 py-3 text-sm font-bold no-underline hover:bg-ink hover:text-paper"
             rel="noopener"
           >
             Join →
@@ -164,7 +164,7 @@ const icsHref = `/events/${event.id}.ics`;
         showRsvp && (
           <a
             href={event.data.rsvpUrl}
-            class="press inline-flex items-center border-2 border-ink px-5 py-3 text-sm font-bold uppercase tracking-wider no-underline hover:bg-ink hover:text-paper"
+            class="press inline-flex items-center border-2 border-ink px-5 py-3 text-sm font-bold no-underline hover:bg-ink hover:text-paper"
             rel="noopener"
           >
             RSVP →
@@ -173,7 +173,7 @@ const icsHref = `/events/${event.id}.ics`;
       }
       <a
         href={icsHref}
-        class="press inline-flex items-center border-2 border-ink px-5 py-3 text-sm font-bold uppercase tracking-wider no-underline hover:bg-ink hover:text-paper"
+        class="press inline-flex items-center border-2 border-ink px-5 py-3 text-sm font-bold no-underline hover:bg-ink hover:text-paper"
       >
         Add to calendar →
       </a>

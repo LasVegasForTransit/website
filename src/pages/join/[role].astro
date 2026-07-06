@@ -51,12 +51,12 @@ const mailtoHref = roleApplicationMailto(role.data.title);
   <header data-role-hero class="container-page pt-12 pb-12 md:pt-16 md:pb-16">
     <a
       href="/join"
-      class="text-sm font-bold uppercase tracking-wider underline underline-offset-4 decoration-2 decoration-accent"
+      class="text-sm font-bold underline underline-offset-4 decoration-2 decoration-accent"
     >
       ← Open roles
     </a>
     <h1 class="text-headline-lg mt-6">{role.data.title}</h1>
-    <p class="mt-4 text-sm font-bold uppercase tracking-wider opacity-60">
+    <p class="mt-4 text-sm font-bold opacity-60">
       {role.data.team && <span>{role.data.team} · </span>}{role.data.commitment}
     </p>
     <a

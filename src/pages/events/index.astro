@@ -22,7 +22,10 @@ const featured = upcoming.find((e) => e.data.featured) ?? upcoming[0] ?? null;
 const otherUpcoming = featured ? upcoming.filter((e) => e.id !== featured.id) : [];
 ---
 
-<BaseLayout title="Events" description="Where we're meeting up next, and what we've done.">
+<BaseLayout
+  title="Events"
+  description="Upcoming LVBT meetings, walks, teach-ins, and organizing actions for better transit in the Las Vegas Valley."
+>
   <header class="container-page pt-20 pb-12 md:pt-28 md:pb-16">
     <SectionHeader title="Events" />
   </header>
@@ -69,7 +72,7 @@ const otherUpcoming = featured ? upcoming.filter((e) => e.id !== featured.id) : 
           </p>
           <a
             href="/go#newsletter"
-            class="press inline-flex items-center bg-ink text-paper px-6 py-3 font-bold uppercase tracking-wider no-underline hover:bg-accent"
+            class="press inline-flex items-center bg-ink text-paper px-6 py-3 font-bold no-underline hover:bg-accent"
           >
             Subscribe →
           </a>
