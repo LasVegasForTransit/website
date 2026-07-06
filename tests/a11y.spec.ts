@@ -1,24 +1,12 @@
-import { readFileSync } from 'node:fs';
-import { fileURLToPath } from 'node:url';
-import { dirname, resolve } from 'node:path';
 import { expect, test } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
+import { builtSitemapPaths } from './sitemap-paths';
 
 // Same sitemap-driven URL list as screenshots.spec.ts so dynamic content-
 // collection routes are covered automatically. axe runs in one viewport
 // only — accessibility findings don't differ meaningfully across breakpoints
 // for this site, and running 6× would 6× the CI cost for ~no extra signal.
-const SITEMAP_PATH = resolve(dirname(fileURLToPath(import.meta.url)), '../dist/sitemap-0.xml');
-const PROD_ORIGIN = 'https://lasvegasfortransit.org';
-
-const sitemap = readFileSync(SITEMAP_PATH, 'utf8');
-const paths = [...sitemap.matchAll(/<loc>([^<]+)<\/loc>/g)]
-  .map((m) => (m[1] ?? '').replace(PROD_ORIGIN, ''))
-  .map((p) => p || '/');
-
-if (paths.length === 0) {
-  throw new Error(`No URLs found in ${SITEMAP_PATH}. Did the build run?`);
-}
+const paths = builtSitemapPaths(import.meta.url);
 
 for (const path of paths) {
   test(`a11y: ${path}`, async ({ page }) => {

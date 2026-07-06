@@ -2,6 +2,7 @@ import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, resolve } from 'node:path';
 import { expect, test } from '@playwright/test';
+import { builtSitemapPaths } from './sitemap-paths';
 
 // Same sitemap-driven URL list as a11y.spec.ts / screenshots.spec.ts so
 // dynamic content-collection routes are checked automatically. Memory is
@@ -15,8 +16,6 @@ import { expect, test } from '@playwright/test';
 // in BaseLayout.astro unobserves on first intersection, so a clean page
 // should land well under the budget; a meaningful breach means a new
 // retainer slipped in.
-const SITEMAP_PATH = resolve(dirname(fileURLToPath(import.meta.url)), '../dist/sitemap-0.xml');
-const PROD_ORIGIN = 'https://lasvegasfortransit.org';
 const BUDGET_PATH = resolve(dirname(fileURLToPath(import.meta.url)), '../perf-budgets.json');
 
 interface PerfBudgets {
@@ -24,14 +23,7 @@ interface PerfBudgets {
 }
 const budget = (JSON.parse(readFileSync(BUDGET_PATH, 'utf8')) as PerfBudgets).runtime.usedJsHeapMb;
 
-const sitemap = readFileSync(SITEMAP_PATH, 'utf8');
-const paths = [...sitemap.matchAll(/<loc>([^<]+)<\/loc>/g)]
-  .map((m) => (m[1] ?? '').replace(PROD_ORIGIN, ''))
-  .map((p) => p || '/');
-
-if (paths.length === 0) {
-  throw new Error(`No URLs found in ${SITEMAP_PATH}. Did the build run?`);
-}
+const paths = builtSitemapPaths(import.meta.url);
 
 // Chromium-only API. Skip cleanly on any other browser so this spec can
 // still be invoked from a multi-browser run without false failures.

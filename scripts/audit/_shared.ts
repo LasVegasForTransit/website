@@ -16,6 +16,8 @@ export function distHtmlFiles(distDir: string): string[] {
   return out.sort();
 }
 
+// lighthouserc.cjs duplicates this <loc> parse inline (a .cjs can't import
+// this .ts without a loader). Keep both in sync if the sitemap shape changes.
 export function sitemapPaths(distDir: string): string[] {
   const xml = readFileSync(join(distDir, 'sitemap-0.xml'), 'utf8');
   const matches = [...xml.matchAll(/<loc>([^<]+)<\/loc>/g)];

@@ -21,7 +21,7 @@ A few terms used in the table below:
 | Bucket                                           | Budget             | Enforced by                      |
 | ------------------------------------------------ | ------------------ | -------------------------------- |
 | Gzipped CSS (total)                              | 20 KB              | `scripts/audit/bundle-size.ts`   |
-| Gzipped JS (total)                               | 4 KB               | `scripts/audit/bundle-size.ts`   |
+| Gzipped JS (total)                               | 12 KB              | `scripts/audit/bundle-size.ts`   |
 | Gzipped combined                                 | 24 KB              | `scripts/audit/bundle-size.ts`   |
 | Any single gzipped file                          | 14 KB              | `scripts/audit/bundle-size.ts`   |
 | Raster image (PNG/JPG) without `.webp` companion | 20 KB              | `scripts/audit/asset-budget.ts`  |
@@ -44,7 +44,10 @@ PR (pull request — a proposed change opened on GitHub) and push to `main`. The
 performance-relevant jobs:
 
 - **Lighthouse (desktop)** — `lighthouserc.cjs` default preset; CWV
-  thresholds tuned for the build artifact. Hard gate.
+  thresholds tuned for the build artifact. The URL list is derived from
+  the built sitemap (every static route plus one representative detail
+  page per collection), so new pages are covered without editing the
+  config. Hard gate.
 - **Lighthouse (mobile)** — same config, `LIGHTHOUSE_PRESET=mobile`;
   Moto G4 on slow 4G. Soft-fail at first; promoted once one clean run
   is in.
@@ -68,6 +71,12 @@ so memory + wall-clock land in the trend file with no extra build cost.
 runs weekly with `LIGHTHOUSE_PRESET=prod` against the live production
 URLs (no `staticDistDir`). Regressions trigger
 `notify-on-failure`, which opens a GitHub issue labelled `audit, maintenance`.
+
+The production preset treats Lighthouse's `robots-txt` audit as a known
+exception only because Cloudflare may inject a managed `Content-Signal` line
+into the live `robots.txt` response. That line is intentional policy for AI
+crawler use, but Lighthouse currently reports it as an unknown robots
+directive. The config still checks the other production SEO audits directly.
 
 ## Real-user monitoring (CWA)
 
