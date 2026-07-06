@@ -36,7 +36,8 @@ export default defineConfig({
   projects: [
     {
       name: 'ui-contracts',
-      testMatch: /body-links\.spec\.ts$/,
+      testMatch:
+        /(body-links|event-metadata|footer-colophon|header-current|not-found-search|typography-contracts)\.spec\.ts$/,
       use: { ...devices['Desktop Chrome'] },
     },
     {
