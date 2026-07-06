@@ -8,6 +8,7 @@ import { getCollection, getEntry, render } from 'astro:content';
 import EventBadgePill from '../../components/EventBadgePill.astro';
 import { whereLabel } from '../../lib/event-format';
 import { relativeLabel, formatEventTime, TIMEZONE } from '../../lib/event-time';
+import { eventMetaDescription, eventMetaTitle } from '../../lib/event-seo';
 
 export async function getStaticPaths() {
   const events = await getCollection('events');
@@ -62,7 +63,7 @@ const inlineRelative = relative && !isUrgent ? relative.text : null;
 const icsHref = `/events/${event.id}.ics`;
 ---
 
-<BaseLayout title={event.data.title} description={event.data.summary}>
+<BaseLayout title={eventMetaTitle(event)} description={eventMetaDescription(event)}>
   <StructuredData slot="head" data={eventSchema(event, eventUrl)} />
   {
     /* Header padding is intentionally compact on every viewport so the
