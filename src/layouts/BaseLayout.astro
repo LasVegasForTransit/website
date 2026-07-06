@@ -13,6 +13,7 @@ interface Props {
   noindex?: boolean;
   searchIndex?: boolean;
   chrome?: 'site' | 'none';
+  mainClass?: string;
   /**
    * Root canvas color. 'paper' (default) is the standard cream surface every
    * page uses. 'dark' paints the body ink and asks the header to render
@@ -30,6 +31,7 @@ const {
   noindex = false,
   searchIndex = !noindex,
   chrome = 'site',
+  mainClass = '',
   canvas = 'paper',
 } = Astro.props;
 
@@ -118,7 +120,11 @@ const canonical = new URL(Astro.url.pathname, site.url).toString();
     }
     <div class="min-h-dvh flex flex-col">
       {chrome === 'site' && <Header />}
-      <main id="main" class="flex-1" data-pagefind-body={searchIndex ? '' : undefined}>
+      <main
+        id="main"
+        class:list={['flex-1', mainClass]}
+        data-pagefind-body={searchIndex ? '' : undefined}
+      >
         <slot />
       </main>
     </div>
