@@ -41,6 +41,9 @@ const sitemapSerialize = (item) => {
   if (path === '/about/strategy') {
     return { ...item, changefreq: EnumChangefreq.MONTHLY, priority: 0.7 };
   }
+  if (path === '/letters' || path.startsWith('/letters/')) {
+    return { ...item, changefreq: EnumChangefreq.MONTHLY, priority: 0.6 };
+  }
   if (path.startsWith('/projects/')) {
     return { ...item, changefreq: EnumChangefreq.MONTHLY, priority: 0.7 };
   }

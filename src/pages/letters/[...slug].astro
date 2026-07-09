@@ -1,0 +1,49 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import MarkdownRule from '../../components/MarkdownRule.astro';
+import { getCollection, render } from 'astro:content';
+
+export async function getStaticPaths() {
+  const letters = await getCollection('letters', (entry) => !entry.id.startsWith('_'));
+  return letters.map((letter) => ({
+    params: { slug: letter.id },
+    props: { letter },
+  }));
+}
+
+const { letter } = Astro.props;
+const { Content } = await render(letter);
+
+// `date` is authored as a plain calendar date (no time-of-day), so format in
+// UTC — the zone it was coerced in — rather than a local zone that could
+// shift it back a day.
+const dateLabel = new Intl.DateTimeFormat('en-US', {
+  month: 'long',
+  day: 'numeric',
+  year: 'numeric',
+  timeZone: 'UTC',
+}).format(letter.data.date);
+---
+
+<BaseLayout title={letter.data.title} description={letter.data.summary}>
+  <header class="container-page pt-6 pb-6 md:pt-10">
+    <p class="text-body-sm font-semibold">
+      <a href="/letters" class="no-underline hover:underline">← All letters</a>
+    </p>
+    <h1 class="text-display-md mt-7 max-w-3xl text-balance">{letter.data.title}</h1>
+    <p class="mt-5 text-body-sm font-semibold text-on-surface-variant">
+      Willie Chalmers III, President ·{' '}
+      <time datetime={letter.data.date.toISOString()}>{dateLabel}</time>
+    </p>
+  </header>
+
+  <hr class="rule-thick container-page" />
+
+  <div class="mx-auto max-w-4xl px-5 py-16 md:py-24">
+    <article class="border border-outline bg-surface-container p-8 md:p-12">
+      <div class="prose prose-lg max-w-none">
+        <Content components={{ hr: MarkdownRule }} />
+      </div>
+    </article>
+  </div>
+</BaseLayout>

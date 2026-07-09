@@ -7,4 +7,6 @@ export const paths = {
   projects: '/projects',
   project: (id: string) => `/projects/${id}`,
   initiative: (id: string) => `/projects#${id}`,
+  letters: '/letters',
+  letter: (id: string) => `/letters/${id}`,
 } as const;

@@ -1,0 +1,17 @@
+---
+// Closing signature block for a letter — a short accent rule, then the
+// name and title. Deliberately outside the Tailwind Typography `.prose`
+// rhythm (`not-prose`) so it reads as a signature, not another paragraph.
+interface Props {
+  name: string;
+  title: string;
+}
+
+const { name, title } = Astro.props;
+---
+
+<div class="not-prose mt-8">
+  <div class="mb-4 w-12 border-t-[3px] border-primary" aria-hidden="true"></div>
+  <p class="text-title-lg font-extrabold">{name}</p>
+  <p class="mt-1 text-sm italic text-on-surface-variant">{title}</p>
+</div>

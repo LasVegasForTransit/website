@@ -1,4 +1,69 @@
 @import 'tailwindcss';
+@plugin '@tailwindcss/typography';
+
+/* Tailwind Typography plugin, re-pointed at this project's semantic color
+   tokens instead of its default gray scale — keeps long-form documents
+   (e.g. the letters archive) on-brand without hand-rolling every rule
+   `.prose-doc` already covers for other content. Deliberately unlayered
+   (not inside @layer components/utilities): the plugin's own `.prose`
+   defaults land in a layer that otherwise wins over same-specificity rules
+   declared in @layer components, and unlayered CSS always outranks any
+   layered CSS regardless of source order. */
+.prose {
+  --tw-prose-body: var(--color-ink);
+  --tw-prose-headings: var(--color-ink);
+  --tw-prose-lead: var(--color-mute);
+  --tw-prose-links: var(--color-accent-ink);
+  --tw-prose-bold: var(--color-ink);
+  --tw-prose-counters: var(--color-mute);
+  --tw-prose-bullets: var(--color-ink);
+  --tw-prose-hr: var(--color-rule);
+  --tw-prose-quotes: var(--color-ink);
+  --tw-prose-quote-borders: var(--color-accent);
+  --tw-prose-captions: var(--color-mute);
+  --tw-prose-code: var(--color-ink);
+  --tw-prose-th-borders: var(--color-rule);
+  --tw-prose-td-borders: var(--color-rule);
+}
+
+/* Footnotes (remark-gfm output: section[data-footnotes], data-footnote-ref,
+   data-footnote-backref) — supplementary content, de-emphasized relative to
+   the letter body. Unlayered for the same reason as .prose above. */
+.prose section[data-footnotes] {
+  margin-top: 3em;
+  padding-top: 1.25em;
+  border-top: 1px solid var(--color-rule);
+  font-size: var(--text-body-sm);
+}
+
+.prose section[data-footnotes] h2 {
+  /* Un-hide the auto-generated "Footnotes" label as a quiet eyebrow —
+     not a heading-weight section title. */
+  position: static;
+  overflow: visible;
+  clip: auto;
+  clip-path: none;
+  width: auto;
+  height: auto;
+  margin: 0 0 0.75em;
+  padding: 0;
+  white-space: normal;
+  font-size: var(--text-label-sm);
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-mute);
+}
+
+.prose section[data-footnotes] ol {
+  color: var(--color-mute);
+}
+
+.prose [data-footnote-ref],
+.prose .data-footnote-backref {
+  color: var(--color-mute);
+  text-decoration-color: color-mix(in srgb, var(--color-mute) 50%, transparent);
+}
 
 /* Public Sans (variable) — vendored from @fontsource-variable/public-sans@5.2.7,
    latin subset only (files/public-sans-latin-wght-normal.woff2). Served from the
@@ -868,8 +933,17 @@ body[data-canvas='dark'] [data-site-header]:not([data-stuck]):not([data-nav-open
     padding-left: 1.25rem;
     font-size: var(--text-body-lg);
     line-height: 1.4;
-    color: var(--color-ink);
+    color: inherit;
     font-weight: 500;
+  }
+
+  .prose-doc blockquote cite {
+    display: block;
+    margin-top: 0.75rem;
+    font-size: var(--text-body-sm);
+    font-weight: 600;
+    font-style: normal;
+    color: var(--color-mute);
   }
 
   .container-prose {

@@ -111,6 +111,19 @@ const projects = defineCollection({
   }),
 });
 
+// Letters from Leadership — an open-ended, chronological archive. One file
+// per letter; adding a new one is just a new file, no route changes needed.
+// See src/pages/letters/index.astro (list) and [...slug].astro (detail).
+const letters = defineCollection({
+  loader: glob({ pattern: '**/*.{md,mdx}', base: './src/content/letters' }),
+  schema: z.object({
+    title: z.string(),
+    date: z.coerce.date(),
+    summary: z.string(),
+    order: z.number().optional(),
+  }),
+});
+
 const initiatives = defineCollection({
   loader: glob({ pattern: '**/*.json', base: './src/content/initiatives' }),
   schema: z.object({
@@ -167,4 +180,5 @@ export const collections = {
   pages,
   glossary,
   roles,
+  letters,
 };

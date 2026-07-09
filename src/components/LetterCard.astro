@@ -1,0 +1,33 @@
+---
+import type { CollectionEntry } from 'astro:content';
+import { paths } from '../lib/paths';
+
+interface Props {
+  letter: CollectionEntry<'letters'>;
+}
+
+const { letter } = Astro.props;
+const { title, date, summary } = letter.data;
+
+// `date` is authored as a plain calendar date (no time-of-day), so format in
+// UTC — the zone it was coerced in — rather than a local zone that could
+// shift it back a day.
+const dateLabel = new Intl.DateTimeFormat('en-US', {
+  month: 'short',
+  day: 'numeric',
+  year: 'numeric',
+  timeZone: 'UTC',
+}).format(date);
+---
+
+<a
+  href={paths.letter(letter.id)}
+  class="lift flex flex-col h-full border border-outline bg-surface-container text-on-surface p-6 no-underline hover:bg-slab hover:text-on-slab"
+>
+  <p class="text-body-sm font-semibold text-on-surface-variant">
+    <time datetime={date.toISOString()}>{dateLabel}</time>
+  </p>
+  <h3 class="text-title-lg mt-2">{title}</h3>
+  <p class="mt-4 leading-relaxed flex-1">{summary}</p>
+  <p class="mt-6 text-sm font-bold">Read →</p>
+</a>
