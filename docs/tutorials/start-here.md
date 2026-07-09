@@ -18,8 +18,10 @@ text file and follow a few commands, you can help.
 
 Three things. Install them once:
 
-- **[Node](../reference/glossary.md#node)** version 22.12 or newer — runs the
-  project. Get it from [nodejs.org](https://nodejs.org) (the "LTS" version is fine).
+- **[Node](../reference/glossary.md#node)** version 24.18.0 or newer in the
+  24.x line — runs the project. Get it from [nodejs.org](https://nodejs.org)
+  (the "LTS" version is fine). If you use `nvm`, `nvm use` will follow the
+  checked-in `.nvmrc`.
 - **[pnpm](../reference/glossary.md#pnpm)** — our package manager. After Node is
   installed, run `npm install -g pnpm`.
 - **git** — version control, for getting the code and saving changes. Most
@@ -45,9 +47,9 @@ pnpm install
 pnpm dev
 ```
 
-`pnpm dev` prints a URL (usually `http://localhost:4321`). Open it in your browser
-— that's the site, running on your machine. Edits you make to files show up there
-within a second or two (that live-update is called
+`pnpm dev` prints `https://lvbt.localhost`. Open it in your browser — that's the
+site, running on your machine. Edits you make to files show up there within a
+second or two (that live-update is called
 [HMR](../reference/glossary.md#hmr)). Press `Ctrl+C` in the terminal to stop it.
 
 Stuck on this step? [local-dev.md](../reference/local-dev.md) covers ports and

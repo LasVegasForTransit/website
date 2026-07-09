@@ -4,7 +4,7 @@
  * Usage:
  *   pnpm screenshot <path> [--out <file>] [--w 1440] [--h 900]
  *                          [--scrolled <px>] [--full] [--scale 2]
- *                          [--host https://lvbt.localhost:1355]
+ *                          [--host https://lvbt.localhost]
  *
  * Examples:
  *   pnpm screenshot /vision
@@ -12,8 +12,8 @@
  *   pnpm screenshot / --w 390 --h 844 --out /tmp/home-mobile.png
  *
  * Output defaults to /tmp/lvbt-<path>.png. Reads dev server from --host or
- * env LVBT_DEV_URL; falls back to https://lvbt.localhost:1355 (the portless
- * default for this project — see `pnpm dev`).
+ * env LVBT_DEV_URL; falls back to https://lvbt.localhost (the stable local
+ * Portless URL for this project — see `pnpm dev`).
  *
  * The page-settle sequence mirrors tests/screenshots.spec.ts so ad-hoc
  * captures compare cleanly against CI baselines: networkidle → fonts.ready →
@@ -69,7 +69,7 @@ function parseArgs(argv: string[]): Args {
     h: Number(flags.h ?? 900),
     scrolled: scrolledRaw != null ? Number(scrolledRaw) : null,
     full: flags.full === true,
-    host: (flags.host as string) ?? process.env.LVBT_DEV_URL ?? 'https://lvbt.localhost:1355',
+    host: (flags.host as string) ?? process.env.LVBT_DEV_URL ?? 'https://lvbt.localhost',
     scale: Number(flags.scale ?? 2),
   };
 }

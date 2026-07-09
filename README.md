@@ -24,7 +24,7 @@ To preview the site on your own computer — all most contributors ever need:
 
 ```sh
 pnpm install   # one-time: install dependencies
-pnpm dev       # start the local site at http://localhost:4321
+pnpm dev       # start the local site at https://lvbt.localhost
 ```
 
 That's it: edit a file, see it update live. New to the project or our tools?
@@ -55,7 +55,7 @@ hand-held version.
 
 | Command             | Action                                                                             |
 | ------------------- | ---------------------------------------------------------------------------------- |
-| `pnpm dev`          | Local dev server at http://localhost:4321                                          |
+| `pnpm dev`          | Local dev server at https://lvbt.localhost                                         |
 | `pnpm build`        | Build production site to `./dist/`                                                 |
 | `pnpm preview`      | Serve `./dist/` locally                                                            |
 | `pnpm typecheck`    | Type-check the Astro app + bootstrap CLI                                           |

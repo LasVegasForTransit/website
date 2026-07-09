@@ -36,12 +36,16 @@ bug — please add it (see [writing-docs.md](../standards/writing-docs.md)).
 ## Running & shipping (the developer tools)
 
 - **Node** <a id="node"></a> — the program that runs JavaScript/TypeScript outside
-  a browser. You need it installed to run anything here (version 22.12+).
+  a browser. You need it installed to run anything here (version 24.18.0 or
+  newer in the 24.x line).
 - **pnpm** <a id="pnpm"></a> — the package manager we use (an alternative to npm).
   It installs dependencies and runs project commands like `pnpm dev`. If you know
   npm, it's the same idea.
 - **`pnpm dev`** <a id="pnpm-dev"></a> — starts the site on your own computer so you
   can preview changes live. See [local-dev.md](./local-dev.md).
+- **Portless** <a id="portless"></a> — a local development proxy that gives the
+  site a stable browser URL (`https://lvbt.localhost`) instead of making you
+  remember a port number.
 - **HMR (Hot Module Replacement)** <a id="hmr"></a> — when the dev server updates
   the page in your browser instantly as you edit, without a full reload.
 - **TypeScript** <a id="typescript"></a> — JavaScript with type labels that catch
