@@ -5,7 +5,7 @@ import SectionHead from '../SectionHead.astro';
 ---
 
 <section data-vision-section class="band-cream section">
-  <SectionHead num="5 / 14 — Place" heading="The Strip is a rehearsal." />
+  <SectionHead heading="The Strip is a rehearsal." />
 
   <div class="container-page">
     <PhotoPlaceholder
@@ -184,13 +184,13 @@ import SectionHead from '../SectionHead.astro';
         <text class="valley-axis" x="280" y="60">Sheep Range</text>
         <text class="valley-axis" x="280" y="350">McCullough</text>
         <circle class="valley-ring" cx="290" cy="200" r="28"></circle><circle
-          class="valley-dot-accent"
+          class="valley-dot-primary"
           cx="290"
           cy="200"
           r="6"></circle>
         <text class="valley-center" x="290" y="187" text-anchor="middle">Downtown</text>
         <circle class="valley-ring" cx="305" cy="240" r="22"></circle><circle
-          class="valley-dot-accent"
+          class="valley-dot-primary"
           cx="305"
           cy="240"
           r="5"></circle>
@@ -283,7 +283,7 @@ import SectionHead from '../SectionHead.astro';
      label plus opacity on the decorative icon keeps the hierarchy and
      the contrast. */
   .typology-cell.is-current .typology-label {
-    color: var(--color-mute);
+    color: var(--color-on-surface-variant);
   }
   .typology-cell.is-current svg {
     opacity: 0.42;
@@ -295,7 +295,7 @@ import SectionHead from '../SectionHead.astro';
     font-size: 0.75rem;
   }
   .typology-cell.is-missing svg {
-    color: var(--color-accent);
+    color: var(--color-primary);
   }
 
   .valley-map {
@@ -319,8 +319,8 @@ import SectionHead from '../SectionHead.astro';
   .valley-dot {
     fill: currentColor;
   }
-  .valley-dot-accent {
-    fill: var(--color-accent);
+  .valley-dot-primary {
+    fill: var(--color-primary);
   }
   .valley-center {
     font-size: 10px;
@@ -334,7 +334,7 @@ import SectionHead from '../SectionHead.astro';
   }
   .valley-corridor {
     fill: none;
-    stroke: var(--color-accent);
+    stroke: var(--color-primary);
     stroke-width: 1.6;
     stroke-dasharray: 2 4;
     opacity: 0.55;

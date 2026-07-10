@@ -5,7 +5,7 @@ import SectionHead from '../SectionHead.astro';
 ---
 
 <section data-vision-section class="band-cream section">
-  <SectionHead num="9 / 14 — People" heading="Twenty-four thousand a year." />
+  <SectionHead heading="Twenty-four thousand a year." />
 
   <div class="container-page">
     <PhotoPlaceholder
@@ -126,7 +126,7 @@ import SectionHead from '../SectionHead.astro';
   }
   .cost-label em {
     display: block;
-    color: var(--color-accent);
+    color: var(--color-primary);
     font-style: normal;
     font-weight: 900;
     font-size: 1.5rem;
@@ -138,34 +138,34 @@ import SectionHead from '../SectionHead.astro';
     height: 36px;
   }
   .cost-seg {
-    color: var(--color-paper);
+    color: var(--color-on-slab);
     font-size: 0.7rem;
     font-weight: 700;
     display: flex;
     align-items: center;
     justify-content: center;
-    border-right: 2px solid var(--color-paper);
+    border-right: 2px solid var(--color-on-slab);
   }
   .cost-seg:last-child {
     border-right: 0;
   }
   .cost-s-fuel {
-    background: var(--color-ink);
+    background: var(--color-slab);
   }
   .cost-s-ins {
-    background: color-mix(in srgb, var(--color-ink) 75%, var(--color-accent));
+    background: color-mix(in srgb, var(--color-slab) 75%, var(--color-primary));
   }
   .cost-s-pay {
-    background: color-mix(in srgb, var(--color-ink) 50%, var(--color-accent));
+    background: color-mix(in srgb, var(--color-slab) 50%, var(--color-primary));
   }
   .cost-s-maint {
-    background: color-mix(in srgb, var(--color-ink) 25%, var(--color-accent));
+    background: color-mix(in srgb, var(--color-slab) 25%, var(--color-primary));
   }
   .cost-s-dep {
-    background: var(--color-accent);
-    /* Paper on accent is 3.64:1 — under AA. Flip to ink only on the
-       lightest segment; the darker mixes keep paper text. */
-    color: var(--color-ink);
+    background: var(--color-primary);
+    /* Paper on primary is 3.64:1 — under AA. Flip to on-primary only on
+       the lightest segment; the darker mixes keep paper text. */
+    color: var(--color-on-primary);
   }
   .cost-legend {
     display: flex;

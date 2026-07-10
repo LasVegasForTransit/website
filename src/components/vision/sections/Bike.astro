@@ -5,7 +5,7 @@ import SectionHead from '../SectionHead.astro';
 ---
 
 <section data-vision-section class="band-cream section">
-  <SectionHead num="2 / 14 — How we get around" heading="The kid in the protected lane." />
+  <SectionHead heading="The kid in the protected lane." />
 
   <div class="container-page">
     <PhotoPlaceholder
@@ -38,7 +38,7 @@ import SectionHead from '../SectionHead.astro';
         <rect class="sidewalk" x="20" y="60" width="80" height="60"></rect>
         <text class="cs-label" x="60" y="135" text-anchor="middle">Sidewalk</text>
         <rect class="bike-fill" x="100" y="60" width="60" height="60" opacity="0.85"></rect>
-        <text class="cs-label" x="130" y="135" text-anchor="middle" fill="var(--color-accent)"
+        <text class="cs-label" x="130" y="135" text-anchor="middle" fill="var(--color-primary)"
           >Bike lane</text
         >
         <rect class="protect-buffer" x="160" y="60" width="20" height="60"></rect>
@@ -101,14 +101,14 @@ import SectionHead from '../SectionHead.astro';
     stroke-width: 1;
   }
   .bike-cs .bike-fill {
-    fill: var(--color-accent);
+    fill: var(--color-primary);
   }
   .bike-cs .car-lane {
     fill: color-mix(in srgb, currentColor 14%, transparent);
   }
   .bike-cs .bus-lane {
-    fill: color-mix(in srgb, var(--color-accent) 15%, transparent);
-    stroke: var(--color-accent);
+    fill: color-mix(in srgb, var(--color-primary) 15%, transparent);
+    stroke: var(--color-primary);
     stroke-width: 1;
   }
   .bike-cs .protect-buffer {

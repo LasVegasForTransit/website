@@ -5,7 +5,7 @@ import SectionHead from '../SectionHead.astro';
 ---
 
 <section data-vision-section class="band-cream section rule-thick">
-  <SectionHead num="1 / 14 — How we get around" heading="Walk to milk." />
+  <SectionHead heading="Walk to milk." />
 
   <div class="container-page">
     <PhotoPlaceholder
@@ -112,13 +112,13 @@ import SectionHead from '../SectionHead.astro';
     max-height: 360px;
   }
   .walk-radius .radius-circle {
-    fill: color-mix(in srgb, var(--color-accent) 6%, transparent);
-    stroke: var(--color-accent);
+    fill: color-mix(in srgb, var(--color-primary) 6%, transparent);
+    stroke: var(--color-primary);
     stroke-width: 1.5;
     stroke-dasharray: 3 4;
   }
   .walk-radius .home-dot {
-    fill: var(--color-accent);
+    fill: var(--color-primary);
   }
   .walk-radius .dest-dot {
     fill: var(--vp-text);
@@ -131,12 +131,12 @@ import SectionHead from '../SectionHead.astro';
   .walk-radius .home-label {
     font-size: 12px;
     font-weight: 900;
-    fill: var(--color-accent);
+    fill: var(--color-primary);
   }
   .walk-radius .ring-label {
     font-size: 9px;
     font-weight: 700;
     letter-spacing: 0.18em;
-    fill: var(--color-accent);
+    fill: var(--color-primary);
   }
 </style>

@@ -3,7 +3,7 @@
  *
  * Imported by src/pages/vision.astro. Marked global at the import so each
  * section component under src/components/vision/sections/ can consume the
- * shared classes (.band-cream, .vision-prose, .eyebrow override, etc.)
+ * shared classes (.band-cream, .vision-prose, etc.)
  * without redefining them. Section-specific figure CSS stays scoped inside
  * each section component.
  *
@@ -50,7 +50,9 @@
 .vision-page .frame-hero__scrim {
   position: absolute;
   inset: 0;
-  background: color-mix(in srgb, var(--color-ink) 62%, transparent);
+  /* Fixed primitive: the scrim darkens the hero photo for text legibility and
+     must stay dark in both themes. */
+  background: color-mix(in srgb, var(--ink) 62%, transparent);
   pointer-events: none;
 }
 .vision-page .frame-hero__text {
@@ -65,13 +67,14 @@
   font-weight: 900;
   letter-spacing: -0.035em;
   line-height: 0.92;
-  color: var(--color-paper);
+  /* Fixed primitive: hero text sits over the (always-dark) photo scrim. */
+  color: var(--paper);
   text-wrap: balance;
 }
 .vision-page .frame-hero__text .hero-lede {
   margin-top: 2.5rem;
   max-width: 44rem;
-  color: color-mix(in srgb, var(--color-paper) 72%, var(--color-ink));
+  color: color-mix(in srgb, var(--paper) 72%, var(--ink));
 }
 .vision-page .frame-scroll-hint {
   position: absolute;
@@ -79,7 +82,7 @@
   left: 50%;
   transform: translateX(-50%);
   z-index: 2;
-  color: var(--color-paper);
+  color: var(--paper);
   opacity: 0.45;
   font-size: 0.7rem;
   font-weight: 700;
@@ -116,7 +119,7 @@
   opacity: 1;
 }
 .vision-page .section-anchor[data-copied] .section-anchor__glyph {
-  color: var(--color-accent);
+  color: var(--color-primary);
   opacity: 1;
 }
 .vision-page .section-anchor[data-copied] .section-anchor__glyph::after {
@@ -136,10 +139,10 @@
   top: var(--lvbt-header-h, 4.5rem);
   inset-inline: 0;
   z-index: 40;
-  background: color-mix(in srgb, var(--color-paper) 80%, transparent);
+  background: color-mix(in srgb, var(--color-surface) 80%, transparent);
   backdrop-filter: blur(8px) saturate(150%);
   -webkit-backdrop-filter: blur(8px) saturate(150%);
-  border-bottom: 1px solid color-mix(in srgb, var(--color-rule) 15%, transparent);
+  border-bottom: 1px solid color-mix(in srgb, var(--color-outline-variant) 15%, transparent);
   transition:
     opacity 200ms ease,
     transform 200ms ease;
@@ -156,7 +159,7 @@
   gap: 0.75rem;
   align-items: baseline;
   font-size: 0.85rem;
-  color: var(--color-ink);
+  color: var(--color-on-surface);
 }
 .section-progress__num {
   font-weight: 700;
@@ -164,7 +167,7 @@
   flex: 0 0 auto;
 }
 .section-progress__sep {
-  color: var(--color-mute);
+  color: var(--color-on-surface-variant);
   flex: 0 0 auto;
 }
 .section-progress__title {
@@ -177,7 +180,7 @@
   text-overflow: ellipsis;
 }
 .section-progress__title:hover {
-  color: var(--color-accent);
+  color: var(--color-primary);
 }
 
 /* ====== Side TOC (desktop only). Visibility + per-item active state are
@@ -208,7 +211,7 @@
   }
   .vision-toc a {
     display: block;
-    color: var(--color-ink);
+    color: var(--color-on-surface);
     opacity: 0.55;
     font-size: 0.7rem;
     font-weight: 600;
@@ -221,7 +224,7 @@
   }
   .vision-toc a:hover {
     opacity: 1;
-    color: var(--color-accent);
+    color: var(--color-primary);
   }
 }
 
@@ -239,7 +242,7 @@
 }
 @keyframes vision-toc-active {
   50% {
-    color: var(--color-accent);
+    color: var(--color-primary);
     opacity: 1;
     font-weight: 700;
     text-transform: none;
@@ -269,60 +272,53 @@
   }
 }
 
+/* Bands map to the site surface roles so they flip with the theme:
+   band-cream = the base surface (cream → near-black), band-ink = the
+   punctuation slab (near-black → raised warm charcoal, never bright). */
 .vision-page .band-cream {
-  background: var(--color-paper);
-  color: var(--color-ink);
-  --vp-text: var(--color-ink);
-  --vp-text-muted: var(--color-mute);
-  --vp-text-subtle: color-mix(in srgb, var(--color-ink) 18%, transparent);
-  --vp-eyebrow: var(--color-mute);
-  --vp-prose: var(--color-ink);
-  --vp-link: var(--color-accent-ink);
-  --vp-cite: var(--color-mute);
-  --vp-rule: color-mix(in srgb, var(--color-ink) 18%, transparent);
+  background: var(--color-surface);
+  color: var(--color-on-surface);
+  --vp-text: var(--color-on-surface);
+  --vp-text-muted: var(--color-on-surface-variant);
+  --vp-text-subtle: color-mix(in srgb, var(--color-on-surface) 18%, transparent);
+  --vp-prose: var(--color-on-surface);
+  --vp-link: var(--color-primary-ink);
+  --vp-cite: var(--color-on-surface-variant);
+  --vp-rule: color-mix(in srgb, var(--color-on-surface) 18%, transparent);
 }
 .vision-page .band-ink {
-  background: var(--color-ink);
-  color: var(--color-paper);
-  --vp-text: var(--color-paper);
-  --vp-text-muted: color-mix(in srgb, var(--color-paper) 65%, var(--color-ink));
-  --vp-text-subtle: color-mix(in srgb, var(--color-paper) 18%, var(--color-ink));
-  --vp-eyebrow: color-mix(in srgb, var(--color-paper) 55%, var(--color-ink));
-  --vp-prose: color-mix(in srgb, var(--color-paper) 92%, var(--color-ink));
-  --vp-link: var(--color-accent-soft);
-  --vp-cite: color-mix(in srgb, var(--color-paper) 55%, var(--color-ink));
-  --vp-rule: color-mix(in srgb, var(--color-paper) 18%, transparent);
+  background: var(--color-slab);
+  color: var(--color-on-slab);
+  --vp-text: var(--color-on-slab);
+  --vp-text-muted: var(--color-on-slab-variant);
+  --vp-text-subtle: color-mix(in srgb, var(--color-on-slab) 18%, transparent);
+  --vp-prose: color-mix(in srgb, var(--color-on-slab) 92%, var(--color-slab));
+  --vp-link: var(--color-primary-soft);
+  --vp-cite: var(--color-on-slab-variant);
+  --vp-rule: color-mix(in srgb, var(--color-on-slab) 18%, transparent);
 }
-.vision-page .band-accent {
-  background: var(--color-accent);
-  /* Accent + cream text bottoms out at 3.64:1 (paper on accent) and the
-     paper/accent mixes used to be ~2.5–3:1 — under AA at every label
-     size. Ink reads 6.35:1 on accent and the partial ink/accent mixes
-     hold up too, so band-accent palette flips to ink-derived tones. */
-  color: var(--color-ink);
-  --vp-text: var(--color-ink);
-  /* Even ink × 80% accent reads 4.12:1 on the accent surface — the
+.vision-page .band-primary {
+  background: var(--color-primary);
+  /* Primary + cream text bottoms out at 3.64:1 (paper on primary) and the
+     paper/primary mixes used to be ~2.5–3:1 — under AA at every label
+     size. On-primary reads 4.72:1 on primary and the partial ink/primary
+     mixes hold up too, so band-primary palette flips to ink-derived tones. */
+  color: var(--color-on-primary);
+  --vp-text: var(--color-on-primary);
+  /* Even ink × 80% primary reads 4.12:1 on the primary surface — the
      orange's luminance leaves no headroom. Drop the mix entirely; muted
-     text on accent shares the body color and relies on the surrounding
+     text on primary shares the body color and relies on the surrounding
      font-weight / size for hierarchy. */
-  --vp-text-muted: var(--color-ink);
-  --vp-text-subtle: color-mix(in srgb, var(--color-ink) 24%, transparent);
-  --vp-eyebrow: var(--color-ink);
-  --vp-prose: var(--color-ink);
-  --vp-link: var(--color-ink);
-  --vp-cite: var(--color-ink);
-  --vp-rule: color-mix(in srgb, var(--color-ink) 24%, transparent);
+  --vp-text-muted: var(--color-on-primary);
+  --vp-text-subtle: color-mix(in srgb, var(--color-on-primary) 24%, transparent);
+  --vp-prose: var(--color-on-primary);
+  --vp-link: var(--color-on-primary);
+  --vp-cite: var(--color-on-primary);
+  --vp-rule: color-mix(in srgb, var(--color-on-primary) 24%, transparent);
 }
 .vision-page .band-ink ::selection {
-  background: var(--color-paper);
-  color: var(--color-ink);
-}
-
-/* ====== Eyebrow override (global .eyebrow already exists) ====== */
-.vision-page .eyebrow {
-  color: var(--vp-eyebrow);
-  display: block;
-  margin-bottom: 1.25rem;
+  background: var(--color-on-slab);
+  color: var(--color-slab);
 }
 
 /* ====== Section heading + hero ====== */
@@ -377,13 +373,13 @@
   font-weight: 700;
 }
 
-/* ====== Inline accent highlight ====== */
+/* ====== Inline primary highlight ====== */
 .vision-page .inline-highlight {
-  background: color-mix(in srgb, var(--color-accent) 18%, transparent);
+  background: color-mix(in srgb, var(--color-primary) 18%, transparent);
   padding: 0.05em 0.25em;
 }
 .vision-page .band-ink .inline-highlight {
-  background: color-mix(in srgb, var(--color-accent) 35%, transparent);
+  background: color-mix(in srgb, var(--color-primary) 35%, transparent);
 }
 
 /* ====== Reader's note (frame) ====== */
@@ -425,9 +421,9 @@
   gap: 1rem;
   margin: 2.5rem 0 0 0;
   padding: 0;
-  --content-link-color: var(--color-paper);
-  --content-link-hover: var(--color-accent-soft);
-  --content-link-decoration: color-mix(in srgb, var(--color-accent-soft) 82%, transparent);
+  --content-link-color: var(--color-on-slab);
+  --content-link-hover: var(--color-primary-soft);
+  --content-link-decoration: color-mix(in srgb, var(--color-primary-soft) 82%, transparent);
 }
 .vision-page .close-pointers li {
   font-size: clamp(1.05rem, 0.3vw + 1rem, 1.2rem);
@@ -436,8 +432,8 @@
 .vision-page .close-pointers li em {
   font-style: italic;
   font-weight: 400;
-  /* Opacity 0.85 dropped ink/accent contrast from 6.35 → 4.12 on the
-     band-accent close section. Italic + lighter weight already mark the
+  /* Opacity 0.85 dropped ink/primary contrast from 6.35 → 4.12 on the
+     band-primary close section. Italic + lighter weight already mark the
      em as supportive, so drop the opacity dim. */
 }
 .vision-page .close-pointers li a {

@@ -40,40 +40,40 @@ const {
   .photo-placeholder.is-cream {
     background: linear-gradient(
       135deg,
-      color-mix(in srgb, var(--color-ink) 6%, var(--color-paper)) 0%,
-      color-mix(in srgb, var(--color-ink) 12%, var(--color-paper)) 100%
+      color-mix(in srgb, var(--color-on-surface) 6%, var(--color-surface)) 0%,
+      color-mix(in srgb, var(--color-on-surface) 12%, var(--color-surface)) 100%
     );
-    border: 1px dashed color-mix(in srgb, var(--color-ink) 28%, transparent);
+    border: 1px dashed color-mix(in srgb, var(--color-outline) 28%, transparent);
   }
   .photo-placeholder.is-ink {
     background: linear-gradient(
       135deg,
-      color-mix(in srgb, var(--color-paper) 6%, var(--color-ink)) 0%,
-      color-mix(in srgb, var(--color-paper) 12%, var(--color-ink)) 100%
+      color-mix(in srgb, var(--color-on-slab) 6%, var(--color-slab)) 0%,
+      color-mix(in srgb, var(--color-on-slab) 12%, var(--color-slab)) 100%
     );
-    border: 1px dashed color-mix(in srgb, var(--color-paper) 30%, transparent);
+    border: 1px dashed color-mix(in srgb, var(--color-on-slab) 30%, transparent);
   }
   .badge {
     font-size: 0.7rem;
     letter-spacing: 0.22em;
     font-weight: 700;
-    color: var(--color-mute);
+    color: var(--color-on-surface-variant);
     padding: 0.4rem 0.75rem;
-    border: 1px solid color-mix(in srgb, var(--color-ink) 30%, transparent);
+    border: 1px solid color-mix(in srgb, var(--color-outline) 30%, transparent);
   }
   .is-ink .badge {
-    color: color-mix(in srgb, var(--color-paper) 55%, var(--color-ink));
-    border-color: color-mix(in srgb, var(--color-paper) 30%, transparent);
+    color: color-mix(in srgb, var(--color-on-slab) 55%, var(--color-slab));
+    border-color: color-mix(in srgb, var(--color-on-slab) 30%, transparent);
   }
   .desc {
     font-size: 0.95rem;
     font-style: italic;
-    color: color-mix(in srgb, var(--color-ink) 65%, var(--color-paper));
+    color: color-mix(in srgb, var(--color-on-surface) 65%, var(--color-surface));
     max-width: 38rem;
     line-height: 1.45;
   }
   .is-ink .desc {
-    color: color-mix(in srgb, var(--color-paper) 65%, var(--color-ink));
+    color: color-mix(in srgb, var(--color-on-slab) 65%, var(--color-slab));
   }
   .photo-placeholder.is-fill {
     aspect-ratio: unset;

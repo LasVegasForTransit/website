@@ -10,7 +10,7 @@ const { num, title } = Astro.props;
 ---
 
 <figure class="vision-figure reveal">
-  <p class="figure-eyebrow"><span class="num">FIG. {num}</span> — {title}</p>
+  <p class="figure-label">Fig. {num}: {title}</p>
   <slot />
   <figcaption class="figure-caption"><slot name="caption" /></figcaption>
 </figure>
@@ -22,32 +22,24 @@ const { num, title } = Astro.props;
     border-top: 1px solid color-mix(in srgb, currentColor 18%, transparent);
     border-bottom: 1px solid color-mix(in srgb, currentColor 18%, transparent);
   }
-  .figure-eyebrow {
-    font-size: 0.7rem;
-    letter-spacing: 0.22em;
+  .figure-label {
+    font-size: 0.9rem;
+    line-height: 1.4;
     font-weight: 700;
-    color: var(--vp-eyebrow, var(--color-mute));
+    color: var(--vp-text-muted, var(--color-on-surface-variant));
     margin-bottom: 1.5rem;
-  }
-  .num {
-    color: var(--color-accent);
-  }
-  /* Accent on cream is ~3.6:1 — under AA for the 11px figure label.
-     On dark bands accent clears 4.65:1, so the override is cream-only. */
-  :global(.band-cream) .num {
-    color: var(--color-ink);
   }
   .figure-caption {
     margin-top: 1.5rem;
     font-size: 0.9rem;
     line-height: 1.5;
-    color: var(--vp-text-muted, var(--color-mute));
+    color: var(--vp-text-muted, var(--color-on-surface-variant));
     max-width: 42rem;
     text-wrap: pretty;
   }
   .figure-caption :global(em) {
     font-style: italic;
-    color: var(--vp-text, var(--color-ink));
+    color: var(--vp-text, var(--color-on-surface));
     font-weight: 600;
   }
 </style>

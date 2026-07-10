@@ -1,7 +1,7 @@
 ---
+import { slugify } from '../../lib/slugify';
+
 interface Props {
-  /** Section number/pos label, e.g. "3 / 14 — How we get around". Omit to suppress the eyebrow. */
-  num?: string;
   /** The visible section title — full sentence/phrase. May contain HTML entities (e.g. &nbsp;). */
   heading: string;
   /** Heading level. Defaults to h2; the frame and close use h1/h2 with hero styling. */
@@ -11,7 +11,7 @@ interface Props {
 }
 
 const props = Astro.props as Props;
-const { num, heading, as = 'h2', variant = 'section' } = props;
+const { heading, as = 'h2', variant = 'section' } = props;
 const Tag = as;
 const headingClass = variant === 'hero' ? 'hero-heading' : 'section-heading';
 
@@ -20,15 +20,10 @@ const headingClass = variant === 'hero' ? 'hero-heading' : 'section-heading';
 // &nbsp; (the only entity in current headings) before slugifying so the
 // resulting id reads as it would if you typed it.
 const decoded = heading.replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&');
-const slug = decoded
-  .toLowerCase()
-  .replace(/['’]/g, '')
-  .replace(/[^a-z0-9]+/g, '-')
-  .replace(/^-+|-+$/g, '');
+const slug = slugify(decoded.replace(/['’]/g, ''));
 ---
 
 <div id={slug} class="container-narrow reveal" data-vision-section-title={decoded}>
-  {num && <p class="eyebrow">{num}</p>}
   <Tag class={headingClass}>
     <a href={`#${slug}`} class="section-anchor" data-copy-anchor>
       <span class="section-anchor__text" set:html={heading} />

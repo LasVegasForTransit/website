@@ -130,20 +130,4 @@ ${SECTIONS.map(
   </article>
 
   <VisionToc sections={SECTIONS} />
-
-  <script is:inline>
-    document.addEventListener('click', (e) => {
-      const target = e.target;
-      const a = target instanceof Element ? target.closest('a[data-copy-anchor]') : null;
-      if (!a) return;
-      e.preventDefault();
-      const href = a.getAttribute('href');
-      if (!href) return;
-      const url = new URL(href, location.href).toString();
-      if (navigator.clipboard) navigator.clipboard.writeText(url).catch(() => {});
-      history.replaceState(null, '', href);
-      a.setAttribute('data-copied', '');
-      setTimeout(() => a.removeAttribute('data-copied'), 1400);
-    });
-  </script>
 </BaseLayout>

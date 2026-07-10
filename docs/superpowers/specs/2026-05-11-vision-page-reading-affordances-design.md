@@ -10,7 +10,7 @@ The `/vision` page is 14 named sections plus a Frame hero and a Close — roughl
 This spec adds three coupled affordances that turn the page from a long scroll into a navigable document, without compromising the immersive opening:
 
 1. **Per-section anchor permalinks** — every section is linkable and the heading itself is the link, with a small `§` glyph on hover/focus.
-2. **Section enter reveals** — eyebrow + heading + figures fade in on viewport entry, using the existing `.reveal` infrastructure. Substantive prose is not animated.
+2. **Section enter reveals** — headings and figures fade in on viewport entry, using the existing `.reveal` infrastructure. Substantive prose is not animated.
 3. **Sticky progress sub-bar** — a thin row below the main header showing `§ 3 / 14 — Twelve minutes.`, appearing once the hero is scrolled past. The denominator is `14` (the named sections Walk–Riders); the Frame hero and the Close are outside the count.
 4. **Side TOC (desktop ≥1024 px)** — a fixed right-side list of all 16 entries (Intro + 14 named sections + Outro), with the current item highlighted via CSS scroll-driven animations. Hidden during the hero and the Close section.
 
@@ -244,7 +244,7 @@ No special `--hero-view` / `--close-view` aliases — the Intro and Outro view-t
 }
 .vision-page .section-anchor[data-copied] .section-anchor__glyph::after {
   content: ' copied';
-  color: var(--color-accent);
+  color: var(--color-primary);
   font-size: 0.7em;
 }
 
@@ -279,14 +279,14 @@ No special `--hero-view` / `--close-view` aliases — the Intro and Outro view-t
   letter-spacing: 0.02em;
 }
 .section-progress__sep {
-  color: var(--color-mute);
+  color: var(--color-on-surface-variant);
 }
 .section-progress__title {
   color: inherit;
   text-decoration: none;
 }
 .section-progress__title:hover {
-  color: var(--color-accent);
+  color: var(--color-primary);
 }
 
 /* ===== Side TOC (desktop only) ===== */
@@ -332,7 +332,7 @@ No special `--hero-view` / `--close-view` aliases — the Intro and Outro view-t
   }
   .vision-toc a:hover {
     opacity: 1;
-    color: var(--color-accent);
+    color: var(--color-primary);
   }
 }
 
@@ -351,7 +351,7 @@ No special `--hero-view` / `--close-view` aliases — the Intro and Outro view-t
 
 @keyframes vision-toc-active {
   50% {
-    color: var(--color-accent);
+    color: var(--color-primary);
     opacity: 1;
     font-weight: 700;
     text-transform: none;
@@ -410,7 +410,7 @@ document.addEventListener('click', (e) => {
 - The progress sub-bar is `aria-hidden="true"`. It's a visual orientation aid; screen readers get the same information from the section headings themselves.
 - The TOC is a `<nav aria-label="Sections">` with an ordered list. Screen reader users get the navigable list of sections regardless of viewport width — but on small viewports the visual style is `display: none`, which also hides it from assistive tech. Adjust to `position: absolute; left: -9999px` if we want it screen-reader-visible site-wide; flagged for future review.
 - `prefers-reduced-motion`: existing `.reveal` styles already short-circuit. The TOC visibility fades become instant transitions. The scroll-driven CSS state changes are kept — they're informational, not motion.
-- Color contrast: TOC default opacity `0.55` against cream gives ~3.3:1 contrast for the small label text. Active state at `1.0` is ~10:1. Hover state at `accent` color on cream is ~5.6:1. All meet WCAG AA for non-text and large-text categories; the small inactive type may not meet AA for body text — kept as a deliberate design choice for ambient navigation, with the rationale that this is supplementary wayfinding, not the primary reading surface.
+- Color contrast: TOC default opacity `0.55` against cream gives ~3.3:1 contrast for the small label text. Active state at `1.0` is ~10:1. Hover state at `primary` color on cream is ~5.6:1. All meet WCAG AA for non-text and large-text categories; the small inactive type may not meet AA for body text — kept as a deliberate design choice for ambient navigation, with the rationale that this is supplementary wayfinding, not the primary reading surface.
 
 ## Browser support
 
@@ -428,7 +428,7 @@ document.addEventListener('click', (e) => {
 | `src/components/vision/VisionFigure.astro`          | Add `class="reveal"` to root                                                                                               |
 | `src/components/vision/sections/*.astro` (16 files) | Add `data-vision-section` to outer `<section>`                                                                             |
 | `src/components/vision/sections/Frame.astro`        | Apply `view-timeline: --hero-view block` to `.frame-hero` via vision.css; no markup change                                 |
-| `src/components/vision/sections/Close.astro`        | The `.band-accent.section` rule already targets it via vision.css; no markup change                                        |
+| `src/components/vision/sections/Close.astro`        | The `.band-primary.section` rule already targets it via vision.css; no markup change                                       |
 | `src/pages/vision.astro`                            | Add `SECTIONS` registry, mount `SectionProgressBar` and `VisionToc`, emit inline `<style>` block, mount anchor-copy script |
 | `src/components/site/SectionProgressBar.astro`      | **NEW**                                                                                                                    |
 | `src/components/vision/VisionToc.astro`             | **NEW**                                                                                                                    |

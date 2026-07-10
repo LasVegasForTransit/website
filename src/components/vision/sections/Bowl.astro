@@ -4,7 +4,7 @@ import SectionHead from '../SectionHead.astro';
 ---
 
 <section data-vision-section class="band-cream section">
-  <SectionHead num="12 / 14 — Context" heading="Bowl country." />
+  <SectionHead heading="Bowl country." />
 
   <div class="container-page">
     <VisionFigure num="11" title="The Valley as a bowl">
@@ -28,7 +28,7 @@ import SectionHead from '../SectionHead.astro';
         <path class="basin-arrow" d="M280 60 L280 130" marker-end="url(#down-arrow)"></path>
         <path class="basin-arrow" d="M310 80 L310 140"></path>
         <path class="basin-arrow" d="M250 90 L250 130"></path>
-        <text class="basin-label" x="330" y="60" fill="var(--color-accent)"
+        <text class="basin-label" x="330" y="60" fill="var(--color-primary)"
           >Heat &amp; air don't leave</text
         >
         <defs>
@@ -40,7 +40,7 @@ import SectionHead from '../SectionHead.astro';
             refY="9"
             orient="auto"
           >
-            <path d="M0,0 L5,10 L10,0 Z" fill="var(--color-accent)"></path>
+            <path d="M0,0 L5,10 L10,0 Z" fill="var(--color-primary)"></path>
           </marker>
         </defs>
       </svg>
@@ -100,12 +100,12 @@ import SectionHead from '../SectionHead.astro';
     opacity: 0.3;
   }
   .basin-arrow {
-    stroke: var(--color-accent);
+    stroke: var(--color-primary);
     stroke-width: 1.5;
     fill: none;
   }
   .basin-sun {
-    fill: var(--color-accent);
+    fill: var(--color-primary);
   }
   .basin-label {
     font-size: 11px;

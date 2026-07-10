@@ -8,30 +8,30 @@ status: implemented · 2026-05-01
 
 Implemented as a custom Astro page. `src/pages/vision.astro` is a thin orchestrator (~52 lines) that imports a page-level stylesheet at `src/styles/vision.css` and composes 16 section components from `src/components/vision/sections/`:
 
-| Order | Component           | §                                    | Band   |
-| ----: | ------------------- | ------------------------------------ | ------ |
-|     0 | `Frame.astro`       | Frame                                | cream  |
-|     1 | `Walk.astro`        | Walk to milk.                        | cream  |
-|     2 | `Bike.astro`        | The kid in the protected lane.       | cream  |
-|     3 | `Frequency.astro`   | Twelve minutes.                      | ink    |
-|     4 | `Region.astro`      | Vegas as a node…                     | ink    |
-|     5 | `Strip.astro`       | The Strip is a rehearsal.            | cream  |
-|     6 | `Maryland.astro`    | Maryland, after.                     | ink    |
-|     7 | `PublicSpace.astro` | Beyond the living room.              | cream  |
-|     8 | `Shrinks.astro`     | When the Valley shrinks.             | ink    |
-|     9 | `Cost.astro`        | Twenty-four thousand a year.         | cream  |
-|    10 | `Shift.astro`       | The shift change.                    | cream  |
-|    11 | `Recreation.astro`  | We didn't move here for the traffic. | ink    |
-|    12 | `Bowl.astro`        | Bowl country.                        | cream  |
-|    13 | `Health.astro`      | What the doctors stop seeing.        | cream  |
-|    14 | `Riders.astro`      | The dishwasher and the dean.         | ink    |
-|    15 | `Close.astro`       | Close                                | accent |
+| Order | Component           | §                                    | Band    |
+| ----: | ------------------- | ------------------------------------ | ------- |
+|     0 | `Frame.astro`       | Frame                                | cream   |
+|     1 | `Walk.astro`        | Walk to milk.                        | cream   |
+|     2 | `Bike.astro`        | The kid in the protected lane.       | cream   |
+|     3 | `Frequency.astro`   | Twelve minutes.                      | ink     |
+|     4 | `Region.astro`      | Vegas as a node…                     | ink     |
+|     5 | `Strip.astro`       | The Strip is a rehearsal.            | cream   |
+|     6 | `Maryland.astro`    | Maryland, after.                     | ink     |
+|     7 | `PublicSpace.astro` | Beyond the living room.              | cream   |
+|     8 | `Shrinks.astro`     | When the Valley shrinks.             | ink     |
+|     9 | `Cost.astro`        | Twenty-four thousand a year.         | cream   |
+|    10 | `Shift.astro`       | The shift change.                    | cream   |
+|    11 | `Recreation.astro`  | We didn't move here for the traffic. | ink     |
+|    12 | `Bowl.astro`        | Bowl country.                        | cream   |
+|    13 | `Health.astro`      | What the doctors stop seeing.        | cream   |
+|    14 | `Riders.astro`      | The dishwasher and the dean.         | ink     |
+|    15 | `Close.astro`       | Close                                | primary |
 
 Shared utility components in `src/components/vision/`:
 
-- `SectionHead.astro` — eyebrow + heading pattern, supports `as: 'h1' | 'h2'` and `variant: 'section' | 'hero'`
+- `SectionHead.astro` — heading pattern, supports `as: 'h1' | 'h2'` and `variant: 'section' | 'hero'`
 - `PhotoPlaceholder.astro` — dashed-border placeholder, supports `variant: 'cream' | 'ink'`
-- `VisionFigure.astro` — figure wrapper with eyebrow + slot + named caption slot
+- `VisionFigure.astro` — figure wrapper with label + slot + named caption slot
 
 ### Resolved open questions
 
@@ -47,19 +47,17 @@ Shared utility components in `src/components/vision/`:
 
 - `.container-narrow` (max 42rem, vision-page-scoped)
 - `.section`, `.section-bordered` (padding rhythm + frame divider)
-- `.band-cream`, `.band-ink`, `.band-accent` (band backgrounds + custom-property flips)
-- `--vp-text`, `--vp-text-muted`, `--vp-text-subtle`, `--vp-eyebrow`, `--vp-prose`, `--vp-link`, `--vp-cite`, `--vp-rule` (band-flipping custom properties — eliminates per-section `.band-ink` overrides)
+- `.band-cream`, `.band-ink`, `.band-primary` (band backgrounds + custom-property flips)
+- `--vp-text`, `--vp-text-muted`, `--vp-text-subtle`, `--vp-prose`, `--vp-link`, `--vp-cite`, `--vp-rule` (band-flipping custom properties — eliminates per-section `.band-ink` overrides)
 - `.section-heading`, `.hero-heading`, `.hero-lede`
 - `.vision-prose`, `.vision-tail`, `.reader-note`, `.inline-highlight` (renamed from `.prose` and `.tail` to avoid future collision with `.prose-doc`)
-- `.eyebrow` color override (uses `--vp-eyebrow`)
 - `.close-pointers`
 
 ### Reused existing utilities (post-simplify pass)
 
 - `PullQuote.astro` (existing component) for § 14 instead of inline blockquote.
-- Global `.eyebrow` class (existing in `global.css`) instead of new `.section-num`.
 - Global `.container-page` class (existing) for full-width bands.
-- `--color-ink`, `--color-paper`, `--color-accent`, `--color-accent-soft`, `--color-mute` color tokens.
+- `--color-ink`, `--color-paper`, `--color-primary`, `--color-primary-soft`, and `--color-on-surface-variant` color tokens.
 - `text-display-lg` / `text-headline-*` token sizes via `clamp()` patterns.
 
 ### Skipped (after simplify-skill review)
@@ -193,7 +191,7 @@ Final line: _A sustainable oasis in the desert, made possible through public tra
 ## Voice & style
 
 - **Editorial-essay register** at the section level. Each section opens with concrete imagery or a scene, then explanatory prose, then ties back to the section's claim.
-- **No listicle scaffolding.** Section headings are sentences, not numbered eyebrows. The `§ 01 / § 02 / § 06` pattern from earlier iterations is dead.
+- **No listicle scaffolding.** Section headings are sentences, not numbered pre-heading labels. The `§ 01 / § 02 / § 06` pattern from earlier iterations is dead.
 - **Explain the technical vocabulary** (BRT, missing-middle housing, Vision Zero, fixed-guideway transit, mixed-use zoning) in the section that introduces it. Don't assume the reader knows.
 - **Vary composition** across sections — don't templatize. Some sections lean on a paragraph or two; some include a short list of concrete pictures; some end on a tail line. No two sections should read the same shape.
 - **Source-first.** Pull from the canonical vision text and existing repo docs (mission.mdx, problems.mdx, why-now.mdx, strategy.mdx) before inventing. Use the user's actual phrasing where it lands.
