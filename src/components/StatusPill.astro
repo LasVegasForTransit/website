@@ -1,8 +1,13 @@
 ---
 interface Props {
   status: 'active' | 'planned' | 'complete' | 'paused';
+  // Overrides the default label for `status` — e.g. "Starts {Month Year}"
+  // for an upcoming project, computed by src/lib/projects.ts's
+  // `projectDisplayStatus`, which is also what decides which `status`
+  // (and therefore which style) actually gets passed in.
+  label?: string;
 }
-const { status } = Astro.props;
+const { status, label: labelOverride } = Astro.props;
 
 // `group-hover:` utilities ride alongside the base color so they land in
 // the same Tailwind layer and order beats the dark base on hover — when
@@ -37,5 +42,5 @@ const label: Record<Props['status'], string> = {
     styles[status],
   ]}
 >
-  {label[status]}
+  {labelOverride ?? label[status]}
 </span>

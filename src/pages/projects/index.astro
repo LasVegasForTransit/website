@@ -5,7 +5,6 @@ import ProjectCard from '../../components/ProjectCard.astro';
 import { Icon } from 'astro-icon/components';
 import { getCollection } from 'astro:content';
 import { byOrderThenTitle, isActiveProject } from '../../lib/projects';
-import { paths } from '../../lib/paths';
 
 const projects = await getCollection(
   'projects',
@@ -56,7 +55,6 @@ const renderedInitiatives = initiatives.filter(
       See the roadmap →
     </a>
   </PageHero>
-  <hr class="rule-thick container-page" />
 
   {
     /* Each initiative's inline header IS the sticky element — same DOM
@@ -124,10 +122,7 @@ const renderedInitiatives = initiatives.filter(
           <div class="mt-8 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
             {inInitiative.map((project) => (
               <ProjectCard
-                href={paths.project(project.id)}
-                title={project.data.title}
-                status={project.data.status}
-                tldr={project.data.tldr}
+                project={project}
                 initiatives={project.data.initiatives.map((slug) => ({
                   title: initiativesById.get(slug)?.data.title ?? slug,
                 }))}
@@ -142,3 +137,32 @@ const renderedInitiatives = initiatives.filter(
   <script is:inline src="/scripts/projects-initiative-stuck.js" defer></script>
   <script is:inline src="/scripts/projects-initiative-permalink.js" defer></script>
 </BaseLayout>
+
+<style>
+  /* /projects print layout — the sticky initiative headers unpin and the
+     permalink affordances disappear on paper. Only this route ships it. */
+  @media print {
+    [data-initiative-header] {
+      position: static !important;
+      z-index: auto !important;
+      padding-block: 0.18in 0.12in !important;
+      background: transparent !important;
+      border-top: 1pt solid color-mix(in srgb, var(--ink) 28%, var(--paper)) !important;
+      border-bottom: 0 !important;
+      break-after: avoid;
+      page-break-after: avoid;
+    }
+
+    [data-initiative-sentinel] {
+      display: none !important;
+    }
+
+    [data-initiative-permalink] {
+      pointer-events: none !important;
+    }
+
+    [data-initiative-permalink] > :is(svg, [aria-hidden='true']) {
+      display: none !important;
+    }
+  }
+</style>

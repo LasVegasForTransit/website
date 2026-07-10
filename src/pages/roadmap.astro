@@ -3,7 +3,7 @@ import BaseLayout from '../layouts/BaseLayout.astro';
 import PageHero from '../components/PageHero.astro';
 import { Icon } from 'astro-icon/components';
 import { getCollection } from 'astro:content';
-import { byOrderThenTitle, isActiveProject } from '../lib/projects';
+import { byOrderThenTitle, isActiveProject, MONTH_YEAR_FORMATTER } from '../lib/projects';
 import { paths } from '../lib/paths';
 
 const projects = await getCollection(
@@ -14,11 +14,6 @@ const initiatives = await getCollection('initiatives');
 
 const sorted = [...projects].sort(byOrderThenTitle);
 const initiativesById = new Map(initiatives.map((initiative) => [initiative.id, initiative]));
-const monthFormatter = new Intl.DateTimeFormat('en', {
-  month: 'long',
-  timeZone: 'UTC',
-  year: 'numeric',
-});
 
 const QUARTER_NAMES = ['January-March', 'April-June', 'July-September', 'October-December'];
 const QUARTER_DESCRIPTIONS = [
@@ -78,7 +73,6 @@ const timelineGroups = [...timelineByKey.values()];
       Help with a future project
     </a>
   </PageHero>
-  <hr class="rule-thick container-page" />
 
   <section class="container-page py-16 md:py-20">
     <div class="max-w-3xl">
@@ -126,7 +120,7 @@ const timelineGroups = [...timelineByKey.values()];
                   <div class="min-w-0">
                     <h3 class="text-title-md">{project.data.title}</h3>
                     <p class="mt-2 text-sm font-bold text-on-surface-variant group-hover:text-on-slab/75 group-focus-visible:text-on-slab/75">
-                      Target start: {monthFormatter.format(project.data.startDate)}
+                      Target start: {MONTH_YEAR_FORMATTER.format(project.data.startDate)}
                     </p>
                     <p class="mt-2 text-body-md leading-relaxed text-on-surface-variant group-hover:text-on-slab/75 group-focus-visible:text-on-slab/75">
                       {project.data.tldr}

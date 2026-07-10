@@ -1,6 +1,7 @@
 import type { CollectionEntry } from 'astro:content';
 
 type Project = CollectionEntry<'projects'>;
+export type ProjectStatus = Project['data']['status'];
 
 /**
  * Single source of truth for the /projects-vs-/roadmap split: `planned`
@@ -10,6 +11,36 @@ type Project = CollectionEntry<'projects'>;
  */
 export function isActiveProject(project: Project): boolean {
   return project.data.status !== 'planned';
+}
+
+// Shared "Month Year" formatter for a project's startDate — used by every
+// page/component that displays it, so there's one spec instead of several
+// independently-typed copies.
+export const MONTH_YEAR_FORMATTER = new Intl.DateTimeFormat('en-US', {
+  month: 'long',
+  year: 'numeric',
+  timeZone: 'UTC',
+});
+
+export interface ProjectDisplayStatus {
+  status: ProjectStatus;
+  // Set only when the label needs to override the status's default text —
+  // e.g. an `active` project whose start date hasn't arrived yet reads as
+  // "Starts {Month Year}" rather than a bare "Active" that isn't true yet.
+  label?: string;
+}
+
+/**
+ * What a project's status pill should actually show. Computed once here so
+ * "is this active project actually upcoming" is defined in exactly one
+ * place, not re-derived by every consumer that renders a status pill.
+ */
+export function projectDisplayStatus(project: Project): ProjectDisplayStatus {
+  const { status, startDate } = project.data;
+  if (status === 'active' && startDate.getTime() > Date.now()) {
+    return { status: 'planned', label: `Starts ${MONTH_YEAR_FORMATTER.format(startDate)}` };
+  }
+  return { status };
 }
 
 /**

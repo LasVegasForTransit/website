@@ -6,6 +6,7 @@ import ProjectGoals from '../../components/ProjectGoals.astro';
 import Breadcrumbs from '../../components/Breadcrumbs.astro';
 import { getCollection, render } from 'astro:content';
 import { paths } from '../../lib/paths';
+import { projectDisplayStatus } from '../../lib/projects';
 
 export async function getStaticPaths() {
   const projects = await getCollection('projects', (entry) => !entry.id.startsWith('_'));
@@ -19,6 +20,7 @@ export async function getStaticPaths() {
 
 const { project, initiativesById } = Astro.props;
 const { Content } = await render(project);
+const displayStatus = projectDisplayStatus(project);
 
 const dateFmt = new Intl.DateTimeFormat('en-US', {
   month: 'long',
@@ -71,7 +73,7 @@ const leadsLabel = project.data.contacts.length > 1 ? `${LEAD_ROLE}s` : LEAD_ROL
       <div>
         <p class="text-title-sm text-on-surface-variant">Status</p>
         <div class="mt-2">
-          <StatusPill status={project.data.status} />
+          <StatusPill status={displayStatus.status} label={displayStatus.label} />
         </div>
       </div>
       <div>
