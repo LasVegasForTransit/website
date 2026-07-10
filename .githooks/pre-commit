@@ -50,6 +50,29 @@ EOF
 fi
 
 # ----------------------------------------------------------------------------
+# Stylesheet lint + brand-token drift. stylelint covers the hand-authored
+# stylesheets (rule set in .stylelintrc.json — Astro <style> blocks are out of
+# scope). brand-tokens.ts guards the palette hexes copied outside global.css
+# and global.css's unlayered-zone allowlist.
+# ----------------------------------------------------------------------------
+CSS_STAGED=$(printf '%s\n' "$STAGED" | grep -E '^src/.*\.css$' || true)
+if [ -n "$CSS_STAGED" ]; then
+  # shellcheck disable=SC2086  # intentional word-split into file args
+  if ! pnpm --silent exec stylelint $CSS_STAGED; then
+    printf '\n❌ Commit blocked: stylelint failed on staged stylesheets.\n\n' >&2
+    exit 1
+  fi
+fi
+
+BRAND_TOKEN_STAGED=$(printf '%s\n' "$STAGED" | grep -E '^src/styles/global\.css$|^src/pages/(brand|qr)\.astro$|^src/lib/qr-svg\.ts$|^scripts/generate-og-image\.ts$|^tests/(a11y-helpers\.ts|body-links\.spec\.ts|color-contracts\.spec\.ts)$' || true)
+if [ -n "$BRAND_TOKEN_STAGED" ]; then
+  if ! pnpm --silent exec tsx scripts/audit/brand-tokens.ts; then
+    printf '\n❌ Commit blocked: brand token drift (see scripts/audit/brand-tokens.ts output).\n\n' >&2
+    exit 1
+  fi
+fi
+
+# ----------------------------------------------------------------------------
 # Markdown / MDX link validation. Pass the staged set with `--files` so the
 # script restricts outbound-link extraction to changed files (cross-file
 # anchor checks still work — target headings are read lazily on demand).
