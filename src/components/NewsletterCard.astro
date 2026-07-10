@@ -23,14 +23,15 @@ const dateLabel = new Intl.DateTimeFormat('en-US', {
 }
 <a
   href={link}
+  data-print-url={link}
   target="_blank"
   rel="noopener"
-  class="lift flex flex-col h-full border border-ink bg-paper text-ink p-6 no-underline hover:bg-ink hover:text-paper"
+  class="lift flex flex-col h-full border border-outline bg-surface-container text-on-surface p-6 no-underline hover:bg-slab hover:text-on-slab"
 >
-  <p class="eyebrow">
+  <p class="text-body-sm font-semibold text-on-surface-variant">
     <time datetime={pubDate.toISOString()}>{dateLabel}</time>
   </p>
   <h3 class="text-title-lg mt-2">{title}</h3>
   <p class="mt-4 leading-relaxed flex-1">{excerpt}</p>
-  <p class="mt-6 text-sm font-bold">Read on Beehiiv →</p>
+  <p class="mt-6 text-sm font-bold">Read on Beehiiv</p>
 </a>

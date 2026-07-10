@@ -1,6 +1,6 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
-import SectionHeader from '../components/SectionHeader.astro';
+import PageHero from '../components/PageHero.astro';
 import NewsletterCard from '../components/NewsletterCard.astro';
 import NewsletterEmbed from '../components/NewsletterEmbed.astro';
 import { getCollection } from 'astro:content';
@@ -17,26 +17,33 @@ const posts = (await getCollection('newsletter')).sort(
 
 <BaseLayout
   title="Newsletter"
-  description="Legislative updates, project briefs, and ways to show up — straight to your inbox."
+  description="Member updates on events, transit news, and ways to take action, delivered straight to your inbox."
 >
-  <header class="container-page pt-20 pb-12 md:pt-28 md:pb-16">
-    <SectionHeader
-      title="Newsletter"
-      lede="Legislative updates, project briefs, and ways to show up. Published on Beehiiv — read every issue or subscribe below."
-    />
+  <PageHero
+    title="Newsletter"
+    lede="The newsletter covers upcoming events, transit news from around the Valley, and ways to take action."
+  >
     {
       site.newsletter.url && (
         <p class="mt-6">
-          <a href={site.newsletter.url} rel="noopener" target="_blank" class="press">
-            Read every issue on Beehiiv →
+          <a
+            href={site.newsletter.url}
+            data-print-plain-link
+            data-print-url={site.newsletter.url}
+            rel="noopener"
+            target="_blank"
+            class="press inline-flex items-center gap-2 bg-on-surface px-7 py-4 font-bold text-surface no-underline hover:bg-primary hover:text-on-primary focus-visible:bg-primary focus-visible:text-on-primary"
+          >
+            Read every issue
           </a>
         </p>
       )
     }
-  </header>
+  </PageHero>
   <hr class="rule-thick container-page" />
 
   <section class="container-page py-12">
+    <h2 class="sr-only">Newsletter issues and subscription</h2>
     {
       posts.length === 0 ? (
         <div class="max-w-2xl space-y-6">
@@ -45,15 +52,6 @@ const posts = (await getCollection('newsletter')).sort(
             anywhere else.
           </p>
           <NewsletterEmbed />
-          {site.newsletter.url && (
-            <p class="leading-relaxed text-mute">
-              You can also{' '}
-              <a href={site.newsletter.url} rel="noopener" target="_blank">
-                follow along on Beehiiv
-              </a>
-              .
-            </p>
-          )}
         </div>
       ) : (
         <div class="grid gap-6 md:grid-cols-2 lg:grid-cols-3">

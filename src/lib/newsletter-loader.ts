@@ -4,10 +4,10 @@
 //
 // Unlike the events loader, an EMPTY feed is not an error: the newsletter may
 // not have published its first issue yet, or PUBLIC_LVBT_NEWSLETTER_FEED_URL
-// may be unset (e.g. local dev without .env.local). In both cases we log and
-// emit zero entries; the /newsletter page renders an empty state. We only fail
-// the build when a configured feed can't be fetched (network failure worth
-// surfacing loudly).
+// may be unset (e.g. local dev without .env.local). In both cases we emit zero
+// entries; the /newsletter page renders an empty state. We only fail the build
+// when a configured feed can't be fetched (network failure worth surfacing
+// loudly).
 //
 // The site does not host issues — each entry's `link` points at the Beehiiv
 // post. The feed re-pulls on the existing twice-daily production rebuild
@@ -16,6 +16,7 @@
 import type { Loader } from 'astro/loaders';
 import { XMLParser } from 'fast-xml-parser';
 import { site } from './site';
+import { truncate } from './truncate';
 
 type NewsletterData = {
   title: string;
@@ -41,13 +42,6 @@ function decodeEntities(s: string): string {
     .replace(/&gt;/g, '>')
     .replace(/&#39;/g, "'")
     .replace(/&quot;/g, '"');
-}
-
-function truncate(text: string, max: number): string {
-  if (text.length <= max) return text;
-  const clipped = text.slice(0, max);
-  const lastSpace = clipped.lastIndexOf(' ');
-  return `${(lastSpace > 0 ? clipped.slice(0, lastSpace) : clipped).trimEnd()}…`;
 }
 
 // fast-xml-parser leaves an element as a plain string when it has no
@@ -106,7 +100,6 @@ export function beehiivNewsletterLoader(): Loader {
       const feedUrl = site.newsletter.feedUrl;
       if (!feedUrl) {
         store.clear();
-        logger.info('PUBLIC_LVBT_NEWSLETTER_FEED_URL is unset — emitting no issues.');
         return;
       }
 

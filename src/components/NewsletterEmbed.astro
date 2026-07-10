@@ -6,7 +6,7 @@
 // page "refreshes". Same pattern as Header.astro / ShareButton.astro.
 interface Props {
   variant?: 'light' | 'dark';
-  // `compact` drops the box framing and the internal eyebrow/heading/pitch,
+  // `compact` drops the box framing and the internal heading/pitch,
   // rendering just the form. Use it where the surrounding section already
   // supplies the heading and the pitch (e.g. the /join membership section)
   // so the form doesn't read as a second, competing call to action.
@@ -22,19 +22,15 @@ const { variant = 'light', compact = false, stack = false } = Astro.props;
 <div
   class:list={[
     !compact && 'border p-6 md:p-8',
-    variant === 'dark' ? 'bg-ink text-paper border-ink' : 'text-ink',
-    !compact && (variant === 'dark' ? 'border-ink' : 'bg-paper border-ink'),
+    variant === 'dark' ? 'bg-slab text-on-slab border-slab' : 'text-on-surface',
+    !compact && (variant === 'dark' ? 'border-slab' : 'bg-surface-container border-outline'),
   ]}
 >
   {
     !compact && (
       <>
-        <p class="eyebrow">Newsletter</p>
-        <h3 class="text-title-lg mt-3">Updates from the front lines.</h3>
-        <p class="mt-4 max-w-md">
-          We're building a lasting movement for better transit in the Valley. Subscribe for
-          legislative updates, project briefs, and ways to show up.
-        </p>
+        <h3 class="text-title-lg">Get the newsletter.</h3>
+        <p class="mt-4 max-w-md">We keep it short and infrequent, usually every couple of weeks.</p>
       </>
     )
   }
@@ -51,6 +47,7 @@ const { variant = 'light', compact = false, stack = false } = Astro.props;
       name="email"
       required
       autocomplete="email"
+      aria-label="Email address"
       placeholder="you@example.com"
       aria-describedby="newsletter-status"
       class="flex-1 min-w-0 px-4 py-3 border-2 border-current bg-transparent placeholder:opacity-80 focus:outline-none"
@@ -59,7 +56,7 @@ const { variant = 'light', compact = false, stack = false } = Astro.props;
       type="submit"
       data-submit-btn
       class:list={[
-        'font-bold bg-accent text-ink border-2 border-accent hover:bg-transparent hover:text-current transition-colors',
+        'font-bold bg-primary text-on-primary border-2 border-primary hover:bg-transparent hover:text-current transition-colors',
         // In stacked layout the button sizes to its label (smaller padding,
         // left-aligned) instead of stretching full width and reading oversized.
         stack ? 'self-start px-4 py-2 text-sm' : 'px-6 py-3',
