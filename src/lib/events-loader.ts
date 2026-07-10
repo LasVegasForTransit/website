@@ -12,6 +12,7 @@
 import type { Loader } from 'astro/loaders';
 import ICAL from 'ical.js';
 import { site } from './site';
+import { slugify } from './slugify';
 
 import type { EventLocation } from './event-format';
 import { TIMEZONE } from './event-time';
@@ -41,13 +42,6 @@ const ptDateFmt = new Intl.DateTimeFormat('en-CA', {
 function ptDateSlug(d: Date): string {
   // en-CA short date gives YYYY-MM-DD.
   return ptDateFmt.format(d);
-}
-
-function slugifyTitle(s: string): string {
-  return s
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '');
 }
 
 function isUrl(s: string): boolean {
@@ -179,7 +173,7 @@ function buildEventEntry(
   else if (joinUrl) location = { format: 'virtual', joinUrl };
   else if (venue) location = { format: 'in-person', venue };
 
-  const slug = `${ptDateSlug(startDate)}-${slugifyTitle(title)}`;
+  const slug = `${ptDateSlug(startDate)}-${slugify(title)}`;
   const { summary, body } = parseDescription(description, title);
 
   const data: EventData = {

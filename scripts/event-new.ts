@@ -17,6 +17,8 @@ import { existsSync } from 'node:fs';
 import { cancel, intro, isCancel, outro, text, confirm, note } from '@clack/prompts';
 import pc from 'picocolors';
 
+import { slugify } from '../src/lib/slugify';
+
 const REPO_ROOT = path.resolve(import.meta.dirname, '..');
 const BODIES_DIR = path.join(REPO_ROOT, 'src', 'content', 'event-bodies');
 
@@ -26,13 +28,6 @@ function exitIfCancelled<T>(value: T | symbol): T {
     process.exit(0);
   }
   return value;
-}
-
-function slugify(title: string): string {
-  return title
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '');
 }
 
 function ymdFromIsoInput(iso: string): string {
