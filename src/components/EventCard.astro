@@ -17,7 +17,7 @@ const href = `/events/${event.id}`;
 
 // Mixed case, not all-caps. The date is the primary scannable anchor of an
 // event card ("when is this?"), so it gets a real label treatment rather
-// than an eyebrow. Year stays for cross-year clarity.
+// than a decorative label. Year stays for cross-year clarity.
 const dateLabel = new Intl.DateTimeFormat('en-US', {
   weekday: 'short',
   month: 'short',
@@ -46,10 +46,10 @@ const inlineRelative = relative && !isUrgent ? relative.text : null;
     // `flex flex-col h-full` lets the "where" line anchor to the card's
     // footer via `mt-auto` so neighbouring cards align horizontally even
     // when their summaries are different lengths.
-    'lift flex flex-col h-full border border-ink no-underline',
+    'lift group flex h-full flex-col border border-outline-variant/25 no-underline transition-colors',
     featured
-      ? 'bg-ink text-paper p-8 md:p-12'
-      : 'bg-paper text-ink p-6 hover:bg-ink hover:text-paper',
+      ? 'bg-on-surface p-6 text-surface md:p-8 lg:p-10'
+      : 'bg-surface-container p-5 text-on-surface hover:bg-on-surface hover:text-surface focus-visible:bg-on-surface focus-visible:text-surface md:p-6',
   ]}
 >
   {
@@ -74,7 +74,7 @@ const inlineRelative = relative && !isUrgent ? relative.text : null;
   </span>
   {
     featured ? (
-      <p data-event-fallback hidden={isUrgent} class="eyebrow text-accent-soft">
+      <p data-event-fallback hidden={isUrgent} class="text-title-sm text-primary-soft">
         Next event
       </p>
     ) : (
@@ -89,14 +89,14 @@ const inlineRelative = relative && !isUrgent ? relative.text : null;
     inline relative label appears next to it in the soft cases (Tomorrow
     / In N days / Next week); urgent cases own the badge above. */
   }
-  <p class:list={[featured ? 'mt-4 md:mt-5 text-body-lg font-bold' : 'mt-4 font-semibold']}>
+  <p class:list={[featured ? 'mt-4 text-title-md md:mt-5' : 'mt-4 text-title-sm']}>
     <time datetime={date.toISOString()}>{dateLabel} · {timeLabel}</time>
     <span
       data-event-inline
       hidden={!inlineRelative}
       class:list={[
         'ml-2 font-normal',
-        featured ? 'text-paper/70' : 'text-[color:var(--color-mute)]',
+        featured ? 'text-on-slab/70' : 'text-[color:var(--color-on-surface-variant)]',
       ]}>· <span data-event-inline-text>{inlineRelative ?? ''}</span></span
     >
   </p>
@@ -104,13 +104,15 @@ const inlineRelative = relative && !isUrgent ? relative.text : null;
   {
     /* Title — primary anchor. `break-words` keeps long titles from kissing
     the right edge on narrow viewports where display-md clamps down.
-    Featured-card title carries the warm accent: same family as the
-    brand orange, softer against ink than the saturated CTA accent.
+    Featured-card title carries the warm primary: same family as the
+    brand orange, softer against ink than the saturated CTA primary.
     Non-featured grid cards stay ink-on-paper. */
   }
   <h3
     class:list={[
-      featured ? 'text-display-md text-accent-warm mt-3 md:mt-4 break-words' : 'text-title-lg mt-1',
+      featured
+        ? 'mt-3 break-words text-headline-lg text-primary-soft md:mt-4 md:text-display-sm'
+        : 'mt-2 text-title-lg',
     ]}
   >
     {title}
@@ -125,7 +127,9 @@ const inlineRelative = relative && !isUrgent ? relative.text : null;
   }
   <p
     class:list={[
-      featured ? 'mt-5 md:mt-6 leading-relaxed flex-1 max-w-prose' : 'mt-4 leading-relaxed flex-1',
+      featured
+        ? 'mt-5 max-w-prose flex-1 text-body-lg leading-relaxed text-surface/85 md:mt-6'
+        : 'mt-4 flex-1 text-body-md leading-relaxed text-on-surface-variant group-hover:text-surface/75 group-focus-visible:text-surface/75',
     ]}
   >
     {summary}
@@ -141,7 +145,12 @@ const inlineRelative = relative && !isUrgent ? relative.text : null;
   {
     (featured || (format != null && format !== 'virtual')) && (
       <p
-        class:list={['mt-6 text-sm', featured ? 'text-paper/70' : 'text-[color:var(--color-mute)]']}
+        class:list={[
+          'mt-6 text-body-sm',
+          featured
+            ? 'text-surface/70'
+            : 'text-on-surface-variant group-hover:text-surface/70 group-focus-visible:text-surface/70',
+        ]}
       >
         {whereLabel(location)}
       </p>

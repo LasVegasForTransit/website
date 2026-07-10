@@ -1,7 +1,7 @@
 ---
 // Format-badge pill shared by EventCard, the event detail page, and the /go
 // carousel. Background + foreground are baked in so the badge clears WCAG AA
-// regardless of surrounding canvas — `text-accent-soft` text alone on the
+// regardless of surrounding canvas — `text-primary-soft` text alone on the
 // paper canvas was the bug we're correcting here.
 //
 // `canvas` flips the pill into a dark-surface variant for use on the ink-
@@ -29,8 +29,11 @@ const { format, canvas = 'paper', size = 'sm' } = Astro.props;
 const iconName = format ? FORMAT_ICON_NAME[format] : PENDING_FORMAT_ICON_NAME;
 const label = format ? FORMAT_LABEL[format] : PENDING_FORMAT_LABEL;
 
-const surfaceClass = canvas === 'ink' ? 'bg-paper/10 text-paper' : 'bg-accent-soft text-ink';
-const iconColorClass = canvas === 'ink' ? 'text-accent-soft' : 'text-accent';
+const surfaceClass =
+  canvas === 'ink'
+    ? 'bg-on-slab/10 text-on-slab'
+    : 'bg-primary-container text-on-primary-container';
+const iconColorClass = canvas === 'ink' ? 'text-primary-soft' : 'text-primary-ink';
 const padClass = size === 'md' ? 'px-3 py-1.5 text-sm' : 'px-2.5 py-1 text-xs';
 const iconSizeClass = size === 'md' ? 'size-4' : 'size-3.5';
 ---

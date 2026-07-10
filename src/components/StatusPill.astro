@@ -6,19 +6,20 @@ const { status } = Astro.props;
 
 // `group-hover:` utilities ride alongside the base color so they land in
 // the same Tailwind layer and order beats the dark base on hover — when
-// the parent .group card flips to bg-ink, pill text/border flip to paper.
-// `active` keeps its accent fill unchanged; it reads fine against ink.
+// the parent .group card flips to bg-slab, pill text/border flip to on-slab.
+// `active` keeps its primary fill unchanged; it reads fine against the slab.
 const styles: Record<Props['status'], string> = {
-  // Active uses ink-on-accent for AA contrast (paper-on-accent fails at
+  // Active uses ink-on-primary for AA contrast (paper-on-primary fails at
   // 3.64:1). Other states adopt the redesign's group-hover pattern so
   // pills track the parent card's hover-flip without the on-card-invert
   // utility classes the old approach relied on.
-  active: 'bg-accent text-ink border-accent',
-  planned: 'bg-transparent text-ink border-ink group-hover:text-paper group-hover:border-paper',
+  active: 'bg-primary text-on-primary border-primary',
+  planned:
+    'bg-transparent text-on-surface border-outline group-hover:text-on-slab group-hover:border-on-slab',
   complete:
-    'bg-rule/15 text-mute border-mute/30 group-hover:text-paper group-hover:border-paper/50',
+    'bg-outline-variant/15 text-on-surface-variant border-on-surface-variant/30 group-hover:text-on-slab group-hover:border-on-slab/50',
   paused:
-    'bg-transparent text-mute border-dashed border-mute group-hover:text-paper group-hover:border-paper',
+    'bg-transparent text-on-surface-variant border-dashed border-on-surface-variant group-hover:text-on-slab group-hover:border-on-slab',
 };
 
 const label: Record<Props['status'], string> = {
@@ -30,6 +31,7 @@ const label: Record<Props['status'], string> = {
 ---
 
 <span
+  data-status-pill
   class:list={[
     'inline-flex items-center px-2.5 py-1 text-xs font-bold border transition-colors',
     styles[status],

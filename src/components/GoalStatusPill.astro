@@ -8,9 +8,9 @@ interface Props {
 const { status } = Astro.props;
 
 const styles: Record<GoalStatus, string> = {
-  planned: 'bg-transparent text-mute border-mute/60',
-  'in-progress': 'bg-accent text-ink border-accent',
-  done: 'bg-ink text-paper border-ink',
+  planned: 'bg-transparent text-on-surface-variant border-on-surface-variant/60',
+  'in-progress': 'bg-primary text-on-primary border-primary',
+  done: 'bg-slab text-on-slab border-slab',
 };
 
 const label: Record<GoalStatus, string> = {

@@ -1,15 +1,13 @@
 ---
 interface Props {
   title: string;
-  eyebrow?: string;
 }
-const { title, eyebrow } = Astro.props;
+const { title } = Astro.props;
 ---
 
 <section class="py-12">
   <div class="container-page">
-    {eyebrow && <p class="eyebrow">{eyebrow}</p>}
-    <h2 class="text-headline-lg mt-2 mb-8">{title}</h2>
+    <h2 class="text-headline-lg mb-8">{title}</h2>
   </div>
   <div class="carousel-scroll overflow-x-auto pb-4">
     <div class="carousel-track flex gap-5 snap-x snap-mandatory">

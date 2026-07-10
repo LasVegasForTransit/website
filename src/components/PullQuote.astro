@@ -1,13 +1,27 @@
 ---
 interface Props {
   cite?: string;
+  surface?: 'surface' | 'slab';
 }
-const { cite } = Astro.props;
+const { cite, surface = 'surface' } = Astro.props;
+
+const citeClassBySurface = {
+  surface: 'text-on-surface-variant',
+  slab: 'text-on-slab-variant',
+};
 ---
 
 <blockquote
-  class="reveal-quote border-l-[6px] border-accent pl-6 md:pl-10 py-2 text-headline-md font-medium leading-snug text-balance"
+  class="reveal-quote border-l-[6px] border-primary pl-6 md:pl-10 py-2 text-headline-md font-medium leading-snug text-balance"
 >
   <slot />
-  {cite && <cite class="block mt-4 not-italic text-sm font-semibold text-mute">— {cite}</cite>}
+  {
+    cite && (
+      <cite
+        class:list={['block mt-4 not-italic text-sm font-semibold', citeClassBySurface[surface]]}
+      >
+        — {cite}
+      </cite>
+    )
+  }
 </blockquote>

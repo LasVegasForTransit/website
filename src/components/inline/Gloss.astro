@@ -101,11 +101,11 @@ const isExternal = isLink && /^https?:/.test(url!);
   .gloss-trigger-link {
     cursor: pointer;
     text-decoration-style: solid;
-    text-decoration-color: var(--color-accent);
+    text-decoration-color: var(--color-primary);
   }
   .gloss-trigger:hover,
   .gloss-trigger:focus-visible {
-    text-decoration-color: var(--color-accent);
+    text-decoration-color: var(--color-primary);
     outline: none;
   }
   .gloss-trigger:focus-visible {
@@ -116,13 +116,13 @@ const isExternal = isLink && /^https?:/.test(url!);
     margin: 0;
     inset: auto;
     padding: 0.875rem 1.05rem;
-    border: 1px solid var(--color-ink);
-    background: var(--color-ink);
-    color: var(--color-paper);
+    border: 1px solid var(--color-slab);
+    background: var(--color-slab);
+    color: var(--color-on-slab);
     max-width: 22rem;
     font-size: 0.9375rem;
     line-height: 1.55;
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18);
+    box-shadow: 0 8px 24px color-mix(in srgb, var(--color-on-surface) 18%, transparent);
   }
 </style>
 

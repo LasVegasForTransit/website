@@ -10,20 +10,20 @@
    declared in @layer components, and unlayered CSS always outranks any
    layered CSS regardless of source order. */
 .prose {
-  --tw-prose-body: var(--color-ink);
-  --tw-prose-headings: var(--color-ink);
-  --tw-prose-lead: var(--color-mute);
-  --tw-prose-links: var(--color-accent-ink);
-  --tw-prose-bold: var(--color-ink);
-  --tw-prose-counters: var(--color-mute);
-  --tw-prose-bullets: var(--color-ink);
-  --tw-prose-hr: var(--color-rule);
-  --tw-prose-quotes: var(--color-ink);
-  --tw-prose-quote-borders: var(--color-accent);
-  --tw-prose-captions: var(--color-mute);
-  --tw-prose-code: var(--color-ink);
-  --tw-prose-th-borders: var(--color-rule);
-  --tw-prose-td-borders: var(--color-rule);
+  --tw-prose-body: var(--color-on-surface);
+  --tw-prose-headings: var(--color-on-surface);
+  --tw-prose-lead: var(--color-on-surface-variant);
+  --tw-prose-links: var(--color-link);
+  --tw-prose-bold: var(--color-on-surface);
+  --tw-prose-counters: var(--color-on-surface-variant);
+  --tw-prose-bullets: var(--color-on-surface);
+  --tw-prose-hr: var(--color-outline-variant);
+  --tw-prose-quotes: var(--color-on-surface);
+  --tw-prose-quote-borders: var(--color-primary);
+  --tw-prose-captions: var(--color-on-surface-variant);
+  --tw-prose-code: var(--color-on-surface);
+  --tw-prose-th-borders: var(--color-outline-variant);
+  --tw-prose-td-borders: var(--color-outline-variant);
 }
 
 /* Footnotes (remark-gfm output: section[data-footnotes], data-footnote-ref,
@@ -32,13 +32,15 @@
 .prose section[data-footnotes] {
   margin-top: 3em;
   padding-top: 1.25em;
-  border-top: 1px solid var(--color-rule);
+  border-top: 1px solid var(--color-outline-variant);
   font-size: var(--text-body-sm);
 }
 
 .prose section[data-footnotes] h2 {
-  /* Un-hide the auto-generated "Footnotes" label as a quiet eyebrow —
-     not a heading-weight section title. */
+  /* Un-hide the auto-generated "Footnotes" label as plain metadata text —
+     Body small, same role as any other caption/secondary-note copy on the
+     site. No uppercase/letter-spaced "eyebrow" treatment; that pattern is
+     retired sitewide. */
   position: static;
   overflow: visible;
   clip: auto;
@@ -48,21 +50,35 @@
   margin: 0 0 0.75em;
   padding: 0;
   white-space: normal;
-  font-size: var(--text-label-sm);
+  font-size: var(--text-body-sm);
   font-weight: 600;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--color-mute);
+  color: var(--color-on-surface-variant);
 }
 
 .prose section[data-footnotes] ol {
-  color: var(--color-mute);
+  color: var(--color-on-surface-variant);
+}
+
+.prose section[data-footnotes] li {
+  margin-top: 0;
+  margin-bottom: 0;
+}
+
+.prose section[data-footnotes] li + li {
+  margin-top: 0.5em;
+}
+
+.prose section[data-footnotes] li p {
+  /* Each footnote is a single short paragraph — the plugin's full
+     paragraph margin (sized off the base prose scale, not this section's
+     smaller font) is what was creating the oversized gap between items. */
+  margin: 0;
 }
 
 .prose [data-footnote-ref],
 .prose .data-footnote-backref {
-  color: var(--color-mute);
-  text-decoration-color: color-mix(in srgb, var(--color-mute) 50%, transparent);
+  color: var(--color-on-surface-variant);
+  text-decoration-color: color-mix(in srgb, var(--color-on-surface-variant) 50%, transparent);
 }
 
 /* Public Sans (variable) — vendored from @fontsource-variable/public-sans@5.2.7,
@@ -83,24 +99,76 @@
     U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
 }
 
+/* ── Brand primitives ───────────────────────────────────────────────────
+   Raw palette values. Plain :root (not @theme) so Tailwind generates NO
+   utilities for them — they exist only to be referenced by the semantic
+   role tokens in @theme. Non-flipping: the same hex in light and dark.
+   "No pure black or white" (see design-system.md): Ink and Cream, plus a
+   warm charcoal ramp for dark-mode elevation and a brighter Ember for
+   ember-as-text on dark. */
+:root {
+  --ink: #0f1115;
+  --paper: #f7f4ec;
+  --paper-raised: #efe9db; /* light-mode elevation: a warm step down from paper so cards/panels read as distinct surfaces */
+  --ember: #e5471a;
+  --coral: #ec7049;
+  --rust: #bf3a10;
+  --peach: #ffe9d6;
+  --stone: #4a4e57;
+  /* Muted text on dark slabs. Light theme keeps the cool value the prior
+     dark-band remap used; dark theme warms it for the "Valley after dark" read. */
+  --slab-muted-light: #a8acb4;
+  --warm-muted: #b0a99c;
+  /* Warm charcoal ramp — dark-mode surfaces, never pure black. */
+  --charcoal-1: #1a1713; /* surface-container (elevation 1) */
+  --charcoal-2: #24201a; /* inverse-surface / punctuation slab (elevation 2) */
+  --charcoal-line: #736859; /* outline on dark — lightened to clear 3:1 against --charcoal-1 and --ink (WCAG 1.4.11) */
+  --ember-bright: #ff8a5c; /* ember-as-text on dark (MD3: primary lightens) */
+  --ember-container: #47210f; /* primary-container surface on dark */
+  --on-ember-container-dark: #ffd9c7;
+}
+
 @theme {
   --font-sans: 'Public Sans Variable', ui-sans-serif, system-ui, sans-serif;
 
-  --color-ink: #0f1115;
-  --color-paper: #f7f4ec;
-  --color-accent: #e5471a;
-  /* Warm mid-stop between the saturated CTA accent and the very pale
-     accent-soft. Reads as a softened terracotta — same family as the
-     brand orange, less aggressive against ink-on-dark surfaces. */
-  --color-accent-warm: #ec7049;
-  --color-accent-soft: #ffe9d6;
-  /* Darkened accent for accent-as-text on light surfaces. The bright accent
-     is ~3.5:1 on paper — below AA for body copy — so links and inline accent
-     text use this (~4.9:1) while fills, buttons, and large display keep the
-     bright accent. */
-  --color-accent-ink: #bf3a10;
-  --color-mute: #4a4e57;
-  --color-rule: #1f232b;
+  /* ── Color: MD3 semantic role tokens ──────────────────────────────────
+     These reference the brand primitives above and are re-pointed under
+     @media (prefers-color-scheme: dark) further down, so overriding a role
+     var at runtime flips every consumer. Light values equal the prior
+     palette exactly, so introducing this layer is a no-op in light mode.
+     Minimal surface set (surface + one container level + inverse) per the
+     "don't add elevation layers" rule in design-system.md. */
+
+  /* Neutral surfaces + text */
+  --color-surface: var(--paper);
+  --color-on-surface: var(--ink);
+  --color-on-surface-variant: var(--stone);
+  --color-surface-container: var(--paper-raised); /* distinct raised surface in both themes */
+  /* The "punctuation slab" (Cliff band, footer, featured cards). NOT MD3
+     inverse-surface — light mode expresses emphasis by INVERSION (a near-black
+     band on cream), dark mode by ELEVATION (a slightly raised warm charcoal on
+     the near-black page). Dark in BOTH themes — never a bright surface. Its
+     text (on-slab) is cream in both. */
+  --color-slab: var(--ink);
+  --color-on-slab: var(--paper);
+  --color-on-slab-variant: var(--slab-muted-light);
+  --color-outline: var(--ink);
+  --color-outline-variant: var(--ink);
+
+  /* Accent (Ember). Fill stays saturated in both themes; ember-as-text
+     (primary-ink) and the container pair lighten in dark. on-primary is Cream
+     (--paper) — light text reads better on the Ember fill. (Cream on Ember is
+     ~3.6:1, under WCAG AA; a deliberate look-over-number call.) */
+  --color-primary: var(--ember);
+  --color-on-primary: var(--paper);
+  --color-primary-container: var(--peach);
+  --color-on-primary-container: var(--ink);
+  --color-primary-warm: var(--coral);
+  --color-primary-ink: var(--rust);
+  /* Peach — the soft accent used for links/labels on the dark slab. Stays
+     light in both themes (reads well on Ink and on warm charcoal). */
+  --color-primary-soft: var(--peach);
+  --color-link: var(--color-primary-ink);
 
   /* MD3 type-token series. Display sizes are bumped well above MD3
      defaults to preserve the editorial feel; headline/title/body/label
@@ -190,6 +258,44 @@
   --page-pad: clamp(1.25rem, 4vw, 3rem);
 }
 
+/* ── Dark theme ──────────────────────────────────────────────────────────
+   Device-driven only (prefers-color-scheme) — no manual toggle. Re-points
+   the semantic role tokens to warm dark values; every consumer (utilities +
+   the compat aliases) follows via var(). MUST be unlayered so it outranks
+   @theme, which Tailwind v4 emits into @layer theme.
+
+   "Valley after dark": a warm near-black canvas, elevation expressed by
+   progressively lighter warm-charcoal containers (MD3-style tonal
+   elevation, not drop shadows), and Ember reading like a light in the dark.
+   All values are validated against the ≥4.5:1 contrast gate. */
+@media (prefers-color-scheme: dark) {
+  :root {
+    color-scheme: dark;
+
+    --color-surface: var(--ink);
+    --color-on-surface: var(--paper);
+    --color-on-surface-variant: var(--warm-muted);
+    --color-surface-container: var(--charcoal-1);
+    /* Slab lifts from the near-black base to a warm charcoal — a subtle
+       elevation, still firmly dark. This is what keeps the footer from
+       glaring; it is one tonal step up, not an inverse/bright surface. */
+    --color-slab: var(--charcoal-2);
+    --color-on-slab: var(--paper);
+    --color-on-slab-variant: var(--warm-muted);
+    --color-outline: var(--charcoal-line);
+    --color-outline-variant: var(--paper);
+
+    --color-primary: var(--ember);
+    --color-on-primary: var(--paper);
+    --color-primary-container: var(--ember-container);
+    --color-on-primary-container: var(--on-ember-container-dark);
+    --color-primary-warm: var(--coral);
+    --color-primary-ink: var(--ember-bright);
+    --color-primary-soft: var(--peach);
+    --color-link: var(--color-primary-ink);
+  }
+}
+
 /* Typed custom property that powers smooth shadow interpolation on `.lift`.
    Declared as a <number> so the engine can animate it linearly; without
    @property a raw custom property would snap discretely. */
@@ -229,7 +335,7 @@
   left: 0;
   right: 0;
   height: 3px;
-  background: var(--color-accent);
+  background: var(--color-primary);
   z-index: 55;
   transform: scaleX(0);
   transform-origin: left;
@@ -355,9 +461,10 @@ html:active-view-transition-type(from-qr)::view-transition-old(root) {
 @layer base {
   :root {
     color-scheme: light;
+    --external-link-icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M14 3v2h3.59l-9.83 9.83 1.41 1.41L19 6.41V10h2V3h-7ZM19 19H5V5h7V3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7h-2v7Z'/%3E%3C/svg%3E");
     /* Brand-paint native form controls (checkbox, radio, range, progress)
        site-wide without per-component overrides. Universally supported. */
-    accent-color: var(--color-accent);
+    accent-color: var(--color-primary);
     /* Permit transitioning to/from keyword lengths (`height: auto`, etc.)
        for future disclosure / accordion patterns. No-op elsewhere. */
     interpolate-size: allow-keywords;
@@ -372,8 +479,8 @@ html:active-view-transition-type(from-qr)::view-transition-old(root) {
   }
 
   html {
-    background: var(--color-paper);
-    color: var(--color-ink);
+    background: var(--color-surface);
+    color: var(--color-on-surface);
     font-family: var(--font-sans);
     -webkit-font-smoothing: antialiased;
     text-rendering: optimizeLegibility;
@@ -391,34 +498,14 @@ html:active-view-transition-type(from-qr)::view-transition-old(root) {
      transition is owned by the header's own data-stuck attribute and applies
      to every page identically, so nothing here is page-specific. */
   body[data-canvas='dark'] {
-    background: var(--color-ink);
+    background: var(--ink);
   }
 
-  /* Cream's #4a4e57 mute reads as ~3.8:1 against #0f1115 — fails AA for
-     small text. Lift the mute wherever a dark surface is in play: full
-     dark-canvas pages, local .bg-ink bands inside otherwise-cream pages,
-     and any element opting in via .on-dark-surface. */
-  body[data-canvas='dark'],
-  .bg-ink,
-  .on-dark-surface {
-    --color-mute: #a8acb4;
-  }
-
-  /* Re-claim the cream-canvas mute on any .bg-paper / .bg-accent-soft /
-     vision's .band-cream surface that sits inside a dark ancestor —
-     otherwise the dark mute inherits down into cream cards and fails
-     contrast on them. */
-  .bg-paper,
-  .bg-accent-soft,
-  .band-cream {
-    --color-mute: #4a4e57;
-  }
-
-  /* The accent orange is too saturated for a muted gray to pass AA at any
-     value — muted labels on a .bg-accent surface use ink instead (≈6.3:1
-     against #e5471a). */
-  .bg-accent {
-    --color-mute: var(--color-ink);
+  /* Interactive surfaces that invert to On Surface also need their
+     on-surface-variant descendants to invert. Remap the role on the active
+     surface instead of adding per-child group-hover classes everywhere. */
+  :is(.hover\:bg-on-surface:hover, .focus-visible\:bg-on-surface:focus-visible) {
+    --color-on-surface-variant: var(--color-surface);
   }
 
   body[data-canvas='dark'] [data-site-header] {
@@ -428,41 +515,41 @@ html:active-view-transition-type(from-qr)::view-transition-old(root) {
       border-color 200ms ease;
   }
   body[data-canvas='dark'] [data-site-header]:not([data-stuck]):not([data-nav-open]) {
-    /* Tailwind's bg-paper/80 utility lives in a higher cascade layer than
+    /* Tailwind's neutral background utility lives in a higher cascade layer than
        this rule. Bump with !important so the dark hero shows through the
        header instead of letting cream blur seep over ink. */
     background-color: transparent !important;
     border-bottom-color: transparent !important;
   }
   body[data-canvas='dark'] [data-site-header]:not([data-stuck]):not([data-nav-open]) a {
-    color: var(--color-paper);
+    color: var(--paper);
   }
   body[data-canvas='dark'] [data-site-header]:not([data-stuck]):not([data-nav-open]) a:hover {
-    color: var(--color-accent);
+    color: var(--color-primary);
   }
   body[data-canvas='dark']
     [data-site-header]:not([data-stuck]):not([data-nav-open])
     a[aria-current='page'] {
-    color: var(--color-accent);
+    color: var(--color-primary);
   }
   body[data-canvas='dark']
     [data-site-header]:not([data-stuck]):not([data-nav-open])
     a
-    span.text-accent {
-    color: var(--color-accent);
+    span.text-primary {
+    color: var(--color-primary);
   }
   body[data-canvas='dark'] [data-site-header]:not([data-stuck]):not([data-nav-open]) .press {
-    background-color: var(--color-paper);
-    color: var(--color-ink);
+    background-color: var(--paper);
+    color: var(--ink);
   }
   body[data-canvas='dark'] [data-site-header]:not([data-stuck]):not([data-nav-open]) .press:hover {
-    background-color: var(--color-accent);
-    color: var(--color-paper);
+    background-color: var(--color-primary);
+    color: var(--color-on-primary);
   }
 
   ::selection {
-    background: var(--color-accent);
-    color: var(--color-paper);
+    background: var(--color-primary);
+    color: var(--color-on-primary);
   }
 
   a {
@@ -498,7 +585,7 @@ html:active-view-transition-type(from-qr)::view-transition-old(root) {
   }
 
   :focus-visible {
-    outline: 2px solid var(--color-accent);
+    outline: 2px solid var(--color-primary);
     outline-offset: 3px;
     border-radius: 0;
   }
@@ -511,8 +598,8 @@ html:active-view-transition-type(from-qr)::view-transition-old(root) {
     top: 5rem; /* sits below the top app bar instead of overlapping the logo */
     left: 50%;
     z-index: 100;
-    background: var(--color-ink);
-    color: var(--color-paper);
+    background: var(--color-slab);
+    color: var(--color-on-slab);
     padding: 0.625rem 1.25rem;
     font-weight: 700;
     text-decoration: none;
@@ -551,7 +638,7 @@ html:active-view-transition-type(from-qr)::view-transition-old(root) {
       border-color 200ms var(--ease-out);
   }
   [data-site-header][data-stuck] {
-    box-shadow: 0 1px 0 color-mix(in srgb, var(--color-ink) 8%, transparent);
+    box-shadow: 0 1px 0 color-mix(in srgb, var(--color-on-surface) 8%, transparent);
   }
 
   /* Modern engines (Chrome 115+, Safari 18+) drive the sticky header's
@@ -593,7 +680,7 @@ html:active-view-transition-type(from-qr)::view-transition-old(root) {
   body[data-canvas='dark']
     [data-site-header]:not([data-stuck]):not([data-nav-open])
     [data-nav-toggle] {
-    color: var(--color-paper);
+    color: var(--paper);
   }
 
   /* Hide the Join CTA while the overlay is open */
@@ -624,8 +711,8 @@ html:active-view-transition-type(from-qr)::view-transition-old(root) {
 @keyframes site-header-stuck {
   to {
     backdrop-filter: blur(12px) saturate(1.5);
-    border-bottom-color: color-mix(in srgb, var(--color-rule) 15%, transparent);
-    box-shadow: 0 1px 0 color-mix(in srgb, var(--color-ink) 8%, transparent);
+    border-bottom-color: color-mix(in srgb, var(--color-outline-variant) 15%, transparent);
+    box-shadow: 0 1px 0 color-mix(in srgb, var(--color-on-surface) 8%, transparent);
   }
 }
 
@@ -636,10 +723,10 @@ html:active-view-transition-type(from-qr)::view-transition-old(root) {
    the data-stuck attribute and applies to every page identically.
 
    Lives at top level (unlayered) so it outranks Tailwind's utility-layer
-   `bg-paper/80`, `border-b`, and similar classes on [data-site-header].
+   neutral background utilities, `border-b`, and similar classes on [data-site-header].
    Inside @layer base, utilities would win regardless of specificity. */
 body[data-canvas='dark'] {
-  background: var(--color-ink);
+  background: var(--ink);
 }
 body[data-canvas='dark'] [data-site-header] {
   transition:
@@ -652,39 +739,99 @@ body[data-canvas='dark'] [data-site-header]:not([data-stuck]):not([data-nav-open
   border-bottom-color: transparent;
 }
 body[data-canvas='dark'] [data-site-header]:not([data-stuck]):not([data-nav-open]) a {
-  color: var(--color-paper);
+  color: var(--paper);
 }
 body[data-canvas='dark'] [data-site-header]:not([data-stuck]):not([data-nav-open]) a:hover {
-  color: var(--color-accent);
+  color: var(--color-primary);
 }
 body[data-canvas='dark']
   [data-site-header]:not([data-stuck]):not([data-nav-open])
   a[aria-current='page'] {
-  color: var(--color-accent);
+  color: var(--color-primary);
 }
 body[data-canvas='dark']
   [data-site-header]:not([data-stuck]):not([data-nav-open])
   a
-  span.text-accent {
-  color: var(--color-accent);
+  span.text-primary {
+  color: var(--color-primary);
 }
 body[data-canvas='dark'] [data-site-header]:not([data-stuck]):not([data-nav-open]) .press {
-  background-color: var(--color-paper);
-  color: var(--color-ink);
+  background-color: var(--paper);
+  color: var(--ink);
 }
 body[data-canvas='dark'] [data-site-header]:not([data-stuck]):not([data-nav-open]) .press:hover {
-  background-color: var(--color-accent);
-  color: var(--color-paper);
+  background-color: var(--color-primary);
+  color: var(--color-on-primary);
 }
 
 @layer components {
+  .heading-anchor,
+  .section-anchor {
+    color: inherit;
+    display: inline;
+    position: relative;
+    text-decoration: none;
+  }
+
+  .heading-anchor__glyph,
+  .section-anchor__glyph {
+    color: var(--color-on-surface-variant);
+    display: inline-block;
+    font-size: 0.68em;
+    font-weight: 700;
+    margin-inline-start: 0.35em;
+    opacity: 0;
+    position: relative;
+    transition:
+      color 150ms ease,
+      opacity 150ms ease;
+  }
+
+  .heading-anchor:hover .heading-anchor__glyph,
+  .heading-anchor:focus-visible .heading-anchor__glyph,
+  .heading-anchor[data-copied] .heading-anchor__glyph,
+  .section-anchor:hover .section-anchor__glyph,
+  .section-anchor:focus-visible .section-anchor__glyph,
+  .section-anchor[data-copied] .section-anchor__glyph {
+    opacity: 1;
+  }
+
+  .heading-anchor[data-copied] .heading-anchor__glyph,
+  .section-anchor[data-copied] .section-anchor__glyph {
+    color: var(--color-primary-ink);
+  }
+
+  .heading-anchor[data-copied] .heading-anchor__glyph::after,
+  .section-anchor[data-copied] .section-anchor__glyph::after {
+    background: var(--color-surface-container);
+    border: 1px solid color-mix(in srgb, var(--color-outline) 18%, transparent);
+    color: var(--color-primary-ink);
+    content: 'Copied';
+    font-size: var(--text-body-sm);
+    font-weight: 400;
+    letter-spacing: 0;
+    line-height: 1;
+    margin-inline-start: 0;
+    padding: 0.3rem 0.45rem;
+    position: absolute;
+    top: 50%;
+    left: calc(100% + 0.45rem);
+    transform: translateY(-50%);
+    white-space: nowrap;
+    z-index: 20;
+  }
+
   .lift {
     /* Always render the shadow shape; modulate opacity via the typed
        --lift-shadow-strength custom property so hover/rest interpolates
        smoothly instead of snapping in/out. */
     --lift-shadow-strength: 0;
     box-shadow: 0 12px 30px -16px
-      color-mix(in srgb, var(--color-ink) calc(var(--lift-shadow-strength) * 25%), transparent);
+      color-mix(
+        in srgb,
+        var(--color-on-surface) calc(var(--lift-shadow-strength) * 25%),
+        transparent
+      );
     transition-property: transform, --lift-shadow-strength, background-color, color, border-color;
     transition-duration: 200ms;
     transition-timing-function: var(--ease-out);
@@ -721,31 +868,70 @@ body[data-canvas='dark'] [data-site-header]:not([data-stuck]):not([data-nav-open
 
   .nav-link {
     position: relative;
+    background-image: linear-gradient(currentColor, currentColor);
+    background-repeat: no-repeat;
+    background-position: left bottom;
+    background-size: 0 2px;
+    padding-bottom: 0.35em;
+    margin-bottom: -0.35em;
+    transition:
+      background-size 200ms var(--ease-out),
+      color 160ms var(--ease-out);
   }
-  .nav-link::after {
-    content: '';
-    position: absolute;
-    left: 0;
-    right: 0;
-    bottom: -6px;
-    height: 2px;
-    background: currentColor;
-    transform: scaleX(0);
-    transform-origin: left;
-    transition: transform 200ms var(--ease-out);
+  [data-site-header] .nav-link[aria-current='page'] {
+    color: var(--color-primary-ink);
   }
-  .nav-link:hover::after,
-  .nav-link[aria-current='page']::after {
-    transform: scaleX(1);
+  .nav-link:hover,
+  .nav-link[aria-current='page'] {
+    background-size: 100% 2px;
   }
   /* On first paint, the active page's underline arrives by scaling in
      from the left edge — matches the hover gesture, so the page feels
      "freshly landed" rather than statically marked. Browsers without
      @starting-style render the final scaleX(1) immediately. */
   @starting-style {
-    .nav-link[aria-current='page']::after {
-      transform: scaleX(0);
+    .nav-link[aria-current='page'] {
+      background-size: 0 2px;
     }
+  }
+
+  :where(
+    a[href^='http://']:not(
+        [href^='http://lasvegasfortransit.org'],
+        [href^='http://www.lasvegasfortransit.org'],
+        .block,
+        .flex,
+        .grid,
+        .inline-flex,
+        [data-external-icon='false']
+      ),
+    a[href^='https://']:not(
+        [href^='https://lasvegasfortransit.org'],
+        [href^='https://www.lasvegasfortransit.org'],
+        .block,
+        .flex,
+        .grid,
+        .inline-flex,
+        [data-external-icon='false']
+      )
+  )::after {
+    content: '\00a0';
+    display: inline;
+    width: var(--external-link-icon-size, 0.86em);
+    height: var(--external-link-icon-size, 0.86em);
+    margin-inline-start: var(--external-link-icon-gap, 0.28em);
+    padding-inline-end: var(--external-link-icon-size, 0.86em);
+    vertical-align: -0.12em;
+    flex: none;
+    background-color: currentColor;
+    -webkit-mask-image: var(--external-link-icon);
+    mask-image: var(--external-link-icon);
+    -webkit-mask-position: right center;
+    mask-position: right center;
+    -webkit-mask-repeat: no-repeat;
+    mask-repeat: no-repeat;
+    -webkit-mask-size: var(--external-link-icon-size, 0.86em) var(--external-link-icon-size, 0.86em);
+    mask-size: var(--external-link-icon-size, 0.86em) var(--external-link-icon-size, 0.86em);
   }
 
   /* Arrow glyph nudge: any element with a `.arrow` span inside a `.lift`,
@@ -761,41 +947,42 @@ body[data-canvas='dark'] [data-site-header]:not([data-stuck]):not([data-nav-open
     transform: translateX(3px);
   }
 
-  /* Compositional aliases over MD3 tokens. Markup uses these semantic
-     classes; they bundle size + transform + color + tracking. */
-
-  .eyebrow {
-    font-size: var(--text-title-sm);
-    line-height: var(--text-title-sm--line-height);
-    letter-spacing: var(--text-title-sm--letter-spacing);
-    font-weight: var(--text-title-sm--font-weight);
-    color: var(--color-mute);
-  }
-
   .lede {
     font-size: var(--text-body-lg);
     line-height: var(--text-body-lg--line-height);
-    color: var(--color-mute);
+    color: var(--color-on-surface-variant);
     text-wrap: pretty;
-    --content-link-color: var(--color-ink);
-    --content-link-hover: var(--color-accent-ink);
-    --content-link-decoration: color-mix(in srgb, var(--color-accent-ink) 70%, transparent);
+    --content-link-color: var(--color-on-surface);
+    --content-link-hover: var(--color-primary-ink);
+    --content-link-decoration: color-mix(in srgb, var(--color-primary-ink) 70%, transparent);
   }
 
   .prose-doc {
     font-size: var(--text-body-md);
     line-height: 1.7;
     text-wrap: pretty;
+    --prose-cite-color: var(--color-on-surface-variant);
     --content-link-color: inherit;
-    --content-link-hover: var(--color-accent-ink);
-    --content-link-decoration: color-mix(in srgb, var(--color-accent-ink) 70%, transparent);
+    --content-link-hover: var(--color-primary-ink);
+    --content-link-decoration: color-mix(in srgb, var(--color-primary-ink) 70%, transparent);
   }
 
-  :is(.lede, .prose-doc).text-paper,
-  .text-paper :is(.lede, .prose-doc) {
-    --content-link-color: var(--color-paper);
-    --content-link-hover: var(--color-accent-soft);
-    --content-link-decoration: color-mix(in srgb, var(--color-accent-soft) 82%, transparent);
+  /* Readable prose wraps "pretty" so paragraphs avoid orphans and stranded short
+     last lines. Headings keep their own text-wrap: balance (set directly on the
+     element above), which wins over this inherited value. */
+  [data-readable] {
+    text-wrap: pretty;
+  }
+
+  /* Content links inside a dark slab: rest at the slab's cream text, hover to
+     peach. Keyed on semantic slab classes so links stay visible on the
+     charcoal slab in dark. */
+  :is(.lede, .prose-doc):is(.bg-slab, .band-ink),
+  :is(.bg-slab, .band-ink) :is(.lede, .prose-doc) {
+    --prose-cite-color: var(--color-on-slab-variant);
+    --content-link-color: var(--color-on-slab);
+    --content-link-hover: var(--color-primary-soft);
+    --content-link-decoration: color-mix(in srgb, var(--color-primary-soft) 82%, transparent);
   }
 
   :where(
@@ -832,7 +1019,7 @@ body[data-canvas='dark'] [data-site-header]:not([data-stuck]):not([data-nav-open
     .vision-page .vision-prose a,
     .vision-page .close-pointers li a
   ):focus-visible {
-    color: var(--content-link-hover, var(--color-accent-ink));
+    color: var(--content-link-hover, var(--color-primary-ink));
     text-decoration-color: currentColor;
     text-decoration-thickness: 0.16em;
   }
@@ -846,7 +1033,7 @@ body[data-canvas='dark'] [data-site-header]:not([data-stuck]):not([data-nav-open
 
   .contact-link:hover,
   .contact-link:focus-visible {
-    color: var(--color-accent-ink);
+    color: var(--color-primary-ink);
     text-decoration-color: currentColor;
     text-decoration-thickness: 0.16em;
   }
@@ -859,10 +1046,10 @@ body[data-canvas='dark'] [data-site-header]:not([data-stuck]):not([data-nav-open
   }
 
   /* Body content adjacency — only between text-block siblings. Headings get
-     their own uniform rem-based margin (below) so they look the same
+     their own uniform content-scaled margin (below) so they look the same
      wherever they land in the document. */
   .prose-doc :is(p, ul, ol, blockquote) + :is(p, ul, ol, blockquote) {
-    margin-top: 1.25em;
+    margin-top: 0.9em;
   }
 
   .prose-doc h2 {
@@ -907,11 +1094,11 @@ body[data-canvas='dark'] [data-site-header]:not([data-stuck]):not([data-nav-open
   }
 
   .prose-doc li {
-    margin-block: 0.35em;
+    margin-block: 0.18em;
   }
 
   .prose-doc li::marker {
-    color: var(--color-mute);
+    color: var(--color-on-surface-variant);
   }
 
   .prose-doc li > p {
@@ -921,7 +1108,7 @@ body[data-canvas='dark'] [data-site-header]:not([data-stuck]):not([data-nav-open
   .prose-doc ul ul,
   .prose-doc ol ul {
     list-style-type: circle;
-    margin-block: 0.4em;
+    margin-block: 0.25em;
   }
 
   .prose-doc strong {
@@ -929,7 +1116,7 @@ body[data-canvas='dark'] [data-site-header]:not([data-stuck]):not([data-nav-open
   }
 
   .prose-doc blockquote {
-    border-left: 4px solid var(--color-accent);
+    border-left: 4px solid var(--color-primary);
     padding-left: 1.25rem;
     font-size: var(--text-body-lg);
     line-height: 1.4;
@@ -943,7 +1130,7 @@ body[data-canvas='dark'] [data-site-header]:not([data-stuck]):not([data-nav-open
     font-size: var(--text-body-sm);
     font-weight: 600;
     font-style: normal;
-    color: var(--color-mute);
+    color: var(--prose-cite-color);
   }
 
   .container-prose {
@@ -995,7 +1182,17 @@ body[data-canvas='dark'] [data-site-header]:not([data-stuck]):not([data-nav-open
   }
 
   .rule-thick {
-    border-top: 6px solid var(--color-ink);
+    border-top: 6px solid var(--color-outline-variant);
+  }
+
+  hr.rule-thick,
+  hr.rule-thin {
+    border-right: 0;
+    border-bottom: 0;
+    border-left: 0;
+    color: inherit;
+    height: 0;
+    opacity: 1;
   }
 
   /* hr.border draws at the outer edge, not the content edge.
@@ -1006,8 +1203,7 @@ body[data-canvas='dark'] [data-site-header]:not([data-stuck]):not([data-nav-open
   }
 
   .rule-thin {
-    border-top: 1px solid var(--color-rule);
-    opacity: 0.18;
+    border-top: 1px solid color-mix(in srgb, var(--color-outline-variant) 50%, var(--color-surface));
   }
 
   /* Bold flourish: horizontal stripes and section dividers draw themselves
@@ -1105,7 +1301,7 @@ body[data-canvas='dark'] [data-site-header]:not([data-stuck]):not([data-nav-open
     }
   }
 
-  /* Newsletter input focus polish: a 4px accent strip rides the bottom of
+  /* Newsletter input focus polish: a 4px primary strip rides the bottom of
      the input when :focus-visible, layered as inset box-shadow so no DOM
      wrapper is needed. The global :focus-visible outline still applies
      on top — these compose rather than replace each other. */
@@ -1115,7 +1311,7 @@ body[data-canvas='dark'] [data-site-header]:not([data-stuck]):not([data-nav-open
       border-color 180ms var(--ease-out);
   }
   [data-newsletter-form] input[type='email']:focus-visible {
-    box-shadow: inset 0 -4px 0 var(--color-accent);
+    box-shadow: inset 0 -4px 0 var(--color-primary);
   }
 
   /* Status message slides + fades in once content arrives. Empty state
@@ -1131,5 +1327,30 @@ body[data-canvas='dark'] [data-site-header]:not([data-stuck]):not([data-nav-open
   [data-form-status]:not(:empty) {
     opacity: 1;
     transform: none;
+  }
+}
+
+/* ── Ember glow (dark only) ───────────────────────────────────────────────
+   "A light in the dark." MD3 dark expresses elevation tonally, not with drop
+   shadows — so this glow is a deliberate BRAND flourish, reserved for primary
+   (Ember) CTAs and applied only in dark. It is a static box-shadow (no
+   keyframe pulsing); the .press box-shadow transition is already capped to
+   0.01ms under prefers-reduced-motion, so the hover intensification degrades
+   to an instant change. Kept sparing: primary CTAs and an opt-in .glow-ember
+   only — never large surfaces. Unlayered so it composes over utilities. */
+@media (prefers-color-scheme: dark) {
+  .glow-ember,
+  .press.bg-primary {
+    box-shadow:
+      0 0 0 1px color-mix(in srgb, var(--color-primary) 35%, transparent),
+      0 6px 26px -8px color-mix(in srgb, var(--color-primary) 45%, transparent);
+  }
+  .glow-ember:hover,
+  .glow-ember:focus-visible,
+  .press.bg-primary:hover,
+  .press.bg-primary:focus-visible {
+    box-shadow:
+      0 0 0 1px color-mix(in srgb, var(--color-primary) 55%, transparent),
+      0 10px 34px -8px color-mix(in srgb, var(--color-primary) 60%, transparent);
   }
 }

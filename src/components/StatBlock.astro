@@ -11,6 +11,6 @@ const { value, label, context } = Astro.props;
   <span class="block text-[clamp(3.5rem,9vw,7rem)] font-black leading-none tracking-tighter tnum"
     >{value}</span
   >
-  <span class="eyebrow">{label}</span>
-  {context && <p class="text-sm text-mute max-w-xs">{context}</p>}
+  <span class="text-title-sm font-bold text-on-surface-variant">{label}</span>
+  {context && <p class="text-sm text-on-surface-variant max-w-xs">{context}</p>}
 </div>

@@ -24,13 +24,15 @@ const monthYear = new Intl.DateTimeFormat('en-US', { month: 'short', year: 'nume
       <h2 class="text-2xl font-bold tracking-tight">Goals</h2>
       <ul class="mt-5 space-y-5 list-none pl-0">
         {goals.map((goal) => (
-          <li class="border-l-2 border-rule/30 pl-4">
+          <li class="border-l-2 border-outline-variant/30 pl-4">
             <div class="flex flex-wrap items-baseline gap-x-3 gap-y-1">
               <GoalStatusPill status={goal.status} />
               <p class="text-base leading-snug">{goal.text}</p>
             </div>
             {goal.target && (
-              <p class="mt-1.5 text-[0.7rem] text-mute">Target {monthYear.format(goal.target)}</p>
+              <p class="mt-1.5 text-[0.7rem] text-on-surface-variant">
+                Target {monthYear.format(goal.target)}
+              </p>
             )}
           </li>
         ))}

@@ -52,35 +52,35 @@ const {
   .site-search__form input {
     min-height: 3rem;
     width: 100%;
-    border: 2px solid var(--color-ink);
-    background: var(--color-paper);
+    border: 2px solid var(--color-outline);
+    background: var(--color-surface);
     padding: 0.75rem 0.9rem;
-    color: var(--color-ink);
+    color: var(--color-on-surface);
   }
 
   .site-search__form input:focus-visible {
-    outline: 3px solid var(--color-accent);
+    outline: 3px solid var(--color-primary);
     outline-offset: 2px;
   }
 
   .site-search__form button {
     min-height: 3rem;
-    border: 2px solid var(--color-ink);
-    background: var(--color-ink);
+    border: 2px solid var(--color-on-surface);
+    background: var(--color-on-surface);
     padding: 0.65rem 1rem;
-    color: var(--color-paper);
+    color: var(--color-surface);
     cursor: pointer;
   }
 
   .site-search__form button:hover,
   .site-search__form button:focus-visible {
-    background: var(--color-accent);
-    color: var(--color-ink);
+    background: var(--color-primary);
+    color: var(--color-on-primary);
   }
 
   .site-search__status {
     margin-top: 0.5rem;
-    color: var(--color-mute);
+    color: var(--color-on-surface-variant);
   }
 
   .site-search__results {
@@ -90,29 +90,29 @@ const {
   }
 
   .site-search__result {
-    border-top: 1px solid color-mix(in srgb, var(--color-ink) 18%, transparent);
+    border-top: 1px solid color-mix(in srgb, var(--color-outline-variant) 18%, transparent);
     padding-top: 0.75rem;
   }
 
   .site-search__result a {
-    color: var(--color-ink);
-    text-decoration-color: var(--color-accent);
+    color: var(--color-on-surface);
+    text-decoration-color: var(--color-primary);
     text-decoration-thickness: 0.16em;
     text-underline-offset: 0.2em;
   }
 
   .site-search__result a:hover,
   .site-search__result a:focus-visible {
-    color: var(--color-accent-ink);
+    color: var(--color-primary-ink);
   }
 
   .site-search__result p {
     margin-top: 0.25rem;
-    color: var(--color-mute);
+    color: var(--color-on-surface-variant);
   }
 
   .site-search__result mark {
-    background: var(--color-accent-soft);
+    background: var(--color-primary-soft);
     color: inherit;
   }
 

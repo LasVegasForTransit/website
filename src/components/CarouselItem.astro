@@ -16,9 +16,11 @@ const target = external ? '_blank' : undefined;
   target={target}
   class:list={[
     'snap-start shrink-0 w-[18rem] md:w-[22rem] border p-6 md:p-8 no-underline',
-    pending ? 'border-dashed border-ink/40 bg-transparent text-mute' : 'border-ink bg-paper',
+    pending
+      ? 'border-dashed border-outline-variant/40 bg-transparent text-on-surface-variant'
+      : 'border-outline bg-surface-container',
     href && 'lift',
-    href && !pending && 'hover:bg-ink hover:text-paper',
+    href && !pending && 'hover:bg-slab hover:text-on-slab',
   ]}
 >
   <slot />
