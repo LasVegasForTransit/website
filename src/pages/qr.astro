@@ -161,25 +161,38 @@ const slideCodes = new Map(slides.map((slide) => [slide.id, qrSvg(slide.url)]));
             <h2>Scan to get involved</h2>
           </header>
 
+          {
+            /* Two sections (not one flat list) so the "2 columns" the deck
+               and the printed page both want is real grid-template-columns
+               on .qr-flyer-grid itself — matching how print-link-sheet's own
+               3-section layout works, just with 2 groups instead of 3. */
+          }
           <div class="qr-flyer-grid print-link-sheet__grid">
-            <div class="print-link-sheet__section">
-              <ul>
-                {
-                  slides.map((slide) => (
-                    <li>
-                      <a href={slide.url} class="qr-flyer-entry">
-                        <div class="qr-flyer-code" set:html={slideCodes.get(slide.id)} />
-                        <span class="print-link-sheet__label">{slide.label}</span>
-                        <span class="qr-flyer-value print-link-sheet__url">
-                          <UrlChunks url={slide.displayUrl} />
-                        </span>
-                        {slide.handle && <span class="print-link-sheet__path">{slide.handle}</span>}
-                      </a>
-                    </li>
-                  ))
-                }
-              </ul>
-            </div>
+            {
+              [
+                slides.slice(0, Math.ceil(slides.length / 2)),
+                slides.slice(Math.ceil(slides.length / 2)),
+              ].map((group) => (
+                <div class="print-link-sheet__section">
+                  <ul>
+                    {group.map((slide) => (
+                      <li>
+                        <a href={slide.url} class="qr-flyer-entry">
+                          <div class="qr-flyer-code" set:html={slideCodes.get(slide.id)} />
+                          <span class="print-link-sheet__label">{slide.label}</span>
+                          <span class="qr-flyer-value print-link-sheet__url">
+                            <UrlChunks url={slide.displayUrl} />
+                          </span>
+                          {slide.handle && (
+                            <span class="print-link-sheet__path">{slide.handle}</span>
+                          )}
+                        </a>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ))
+            }
           </div>
         </div>
       </article>
@@ -230,7 +243,7 @@ const slideCodes = new Map(slides.map((slide) => [slide.id, qrSvg(slide.url)]));
         color-mix(in srgb, var(--color-primary) 24%, transparent),
         transparent 20rem
       ),
-      linear-gradient(135deg, var(--ink) 0%, #191511 48%, var(--ink) 100%);
+      linear-gradient(135deg, var(--ink) 0%, var(--charcoal-1) 48%, var(--ink) 100%);
     color: var(--paper);
     overflow: hidden;
   }
@@ -519,12 +532,12 @@ const slideCodes = new Map(slides.map((slide) => [slide.id, qrSvg(slide.url)]));
 
   .qr-flyer-grid {
     display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 1rem;
   }
 
   .qr-flyer-grid ul {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(min(100%, 20rem), 1fr));
     gap: 1rem;
     list-style: none;
     margin: 0;
@@ -623,6 +636,112 @@ const slideCodes = new Map(slides.map((slide) => [slide.id, qrSvg(slide.url)]));
     .qr-flyer-code {
       flex-shrink: 0;
       width: 1.5in !important;
+    }
+  }
+
+  /* /qr print layout — scan cards become one flyer page each. Lives here
+     (not in the sitewide print stylesheet) so only this route ships it;
+     the shared print rules in src/styles/print.css still apply underneath. */
+  @media print {
+    :global(body[data-canvas='dark']) .qr-deck {
+      background: transparent !important;
+    }
+
+    .qr-deck {
+      display: block !important;
+      height: auto !important;
+      overflow: visible !important;
+      scroll-snap-type: none !important;
+    }
+
+    /* Each scan card fills its own page edge to edge (minus a narrow outer
+     inset) rather than sitting as a small centered card in mostly-empty
+     paper. `height` (not min-height) gives `.qr-shell` a definite box to
+     resolve its own 100% height against, which is what lets the QR code's
+     row actually grow to fill the page instead of just sizing to content. */
+    .qr-slide {
+      display: grid !important;
+      width: auto !important;
+      min-width: 0 !important;
+      height: var(--print-page-content-height) !important;
+      padding: 0.35in 0.2in !important;
+      place-items: stretch !important;
+      break-after: page !important;
+      page-break-after: always !important;
+    }
+
+    .qr-slide:last-child {
+      break-after: auto !important;
+      page-break-after: auto !important;
+    }
+
+    .qr-flyer-slide {
+      background: var(--paper) !important;
+      color: var(--ink) !important;
+    }
+
+    /* No fill — plain paper (no ink) behind the card. Only the border (a
+     thin line, negligible ink) and the QR code's own necessary black
+     modules cost anything to print. Border weight matches
+     [data-print-link-sheet]'s (1.75pt) for consistency with the flyer
+     page, the other print artifact on this same page. */
+    .qr-shell {
+      width: 100% !important;
+      height: 100% !important;
+      min-height: 0 !important;
+      margin-inline: 0 !important;
+      display: grid !important;
+      grid-template-rows: auto 1fr auto !important;
+      align-items: center !important;
+      justify-items: center !important;
+      gap: 0.3in !important;
+      padding: 0.3in !important;
+      border: 1.75pt solid var(--ink) !important;
+      background: none !important;
+      color: var(--ink) !important;
+      backdrop-filter: none !important;
+    }
+
+    /* Anchored to the top of its row (not vertically centered) and stretched
+     to the shell's full width — the card's "top thing" reads as a proper
+     header instead of floating mid-page. Sized to read from a few feet
+     away, not just up close — this is a handout, not a page of body text. */
+    .qr-copy {
+      align-self: start !important;
+      justify-self: stretch !important;
+      text-align: center !important;
+    }
+
+    .qr-copy h2 {
+      max-width: none !important;
+      font-size: 44pt !important;
+      line-height: 1.02 !important;
+    }
+
+    .qr-copy p:last-child {
+      max-width: none !important;
+      margin-top: 0.12in !important;
+      font-size: 22pt !important;
+    }
+
+    /* The page fills edge to edge (see .qr-slide/.qr-shell above) — the code
+     itself stays a normal, functional size and centers in the 1fr row's
+     leftover space rather than growing to fill it. A code the height of
+     the page is unnecessary for scanning and wastes ink/paper. */
+    .qr-code {
+      width: 3.5in !important;
+      max-width: 100% !important;
+      padding: 0.12in !important;
+    }
+
+    .qr-link-row {
+      font-size: 18pt !important;
+    }
+
+    .qr-copy h2,
+    .qr-copy p,
+    .qr-link-row a {
+      color: var(--ink) !important;
     }
   }
 </style>
