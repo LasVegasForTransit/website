@@ -1,0 +1,170 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import PageHero from '../components/PageHero.astro';
+import { Icon } from 'astro-icon/components';
+import { getCollection } from 'astro:content';
+import { byOrderThenTitle, isActiveProject } from '../lib/projects';
+import { paths } from '../lib/paths';
+
+const projects = await getCollection(
+  'projects',
+  (entry) => !entry.id.startsWith('_') && !isActiveProject(entry),
+);
+const initiatives = await getCollection('initiatives');
+
+const sorted = [...projects].sort(byOrderThenTitle);
+const initiativesById = new Map(initiatives.map((initiative) => [initiative.id, initiative]));
+const monthFormatter = new Intl.DateTimeFormat('en', {
+  month: 'long',
+  timeZone: 'UTC',
+  year: 'numeric',
+});
+
+const QUARTER_NAMES = ['January-March', 'April-June', 'July-September', 'October-December'];
+const QUARTER_DESCRIPTIONS = [
+  'Future work starts here, then moves when the right lead, partner, or public moment is ready.',
+  'Early groundwork: public education, meeting coverage, and the basic research habits a serious transit organization needs.',
+  'Summer and early fall are about finding people: students, neighbors, artists, and residents who can help make the work public.',
+  'Late 2026 is for projects that need more setup before they can ask the public to show up.',
+];
+
+type TimelineGroup = {
+  quarter: string;
+  title: string;
+  description: string;
+  projects: typeof sorted;
+};
+
+const timelineByKey = new Map<string, TimelineGroup>();
+
+for (const project of [...sorted].sort(
+  (a, b) =>
+    a.data.startDate.getTime() - b.data.startDate.getTime() ||
+    (a.data.order ?? 999) - (b.data.order ?? 999) ||
+    a.data.title.localeCompare(b.data.title),
+)) {
+  const date = project.data.startDate;
+  const year = date.getUTCFullYear();
+  const quarterIndex = Math.floor(date.getUTCMonth() / 3);
+  const key = `${year}-${quarterIndex}`;
+
+  if (!timelineByKey.has(key)) {
+    timelineByKey.set(key, {
+      quarter: `${year}Q${quarterIndex + 1}`,
+      title: `${QUARTER_NAMES[quarterIndex]} ${year}`,
+      description: QUARTER_DESCRIPTIONS[quarterIndex],
+      projects: [],
+    });
+  }
+  timelineByKey.get(key)?.projects.push(project);
+}
+
+const timelineGroups = [...timelineByKey.values()];
+---
+
+<BaseLayout
+  title="Roadmap"
+  description="LVBT's broad plan for building toward world-class public transportation in Southern Nevada."
+>
+  <PageHero
+    title="Roadmap"
+    lede="We have a long road ahead of us. This is how we get to our goal of world-class public transportation."
+  >
+    <a
+      href="/go"
+      data-screen-action
+      class="mt-8 inline-flex bg-primary px-5 py-3 font-bold text-on-primary no-underline hover:bg-on-surface hover:text-surface focus-visible:bg-on-surface focus-visible:text-surface"
+    >
+      Help with a future project
+    </a>
+  </PageHero>
+  <hr class="rule-thick container-page" />
+
+  <section class="container-page py-16 md:py-20">
+    <div class="max-w-3xl">
+      <h2 class="text-headline-md">About the Roadmap</h2>
+      <div class="mt-5 space-y-3 text-body-lg leading-relaxed text-on-surface-variant">
+        <p>
+          Las Vegans for Better Transit is building the public, political, and civic capacity the
+          Valley needs to win better transit.
+        </p>
+        <p>
+          This roadmap shows the work we are preparing next and where new volunteers, partners, and
+          members of the public can step in.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  {
+    timelineGroups.map((group) => {
+      return (
+        <section
+          id={group.title.toLowerCase().replaceAll(' ', '-')}
+          class="container-page pb-16 md:pb-20 scroll-mt-24"
+        >
+          <div class="grid gap-8 lg:grid-cols-[minmax(14rem,22rem)_minmax(0,1fr)]">
+            <div class="min-w-0 lg:sticky lg:top-24 lg:self-start">
+              {group.quarter && (
+                <span class="mb-2 block text-title-sm font-bold text-primary-ink">
+                  {group.quarter}
+                </span>
+              )}
+              <h2 class="text-headline-md">{group.title}</h2>
+              <p class="mt-4 text-body-lg leading-relaxed text-on-surface-variant">
+                {group.description}
+              </p>
+            </div>
+            <div class="grid gap-4">
+              {group.projects.map((project) => (
+                <a
+                  href={paths.project(project.id)}
+                  data-print-card
+                  data-print-url={paths.project(project.id)}
+                  class="group grid gap-4 border border-outline-variant/30 bg-surface-container p-5 no-underline transition-colors hover:bg-slab hover:text-on-slab focus-visible:bg-slab focus-visible:text-on-slab md:grid-cols-[minmax(0,1fr)_auto]"
+                >
+                  <div class="min-w-0">
+                    <h3 class="text-title-md">{project.data.title}</h3>
+                    <p class="mt-2 text-sm font-bold text-on-surface-variant group-hover:text-on-slab/75 group-focus-visible:text-on-slab/75">
+                      Target start: {monthFormatter.format(project.data.startDate)}
+                    </p>
+                    <p class="mt-2 text-body-md leading-relaxed text-on-surface-variant group-hover:text-on-slab/75 group-focus-visible:text-on-slab/75">
+                      {project.data.tldr}
+                    </p>
+                    <p class="mt-3 text-sm leading-relaxed text-on-surface-variant group-hover:text-on-slab/75 group-focus-visible:text-on-slab/75">
+                      Strategic area:{' '}
+                      {project.data.initiatives
+                        .map((id) => initiativesById.get(id)?.data.title ?? id)
+                        .join(', ')}
+                    </p>
+                  </div>
+                  <span class="flex items-center gap-2 self-start font-bold">
+                    Read brief
+                    <Icon name="mdi:arrow-right" aria-hidden="true" class="size-5" />
+                  </span>
+                </a>
+              ))}
+            </div>
+          </div>
+        </section>
+      );
+    })
+  }
+
+  <section data-print-callout class="bg-primary-container text-on-primary-container">
+    <div class="container-page py-16 md:py-20">
+      <h2 class="text-headline-lg max-w-3xl">Want to help turn a future project into real work?</h2>
+      <p class="mt-6 max-w-2xl text-body-lg leading-relaxed">
+        We are looking for people who can lead a small project, connect us to a partner, host a
+        conversation, or help with research and outreach.
+      </p>
+      <a
+        href="/go"
+        data-screen-action
+        class="mt-8 inline-flex bg-primary px-5 py-3 font-bold text-on-primary no-underline hover:bg-on-surface hover:text-surface focus-visible:bg-on-surface focus-visible:text-surface"
+      >
+        Tell us what you can take on
+      </a>
+    </div>
+  </section>
+</BaseLayout>
