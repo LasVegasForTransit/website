@@ -25,6 +25,14 @@ runs:
       shell: bash
       run: pnpm lint:check
 
+    - name: Stylesheet lint
+      shell: bash
+      run: pnpm exec stylelint 'src/styles/*.css' 'src/**/*.module.css'
+
+    - name: Brand token drift check
+      shell: bash
+      run: pnpm exec tsx scripts/audit/brand-tokens.ts
+
     - name: Validate doc links
       shell: bash
       run: pnpm check:docs
