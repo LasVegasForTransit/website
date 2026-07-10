@@ -35,10 +35,10 @@ function apply(root: HTMLElement, now: Date): void {
       const live = relative.kind === 'live';
       const pill = badge.querySelector<HTMLElement>('[data-event-badge-pill]');
       if (pill) {
-        pill.classList.toggle('bg-accent', live);
-        pill.classList.toggle('text-paper', live);
-        pill.classList.toggle('bg-accent-soft', !live);
-        pill.classList.toggle('text-ink', !live);
+        pill.classList.toggle('bg-primary', live);
+        pill.classList.toggle('text-on-primary', live);
+        pill.classList.toggle('bg-primary-container', !live);
+        pill.classList.toggle('text-on-primary-container', !live);
       }
       const dot = badge.querySelector<HTMLElement>('[data-event-badge-dot]');
       if (dot) dot.hidden = !live;

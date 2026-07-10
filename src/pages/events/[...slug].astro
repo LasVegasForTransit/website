@@ -2,8 +2,9 @@
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import StructuredData from '../../components/seo/StructuredData.astro';
 import ShareButton from '../../components/ShareButton.astro';
+import Breadcrumbs from '../../components/Breadcrumbs.astro';
 import { eventSchema } from '../../lib/structured-data';
-import { site } from '../../lib/site';
+import { paths, canonicalUrl } from '../../lib/paths';
 import { getCollection, getEntry, render } from 'astro:content';
 import EventBadgePill from '../../components/EventBadgePill.astro';
 import { whereLabel } from '../../lib/event-format';
@@ -32,7 +33,7 @@ const { event } = Astro.props;
 const fragment = await getEntry('eventBodies', event.id);
 const FragmentContent = fragment ? (await render(fragment)).Content : null;
 const calendarBodyHtml = !FragmentContent && event.data.body ? event.data.body : null;
-const eventUrl = new URL(Astro.url.pathname, site.url).toString();
+const eventUrl = canonicalUrl(Astro.url.pathname);
 
 const dateLabel = new Intl.DateTimeFormat('en-US', {
   weekday: 'long',
@@ -79,7 +80,7 @@ const icsHref = `/events/${event.id}.ics`;
     data-start={event.data.date.toISOString()}
     data-end={event.data.endDate ? event.data.endDate.toISOString() : undefined}
   >
-    <p class="eyebrow"><a href="/events" class="no-underline hover:underline">← All events</a></p>
+    <Breadcrumbs section={{ name: 'Events', href: paths.events }} current={event.data.title} />
     {
       /* Headline-lg on mobile keeps "General Meeting" on one line;
         display-md on desktop is large enough to anchor the page but
@@ -115,21 +116,23 @@ const icsHref = `/events/${event.id}.ics`;
         format pill above the title was redundant with this dl and has
         been removed. */
     }
-    <dl class="mt-8 md:mt-10 grid grid-cols-2 gap-x-8 gap-y-5 md:gap-y-6 max-w-2xl">
+    <dl class="mt-8 grid max-w-2xl grid-cols-1 gap-x-8 gap-y-5 sm:grid-cols-2 md:mt-10 md:gap-y-6">
       <div>
-        <dt class="eyebrow">When</dt>
-        <dd class="mt-1 text-base font-semibold">
-          <time datetime={event.data.date.toISOString()}>{dateLabel} · {timeLabel}</time>
+        <dt class="text-title-sm text-on-surface-variant">When</dt>
+        <dd class="mt-1 flex flex-wrap items-baseline gap-x-2 gap-y-1 text-base font-semibold">
+          <time datetime={event.data.date.toISOString()} class="min-w-0">
+            {dateLabel} · {timeLabel}
+          </time>
           <span
             data-event-inline
             hidden={!inlineRelative}
-            class="ml-2 font-normal text-[color:var(--color-mute)]"
-            >· <span data-event-inline-text>{inlineRelative ?? ''}</span></span
+            class="inline-flex whitespace-nowrap font-normal text-[color:var(--color-on-surface-variant)]"
+            ><span data-event-inline-text>{inlineRelative ?? ''}</span></span
           >
         </dd>
       </div>
       <div>
-        <dt class="eyebrow">Where</dt>
+        <dt class="text-title-sm text-on-surface-variant">Where</dt>
         <dd class="mt-1 text-base font-semibold">{whereLabel(location)}</dd>
       </div>
     </dl>
@@ -138,7 +141,7 @@ const icsHref = `/events/${event.id}.ics`;
       /* Action row sits AFTER the When/Where data so the visitor has read
         what the event is and where/when it's happening before being asked
         to commit. A definition list (dl) is for data — a button isn't
-        data, so it lives outside the dl with no eyebrow restating the
+        data, so it lives outside the dl with no label restating the
         button text. Order: primary (Join) → registration (RSVP) →
         utility (Add to calendar, Share). */
     }
@@ -153,10 +156,11 @@ const icsHref = `/events/${event.id}.ics`;
         showJoin && (
           <a
             href={joinUrl}
-            class="press inline-flex items-center bg-accent text-ink px-5 py-3 text-sm font-bold no-underline hover:bg-ink hover:text-paper"
+            data-print-url={joinUrl}
+            class="press inline-flex items-center bg-primary text-on-primary px-5 py-3 text-sm font-bold no-underline hover:bg-on-surface hover:text-surface"
             rel="noopener"
           >
-            Join →
+            Join
           </a>
         )
       }
@@ -164,16 +168,18 @@ const icsHref = `/events/${event.id}.ics`;
         showRsvp && (
           <a
             href={event.data.rsvpUrl}
-            class="press inline-flex items-center border-2 border-ink px-5 py-3 text-sm font-bold no-underline hover:bg-ink hover:text-paper"
+            data-print-url={event.data.rsvpUrl}
+            class="press inline-flex items-center border-2 border-outline px-5 py-3 text-sm font-bold no-underline hover:bg-on-surface hover:text-surface"
             rel="noopener"
           >
-            RSVP →
+            RSVP
           </a>
         )
       }
       <a
         href={icsHref}
-        class="press inline-flex items-center border-2 border-ink px-5 py-3 text-sm font-bold no-underline hover:bg-ink hover:text-paper"
+        data-print-url={icsHref}
+        class="press inline-flex items-center border-2 border-outline px-5 py-3 text-sm font-bold no-underline hover:bg-on-surface hover:text-surface"
       >
         Add to calendar →
       </a>

@@ -1,6 +1,7 @@
 ---
+import { Icon } from 'astro-icon/components';
 import BaseLayout from '../../layouts/BaseLayout.astro';
-import SectionHeader from '../../components/SectionHeader.astro';
+import PageHero from '../../components/PageHero.astro';
 import EventCard from '../../components/EventCard.astro';
 import { getCollection } from 'astro:content';
 import { whereLabel } from '../../lib/event-format';
@@ -26,99 +27,122 @@ const otherUpcoming = featured ? upcoming.filter((e) => e.id !== featured.id) : 
   title="Events"
   description="Upcoming LVBT meetings, walks, teach-ins, and organizing actions for better transit in the Las Vegas Valley."
 >
-  <header class="container-page pt-20 pb-12 md:pt-28 md:pb-16">
-    <SectionHeader title="Events" />
-  </header>
-  <hr class="rule-thick container-page" />
+  <PageHero
+    title="Events"
+    lede="Meetings, walks, teach-ins, and organizing actions for people who want better transit in the Las Vegas Valley."
+  />
 
-  <section class="container-page py-12">
-    <h2 class="text-headline-lg">Upcoming</h2>
-    {
-      /* Cadence hint — names the rhythm so a newcomer doesn't have to
-        scan eight cards to figure out we meet monthly. Static copy, no
-        schema.org recurring-event claim; that would need
-        Event.eventSchedule and a separate validation pass. */
-    }
-    {
-      upcoming.length > 0 && (
-        <p class="mt-3 text-sm text-[color:var(--color-mute)]">
-          General meetings — first Thursday of every month, 6:00 PM PT.
-        </p>
-      )
-    }
-    {
-      /* The Google Calendar is the source of truth for event metadata —
-        the page rebuilds against it on a schedule. Surfacing the link
-        gives readers a one-click subscribe path and a fallback if a
-        rebuild lags behind a recent change. */
-    }
-    <p class="mt-2 text-sm text-[color:var(--color-mute)]">
-      Subscribe in{' '}
-      <a href={site.calendar.url} rel="noopener" target="_blank"> Google Calendar </a>{' '}
-      — that's where event details are kept up to date.
-    </p>
-    {
-      upcoming.length === 0 ? (
-        <div class="mt-8 max-w-2xl space-y-6">
-          <p class="lede">
-            We're scheduling our first public events. Coalition meetings, neighborhood walks,
-            organizing teach-ins, and Carson&nbsp;City delegations will all land here.
+  <div class="container-page">
+    <hr class="rule-thick" />
+  </div>
+
+  <div class="container-page py-12 md:py-16">
+    <section>
+      <div class="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(18rem,24rem)] lg:items-start">
+        <div class="max-w-3xl">
+          <h2 class="text-headline-lg">Upcoming events</h2>
+          <p class="mt-4 text-body-lg leading-relaxed text-on-surface-variant text-pretty">
+            Show up to meet other riders, learn what decisions are moving, and help turn transit
+            advocacy into public pressure.
           </p>
-          <p class="leading-relaxed text-mute">
-            Subscribe and we'll send the first one to your inbox before it goes anywhere else. If
-            you'd like to host a meeting for your community — a faith group, labor local, school,
-            neighborhood — email{' '}
-            <a href="mailto:hello@lasvegasfortransit.org">hello@lasvegasfortransit.org</a>.
-          </p>
+          {
+            upcoming.length > 0 && (
+              <p class="mt-4 text-body-md leading-relaxed text-on-surface-variant">
+                Member meetings are usually the second Thursday of the month at 6:00 PM PT.
+              </p>
+            )
+          }
+        </div>
+
+        <div>
           <a
-            href="/go#newsletter"
-            class="press inline-flex items-center bg-ink text-paper px-6 py-3 font-bold no-underline hover:bg-accent"
+            href={site.calendar.url}
+            rel="noopener"
+            target="_blank"
+            class="group flex min-w-0 max-w-sm items-start gap-3 bg-primary-container p-5 text-on-primary-container no-underline transition-colors hover:bg-on-surface hover:text-surface focus-visible:bg-on-surface focus-visible:text-surface"
           >
-            Subscribe →
+            <Icon
+              name="mdi:calendar-month-outline"
+              class="mt-1 size-5 shrink-0"
+              aria-hidden="true"
+            />
+            <span>
+              <span class="block text-title-md">Subscribe in Google Calendar</span>
+              <span
+                class="mt-2 block text-body-sm leading-relaxed text-on-primary-container/80 group-hover:text-surface/75 group-focus-visible:text-surface/75"
+              >
+                Event details are kept there first when plans change.
+              </span>
+            </span>
           </a>
         </div>
-      ) : (
-        <div class="mt-8 space-y-12">
-          {featured && <EventCard event={featured} featured />}
-          {otherUpcoming.length > 0 && (
-            <div class="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-              {otherUpcoming.map((e) => (
-                <EventCard event={e} />
-              ))}
-            </div>
-          )}
-        </div>
+      </div>
+
+      {
+        upcoming.length === 0 ? (
+          <div class="mt-10 max-w-2xl">
+            <p class="text-body-lg leading-relaxed text-pretty">
+              We're scheduling our first public events. Coalition meetings, neighborhood walks,
+              organizing teach-ins, and Carson&nbsp;City delegations will all land here.
+            </p>
+            <p class="mt-5 text-body-md leading-relaxed text-on-surface-variant">
+              Subscribe and we'll send the first one to your inbox before it goes anywhere else. If
+              you'd like to host a meeting for your community — a faith group, labor local, school,
+              neighborhood — email{' '}
+              <a href="mailto:hello@lasvegasfortransit.org">hello@lasvegasfortransit.org</a>.
+            </p>
+            <a
+              href="/go#newsletter"
+              class="press mt-6 inline-flex items-center bg-on-surface px-6 py-3 text-title-sm text-surface no-underline hover:bg-primary hover:text-on-primary focus-visible:bg-primary focus-visible:text-on-primary"
+            >
+              Subscribe →
+            </a>
+          </div>
+        ) : (
+          <div class="mt-10 space-y-8 md:mt-12 md:space-y-10">
+            {featured && <EventCard event={featured} featured />}
+            {otherUpcoming.length > 0 && (
+              <div class="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+                {otherUpcoming.map((e) => (
+                  <EventCard event={e} />
+                ))}
+              </div>
+            )}
+          </div>
+        )
+      }
+    </section>
+
+    {
+      past.length > 0 && (
+        <section class="pt-16 md:pt-20">
+          <h2 class="text-headline-lg">Past events</h2>
+          <ul class="mt-8 border-y border-outline-variant/20">
+            {past.map((e) => {
+              const dateLabel = new Intl.DateTimeFormat('en-US', {
+                month: 'short',
+                day: 'numeric',
+                year: 'numeric',
+                timeZone: TIMEZONE,
+              }).format(e.data.date);
+              return (
+                <li>
+                  <a
+                    href={`/events/${e.id}`}
+                    class="press group -mx-4 grid gap-2 border-b border-outline-variant/20 px-4 py-5 no-underline transition-colors last:border-b-0 hover:bg-on-surface hover:text-surface focus-visible:bg-on-surface focus-visible:text-surface md:grid-cols-[9rem_minmax(0,1fr)_minmax(10rem,auto)] md:items-baseline md:gap-6"
+                  >
+                    <span class="text-body-sm text-on-surface-variant">{dateLabel}</span>
+                    <span class="text-title-md">{e.data.title}</span>
+                    <span class="text-body-sm text-on-surface-variant md:text-right">
+                      {whereLabel(e.data.location)}
+                    </span>
+                  </a>
+                </li>
+              );
+            })}
+          </ul>
+        </section>
       )
     }
-  </section>
-
-  {
-    past.length > 0 && (
-      <section class="container-page py-16">
-        <h2 class="text-headline-lg">Past events</h2>
-        <ul class="mt-8 divide-y divide-rule/20 border-y border-rule/20">
-          {past.map((e) => {
-            const dateLabel = new Intl.DateTimeFormat('en-US', {
-              month: 'short',
-              day: 'numeric',
-              year: 'numeric',
-              timeZone: TIMEZONE,
-            }).format(e.data.date);
-            return (
-              <li>
-                <a
-                  href={`/events/${e.id}`}
-                  class="press grid grid-cols-[10rem_1fr_auto] gap-6 items-baseline py-5 no-underline hover:bg-ink hover:text-paper hover:px-3"
-                >
-                  <span class="eyebrow">{dateLabel}</span>
-                  <span class="font-semibold">{e.data.title}</span>
-                  <span class="text-sm text-mute">{whereLabel(e.data.location)}</span>
-                </a>
-              </li>
-            );
-          })}
-        </ul>
-      </section>
-    )
-  }
+  </div>
 </BaseLayout>
