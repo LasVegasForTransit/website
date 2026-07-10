@@ -32,6 +32,13 @@ bug — please add it (see [writing-docs.md](../standards/writing-docs.md)).
 - **Tailwind** <a id="tailwind"></a> — a CSS framework where you style elements
   with utility classes (e.g. `class="text-lg font-bold"`) instead of writing
   separate CSS files.
+- **`data-*` attribute** <a id="data-attribute"></a> — a normal HTML attribute
+  used to store small bits of metadata on an element. For example,
+  `data-screen-action` tells the print stylesheet that an element is only useful
+  on screen and should disappear on paper.
+- **print stylesheet** <a id="print-stylesheet"></a> — CSS rules that apply only
+  when a page is printed or exported to PDF. In this repo they live in
+  `src/styles/global.css` under `@media print`.
 
 ## Running & shipping (the developer tools)
 

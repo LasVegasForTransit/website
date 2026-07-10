@@ -1,0 +1,20 @@
+---
+// Renders a display URL with <wbr> inserted after each "/" or "." so the
+// browser only wraps there if it must, instead of `overflow-wrap: anywhere`
+// breaking mid-word wherever it fits.
+interface Props {
+  url: string;
+}
+
+const { url } = Astro.props;
+const chunks = url.split(/(?<=[/.])/);
+---
+
+{
+  chunks.map((chunk, i) => (
+    <>
+      {chunk}
+      {i < chunks.length - 1 && <wbr />}
+    </>
+  ))
+}

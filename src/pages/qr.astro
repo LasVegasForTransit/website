@@ -1,44 +1,55 @@
 ---
+import { Icon } from 'astro-icon/components';
 import BaseLayout from '../layouts/BaseLayout.astro';
+import UrlChunks from '../components/inline/UrlChunks.astro';
 import { qrSvg } from '../lib/qr-svg';
 import { site } from '../lib/site';
+import { displayUrl } from '../lib/paths';
+import { handleFromUrl } from '../lib/social';
 
 type QrSlide = {
   id: string;
   label: string;
   title: string;
   url: string;
+  displayUrl: string;
   hint: string;
+  /** @-handle shown on the printable flyer, for platforms that have one. */
+  handle?: string;
 };
 
 const socialSlides: QrSlide[] = [
   site.social.instagram && {
     id: 'instagram',
     label: 'Instagram',
-    title: '@lasvegasfortransit',
+    title: 'Follow us on Instagram',
     url: site.social.instagram,
-    hint: 'Posts, photos, and action calls from the Valley.',
+    displayUrl: handleFromUrl(site.social.instagram)!,
+    hint: 'Photos and updates from campaigns and events.',
   },
   site.social.discord && {
     id: 'discord',
     label: 'Discord',
     title: 'Join the organizing chat',
     url: site.social.discord,
+    displayUrl: displayUrl(site.social.discord),
     hint: 'Where volunteers coordinate the work.',
   },
   site.social.linkedin && {
     id: 'linkedin',
     label: 'LinkedIn',
-    title: 'LVBT on LinkedIn',
+    title: 'Follow LVBT on LinkedIn',
     url: site.social.linkedin,
-    hint: 'Organization updates and public profile.',
+    displayUrl: displayUrl(site.social.linkedin),
+    hint: 'Organization updates and announcements.',
   },
   site.social.bluesky && {
     id: 'bluesky',
     label: 'Bluesky',
-    title: '@lasvegasfortransit.org',
+    title: 'Follow us on Bluesky',
     url: site.social.bluesky,
-    hint: 'Longer posts, threads, and transit conversation.',
+    displayUrl: handleFromUrl(site.social.bluesky)!,
+    hint: 'Posts, threads, and discussion about transit in Las Vegas.',
   },
 ].filter((slide): slide is QrSlide => Boolean(slide));
 
@@ -48,6 +59,7 @@ const joinSlide: QrSlide | undefined = site.membership.formUrl
       label: 'Join',
       title: 'Become a member',
       url: site.membership.formUrl,
+      displayUrl: 'lasvegasfortransit.org/join',
       hint: 'Scan to fill out the membership form.',
     }
   : undefined;
@@ -58,11 +70,17 @@ const slides: QrSlide[] = [
     label: 'Website',
     title: site.name,
     url: site.url,
+    displayUrl: displayUrl(site.url),
     hint: 'Scan to open the LVBT website.',
   },
   ...(joinSlide ? [joinSlide] : []),
   ...socialSlides,
 ];
+
+// Encode each slide's QR code once — it's rendered twice (the swipeable
+// deck and the printable flyer grid), and qrSvg does real work (Reed-Solomon
+// error correction, module-matrix layout, SVG assembly), not a cheap lookup.
+const slideCodes = new Map(slides.map((slide) => [slide.id, qrSvg(slide.url)]));
 ---
 
 <BaseLayout
@@ -72,73 +90,165 @@ const slides: QrSlide[] = [
   canvas="dark"
   chrome="none"
 >
-  <section class="qr-deck" aria-label="LVBT scan cards" data-qr-deck>
-    {
-      slides.map((slide, index) => (
-        <article
-          id={`qr-${slide.id}`}
-          class="qr-slide"
-          aria-label={`${slide.label} QR code`}
-          data-qr-slide
-          data-qr-url={slide.url}
-          data-qr-index={index}
-        >
-          <div class="qr-shell">
-            <div class="qr-copy">
-              <p class="qr-kicker">{slide.label}</p>
-              <h1>{slide.title}</h1>
-              <p>{slide.hint}</p>
+  <h1 class="sr-only">QR Presenter</h1>
+
+  <div class="qr-viewport">
+    <section class="qr-deck" aria-label="LVBT scan cards" data-qr-deck>
+      {
+        slides.map((slide, index) => (
+          <article
+            id={`qr-${slide.id}`}
+            class="qr-slide"
+            aria-label={`${slide.label} QR code`}
+            data-qr-slide
+            data-qr-url={slide.url}
+            data-qr-index={index}
+          >
+            <div class="qr-shell">
+              <div class="qr-copy">
+                <h2>{slide.title}</h2>
+                <p>{slide.hint}</p>
+              </div>
+
+              {/* The first card's code carries `.qr-portal`, shared with the
+                  footer's Scan-cards glyph, so the glyph container-transforms into
+                  this code when entering /qr (see global.css + route-transition.js).
+                  Only slide 0 — a view-transition-name must be unique per document. */}
+              <div
+                class:list={['qr-code', index === 0 && 'qr-portal']}
+                set:html={slideCodes.get(slide.id)}
+              />
+
+              <div class="qr-link-row">
+                <a href={slide.url} rel={slide.url.startsWith(site.url) ? undefined : 'noopener'}>
+                  <UrlChunks url={displayUrl(slide.url)} />
+                </a>
+              </div>
             </div>
+          </article>
+        ))
+      }
 
-            {/* The first card's code carries `.qr-portal`, shared with the
-                footer's Scan-cards glyph, so the glyph container-transforms into
-                this code when entering /qr (see global.css + route-transition.js).
-                Only slide 0 — a view-transition-name must be unique per document. */}
-            <div class:list={['qr-code', index === 0 && 'qr-portal']} set:html={qrSvg(slide.url)} />
+      {
+        /* The flyer reuses Footer.astro's [data-print-link-sheet] system
+           (see docs/standards/print-layout.md) rather than inventing its own
+           print treatment: same page sizing/border/padding tokens for the
+           outer box, same masthead/brand/wordmark classes, same
+           label/url/path text roles for each entry. The QR code image per
+           entry is the one genuinely new piece — nothing else on the site
+           prints a code, so there's no existing class for that. */
+      }
+      <article
+        class="qr-slide qr-flyer-slide"
+        id="qr-flyer"
+        aria-label="QR flyer"
+        data-qr-slide
+        data-qr-index={slides.length}
+        data-print-link-sheet
+      >
+        <div class="qr-flyer">
+          <header class="qr-flyer-masthead print-link-sheet__masthead">
+            <div class="qr-flyer-brand print-link-sheet__brand">
+              <img src="/brand/lvbt-logo-512.png" alt="" width="260" height="260" />
+              <img
+                src="/brand/lvbt-wordmark-dark.svg"
+                alt={site.name}
+                width="720"
+                height="190"
+                class="qr-flyer-wordmark print-link-sheet__wordmark"
+              />
+            </div>
+            <h2>Scan to get involved</h2>
+          </header>
 
-            <div class="qr-link-row">
-              <a href={slide.url} rel={slide.url.startsWith(site.url) ? undefined : 'noopener'}>
-                {slide.url.replace(/^https?:\/\//, '')}
-              </a>
+          <div class="qr-flyer-grid print-link-sheet__grid">
+            <div class="print-link-sheet__section">
+              <ul>
+                {
+                  slides.map((slide) => (
+                    <li>
+                      <a href={slide.url} class="qr-flyer-entry">
+                        <div class="qr-flyer-code" set:html={slideCodes.get(slide.id)} />
+                        <span class="print-link-sheet__label">{slide.label}</span>
+                        <span class="qr-flyer-value print-link-sheet__url">
+                          <UrlChunks url={slide.displayUrl} />
+                        </span>
+                        {slide.handle && <span class="print-link-sheet__path">{slide.handle}</span>}
+                      </a>
+                    </li>
+                  ))
+                }
+              </ul>
             </div>
           </div>
-        </article>
-      ))
-    }
-  </section>
+        </div>
+      </article>
+    </section>
 
-  <a class="qr-exit" href="/">Exit</a>
+    <nav class="qr-pagination" aria-label="QR slides" data-screen-action>
+      <button type="button" class="qr-pagination-arrow" data-qr-prev aria-label="Previous card">
+        <Icon name="mdi:chevron-left" aria-hidden="true" />
+      </button>
 
-  <nav class="qr-pagination" aria-label="QR slides">
-    {
-      slides.map((slide, index) => (
+      <div class="qr-pagination-dots">
+        {
+          slides.map((slide, index) => (
+            <a
+              href={`#qr-${slide.id}`}
+              class="qr-dot"
+              aria-label={`Show ${slide.label} QR code`}
+              data-qr-dot
+              data-qr-index={index}
+              aria-current={index === 0 ? 'true' : undefined}
+            />
+          ))
+        }
         <a
-          href={`#qr-${slide.id}`}
+          href="#qr-flyer"
           class="qr-dot"
-          aria-label={`Show ${slide.label} QR code`}
+          aria-label="Show printable flyer"
           data-qr-dot
-          data-qr-index={index}
-          aria-current={index === 0 ? 'true' : undefined}
-        />
-      ))
-    }
-  </nav>
+          data-qr-index={slides.length}></a>
+      </div>
 
-  <p class="qr-swipe-cue" aria-hidden="true">Swipe</p>
+      <button type="button" class="qr-pagination-arrow" data-qr-next aria-label="Next card">
+        <Icon name="mdi:chevron-right" aria-hidden="true" />
+      </button>
+    </nav>
+  </div>
+
+  <a class="qr-exit" href="/" data-screen-action>Exit</a>
+
   <script is:inline src="/scripts/qr-deck.js" defer></script>
 </BaseLayout>
 
 <style>
   :global(body[data-canvas='dark']) {
     background:
-      radial-gradient(circle at top left, rgb(229 71 26 / 0.24), transparent 20rem),
-      linear-gradient(135deg, #0f1115 0%, #191511 48%, #0f1115 100%);
-    color: var(--color-paper);
+      radial-gradient(
+        circle at top left,
+        color-mix(in srgb, var(--color-primary) 24%, transparent),
+        transparent 20rem
+      ),
+      linear-gradient(135deg, var(--ink) 0%, #191511 48%, var(--ink) 100%);
+    color: var(--paper);
     overflow: hidden;
   }
 
-  .qr-deck {
+  /* Deck + pagination share one column: the pagination is a normal-flow
+     sibling below the deck (not a floating overlay), so it's always
+     visible without needing to reserve overlay clearance inside each
+     slide. dvh (not %) so it's always exactly one real viewport regardless
+     of ancestor sizing. */
+  .qr-viewport {
     height: 100dvh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .qr-deck {
+    flex: 1;
+    min-height: 0;
     overflow-x: auto;
     overflow-y: hidden;
     display: flex;
@@ -152,12 +262,11 @@ const slides: QrSlide[] = [
   }
 
   .qr-slide {
-    /* Reserve clearance at the top (Exit pill) and bottom (pagination dots +
-       Swipe cue) so the shell's content — including the URL link — is never
-       hidden underneath the fixed overlays. */
-    --qr-zone: 3.75rem;
+    /* Symmetric top/bottom padding — asymmetric padding shifts the centered
+       card off-center even when the outer height is correct, since
+       `place-items: center` centers within the padded content box. */
+    --qr-zone: 2rem;
     min-width: 100vw;
-    height: 100dvh;
     scroll-snap-align: start;
     display: grid;
     place-items: center;
@@ -167,48 +276,39 @@ const slides: QrSlide[] = [
 
   .qr-shell {
     width: min(100%, 31rem);
-    min-height: min(
-      44rem,
-      calc(100dvh - var(--qr-zone) * 2 - env(safe-area-inset-top) - env(safe-area-inset-bottom))
-    );
+    min-height: min(44rem, 100%);
     display: grid;
     grid-template-rows: minmax(0, 1fr) auto auto;
     gap: 1rem;
     align-items: center;
     padding: 1.125rem;
-    border: 1px solid rgb(247 244 236 / 0.2);
-    background: rgb(15 17 21 / 0.7);
-    box-shadow: 0 1.5rem 4rem rgb(0 0 0 / 0.32);
-    backdrop-filter: blur(18px);
+    border: 1px solid color-mix(in srgb, var(--paper) 20%, transparent);
+    background: color-mix(in srgb, var(--ink) 70%, transparent);
   }
 
   .qr-copy {
     align-self: end;
   }
 
-  .qr-kicker {
-    margin: 0 0 0.75rem;
-    font-size: 0.75rem;
-    font-weight: 800;
-    line-height: 1.2;
-    letter-spacing: 0;
-    color: var(--color-accent-warm);
-  }
-
-  h1 {
+  /* Same type scale as the rest of the site (e.g. /programs) — display-md
+     for the headline, body-lg for the supporting line. Both tokens already
+     use fluid clamp() sizing, so no separate desktop breakpoint override
+     is needed the way fixed rem values would require. */
+  .qr-copy h2 {
     max-width: 16ch;
     margin: 0;
-    font-size: 2rem;
-    font-weight: 900;
-    line-height: 0.98;
-    letter-spacing: 0;
+    font-size: var(--text-display-md);
+    font-weight: var(--text-display-md--font-weight);
+    line-height: var(--text-display-md--line-height);
+    letter-spacing: var(--text-display-md--letter-spacing);
   }
 
   .qr-copy p:last-child {
     max-width: 26rem;
     margin: 0.85rem 0 0;
-    color: rgb(247 244 236 / 0.74);
-    line-height: 1.45;
+    color: color-mix(in srgb, var(--paper) 74%, transparent);
+    font-size: var(--text-body-lg);
+    line-height: var(--text-body-lg--line-height);
   }
 
   .qr-code {
@@ -216,8 +316,9 @@ const slides: QrSlide[] = [
     aspect-ratio: 1;
     justify-self: center;
     padding: 0.75rem;
-    background: var(--color-paper);
-    color: var(--color-ink);
+    border: 1px solid color-mix(in srgb, var(--ink) 12%, transparent);
+    background: var(--paper);
+    color: var(--ink);
   }
 
   .qr-code :global(svg) {
@@ -230,56 +331,87 @@ const slides: QrSlide[] = [
     min-width: 0;
     padding-top: 0.125rem;
     text-align: center;
-    font-size: 0.875rem;
+    font-size: var(--text-body-md);
     line-height: 1.3;
   }
 
   .qr-link-row a {
-    color: var(--color-paper);
-    overflow-wrap: anywhere;
+    color: var(--paper);
+    overflow-wrap: break-word;
     text-decoration-thickness: 2px;
     text-underline-offset: 0.25em;
   }
 
+  /* Attached to the carousel in normal flow (not a floating overlay) with
+     margin separating it from the cards above — always on screen since
+     it's part of the same fixed-height column as the deck. Chevrons are
+     the swipe affordance (disabled at either end). data-screen-action
+     (see markup) hides the whole nav in print automatically — the
+     documented mechanism for exactly this ("carousel controls"), so no
+     manual display:none override is needed here. */
   .qr-pagination {
-    position: fixed;
-    z-index: 20;
-    left: 50%;
-    bottom: calc(1rem + env(safe-area-inset-bottom));
-    transform: translateX(-50%);
+    flex-shrink: 0;
     display: flex;
-    gap: 0.55rem;
-    padding: 0.55rem 0.7rem;
-    background: rgb(15 17 21 / 0.62);
-    border: 1px solid rgb(247 244 236 / 0.18);
-    backdrop-filter: blur(16px);
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    margin: 1rem auto calc(1rem + env(safe-area-inset-bottom));
+    padding: 0.4rem 0.55rem;
+    background: color-mix(in srgb, var(--ink) 62%, transparent);
+    border: 1px solid color-mix(in srgb, var(--paper) 18%, transparent);
   }
 
+  .qr-pagination-dots {
+    display: flex;
+    align-items: center;
+    gap: 0.55rem;
+  }
+
+  /* A real button chip (background + border), not a bare icon — icons
+     alone don't read as clickable. */
+  .qr-pagination-arrow {
+    display: grid;
+    place-items: center;
+    width: 2.25rem;
+    height: 2.25rem;
+    color: var(--paper);
+    background: color-mix(in srgb, var(--paper) 12%, transparent);
+    border: 1px solid color-mix(in srgb, var(--paper) 24%, transparent);
+    font-size: 1.5rem;
+    cursor: pointer;
+  }
+
+  .qr-pagination-arrow:hover:not(:disabled) {
+    color: var(--color-primary);
+    background: color-mix(in srgb, var(--paper) 20%, transparent);
+  }
+
+  .qr-pagination-arrow:focus-visible {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 2px;
+  }
+
+  .qr-pagination-arrow:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+  }
+
+  /* Small rounded squares, not circles — on theme with the logomark's
+     rounded-square motif. */
   .qr-dot {
-    width: 0.72rem;
-    height: 0.72rem;
-    border-radius: 999px;
-    background: rgb(247 244 236 / 0.42);
+    width: 0.65rem;
+    height: 0.65rem;
+    border-radius: 0.15rem;
+    background: color-mix(in srgb, var(--paper) 42%, transparent);
     outline-offset: 0.25rem;
   }
 
   .qr-dot[aria-current='true'] {
-    background: var(--color-accent);
+    background: var(--color-primary);
   }
 
-  .qr-swipe-cue {
-    position: fixed;
-    right: 1rem;
-    bottom: calc(1rem + env(safe-area-inset-bottom));
-    margin: 0;
-    font-size: 0.75rem;
-    font-weight: 800;
-    letter-spacing: 0;
-    color: rgb(247 244 236 / 0.58);
-  }
-
-  /* Back to the main site. Matches the pagination/swipe chrome — translucent
-     ink, blur, sharp corners — and clears the notch via safe-area insets. */
+  /* Back to the main site. data-screen-action (see markup) hides it in
+     print automatically. */
   .qr-exit {
     position: fixed;
     z-index: 20;
@@ -290,14 +422,13 @@ const slides: QrSlide[] = [
     font-weight: 800;
     letter-spacing: 0;
     text-decoration: none;
-    color: var(--color-paper);
-    background: rgb(15 17 21 / 0.62);
-    border: 1px solid rgb(247 244 236 / 0.18);
-    backdrop-filter: blur(16px);
+    color: var(--paper);
+    background: color-mix(in srgb, var(--ink) 62%, transparent);
+    border: 1px solid color-mix(in srgb, var(--paper) 18%, transparent);
   }
 
   .qr-exit:hover {
-    color: var(--color-accent);
+    color: var(--color-primary);
   }
 
   @media (min-width: 48rem) {
@@ -308,12 +439,10 @@ const slides: QrSlide[] = [
 
     .qr-shell {
       width: min(72rem, calc(100vw - 4rem));
-      min-height: min(
-        40rem,
-        calc(100dvh - var(--qr-zone) * 2 - env(safe-area-inset-top) - env(safe-area-inset-bottom))
-      );
+      min-height: min(40rem, 100%);
       grid-template-columns: minmax(0, 1fr) auto;
-      grid-template-rows: 1fr auto;
+      grid-template-rows: auto auto;
+      align-content: center;
       column-gap: 3rem;
       padding: 2rem;
     }
@@ -329,15 +458,171 @@ const slides: QrSlide[] = [
       align-self: start;
       text-align: left;
     }
-
-    h1 {
-      font-size: 3rem;
-    }
   }
 
   @media (prefers-reduced-motion: reduce) {
     .qr-deck {
       scroll-behavior: auto;
+    }
+  }
+
+  /* No extra background here — like every other slide, it just shows
+     through the shared body[data-canvas='dark'] gradient. */
+  .qr-flyer-slide {
+    color: var(--paper);
+  }
+
+  .qr-flyer {
+    width: min(100%, 72rem);
+    display: grid;
+    gap: clamp(1rem, 2vw, 1.5rem);
+    padding: clamp(1rem, 2.3vw, 1.75rem);
+    border: 1px solid color-mix(in srgb, var(--paper) 18%, transparent);
+    background: color-mix(in srgb, var(--ink) 82%, transparent);
+  }
+
+  .qr-flyer-masthead {
+    display: grid;
+    grid-template-columns: 1fr;
+    align-items: end;
+    gap: clamp(1rem, 3vw, 2rem);
+    padding: clamp(1rem, 2.6vw, 2rem);
+    background: var(--ink);
+    color: var(--paper);
+    border-left: 0.35rem solid var(--color-primary);
+  }
+
+  /* The logo+wordmark lockup is redundant on the website itself — the
+     visitor is already on the LVBT site. It only earns its place on the
+     printed flyer (see print-link-sheet__brand's own print rule in
+     global.css, reused via the class on this element in the markup). */
+  @media screen {
+    .qr-flyer-brand {
+      display: none;
+    }
+  }
+
+  .qr-flyer-wordmark {
+    display: block;
+    width: 100%;
+    height: auto;
+  }
+
+  .qr-flyer-masthead h2 {
+    margin: 0;
+    max-width: 13ch;
+    font-size: clamp(2.5rem, 6vw, 5.8rem);
+    font-weight: 900;
+    letter-spacing: 0;
+    line-height: 0.88;
+  }
+
+  .qr-flyer-grid {
+    display: grid;
+    gap: 1rem;
+  }
+
+  .qr-flyer-grid ul {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 20rem), 1fr));
+    gap: 1rem;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+
+  .qr-flyer-entry {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: center;
+    gap: 1rem;
+    min-width: 0;
+    padding: 1rem;
+    text-align: left;
+    text-decoration: none;
+    background: var(--paper);
+    color: var(--ink);
+  }
+
+  .qr-flyer-code {
+    grid-row: 1 / -1;
+    width: clamp(5.5rem, 11vw, 7.25rem);
+    aspect-ratio: 1;
+    padding: 0.35rem;
+    background: var(--paper);
+  }
+
+  .qr-flyer-code :global(svg) {
+    display: block;
+    width: 100%;
+    height: 100%;
+  }
+
+  .print-link-sheet__label {
+    grid-column: 2;
+    font-size: var(--text-title-lg);
+  }
+
+  .print-link-sheet__url {
+    grid-column: 2;
+    font-size: var(--text-body-md);
+    color: var(--color-on-surface-variant);
+  }
+
+  .print-link-sheet__path {
+    grid-column: 2;
+    font-size: var(--text-body-md);
+    font-weight: 700;
+    color: var(--color-primary-ink);
+  }
+
+  @media (max-width: 40rem) {
+    .qr-flyer {
+      width: min(100%, 27rem);
+    }
+
+    .qr-flyer-masthead h2 {
+      font-size: clamp(2.2rem, 14vw, 3.6rem);
+    }
+
+    .qr-flyer-entry {
+      padding: 0.75rem;
+    }
+
+    .qr-flyer-code {
+      width: 5rem;
+    }
+  }
+
+  /* Everything about the flyer's PAGE (border, size, padding, page-break,
+     masthead, label/url typography) comes from global.css's
+     [data-print-link-sheet] rules via the classes applied in the markup —
+     see docs/standards/print-layout.md. The only new print CSS here is for
+     the one thing that system doesn't have: a QR code image per entry. */
+  @media print {
+    .qr-flyer {
+      display: grid;
+      width: 100%;
+      gap: 0.24in;
+      padding: 0;
+      border: 0;
+      background: transparent;
+      color: var(--ink);
+    }
+
+    .qr-flyer-grid.print-link-sheet__grid {
+      grid-template-columns: repeat(2, 1fr) !important;
+    }
+
+    .qr-flyer-entry {
+      display: flex !important;
+      align-items: center !important;
+      gap: 0.2in !important;
+    }
+
+    .qr-flyer-code {
+      flex-shrink: 0;
+      width: 1.5in !important;
     }
   }
 </style>
