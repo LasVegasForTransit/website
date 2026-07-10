@@ -137,15 +137,15 @@ Expected body:
 
 Responses. The **Status** column is the [HTTP status code](./glossary.md#status-code) (`2xx` = success, `4xx`/`5xx` = failure):
 
-| Status | Body                                 | Meaning                             |
-| ------ | ------------------------------------ | ----------------------------------- |
-| `200`  | `{ "success": true }`                | Beehiiv and Notion both accepted it |
-| `400`  | `{ "error": "invalid_body" }`        | JSON body could not be parsed       |
-| `400`  | `{ "error": "invalid_email" }`       | Email missing or malformed          |
-| `401`  | `{ "error": "unauthorized" }`        | Missing or incorrect bearer token   |
-| `502`  | `{ "error": "subscription_failed" }` | Beehiiv rejected the subscription   |
-| `502`  | `{ "error": "notion_sync_failed" }`  | Notion rejected the page create     |
-| `503`  | `{ "error": "service_unavailable" }` | Required runtime secret is missing  |
+| Status | Body                                                   | Meaning                                                                |
+| ------ | ------------------------------------------------------ | ---------------------------------------------------------------------- |
+| `200`  | `{ "success": true }`                                  | Beehiiv and Notion both accepted it                                    |
+| `400`  | `{ "error": "invalid_body" }`                          | JSON body could not be parsed                                          |
+| `400`  | `{ "error": "invalid_email" }`                         | Email missing or malformed                                             |
+| `401`  | `{ "error": "unauthorized" }`                          | Missing or incorrect bearer token                                      |
+| `502`  | `{ "error": "subscription_failed" }`                   | Beehiiv rejected the subscription                                      |
+| `502`  | `{ "error": "notion_sync_failed" }`                    | Notion rejected the page create                                        |
+| `503`  | `{ "error": "service_unavailable", "missing": [...] }` | Required runtime secret is missing; the missing key names are included |
 
 ## Verification
 

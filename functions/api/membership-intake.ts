@@ -35,8 +35,15 @@ const jsonHeaders = {
   'Content-Type': 'application/json',
 };
 
-function errorResponse(error: JsonError, status: number): Response {
-  return Response.json({ error }, { status, headers: jsonHeaders });
+function errorResponse(
+  error: JsonError,
+  status: number,
+  details?: Record<string, unknown>,
+): Response {
+  return Response.json(details ? { error, ...details } : { error }, {
+    status,
+    headers: jsonHeaders,
+  });
 }
 
 function requiredConfig(env: Env): string[] {
@@ -185,7 +192,7 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
     console.error(
       `/api/membership-intake: missing required Pages secret(s): ${missing.join(', ')}`,
     );
-    return errorResponse('service_unavailable', 503);
+    return errorResponse('service_unavailable', 503, { missing });
   }
 
   if (!timingSafeEqual(bearerToken(context.request), context.env.LVBT_MEMBERSHIP_INTAKE_SECRET)) {

@@ -176,7 +176,10 @@ test('reports missing runtime configuration before downstream calls', async () =
   );
 
   assert.equal(response.status, 503);
-  assert.deepEqual(await response.json(), { error: 'service_unavailable' });
+  assert.deepEqual(await response.json(), {
+    error: 'service_unavailable',
+    missing: ['LVBT_NOTION_API_KEY'],
+  });
   assert.equal(calls.length, 0);
 });
 

@@ -23,8 +23,16 @@ function onMembershipFormSubmit(event) {
   const intakeUrl = properties.getProperty('LVBT_MEMBERSHIP_INTAKE_URL');
   const intakeSecret = properties.getProperty('LVBT_MEMBERSHIP_INTAKE_SECRET');
 
-  if (!intakeUrl || !intakeSecret) {
-    throw new Error('Missing LVBT membership intake Apps Script properties.');
+  const missingProperties = [];
+  if (!intakeUrl) missingProperties.push('LVBT_MEMBERSHIP_INTAKE_URL');
+  if (!intakeSecret) missingProperties.push('LVBT_MEMBERSHIP_INTAKE_SECRET');
+  if (missingProperties.length > 0) {
+    const message =
+      'Missing LVBT membership intake Apps Script property(ies): ' +
+      missingProperties.join(', ') +
+      '. Set them in Project Settings → Script properties.';
+    console.error(message);
+    throw new Error(message);
   }
 
   const answers = answersByQuestionTitle(event.response);
@@ -51,9 +59,10 @@ function onMembershipFormSubmit(event) {
 
   const status = response.getResponseCode();
   if (status < 200 || status >= 300) {
-    throw new Error(
-      'LVBT membership intake failed with HTTP ' + status + ': ' + response.getContentText(),
-    );
+    const responseText = response.getContentText();
+    const message = 'LVBT membership intake failed with HTTP ' + status + ': ' + responseText;
+    console.error(message);
+    throw new Error(message);
   }
 }
 
