@@ -4,16 +4,16 @@ import PageHero from '../../components/PageHero.astro';
 import LetterCard from '../../components/LetterCard.astro';
 import { getCollection } from 'astro:content';
 
-const letters = (await getCollection('letters', (entry) => !entry.id.startsWith('_'))).sort(
+const letters = (await getCollection('letters')).sort(
   (a, b) => b.data.date.getTime() - a.data.date.getTime(),
 );
 ---
 
 <BaseLayout
   title="Letters from Leadership"
-  description="Periodic notes from organization leadership on where the fight for better transit stands."
+  description="Periodic notes from LVBT's team on where the fight for better transit stands."
 >
-  <PageHero title="Letters from Leadership" lede="Periodic notes from organization leadership." />
+  <PageHero title="Letters from Leadership" lede="Periodic notes from LVBT's team." />
   <hr class="rule-thick container-page" />
 
   <section class="container-page py-12">
