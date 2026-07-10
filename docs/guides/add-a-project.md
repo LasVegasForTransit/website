@@ -33,10 +33,12 @@ Steps:
    ---
    ```
 
-4. **Body order is loosely standard.** "Loosely" means this is the usual shape, not a rule the build enforces — follow it so pages feel consistent, but it's fine to deviate when a project genuinely needs it (e.g. rename or add a context section, as shown in step 2 below). Every project page reads:
-   1. **`## Why this project`** — motivation. What problem this addresses, why it matters, why now. Two to four paragraphs. Lead with the reader's stake, not internal jargon.
-   2. **`## Approach`** (or a project-specific context section like `## Priority partners`, `## Where we're starting`, `## Key dates`, `## What's in the report`, `## Target departments`) — context for the specific project: how it runs, who it touches, what it produces.
-   3. **`## Updates`** — reverse-chronological progress entries, added as the work happens. Use `### YYYY-MM-DD — short label` for each entry.
+4. **Use the standard body order.** Every project page is a public brief, not an internal project plan. Use these sections:
+   1. **`## Overview`** — what the project is, who it involves, and what people will see.
+   2. **`## Motivation`** — the public need, who feels it, why LVBT is acting, and why the work matters now. This section carries the nonprofit-reporting logic, but write it like a person.
+   3. **`## Approach`** — how the work runs: main activities, partners or audiences, cadence, and coordination with related LVBT projects.
+   4. **`## What people will see`** — the concrete things the page will eventually point to: events held, people reached, reports published, testimony, dashboards, briefs, chapters, coalitions, campaign materials, relationships, or other recorded results.
+   5. **`## Updates`** — reverse-chronological progress entries, added only as the work happens. Use `### YYYY-MM-DD — short label` for each entry.
 
 5. **Goals render automatically** at the end of the page from the frontmatter `goals:` array via `src/components/ProjectGoals.astro`. Do **not** add a `## Goals` section in the body — it would duplicate the auto-render.
 6. **Three statuses, kept simple.** `planned` (committed but not started), `in-progress` (working on it), `done` (achieved). If a goal genuinely changes scope, edit the text or remove it. Misses and scope changes go in `## Updates`, not in new status types.

@@ -1,24 +1,30 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
-import SectionHeader from '../../components/SectionHeader.astro';
+import PageHero from '../../components/PageHero.astro';
 import ProjectCard from '../../components/ProjectCard.astro';
 import { Icon } from 'astro-icon/components';
 import { getCollection } from 'astro:content';
-import { byOrderThenTitle } from '../../lib/projects';
+import { byOrderThenTitle, isActiveProject } from '../../lib/projects';
 import { paths } from '../../lib/paths';
 
-const projects = await getCollection('projects', (entry) => !entry.id.startsWith('_'));
+const projects = await getCollection(
+  'projects',
+  (entry) => !entry.id.startsWith('_') && isActiveProject(entry),
+);
 const initiatives = await getCollection('initiatives');
 
 const sorted = [...projects].sort(byOrderThenTitle);
 const initiativesById = new Map(initiatives.map((i) => [i.id, i]));
 
-// Group sorted projects by initiative id. Cross-tagged projects appear in
-// every section they're tagged with — for a small roadmap this reads as a
-// feature, not duplication.
-const projectsByInitiative = new Map(
-  initiatives.map((i) => [i.id, sorted.filter((p) => p.data.initiatives.includes(i.id))]),
-);
+// Cross-tagged projects appear in every section they're tagged with — for a
+// small roadmap this reads as a feature, not duplication.
+const projectsByInitiative = new Map(initiatives.map((i) => [i.id, [] as typeof sorted]));
+
+for (const project of sorted) {
+  for (const initiativeId of project.data.initiatives) {
+    projectsByInitiative.get(initiativeId)?.push(project);
+  }
+}
 
 // Filtered list drives the rendered sections; stable index lets us skip
 // the negative-margin overlap on the very first section (no previous
@@ -38,17 +44,23 @@ const renderedInitiatives = initiatives.filter(
        and still breathes on tall monitors. Clamped to a 3rem floor and
        7rem ceiling so it doesn't go either claustrophobic or absurd. */
   }
-  <header class="container-page pt-[clamp(3rem,10dvh,7rem)] pb-12 md:pb-16">
-    <SectionHeader
-      title="Our projects"
-      lede="Buses every ten minutes. Safe streets to reach them. A Legislature that funds both. None of it happens without organized people."
-    />
-  </header>
+  <PageHero
+    title="Our projects"
+    lede="Buses every ten minutes. Safe streets to reach them. A Legislature that funds both. None of it happens without organized people."
+  >
+    <a
+      href="/roadmap"
+      data-screen-action
+      class="mt-8 inline-flex border-2 border-outline px-5 py-3 font-bold no-underline hover:bg-on-surface hover:text-surface focus-visible:bg-on-surface focus-visible:text-surface"
+    >
+      See the roadmap →
+    </a>
+  </PageHero>
   <hr class="rule-thick container-page" />
 
   {
     /* Each initiative's inline header IS the sticky element — same DOM
-       node morphs from expanded (eyebrow + display title + lede) to a
+       node morphs from expanded (display title + lede) to a
        compact label-row when it pins below the site header. A 1px
        sentinel placed just above the header drives the morph via an
        IntersectionObserver in /scripts/projects-initiative-stuck.js
@@ -73,9 +85,8 @@ const renderedInitiatives = initiatives.filter(
           <div data-initiative-sentinel aria-hidden="true" class="h-px" />
           <div
             data-initiative-header
-            class="group/init sticky top-[var(--lvbt-header-h)] z-40 bg-paper pt-10 pb-8 border-y border-y-transparent transition-[padding,border-color] duration-200 ease-out data-[stuck]:pt-3 data-[stuck]:pb-3 data-[stuck]:border-y-rule/15"
+            class="group/init sticky top-[var(--lvbt-header-h)] z-40 bg-surface pt-10 pb-8 border-y border-y-transparent transition-[padding,border-color] duration-200 ease-out data-[stuck]:pt-3 data-[stuck]:pb-3 data-[stuck]:border-y-outline-variant/15"
           >
-            <p class="eyebrow group-data-[stuck]/init:hidden">Initiative</p>
             <h2 class="text-headline-lg mt-2 transition-[font-size,line-height,letter-spacing] duration-200 ease-out group-data-[stuck]/init:text-title-lg group-data-[stuck]/init:mt-0">
               <a
                 href={`#${initiative.id}`}
@@ -92,15 +103,15 @@ const renderedInitiatives = initiatives.filter(
                 <Icon
                   name="mdi:check"
                   aria-hidden="true"
-                  class="absolute right-full top-1/2 -translate-y-1/2 mr-2 size-[0.6em] text-accent opacity-0 transition-opacity duration-150 group-data-[copied]/perm:opacity-100"
+                  class="absolute right-full top-1/2 -translate-y-1/2 mr-2 size-[0.6em] text-primary opacity-0 transition-opacity duration-150 group-data-[copied]/perm:opacity-100"
                 />
                 <span>{initiative.data.title}</span>
                 {/* `#` permalink affordance on the right — visible on
-                    hover/focus. Stays muted on copy; the accent check
+                    hover/focus. Stays muted on copy; the primary check
                     on the left carries the success-state signal. */}
                 <span
                   aria-hidden="true"
-                  class="text-mute text-[0.5em] font-normal tracking-normal opacity-0 transition-opacity duration-150 group-hover/perm:opacity-100 group-focus-visible/perm:opacity-100"
+                  class="text-on-surface-variant text-[0.5em] font-normal tracking-normal opacity-0 transition-opacity duration-150 group-hover/perm:opacity-100 group-focus-visible/perm:opacity-100"
                 >
                   #
                 </span>
