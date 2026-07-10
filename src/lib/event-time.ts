@@ -1,6 +1,6 @@
 // Temporal helpers for the event surfaces — relative-date labels, "live
 // now" detection, and the "today" boundary check. Centralised here so
-// EventCard, the detail page, the /go carousel, and any future surface
+// EventCard, the detail page, and any future surface
 // share the same definitions of "soon" and "in progress".
 //
 // All comparisons run in America/Los_Angeles. The Valley is in PT, the
