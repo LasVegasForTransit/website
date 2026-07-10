@@ -37,7 +37,7 @@ Steps:
    1. **`## Overview`** — what the project is, who it involves, and what people will see.
    2. **`## Motivation`** — the public need, who feels it, why LVBT is acting, and why the work matters now. This section carries the nonprofit-reporting logic, but write it like a person.
    3. **`## Approach`** — how the work runs: main activities, partners or audiences, cadence, and coordination with related LVBT projects.
-   4. **`## What people will see`** — the concrete things the page will eventually point to: events held, people reached, reports published, testimony, dashboards, briefs, chapters, coalitions, campaign materials, relationships, or other recorded results.
+   4. **`## Activities`** — the concrete things the page will eventually point to: events held, people reached, reports published, testimony, briefs, evidence logs, chapters, coalitions, campaign materials, media packages, relationships, or other recorded results.
    5. **`## Updates`** — reverse-chronological progress entries, added only as the work happens. Use `### YYYY-MM-DD — short label` for each entry.
 
 5. **Goals render automatically** at the end of the page from the frontmatter `goals:` array via `src/components/ProjectGoals.astro`. Do **not** add a `## Goals` section in the body — it would duplicate the auto-render.

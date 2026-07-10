@@ -101,7 +101,7 @@ Pre-approval to commit applies only when the user has explicitly said "commit" /
 ## Stack quick map
 
 - Astro 4 + Tailwind v4 (MDX content collections under `src/content/`)
-- Cloudflare Pages (`pnpm dev` runs Astro + `wrangler pages dev --proxy`)
+- Cloudflare Pages (`pnpm dev` starts Astro + a local Wrangler Pages Functions server, with Astro proxying `/api/*` to it)
 - pnpm, Node ≥ 24.18.0
 - Playwright for tests and ad-hoc screenshots
 - `scripts/bootstrap/` is the interactive setup CLI (`pnpm bootstrap`, `pnpm preflight`)
