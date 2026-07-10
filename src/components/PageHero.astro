@@ -1,0 +1,21 @@
+---
+// Shared opening hero for every top-level page. Owns the header block —
+// padding, the display-md page title, and the optional lede — so all top-level
+// pages open identically. Home keeps its own larger landing hero; About is
+// allowed to differ. `title` and `lede` accept HTML (e.g. &nbsp;). Extra
+// content (jump links, buttons) can be passed as the default slot.
+interface Props {
+  title: string;
+  lede?: string;
+}
+
+const { title, lede } = Astro.props;
+---
+
+<header class="container-page pt-[clamp(3rem,10dvh,7rem)] pb-8 md:pb-12">
+  <div class="max-w-4xl">
+    <h1 class="text-display-md text-balance" set:html={title} />
+    {lede && <p class="lede mt-6 max-w-2xl" set:html={lede} />}
+    <slot />
+  </div>
+</header>

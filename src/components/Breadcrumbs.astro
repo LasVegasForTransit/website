@@ -1,0 +1,54 @@
+---
+// Visible breadcrumb trail + matching BreadcrumbList JSON-LD for a detail
+// page, in one call: <Breadcrumbs section={{ name, href }} current={title} />.
+// Building the three-item array and emitting the schema here (instead of at
+// each call site) means a page can't render the nav without the matching
+// JSON-LD, or vice versa — previously each of the three call sites built the
+// same array independently and had to remember to also pass it to
+// `breadcrumbSchema()`. JSON-LD doesn't need to live in <head> to be valid,
+// so the <StructuredData> below is rendered inline, right alongside the nav.
+import StructuredData from './seo/StructuredData.astro';
+import { breadcrumbSchema } from '../lib/structured-data';
+
+interface Props {
+  section: { name: string; href: string };
+  current: string;
+}
+
+const { section, current } = Astro.props;
+
+const items = [
+  { name: 'Home', href: '/', url: '/' },
+  { name: section.name, href: section.href, url: section.href },
+  { name: current }, // current page — no `url`, per Google's breadcrumb guide
+];
+---
+
+<StructuredData data={breadcrumbSchema(items)} />
+<nav aria-label="Breadcrumb" class="mb-6 text-body-sm font-semibold">
+  <ol class="flex flex-wrap items-center gap-2">
+    {
+      items.map((item, i) => (
+        <>
+          {i > 0 && (
+            <li aria-hidden="true" class="text-on-surface-variant">
+              /
+            </li>
+          )}
+          <li
+            aria-current={item.url ? undefined : 'page'}
+            class={item.url ? undefined : 'text-on-surface-variant'}
+          >
+            {item.href ? (
+              <a href={item.href} class="nav-link no-underline hover:text-primary">
+                {item.name}
+              </a>
+            ) : (
+              item.name
+            )}
+          </li>
+        </>
+      ))
+    }
+  </ol>
+</nav>
