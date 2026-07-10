@@ -104,24 +104,196 @@ const colors = [
   },
 ];
 
-const colorPairings = [
-  [
-    'Primary / On primary',
-    'Use Cream on Ember for action surfaces, active states, and urgent facts.',
-  ],
-  [
-    'Primary container / On primary container',
-    'Use Ink on Peach for softer emphasis, callouts, and selected states.',
-  ],
-  ['Primary ink / Surface', 'Use Rust when orange appears as text on the base surface.'],
-  [
-    'Surface / On surface',
-    'Use On surface on Surface for long reading and most interface surfaces.',
-  ],
-  [
-    'Slab / On slab',
-    'Use On slab on Slab for dark bands, major statements, and high-emphasis panels.',
-  ],
+const semanticColorRoles = [
+  {
+    token: '--color-surface',
+    light: '#F7F4EC',
+    dark: '#191A1D',
+    pair: '--color-on-surface',
+    role: 'Base page surface',
+    guidance: 'Use for the main reading canvas and ordinary page backgrounds.',
+  },
+  {
+    token: '--color-on-surface',
+    light: '#0F1115',
+    dark: '#F7F4EC',
+    pair: '--color-surface',
+    role: 'Primary text',
+    guidance: 'Use for headings, body copy, and icons on Surface or Surface container.',
+  },
+  {
+    token: '--color-on-surface-variant',
+    light: '#4A4E57',
+    dark: '#B0A99C',
+    pair: '--color-surface',
+    role: 'Secondary text',
+    guidance: 'Use for supporting copy, metadata, captions, and lower-emphasis labels.',
+  },
+  {
+    token: '--color-surface-container',
+    light: '#EFE9DB',
+    dark: '#232428',
+    pair: '--color-on-surface',
+    role: 'Raised surface',
+    guidance: 'Use for cards, panels, grouped tools, and quiet callouts.',
+  },
+  {
+    token: '--color-slab',
+    light: '#0F1115',
+    dark: '#2D2F34',
+    pair: '--color-on-slab',
+    role: 'High-emphasis dark surface',
+    guidance: 'Use for footer, featured dark cards, and major statement surfaces.',
+  },
+  {
+    token: '--color-on-slab',
+    light: '#F7F4EC',
+    dark: '#F7F4EC',
+    pair: '--color-slab',
+    role: 'Text on Slab',
+    guidance: 'Use for primary text, icons, and buttons placed on Slab.',
+  },
+  {
+    token: '--color-on-slab-variant',
+    light: '#A8ACB4',
+    dark: '#B0A99C',
+    pair: '--color-slab',
+    role: 'Muted text on Slab',
+    guidance: 'Use for supporting text on dark bands and featured dark cards.',
+  },
+  {
+    token: '--color-primary',
+    light: '#E5471A',
+    dark: '#E5471A',
+    pair: '--color-on-primary',
+    role: 'Primary action',
+    guidance: 'Use for primary buttons, selected states, live badges, and urgent markers.',
+  },
+  {
+    token: '--color-on-primary',
+    light: '#F7F4EC',
+    dark: '#F7F4EC',
+    pair: '--color-primary',
+    role: 'Text on Primary',
+    guidance: 'Use for text and icons on Primary. Do not put orange text on Primary.',
+  },
+  {
+    token: '--color-primary-container',
+    light: '#FFE9D6',
+    dark: '#47210F',
+    pair: '--color-on-primary-container',
+    role: 'Soft brand surface',
+    guidance: 'Use for support panels, chips, specimens, and brand-tinted callouts.',
+  },
+  {
+    token: '--color-on-primary-container',
+    light: '#0F1115',
+    dark: '#FFD9C7',
+    pair: '--color-primary-container',
+    role: 'Text on Primary container',
+    guidance: 'Use for copy and icons on Primary container.',
+  },
+  {
+    token: '--color-primary-ink',
+    light: '#BF3A10',
+    dark: '#FF8A5C',
+    pair: '--color-surface',
+    role: 'Orange text',
+    guidance: 'Use when orange itself is text, especially links and inline emphasis.',
+  },
+  {
+    token: '--color-primary-warm',
+    light: '#EC7049',
+    dark: '#EC7049',
+    pair: '--color-surface',
+    role: 'Warm accent',
+    guidance: 'Use sparingly for graphic accents when Primary is too forceful.',
+  },
+  {
+    token: '--color-primary-soft',
+    light: '#FFE9D6',
+    dark: '#FFE9D6',
+    pair: '--color-slab',
+    role: 'Soft accent on dark',
+    guidance: 'Use for warm highlights on Slab, including featured dark cards.',
+  },
+  {
+    token: '--color-outline',
+    light: '#0F1115',
+    dark: '#72757D',
+    pair: '--color-surface',
+    role: 'Strong border',
+    guidance: 'Use for high-emphasis borders, button outlines, and structural frames.',
+  },
+  {
+    token: '--color-outline-variant',
+    light: '#0F1115',
+    dark: '#F7F4EC',
+    pair: '--color-surface',
+    role: 'Divider color',
+    guidance: 'Use with opacity or color-mix for dividers, table lines, and subtle boundaries.',
+  },
+  {
+    token: '--color-link',
+    light: '#BF3A10',
+    dark: '#FF8A5C',
+    pair: '--color-surface',
+    role: 'Link text',
+    guidance: 'Use for inline links on ordinary reading surfaces.',
+  },
+];
+
+const functionalColorRoles = [
+  {
+    use: 'Page background',
+    tokens: '--color-surface',
+    guidance: 'Default canvas for content-heavy pages. Keep long reading on this surface.',
+  },
+  {
+    use: 'Body text and headings',
+    tokens: '--color-on-surface',
+    guidance: 'Primary foreground on Surface and Surface container.',
+  },
+  {
+    use: 'Supporting copy',
+    tokens: '--color-on-surface-variant',
+    guidance: 'Metadata, captions, helper text, and secondary paragraphs.',
+  },
+  {
+    use: 'Cards and grouped panels',
+    tokens: '--color-surface-container + --color-on-surface',
+    guidance: 'Use when content needs grouping without becoming a call to action.',
+  },
+  {
+    use: 'Primary action',
+    tokens: '--color-primary + --color-on-primary',
+    guidance: 'Buttons, selected states, urgent facts, and live status surfaces.',
+  },
+  {
+    use: 'Quiet brand callout',
+    tokens: '--color-primary-container + --color-on-primary-container',
+    guidance: 'Notes, chips, logo specimens, and warm support areas.',
+  },
+  {
+    use: 'Inline orange text',
+    tokens: '--color-primary-ink or --color-link',
+    guidance: 'Links and emphasis on quiet surfaces. Do not use Primary as text on Primary.',
+  },
+  {
+    use: 'Dark feature surface',
+    tokens: '--color-slab + --color-on-slab',
+    guidance: 'Footer, featured event cards, and major statements that need weight.',
+  },
+  {
+    use: 'Muted text on dark',
+    tokens: '--color-on-slab-variant',
+    guidance: 'Secondary copy on Slab. Keep body copy readable; do not over-mute key facts.',
+  },
+  {
+    use: 'Dividers and frames',
+    tokens: '--color-outline or --color-outline-variant',
+    guidance: 'Use structural borders intentionally. Prefer space before adding another line.',
+  },
 ];
 
 interface LogoAsset {
@@ -609,7 +781,8 @@ const brandContents = [
     id: 'color',
     label: 'Color roles',
     children: [
-      { id: 'color-pairings', label: 'Foreground roles' },
+      { id: 'color-semantic-reference', label: 'Semantic reference' },
+      { id: 'color-functional-reference', label: 'Functional reference' },
       { id: 'color-in-practice', label: 'Color in practice' },
     ],
   },
@@ -868,26 +1041,116 @@ const brandContents = [
 
         <div data-brand-color-pairings class="mt-8">
           <HeadingLink
-            id="color-pairings"
+            id="color-semantic-reference"
             as="h3"
-            label="Foreground roles"
+            label="Semantic reference"
             class="text-headline-sm scroll-mt-24"
             includeInContents
           />
-          <div class="mt-4 grid gap-4">
-            {
-              colorPairings.map(([name, guidance]) => (
-                <article
-                  data-brand-color-pairing
-                  class="grid gap-1 md:grid-cols-[13rem_minmax(0,1fr)] md:gap-6"
-                >
-                  <p class="text-title-md">{name}</p>
-                  <p data-readable class="text-body-md text-on-surface-variant">
-                    {guidance}
-                  </p>
-                </article>
-              ))
-            }
+          <p data-readable class="mt-3 max-w-3xl text-body-md text-on-surface-variant">
+            Semantic tokens describe what a color is in the system. Use the paired token listed here
+            when text or icons sit on a colored surface.
+          </p>
+
+          <div class="mt-5 overflow-x-auto border border-outline-variant/25">
+            <table class="min-w-[58rem] w-full border-collapse text-left">
+              <thead class="bg-surface-container">
+                <tr class="border-b border-outline-variant/25">
+                  <th class="p-3 text-title-sm">Token</th>
+                  <th class="p-3 text-title-sm">Light</th>
+                  <th class="p-3 text-title-sm">Dark</th>
+                  <th class="p-3 text-title-sm">Pair</th>
+                  <th class="p-3 text-title-sm">Role</th>
+                  <th class="p-3 text-title-sm">Guidance</th>
+                </tr>
+              </thead>
+              <tbody>
+                {
+                  semanticColorRoles.map((role) => (
+                    <tr class="border-b border-outline-variant/20 last:border-b-0">
+                      <td class="p-3 align-top">
+                        <button
+                          type="button"
+                          data-copy-color
+                          data-color={role.token}
+                          data-color-text={role.light}
+                          class="inline-flex items-center gap-2 bg-transparent p-0 text-left font-bold text-primary-ink hover:text-on-surface focus-visible:text-on-surface"
+                        >
+                          <Icon name="mdi:content-copy" class="size-4" aria-hidden="true" />
+                          {role.token}
+                        </button>
+                      </td>
+                      <td class="p-3 align-top">
+                        <span class="inline-flex items-center gap-2">
+                          <span
+                            class="size-7 border border-outline-variant/25"
+                            style={`background: ${role.light}`}
+                            aria-hidden="true"
+                          />
+                          <span class="text-body-sm">{role.light}</span>
+                        </span>
+                      </td>
+                      <td class="p-3 align-top">
+                        <span class="inline-flex items-center gap-2">
+                          <span
+                            class="size-7 border border-outline-variant/25"
+                            style={`background: ${role.dark}`}
+                            aria-hidden="true"
+                          />
+                          <span class="text-body-sm">{role.dark}</span>
+                        </span>
+                      </td>
+                      <td class="p-3 align-top text-body-sm font-semibold">{role.pair}</td>
+                      <td class="p-3 align-top text-body-sm font-semibold">{role.role}</td>
+                      <td data-readable class="p-3 align-top text-body-sm text-on-surface-variant">
+                        {role.guidance}
+                      </td>
+                    </tr>
+                  ))
+                }
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="mt-10">
+          <HeadingLink
+            id="color-functional-reference"
+            as="h3"
+            label="Functional reference"
+            class="text-headline-sm scroll-mt-24"
+            includeInContents
+          />
+          <p data-readable class="mt-3 max-w-3xl text-body-md text-on-surface-variant">
+            Functional roles describe what to reach for when designing a page, graphic, event card,
+            or document.
+          </p>
+
+          <div class="mt-5 overflow-x-auto border border-outline-variant/25">
+            <table class="min-w-[48rem] w-full border-collapse text-left">
+              <thead class="bg-surface-container">
+                <tr class="border-b border-outline-variant/25">
+                  <th class="p-3 text-title-sm">Use</th>
+                  <th class="p-3 text-title-sm">Tokens</th>
+                  <th class="p-3 text-title-sm">Guidance</th>
+                </tr>
+              </thead>
+              <tbody>
+                {
+                  functionalColorRoles.map((role) => (
+                    <tr class="border-b border-outline-variant/20 last:border-b-0">
+                      <td class="p-3 align-top text-title-sm">{role.use}</td>
+                      <td class="p-3 align-top text-body-sm font-semibold text-primary-ink">
+                        {role.tokens}
+                      </td>
+                      <td data-readable class="p-3 align-top text-body-sm text-on-surface-variant">
+                        {role.guidance}
+                      </td>
+                    </tr>
+                  ))
+                }
+              </tbody>
+            </table>
           </div>
         </div>
 
@@ -1253,7 +1516,7 @@ const brandContents = [
                 </div>
                 <div class="grid gap-3">
                   <p class="text-label-lg text-on-surface-variant">LVBT mark</p>
-                  <div class="grid min-h-32 place-items-center bg-primary-container p-6">
+                  <div class="grid min-h-32 place-items-center bg-primary-soft p-6">
                     <img src="/brand/lvbt-logo.svg" alt="" class="size-28" />
                   </div>
                 </div>
@@ -1547,3 +1810,167 @@ const brandContents = [
 
   <script is:inline src="/scripts/brand-guide.js" defer></script>
 </BaseLayout>
+
+<style is:global>
+  /* /brand print layout — the guide prints as a reference manual. is:global
+     because the [data-brand-*] elements render inside brand/* components,
+     which a scoped block here could not reach. Only this route ships it. */
+  @media print {
+    [data-brand-page] ~ *,
+    [data-brand-body] {
+      --brand-print-rule: color-mix(in srgb, var(--ink) 38%, var(--paper));
+    }
+
+    [data-brand-intro] {
+      break-after: avoid;
+      page-break-after: avoid;
+    }
+
+    [data-brand-contents-frame],
+    [data-brand-copy-status],
+    [data-brand-color-status],
+    [data-brand-logo-tabs-shell],
+    [data-brand-logo-downloads],
+    [data-brand-logo-actions],
+    [data-brand-print-hide],
+    [data-brand-copy-control],
+    [data-brand-logo-kit] button {
+      display: none !important;
+    }
+
+    [data-brand-print-only] {
+      display: block !important;
+    }
+
+    [data-brand-shell] {
+      gap: 0.34in !important;
+      max-width: none !important;
+    }
+
+    [data-brand-section] {
+      display: block !important;
+      padding-block: 0.18in 0.08in !important;
+      break-inside: auto !important;
+      page-break-inside: auto !important;
+    }
+
+    [data-brand-section-flow],
+    [data-brand-section-content] > .grid {
+      display: block !important;
+    }
+
+    [data-brand-section-flow] > * + *,
+    [data-brand-section-content] > .grid > * + * {
+      margin-top: 0.16in !important;
+    }
+
+    [data-brand-section] + [data-brand-section] {
+      border-top: 1.25pt solid var(--ink);
+      padding-top: 0.28in !important;
+    }
+
+    [data-brand-section-header] {
+      position: static !important;
+      z-index: auto !important;
+      padding-block: 0 0.08in !important;
+      background: transparent !important;
+      border-bottom: 1pt solid var(--brand-print-rule) !important;
+      backdrop-filter: none !important;
+      break-after: avoid;
+      page-break-after: avoid;
+    }
+
+    [data-brand-section-intro] {
+      margin-top: 0.12in !important;
+      break-after: avoid;
+      page-break-after: avoid;
+    }
+
+    [data-brand-section-content] {
+      margin-top: 0.16in !important;
+    }
+
+    [data-brand-section] :is([data-brand-guidance], [data-brand-example]) {
+      break-inside: avoid;
+      page-break-inside: avoid;
+    }
+
+    [data-brand-inspiration-specimen] {
+      border: 1pt solid var(--ink) !important;
+      background: color-mix(in srgb, var(--paper) 86%, white) !important;
+      color: var(--ink) !important;
+    }
+
+    [data-brand-color] {
+      display: grid !important;
+      appearance: none !important;
+      border: 0.75pt solid var(--brand-print-rule) !important;
+      background: transparent !important;
+      color: var(--ink) !important;
+      break-inside: avoid;
+      page-break-inside: avoid;
+    }
+
+    [data-brand-color-list],
+    [data-brand-color-pairings],
+    [data-brand-color-specimen],
+    [data-brand-logo-kit],
+    [data-brand-logo-kit-frame] {
+      break-inside: auto;
+      page-break-inside: auto;
+    }
+
+    [data-brand-logo-kit-frame] {
+      display: block !important;
+      border: 1pt solid var(--brand-print-rule) !important;
+      background: transparent !important;
+    }
+
+    [data-brand-logo-viewer] {
+      position: static !important;
+      border: 0 !important;
+      background: transparent !important;
+    }
+
+    [data-brand-logo-preview-stack] {
+      display: grid !important;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      border-bottom: 1pt solid var(--brand-print-rule);
+    }
+
+    [data-brand-logo-preview][hidden],
+    [data-brand-logo-panel][hidden] {
+      display: block !important;
+    }
+
+    [data-brand-logo-specimen] {
+      min-height: 1.25in !important;
+      aspect-ratio: auto !important;
+      padding: 0.16in !important;
+      border-right: 1pt solid var(--brand-print-rule);
+      border-bottom: 1pt solid var(--brand-print-rule);
+      background: transparent !important;
+      color: var(--ink) !important;
+    }
+
+    [data-brand-logo-specimen] img {
+      max-height: 0.68in !important;
+      width: auto !important;
+    }
+
+    [data-brand-logo-details] {
+      padding: 0.18in !important;
+      border-top: 1pt solid var(--brand-print-rule);
+      break-inside: avoid;
+      page-break-inside: avoid;
+    }
+
+    [data-brand-print-assets] {
+      padding: 0.18in !important;
+      border-top: 1.25pt solid var(--ink);
+      background: color-mix(in srgb, var(--paper) 88%, white) !important;
+      break-inside: avoid;
+      page-break-inside: avoid;
+    }
+  }
+</style>
