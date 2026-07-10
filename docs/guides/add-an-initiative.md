@@ -10,7 +10,7 @@ Initiatives are the chips/tags (the small labeled pills used to filter and group
    {
      "title": "Initiative title",
      "description": "One- or two-sentence description.",
-     "color": "accent"
+     "color": "primary"
    }
    ```
 

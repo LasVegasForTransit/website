@@ -86,4 +86,4 @@ Distinct things — easy to confuse, but only one of them violates the voice.
 - **Abstractions without specific examples following.** Every general claim should be followed by a named instance within two sentences.
 - **Generic CTAs as button labels.** _Get involved_, _Take action_, _Learn more_ are lazy. Use specific verbs: Subscribe, RSVP, Donate, Read the brief.
 - **Slogans on utility pages.** _"Show up. Things change."_ on /events is the wrong job for a calendar listing. Plain page-job nouns belong on utility pages; slogans, when used at all, belong on persuasion pages.
-- **Templated card grammar.** Three identical eyebrow → headline → body cards in a row reads AI-generated. Vary composition deliberately.
+- **Templated card grammar.** Three identical label → headline → body cards in a row reads AI-generated. Vary composition deliberately.

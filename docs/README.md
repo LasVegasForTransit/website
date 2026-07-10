@@ -55,6 +55,7 @@ How we write code, commits, and docs. Skim before contributing.
 - [Commit scopes](./standards/commit-scopes.md) — the four allowed scopes and why
 - [Git guidelines](./standards/git-guidelines.md) — staging discipline and the atomic commit pattern
 - [Performance monitoring](./standards/performance-monitoring.md) — budgets, Lighthouse, real-user metrics
+- [Print layout](./standards/print-layout.md) — data attributes that make pages work on paper
 
 ## Explanation
 
