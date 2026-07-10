@@ -1,5 +1,6 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
+import PageHero from '../components/PageHero.astro';
 import StructuredData from '../components/seo/StructuredData.astro';
 import { getCollection } from 'astro:content';
 import { site } from '../lib/site';
@@ -40,7 +41,7 @@ const topGroups: Group[] = [
       {
         name: 'Letters from Leadership',
         href: '/letters',
-        description: 'Periodic notes from organization leadership.',
+        description: "Periodic notes from LVBT's team.",
       },
     ],
   },
@@ -48,9 +49,14 @@ const topGroups: Group[] = [
     label: 'Work',
     entries: [
       {
+        name: 'Programs',
+        href: '/programs',
+        description: "The nonprofit portfolios that organize LVBT's recurring responsibilities.",
+      },
+      {
         name: 'Projects',
         href: '/projects',
-        description: 'The public roadmap of active and planned projects.',
+        description: 'The roadmap of named, reportable project lines.',
       },
       {
         name: 'Events',
@@ -136,6 +142,12 @@ const elsewhere: Entry[] = [
       ]
     : []),
   {
+    name: 'Candid',
+    href: site.transparency.candidUrl,
+    description: 'The public nonprofit profile for LVBT.',
+    external: true,
+  },
+  {
     name: 'GitHub',
     href: 'https://github.com/LasVegasForTransit/website',
     description: 'The source of this website. We build in public.',
@@ -192,16 +204,16 @@ const navSchema = {
 <BaseLayout title="Sitemap">
   <StructuredData slot="head" data={navSchema} />
 
-  <section class="container-page pt-16 md:pt-24 pb-24 md:pb-32">
-    <h1 class="text-headline-lg">Sitemap</h1>
+  <PageHero title="Sitemap" />
 
+  <section class="container-page pb-24 md:pb-32">
     {/* TOP-LEVEL GROUPS */}
-    <div class="mt-12 md:mt-16 grid grid-cols-1 md:grid-cols-3 gap-x-12 gap-y-12">
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-x-12 gap-y-12">
       {
         topGroups.map((group) => (
           <div>
-            <p class="eyebrow pb-3 border-b-2 border-ink">{group.label}</p>
-            <ul class="divide-y divide-ink/15">
+            <h2 class="border-b-2 border-outline pb-3 text-title-lg">{group.label}</h2>
+            <ul class="divide-y divide-outline-variant/15">
               {group.entries.map((entry) => (
                 <li>
                   <a
@@ -209,16 +221,10 @@ const navSchema = {
                     rel={entry.external ? 'noopener' : undefined}
                     class="group block py-5 no-underline"
                   >
-                    <p class="font-semibold group-hover:text-accent transition-colors">
+                    <p class="font-semibold group-hover:text-primary transition-colors">
                       {entry.name}
-                      {entry.external && (
-                        <span aria-hidden="true" class="text-[color:var(--color-mute)]">
-                          {' '}
-                          ↗
-                        </span>
-                      )}
                     </p>
-                    <p class="text-body-sm mt-1 text-[color:var(--color-mute)]">
+                    <p class="text-body-sm mt-1 text-[color:var(--color-on-surface-variant)]">
                       {entry.description}
                     </p>
                   </a>
@@ -232,11 +238,11 @@ const navSchema = {
 
     {/* PROJECTS */}
     <div class="mt-16 md:mt-20">
-      <div class="pb-3 border-b-2 border-ink flex items-baseline justify-between gap-4">
-        <p class="eyebrow">Projects</p>
+      <div class="pb-3 border-b-2 border-outline flex items-baseline justify-between gap-4">
+        <h2 class="text-title-lg">Projects</h2>
         <a
           href="/projects"
-          class="text-body-sm text-[color:var(--color-mute)] hover:text-accent-ink no-underline"
+          class="text-body-sm text-[color:var(--color-on-surface-variant)] hover:text-primary-ink no-underline"
         >
           {projects.length} total · open the directory →
         </a>
@@ -244,12 +250,12 @@ const navSchema = {
       <ul class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-x-12 gap-y-0">
         {
           projects.map((p) => (
-            <li class="border-b border-ink/15">
+            <li class="border-b border-outline-variant/15">
               <a href={`/projects/${p.id}`} class="group block py-3 no-underline">
-                <p class="font-semibold group-hover:text-accent transition-colors leading-snug">
+                <p class="font-semibold group-hover:text-primary transition-colors leading-snug">
                   {p.data.title}
                 </p>
-                <p class="text-body-sm mt-0.5 text-[color:var(--color-mute)]">
+                <p class="text-body-sm mt-0.5 text-[color:var(--color-on-surface-variant)]">
                   {statusLabel[p.data.status]}
                 </p>
               </a>
@@ -261,13 +267,15 @@ const navSchema = {
 
     {/* INITIATIVES */}
     <div class="mt-16 md:mt-20">
-      <p class="eyebrow pb-3 border-b-2 border-ink">Initiatives</p>
+      <h2 class="border-b-2 border-outline pb-3 text-title-lg">Initiatives</h2>
       <ul class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-12 gap-y-0">
         {
           initiatives.map((i) => (
-            <li class="border-b border-ink/15 py-5">
+            <li class="border-b border-outline-variant/15 py-5">
               <p class="font-semibold">{i.data.title}</p>
-              <p class="text-body-sm mt-1 text-[color:var(--color-mute)]">{i.data.description}</p>
+              <p class="text-body-sm mt-1 text-[color:var(--color-on-surface-variant)]">
+                {i.data.description}
+              </p>
             </li>
           ))
         }
@@ -276,24 +284,20 @@ const navSchema = {
 
     {/* ELSEWHERE */}
     <div class="mt-16 md:mt-20">
-      <p class="eyebrow pb-3 border-b-2 border-ink">Elsewhere</p>
+      <h2 class="border-b-2 border-outline pb-3 text-title-lg">Elsewhere</h2>
       <ul class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-12 gap-y-0">
         {
           elsewhere.map((entry) => (
-            <li class="border-b border-ink/15">
+            <li class="border-b border-outline-variant/15">
               <a
                 href={entry.href}
                 rel={entry.external ? 'noopener' : undefined}
                 class="group block py-5 no-underline"
               >
-                <p class="font-semibold group-hover:text-accent transition-colors">
-                  {entry.name}
-                  <span aria-hidden="true" class="text-[color:var(--color-mute)]">
-                    {' '}
-                    ↗
-                  </span>
+                <p class="font-semibold group-hover:text-primary transition-colors">{entry.name}</p>
+                <p class="text-body-sm mt-1 text-[color:var(--color-on-surface-variant)]">
+                  {entry.description}
                 </p>
-                <p class="text-body-sm mt-1 text-[color:var(--color-mute)]">{entry.description}</p>
               </a>
             </li>
           ))
@@ -303,16 +307,18 @@ const navSchema = {
 
     {/* MACHINE-READABLE */}
     <div class="mt-16 md:mt-20">
-      <p class="eyebrow pb-3 border-b-2 border-ink">Machine-readable</p>
+      <h2 class="border-b-2 border-outline pb-3 text-title-lg">Machine-readable</h2>
       <ul class="grid grid-cols-1 sm:grid-cols-2 gap-x-12 gap-y-0">
         {
           machineReadable.map((entry) => (
-            <li class="border-b border-ink/15">
+            <li class="border-b border-outline-variant/15">
               <a href={entry.href} class="group block py-5 no-underline">
-                <p class="font-semibold font-mono group-hover:text-accent transition-colors">
+                <p class="font-semibold font-mono group-hover:text-primary transition-colors">
                   {entry.name}
                 </p>
-                <p class="text-body-sm mt-1 text-[color:var(--color-mute)]">{entry.description}</p>
+                <p class="text-body-sm mt-1 text-[color:var(--color-on-surface-variant)]">
+                  {entry.description}
+                </p>
               </a>
             </li>
           ))

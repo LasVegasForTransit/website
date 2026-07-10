@@ -35,10 +35,11 @@ const u = (path: string): string => new URL(path, site.url).toString();
 const fmtDate = (d: Date | undefined): string => (d ? d.toISOString().split('T')[0] : '');
 
 export const GET: APIRoute = async () => {
-  const [docs, pages, projects, initiatives] = await Promise.all([
+  const [docs, pages, projects, programs, initiatives] = await Promise.all([
     getCollection('docs'),
     getCollection('pages'),
     getCollection('projects'),
+    getCollection('programs'),
     getCollection('initiatives'),
   ]);
 
@@ -77,6 +78,24 @@ export const GET: APIRoute = async () => {
     out.push('---');
     out.push('');
   }
+
+  // Programs — public-facing nonprofit portfolios alongside reportable project lines.
+  out.push('# Programs');
+  out.push(`Source: ${u('/programs')}`);
+  out.push('');
+  const sortedPrograms = [...programs].sort((a, b) => a.data.order - b.data.order);
+  for (const program of sortedPrograms) {
+    out.push(`## ${program.data.title}`);
+    out.push('');
+    out.push(program.data.summary);
+    if (program.body) {
+      out.push('');
+      out.push(program.body.trim());
+    }
+    out.push('');
+  }
+  out.push('---');
+  out.push('');
 
   // Long-form organizational docs — strategy, vision, mission, etc.
   out.push('# Organizational documents');
