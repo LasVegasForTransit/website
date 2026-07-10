@@ -7,9 +7,10 @@
 interface Props {
   title: string;
   lede?: string;
+  showRule?: boolean;
 }
 
-const { title, lede } = Astro.props;
+const { title, lede, showRule = true } = Astro.props;
 ---
 
 <header class="container-page pt-[clamp(3rem,10dvh,7rem)] pb-8 md:pb-12">
@@ -19,4 +20,4 @@ const { title, lede } = Astro.props;
     <slot />
   </div>
 </header>
-<hr class="rule-thick container-page" />
+{showRule && <hr class="rule-thick container-page" />}

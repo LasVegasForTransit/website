@@ -996,6 +996,14 @@ test.describe('body content links', () => {
     }
   });
 
+  test('omits the shared hero rule on the sitemap page', async ({ page }) => {
+    await page.goto('/sitemap');
+    await page.waitForLoadState('networkidle');
+
+    await expect(page.locator('main h1')).toHaveText('Sitemap');
+    await expect(page.locator('main > hr.rule-thick.container-page')).toHaveCount(0);
+  });
+
   test('adds open icons to external links automatically', async ({ page }) => {
     let totalExternalLinks = 0;
 
