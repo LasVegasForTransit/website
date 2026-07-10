@@ -6,12 +6,10 @@ const env: EnvLike = (import.meta as unknown as { env?: EnvLike }).env ?? {};
 // URL — comes exclusively from PUBLIC_LVBT_* env vars (`.env.local` in dev,
 // the Cloudflare Pages dashboard in prod). There are deliberately NO fallback
 // literals: an unset var resolves to `undefined`, consumers skip rendering
-// that link rather than ship a stale URL, and we warn at build so the gap is
-// visible in the logs instead of silent. See .env.example for the full list.
+// that link rather than ship a stale URL. See .env.example for the full list.
 function urlFromEnv(key: string): string | undefined {
   const value = env[key];
   if (value && value.trim()) return value;
-  console.warn(`[site config] ${key} is unset — its link will be hidden.`);
   return undefined;
 }
 
@@ -19,6 +17,19 @@ export const site = {
   name: 'Las Vegans for Better Transit',
   shortName: 'LVBT',
   tagline: 'Better transit, safer streets, a Vegas that works for everyone.',
+  // Shared between BaseLayout's default meta description and the Organization
+  // JSON-LD (src/lib/structured-data.ts) — one description, not two copies
+  // that can drift.
+  description:
+    'Las Vegans for Better Transit is the grassroots advocacy group fighting for world-class public transit and supportive land use in the Las Vegas Valley.',
+  // Shared between the /join/[role] page's visible "About" intro and
+  // jobPostingSchema's JSON-LD description (src/lib/structured-data.ts) — same
+  // reasoning as `description` above. Not the same statement as
+  // src/content/docs/mission.mdx's opening sentence, which is worded
+  // differently for its own purpose; reconciling those two is an editorial
+  // call, not a duplication fix.
+  orgIntro:
+    'We advocate for world-class public transportation and the land use that makes it work through public education, community outreach, and coalition building.',
   url: 'https://lasvegasfortransit.org',
   email: {
     general: 'hello@lasvegasfortransit.org',
@@ -34,6 +45,12 @@ export const site = {
   donate: {
     label: 'Donate',
     url: urlFromEnv('PUBLIC_LVBT_DONATE_URL'),
+  },
+  // Candid nonprofit profile — the third-party transparency record linked from
+  // the About page. This is stable public organization metadata, not deploy
+  // configuration.
+  transparency: {
+    candidUrl: 'https://app.candid.org/profile/16646908/las-vegans-for-better-transit-42-1995935',
   },
   // Membership intake Google Form — the canonical front door for new members
   // (feeds the Beehiiv + Notion pipeline via its Apps Script submit trigger).
@@ -65,9 +82,10 @@ export const site = {
   org: {
     legalName: 'Las Vegans for Better Transit',
     // TODO: update to full PO box mailing address once secured.
-    address: 'Las\u00A0Vegas, Nevada',
+    address: 'North\u00A0Las\u00A0Vegas, Nevada',
     ein: '42-1995935',
     founded: 'April 17, 2026',
+    founder: 'Willie Chalmers III',
   },
 } as const;
 
@@ -77,6 +95,7 @@ export const site = {
 //   llms-*.txt sources, astro.config.mjs, and vision.astro's `noindex` flag.
 export const navMain = [
   { href: '/about', label: 'About' },
+  { href: '/programs', label: 'Programs' },
   { href: '/projects', label: 'Projects' },
   { href: '/events', label: 'Events' },
   { href: '/join', label: 'Join' },

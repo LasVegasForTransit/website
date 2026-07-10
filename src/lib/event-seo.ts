@@ -1,6 +1,7 @@
 import type { CollectionEntry } from 'astro:content';
 import { TIMEZONE, formatEventTime } from './event-time';
 import { site } from './site';
+import { truncate } from './truncate';
 
 type EventEntry = CollectionEntry<'events'>;
 
@@ -11,12 +12,30 @@ const dateFormatter = new Intl.DateTimeFormat('en-US', {
   timeZone: TIMEZONE,
 });
 
+const metaTitleDateFormatter = new Intl.DateTimeFormat('en-US', {
+  month: 'short',
+  day: 'numeric',
+  year: 'numeric',
+  timeZone: TIMEZONE,
+});
+
 function eventDateLabel(event: EventEntry): string {
   return dateFormatter.format(event.data.date);
 }
 
+function eventMetaDateLabel(event: EventEntry): string {
+  return metaTitleDateFormatter.format(event.data.date);
+}
+
 export function eventMetaTitle(event: EventEntry): string {
-  return `${eventDateLabel(event)}: ${event.data.title}`;
+  const date = eventMetaDateLabel(event);
+  const titleBudget = 34 - date.length - 2;
+  const title = truncate(event.data.title, titleBudget, {
+    ellipsis: '...',
+    reserveEllipsisWidth: true,
+    normalizeWhitespace: true,
+  });
+  return `${date}: ${title}`;
 }
 
 export function eventMetaDescription(event: EventEntry): string {
