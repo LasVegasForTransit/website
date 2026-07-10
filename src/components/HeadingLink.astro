@@ -1,0 +1,29 @@
+---
+type HeadingTag = 'h1' | 'h2' | 'h3' | 'h4';
+
+interface Props {
+  as?: HeadingTag;
+  class?: string;
+  id?: string;
+  includeInContents?: boolean;
+  label: string;
+  targetId?: string;
+}
+
+const {
+  as = 'h2',
+  class: className = '',
+  id,
+  includeInContents = false,
+  label,
+  targetId = id,
+} = Astro.props as Props;
+const Tag = as;
+---
+
+<Tag id={id} class={className} data-brand-contents-heading={includeInContents ? '' : undefined}>
+  <a href={`#${targetId}`} class="heading-anchor" data-copy-anchor>
+    <span class="heading-anchor__text"><slot>{label}</slot></span>
+    <span class="heading-anchor__glyph" aria-hidden="true">#</span>
+  </a>
+</Tag>
