@@ -1,5 +1,6 @@
 import { defineCollection } from 'astro:content';
 import { glob } from 'astro/loaders';
+import { existsSync } from 'node:fs';
 import { z } from 'zod';
 import { calendarEventsLoader } from './lib/events-loader';
 import { beehiivNewsletterLoader } from './lib/newsletter-loader';
@@ -61,8 +62,19 @@ const events = defineCollection({
 // derived slug is 2026-05-28-general-meeting). When a fragment is
 // present, the detail page renders it below the header; otherwise the
 // header is the full page. Frontmatter is intentionally minimal.
+const EVENT_BODIES_DIR = './src/content/event-bodies';
+
+const eventBodiesLoader = existsSync(EVENT_BODIES_DIR)
+  ? glob({ pattern: '**/*.{md,mdx}', base: EVENT_BODIES_DIR })
+  : {
+      name: 'empty-event-bodies-loader',
+      load: async ({ store }: { store: { clear: () => void } }) => {
+        store.clear();
+      },
+    };
+
 const eventBodies = defineCollection({
-  loader: glob({ pattern: '**/*.{md,mdx}', base: './src/content/event-bodies' }),
+  loader: eventBodiesLoader,
   schema: z.object({
     slug: z.string(),
   }),
@@ -84,8 +96,14 @@ const newsletter = defineCollection({
   }),
 });
 
+// Pattern excludes `_`-prefixed files (e.g. `_template.mdx`) at the loader
+// level — so an authoring template never enters the content store and never
+// needs a `(entry) => !entry.id.startsWith('_'))` filter at each call site.
+// See docs/reference/content-collections.md's "Templates" section.
+const excludeTemplates = ['**/*.{md,mdx}', '!**/_*.{md,mdx}'];
+
 const projects = defineCollection({
-  loader: glob({ pattern: '**/*.{md,mdx}', base: './src/content/projects' }),
+  loader: glob({ pattern: excludeTemplates, base: './src/content/projects' }),
   schema: z.object({
     title: z.string(),
     status: z.enum(['active', 'planned', 'complete', 'paused']),
@@ -111,15 +129,39 @@ const projects = defineCollection({
   }),
 });
 
+const programs = defineCollection({
+  loader: glob({ pattern: excludeTemplates, base: './src/content/programs' }),
+  schema: z.object({
+    title: z.string(),
+    summary: z.string(),
+    icon: z.string(),
+    order: z.number(),
+    projects: z.array(z.string()).default([]),
+    cohorts: z
+      .array(
+        z.object({
+          name: z.string(),
+          status: z.string(),
+          description: z.string(),
+        }),
+      )
+      .default([]),
+  }),
+});
+
 // Letters from Leadership — an open-ended, chronological archive. One file
 // per letter; adding a new one is just a new file, no route changes needed.
 // See src/pages/letters/index.astro (list) and [...slug].astro (detail).
+// Why "Leadership" and why author/authorTitle are per-letter fields:
+// docs/reference/content-collections.md → "Letter".
 const letters = defineCollection({
-  loader: glob({ pattern: '**/*.{md,mdx}', base: './src/content/letters' }),
+  loader: glob({ pattern: excludeTemplates, base: './src/content/letters' }),
   schema: z.object({
     title: z.string(),
     date: z.coerce.date(),
     summary: z.string(),
+    author: z.string(),
+    authorTitle: z.string(),
     order: z.number().optional(),
   }),
 });
@@ -129,7 +171,7 @@ const initiatives = defineCollection({
   schema: z.object({
     title: z.string(),
     description: z.string(),
-    color: z.enum(['accent', 'ink', 'mute']).default('accent'),
+    color: z.enum(['primary', 'ink', 'mute']).default('primary'),
   }),
 });
 
@@ -167,6 +209,10 @@ const roles = defineCollection({
     commitment: z.string(),
     team: z.string().optional(),
     order: z.number().optional(),
+    // Required by Google's JobPosting structured-data guide. Set to the date
+    // the posting was actually added to the repo (verified via git/GitHub
+    // history), not a placeholder.
+    datePosted: z.coerce.date(),
   }),
 });
 
@@ -176,6 +222,7 @@ export const collections = {
   eventBodies,
   newsletter,
   projects,
+  programs,
   initiatives,
   pages,
   glossary,

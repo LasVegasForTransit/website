@@ -13,6 +13,7 @@ Most collections are authored in MDX (Markdown with the ability to drop in inter
 | `src/content/docs/`         | MDX             | Long-form essays (vision, mission, why-now, problems, strategy). Rendered at `/vision` and `/about/strategy`.                                                                                                                                     |
 | `src/content/pages/`        | MDX             | Body copy for individual site pages (about, contact, get-involved).                                                                                                                                                                               |
 | `src/content/projects/`     | MDX             | One per project. Drives `/projects` and `/projects/[slug]`.                                                                                                                                                                                       |
+| `src/content/letters/`      | MDX             | One per letter. Drives `/letters` and `/letters/[slug]`. See "Letter" below for what belongs here.                                                                                                                                                |
 | _(events)_                  | Google Calendar | Event metadata. Pulled at build time by the custom loader in `src/lib/events-loader.ts`. See [events pipeline](../explanation/events-pipeline.md).                                                                                                |
 | `src/content/event-bodies/` | MDX             | Optional long-form body for a specific event, keyed by slug. Rendered below the event header on `/events/[slug]`.                                                                                                                                 |
 | _(newsletter)_              | Beehiiv RSS     | Newsletter issues. Pulled at build time by the loader in `src/lib/newsletter-loader.ts` from the feed at `PUBLIC_LVBT_NEWSLETTER_FEED_URL`. Drives `/newsletter`; each card links out to the Beehiiv post (issues are never hosted on this site). |
@@ -79,13 +80,28 @@ startDate: ISO 8601 date
 order: number                     # optional, lower = earlier
 ```
 
+Project bodies use a standard public-brief structure: `## Overview`, `## Motivation`, `## Approach`, and `## What people will see`, with `## Updates` added only when there is dated progress to record. The `Motivation` section explains the public problem, who is affected, why LVBT is acting, and why the work matters now. `What people will see` names the concrete things the page will eventually point to: reports, events, comments, coalitions, chapters, dashboards, briefings, published stories, public relationships, or other recorded results.
+
+### Letter
+
+```yaml
+title: string
+date: ISO 8601 date # when the letter was posted
+summary: string
+author: string # e.g. "Willie Chalmers III"
+authorTitle: string # e.g. "President" — the author's role on THIS letter
+order: number # optional, lower = earlier
+```
+
+The page is titled "Letters from Leadership," not "Letters from the President," on purpose. The main use case today is letters from the president, but leadership is more than whoever's in charge — this collection is open to other officers, board members, and team leads, and eventually to open letters that aren't tied to one individual author. That's why `author`/`authorTitle` are per-letter fields rather than a name hardcoded into the page template: each letter can be signed by whoever actually wrote it.
+
 ### Initiative (JSON)
 
 ```json
 {
   "title": "string",
   "description": "string",
-  "color": "accent" | "ink" | "mute"
+  "color": "primary" | "ink" | "mute"
 }
 ```
 
@@ -99,4 +115,4 @@ Front-matter is `{ title, summary }` plus an MDX body. Slug is the filename.
 
 ## Templates
 
-Each MDX/JSON-backed collection has a `_template.mdx` (or `_template.json`) showing the canonical shape. Copy it when adding new content. The leading underscore is a convention that tells Astro to ignore the file as content — so the template itself never becomes a published page. Events have no template — they're created in Google Calendar; `pnpm event:new` scaffolds an optional body fragment.
+Each MDX/JSON-backed collection has a `_template.mdx` (or `_template.json`) showing the canonical shape. Copy it when adding new content. The leading underscore is a convention: for collections that use it (currently `projects`, `programs`, `letters`), the collection's `glob()` loader pattern in `src/content.config.ts` excludes `_`-prefixed files at the source, so the template never enters the content store and never needs per-page filtering to keep it out of listings, sitemaps, or `/llms-full.txt`. A new MDX/JSON collection that wants this convention needs to opt in the same way — the underscore prefix alone does nothing on its own. Events have no template — they're created in Google Calendar; `pnpm event:new` scaffolds an optional body fragment.
