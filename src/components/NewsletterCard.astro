@@ -26,7 +26,7 @@ const dateLabel = new Intl.DateTimeFormat('en-US', {
   data-print-url={link}
   target="_blank"
   rel="noopener"
-  class="lift flex flex-col h-full border border-outline bg-surface-container text-on-surface p-6 no-underline hover:bg-slab hover:text-on-slab"
+  class="lift flex flex-col h-full border border-outline bg-surface-container text-on-surface p-6 no-underline hover:bg-slab hover:text-on-slab focus-visible:bg-slab focus-visible:text-on-slab"
 >
   <p class="text-body-sm font-semibold text-on-surface-variant">
     <time datetime={pubDate.toISOString()}>{dateLabel}</time>

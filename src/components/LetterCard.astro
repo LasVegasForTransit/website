@@ -22,7 +22,7 @@ const dateLabel = new Intl.DateTimeFormat('en-US', {
 
 <a
   href={paths.letter(letter.id)}
-  class="lift flex flex-col h-full border border-outline bg-surface-container text-on-surface p-6 no-underline hover:bg-slab hover:text-on-slab"
+  class="lift flex flex-col h-full border border-outline bg-surface-container text-on-surface p-6 no-underline hover:bg-slab hover:text-on-slab focus-visible:bg-slab focus-visible:text-on-slab"
 >
   <p class="text-body-sm font-semibold text-on-surface-variant">
     <time datetime={date.toISOString()}>{dateLabel}</time>
