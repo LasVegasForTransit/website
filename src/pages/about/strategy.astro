@@ -1,25 +1,12 @@
 ---
-import { Icon } from 'astro-icon/components';
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import PageHero from '../../components/PageHero.astro';
-import MarkdownRule from '../../components/MarkdownRule.astro';
-import StrategySection from '../../components/StrategySection.astro';
 import {
-  powerMoves,
-  strategyBoundaries,
-  strategyContext,
-  strategyFocus,
-  strategyLinks,
+  strategicPriorities,
+  strategyIntro,
   strategyMeta,
-  strategyOpening,
-  strategyValues,
+  strategyNorthStar,
 } from '../../lib/strategy-content';
-
-const openingStats = [
-  { value: '0', label: 'Miles of passenger rail in the metro' },
-  { value: '2.4M+', label: 'People who live in the region' },
-  { value: '2027', label: 'Next major state funding window' },
-];
 ---
 
 <BaseLayout title="Our strategy" description={strategyMeta.description}>
@@ -33,209 +20,278 @@ const openingStats = [
       </a>
       <a
         href="/programs"
-        class="press inline-flex border-2 border-outline px-5 py-3 font-bold no-underline hover:bg-on-surface hover:text-surface"
+        class="press inline-flex border-2 border-outline px-5 py-3 font-bold no-underline hover:bg-on-surface hover:text-surface focus-visible:bg-on-surface focus-visible:text-surface"
       >
         See programs
       </a>
     </div>
   </PageHero>
 
-  <div class="container-page">
-    <hr class="rule-thick" />
-  </div>
-
-  <section class="container-page py-14 md:py-20" aria-labelledby="strategy-opening">
-    <h2 id="strategy-opening" class="sr-only">Strategy summary</h2>
-
-    <div class="grid gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(18rem,24rem)] lg:gap-12">
-      <div class="grid gap-6 md:grid-cols-2">
-        {
-          strategyOpening.map((item) => (
-            <article class="border-l-8 border-primary bg-surface-container p-6 md:p-8">
-              <h3 class="text-headline-sm">{item.title}</h3>
-              <p class="mt-4 text-body-lg leading-relaxed text-on-surface-variant text-pretty">
-                {item.body}
-              </p>
-            </article>
-          ))
-        }
+  <div class="strategy-page container-page">
+    <section class="strategy-intro" aria-label="Strategy introduction">
+      <div class="strategy-intro__copy">
+        {strategyIntro.map((paragraph) => <p>{paragraph}</p>)}
       </div>
 
-      <dl class="grid border border-outline bg-surface-container">
-        {
-          openingStats.map((stat) => (
-            <div class="border-b border-outline-variant/25 p-6 last:border-b-0">
-              <dt class="text-body-md font-semibold text-on-surface-variant">{stat.label}</dt>
-              <dd class="mt-2 text-display-sm">{stat.value}</dd>
-            </div>
-          ))
-        }
-      </dl>
-    </div>
-  </section>
+      <aside class="strategy-north-star" aria-labelledby="strategy-north-star">
+        <h2 id="strategy-north-star">{strategyNorthStar.title}</h2>
+        <p>{strategyNorthStar.body}</p>
+        <p>{strategyNorthStar.note}</p>
+      </aside>
+    </section>
 
-  <StrategySection
-    id="what-we-want"
-    title="What we want"
-    intro="LVBT's north star is a Las Vegas Valley where public transportation is part of ordinary life, not a last resort. Light rail is part of the dream, but the work cannot wait for one perfect project."
-  >
-    <div class="prose-doc max-w-[72ch] text-on-surface-variant">
-      <p>
-        Better transit should make the Valley more affordable, more independent, and more humane.
-        Families should not need to drive for every errand. Students should not need a parent to get
-        home from an after-school club. Workers should not have to choose between unreliable
-        transportation and a missed shift. Streets should not keep producing preventable injuries
-        and deaths as the cost of getting around.
-      </p>
-      <p>
-        The practical work is incremental: protect and improve bus service, make major corridors
-        easier to use, connect land use to transit, and build enough public demand that future rail
-        becomes politically and financially possible.
-      </p>
-    </div>
-  </StrategySection>
-
-  <StrategySection
-    id="why-las-vegas-is-different"
-    title="Why Las Vegas is different"
-    intro="The Valley's transit problem is not just technical. It is civic. Las Vegas has to build public expectation for transit while it builds the system itself."
-  >
-    <div class="grid gap-4 md:grid-cols-2">
-      {
-        strategyContext.map((item) => (
-          <article class="border border-outline-variant/30 bg-surface-container p-5">
-            <h3 class="text-title-lg">{item.title}</h3>
-            <p class="mt-3 text-body-md leading-relaxed text-on-surface-variant text-pretty">
-              {item.body}
-            </p>
-          </article>
-        ))
-      }
-    </div>
-  </StrategySection>
-
-  <StrategySection
-    id="where-we-focus"
-    title="Where we focus"
-    intro="This is not a formal strategic plan. It is the public shape of the work while LVBT grows into one: what we pay attention to, who we try to reach, and how we keep the mission grounded."
-  >
-    <ol class="grid list-none gap-4 md:grid-cols-2">
-      {
-        strategyFocus.map((item, index) => (
-          <li class="border border-outline-variant/30 bg-surface-container p-5">
-            <article>
-              <p class="text-body-sm font-bold text-primary-ink">Focus {index + 1}</p>
-              <h3 class="mt-2 text-title-lg">{item.title}</h3>
-              <p class="mt-3 text-body-md leading-relaxed text-on-surface-variant text-pretty">
-                {item.body}
-              </p>
-            </article>
-          </li>
-        ))
-      }
-    </ol>
-  </StrategySection>
-
-  <StrategySection
-    id="how-we-build-power"
-    title="How we build power"
-    intro="The strategy is not to publish a plan and wait. It is to make transit easier to understand, easier to support, and harder for decision-makers to ignore."
-  >
-    <div class="grid gap-6">
-      {
-        powerMoves.map((item, index) => (
-          <article class="grid gap-4 border-t border-outline-variant/25 pt-6 md:grid-cols-[4rem_minmax(0,1fr)]">
-            <p class="text-headline-sm text-primary-ink tnum">
-              {String(index + 1).padStart(2, '0')}
-            </p>
-            <div>
-              <h3 class="text-title-lg">{item.title}</h3>
-              <p class="mt-2 text-body-md leading-relaxed text-on-surface-variant text-pretty">
-                {item.body}
-              </p>
-            </div>
-          </article>
-        ))
-      }
-    </div>
-  </StrategySection>
-
-  <StrategySection
-    id="values"
-    title="Values"
-    intro="The work has to be principled enough to matter and practical enough to last."
-  >
-    <div class="grid gap-4 md:grid-cols-2">
-      {
-        strategyValues.map((item) => (
-          <article class="border border-outline-variant/30 bg-surface-container p-5">
-            <h3 class="text-title-lg">{item.title}</h3>
-            <p class="mt-3 text-body-md leading-relaxed text-on-surface-variant text-pretty">
-              {item.body}
-            </p>
-          </article>
-        ))
-      }
-    </div>
-  </StrategySection>
-
-  <StrategySection
-    id="what-we-are-not"
-    title="What we are not"
-    intro="Clear boundaries keep the organization honest and help partners understand the role LVBT is built to play."
-  >
-    <div class="grid gap-4 md:grid-cols-2">
-      {
-        strategyBoundaries.map((item) => (
-          <article class="border border-outline-variant/30 p-5">
-            <h3 class="text-title-lg">{item.title}</h3>
-            <p class="mt-3 text-body-md leading-relaxed text-on-surface-variant text-pretty">
-              {item.body}
-            </p>
-          </article>
-        ))
-      }
-    </div>
-  </StrategySection>
-
-  <section
-    class="container-page pb-20 pt-14 md:pb-28 md:pt-20"
-    aria-labelledby="where-this-connects"
-  >
-    <MarkdownRule class="mb-10" />
-    <div class="grid gap-8 lg:grid-cols-[minmax(14rem,22rem)_minmax(0,1fr)] lg:gap-10">
-      <div>
-        <h2 id="where-this-connects" class="text-headline-lg">Where this connects</h2>
-        <p class="mt-4 text-body-lg leading-relaxed text-on-surface-variant text-pretty">
-          Strategy should point people toward the next useful page, not trap them in an internal
-          planning document.
-        </p>
-      </div>
-
-      <ul class="grid list-none gap-4 md:grid-cols-2">
-        {
-          strategyLinks.map((link) => (
-            <li>
-              <a
-                href={link.href}
-                class="group flex h-full min-w-0 flex-col border border-outline bg-surface-container p-5 no-underline transition-colors hover:bg-slab hover:text-on-slab focus-visible:bg-slab focus-visible:text-on-slab"
-              >
-                <span class="flex items-center justify-between gap-4 text-title-lg">
-                  {link.label}
-                  <Icon
-                    name="mdi:arrow-right"
-                    class="size-5 shrink-0 transition-transform group-hover:translate-x-1 group-focus-visible:translate-x-1"
-                    aria-hidden="true"
-                  />
-                </span>
-                <span class="mt-3 text-body-md leading-relaxed text-on-surface-variant text-pretty group-hover:text-on-slab/75 group-focus-visible:text-on-slab/75">
-                  {link.body}
-                </span>
+    <section class="strategy-layout" aria-labelledby="strategy-priorities">
+      <aside class="strategy-sidebar" aria-label="Strategic priority links">
+        <nav class="strategy-priority-nav" aria-label="Strategic priorities">
+          {
+            strategicPriorities.map((item) => (
+              <a href={`#${item.id}`}>
+                <span aria-hidden="true">{item.number}</span>
+                {item.shortTitle}
               </a>
-            </li>
-          ))
-        }
-      </ul>
-    </div>
-  </section>
+            ))
+          }
+        </nav>
+      </aside>
+
+      <div class="strategy-content">
+        <div class="strategy-section-heading">
+          <h2 id="strategy-priorities">Strategic priorities</h2>
+          <p>Five areas guide LVBT's first years of organizing, education, and public action.</p>
+        </div>
+
+        <ol class="strategy-priorities">
+          {
+            strategicPriorities.map((item) => (
+              <li id={item.id} class="strategy-priority">
+                <article>
+                  <div class="strategy-priority__number" aria-hidden="true">
+                    {item.number}
+                  </div>
+
+                  <div class="strategy-priority__copy">
+                    <h3>{item.title}</h3>
+                    <p class="strategy-priority__thesis">{item.thesis}</p>
+                    <p>{item.body}</p>
+
+                    <div
+                      class="strategy-priority__links"
+                      aria-label={`Related links for ${item.title}`}
+                    >
+                      {item.links.map((link) => (
+                        <a href={link.href}>{link.label}</a>
+                      ))}
+                    </div>
+                  </div>
+                </article>
+              </li>
+            ))
+          }
+        </ol>
+      </div>
+    </section>
+  </div>
 </BaseLayout>
+
+<style>
+  .strategy-page {
+    padding-block: clamp(3.5rem, 7vw, 5rem) clamp(5rem, 9vw, 8rem);
+  }
+
+  .strategy-intro {
+    display: grid;
+    gap: clamp(2rem, 5vw, 4rem);
+    align-items: start;
+  }
+
+  .strategy-intro__copy {
+    display: grid;
+    gap: 1.1rem;
+    max-width: 52rem;
+    color: var(--color-on-surface-variant);
+    font-size: var(--text-body-lg);
+    font-weight: var(--text-body-lg--font-weight);
+    line-height: 1.65;
+    text-wrap: pretty;
+  }
+
+  .strategy-layout {
+    display: grid;
+    gap: clamp(2rem, 5vw, 4.5rem);
+    margin-top: clamp(3.5rem, 7vw, 6rem);
+  }
+
+  .strategy-sidebar {
+    align-self: start;
+  }
+
+  .strategy-content {
+    display: grid;
+    gap: clamp(2rem, 4vw, 3rem);
+    min-width: 0;
+  }
+
+  .strategy-priority-nav {
+    display: grid;
+    gap: 0.35rem;
+    border-left: 2px solid
+      color-mix(in srgb, var(--color-outline-variant) 28%, var(--color-surface));
+    padding-left: 0.9rem;
+  }
+
+  .strategy-priority-nav a {
+    display: grid;
+    grid-template-columns: 2ch minmax(0, 1fr);
+    gap: 0.75rem;
+    padding-block: 0.35rem;
+    color: var(--color-on-surface-variant);
+    font-size: var(--text-body-md);
+    font-weight: 650;
+    line-height: 1.25;
+    text-decoration: none;
+  }
+
+  .strategy-priority-nav a:hover,
+  .strategy-priority-nav a:focus-visible {
+    color: var(--color-primary-ink);
+  }
+
+  .strategy-priority-nav span {
+    color: var(--color-primary-ink);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .strategy-north-star {
+    border: 1px solid color-mix(in srgb, var(--color-outline-variant) 45%, var(--color-surface));
+    background: var(--color-surface-container);
+    padding: clamp(1.25rem, 3vw, 2rem);
+  }
+
+  .strategy-north-star h2,
+  .strategy-section-heading h2,
+  .strategy-priority h3 {
+    font-size: var(--text-headline-lg);
+    font-weight: var(--text-headline-lg--font-weight);
+    letter-spacing: var(--text-headline-lg--letter-spacing);
+    line-height: var(--text-headline-lg--line-height);
+    text-wrap: balance;
+  }
+
+  .strategy-north-star p,
+  .strategy-section-heading p {
+    margin-top: 1rem;
+    max-width: 62ch;
+    color: var(--color-on-surface-variant);
+    font-size: var(--text-body-lg);
+    line-height: 1.6;
+    text-wrap: pretty;
+  }
+
+  .strategy-north-star p:first-of-type,
+  .strategy-priority__thesis {
+    color: var(--color-on-surface);
+    font-size: var(--text-title-lg);
+    font-weight: var(--text-title-lg--font-weight);
+    letter-spacing: var(--text-title-lg--letter-spacing);
+    /* 1.35, not the token's 1.2: these run two or three lines at this
+       measure, where the tighter token leading reads cramped. */
+    line-height: 1.35;
+  }
+
+  .strategy-section-heading {
+    max-width: 60rem;
+  }
+
+  .strategy-priorities {
+    display: grid;
+    gap: 1.25rem;
+    margin-top: clamp(1.5rem, 3vw, 2rem);
+    list-style: none;
+  }
+
+  .strategy-priority {
+    scroll-margin-top: 7rem;
+  }
+
+  .strategy-priority article {
+    display: grid;
+    gap: clamp(1rem, 3vw, 2rem);
+    border: 1px solid color-mix(in srgb, var(--color-outline-variant) 52%, var(--color-surface));
+    background: var(--color-surface-container);
+    padding: clamp(1.25rem, 3vw, 2.5rem);
+  }
+
+  .strategy-priority__number {
+    color: var(--color-primary-ink);
+    font-size: clamp(2.75rem, 6vw, 5.5rem);
+    font-weight: 900;
+    letter-spacing: -0.04em;
+    line-height: 0.85;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .strategy-priority__copy {
+    min-width: 0;
+  }
+
+  .strategy-priority h3 {
+    max-width: 22ch;
+  }
+
+  .strategy-priority__thesis {
+    margin-top: 1.25rem;
+    max-width: 64ch;
+    text-wrap: pretty;
+  }
+
+  .strategy-priority__thesis + p {
+    margin-top: 1rem;
+    max-width: 68ch;
+    color: var(--color-on-surface-variant);
+    font-size: var(--text-body-lg);
+    font-weight: var(--text-body-lg--font-weight);
+    line-height: 1.6;
+    text-wrap: pretty;
+  }
+
+  .strategy-priority__links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    margin-top: 1.6rem;
+  }
+
+  .strategy-priority__links a {
+    border: 1px solid color-mix(in srgb, var(--color-outline-variant) 60%, var(--color-surface));
+    color: var(--color-on-surface);
+    font-weight: 800;
+    padding: 0.65rem 0.9rem;
+    text-decoration: none;
+  }
+
+  .strategy-priority__links a:hover,
+  .strategy-priority__links a:focus-visible {
+    background: var(--color-slab);
+    color: var(--color-on-slab);
+  }
+
+  @media (min-width: 64rem) {
+    .strategy-intro {
+      grid-template-columns: minmax(0, 1fr) minmax(22rem, 30rem);
+    }
+
+    .strategy-layout {
+      grid-template-columns: minmax(12rem, 16rem) minmax(0, 1fr);
+      align-items: start;
+    }
+
+    .strategy-sidebar {
+      position: sticky;
+      top: 7rem;
+    }
+
+    .strategy-priority article {
+      grid-template-columns: minmax(4rem, 7rem) minmax(0, 1fr);
+    }
+  }
+</style>

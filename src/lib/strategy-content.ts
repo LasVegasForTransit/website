@@ -1,168 +1,94 @@
-export type StrategyLink = {
-  label: string;
-  href: string;
-  body: string;
-};
-
-export type StrategyItem = {
+export type StrategyPriority = {
+  id: string;
+  number: string;
+  shortTitle: string;
   title: string;
+  thesis: string;
   body: string;
+  links: {
+    href: string;
+    label: string;
+  }[];
 };
 
 export const strategyMeta = {
   title: 'Our strategy',
-  description:
-    'How Las Vegans for Better Transit thinks about building the public constituency, partnerships, and policy support needed for better transit in Southern Nevada.',
-  lede: "We're trying to do something that still feels borderline impossible in this city: build a real public voice for transit in a region that has been built around cars for half a century. This page is the working theory behind that effort.",
+  description: 'What Las Vegans for Better Transit wants and how we get there.',
+  lede: "LVBT's first five years will focus on creating a community of transit advocates and urbanists and taking action to meaningfully improve daily life in the Las Vegas Metropolitan Area.",
 } as const;
 
-export const strategyOpening: StrategyItem[] = [
-  {
-    title: 'The vision',
-    body: 'A Las Vegas Valley where reliable, safe, and efficient public transportation helps people get to work, reach school, buy groceries, enjoy recreation, and build community without needing a car for every trip.',
-  },
-  {
-    title: 'The work',
-    body: 'We educate the public, organize people into a durable civic base, and make friends with enough riders, neighbors, students, workers, public servants, and institutions to make better transit politically real.',
-  },
-];
+export const strategyIntro = [
+  'Our mission is to advocate for world-class public transportation and supportive land use policies in the Las Vegas metropolitan area through public education, community outreach, and coalition building.',
+  'For our first year of operation, we will focus on becoming a reliable community partner and a force worthy of community attention.',
+] as const;
 
-export const strategyContext: StrategyItem[] = [
-  {
-    title: 'The Valley starts from a different place',
-    body: 'Southern Nevada has no passenger rail and a relatively young civic memory around transit. Many residents have never seen high-quality transit as part of ordinary life, so education has to come before pressure.',
-  },
-  {
-    title: 'Growth is running into limits',
-    body: 'The region is approaching the physical and fiscal limits of outward growth. Better transit and more traditional, connected development patterns are not aesthetic preferences; they are practical requirements.',
-  },
-  {
-    title: 'The transit agency is not the obstacle',
-    body: 'RTC has plans and professional capacity, but funding and political demand limit what it can deliver. LVBT can build the outside constituency public agencies cannot build for themselves.',
-  },
-  {
-    title: 'The public needs a clearer picture',
-    body: 'Transit is too often framed as a narrow service for someone else. We make the case that better buses, safer streets, and future rail are part of affordability, independence, economic development, and public life.',
-  },
-];
+export const strategyNorthStar = {
+  title: 'World-class transit in Las Vegas',
+  body: 'A Las Vegas Valley where residents have access to reliable, safe, and efficient public transportation that helps people get to work, enjoy recreation, and build community.',
+  note: 'Light rail is the north star. The work starts now with better buses, better streets, better land use, and enough public demand to make larger investment possible.',
+} as const;
 
-export const strategyFocus: StrategyItem[] = [
+export const strategicPriorities: StrategyPriority[] = [
   {
-    title: 'Make the case for better transit',
-    body: 'Talk plainly about what car dependence costs people in time, money, safety, and isolation, and show what better buses, safer streets, and future rail could make possible.',
+    id: 'regional-transit',
+    number: '1',
+    shortTitle: 'Transit infrastructure',
+    title: 'Meaningfully change regional transit infrastructure',
+    thesis: 'Win better service now while building public demand for major investment.',
+    body: 'The primary purpose of LVBT is to secure world-class public transportation in the Las Vegas Valley. That means pushing for long-term investment while also advocating for small-scale policy, funding, street, and service changes that improve daily life for people who use transit and people who could use transit.',
+    links: [
+      { href: '/programs', label: 'Programs' },
+      { href: '/roadmap', label: 'Roadmap' },
+    ],
   },
   {
-    title: 'Bring young people in early',
-    body: "Students and young workers will live longest with today's choices. The work has to feel hopeful, useful, and worth joining, not like another civic process happening somewhere else.",
+    id: 'young-people',
+    number: '2',
+    shortTitle: 'Young people',
+    title: 'Engage with young people',
+    thesis: 'Treat students and young workers as the future constituency for transit.',
+    body: 'Building public transportation requires long-term thinking and investment in future generations. Students and young workers have the most to gain from world-class transportation, so LVBT has to make better transit feel hopeful, useful, and worth joining.',
+    links: [
+      { href: '/join', label: 'Join LVBT' },
+      { href: '/events', label: 'Events' },
+    ],
   },
   {
-    title: 'Build the missing community',
-    body: 'Las Vegas does not yet have a strong home for transit advocates and urbanists. We have to build that community ourselves, and keep it useful between campaigns.',
+    id: 'urbanist-community',
+    number: '3',
+    shortTitle: 'Urbanist community',
+    title: 'Build a community of urbanists',
+    thesis: 'Create the home for people in Las Vegas who already know the Valley can work better.',
+    body: 'Las Vegas does not yet have a strong home for transit advocates and urbanists. Without people, the organization is limited in what it can do, so LVBT has to build the community that can influence the entire Valley.',
+    links: [
+      { href: '/go', label: 'Get involved' },
+      { href: '/newsletter', label: 'Newsletter' },
+    ],
   },
   {
-    title: 'Work with institutions without becoming one',
-    body: 'Public agencies, schools, civic groups, businesses, labor, and elected officials all matter. LVBT can work with them while still saying the things residents need said out loud.',
+    id: 'public-engagement',
+    number: '4',
+    shortTitle: 'Public engagement',
+    title: 'Engage the public',
+    thesis:
+      'Help people connect better transit to the places and daily routines they already care about.',
+    body: 'Most people may not define urbanism, but they know what a good place feels like. LVBT has to help residents reimagine the relationship they have with the city and the way they get around it.',
+    links: [
+      { href: '/brand', label: 'Brand guide' },
+      { href: '/contact', label: 'Contact' },
+    ],
   },
   {
-    title: 'Stay practical about land use',
-    body: 'Transit only works when the places around it work. Zoning, parking, housing, shade, street design, and station areas are part of the transit conversation.',
-  },
-];
-
-export const powerMoves: StrategyItem[] = [
-  {
-    title: 'Make transit legible',
-    body: 'Explain how the system works, what is at stake, who decides, and how ordinary residents can intervene.',
-  },
-  {
-    title: 'Turn interest into membership',
-    body: 'Build a base large enough that public officials, agencies, reporters, and partners can see organized demand for transit.',
-  },
-  {
-    title: 'Show up consistently',
-    body: 'Attend meetings, submit comments, brief partners, and stay present long enough that LVBT becomes a reliable civic actor.',
-  },
-  {
-    title: 'Connect transit to land use',
-    body: 'Advocate for zoning, parking, housing, and street-design choices that make transit useful beyond the bus stop.',
-  },
-  {
-    title: 'Fill gaps agencies cannot fill',
-    body: 'Name the vision, build public support, and create political cover for staff and elected officials who need a visible constituency behind them.',
-  },
-];
-
-export const strategyValues: StrategyItem[] = [
-  {
-    title: 'Community and cooperation',
-    body: 'We prefer durable wins built with people over performative fights that leave the region harder to organize.',
-  },
-  {
-    title: 'Authenticity',
-    body: 'The work is strongest when volunteers, partners, and members can bring real talents and convictions to the table.',
-  },
-  {
-    title: 'Courage',
-    body: "Advocating for transit in one of the country's most car-dependent regions requires taking public stands before success is guaranteed.",
-  },
-  {
-    title: 'Empowerment',
-    body: 'We help residents understand the systems around them and give them practical ways to act on that understanding.',
-  },
-  {
-    title: 'Sustainability',
-    body: 'We build processes, relationships, and public knowledge that can keep working after a single campaign, meeting, or legislative session ends.',
-  },
-];
-
-export const strategyBoundaries: StrategyItem[] = [
-  {
-    title: 'Not a transit agency',
-    body: 'We do not run buses or write service plans. We organize public demand for better service, funding, streets, and land use.',
-  },
-  {
-    title: 'Not anti-car',
-    body: 'Many supporters drive and will continue to. The point is choice: a Valley where driving is not the only practical option.',
-  },
-  {
-    title: 'Not partisan',
-    body: 'Transit, safety, housing, affordability, and economic opportunity cut across party lines in Nevada.',
-  },
-  {
-    title: 'Not here for one session',
-    body: 'The 2027 Legislature matters, but the work has to continue through future budgets, plans, elections, and public decisions.',
-  },
-];
-
-export const strategyLinks: StrategyLink[] = [
-  {
-    label: 'About LVBT',
-    href: '/about',
-    body: 'Mission, tax status, and how the organization is set up.',
-  },
-  {
-    label: 'Programs',
-    href: '/programs',
-    body: 'The recurring areas of work that carry the strategy forward.',
-  },
-  {
-    label: 'Events',
-    href: '/events',
-    body: 'Meetings, walks, talks, and public actions where the work becomes visible.',
-  },
-  {
-    label: 'Get involved',
-    href: '/go',
-    body: 'Newsletter, membership, volunteer interest, and other ways to plug in.',
-  },
-  {
-    label: 'Letters',
-    href: '/letters',
-    body: 'Longer notes from leadership as the organization grows.',
-  },
-  {
-    label: 'Contact',
-    href: '/contact',
-    body: 'General, press, partnership, and volunteer conversations.',
+    id: 'institutional-relationships',
+    number: '5',
+    shortTitle: 'Institutional relationships',
+    title: 'Maintain relationships with supportive institutional actors',
+    thesis:
+      'Work with the people and institutions that can help deliver a more connected Las Vegas.',
+    body: 'Legislators, public servants, agencies, schools, community organizations, businesses, and labor can all help deliver a more connected Las Vegas. LVBT has to work with institutions while keeping the mission grounded in residents.',
+    links: [
+      { href: '/contact', label: 'Partner with us' },
+      { href: '/about', label: 'About LVBT' },
+    ],
   },
 ];
