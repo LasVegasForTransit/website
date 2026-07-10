@@ -102,7 +102,7 @@ Pre-approval to commit applies only when the user has explicitly said "commit" /
 
 - Astro 4 + Tailwind v4 (MDX content collections under `src/content/`)
 - Cloudflare Pages (`pnpm dev` runs Astro + `wrangler pages dev --proxy`)
-- pnpm, Node ≥ 22.12
+- pnpm, Node ≥ 24.18.0
 - Playwright for tests and ad-hoc screenshots
 - `scripts/bootstrap/` is the interactive setup CLI (`pnpm bootstrap`, `pnpm preflight`)
 - `scripts/audit/` is the CI/release audit baseline

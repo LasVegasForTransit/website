@@ -37,7 +37,7 @@ The setup runs as a sequence of _phases_ — self-contained steps that each get 
 
 | Phase       | What it does                                                                                                                                                                       |
 | ----------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `install`   | Verifies Node ≥22, pnpm ≥10, [GitHub CLI](./glossary.md#gh), [Cloudflare Wrangler](./glossary.md#wrangler), [`dig`](./glossary.md#dig) — offers to install missing tools           |
+| `install`   | Verifies Node ≥24.18.0, pnpm ≥10, [GitHub CLI](./glossary.md#gh), [Cloudflare Wrangler](./glossary.md#wrangler), [`dig`](./glossary.md#dig) — offers to install missing tools      |
 | `auth`      | Confirms `gh auth status` and `wrangler whoami`                                                                                                                                    |
 | `workspace` | Runs `pnpm install --frozen-lockfile` (installs the exact pinned versions from the [lockfile](./glossary.md#lockfile); fails instead of updating it) and a `pnpm build` smoke test |
 | `env`       | Creates `.env.local` from `.env.example`; prompts for live `PUBLIC_LVBT_*` URLs                                                                                                    |

@@ -36,7 +36,7 @@ export const CAPABILITY_SPECS: CapabilityConfig[] = [
     requiredByDefault: true,
     binaryCommand: 'command -v node',
     versionCommand: 'node --version',
-    minVersion: '22.12.0',
+    minVersion: '24.18.0',
     installCommands: {
       macos: ['brew install node@24'],
       linux: [
