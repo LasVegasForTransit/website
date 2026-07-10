@@ -1,7 +1,7 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
-import SectionHeader from '../components/SectionHeader.astro';
 import PullQuote from '../components/PullQuote.astro';
+import { Icon } from 'astro-icon/components';
 import { getEntry, render } from 'astro:content';
 import { site } from '../lib/site';
 import { requireEntry } from '../lib/content-guard';
@@ -11,168 +11,280 @@ requireEntry(aboutPage, 'pages', 'about');
 
 const { Content: OriginContent } = await render(aboutPage);
 
-const missionStatement =
-  'The mission of Las Vegans for Better Transit is to advocate for world-class public transportation and supportive land use policies in the Las\u00A0Vegas metropolitan area through public education, community outreach, and coalition building.';
-
-const pillars: Array<{ label: string; body: string }> = [
+const pillars: Array<{ id: string; label: string; body: string; icon: string }> = [
   {
+    id: 'educate',
     label: 'Educate',
+    icon: 'mdi:school-outline',
     body: 'We help Las Vegans see how the way we get around, what our neighborhoods look like, and what daily life costs in time, money, and lives are all connected.',
   },
   {
+    id: 'organize',
     label: 'Organize',
+    icon: 'mdi:account-group-outline',
     body: 'We build the constituency for transit that Las Vegas has never had, from riders and neighbors to business owners, students, faith communities, and labor, and we bring it to the people who write the budget.',
   },
   {
+    id: 'advocate',
     label: 'Advocate',
+    icon: 'mdi:bullhorn-outline',
     body: 'We show up at the Legislature, the RTC board, planning commissions, and in the press, and we push for dedicated funding, transit-oriented zoning, and the projects the Valley needs.',
   },
 ];
 
-const orgRows: Array<{ label: string; value: string }> = [
+const imprint: Array<{ label: string; value: string }> = [
   { label: 'Legal name', value: site.org.legalName },
-  { label: 'Address', value: site.org.address },
+  { label: 'Tax status', value: '501(c)(3)' },
   { label: 'EIN', value: site.org.ein },
   { label: 'Founded', value: site.org.founded },
 ];
 
-const contacts: Array<{ label: string; email: string; context: string }> = [
+const candidUrl = site.transparency.candidUrl;
+
+// Our approach — plain-language theory of change for the About page.
+const approachItems: Array<{ title: string; body: string }> = [
+  {
+    title: 'Public Education and Engagement',
+    body: 'Many Las Vegans have never ridden a train before or experienced daily life without being car-dependent. We educate and inspire residents so they can see the value of a transit-oriented city and imagine one here.',
+  },
+  {
+    title: 'Youth Engagement',
+    body: 'Young people are the future of our country and have the most to gain from well-designed neighborhoods. We give them opportunities to grow, learn, organize, and use their voices.',
+  },
+  {
+    title: 'Direct Advocacy',
+    body: 'Public investment is the only sustainable way to build better transit. We push government to align funding, land use, street design, and transit service with the needs of residents.',
+  },
+  {
+    title: 'Civic Belonging',
+    body: 'Better transit depends on the people and places it connects. We are building a community of riders, neighbors, students, workers, and local leaders who can make the case for a safer, more affordable, and more connected Las Vegas Valley.',
+  },
+  {
+    title: 'Coalition Building',
+    body: 'Citywide change requires alignment across the public sector, business, labor, education, neighborhoods, and civic life. We bring partners together around practical improvements and a shared long-term vision for the Valley.',
+  },
+];
+
+const contacts: Array<{ label: string; email: string; context: string; icon: string }> = [
   {
     label: 'General',
+    icon: 'mdi:email-outline',
     email: site.email.general,
     context: 'Residents, riders, anyone with a story or a question.',
   },
   {
     label: 'Press',
+    icon: 'mdi:newspaper-variant-outline',
     email: site.email.press,
     context: 'Reporters, editors, podcasters working on a transit story.',
   },
   {
     label: 'Partnerships',
+    icon: 'mdi:handshake-outline',
     email: site.email.partners,
-    context: 'Labor, faith, business, schools — orgs whose constituents depend on transit.',
+    context: 'Organizations that want to work with us on transit and land use.',
   },
 ];
+
+const membershipUrl = site.membership.formUrl;
+const membershipHref = membershipUrl ?? '/go';
+
+// Underlined mission "thrusts" that highlight their matching pillar on hover.
+const thrustClass =
+  'text-inherit underline decoration-2 underline-offset-4 decoration-on-surface/30 transition-colors motion-reduce:transition-none hover:text-primary-ink hover:decoration-primary focus-visible:text-primary-ink focus-visible:decoration-primary';
 ---
 
 <BaseLayout title="About" description={aboutPage.data.summary}>
   {/* Hero --------------------------------------------------------------- */}
-  <header class="container-page pt-20 pb-12 md:pt-28 md:pb-16">
-    <SectionHeader
-      title="Las Vegans for Better Transit"
-      lede={'A grassroots advocacy organization fighting for world-class public transit and supportive land use in the Las\u00A0Vegas Valley.'}
-    />
+  <header class="container-page pt-16 pb-10 md:pt-24 md:pb-12">
+    <h1 class="text-display-sm max-w-4xl text-balance">About Las Vegans for Better Transit</h1>
+    <p class="lede mt-6 max-w-3xl">
+      Las Vegans for Better Transit is a nonprofit advocacy organization in the Las&nbsp;Vegas
+      Valley. We educate residents about the value of public transit, organize them into a
+      constituency that wants it, and push government to implement it.
+    </p>
+    <dl class="mt-10 grid max-w-4xl grid-cols-2 gap-x-8 gap-y-4 text-body-sm sm:grid-cols-4">
+      {
+        imprint.map((item) => (
+          <div>
+            <dt class="text-on-surface-variant">{item.label}</dt>
+            <dd
+              data-about-imprint-value={item.label}
+              class="mt-1 font-semibold text-on-surface tnum [overflow-wrap:anywhere]"
+            >
+              <span>{item.value}</span>
+              {item.label === 'Tax status' && candidUrl && (
+                <>
+                  <span class="text-on-surface-variant" aria-hidden="true">
+                    {' '}
+                    ·{' '}
+                  </span>
+                  <a
+                    href={candidUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    class="inline-flex items-center gap-1 text-primary-ink underline decoration-2 decoration-primary/40 underline-offset-4 hover:decoration-primary"
+                  >
+                    Candid
+                  </a>
+                </>
+              )}
+            </dd>
+          </div>
+        ))
+      }
+    </dl>
   </header>
-  <hr class="rule-thick container-page" />
 
-  {/* § 01 / Mission ----------------------------------------------------- */}
-  <section class="container-page py-20 md:py-28">
-    <p class="eyebrow">§ 01 / Mission</p>
-    <h2 class="text-headline-lg mt-4 max-w-4xl">{missionStatement}</h2>
+  {/* Mission — the statement and the three ways we pursue it ----------- */}
+  <section class="container-page pb-20 pt-8 md:pb-28 md:pt-12">
+    <h2 class="text-headline-lg max-w-5xl text-balance">
+      Our mission is to advocate for <span class="text-primary-ink"
+        >world-class public transportation</span
+      > and <span class="text-primary-ink">supportive land use policies</span> in the Las&nbsp;Vegas metropolitan
+      area through <a href="#educate" data-thrust class={thrustClass}>public education</a>, <a
+        href="#organize"
+        data-thrust
+        class={thrustClass}>community outreach</a
+      >, and <a href="#advocate" data-thrust class={thrustClass}>coalition building</a>.
+    </h2>
 
-    <div class="mt-16 grid gap-px bg-ink border border-ink md:grid-cols-3">
+    <div class="mt-16 grid gap-10 border-t border-outline-variant/15 pt-12 md:grid-cols-3 md:gap-8">
       {
         pillars.map((p) => (
-          <div class="bg-paper p-8 md:p-10 flex flex-col">
-            <h3 class="text-title-lg">{p.label}</h3>
-            <p class="mt-4 leading-relaxed">{p.body}</p>
+          <div id={p.id} class="group scroll-mt-28">
+            <div class="flex items-center gap-3">
+              <Icon name={p.icon} class="size-8 text-primary-ink" aria-hidden="true" />
+              <h3 class="text-headline-sm transition-colors group-[.is-linked]:text-primary-ink">
+                {p.label}
+              </h3>
+            </div>
+            <p class="mt-3 leading-relaxed text-pretty">{p.body}</p>
           </div>
         ))
       }
     </div>
   </section>
 
-  {/* § 02 / Origin ------------------------------------------------------ */}
-  <section class="bg-ink text-paper min-h-screen flex flex-col justify-center">
+  {/* Origin — founder voice on the dark band; quote left, prose right -- */}
+  <section class="bg-slab text-on-slab">
     <div
-      class="container-page py-20 md:py-28 grid gap-12 md:grid-cols-[1fr_1.5fr] md:gap-16 items-start"
+      class="container-page py-10 md:py-12 grid gap-12 md:grid-cols-[1fr_1.5fr] md:gap-16 items-start"
     >
       <div>
-        <p class="eyebrow text-accent-soft">§ 02 / Origin</p>
-        <h2 class="text-headline-lg mt-4">An organization that didn't exist until it had to.</h2>
-
-        <div class="mt-10 max-w-md">
-          <PullQuote cite="RTC of Southern Nevada, March 2026">
-            "Without a new dedicated funding source, the RTC will be forced to eliminate fifteen
-            routes and reduce service across the network — affecting hundreds of thousands of riders
-            by 2028."
+        <h2 class="text-headline-lg">Our story</h2>
+        <div class="mt-10">
+          <PullQuote cite="Willie Chalmers III, founder" surface="slab">
+            "Las Vegas never had an organized public voice for transit. I started LVBT to be it."
           </PullQuote>
         </div>
       </div>
 
-      <div class="prose-doc text-paper max-w-2xl">
-        <OriginContent />
-      </div>
-    </div>
-  </section>
-
-  {/* § 03 / The legal entity -------------------------------------------- */}
-  <section class="container-page py-20 md:py-28">
-    <div class="grid gap-12 md:grid-cols-[1fr_1.5fr] md:gap-16 items-start">
       <div>
-        <p class="eyebrow">§ 03 / The legal entity</p>
-        <h2 class="text-headline-lg mt-4">A registered Nevada nonprofit.</h2>
-        <p class="lede mt-6 max-w-md">
-          Incorporated in Nevada in April 2026 as a <span class="whitespace-nowrap">501(c)(3)</span> nonprofit;
-          donations are tax-deductible.
-        </p>
+        <div class="prose-doc text-on-slab text-body-lg">
+          <OriginContent />
+        </div>
       </div>
-
-      <dl class="border border-ink divide-y divide-rule/15 bg-paper">
-        {
-          orgRows.map((row) => (
-            <div class="grid grid-cols-[8rem_1fr] md:grid-cols-[10rem_1fr] items-baseline gap-4 px-6 py-4">
-              <dt class="eyebrow">{row.label}</dt>
-              <dd class="text-base md:text-lg font-semibold tnum">{row.value}</dd>
-            </div>
-          ))
-        }
-      </dl>
     </div>
   </section>
 
-  {/* § 04 / Stay in touch ----------------------------------------------- */}
-  <section class="container-page py-20 md:py-28 border-t-[6px] border-ink">
-    <p class="eyebrow">§ 04 / Stay in touch</p>
-    <h2 class="text-headline-lg mt-4 max-w-3xl">Keep up with the work.</h2>
-    <p class="lede mt-6 max-w-2xl">
-      The newsletter goes out from <a href="/go" class="body-link">Get involved</a>. Day-to-day, we
-      post on
-      {
-        site.social.instagram ? (
-          <a href={site.social.instagram} rel="noopener" class="body-link">
-            Instagram
-          </a>
-        ) : (
-          'Instagram'
-        )
-      }
-      and {
-        site.social.bluesky ? (
-          <a href={site.social.bluesky} rel="noopener" class="body-link">
-            Bluesky
-          </a>
-        ) : (
-          'Bluesky'
-        )
-      }. For anything more specific, the inboxes below all reach a real person.
+  {/* Our approach — theory of change, then the org on paper ------------ */}
+  <section class="container-page py-20 md:py-28">
+    <h2 class="text-headline-lg">Our approach</h2>
+    <p class="mt-4 max-w-2xl text-body-lg leading-relaxed text-pretty">
+      Our theory of change for fulfilling our mission.
     </p>
 
-    <div class="mt-12 grid gap-px bg-ink border border-ink md:grid-cols-3">
+    <ul
+      data-about-approach-list
+      class="mt-10 grid list-none gap-x-10 gap-y-8 border-t border-outline-variant/15 pt-8 md:grid-cols-2 xl:grid-cols-3"
+    >
+      {
+        approachItems.map((item) => (
+          <li>
+            <article>
+              <h3 class="text-title-lg">{item.title}</h3>
+              <p class="mt-2 text-body-md leading-relaxed text-on-surface-variant text-pretty">
+                {item.body}
+              </p>
+            </article>
+          </li>
+        ))
+      }
+    </ul>
+
+    <a href="/projects" data-screen-action class="body-link mt-8 inline-block font-semibold"
+      >See our projects &#8594;</a
+    >
+  </section>
+
+  {/* Join — the membership conversion band ----------------------------- */}
+  <section data-print-callout class="bg-primary text-on-primary">
+    <div class="container-page py-24 md:py-32">
+      <div class="grid gap-8 md:grid-cols-[1fr_auto] md:items-center">
+        <div>
+          <h2 class="text-headline-lg">Membership</h2>
+          <p class="mt-4 max-w-xl text-body-lg leading-relaxed text-on-primary text-pretty">
+            Membership is free and takes a minute. LVBT is a volunteer-powered organization, and the
+            number of Las&nbsp;Vegans behind this campaign is part of the case we make to the people
+            who write the budget.
+          </p>
+        </div>
+        <div class="md:justify-self-end">
+          <a
+            href={membershipHref}
+            target={membershipUrl ? '_blank' : undefined}
+            rel={membershipUrl ? 'noopener noreferrer' : undefined}
+            class="press inline-flex items-center gap-2 bg-on-surface text-surface px-7 py-4 font-bold no-underline"
+          >
+            Become a member
+            <Icon name="mdi:arrow-right" class="size-4" aria-hidden="true" />
+          </a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  {/* Contact — hover-inverting icon cards ------------------------------ */}
+  <section class="container-page py-20 md:py-28">
+    <h2 class="text-headline-lg">Contact</h2>
+
+    <div class="mt-10 grid gap-4 md:grid-cols-3">
       {
         contacts.map((c) => (
           <a
             href={`mailto:${c.email}`}
-            class="bg-paper p-8 no-underline hover:bg-ink hover:text-paper transition-colors"
+            class="group flex flex-col border border-outline bg-surface-container p-6 no-underline transition-colors hover:bg-slab hover:text-on-slab focus-visible:bg-slab focus-visible:text-on-slab"
           >
-            <p class="eyebrow">{c.label}</p>
-            <p class="mt-3 text-lg md:text-xl font-bold underline underline-offset-4 [overflow-wrap:anywhere]">
+            <Icon
+              name={c.icon}
+              class="size-10 text-primary-ink group-hover:text-primary-soft group-focus-visible:text-primary-soft"
+              aria-hidden="true"
+            />
+            <p class="text-title-lg mt-3">{c.label}</p>
+            <p class="mt-1 text-sm font-bold [overflow-wrap:anywhere] group-hover:text-primary-soft group-focus-visible:text-primary-soft">
               {c.email}
             </p>
-            <p class="mt-4 text-sm leading-relaxed">{c.context}</p>
+            <p class="mt-2 text-sm text-on-surface-variant leading-relaxed text-pretty group-hover:text-on-slab/80 group-focus-visible:text-on-slab/80">
+              {c.context}
+            </p>
           </a>
         ))
       }
     </div>
   </section>
 </BaseLayout>
+
+<script>
+  const thrusts = document.querySelectorAll<HTMLAnchorElement>('a[data-thrust]');
+  thrusts.forEach((link) => {
+    const id = link.getAttribute('href')?.slice(1);
+    const pillar = id ? document.getElementById(id) : null;
+    if (!pillar) return;
+    const set = (on: boolean) => pillar.classList.toggle('is-linked', on);
+    link.addEventListener('mouseenter', () => set(true));
+    link.addEventListener('mouseleave', () => set(false));
+    link.addEventListener('focus', () => set(true));
+    link.addEventListener('blur', () => set(false));
+  });
+</script>
