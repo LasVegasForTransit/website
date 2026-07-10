@@ -16,12 +16,12 @@ const path = normalizePath(Astro.url.pathname);
 <div data-header-sentinel aria-hidden="true" class="h-px"></div>
 <header
   data-site-header
-  class="sticky top-0 z-50 bg-paper/80 border-b border-transparent data-[stuck]:backdrop-blur-md data-[stuck]:backdrop-saturate-150 data-[stuck]:border-rule/15 transition-[border-color] duration-200 ease-out [view-transition-name:site-header]"
+  class="sticky top-0 z-50 bg-surface/80 border-b border-transparent data-[stuck]:backdrop-blur-md data-[stuck]:backdrop-saturate-150 data-[stuck]:border-outline-variant/15 transition-[border-color] duration-200 ease-out [view-transition-name:site-header]"
 >
   <div class="container-page py-4 flex items-center justify-between gap-6">
     {
       /* Wordmark sits at text-xl across breakpoints: at 18px (text-lg)
-        the accent "for Better Transit" reads 3.64:1 on cream, which
+        the primary "for Better Transit" reads 3.64:1 on cream, which
         passes WCAG large-text (3:1) but fails normal-text (4.5:1).
         font-extrabold qualifies as large only at ≥18.66px, so dropping
         to text-lg on mobile flipped the threshold and tanked mobile
@@ -30,7 +30,7 @@ const path = normalizePath(Astro.url.pathname);
     }
     <a href="/" class="font-extrabold tracking-tight text-xl no-underline">
       <span class="block leading-none">Las Vegans</span>
-      <span class="block leading-none text-accent">for Better Transit</span>
+      <span class="block leading-none text-primary">for Better Transit</span>
     </a>
     <nav aria-label="Primary" class="hidden md:block">
       <ul class="flex items-center gap-7 text-sm font-semibold">
@@ -42,7 +42,7 @@ const path = normalizePath(Astro.url.pathname);
                 <a
                   href={item.href}
                   aria-current={active ? 'page' : undefined}
-                  class="nav-link no-underline hover:text-accent"
+                  class="nav-link no-underline hover:text-primary"
                 >
                   {item.label}
                 </a>
@@ -54,7 +54,8 @@ const path = normalizePath(Astro.url.pathname);
     </nav>
     <a
       href="/go"
-      class="press hidden md:inline-flex items-center gap-1.5 bg-ink text-paper px-4 py-2 text-sm font-bold no-underline hover:bg-accent"
+      data-header-cta
+      class="press hidden md:inline-flex items-center gap-1.5 bg-on-surface text-surface px-4 py-2 text-sm font-bold no-underline hover:bg-primary hover:text-on-primary focus-visible:bg-primary focus-visible:text-on-primary"
     >
       Get involved <span class="arrow" aria-hidden="true">→</span>
     </a>
@@ -63,7 +64,7 @@ const path = normalizePath(Astro.url.pathname);
       <a
         href="/join"
         data-mobile-join
-        class="press inline-flex items-center gap-1.5 bg-ink text-paper px-4 py-2 text-sm font-bold no-underline hover:bg-accent"
+        class="press inline-flex items-center gap-1.5 bg-on-surface text-surface px-4 py-2 text-sm font-bold no-underline hover:bg-primary hover:text-on-primary focus-visible:bg-primary focus-visible:text-on-primary"
       >
         Join <span class="arrow" aria-hidden="true">→</span>
       </a>
@@ -89,7 +90,7 @@ const path = normalizePath(Astro.url.pathname);
   data-nav-overlay
   aria-label="Mobile navigation"
   inert
-  class="md:hidden fixed left-0 right-0 bottom-0 bg-paper z-[65] flex flex-col overflow-y-auto"
+  class="md:hidden fixed left-0 right-0 bottom-0 bg-surface z-[65] flex flex-col overflow-y-auto"
   style="top: var(--lvbt-header-h)"
 >
   <ul class="flex-1 list-none m-0 px-6 py-2">
@@ -99,11 +100,11 @@ const path = normalizePath(Astro.url.pathname);
         .map((item) => {
           const active = path === normalizePath(item.href);
           return (
-            <li class="border-b border-rule/15">
+            <li class="border-b border-outline-variant/15">
               <a
                 href={item.href}
                 aria-current={active ? 'page' : undefined}
-                class="flex items-center py-5 text-2xl font-extrabold tracking-tight no-underline hover:text-accent aria-[current=page]:text-accent"
+                class="flex items-center py-5 text-2xl font-extrabold tracking-tight no-underline hover:text-primary aria-[current=page]:text-primary"
               >
                 {item.label}
               </a>
@@ -115,7 +116,7 @@ const path = normalizePath(Astro.url.pathname);
   <div class="px-6 pb-8 pt-4">
     <a
       href="/go"
-      class="press flex items-center justify-center gap-1.5 bg-ink text-paper py-4 text-sm font-bold no-underline hover:bg-accent"
+      class="press flex items-center justify-center gap-1.5 bg-on-surface text-surface py-4 text-sm font-bold no-underline hover:bg-primary hover:text-on-primary focus-visible:bg-primary focus-visible:text-on-primary"
     >
       Get involved <span class="arrow" aria-hidden="true">→</span>
     </a>

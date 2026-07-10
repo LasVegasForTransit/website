@@ -5,6 +5,7 @@ import Footer from '../components/site/Footer.astro';
 import StructuredData from '../components/seo/StructuredData.astro';
 import { site } from '../lib/site';
 import { organizationSchema } from '../lib/structured-data';
+import { canonicalUrl } from '../lib/paths';
 
 interface Props {
   title?: string;
@@ -22,21 +23,33 @@ interface Props {
    * page-agnostic (see [data-canvas='dark'] rules).
    */
   canvas?: 'paper' | 'dark';
+  /**
+   * OpenGraph object type. 'website' (default) fits nearly every page here.
+   * 'article' is for dated, single-author, long-form content (e.g. the
+   * letters archive) — pair it with `articlePublishedTime`/`articleAuthor`
+   * so the `article:*` OG tags below actually populate.
+   */
+  ogType?: 'website' | 'article';
+  articlePublishedTime?: string;
+  articleAuthor?: string;
 }
 
 const {
   title,
-  description = 'Las Vegans for Better Transit is the grassroots advocacy group fighting for world-class public transit and supportive land use in the Las Vegas Valley.',
+  description = site.description,
   ogImage = '/og-default.png',
   noindex = false,
   searchIndex = !noindex,
   chrome = 'site',
   mainClass = '',
   canvas = 'paper',
+  ogType = 'website',
+  articlePublishedTime,
+  articleAuthor,
 } = Astro.props;
 
 const fullTitle = title ? `${title} — ${site.name}` : `${site.name}`;
-const canonical = new URL(Astro.url.pathname, site.url).toString();
+const canonical = canonicalUrl(Astro.url.pathname);
 ---
 
 <!doctype html>
@@ -77,7 +90,17 @@ const canonical = new URL(Astro.url.pathname, site.url).toString();
     <link rel="canonical" href={canonical} />
     <title>{fullTitle}</title>
     <meta name="description" content={description} />
-    <meta property="og:type" content="website" />
+    <meta property="og:type" content={ogType} />
+    {
+      ogType === 'article' && articlePublishedTime && (
+        <meta property="article:published_time" content={articlePublishedTime} />
+      )
+    }
+    {
+      ogType === 'article' && articleAuthor && (
+        <meta property="article:author" content={articleAuthor} />
+      )
+    }
     <meta property="og:title" content={fullTitle} />
     <meta property="og:description" content={description} />
     <meta property="og:url" content={canonical} />
@@ -120,6 +143,13 @@ const canonical = new URL(Astro.url.pathname, site.url).toString();
     }
     <div class="min-h-dvh flex flex-col">
       {chrome === 'site' && <Header />}
+      {
+        chrome === 'site' && (
+          <div data-print-topbar class="hidden" aria-hidden="true">
+            <img src="/brand/lvbt-logo-512.png" alt="" width="260" height="260" />
+          </div>
+        )
+      }
       <main
         id="main"
         class:list={['flex-1', mainClass]}
@@ -136,6 +166,8 @@ const canonical = new URL(Astro.url.pathname, site.url).toString();
         element stuck hidden. Same pattern as ShareButton / Header. */
     }
     {chrome === 'site' && <script is:inline src="/scripts/reveal-on-scroll.js" defer />}
+    {chrome === 'site' && <script is:inline src="/scripts/copy-anchor.js" defer />}
+    {chrome === 'site' && <script is:inline src="/scripts/print-links.js" defer />}
     {
       /* Cloudflare Web Analytics. Real-user CWV + page-view counts to
          complement the synthetic Lighthouse runs in CI. Gated on

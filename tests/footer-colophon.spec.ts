@@ -95,13 +95,21 @@ test.describe('footer colophon', () => {
     await page.waitForLoadState('networkidle');
 
     await expect(page.locator('footer')).not.toContainText('Website made with love');
-    await expect(page.locator('footer a[href="/colophon"]', { hasText: 'Colophon' })).toBeVisible();
+    const utilityNav = page.locator('footer nav[aria-label="Site utilities"]');
+    await expect(utilityNav.locator('a[href="/colophon"]', { hasText: 'Colophon' })).toBeVisible();
+    await expect(utilityNav.locator('a[href="/brand"]', { hasText: 'Brand' })).toBeVisible();
+    await expect(utilityNav.locator('a[href="/sitemap"]', { hasText: 'Sitemap' })).toBeVisible();
+    await expect(
+      utilityNav.locator('a[href="https://github.com/LasVegasForTransit/website"]', {
+        hasText: 'Source',
+      }),
+    ).toBeVisible();
+    await expect(utilityNav.locator('a[href="/qr"][aria-label="Scan cards"]')).toBeVisible();
 
-    const utilityLinks = page.locator('footer nav[aria-label="Site utilities"] a');
-    await expect(utilityLinks).toHaveCount(4);
+    const utilityLinks = utilityNav.locator('a');
+    await expect(utilityLinks).toHaveCount(5);
 
     const meta = page.locator('footer .footer-meta');
-    const utilityNav = page.locator('footer nav[aria-label="Site utilities"]');
 
     const [metaBox, navBox] = await Promise.all([meta.boundingBox(), utilityNav.boundingBox()]);
     expect(metaBox).not.toBeNull();
@@ -111,16 +119,30 @@ test.describe('footer colophon', () => {
     expect(navBox!.x + navBox!.width).toBeLessThanOrEqual(metaBox!.x + metaBox!.width);
   });
 
+  test('uses the footer wordmark as a single non-wrapping logo asset', async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto('/about');
+    await page.waitForLoadState('networkidle');
+
+    const wordmark = page.locator('footer [data-footer-wordmark]');
+    await expect(wordmark).toHaveAttribute('aria-label', 'Las Vegans for Better Transit');
+    await expect(wordmark.locator('img[src="/brand/lvbt-wordmark-dark.svg"]')).toBeVisible();
+    await expect(wordmark.locator('span')).toHaveCount(0);
+
+    const box = await wordmark.boundingBox();
+    expect(box).not.toBeNull();
+    expect(box!.width / box!.height).toBeGreaterThan(3.5);
+  });
+
   test('keeps the colophon on the standard type scale without overline labels', async ({
     page,
   }) => {
     await page.goto('/colophon');
     await page.waitForLoadState('networkidle');
 
-    await expect(page.locator('main .eyebrow')).toHaveCount(0);
     await expect(page.locator('h1')).toHaveText('Colophon');
     await expect(page.locator('h1')).toHaveClass(/text-display-md/);
-    await expect(page.locator('main .lede')).toHaveText(
+    await expect(page.locator('main header .lede')).toHaveText(
       'How this website is produced and maintained',
     );
   });

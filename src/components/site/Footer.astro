@@ -1,6 +1,57 @@
 ---
 import { Icon } from 'astro-icon/components';
-import { site } from '../../lib/site';
+import { navMain, site } from '../../lib/site';
+import { displayUrl } from '../../lib/paths';
+
+const domain = displayUrl(site.url);
+const internalPrintUrl = (path: string) => ({ domain, path });
+
+type PrintLinkSheetLink = {
+  label: string;
+  href: string;
+  printUrl: string | { domain: string; path: string } | string[];
+};
+
+const printLinkSheetSections: Array<{ links: PrintLinkSheetLink[] }> = [
+  {
+    links: [
+      { label: 'Home', href: '/', printUrl: { domain, path: '/' } },
+      ...navMain.map((item) => ({
+        label: item.label,
+        href: item.href,
+        printUrl: internalPrintUrl(item.href),
+      })),
+    ],
+  },
+  {
+    links: [
+      { label: 'Join', href: '/join', printUrl: internalPrintUrl('/join') },
+      { label: 'Newsletter', href: '/newsletter', printUrl: internalPrintUrl('/newsletter') },
+      ...(site.donate.url
+        ? [
+            {
+              label: site.donate.label,
+              href: site.donate.url,
+              printUrl: displayUrl(site.donate.url),
+            },
+          ]
+        : []),
+      { label: 'Email', href: `mailto:${site.email.general}`, printUrl: site.email.general },
+    ],
+  },
+  {
+    links: [
+      { label: 'Brand', href: '/brand', printUrl: internalPrintUrl('/brand') },
+      { label: 'Colophon', href: '/colophon', printUrl: internalPrintUrl('/colophon') },
+      { label: 'Sitemap', href: '/sitemap', printUrl: internalPrintUrl('/sitemap') },
+      {
+        label: 'Source',
+        href: 'https://github.com/LasVegasForTransit/website',
+        printUrl: ['github.com', 'LasVegasForTransit', 'website'],
+      },
+    ],
+  },
+];
 ---
 
 {
@@ -35,28 +86,30 @@ import { site } from '../../lib/site';
       not merge them.
 
     META ROW ITEMS
-      A single utility nav keeps colophon on the left and
+      A single utility nav keeps colophon/brand on the left and
       sitemap/source/QR grouped on the right. Keep the row slim;
       it should read as a utility strip, not another content band.
 
     LINK STYLING
-      One style everywhere: `nav-link no-underline hover:text-accent`.
+      One style everywhere: `nav-link no-underline hover:text-primary`.
       `.nav-link` provides the scaleX underline reveal. Do not
       introduce a second link style; the consistency is the point.
 
     WORDMARK SIZING
       The wordmark is the brand's loudest gesture, but it may shrink
-      on short or narrow viewports so the footer remains usable. Tune
-      the local .footer-wordmark clamp and height rules below; do not
-      add breakpoint-only text utilities that fight the footer's
-      measured height budget.
+      on short or narrow viewports so the footer remains usable. Its
+      max width is capped against the brand display ramp (a multiple of
+      --text-display-lg / --text-display-md), not a magic width, so it
+      scales with the type system. Tune the local .footer-wordmark clamp
+      below; do not add breakpoint-only text utilities that fight the
+      footer's measured height budget.
 
     MISSION BAND
       Visible on every viewport, including mobile. It can and
       should scale down on narrow or short screens; do not hide
       it to solve overflow.
 
-      No eyebrow label. The mission band is the footer's closing
+      No small pre-heading label. The mission band is the footer's closing
       pitch, not a labelled section — the border-top + whitespace
       above already frame it. DO NOT reintroduce a "§ The work" /
       "Mission" / pilcrow-prefixed label; those read as AI template.
@@ -77,13 +130,13 @@ import { site } from '../../lib/site';
       vocabulary is depth + opacity, not scale.
     ============================================================ */
 }
-<footer class="relative z-[60] bg-ink text-paper h-dvh flex flex-col">
+<footer class="relative z-[60] bg-slab text-on-slab h-dvh flex flex-col">
   {
     /* Named for the View Transitions API. Latent until @view-transition
       enables cross-document transitions in global.css — harmless as a
       bare property until then. */
   }
-  <div class="reveal-stripe h-2 bg-accent [view-transition-name:footer-stripe]"></div>
+  <div class="reveal-stripe h-2 bg-primary [view-transition-name:footer-stripe]"></div>
 
   {
     /* Footer is locked to exactly one dynamic viewport height (h-dvh on
@@ -102,27 +155,41 @@ import { site } from '../../lib/site';
         <a
           data-footer-wordmark
           href="/"
-          class="footer-wordmark font-extrabold tracking-tight no-underline block"
+          class="footer-wordmark no-underline block"
+          aria-label={site.name}
         >
-          <span class="block whitespace-nowrap leading-[0.9]">Las Vegans</span>
-          <span class="block whitespace-nowrap leading-[0.9] text-accent">for Better Transit</span>
+          <img
+            src="/brand/lvbt-wordmark-dark.svg"
+            alt=""
+            width="720"
+            height="190"
+            class="block h-auto w-full"
+          />
         </a>
       </div>
       <div class="footer-nav reveal" data-footer-nav="organization">
-        <p class="eyebrow text-accent-soft">Organization</p>
+        <p class="text-title-md font-bold text-primary-soft">Organization</p>
         <ul class="footer-nav-list text-base font-semibold">
-          <li><a href="/about" class="nav-link no-underline hover:text-accent">About</a></li>
-          <li><a href="/projects" class="nav-link no-underline hover:text-accent">Projects</a></li>
-          <li><a href="/events" class="nav-link no-underline hover:text-accent">Events</a></li>
-          <li><a href="/contact" class="nav-link no-underline hover:text-accent">Contact</a></li>
+          <li><a href="/about" class="nav-link no-underline hover:text-primary">About</a></li>
+          <li><a href="/programs" class="nav-link no-underline hover:text-primary">Programs</a></li>
+          <li><a href="/projects" class="nav-link no-underline hover:text-primary">Projects</a></li>
+          <li><a href="/events" class="nav-link no-underline hover:text-primary">Events</a></li>
+          <li><a href="/contact" class="nav-link no-underline hover:text-primary">Contact</a></li>
+          <li>
+            <a
+              href={site.transparency.candidUrl}
+              rel="noopener"
+              class="nav-link no-underline hover:text-primary">Candid</a
+            >
+          </li>
         </ul>
       </div>
       <div class="footer-nav reveal" data-footer-nav="get-involved">
-        <p class="eyebrow text-accent-soft">Get involved</p>
+        <p class="text-title-md font-bold text-primary-soft">Get involved</p>
         <ul class="footer-nav-list text-base font-semibold">
-          <li><a href="/join" class="nav-link no-underline hover:text-accent">Join us</a></li>
+          <li><a href="/join" class="nav-link no-underline hover:text-primary">Join us</a></li>
           <li>
-            <a href="/newsletter" class="nav-link no-underline hover:text-accent">Newsletter</a>
+            <a href="/newsletter" class="nav-link no-underline hover:text-primary">Newsletter</a>
           </li>
           {
             site.donate.url && (
@@ -130,7 +197,7 @@ import { site } from '../../lib/site';
                 <a
                   href={site.donate.url}
                   rel="noopener"
-                  class="nav-link no-underline hover:text-accent"
+                  class="nav-link no-underline hover:text-primary"
                 >
                   Donate
                 </a>
@@ -143,7 +210,7 @@ import { site } from '../../lib/site';
                 <a
                   href={site.social.discord}
                   rel="noopener"
-                  class="nav-link no-underline hover:text-accent"
+                  class="nav-link no-underline hover:text-primary"
                 >
                   Discord
                 </a>
@@ -156,7 +223,7 @@ import { site } from '../../lib/site';
                 <a
                   href={site.social.instagram}
                   rel="noopener"
-                  class="nav-link no-underline hover:text-accent"
+                  class="nav-link no-underline hover:text-primary"
                 >
                   Instagram
                 </a>
@@ -169,7 +236,7 @@ import { site } from '../../lib/site';
                 <a
                   href={site.social.linkedin}
                   rel="noopener"
-                  class="nav-link no-underline hover:text-accent"
+                  class="nav-link no-underline hover:text-primary"
                 >
                   LinkedIn
                 </a>
@@ -177,17 +244,18 @@ import { site } from '../../lib/site';
             )
           }
           <li>
-            <a href={`mailto:${site.email.general}`} class="nav-link no-underline hover:text-accent"
-              >Email</a
+            <a
+              href={`mailto:${site.email.general}`}
+              class="nav-link no-underline hover:text-primary">Email</a
             >
           </li>
         </ul>
       </div>
     </div>
 
-    <div class="footer-mission container-page w-full border-t border-paper/15">
+    <div class="footer-mission container-page w-full border-t border-on-slab/15">
       {
-        /* No eyebrow. No "§ The work" / "Mission" / pilcrow label.
+        /* No pre-heading label. No "§ The work" / "Mission" / pilcrow label.
           The mission band is the footer's closing pitch, not a
           labelled section. Copy is evergreen — no session dates,
           no year references. See FOOTER CONTRACT → MISSION BAND
@@ -198,7 +266,8 @@ import { site } from '../../lib/site';
           punches in with more force than the link columns above. */
       }
       <p class="reveal-stat text-headline-lg max-w-[55ch] text-balance">
-        14th-busiest bus system in the country. <span class="text-accent">Zero miles of rail.</span>
+        14th-busiest bus system in the country. <span class="text-primary">Zero miles of rail.</span
+        >
         Las&nbsp;Vegans deserve better. We're organizing to build it.
       </p>
     </div>
@@ -210,24 +279,88 @@ import { site } from '../../lib/site';
       stays a compact utility surface so narrow viewports do not get
       an ugly wrapped sentence beside the QR icon. */
   }
-  <div class="footer-meta border-t border-paper/15">
+  <div class="footer-meta border-t border-on-slab/15">
+    <p data-print-footer-summary class="hidden">
+      {site.name} · {domain} · {site.email.general}
+    </p>
+    <section data-print-link-sheet class="hidden" aria-labelledby="print-footer-title">
+      <div class="print-link-sheet__masthead">
+        <div class="print-link-sheet__brand">
+          <img src="/brand/lvbt-logo-dark.svg" alt="" width="260" height="260" />
+          <img
+            src="/brand/lvbt-wordmark-dark.svg"
+            alt={site.name}
+            width="720"
+            height="190"
+            class="print-link-sheet__wordmark"
+          />
+        </div>
+        <div class="print-link-sheet__intro">
+          <h2 id="print-footer-title" class="sr-only">{site.name} directory</h2>
+          <dl class="print-link-sheet__contact-list">
+            <div>
+              <dt>Website</dt>
+              <dd>{domain}</dd>
+            </div>
+            <div>
+              <dt>Email</dt>
+              <dd>{site.email.general}</dd>
+            </div>
+          </dl>
+        </div>
+      </div>
+
+      <div class="print-link-sheet__grid">
+        {
+          printLinkSheetSections.map((section) => (
+            <div class="print-link-sheet__section">
+              <ul>
+                {section.links.map((link) => (
+                  <li>
+                    <a href={link.href}>
+                      <span class="print-link-sheet__label">{link.label}</span>
+                      <span class="print-link-sheet__url">
+                        {typeof link.printUrl === 'string' ? (
+                          link.printUrl
+                        ) : Array.isArray(link.printUrl) ? (
+                          link.printUrl.map((part) => (
+                            <span class="print-link-sheet__chunk">{part}</span>
+                          ))
+                        ) : (
+                          <>
+                            <span>{link.printUrl.domain}</span>
+                            <span class="print-link-sheet__path">{link.printUrl.path}</span>
+                          </>
+                        )}
+                      </span>
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))
+        }
+      </div>
+      <div class="print-link-sheet__bottom-anchor" aria-hidden="true"></div>
+    </section>
     {
       /* Single utility nav. Each link remains the focusable element so
         :focus-visible outlines hug the link text or QR glyph. */
     }
     <nav
-      class="footer-utilities container-page w-full text-sm text-paper/60"
+      class="footer-utilities container-page w-full text-sm text-on-slab/60"
       aria-label="Site utilities"
     >
       <span class="footer-utility-group">
-        <a href="/colophon" class="nav-link no-underline hover:text-accent">Colophon</a>
+        <a href="/colophon" class="nav-link no-underline hover:text-primary">Colophon</a>
+        <a href="/brand" class="nav-link no-underline hover:text-primary">Brand</a>
       </span>
       <span class="footer-utility-group">
-        <a href="/sitemap" class="nav-link no-underline hover:text-accent">Sitemap</a>
+        <a href="/sitemap" class="nav-link no-underline hover:text-primary">Sitemap</a>
         <a
           href="https://github.com/LasVegasForTransit/website"
           rel="noopener"
-          class="nav-link no-underline hover:text-accent">Source</a
+          class="nav-link no-underline hover:text-primary">Source</a
         >
         {
           /* Opens the QR presenter (/qr) — a chromeless deck of scan cards for
@@ -238,7 +371,7 @@ import { site } from '../../lib/site';
         }
         <a
           href="/qr"
-          class="qr-portal inline-flex items-center hover:text-accent"
+          class="qr-portal inline-flex items-center hover:text-primary"
           aria-label="Scan cards"
           title="Scan cards"
         >
@@ -265,13 +398,12 @@ import { site } from '../../lib/site';
   }
 
   .footer-wordmark {
-    font-size: clamp(2rem, min(5vw, 9dvh), 4.5rem);
-  }
-
-  @supports (font-size: 1cqi) {
-    .footer-wordmark {
-      font-size: clamp(2rem, min(10cqi, 9dvh), 4.5rem);
-    }
+    /* Cap the mark against the brand display ramp (8× display-lg, ~44rem at
+       the ramp's max) instead of a magic width, so it scales with the type
+       system. The dvh term keeps it height-aware for the h-dvh footer budget;
+       it's loosened just enough that the display-lg cap can actually bind on a
+       normal desktop rather than the viewport height clipping it first. */
+    width: min(100%, clamp(16rem, min(78vw, 72dvh), calc(var(--text-display-lg) * 8)));
   }
 
   .footer-nav {
@@ -340,13 +472,9 @@ import { site } from '../../lib/site';
     }
 
     .footer-wordmark {
-      font-size: clamp(1.75rem, min(5vw, 7.75dvh), 4.5rem);
-    }
-
-    @supports (font-size: 1cqi) {
-      .footer-wordmark {
-        font-size: clamp(1.75rem, min(10cqi, 7.75dvh), 4.5rem);
-      }
+      /* Short-viewport cap steps down a display tier (8× display-md) so the
+         mark stays proportional to the ramp while the height budget tightens. */
+      width: min(100%, clamp(14rem, min(72vw, 58dvh), calc(var(--text-display-md) * 8)));
     }
 
     .footer-nav-list {
