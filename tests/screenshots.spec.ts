@@ -11,12 +11,35 @@ const SITEMAP_PATH = resolve(dirname(fileURLToPath(import.meta.url)), '../dist/s
 const PROD_ORIGIN = 'https://lasvegasfortransit.org';
 
 const sitemap = readFileSync(SITEMAP_PATH, 'utf8');
-const paths = [...sitemap.matchAll(/<loc>([^<]+)<\/loc>/g)]
+const allPaths = [...sitemap.matchAll(/<loc>([^<]+)<\/loc>/g)]
   .map((m) => m[1].replace(PROD_ORIGIN, ''))
   .map((p) => p || '/');
 
-if (paths.length === 0) {
+if (allPaths.length === 0) {
   throw new Error(`No URLs found in ${SITEMAP_PATH}. Did the build run?`);
+}
+
+// Content-collection detail pages (projects/<slug>, events/<slug>, join/<slug>,
+// ...) share one template per family — screenshotting every instance just
+// multiplies the baseline count without adding visual coverage. Keep one
+// exemplar per family (the first in sitemap order) and drop the rest.
+const detailChildrenBySegment = new Map<string, string[]>();
+for (const path of allPaths) {
+  const [segment, ...rest] = path.split('/').filter(Boolean);
+  if (!segment || rest.length === 0) continue; // top-level page, not a detail page
+  detailChildrenBySegment.set(segment, [...(detailChildrenBySegment.get(segment) ?? []), path]);
+}
+const skippedDuplicates = new Set(
+  [...detailChildrenBySegment.values()]
+    .filter((children) => children.length > 1)
+    .flatMap((children) => children.slice(1)),
+);
+const paths = allPaths.filter((path) => !skippedDuplicates.has(path));
+
+if (skippedDuplicates.size > 0) {
+  console.log(
+    `[screenshots] skipping ${skippedDuplicates.size} duplicate detail-page route(s), keeping one exemplar per family`,
+  );
 }
 
 // Each route gets two snapshots: a viewport-only capture (what the user
