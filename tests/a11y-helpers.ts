@@ -2,7 +2,7 @@ import AxeBuilder from '@axe-core/playwright';
 import type { Page } from '@playwright/test';
 
 const BRAND_EMBER = '#e5471a';
-const BRAND_ON_EMBER_COLORS = new Set(['#ffffff', '#f7f4ec']);
+const BRAND_ON_EMBER_COLORS = new Set(['#f7f4ec']);
 
 type AxeResult = Awaited<ReturnType<InstanceType<typeof AxeBuilder>['analyze']>>;
 type AxeNode = AxeResult['violations'][number]['nodes'][number];

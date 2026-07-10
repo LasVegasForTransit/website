@@ -34,8 +34,21 @@ test.describe('landmark accessibility', () => {
 
     await expect(page.locator('main#main')).toHaveCount(1);
     await expect(page.locator('h1')).toHaveText('QR Presenter');
-    await expect(page.locator('header, footer, a.skip-link')).toHaveCount(0);
+    await expect(page.locator('a.skip-link')).toHaveCount(0);
     await expect(page.locator('nav[aria-label="QR slides"]')).toHaveCount(1);
+
+    // A <header>/<footer> only exposes a banner/contentinfo landmark when it
+    // isn't nested inside article/aside/main/nav/section (HTML spec). Count
+    // just the ones that would actually surface as page-chrome landmarks —
+    // the flyer's own <header> masthead is nested inside its <article> and
+    // is legitimately local, not page chrome.
+    const chromeLandmarkCount = await page.evaluate(() => {
+      const scopingAncestors = ['article', 'aside', 'main', 'nav', 'section'];
+      return [...document.querySelectorAll('header, footer')].filter(
+        (el) => !scopingAncestors.some((tag) => el.closest(tag)),
+      ).length;
+    });
+    expect(chromeLandmarkCount).toBe(0);
   });
 
   test('permalink headings keep their visible heading names', async ({ page }) => {
