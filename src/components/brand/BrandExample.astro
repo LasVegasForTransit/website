@@ -1,0 +1,23 @@
+---
+// Neutral example: a single specimen with an explanatory caption beneath it.
+// No Do/Don't judgment — use it to show one thing and say what it demonstrates.
+// The specimen goes in the default slot; `caption` is the context explainer.
+interface Props {
+  caption?: string;
+}
+
+const { caption } = Astro.props;
+---
+
+<figure data-brand-example class="grid gap-3">
+  <div class="border border-outline bg-surface-container p-5 md:p-6">
+    <slot />
+  </div>
+  {
+    caption && (
+      <figcaption data-readable class="text-body-sm max-w-2xl text-on-surface-variant">
+        {caption}
+      </figcaption>
+    )
+  }
+</figure>

@@ -1,0 +1,74 @@
+---
+import { Icon } from 'astro-icon/components';
+
+interface Props {
+  color: {
+    id: string;
+    name: string;
+    token: string;
+    hex: string;
+    pairedToken: string;
+    pairedName: string;
+    text: string;
+    sampleBackground?: string;
+    sampleText?: string;
+    role: string;
+    use: string;
+  };
+}
+
+const { color } = Astro.props;
+const sampleBackground = color.sampleBackground ?? color.hex;
+const sampleText = color.sampleText ?? color.text;
+---
+
+<button
+  type="button"
+  data-brand-color={color.id}
+  data-copy-color
+  data-color={color.hex}
+  data-color-text={color.text}
+  class="group grid cursor-pointer gap-4 border border-outline bg-surface-container p-4 text-left transition-colors sm:grid-cols-[5rem_minmax(0,1fr)] sm:items-stretch hover:bg-slab hover:text-on-slab focus-visible:bg-slab focus-visible:text-on-slab"
+>
+  <span
+    data-brand-color-swatch
+    class="grid h-20 w-full place-items-center border border-outline-variant/20 sm:h-auto sm:w-20"
+    style={`background: ${sampleBackground}; color: ${sampleText}`}
+  >
+    <span class="text-title-md">Aa</span>
+  </span>
+  <span data-brand-color-copy data-readable class="min-w-0">
+    <span class="grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-start">
+      <span>
+        <span class="text-title-md block">{color.name}</span>
+        <span
+          class="text-title-sm mt-1 block text-primary-ink group-hover:text-primary-soft group-focus-visible:text-primary-soft"
+        >
+          {color.token} · {color.hex}
+        </span>
+        <span
+          class="text-body-sm mt-1 block text-on-surface-variant group-hover:text-on-slab/75 group-focus-visible:text-on-slab/75"
+        >
+          {color.pairedToken} · {color.pairedName}
+        </span>
+      </span>
+      <span
+        data-brand-copy-control
+        class="text-label-lg inline-flex items-center gap-1 text-on-surface-variant group-hover:text-on-slab group-focus-visible:text-on-slab"
+      >
+        <Icon name="mdi:content-copy" class="size-4" aria-hidden="true" />
+        Copy
+      </span>
+    </span>
+    <span
+      class="text-body-sm mt-3 block text-on-surface-variant group-hover:text-on-slab/75 group-focus-visible:text-on-slab/75"
+    >
+      {color.role}
+    </span>
+    <span
+      class="text-body-sm mt-2 block text-on-surface-variant group-hover:text-on-slab/75 group-focus-visible:text-on-slab/75"
+    >
+      {color.use}
+    </span>
+  </span>
+</button>

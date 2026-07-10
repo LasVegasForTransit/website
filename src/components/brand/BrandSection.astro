@@ -1,0 +1,31 @@
+---
+import HeadingLink from '../HeadingLink.astro';
+
+interface Props {
+  id: string;
+  title: string;
+  lede: string;
+}
+
+const { id, title, lede } = Astro.props;
+---
+
+<section id={id} data-brand-section class="scroll-mt-24">
+  <div data-brand-section-flow class="grid min-w-0 gap-4">
+    <div
+      data-brand-section-header
+      class="sticky top-[var(--lvbt-header-h)] z-10 border-b border-outline-variant/15 bg-surface/80 py-5 backdrop-blur-md backdrop-saturate-150"
+    >
+      <HeadingLink as="h2" targetId={id} label={title} class="text-headline-lg" includeInContents />
+    </div>
+
+    <div data-brand-section-intro>
+      <p data-readable class="text-body-lg max-w-xl text-pretty">{lede}</p>
+      <slot name="intro-extra" />
+    </div>
+
+    <div data-brand-section-content class="min-w-0">
+      <slot />
+    </div>
+  </div>
+</section>

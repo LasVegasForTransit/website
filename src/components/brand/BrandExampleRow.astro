@@ -1,0 +1,13 @@
+---
+// Pair explanatory copy with a side specimen. The specimen column starts below
+// the heading baseline so rows line up without pushing every BrandExample down.
+---
+
+<article class="grid gap-6 md:grid-cols-2 md:items-start md:gap-10">
+  <div>
+    <slot name="copy" />
+  </div>
+  <div class="md:pt-10">
+    <slot name="example" />
+  </div>
+</article>

@@ -1,0 +1,66 @@
+---
+import { Icon } from 'astro-icon/components';
+import styles from './BrandContents.module.css';
+
+export interface BrandContentsItem {
+  id: string;
+  label: string;
+  children?: BrandContentsItem[];
+}
+
+interface Props {
+  items: BrandContentsItem[];
+}
+
+const { items } = Astro.props;
+---
+
+{
+  /*
+  Document-style table of contents. On narrower screens it is a compact
+  <details> that hugs its own width (never a full-width bar). Once there is
+  room for the guide column plus a rail, it sits outside the guide column but
+  remains positioned by the post-hero container. brand-guide.js forces `open`
+  at that rail breakpoint and closed below it, and drives the aria-current
+  active state via scroll-spy.
+*/
+}
+<aside aria-label="Brand guide contents" data-brand-contents-frame class={styles.frame}>
+  <details data-brand-contents open class:list={['brand-contents group', styles.contents]}>
+    <summary class={styles.summary}>
+      <Icon name="mdi:format-list-bulleted" class="size-4" aria-hidden="true" />
+      Contents
+      <Icon
+        name="mdi:chevron-down"
+        class="size-4 transition-transform group-open:rotate-180"
+        aria-hidden="true"
+      />
+    </summary>
+
+    <nav aria-label="Contents" class:list={['brand-contents-nav', styles.nav]}>
+      <p class={styles.kicker}>Contents</p>
+      <ul data-brand-contents-list class={styles.list}>
+        {
+          items.map((item) => (
+            <li>
+              <a href={`#${item.id}`} data-brand-contents-link class={styles.topLink}>
+                {item.label}
+              </a>
+              {item.children?.length ? (
+                <ul class={styles.childList}>
+                  {item.children.map((child) => (
+                    <li>
+                      <a href={`#${child.id}`} data-brand-contents-link class={styles.childLink}>
+                        {child.label}
+                      </a>
+                    </li>
+                  ))}
+                </ul>
+              ) : null}
+            </li>
+          ))
+        }
+      </ul>
+    </nav>
+  </details>
+</aside>

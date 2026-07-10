@@ -1,0 +1,1549 @@
+---
+import { Icon } from 'astro-icon/components';
+import BrandColorCard from '../components/brand/BrandColorCard.astro';
+import BrandContents from '../components/brand/BrandContents.astro';
+import BrandGuidance from '../components/brand/BrandGuidance.astro';
+import BrandGuidanceCard from '../components/brand/BrandGuidanceCard.astro';
+import BrandExample from '../components/brand/BrandExample.astro';
+import BrandExampleRow from '../components/brand/BrandExampleRow.astro';
+import BrandLogoKit from '../components/brand/BrandLogoKit.astro';
+import BrandSection from '../components/brand/BrandSection.astro';
+import HeadingLink from '../components/HeadingLink.astro';
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { slugify } from '../lib/slugify';
+
+const principles = [
+  {
+    title: 'Bold',
+    body: 'Lead with confidence. The work should feel ready to move people, not like a cautious memo waiting for permission.',
+  },
+  {
+    title: 'Trustworthy',
+    body: 'Use clear facts, plain labels, and consistent structure so people know where the claim comes from and what to do with it.',
+  },
+  {
+    title: 'Approachable',
+    body: 'Transit advocacy should feel open to riders, neighbors, students, workers, and first-time volunteers, not only policy insiders.',
+  },
+  {
+    title: 'Fun',
+    body: 'Make it easier to care. The brand can be expressive, energetic, and memorable without losing the seriousness of the mission.',
+  },
+];
+
+const inspirations = [
+  {
+    handle: '@so.informed',
+    role: 'Clean and structured',
+    body: 'A national progressive news account built almost entirely from clear, well-organized text. It shows how far restraint and strong hierarchy can carry a message.',
+  },
+  {
+    handle: '@moreperfectunion',
+    role: 'Bold and vibrant',
+    body: 'A labor-focused publication with loud, confident, graphic-driven design. It shows how energy and color can make a serious message feel alive.',
+  },
+];
+
+const colors = [
+  {
+    id: 'primary',
+    name: 'Primary / On primary',
+    token: '--color-primary',
+    hex: '#E5471A',
+    pairedToken: '--color-on-primary',
+    pairedName: 'On primary',
+    text: '#F7F4EC',
+    role: 'Primary action color paired with the required text and icon color.',
+    use: 'Use this pair for selected states, live badges, orange buttons, and any primary surface with words or icons on it.',
+  },
+  {
+    id: 'primary-container',
+    name: 'Primary container / On primary container',
+    token: '--color-primary-container',
+    hex: '#FFE9D6',
+    pairedToken: '--color-on-primary-container',
+    pairedName: 'On primary container',
+    text: '#0F1115',
+    role: 'Warm supporting surface paired with its readable foreground.',
+    use: 'Use this pair for notes, chips, specimens, and quiet support areas that still need to feel tied to Ember.',
+  },
+  {
+    id: 'primary-ink',
+    name: 'Primary ink on Surface',
+    token: '--color-primary-ink',
+    hex: '#BF3A10',
+    pairedToken: '--color-surface',
+    pairedName: 'On surface',
+    text: '#F7F4EC',
+    sampleBackground: '#F7F4EC',
+    sampleText: '#BF3A10',
+    role: 'Accessible orange for links, inline emphasis, and small text on the base surface.',
+    use: 'Use it when orange itself is the text color. Do not use it as the foreground on Primary.',
+  },
+  {
+    id: 'surface',
+    name: 'Surface / On surface',
+    token: '--color-surface',
+    hex: '#F7F4EC',
+    pairedToken: '--color-on-surface',
+    pairedName: 'On surface',
+    text: '#0F1115',
+    role: 'The default reading surface and text color for the site.',
+    use: 'Use it for long-form pages, guidance, documents, and most UI.',
+  },
+  {
+    id: 'slab',
+    name: 'Slab / On slab',
+    token: '--color-slab',
+    hex: '#0F1115',
+    pairedToken: '--color-on-slab',
+    pairedName: 'On slab',
+    text: '#F7F4EC',
+    role: 'The dark surface pair for major statements and immersive sections.',
+    use: 'Use it when the information needs weight or permanence. Full dark bands should mark real transitions.',
+  },
+];
+
+const colorPairings = [
+  [
+    'Primary / On primary',
+    'Use Cream on Ember for action surfaces, active states, and urgent facts.',
+  ],
+  [
+    'Primary container / On primary container',
+    'Use Ink on Peach for softer emphasis, callouts, and selected states.',
+  ],
+  ['Primary ink / Surface', 'Use Rust when orange appears as text on the base surface.'],
+  [
+    'Surface / On surface',
+    'Use On surface on Surface for long reading and most interface surfaces.',
+  ],
+  [
+    'Slab / On slab',
+    'Use On slab on Slab for dark bands, major statements, and high-emphasis panels.',
+  ],
+];
+
+interface LogoAsset {
+  id: string;
+  format: 'SVG' | 'PNG';
+  href: string;
+  filename: string;
+  sizePx?: number;
+  descriptor?: string;
+  recommended?: boolean;
+}
+
+interface LogoFamily {
+  id: string;
+  name: string;
+  themes: {
+    id: string;
+    name: string;
+    surface: string;
+    specimen: string;
+    specimenClass: string;
+    assets: LogoAsset[];
+  }[];
+}
+
+const logoFamilies: LogoFamily[] = [
+  {
+    id: 'mark',
+    name: 'LVBT mark',
+    themes: [
+      {
+        id: 'light',
+        name: 'Light',
+        surface: 'Use on Paper, white, and soft orange fields.',
+        specimen: '/brand/lvbt-logo.svg',
+        specimenClass: 'bg-primary-soft text-on-primary-container',
+        assets: [
+          {
+            id: 'svg',
+            format: 'SVG',
+            href: '/brand/lvbt-logo.svg',
+            filename: 'lvbt-logo.svg',
+            recommended: true,
+          },
+          {
+            id: 'png-128',
+            format: 'PNG',
+            sizePx: 128,
+            href: '/brand/lvbt-logo-128.png',
+            filename: 'lvbt-logo-128.png',
+          },
+          {
+            id: 'png-256',
+            format: 'PNG',
+            sizePx: 256,
+            href: '/brand/lvbt-logo-256.png',
+            filename: 'lvbt-logo-256.png',
+          },
+          {
+            id: 'png-512',
+            format: 'PNG',
+            sizePx: 512,
+            href: '/brand/lvbt-logo-512.png',
+            filename: 'lvbt-logo-512.png',
+          },
+        ],
+      },
+      {
+        id: 'dark',
+        name: 'Dark',
+        surface: 'Use on Ink, dark photos, and night-event graphics.',
+        specimen: '/brand/lvbt-logo-dark.svg',
+        specimenClass: 'bg-[var(--ink)]',
+        assets: [
+          {
+            id: 'svg',
+            format: 'SVG',
+            descriptor: 'dark',
+            href: '/brand/lvbt-logo-dark.svg',
+            filename: 'lvbt-logo-dark.svg',
+            recommended: true,
+          },
+          {
+            id: 'png-128',
+            format: 'PNG',
+            descriptor: 'dark',
+            sizePx: 128,
+            href: '/brand/lvbt-logo-dark-128.png',
+            filename: 'lvbt-logo-dark-128.png',
+          },
+          {
+            id: 'png-256',
+            format: 'PNG',
+            descriptor: 'dark',
+            sizePx: 256,
+            href: '/brand/lvbt-logo-dark-256.png',
+            filename: 'lvbt-logo-dark-256.png',
+          },
+          {
+            id: 'png-512',
+            format: 'PNG',
+            descriptor: 'dark',
+            sizePx: 512,
+            href: '/brand/lvbt-logo-dark-512.png',
+            filename: 'lvbt-logo-dark-512.png',
+          },
+        ],
+      },
+    ],
+  },
+  {
+    id: 'wordmark',
+    name: 'Wordmark',
+    themes: [
+      {
+        id: 'light',
+        name: 'Light',
+        surface: 'Use on Paper, white, and soft orange fields.',
+        specimen: '/brand/lvbt-wordmark.svg',
+        specimenClass: 'bg-[var(--paper)]',
+        assets: [
+          {
+            id: 'svg',
+            format: 'SVG',
+            descriptor: 'wordmark',
+            href: '/brand/lvbt-wordmark.svg',
+            filename: 'lvbt-wordmark.svg',
+            recommended: true,
+          },
+          {
+            id: 'png-512',
+            format: 'PNG',
+            descriptor: 'wordmark',
+            sizePx: 512,
+            href: '/brand/lvbt-wordmark-512.png',
+            filename: 'lvbt-wordmark-512.png',
+          },
+          {
+            id: 'png-1024',
+            format: 'PNG',
+            descriptor: 'wordmark',
+            sizePx: 1024,
+            href: '/brand/lvbt-wordmark-1024.png',
+            filename: 'lvbt-wordmark-1024.png',
+          },
+          {
+            id: 'png-2048',
+            format: 'PNG',
+            descriptor: 'wordmark',
+            sizePx: 2048,
+            href: '/brand/lvbt-wordmark-2048.png',
+            filename: 'lvbt-wordmark-2048.png',
+          },
+        ],
+      },
+      {
+        id: 'dark',
+        name: 'Dark',
+        surface: 'Use on Ink, dark photos, and night-event graphics.',
+        specimen: '/brand/lvbt-wordmark-dark.svg',
+        specimenClass: 'bg-[var(--ink)]',
+        assets: [
+          {
+            id: 'svg',
+            format: 'SVG',
+            descriptor: 'dark wordmark',
+            href: '/brand/lvbt-wordmark-dark.svg',
+            filename: 'lvbt-wordmark-dark.svg',
+            recommended: true,
+          },
+          {
+            id: 'png-512',
+            format: 'PNG',
+            descriptor: 'dark wordmark',
+            sizePx: 512,
+            href: '/brand/lvbt-wordmark-dark-512.png',
+            filename: 'lvbt-wordmark-dark-512.png',
+          },
+          {
+            id: 'png-1024',
+            format: 'PNG',
+            descriptor: 'dark wordmark',
+            sizePx: 1024,
+            href: '/brand/lvbt-wordmark-dark-1024.png',
+            filename: 'lvbt-wordmark-dark-1024.png',
+          },
+          {
+            id: 'png-2048',
+            format: 'PNG',
+            descriptor: 'dark wordmark',
+            sizePx: 2048,
+            href: '/brand/lvbt-wordmark-dark-2048.png',
+            filename: 'lvbt-wordmark-dark-2048.png',
+          },
+        ],
+      },
+    ],
+  },
+];
+
+const typeSamples = [
+  {
+    name: 'Display large',
+    className: 'text-display-lg',
+    spec: 'text-display-lg · 40–88px · weight 900',
+    sample: 'We need you in the room.',
+    use: 'Use for the largest home-page or campaign moments only.',
+  },
+  {
+    name: 'Display medium',
+    className: 'text-display-md',
+    spec: 'text-display-md · 36–72px · weight 800',
+    sample: 'Brand',
+    use: 'Use for page titles on major reference, contact, project, and utility pages.',
+  },
+  {
+    name: 'Display small',
+    className: 'text-display-sm',
+    spec: 'text-display-sm · 30–48px · weight 800',
+    sample: 'About Las Vegans for Better Transit',
+    use: 'Use when a title needs display weight but must fit longer civic or organizational names.',
+  },
+  {
+    name: 'Headline large',
+    className: 'text-headline-lg',
+    spec: 'text-headline-lg · 28–44px · weight 800',
+    sample: 'Show up with facts and neighbors.',
+    use: 'Use for top-level sections, feature cards, explainers, and strong page breaks.',
+  },
+  {
+    name: 'Headline medium',
+    className: 'text-headline-md',
+    spec: 'text-headline-md · 28px · weight 800',
+    sample: 'Logos',
+    use: 'Use for sticky guide section headers and compact page-level headings.',
+  },
+  {
+    name: 'Headline small',
+    className: 'text-headline-sm',
+    spec: 'text-headline-sm · 24px · weight 700',
+    sample: 'Personality',
+    use: 'Use for nested section headings that still need more presence than a title role.',
+  },
+  {
+    name: 'Title',
+    className: 'text-title-lg',
+    spec: 'text-title-lg · 20–24px · weight 700',
+    sample: 'Next organizing meeting',
+    use: 'Use for cards, rows, buttons, compact panels, and asset names.',
+  },
+  {
+    name: 'Body large',
+    className: 'text-body-lg',
+    spec: 'text-body-lg · 18–20px · weight 400',
+    sample: 'Transit advocacy works when the stakes are specific and the ask is easy to repeat.',
+    use: 'Use for ledes, section intros, prominent summaries, and short explanatory copy that leads a page or section.',
+  },
+  {
+    name: 'Body medium',
+    className: 'text-body-md',
+    spec: 'text-body-md · 16px · weight 400',
+    sample: 'Better transit is easier to support when people can connect it to daily life.',
+    use: 'Use for default paragraphs, card descriptions, prose blocks, and standard explanatory copy.',
+  },
+  {
+    name: 'Body small',
+    className: 'text-body-sm',
+    spec: 'text-body-sm · 14px · weight 400',
+    sample: 'Updated July 2026 · Program notes',
+    use: 'Use for metadata, captions, helper text, secondary notes, dates, status text, and compact support copy.',
+  },
+];
+
+// Type roles grouped into MD3 families. Each family opens its own subsection
+// with a short guideline, then shows the sizes within it — so Typography reads
+// as guidance, not a flat specimen list. `includes` pulls the matching entries
+// out of `typeSamples` so specimen copy stays in one place.
+const typeFamilies = [
+  {
+    name: 'Display',
+    includes: ['Display large', 'Display medium', 'Display small'],
+    guidance:
+      'The loudest type. Reserve it for the largest home-page and campaign moments and for page titles. Keep it short and concrete — if it needs punctuation to explain itself, it is probably a headline.',
+  },
+  {
+    name: 'Headline',
+    includes: ['Headline large', 'Headline medium', 'Headline small'],
+    guidance:
+      'Section-level emphasis. Headlines should tell the reader what a section does, so prefer a concrete claim over a generic label.',
+  },
+  {
+    name: 'Title',
+    includes: ['Title'],
+    guidance:
+      'The scanning size. Titles name cards, rows, buttons, and assets; pair them with body copy that explains the decision or action.',
+  },
+  {
+    name: 'Body',
+    includes: ['Body large', 'Body medium', 'Body small'],
+    guidance:
+      'The reading sizes. Body large introduces, medium explains, and small supports — reach for the smallest that still gives the content its proper rank.',
+  },
+];
+
+const voiceGuidelines = [
+  {
+    title: 'Know your audience',
+    paragraphs: [
+      'This is the first rule. A county commissioner, a reporter, a high-school student, and a tired rider at a bus stop may all need the same message delivered in different ways.',
+      'Stay professional, but do not confuse professional with formal. Use the language, pace, and amount of context that helps the audience understand the point without feeling talked down to.',
+    ],
+    examples: [
+      {
+        context: 'Community event',
+        note: 'Residents at a booth or neighborhood meeting. Keep it warm and concrete so people feel invited to talk.',
+        vague:
+          'Attend our upcoming policy education session regarding regional mobility priorities.',
+        specific: 'Come talk about better buses, safer stops, and what Clark County can do next.',
+      },
+      {
+        context: 'Public official',
+        note: 'A commissioner or staffer with little time. Lead with the specific ask and what it prevents.',
+        vague: 'We urge policymakers to consider the importance of multimodal investment.',
+        specific:
+          'Please support a 2027 transit funding bill so RTC can avoid service cuts and improve bus frequency.',
+      },
+      {
+        context: 'Youth outreach',
+        note: 'Students and young riders. Speak to their daily trips in plain, direct language.',
+        vague: 'Participate in a discussion about transportation policy in Southern Nevada.',
+        specific:
+          'Want better buses to school, work, and events? Come tell us what needs to change.',
+      },
+    ],
+  },
+  {
+    title: 'Write plainly',
+    paragraphs: [
+      'Sound like people who ride the bus, read agendas, and expect better. Break long thoughts into short sentences, and use headings or bullets when detail starts to pile up.',
+      'Spell out names before using abbreviations. Repeat the noun when “it,” “this,” or “that” could point to more than one thing.',
+    ],
+    examples: [
+      {
+        context: 'Jargon',
+        note: 'Advocacy shorthand a newcomer would not follow. Say who does what in everyday words.',
+        vague:
+          'We are committed to empowering community stakeholders through multimodal mobility solutions.',
+        specific:
+          'We help riders, neighbors, and local partners organize for buses and trains that actually work.',
+      },
+      {
+        context: 'Ambiguous reference',
+        note: 'A pronoun with no clear referent. Name the noun so the sentence stands on its own.',
+        vague: 'This will help them get there faster.',
+        specific: 'More frequent buses help riders get to work and school with less waiting.',
+      },
+    ],
+  },
+  {
+    title: 'Be specific',
+    paragraphs: [
+      'Name the route, meeting, vote, agency, deadline, street, or dollar amount when it matters.',
+      'Specifics make the message credible and easier for someone to repeat in a meeting, a group chat, or testimony.',
+    ],
+    examples: [
+      {
+        context: 'Generic urgency',
+        note: 'A big claim with no anchor. Name the actual political window or decision point.',
+        vague: 'The time is now to transform transportation.',
+        specific: 'The 2027 Legislature is the next real chance to fix RTC funding.',
+      },
+    ],
+  },
+  {
+    title: 'Be informative',
+    paragraphs: [
+      'Give people enough information to understand the issue, not just the mood around it. Facts, dates, names, numbers, and sources make advocacy easier to trust.',
+      'Do not turn every post into a white paper. Lead with the point, then add the context someone needs to decide whether to show up, share, donate, email, or keep reading.',
+      'Explain local references when the audience may not know them. RTC, the County Commission, Carson City, a bill number, or a route name may need one plain sentence of context.',
+    ],
+    examples: [
+      {
+        context: 'Too vague',
+        note: 'A mood with no facts. Give the number, the date, and who can act.',
+        vague: 'Transit funding is a major issue and leaders need to do better.',
+        specific:
+          'RTC says it needs new revenue by 2027 to avoid deeper service cuts. The County Commission can ask the Legislature for that authority.',
+      },
+      {
+        context: 'Too much at once',
+        note: 'Every detail dumped together. Lead with the one point that matters.',
+        vague:
+          'RTC sales tax authority, farebox recovery, capital grants, operating deficits, and service-hour projections all intersect with the 2027 session.',
+        specific:
+          'RTC needs new operating money by 2027. Without it, the agency says bus service could get worse.',
+      },
+    ],
+  },
+  {
+    title: 'Start with what matters',
+    paragraphs: [
+      'Lead with the thing people need first: the ask, deadline, decision, result, or reason to care.',
+      'Every page, post, and flyer should make the next idea or next action easy to find.',
+    ],
+    examples: [
+      {
+        context: 'Link label',
+        note: 'A vague destination. Say what someone will open or read.',
+        vague: 'Learn more about our initiatives.',
+        specific: 'Read the project brief.',
+      },
+    ],
+  },
+  {
+    title: 'Use active verbs',
+    paragraphs: [
+      'Use verbs people recognize from real life: join, read, email, donate, RSVP.',
+      'Buttons and links should say what opens or happens next.',
+    ],
+    examples: [
+      {
+        context: 'Signup action',
+        note: 'A form label or button. Use the verb that matches the action.',
+        vague: 'Submit your information to express interest in participating.',
+        specific: 'Join the volunteer list.',
+      },
+    ],
+  },
+  {
+    title: 'Match the moment',
+    paragraphs: [
+      'A voter guide can be calm. A deadline reminder can be urgent. A community win can have some joy. A youth event can sound more casual than a legislative memo.',
+      'Adjust the tone to the setting, but keep the same core standard: clear, specific, useful, and human.',
+    ],
+    examples: [
+      {
+        context: 'Calm explainer',
+        note: 'Background, not breaking news. Explain how it works without sounding an alarm.',
+        vague: 'A major crisis is unfolding in our transportation system.',
+        specific: 'Here is how RTC is funded, why the gap matters, and what could change in 2027.',
+      },
+      {
+        context: 'Urgent deadline',
+        note: 'A decision is hours away. State the moment and the single action to take.',
+        vague: 'Important updates regarding our ongoing advocacy efforts.',
+        specific: 'RTC is voting Thursday. Email the board before 5 PM.',
+      },
+      {
+        context: 'Community win',
+        note: 'A real result worth celebrating. Credit the people who made it happen.',
+        vague: 'We are pleased to announce a positive development.',
+        specific: 'You packed the room, and the board delayed the fare vote. That matters.',
+      },
+    ],
+  },
+  {
+    title: 'Cut filler',
+    paragraphs: [
+      'Delete throat-clearing, generic urgency, and sentences that sound important without helping anyone.',
+      'If a line does not help someone understand, decide, or act, cut it.',
+    ],
+    examples: [
+      {
+        context: 'Opening line',
+        note: 'A sentence that sounds urgent but says nothing specific. Replace it with the event and action.',
+        vague: 'In these unprecedented times, it is more important than ever to come together.',
+        specific: 'Join us Thursday to plan testimony for the RTC board meeting.',
+      },
+    ],
+  },
+];
+
+const brandContents = [
+  {
+    id: 'foundations',
+    label: 'Overview',
+    children: [{ id: 'principles', label: 'Personality' }],
+  },
+  {
+    id: 'visual-style',
+    label: 'Visual style',
+    children: [{ id: 'visual-style-inspiration', label: 'Inspiration' }],
+  },
+  {
+    id: 'color',
+    label: 'Color roles',
+    children: [
+      { id: 'color-pairings', label: 'Foreground roles' },
+      { id: 'color-in-practice', label: 'Color in practice' },
+    ],
+  },
+  {
+    id: 'typography',
+    label: 'Typography',
+    children: typeFamilies.map((family) => ({
+      id: `typography-${slugify(family.name)}`,
+      label: family.name,
+    })),
+  },
+  {
+    id: 'layout',
+    label: 'Layout & spacing',
+    children: [
+      { id: 'layout-alignment', label: 'Alignment' },
+      { id: 'layout-communications', label: 'Communication layouts' },
+      { id: 'layout-spacing', label: 'Spacing and rhythm' },
+      { id: 'layout-actions', label: 'Actions' },
+    ],
+  },
+  {
+    id: 'logos',
+    label: 'Logos',
+    children: [
+      { id: 'logos-versions', label: 'Logo versions' },
+      { id: 'logos-space', label: 'Space around logos' },
+      { id: 'logos-size', label: 'Minimum sizes' },
+      { id: 'logos-backgrounds', label: 'Backgrounds' },
+      { id: 'logos-placement', label: 'Logo placement' },
+      { id: 'logos-artwork', label: 'Logo artwork' },
+      { id: 'logos-assets', label: 'Logo assets' },
+    ],
+  },
+  {
+    id: 'voice',
+    label: 'Voice',
+    children: voiceGuidelines.map((item) => ({
+      id: `voice-${slugify(item.title)}`,
+      label: item.title,
+    })),
+  },
+];
+---
+
+<BaseLayout
+  title="Brand Guidelines"
+  description="Brand guidelines, logo assets, color tokens, typography, layout rules, and voice guidance for Las Vegans for Better Transit."
+>
+  <header data-brand-page data-brand-intro class="container-page pt-10 pb-8 md:pt-14 md:pb-10">
+    <div class="max-w-4xl">
+      <HeadingLink id="brand-guidelines" as="h1" label="Brand Guidelines" class="text-display-md" />
+      <p class="lede mt-5 max-w-3xl">
+        Guidelines for a grassroots transit advocacy brand that is bold, trustworthy, approachable,
+        and fun.
+      </p>
+    </div>
+  </header>
+  <div class="container-page">
+    <hr class="rule-thick max-w-[68rem]" />
+  </div>
+
+  <div data-brand-body class="container-page relative grid items-start gap-y-8 py-8 md:py-10">
+    <BrandContents items={brandContents} />
+
+    <div data-brand-shell class="grid min-w-0 gap-14 lg:max-w-[68rem]">
+      <BrandSection
+        id="foundations"
+        title="Overview"
+        lede="We're building a modern, playful brand for transit advocacy and better urbanism in Las Vegas."
+      >
+        <div class="grid min-w-0 gap-8">
+          <p data-readable class="text-body-md max-w-2xl text-on-surface-variant">
+            LVBT is part traditional nonprofit, part bold advocacy campaign. A legislator or a
+            coalition partner should take it seriously. It should also feel energetic and youthful
+            enough to carry a genuinely moonshot case for world-class transit in a car-built desert
+            city.
+          </p>
+          <p data-readable class="text-body-md max-w-2xl text-on-surface-variant">
+            It also has to stay accessible enough that a rider, a neighbor, or a first-time
+            volunteer can pick it up and use it well, and flexible enough to support both education
+            and action: explainers, flyers, public testimony, volunteer asks, social posts, and
+            coalition materials.
+          </p>
+          <div>
+            <HeadingLink
+              id="principles"
+              as="h3"
+              label="Personality"
+              class="text-headline-sm scroll-mt-24"
+            />
+            <p data-readable class="mt-3 max-w-2xl text-body-md text-on-surface-variant">
+              LVBT should feel like people who care about the Valley and know what they are talking
+              about: optimistic without being naive, direct without being mean, and playful only
+              when play helps people feel invited into the work.
+            </p>
+            <div data-brand-principles class="mt-6 grid min-w-0 max-w-2xl gap-5">
+              {
+                principles.map((principle) => (
+                  <article data-brand-principle>
+                    <HeadingLink
+                      id={`principles-${slugify(principle.title)}`}
+                      as="h4"
+                      label={principle.title}
+                      class="text-title-md scroll-mt-24"
+                    />
+                    <p data-readable class="text-body-md mt-3 text-on-surface-variant">
+                      {principle.body}
+                    </p>
+                  </article>
+                ))
+              }
+            </div>
+          </div>
+        </div>
+      </BrandSection>
+
+      <BrandSection
+        id="visual-style"
+        title="Visual style"
+        lede="LVBT is expressive. This is not your typical urbanist organization, and the design should make that clear at a glance."
+      >
+        <div class="grid min-w-0 gap-8">
+          <p data-readable class="text-body-md max-w-2xl text-on-surface-variant">
+            The look pulls from two instincts at once. One is the clean, structured clarity of a
+            modern news explainer. The other is the bold, vibrant energy of a labor and justice
+            campaign. Most of a page stays calm and readable so the loud moments land: a big
+            headline, a block of Ember, or one strong photo.
+          </p>
+          <div>
+            <HeadingLink
+              id="visual-style-inspiration"
+              as="h3"
+              label="Inspiration"
+              class="text-headline-sm scroll-mt-24"
+            />
+            <p data-readable class="text-body-md mt-2 max-w-2xl text-on-surface-variant">
+              Draw from public-interest design that is legible, energetic, and built for people who
+              are new to the issue.
+            </p>
+            <div class="mt-5 grid gap-6 md:grid-cols-2">
+              {
+                inspirations.map((ref, index) => (
+                  <article data-brand-inspiration-card class="grid gap-4">
+                    <div
+                      data-brand-inspiration-specimen
+                      class:list={[
+                        'grid aspect-[4/3] overflow-hidden border border-outline bg-surface-container',
+                        index === 0 ? 'p-5' : 'bg-slab p-4 text-on-slab',
+                      ]}
+                      aria-hidden="true"
+                    >
+                      {index === 0 ? (
+                        <div class="grid content-between gap-5">
+                          <div class="flex items-start justify-between gap-4">
+                            <div class="grid gap-2">
+                              <span class="h-2 w-24 bg-on-surface" />
+                              <span class="h-2 w-16 bg-on-surface/45" />
+                            </div>
+                            <span class="text-label-md border border-outline px-2 py-1 text-on-surface-variant">
+                              Brief
+                            </span>
+                          </div>
+                          <div class="grid gap-2">
+                            <span class="h-5 w-11/12 bg-on-surface" />
+                            <span class="h-5 w-4/5 bg-on-surface" />
+                            <span class="h-2 w-full bg-on-surface/25" />
+                            <span class="h-2 w-5/6 bg-on-surface/25" />
+                            <span class="h-2 w-3/5 bg-on-surface/25" />
+                          </div>
+                          <div class="border-t border-outline pt-3">
+                            <span class="block h-2 w-28 bg-primary" />
+                          </div>
+                        </div>
+                      ) : (
+                        <div class="grid content-between gap-4">
+                          <div class="grid grid-cols-[1fr_3rem] gap-3">
+                            <span class="h-20 bg-primary" />
+                            <span class="bg-surface" />
+                          </div>
+                          <div class="grid gap-2">
+                            <span class="h-8 w-full bg-surface" />
+                            <span class="h-8 w-2/3 bg-primary" />
+                          </div>
+                          <div class="grid grid-cols-3 gap-2">
+                            <span class="h-9 bg-primary" />
+                            <span class="h-9 border border-surface/60" />
+                            <span class="h-9 bg-surface/20" />
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                    <div>
+                      <div class="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
+                        <h4
+                          id={`visual-style-${slugify(ref.handle)}`}
+                          class="text-title-md scroll-mt-24"
+                        >
+                          {ref.handle}
+                        </h4>
+                        <p class="text-label-md text-on-surface-variant">{ref.role}</p>
+                      </div>
+                      <p data-readable class="text-body-md mt-2 text-on-surface-variant">
+                        {ref.body}
+                      </p>
+                    </div>
+                  </article>
+                ))
+              }
+            </div>
+          </div>
+        </div>
+        <div class="mt-10">
+          <BrandGuidance>
+            <BrandGuidanceCard
+              variant="recommended"
+              title="Let one loud moment lead"
+              text="Keep most of a layout calm and readable so a single big headline, block of Ember, or strong photo can land."
+            />
+            <BrandGuidanceCard
+              variant="avoid"
+              title="Don't make everything shout"
+              text="Competing loud elements cancel out. When everything is bold, nothing reads as emphasis."
+            />
+          </BrandGuidance>
+        </div>
+      </BrandSection>
+
+      <BrandSection
+        id="color"
+        title="Color roles"
+        lede="Color creates hierarchy, marks action, and keeps LVBT materials legible across education, outreach, and campaign work."
+      >
+        <div data-readable class="mb-8 max-w-3xl">
+          <p class="text-body-md text-on-surface-variant">
+            Start with neutral surfaces. Paper and Ink should carry most of the composition; Ember
+            enters when the reader needs to notice an action, selected state, deadline, or key
+            point.
+          </p>
+          <p class="text-body-md mt-4 text-on-surface-variant">
+            Treat every color as a role with an intended foreground. Do not choose text color by
+            eye. Use the foreground listed with the role, and use Primary ink when orange appears as
+            text on a light surface.
+          </p>
+        </div>
+
+        <div data-brand-color-list class="grid max-w-5xl gap-3 lg:grid-cols-2">
+          {colors.map((color) => <BrandColorCard color={color} />)}
+        </div>
+        <p
+          data-brand-color-status
+          class="text-body-sm mt-4 min-h-[1.5rem] text-on-surface-variant"
+          aria-live="polite"
+        >
+        </p>
+
+        <div data-brand-color-pairings class="mt-8">
+          <HeadingLink
+            id="color-pairings"
+            as="h3"
+            label="Foreground roles"
+            class="text-headline-sm scroll-mt-24"
+            includeInContents
+          />
+          <div class="mt-4 grid gap-4">
+            {
+              colorPairings.map(([name, guidance]) => (
+                <article
+                  data-brand-color-pairing
+                  class="grid gap-1 md:grid-cols-[13rem_minmax(0,1fr)] md:gap-6"
+                >
+                  <p class="text-title-md">{name}</p>
+                  <p data-readable class="text-body-md text-on-surface-variant">
+                    {guidance}
+                  </p>
+                </article>
+              ))
+            }
+          </div>
+        </div>
+
+        <div class="mt-10">
+          <HeadingLink
+            id="color-in-practice"
+            as="h3"
+            label="Color in practice"
+            class="text-headline-sm scroll-mt-24"
+            includeInContents
+          />
+          <div data-brand-color-specimen class="mt-5 grid gap-4 md:grid-cols-3">
+            <div class="bg-primary p-5 text-on-primary">
+              <p class="text-title-md">Action surface</p>
+              <p data-readable class="text-body-sm mt-2">
+                Use for the primary call to action, urgent facts, and active controls.
+              </p>
+            </div>
+            <div class="bg-primary-container p-5 text-on-primary-container">
+              <p class="text-title-md">Support surface</p>
+              <p data-readable class="text-body-sm mt-2">
+                Use for softer emphasis when the page still needs to feel connected to the brand.
+              </p>
+            </div>
+            <div class="bg-surface-container p-5">
+              <p class="text-title-md">Text accent</p>
+              <p data-readable class="text-body-sm mt-2 text-on-surface-variant">
+                Use <span class="text-primary-ink">Primary ink</span> for orange text on quiet surfaces.
+              </p>
+            </div>
+          </div>
+        </div>
+        <div class="mt-10">
+          <BrandGuidance>
+            <BrandGuidanceCard
+              variant="recommended"
+              title="Pair each color with its role"
+              text="Lead with Paper and Ink, bring in Ember to mark action, and use the foreground listed with each role."
+            />
+            <BrandGuidanceCard
+              variant="avoid"
+              title="Don't pick text color by eye"
+              text="Don't flood a layout with Ember or set orange text on Ember. Neutrals carry the page, and color earns its place."
+            />
+          </BrandGuidance>
+        </div>
+      </BrandSection>
+
+      <BrandSection
+        id="typography"
+        title="Typography"
+        lede="Use Public Sans everywhere, and save display type for moments that need real emphasis."
+      >
+        <div data-readable class="mb-10 grid max-w-2xl gap-4 text-body-md text-on-surface-variant">
+          <p>
+            The scale keeps a few roles so pages stay consistent and easy to scan. Reach for the
+            smallest role that still gives the content its proper rank.
+          </p>
+          <p>
+            Labels, buttons, metadata, and section markers should use sentence case or title case.
+            Acronyms can stay uppercase when they are the actual term, but do not force text into
+            uppercase as a style.
+          </p>
+        </div>
+        <div class="grid min-w-0 gap-12">
+          {
+            typeFamilies.map((family) => (
+              <div class="grid min-w-0 gap-5">
+                <div data-readable class="max-w-2xl">
+                  <HeadingLink
+                    id={`typography-${slugify(family.name)}`}
+                    as="h3"
+                    label={family.name}
+                    class="text-headline-sm scroll-mt-24"
+                  />
+                  <p class="text-body-md mt-2 text-on-surface-variant">{family.guidance}</p>
+                </div>
+                <div class="grid min-w-0 gap-4">
+                  {typeSamples
+                    .filter((sample) => family.includes.includes(sample.name))
+                    .map((sample) => (
+                      <article class="bg-surface-container p-5 md:p-6">
+                        <div class="grid gap-5">
+                          <p class={`${sample.className} text-balance`}>{sample.sample}</p>
+                          <div data-readable class="min-w-0">
+                            <div class="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
+                              <p class="text-title-sm">{sample.name}</p>
+                              <p class="text-label-md text-on-surface-variant">{sample.spec}</p>
+                            </div>
+                            <p class="text-body-sm mt-2 text-on-surface-variant">{sample.use}</p>
+                          </div>
+                        </div>
+                      </article>
+                    ))}
+                </div>
+              </div>
+            ))
+          }
+        </div>
+        <div class="mt-12">
+          <BrandGuidance>
+            <BrandGuidanceCard
+              variant="recommended"
+              title="Use the smallest role that fits"
+              text="Match the role to the job, and step down to the smallest size that still gives the content its proper rank."
+            />
+            <BrandGuidanceCard
+              variant="avoid"
+              title="Don't force uppercase labels"
+              text="Use weight, size, spacing, or color for hierarchy. Do not turn labels, buttons, or metadata into all-caps styling."
+            />
+          </BrandGuidance>
+        </div>
+      </BrandSection>
+
+      <BrandSection
+        id="layout"
+        title="Layout & spacing"
+        lede="Layout should make the hierarchy visible before anyone reads the copy. Keep the structure direct, roomy, and easy to scan across pages, flyers, decks, and social graphics."
+      >
+        <div class="grid min-w-0 gap-14">
+          {/* Alignment */}
+          <BrandExampleRow>
+            <div slot="copy">
+              <HeadingLink
+                id="layout-alignment"
+                as="h3"
+                label="Alignment"
+                class="text-headline-sm scroll-mt-24"
+                includeInContents
+              />
+              <div data-readable class="mt-4 grid gap-4 text-body-md text-on-surface-variant">
+                <p>
+                  Default to left-aligning copy, headings, buttons, captions, and stacked elements.
+                  A strong left edge makes flyers, carousels, one-page briefs, and meeting slides
+                  faster to scan.
+                </p>
+                <p>
+                  Center only for a short, intentional moment: a poster-like campaign line, a single
+                  stat, a lone call to action. Never center long paragraphs or mix alignments in one
+                  small block.
+                </p>
+              </div>
+            </div>
+            <BrandExample
+              slot="example"
+              caption="Left edge by default. Center only a short, intentional line, never long copy."
+            >
+              <div class="grid gap-5">
+                <div class="border-l-[6px] border-primary pl-4">
+                  <p class="text-title-sm">Left by default</p>
+                  <p class="text-body-sm mt-1 text-on-surface-variant">
+                    Left edge for reading, comparison, and action.
+                  </p>
+                </div>
+                <div class="border-t border-outline-variant/40 pt-5 text-center">
+                  <p class="text-title-sm">Center for emphasis</p>
+                  <p class="text-body-sm mt-1 text-on-surface-variant">
+                    Center one short idea when it should feel like a moment.
+                  </p>
+                </div>
+              </div>
+            </BrandExample>
+          </BrandExampleRow>
+
+          {/* Communication layouts */}
+          <BrandExampleRow>
+            <div slot="copy">
+              <HeadingLink
+                id="layout-communications"
+                as="h3"
+                label="Communication layouts"
+                class="text-headline-sm scroll-mt-24"
+                includeInContents
+              />
+              <div data-readable class="mt-4 grid gap-4 text-body-md text-on-surface-variant">
+                <p>
+                  <span class="font-semibold text-on-surface">Start with the message.</span> Put the headline,
+                  fact, date, or ask where the eye lands first; decorative structure never outranks the
+                  reason the piece exists.
+                </p>
+                <p>
+                  <span class="font-semibold text-on-surface">Build one clear path.</span> Most pieces
+                  read top-left to bottom-right. Use columns only for comparison, lists, or paired choices.
+                </p>
+                <p>
+                  <span class="font-semibold text-on-surface">Keep groups obvious.</span> Related items
+                  sit close together; separate sections with space first, then a rule if the break needs
+                  to stay visible.
+                </p>
+              </div>
+            </div>
+            <BrandExample
+              slot="example"
+              caption="One reading path: message, then context, then proof, then the action."
+            >
+              <ol class="grid gap-4">
+                <li class="flex items-baseline gap-4">
+                  <span class="text-label-md text-on-surface-variant">01</span>
+                  <span class="text-title-md">Message</span>
+                </li>
+                <li class="flex items-baseline gap-4">
+                  <span class="text-label-md text-on-surface-variant">02</span>
+                  <span class="text-body-md text-on-surface-variant">Context</span>
+                </li>
+                <li class="flex items-baseline gap-4">
+                  <span class="text-label-md text-on-surface-variant">03</span>
+                  <span class="text-body-md text-on-surface-variant">Proof</span>
+                </li>
+                <li class="flex items-center gap-4">
+                  <span class="text-label-md text-on-surface-variant">04</span>
+                  <span
+                    class="text-title-sm inline-flex items-center gap-2 bg-on-surface px-3 py-2 text-surface"
+                  >
+                    Action
+                  </span>
+                </li>
+              </ol>
+            </BrandExample>
+          </BrandExampleRow>
+
+          {/* Spacing and rhythm */}
+          <BrandExampleRow>
+            <div slot="copy">
+              <HeadingLink
+                id="layout-spacing"
+                as="h3"
+                label="Spacing and rhythm"
+                class="text-headline-sm scroll-mt-24"
+                includeInContents
+              />
+              <div data-readable class="mt-4 grid gap-4 text-body-md text-on-surface-variant">
+                <p>
+                  Use larger gaps between major ideas and tighter gaps inside a related group. The
+                  page should feel organized before it feels decorated.
+                </p>
+                <p>
+                  Avoid stacking redundant separators. If a sticky header already has a rule, the
+                  first block below it usually does not need another.
+                </p>
+              </div>
+            </div>
+            <BrandExample
+              slot="example"
+              caption="Big gaps between ideas, tight gaps within a group. Add a rule only when space isn't enough."
+            >
+              <div class="grid gap-8">
+                <div class="grid gap-1.5">
+                  <p class="text-title-sm">Major section</p>
+                  <p class="text-body-sm text-on-surface-variant">
+                    Strong break, clear title, then content.
+                  </p>
+                </div>
+                <div class="grid gap-1.5">
+                  <p class="text-title-sm">Supporting block</p>
+                  <p class="text-body-sm text-on-surface-variant">
+                    Thin rules divide related tools or repeated rows.
+                  </p>
+                </div>
+              </div>
+            </BrandExample>
+          </BrandExampleRow>
+
+          {/* Actions */}
+          <BrandExampleRow>
+            <div slot="copy">
+              <HeadingLink
+                id="layout-actions"
+                as="h3"
+                label="Actions"
+                class="text-headline-sm scroll-mt-24"
+                includeInContents
+              />
+              <p data-readable class="mt-4 text-body-md text-on-surface-variant">
+                Actions sit with the content they complete. Align buttons to the same left edge as
+                the surrounding copy in forms, briefs, emails, and guide pages. Center a button only
+                when it follows a centered, one-message moment.
+              </p>
+            </div>
+            <BrandExample
+              slot="example"
+              caption="Buttons share the left edge of the copy they complete."
+            >
+              <div class="grid justify-items-start gap-3" aria-hidden="true">
+                <span
+                  class="text-title-sm inline-flex items-center justify-center gap-2 bg-on-surface px-4 py-3 text-surface"
+                >
+                  Download assets
+                  <Icon name="mdi:arrow-right" class="size-4" aria-hidden="true" />
+                </span>
+                <span
+                  class="text-title-sm inline-flex items-center justify-center gap-2 border border-outline px-4 py-3"
+                >
+                  Review voice
+                  <Icon name="mdi:arrow-right" class="size-4" aria-hidden="true" />
+                </span>
+              </div>
+            </BrandExample>
+          </BrandExampleRow>
+        </div>
+        <div class="mt-14">
+          <BrandGuidance>
+            <BrandGuidanceCard
+              variant="recommended"
+              title="Lead with a left-aligned path"
+              text="Left-align copy and actions, group related items with space, and make the hierarchy visible before anyone reads a word."
+            />
+            <BrandGuidanceCard
+              variant="avoid"
+              title="Don't center long copy or over-divide"
+              text="Reserve centering for one short moment, and don't stack redundant rules where space already marks the break."
+            />
+          </BrandGuidance>
+        </div>
+      </BrandSection>
+
+      <BrandSection
+        id="logos"
+        title="Logos"
+        lede="Use the wordmark when people need the full name. Use the square LVBT mark when space is tight or the organization is named nearby."
+      >
+        <div slot="intro-extra" class="mt-6">
+          <p data-readable class="text-body-md max-w-2xl text-on-surface-variant">
+            LVBT has two approved logo versions: the full wordmark and the square LVBT mark. Use the
+            wordmark to introduce the organization, and use the mark where space is tight or the
+            name is already nearby. Keep space around every logo, preserve contrast, and use the
+            original artwork.
+          </p>
+        </div>
+
+        <div class="grid min-w-0 gap-12">
+          <BrandExampleRow>
+            <div slot="copy">
+              <HeadingLink
+                id="logos-versions"
+                as="h3"
+                label="Logo versions"
+                class="text-headline-sm scroll-mt-24"
+                includeInContents
+              />
+              <div data-readable class="mt-4 grid gap-4 text-body-md text-on-surface-variant">
+                <p>
+                  Pick the logo that fits the communication job. The wordmark introduces the
+                  organization; the square mark identifies LVBT when the full name already appears
+                  nearby or space is limited.
+                </p>
+                <p>
+                  Use the wordmark for most first impressions: flyers, decks, reports, tabling
+                  materials, and graphics that may travel outside LVBT channels.
+                </p>
+              </div>
+            </div>
+            <BrandExample
+              slot="example"
+              caption="The wordmark introduces the organization. The mark works when the name is already nearby."
+            >
+              <div class="grid gap-5" aria-hidden="true">
+                <div class="grid gap-3">
+                  <p class="text-label-lg text-on-surface-variant">Wordmark</p>
+                  <div class="grid min-h-32 place-items-center bg-[var(--paper)] p-6">
+                    <img src="/brand/lvbt-wordmark.svg" alt="" class="w-full max-w-[18rem]" />
+                  </div>
+                </div>
+                <div class="grid gap-3">
+                  <p class="text-label-lg text-on-surface-variant">LVBT mark</p>
+                  <div class="grid min-h-32 place-items-center bg-primary-container p-6">
+                    <img src="/brand/lvbt-logo.svg" alt="" class="size-28" />
+                  </div>
+                </div>
+              </div>
+            </BrandExample>
+          </BrandExampleRow>
+
+          <div>
+            <div class="mt-1">
+              <BrandGuidance
+                context="Choose the right logo"
+                note="Start with recognition. If the viewer needs the full name, use the wordmark. If the name is already present, the mark can carry the identity."
+              >
+                <BrandGuidanceCard
+                  variant="recommended"
+                  title="Let the full name introduce us"
+                  text="Use the wordmark before asking a new audience to donate, join, testify, or share."
+                />
+                <BrandGuidanceCard
+                  variant="avoid"
+                  title="Don't force the wordmark small"
+                  text="When the name stops reading, switch to the mark or simplify the surrounding layout."
+                />
+              </BrandGuidance>
+            </div>
+          </div>
+
+          <BrandExampleRow>
+            <div slot="copy">
+              <HeadingLink
+                id="logos-space"
+                as="h3"
+                label="Space around logos"
+                class="text-headline-sm scroll-mt-24"
+                includeInContents
+              />
+              <div data-readable class="mt-4 grid gap-4 text-body-md text-on-surface-variant">
+                <p>
+                  Give every logo breathing room. Leave empty space around the mark equal to at
+                  least a quarter of its width, and keep that field empty.
+                </p>
+                <p>
+                  Nothing else belongs inside it: not a partner logo, a QR code, a headline, or a
+                  page edge.
+                </p>
+              </div>
+            </div>
+            <BrandExample
+              slot="example"
+              caption="The dashed area shows the minimum empty space. Keep it clear on every side."
+            >
+              <div
+                class="mx-auto grid max-w-xs place-items-center border border-dashed border-on-surface/30 p-8"
+              >
+                <img src="/brand/lvbt-logo.svg" alt="" class="size-24" />
+              </div>
+            </BrandExample>
+          </BrandExampleRow>
+
+          <BrandExampleRow>
+            <div slot="copy">
+              <HeadingLink
+                id="logos-size"
+                as="h3"
+                label="Minimum sizes"
+                class="text-headline-sm scroll-mt-24"
+                includeInContents
+              />
+              <p data-readable class="mt-4 max-w-2xl text-body-md text-on-surface-variant">
+                Keep the logo large enough to read at a glance. If a placement cannot meet the
+                minimum, change the layout before shrinking the artwork.
+              </p>
+            </div>
+            <BrandExample
+              slot="example"
+              caption="These are minimums, not targets. Give the logo more room whenever the format allows it."
+            >
+              <dl class="grid gap-5 sm:grid-cols-2">
+                <div>
+                  <dt class="text-title-md">LVBT mark</dt>
+                  <dd class="text-body-sm mt-2 text-on-surface-variant">
+                    Minimum digital size: <strong class="font-bold text-on-surface">40px</strong>.
+                    For print, keep it at least <strong class="font-bold text-on-surface"
+                      >0.45 in</strong
+                    >
+                    wide.
+                  </dd>
+                </div>
+                <div>
+                  <dt class="text-title-md">Wordmark</dt>
+                  <dd class="text-body-sm mt-2 text-on-surface-variant">
+                    Minimum digital width: <strong class="font-bold text-on-surface">180px</strong>.
+                    For print, keep it at least <strong class="font-bold text-on-surface"
+                      >1.6 in</strong
+                    >
+                    wide.
+                  </dd>
+                </div>
+              </dl>
+            </BrandExample>
+          </BrandExampleRow>
+
+          <BrandExampleRow>
+            <div slot="copy">
+              <HeadingLink
+                id="logos-backgrounds"
+                as="h3"
+                label="Backgrounds"
+                class="text-headline-sm scroll-mt-24"
+                includeInContents
+              />
+              <p data-readable class="mt-4 max-w-2xl text-body-md text-on-surface-variant">
+                Use the approved light artwork on Paper, white, and soft orange fields. Use the dark
+                artwork on Ink, dark photos, and night-event graphics. The logo should read before
+                the background does.
+              </p>
+            </div>
+            <BrandExample
+              slot="example"
+              caption="Choose the artwork that keeps the logo readable against the background."
+            >
+              <div class="grid gap-4 sm:grid-cols-2" aria-hidden="true">
+                <div class="grid min-h-32 place-items-center bg-[var(--paper)] p-6">
+                  <img src="/brand/lvbt-wordmark.svg" alt="" class="w-full max-w-48" />
+                </div>
+                <div class="grid min-h-32 place-items-center bg-[var(--ink)] p-6">
+                  <img src="/brand/lvbt-wordmark-dark.svg" alt="" class="w-full max-w-48" />
+                </div>
+              </div>
+            </BrandExample>
+          </BrandExampleRow>
+
+          <div>
+            <div class="mt-1">
+              <BrandGuidance
+                context="Choose a quiet background"
+                note="Choose the logo version that gives the logo a clean area behind it. Avoid busy photos, low-contrast color, and improvised recoloring."
+              >
+                <BrandGuidanceCard
+                  variant="recommended"
+                  title="Keep the logo field quiet"
+                  text="Place approved light or dark artwork on Paper, Ink, soft orange, white, or calm image areas."
+                />
+                <BrandGuidanceCard
+                  variant="avoid"
+                  title="Don't decorate the artwork"
+                  text="Do not recolor, outline, shadow, rotate, crop, or place the logo over visual noise."
+                />
+              </BrandGuidance>
+            </div>
+          </div>
+
+          <BrandExampleRow>
+            <div slot="copy">
+              <HeadingLink
+                id="logos-placement"
+                as="h3"
+                label="Logo placement"
+                class="text-headline-sm scroll-mt-24"
+                includeInContents
+              />
+              <div data-readable class="mt-4 grid gap-4 text-body-md text-on-surface-variant">
+                <p>
+                  Place the logo where it can anchor the composition without competing with the
+                  message. Corners and simple header areas usually work better than busy centers.
+                </p>
+                <p>
+                  Pair the logo with a clear title, action, or source line. Do not make the logo
+                  carry the whole message by itself.
+                </p>
+              </div>
+            </div>
+            <BrandExample
+              slot="example"
+              caption="A quiet header field lets the wordmark identify the piece while the headline does the work."
+            >
+              <div class="grid gap-8" aria-hidden="true">
+                <div class="flex items-start justify-between gap-8 border-b border-outline pb-5">
+                  <img src="/brand/lvbt-wordmark.svg" alt="" class="w-36" />
+                  <span
+                    class="text-label-md border border-outline px-2 py-1 text-on-surface-variant"
+                  >
+                    Brief
+                  </span>
+                </div>
+                <div class="grid max-w-md gap-3">
+                  <span class="h-8 w-11/12 bg-on-surface"></span>
+                  <span class="h-8 w-3/4 bg-primary"></span>
+                  <span class="h-2 w-full bg-on-surface/25"></span>
+                  <span class="h-2 w-4/5 bg-on-surface/25"></span>
+                </div>
+              </div>
+            </BrandExample>
+          </BrandExampleRow>
+
+          <div>
+            <HeadingLink
+              id="logos-artwork"
+              as="h3"
+              label="Logo artwork"
+              class="text-headline-sm scroll-mt-24"
+              includeInContents
+            />
+            <p data-readable class="mt-4 max-w-2xl text-body-md text-on-surface-variant">
+              Use the approved logo artwork as provided. If the logo does not fit, adjust the
+              layout, background, or logo version instead of changing the artwork.
+            </p>
+            <div class="mt-6">
+              <BrandGuidance
+                context="Keep the artwork unchanged"
+                note="These rules protect recognition. They also make materials easier for volunteers and partners to reproduce consistently."
+              >
+                <BrandGuidanceCard
+                  variant="recommended"
+                  title="Use original artwork"
+                  text="Use the approved artwork as provided, with enough space and enough contrast."
+                />
+                <BrandGuidanceCard
+                  variant="avoid"
+                  title="Don't redraw or distort"
+                  text="Do not stretch, crop, rotate, add effects, swap colors, or rebuild the logo in another typeface."
+                />
+              </BrandGuidance>
+            </div>
+          </div>
+
+          <div data-brand-logo-kit>
+            <HeadingLink
+              id="logos-assets"
+              as="h3"
+              label="Logo assets"
+              class="text-headline-sm scroll-mt-24"
+              includeInContents
+            />
+            <p data-readable class="mt-4 mb-5 max-w-2xl text-body-md text-on-surface-variant">
+              Use the tabs to preview approved light and dark assets, then copy or download the
+              format your tool supports.
+            </p>
+            <BrandLogoKit families={logoFamilies} />
+          </div>
+        </div>
+      </BrandSection>
+
+      <BrandSection
+        id="voice"
+        title="Voice"
+        lede="LVBT sounds clear, specific, useful, and human. Start with the audience, then choose the tone that helps them understand the issue and act."
+      >
+        <div class="grid min-w-0 gap-8">
+          <div class="max-w-2xl">
+            <p data-readable class="text-body-md text-on-surface-variant">
+              Voice is how LVBT sounds in public: direct, useful, and easy to trust. The same
+              message should not always sound the same everywhere. In every case, the copy should
+              meet people where they are and help them understand what is happening and what they
+              can do next.
+            </p>
+          </div>
+
+          {
+            voiceGuidelines.map((item) => (
+              <article class="max-w-3xl">
+                <HeadingLink
+                  id={`voice-${slugify(item.title)}`}
+                  as="h3"
+                  label={item.title}
+                  class="text-headline-sm scroll-mt-24"
+                  includeInContents
+                />
+                <div class="mt-3 grid gap-3">
+                  {item.paragraphs.map((paragraph) => (
+                    <p data-readable class="text-body-md max-w-2xl text-on-surface-variant">
+                      {paragraph}
+                    </p>
+                  ))}
+                </div>
+                <div class="mt-10 grid gap-10">
+                  {item.examples.map((example) => (
+                    <BrandGuidance context={example.context} note={example.note}>
+                      <BrandGuidanceCard variant="recommended" text={example.specific} />
+                      <BrandGuidanceCard variant="avoid" text={example.vague} />
+                    </BrandGuidance>
+                  ))}
+                </div>
+              </article>
+            ))
+          }
+        </div>
+      </BrandSection>
+    </div>
+  </div>
+
+  <script is:inline src="/scripts/brand-guide.js" defer></script>
+</BaseLayout>

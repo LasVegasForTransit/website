@@ -1,0 +1,30 @@
+---
+// Layout wrapper for a set of guidance examples: an optional context/note
+// header above a responsive grid. Drop BrandGuidanceCard examples into the
+// default slot — each card carries its own recommended/avoid state, so no
+// positive/negative props pass through here.
+interface Props {
+  context?: string;
+  note?: string;
+}
+
+const { context, note } = Astro.props;
+---
+
+<div data-brand-guidance class="grid gap-4">
+  {
+    context && (
+      <div class="max-w-2xl">
+        <p class="text-title-lg text-on-surface">{context}</p>
+        {note && (
+          <p data-readable class="text-body-sm mt-1 text-on-surface-variant">
+            {note}
+          </p>
+        )}
+      </div>
+    )
+  }
+  <div class="grid gap-4 md:grid-cols-2 md:gap-6">
+    <slot />
+  </div>
+</div>

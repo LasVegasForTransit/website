@@ -1,0 +1,296 @@
+---
+import { Icon } from 'astro-icon/components';
+
+interface LogoAsset {
+  id: string;
+  format: 'SVG' | 'PNG';
+  href: string;
+  filename: string;
+  sizePx?: number;
+  descriptor?: string;
+  recommended?: boolean;
+}
+
+interface LogoTheme {
+  id: string;
+  name: string;
+  specimen: string;
+  specimenClass: string;
+  assets: LogoAsset[];
+}
+
+interface LogoFamily {
+  id: string;
+  name: string;
+  themes: LogoTheme[];
+}
+
+interface Props {
+  families: LogoFamily[];
+}
+
+const { families } = Astro.props;
+
+const logoSurfaceTabs = [
+  { id: 'light', label: 'Light', icon: 'mdi:white-balance-sunny' },
+  { id: 'dark', label: 'Dark', icon: 'mdi:moon-waning-crescent' },
+] as const;
+
+const assetLabel = (asset: LogoAsset) =>
+  asset.format === 'PNG' && asset.sizePx ? `${asset.sizePx}px PNG` : asset.format;
+
+const assetCopyLabel = (asset: LogoAsset) =>
+  [asset.descriptor, assetLabel(asset)].filter(Boolean).join(' ');
+
+const printAssets = families.flatMap((family) =>
+  family.themes.map((theme) => {
+    const svgAsset = theme.assets.find((asset) => asset.format === 'SVG');
+    const rasterAssets = theme.assets.filter((asset) => asset.format === 'PNG');
+
+    return {
+      family: family.name,
+      theme: theme.name,
+      svg: svgAsset?.href,
+      raster: rasterAssets.map((asset) => asset.href),
+    };
+  }),
+);
+---
+
+<div
+  data-brand-logo-kit-frame
+  class="w-full border border-outline-variant/25 bg-surface-container lg:grid lg:grid-cols-[minmax(22rem,0.8fr)_minmax(34rem,1.2fr)] lg:items-start"
+>
+  <div
+    data-brand-logo-viewer
+    class="border-b border-outline-variant/20 bg-surface-container lg:sticky lg:top-[calc(var(--lvbt-header-h)+5.5rem)] lg:self-start lg:border-r lg:border-b-0"
+  >
+    <div data-brand-logo-preview-stack>
+      {
+        families.flatMap((family) =>
+          family.themes.map((theme) => {
+            return (
+              <div data-brand-logo-preview data-logo-family={family.id} data-logo-theme={theme.id}>
+                <div
+                  data-brand-logo-specimen
+                  class={`flex aspect-[5/4] min-h-72 items-center justify-center p-6 sm:min-h-80 lg:min-h-0 lg:p-8 ${theme.specimenClass}`}
+                >
+                  <img
+                    src={theme.specimen}
+                    alt={`${family.name} for ${theme.name.toLowerCase()} surfaces`}
+                    class={
+                      family.id === 'wordmark'
+                        ? 'w-full max-w-xs sm:max-w-sm'
+                        : 'size-32 max-w-full sm:size-40'
+                    }
+                  />
+                </div>
+              </div>
+            );
+          }),
+        )
+      }
+    </div>
+    <div data-brand-logo-tabs-shell class="grid border-t border-b border-outline-variant/20">
+      <div
+        data-brand-logo-tabs
+        role="tablist"
+        aria-label="Logo asset family"
+        class="grid grid-cols-2 border-b border-outline-variant/20"
+      >
+        {
+          families.map((family, index) => (
+            <button
+              type="button"
+              role="tab"
+              id={`logos-family-${family.id}-tab`}
+              data-logo-family-tab={family.id}
+              aria-selected={index === 0 ? 'true' : 'false'}
+              aria-controls={`logos-${family.id}-light-panel`}
+              tabindex={index === 0 ? '0' : '-1'}
+              class="text-title-sm -mr-px cursor-pointer border-r border-outline-variant/20 px-3 py-4 transition-colors last:border-r-0 aria-selected:bg-on-surface aria-selected:text-surface hover:bg-on-surface hover:text-surface focus-visible:bg-on-surface focus-visible:text-surface"
+            >
+              {family.name}
+            </button>
+          ))
+        }
+      </div>
+      <div
+        data-brand-logo-theme-tabs
+        role="tablist"
+        aria-label="Logo surface"
+        class="grid grid-cols-2"
+      >
+        {
+          logoSurfaceTabs.map((theme, index) => (
+            <button
+              type="button"
+              role="tab"
+              id={`logos-theme-${theme.id}-tab`}
+              data-logo-tab={theme.id}
+              aria-selected={index === 0 ? 'true' : 'false'}
+              aria-controls={`logos-mark-${theme.id}-panel`}
+              tabindex={index === 0 ? '0' : '-1'}
+              class="text-title-sm -mr-px inline-flex cursor-pointer items-center justify-center gap-2 border-r border-outline-variant/20 px-3 py-4 transition-colors last:border-r-0 aria-selected:bg-on-surface aria-selected:text-surface hover:bg-on-surface hover:text-surface focus-visible:bg-on-surface focus-visible:text-surface"
+            >
+              <Icon name={theme.icon} class="size-4" aria-hidden="true" />
+              {theme.label}
+            </button>
+          ))
+        }
+      </div>
+    </div>
+  </div>
+  <div class="min-w-0 bg-surface-container">
+    {
+      families.flatMap((family) =>
+        family.themes.map((theme) => {
+          const svgAsset = theme.assets.find((asset) => asset.format === 'SVG');
+          const rasterAssets = theme.assets.filter((asset) => asset.format === 'PNG');
+
+          return (
+            <article
+              id={`logos-${family.id}-${theme.id}-panel`}
+              role="tabpanel"
+              data-brand-logo-panel
+              data-logo-family={family.id}
+              data-logo-theme={theme.id}
+              aria-labelledby={`logos-family-${family.id}-tab logos-theme-${theme.id}-tab`}
+              class="bg-surface-container"
+            >
+              <div data-brand-logo-details class="p-5 sm:p-6 lg:p-8">
+                <div data-readable class="min-w-0">
+                  <h3 id={`logos-${family.id}-${theme.id}`} class="text-headline-sm">
+                    {family.name} · {theme.name}
+                  </h3>
+                  <p class="text-body-md mt-2 max-w-2xl text-on-surface-variant">
+                    Download the vector SVG for source artwork, or use a transparent PNG when a tool
+                    cannot place SVG assets.
+                  </p>
+                </div>
+                <div
+                  data-brand-logo-raster
+                  data-brand-logo-downloads
+                  class="mt-5 border-t border-outline-variant/15"
+                >
+                  <div
+                    aria-hidden="true"
+                    class="text-label-lg border-b border-outline-variant/15 py-3 text-on-surface-variant"
+                  >
+                    <span>Downloads</span>
+                  </div>
+                  {svgAsset && (
+                    <div
+                      data-brand-logo-actions
+                      data-brand-logo-asset={`${family.id}-${theme.id}-${svgAsset.id}`}
+                      class="grid gap-3 border-b border-outline-variant/15 py-4 last:border-b-0"
+                    >
+                      <div>
+                        <p class="text-title-md">SVG</p>
+                        <p class="text-body-sm mt-1 text-primary-ink">
+                          Recommended. Scales to any size without blurring.
+                        </p>
+                      </div>
+                      <div class="grid gap-2 min-[520px]:grid-cols-2">
+                        <button
+                          type="button"
+                          data-copy-logo
+                          data-copy-url={svgAsset.href}
+                          data-copy-format={assetCopyLabel(svgAsset)}
+                          class="text-title-sm inline-flex cursor-pointer items-center justify-center gap-2 whitespace-nowrap border border-outline px-4 py-3 transition-colors hover:bg-on-surface hover:text-surface focus-visible:bg-on-surface focus-visible:text-surface"
+                        >
+                          <Icon name="mdi:content-copy" class="size-4" aria-hidden="true" />
+                          Copy SVG code
+                        </button>
+                        <a
+                          href={svgAsset.href}
+                          download={svgAsset.filename}
+                          class="text-title-sm inline-flex items-center justify-center gap-2 whitespace-nowrap border border-outline px-4 py-3 no-underline transition-colors hover:bg-on-surface hover:text-surface focus-visible:bg-on-surface focus-visible:text-surface"
+                        >
+                          <Icon name="mdi:download" class="size-4" aria-hidden="true" />
+                          Download {assetLabel(svgAsset)}
+                        </a>
+                      </div>
+                    </div>
+                  )}
+                  {rasterAssets.map((asset) => {
+                    return (
+                      <div
+                        data-brand-logo-asset={`${family.id}-${theme.id}-${asset.id}`}
+                        class="grid gap-3 border-b border-outline-variant/15 py-4 last:border-b-0"
+                      >
+                        <div>
+                          <p class="text-title-md">{assetLabel(asset)}</p>
+                          <p class="text-body-sm mt-1 text-on-surface-variant">Transparent PNG</p>
+                        </div>
+                        <div class="grid gap-2 min-[520px]:grid-cols-2">
+                          <button
+                            type="button"
+                            data-copy-logo
+                            data-copy-url={asset.href}
+                            data-copy-format={assetCopyLabel(asset)}
+                            class="text-title-sm inline-flex cursor-pointer items-center justify-center gap-2 whitespace-nowrap border border-outline px-4 py-3 transition-colors hover:bg-on-surface hover:text-surface focus-visible:bg-on-surface focus-visible:text-surface"
+                          >
+                            <Icon name="mdi:content-copy" class="size-4" aria-hidden="true" />
+                            Copy PNG
+                          </button>
+                          <a
+                            href={asset.href}
+                            download={asset.filename}
+                            class="text-title-sm inline-flex items-center justify-center gap-2 whitespace-nowrap border border-outline px-4 py-3 no-underline transition-colors hover:bg-on-surface hover:text-surface focus-visible:bg-on-surface focus-visible:text-surface"
+                          >
+                            <Icon name="mdi:download" class="size-4" aria-hidden="true" />
+                            Download {assetLabel(asset)}
+                          </a>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </article>
+          );
+        }),
+      )
+    }
+  </div>
+  <p
+    data-brand-copy-status
+    class="text-body-sm min-h-[1.5rem] px-5 py-4 text-on-surface-variant lg:col-span-2"
+    aria-live="polite"
+  >
+  </p>
+  <section
+    data-brand-print-assets
+    data-brand-print-only
+    aria-label="Logo asset reference"
+    class="hidden"
+  >
+    <div class="grid gap-3">
+      <div>
+        <p class="text-title-lg">Logo asset reference</p>
+        <p class="text-body-sm mt-1 text-on-surface-variant">
+          Use SVG for print and high-resolution layouts. PNG is available for tools that do not
+          accept vector artwork.
+        </p>
+      </div>
+      <div class="grid gap-2">
+        {
+          printAssets.map((asset) => (
+            <article class="border-t border-outline-variant/20 pt-2">
+              <div class="grid gap-1 sm:grid-cols-[10rem_minmax(0,1fr)]">
+                <p class="text-title-sm">
+                  {asset.family} · {asset.theme}
+                </p>
+                <div class="text-body-sm text-on-surface-variant">
+                  {asset.svg && <p>SVG: {asset.svg}</p>}
+                  <p>PNG: {asset.raster.join(', ')}</p>
+                </div>
+              </div>
+            </article>
+          ))
+        }
+      </div>
+    </div>
+  </section>
+</div>

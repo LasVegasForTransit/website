@@ -1,0 +1,44 @@
+---
+import { Icon } from 'astro-icon/components';
+
+// A single guidance example: an accent-edged panel labeled Do or Don't.
+// `variant` carries the recommended/avoid state, so nothing is threaded
+// through the surrounding BrandGuidance wrapper.
+interface Props {
+  variant: 'recommended' | 'avoid';
+  title?: string;
+  text: string;
+}
+
+const { variant, title, text } = Astro.props;
+
+const recommended = variant === 'recommended';
+const kind = recommended ? 'Do' : "Don't";
+const icon = recommended ? 'mdi:check' : 'mdi:close';
+const toneClass = recommended ? 'border-primary' : 'border-outline-variant/40';
+const iconClass = recommended ? 'text-primary-ink' : 'text-on-surface-variant';
+---
+
+<article
+  class:list={[
+    'grid content-start gap-2 border-l-[6px] bg-surface-container py-3 pr-4 pl-4',
+    toneClass,
+  ]}
+>
+  <div class="text-label-lg flex items-center gap-2 text-on-surface-variant">
+    <Icon name={icon} class:list={['size-4 shrink-0', iconClass]} aria-hidden="true" />
+    {kind}
+  </div>
+  <div class="grid gap-1">
+    {title && <p class="text-title-md text-on-surface">{title}</p>}
+    <p
+      data-readable
+      class:list={[
+        'text-body-md text-pretty',
+        title ? 'text-on-surface-variant' : 'text-on-surface',
+      ]}
+    >
+      {text}
+    </p>
+  </div>
+</article>
