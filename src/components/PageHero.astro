@@ -1,9 +1,9 @@
 ---
-// Shared opening hero for every top-level page. Owns the header block —
-// padding, the display-md page title, and the optional lede — so all top-level
-// pages open identically. Home keeps its own larger landing hero; About is
-// allowed to differ. `title` and `lede` accept HTML (e.g. &nbsp;). Extra
-// content (jump links, buttons) can be passed as the default slot.
+// Shared opening hero for every top-level page. Owns the header block, the
+// display title, the optional lede, and the standard divider so pages open
+// identically. Home keeps its own larger landing hero; About is allowed to
+// differ. `title` and `lede` accept HTML (e.g. &nbsp;). Extra content (jump
+// links, buttons) can be passed as the default slot.
 interface Props {
   title: string;
   lede?: string;
@@ -19,3 +19,4 @@ const { title, lede } = Astro.props;
     <slot />
   </div>
 </header>
+<hr class="rule-thick container-page" />

@@ -130,7 +130,7 @@ const printLinkSheetSections: Array<{ links: PrintLinkSheetLink[] }> = [
       vocabulary is depth + opacity, not scale.
     ============================================================ */
 }
-<footer class="relative z-[60] bg-slab text-on-slab h-dvh flex flex-col">
+<footer class="relative z-(--z-footer) bg-slab text-on-slab h-dvh flex flex-col">
   {
     /* Named for the View Transitions API. Latent until @view-transition
       enables cross-document transitions in global.css — harmless as a
@@ -398,12 +398,18 @@ const printLinkSheetSections: Array<{ links: PrintLinkSheetLink[] }> = [
   }
 
   .footer-wordmark {
-    /* Cap the mark against the brand display ramp (8× display-lg, ~44rem at
-       the ramp's max) instead of a magic width, so it scales with the type
-       system. The dvh term keeps it height-aware for the h-dvh footer budget;
-       it's loosened just enough that the display-lg cap can actually bind on a
-       normal desktop rather than the viewport height clipping it first. */
-    width: min(100%, clamp(16rem, min(78vw, 72dvh), calc(var(--text-display-lg) * 8)));
+    /* Sized against its own grid-column width (.footer-brand is a
+       container-type: inline-size query container above), not the
+       viewport — the column already reflects the real space available,
+       whether the brand row is stacked full-width below 48rem or sharing
+       a row with the nav columns above that. A viewport-height term here
+       previously capped the mark well below its column's width on wide,
+       short viewports (mobile landscape, small-height desktops), even
+       though the shared grid row is already at least as tall as the nav
+       columns beside it — growing the mark up to that height costs
+       nothing extra. Capped against the brand display ramp (8×
+       display-lg) so it doesn't get absurd on very wide columns. */
+    width: min(100%, clamp(16rem, 100cqw, calc(var(--text-display-lg) * 8)));
   }
 
   .footer-nav {
@@ -474,7 +480,7 @@ const printLinkSheetSections: Array<{ links: PrintLinkSheetLink[] }> = [
     .footer-wordmark {
       /* Short-viewport cap steps down a display tier (8× display-md) so the
          mark stays proportional to the ramp while the height budget tightens. */
-      width: min(100%, clamp(14rem, min(72vw, 58dvh), calc(var(--text-display-md) * 8)));
+      width: min(100%, clamp(14rem, 100cqw, calc(var(--text-display-md) * 8)));
     }
 
     .footer-nav-list {
