@@ -1,0 +1,27 @@
+---
+import MarkdownRule from './MarkdownRule.astro';
+
+interface Props {
+  id: string;
+  title: string;
+  intro: string;
+}
+
+const { id, title, intro } = Astro.props;
+---
+
+<section id={id} class="container-page py-14 md:py-20">
+  <MarkdownRule class="mb-10" />
+  <div class="grid gap-8 lg:grid-cols-[minmax(14rem,22rem)_minmax(0,1fr)] lg:gap-10">
+    <div class="lg:sticky lg:top-28 lg:self-start">
+      <h2 class="text-headline-lg">{title}</h2>
+      <p class="mt-4 text-body-lg leading-relaxed text-on-surface-variant text-pretty">
+        {intro}
+      </p>
+    </div>
+
+    <div class="min-w-0">
+      <slot />
+    </div>
+  </div>
+</section>

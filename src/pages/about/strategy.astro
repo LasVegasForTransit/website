@@ -1,13 +1,241 @@
 ---
-import DocLayout from '../../layouts/DocLayout.astro';
-import { getEntry, render } from 'astro:content';
-import { requireEntry } from '../../lib/content-guard';
+import { Icon } from 'astro-icon/components';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import PageHero from '../../components/PageHero.astro';
+import MarkdownRule from '../../components/MarkdownRule.astro';
+import StrategySection from '../../components/StrategySection.astro';
+import {
+  powerMoves,
+  strategyBoundaries,
+  strategyContext,
+  strategyFocus,
+  strategyLinks,
+  strategyMeta,
+  strategyOpening,
+  strategyValues,
+} from '../../lib/strategy-content';
 
-const strategy = await getEntry('docs', 'strategy');
-requireEntry(strategy, 'docs', 'strategy');
-const { Content } = await render(strategy);
+const openingStats = [
+  { value: '0', label: 'Miles of passenger rail in the metro' },
+  { value: '2.4M+', label: 'People who live in the region' },
+  { value: '2027', label: 'Next major state funding window' },
+];
 ---
 
-<DocLayout title={strategy.data.title} summary={strategy.data.summary}>
-  <Content />
-</DocLayout>
+<BaseLayout title="Our strategy" description={strategyMeta.description}>
+  <PageHero title={strategyMeta.title} lede={strategyMeta.lede}>
+    <div class="mt-8 flex flex-wrap gap-3">
+      <a
+        href="/go"
+        class="press inline-flex bg-primary px-5 py-3 font-bold text-on-primary no-underline"
+      >
+        Get involved
+      </a>
+      <a
+        href="/programs"
+        class="press inline-flex border-2 border-outline px-5 py-3 font-bold no-underline hover:bg-on-surface hover:text-surface"
+      >
+        See programs
+      </a>
+    </div>
+  </PageHero>
+
+  <div class="container-page">
+    <hr class="rule-thick" />
+  </div>
+
+  <section class="container-page py-14 md:py-20" aria-labelledby="strategy-opening">
+    <h2 id="strategy-opening" class="sr-only">Strategy summary</h2>
+
+    <div class="grid gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(18rem,24rem)] lg:gap-12">
+      <div class="grid gap-6 md:grid-cols-2">
+        {
+          strategyOpening.map((item) => (
+            <article class="border-l-8 border-primary bg-surface-container p-6 md:p-8">
+              <h3 class="text-headline-sm">{item.title}</h3>
+              <p class="mt-4 text-body-lg leading-relaxed text-on-surface-variant text-pretty">
+                {item.body}
+              </p>
+            </article>
+          ))
+        }
+      </div>
+
+      <dl class="grid border border-outline bg-surface-container">
+        {
+          openingStats.map((stat) => (
+            <div class="border-b border-outline-variant/25 p-6 last:border-b-0">
+              <dt class="text-body-md font-semibold text-on-surface-variant">{stat.label}</dt>
+              <dd class="mt-2 text-display-sm">{stat.value}</dd>
+            </div>
+          ))
+        }
+      </dl>
+    </div>
+  </section>
+
+  <StrategySection
+    id="what-we-want"
+    title="What we want"
+    intro="LVBT's north star is a Las Vegas Valley where public transportation is part of ordinary life, not a last resort. Light rail is part of the dream, but the work cannot wait for one perfect project."
+  >
+    <div class="prose-doc max-w-[72ch] text-on-surface-variant">
+      <p>
+        Better transit should make the Valley more affordable, more independent, and more humane.
+        Families should not need to drive for every errand. Students should not need a parent to get
+        home from an after-school club. Workers should not have to choose between unreliable
+        transportation and a missed shift. Streets should not keep producing preventable injuries
+        and deaths as the cost of getting around.
+      </p>
+      <p>
+        The practical work is incremental: protect and improve bus service, make major corridors
+        easier to use, connect land use to transit, and build enough public demand that future rail
+        becomes politically and financially possible.
+      </p>
+    </div>
+  </StrategySection>
+
+  <StrategySection
+    id="why-las-vegas-is-different"
+    title="Why Las Vegas is different"
+    intro="The Valley's transit problem is not just technical. It is civic. Las Vegas has to build public expectation for transit while it builds the system itself."
+  >
+    <div class="grid gap-4 md:grid-cols-2">
+      {
+        strategyContext.map((item) => (
+          <article class="border border-outline-variant/30 bg-surface-container p-5">
+            <h3 class="text-title-lg">{item.title}</h3>
+            <p class="mt-3 text-body-md leading-relaxed text-on-surface-variant text-pretty">
+              {item.body}
+            </p>
+          </article>
+        ))
+      }
+    </div>
+  </StrategySection>
+
+  <StrategySection
+    id="where-we-focus"
+    title="Where we focus"
+    intro="This is not a formal strategic plan. It is the public shape of the work while LVBT grows into one: what we pay attention to, who we try to reach, and how we keep the mission grounded."
+  >
+    <ol class="grid list-none gap-4 md:grid-cols-2">
+      {
+        strategyFocus.map((item, index) => (
+          <li class="border border-outline-variant/30 bg-surface-container p-5">
+            <article>
+              <p class="text-body-sm font-bold text-primary-ink">Focus {index + 1}</p>
+              <h3 class="mt-2 text-title-lg">{item.title}</h3>
+              <p class="mt-3 text-body-md leading-relaxed text-on-surface-variant text-pretty">
+                {item.body}
+              </p>
+            </article>
+          </li>
+        ))
+      }
+    </ol>
+  </StrategySection>
+
+  <StrategySection
+    id="how-we-build-power"
+    title="How we build power"
+    intro="The strategy is not to publish a plan and wait. It is to make transit easier to understand, easier to support, and harder for decision-makers to ignore."
+  >
+    <div class="grid gap-6">
+      {
+        powerMoves.map((item, index) => (
+          <article class="grid gap-4 border-t border-outline-variant/25 pt-6 md:grid-cols-[4rem_minmax(0,1fr)]">
+            <p class="text-headline-sm text-primary-ink tnum">
+              {String(index + 1).padStart(2, '0')}
+            </p>
+            <div>
+              <h3 class="text-title-lg">{item.title}</h3>
+              <p class="mt-2 text-body-md leading-relaxed text-on-surface-variant text-pretty">
+                {item.body}
+              </p>
+            </div>
+          </article>
+        ))
+      }
+    </div>
+  </StrategySection>
+
+  <StrategySection
+    id="values"
+    title="Values"
+    intro="The work has to be principled enough to matter and practical enough to last."
+  >
+    <div class="grid gap-4 md:grid-cols-2">
+      {
+        strategyValues.map((item) => (
+          <article class="border border-outline-variant/30 bg-surface-container p-5">
+            <h3 class="text-title-lg">{item.title}</h3>
+            <p class="mt-3 text-body-md leading-relaxed text-on-surface-variant text-pretty">
+              {item.body}
+            </p>
+          </article>
+        ))
+      }
+    </div>
+  </StrategySection>
+
+  <StrategySection
+    id="what-we-are-not"
+    title="What we are not"
+    intro="Clear boundaries keep the organization honest and help partners understand the role LVBT is built to play."
+  >
+    <div class="grid gap-4 md:grid-cols-2">
+      {
+        strategyBoundaries.map((item) => (
+          <article class="border border-outline-variant/30 p-5">
+            <h3 class="text-title-lg">{item.title}</h3>
+            <p class="mt-3 text-body-md leading-relaxed text-on-surface-variant text-pretty">
+              {item.body}
+            </p>
+          </article>
+        ))
+      }
+    </div>
+  </StrategySection>
+
+  <section
+    class="container-page pb-20 pt-14 md:pb-28 md:pt-20"
+    aria-labelledby="where-this-connects"
+  >
+    <MarkdownRule class="mb-10" />
+    <div class="grid gap-8 lg:grid-cols-[minmax(14rem,22rem)_minmax(0,1fr)] lg:gap-10">
+      <div>
+        <h2 id="where-this-connects" class="text-headline-lg">Where this connects</h2>
+        <p class="mt-4 text-body-lg leading-relaxed text-on-surface-variant text-pretty">
+          Strategy should point people toward the next useful page, not trap them in an internal
+          planning document.
+        </p>
+      </div>
+
+      <ul class="grid list-none gap-4 md:grid-cols-2">
+        {
+          strategyLinks.map((link) => (
+            <li>
+              <a
+                href={link.href}
+                class="group flex h-full min-w-0 flex-col border border-outline bg-surface-container p-5 no-underline transition-colors hover:bg-slab hover:text-on-slab focus-visible:bg-slab focus-visible:text-on-slab"
+              >
+                <span class="flex items-center justify-between gap-4 text-title-lg">
+                  {link.label}
+                  <Icon
+                    name="mdi:arrow-right"
+                    class="size-5 shrink-0 transition-transform group-hover:translate-x-1 group-focus-visible:translate-x-1"
+                    aria-hidden="true"
+                  />
+                </span>
+                <span class="mt-3 text-body-md leading-relaxed text-on-surface-variant text-pretty group-hover:text-on-slab/75 group-focus-visible:text-on-slab/75">
+                  {link.body}
+                </span>
+              </a>
+            </li>
+          ))
+        }
+      </ul>
+    </div>
+  </section>
+</BaseLayout>
