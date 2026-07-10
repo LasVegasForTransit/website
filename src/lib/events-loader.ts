@@ -14,7 +14,12 @@ import ICAL from 'ical.js';
 import { site } from './site';
 import { slugify } from './slugify';
 
-import type { EventLocation } from './event-format';
+import type {
+  EventAdmissionLabel,
+  EventLocation,
+  EventSchemaMetadata,
+  EventVenue,
+} from './event-format';
 import { TIMEZONE } from './event-time';
 
 type EventData = {
@@ -24,9 +29,12 @@ type EventData = {
   // Undefined when the event has no arranged join URL or venue yet.
   location?: EventLocation;
   rsvpUrl?: string;
+  admissionUrl?: string;
+  admissionLabel?: EventAdmissionLabel;
   featured: boolean;
   summary: string;
   body?: string;
+  schema?: EventSchemaMetadata;
 };
 
 const CONFERENCE_HOST_RE =
@@ -60,6 +68,47 @@ function findConferenceUrl(text: string): string | undefined {
 function findRsvpUrl(description: string): string | undefined {
   const m = description.match(/^\s*RSVP:\s*(https?:\/\/\S+)/im);
   return m?.[1];
+}
+
+function findAdmissionLink(
+  description: string,
+): { url: string; label: EventAdmissionLabel } | undefined {
+  const m = description.match(/^\s*(ADMISSION|TICKETS?):\s*(https?:\/\/\S+)/im);
+  if (!m?.[1] || !m[2]) return undefined;
+  return {
+    url: m[2],
+    label: m[1].toUpperCase().startsWith('TICKET') ? 'Tickets' : 'Admission',
+  };
+}
+
+function parseGooglePlaceLocation(rawLocation: string): EventVenue {
+  const fallback: EventVenue = {
+    name: rawLocation,
+    addressLocality: 'Las Vegas',
+    addressRegion: 'NV',
+    addressCountry: 'US',
+  };
+
+  const parts = rawLocation
+    .split(',')
+    .map((part) => part.trim())
+    .filter(Boolean);
+
+  if (parts.length < 4) return fallback;
+
+  const [name, streetAddress, addressLocality, regionPostal, country] = parts;
+  const regionPostalMatch = regionPostal?.match(/^([A-Z]{2})\s+(\d{5}(?:-\d{4})?)$/);
+
+  if (!name || !streetAddress || !addressLocality || !regionPostalMatch) return fallback;
+
+  return {
+    name,
+    streetAddress,
+    addressLocality,
+    addressRegion: regionPostalMatch[1],
+    postalCode: regionPostalMatch[2],
+    addressCountry: country === 'USA' ? 'US' : (country ?? 'US'),
+  };
 }
 
 // Google Calendar's web editor saves rich-text descriptions as HTML — paragraph
@@ -153,14 +202,7 @@ function buildEventEntry(
     if (fromDesc) joinUrl = fromDesc;
   }
 
-  const venue = venueName
-    ? {
-        name: venueName,
-        addressLocality: 'Las Vegas',
-        addressRegion: 'NV',
-        addressCountry: 'US',
-      }
-    : undefined;
+  const venue = venueName ? parseGooglePlaceLocation(venueName) : undefined;
 
   // Resolve the location union from what the calendar gave us. An event with
   // neither a join URL nor a venue is still a real, dated event — it just
@@ -175,6 +217,7 @@ function buildEventEntry(
 
   const slug = `${ptDateSlug(startDate)}-${slugify(title)}`;
   const { summary, body } = parseDescription(description, title);
+  const admission = findAdmissionLink(description);
 
   const data: EventData = {
     title,
@@ -182,9 +225,18 @@ function buildEventEntry(
     endDate,
     location,
     rsvpUrl: findRsvpUrl(description),
+    admissionUrl: admission?.url,
+    admissionLabel: admission?.label,
     featured: false,
     summary,
     body,
+    schema: {
+      schemaType: title.toLowerCase().includes('teach-in') ? 'EducationEvent' : 'Event',
+      isAccessibleForFree: true,
+      about: ['Public transit', 'Transit advocacy', 'Southern Nevada'],
+      audience: ['Las Vegas Valley residents', 'Transit riders'],
+      keywords: ['transit', 'public transportation', 'Las Vegas', 'Southern Nevada'],
+    },
   };
 
   return {

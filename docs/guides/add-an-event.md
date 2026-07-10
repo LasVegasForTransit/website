@@ -15,8 +15,8 @@ Events live in the LVBT (Las Vegans for Better Transit) Google Calendar, not in 
 2. Create the event:
    - **Title** — what should show on the events page (e.g. "General Meeting").
    - **Date / time** — in Pacific Time (Las Vegas's time zone, UTC−8/−7). Always set an end time.
-   - **Location** — a meeting URL (virtual), a physical address (in-person), or both (hybrid — put the address in Location and the meeting URL in Description).
-   - **Description** — the first paragraph becomes the card / lede summary (keep it to one sentence). Everything after that paragraph becomes the body on the detail page; format it however you want with GCal's rich-text editor (the toolbar for bold, lists, links — like a mini word processor). Add an `RSVP: https://…` line anywhere if registration goes through an external sign-up form.
+   - **Location** — a meeting URL (virtual), a full physical address (in-person), or both (hybrid — put the address in Location and the meeting URL in Description). For physical events, use the full Google-style address so the site can publish a real postal address in structured data.
+   - **Description** — the first paragraph becomes the card / lede summary (keep it to one sentence). Everything after that paragraph becomes the body on the detail page; format it however you want with GCal's rich-text editor (the toolbar for bold, lists, links — like a mini word processor). Add `RSVP: https://…` if registration goes through an external sign-up form. Add `ADMISSION: https://…` or `TICKETS: https://…` only when the link is where people get admission or tickets, even for a free event.
 3. Save. The next scheduled rebuild (within ~1 hour) picks it up. To rush it, trigger a redeploy from the Cloudflare Pages dashboard.
 
 ## When an event needs more than what GCal can hold
@@ -33,8 +33,8 @@ walks you through it: it prints the GCal field checklist, then optionally scaffo
 
 ## Common failures
 
-- **Build fails: "neither a join URL nor a venue"**
-  - _What it means:_ the event in GCal has no Location and no meeting link in the Description, so the site doesn't know where the event happens.
+- **Structured-data audit says "no location yet"**
+  - _What it means:_ the event in GCal has no Location and no meeting link in the Description, so the page can publish the event but Google won't treat it as eligible for its Event rich result.
   - _How to fix:_ open the event in GCal and add either a physical address in Location or a meeting URL in the Description.
 - **Build fails: "No upcoming events in the Google Calendar feed"**
   - _What it means:_ every event in the calendar is in the past, so there's nothing future to show.

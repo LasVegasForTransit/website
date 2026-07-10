@@ -4,7 +4,15 @@ import { existsSync } from 'node:fs';
 import { z } from 'zod';
 import { calendarEventsLoader } from './lib/events-loader';
 import { beehiivNewsletterLoader } from './lib/newsletter-loader';
-import { eventLocationSchema } from './lib/event-format';
+import { EVENT_ADMISSION_LABELS, eventLocationSchema } from './lib/event-format';
+
+// Shared shape for schema.org's `performer`/`contributor`/`sponsor`/`funder`
+// — all four are just "a Person or Organization, optionally with a URL."
+const personOrOrgSchema = z.object({
+  type: z.enum(['Person', 'Organization']).optional(),
+  name: z.string(),
+  url: z.url().optional(),
+});
 
 const docs = defineCollection({
   loader: glob({ pattern: '**/*.{md,mdx}', base: './src/content/docs' }),
@@ -34,6 +42,8 @@ const events = defineCollection({
       // dated, but join URL / venue still pending. See lib/event-format.ts.
       location: eventLocationSchema.optional(),
       rsvpUrl: z.url().optional(),
+      admissionUrl: z.url().optional(),
+      admissionLabel: z.enum(EVENT_ADMISSION_LABELS).optional(),
       featured: z.boolean().default(false),
       summary: z.string(),
       // HTML body, derived from everything in the GCal description after
@@ -42,6 +52,44 @@ const events = defineCollection({
       // calendar; treated as trusted.
       body: z.string().optional(),
       image: z.string().optional(),
+      schema: z
+        .object({
+          schemaType: z
+            .enum(['Event', 'BusinessEvent', 'EducationEvent', 'SocialEvent'])
+            .optional(),
+          status: z
+            .enum([
+              'EventScheduled',
+              'EventCancelled',
+              'EventMovedOnline',
+              'EventPostponed',
+              'EventRescheduled',
+            ])
+            .optional(),
+          previousStartDate: z.coerce.date().optional(),
+          doorTime: z.coerce.date().optional(),
+          images: z.array(z.string()).optional(),
+          offer: z
+            .object({
+              url: z.url(),
+              price: z.union([z.number(), z.string()]).optional(),
+              priceCurrency: z.string().optional(),
+              availability: z.enum(['InStock', 'SoldOut', 'PreOrder']).optional(),
+              validFrom: z.coerce.date().optional(),
+            })
+            .optional(),
+          isAccessibleForFree: z.boolean().optional(),
+          keywords: z.array(z.string()).optional(),
+          about: z.array(z.string()).optional(),
+          audience: z.array(z.string()).optional(),
+          performer: z.array(personOrOrgSchema).optional(),
+          contributor: z.array(personOrOrgSchema).optional(),
+          sponsor: z.array(personOrOrgSchema).optional(),
+          funder: z.array(personOrOrgSchema).optional(),
+          maximumAttendeeCapacity: z.number().int().positive().optional(),
+          remainingAttendeeCapacity: z.number().int().nonnegative().optional(),
+        })
+        .optional(),
     })
     .superRefine((data, ctx) => {
       // `endDate` is optional but, when present, must come strictly after

@@ -29,12 +29,12 @@ events/index.astro · events/[...slug].astro · events/[...slug].ics.ts · go.as
 1. Open the LVBT calendar (the only one).
 2. Create an event with these fields:
 
-| GCal field  | Becomes                                                                                                    | Notes                                                                                                 |
-| ----------- | ---------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------- |
-| Title       | `title`                                                                                                    | Trimmed; surfaces on cards and detail page.                                                           |
-| Date / time | `date`, `endDate`                                                                                          | Always set an end time — the `.ics` builder needs one, and the "Live now" check needs the end window. |
-| Location    | `joinUrl` if URL, else `venue.name`                                                                        | Put a meeting URL here for a virtual event, a physical address for an in-person event.                |
-| Description | `summary` (first paragraph) + `body` (everything after, as HTML) + optional `joinUrl` + optional `rsvpUrl` | See conventions below.                                                                                |
+| GCal field  | Becomes                                                                                                              | Notes                                                                                                 |
+| ----------- | -------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------- |
+| Title       | `title`                                                                                                              | Trimmed; surfaces on cards and detail page.                                                           |
+| Date / time | `date`, `endDate`                                                                                                    | Always set an end time — the `.ics` builder needs one, and the "Live now" check needs the end window. |
+| Location    | `joinUrl` if URL, else `venue`                                                                                       | Put a meeting URL here for a virtual event, or a physical address for an in-person event.             |
+| Description | `summary` (first paragraph) + `body` (everything after, as HTML) + optional `joinUrl`, `rsvpUrl`, and admission link | See conventions below.                                                                                |
 
 3. (Optional) Add long-form body copy under `src/content/event-bodies/<slug>.mdx`. The slug is `<YYYY-MM-DD>-<slugified-title>` using the Pacific-time date. `pnpm event:new` walks through this.
 
@@ -50,18 +50,26 @@ Google Calendar's auto-appended footer ("Join with Google Meet: …", phone numb
 Two other conventions the build watches for:
 
 - **A Meet / Zoom / Teams / Webex / Whereby URL on its own line** is picked up as `joinUrl` if the Location field is a physical address. Use this for hybrid events.
-- **A line starting with `RSVP:`** registers an `rsvpUrl`. Example: `RSVP: https://lu.ma/abc-def`.
+- **A line starting with `RSVP:`** registers a sign-up link. Example: `RSVP: https://forms.gle/abc-def`.
+- **A line starting with `ADMISSION:` or `TICKETS:`** registers the admission link. Use this only for a page where someone can get admission or a ticket, even when the event is free. Examples: `ADMISSION: https://lu.ma/abc-def` or `TICKETS: https://lu.ma/abc-def`.
+- **A Google-style physical address** such as `7-Eleven, 4728 W Craig Rd, North Las Vegas, NV 89032, USA` is split into a Schema.org `Place` with a `PostalAddress`.
 
 ### Format inference
 
 `format` is derived, not authored:
 
-| Join URL | Venue | Result                              |
-| -------- | ----- | ----------------------------------- |
-| ✓        | —     | `virtual`                           |
-| —        | ✓     | `in-person`                         |
-| ✓        | ✓     | `hybrid`                            |
-| —        | —     | **build fails** (loud, intentional) |
+| Join URL | Venue | Result                                         |
+| -------- | ----- | ---------------------------------------------- |
+| ✓        | —     | `virtual`                                      |
+| —        | ✓     | `in-person`                                    |
+| ✓        | ✓     | `hybrid`                                       |
+| —        | —     | Event still builds; page shows details pending |
+
+## Structured data
+
+Each event detail page emits Schema.org `Event` JSON-LD. The site includes the event title, summary, canonical URL, stable event id, start and end times, duration, attendance mode, organizer, language, default image, accessibility/free-attendance flag, transit-related topics, and location when the calendar provides one. `RSVP:` links publish as a registration action; `ADMISSION:` and `TICKETS:` links publish as event offers.
+
+Virtual and hybrid events use Schema.org `VirtualLocation`, which is valid structured data. Google's Event rich-result feature is narrower: virtual-only events and events with no physical location are reported by `pnpm check:structured-data` as non-fatal Google eligibility notes. Physical events need a real postal address for Google eligibility.
 
 ## Slug
 
@@ -90,7 +98,7 @@ Worst-case staleness: ~12 hours (gap between the morning and evening rebuilds) +
 ## Failure modes the build will surface
 
 - **Empty calendar / no upcoming events** → the loader throws and the build fails. Populate at least one upcoming event in GCal.
-- **Event with neither join URL nor venue** → loader throws. Add a Meet URL or a physical address to the calendar event.
+- **Event with neither join URL nor venue** → the page still builds and shows "Location to be announced." The structured-data audit reports a non-fatal Google eligibility note until you add a meeting URL or physical address.
 - **End time missing** → currently allowed (the schema's `endDate` is optional), but downstream behavior degrades: `.ics` falls back to a 1-hour duration and "Live now" never fires correctly. Always set an end time.
 - **ICS fetch fails (network / Google returns non-2xx)** → loader throws with the status. Retry the deploy; if persistent, check the calendar's "Make available to public" setting in GCal share settings.
 

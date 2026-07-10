@@ -1,6 +1,6 @@
 // Single source of truth for an event's location/attendance shape and how it's
 // presented. The content schema builds its `location` field from the union
-// here, and EventCard, the detail page, the /go carousel, structured data, and
+// here, and EventCard, the detail page, structured data, and
 // the .ics generator all import the inferred types and helpers — so the shape
 // is defined once.
 //
@@ -20,7 +20,12 @@ const venueSchema = z.object({
   streetAddress: z.string().optional(),
   addressLocality: z.string().default('Las Vegas'),
   addressRegion: z.string().default('NV'),
+  postalCode: z.string().optional(),
   addressCountry: z.string().default('US'),
+  url: z.url().optional(),
+  sameAs: z.url().optional(),
+  latitude: z.number().optional(),
+  longitude: z.number().optional(),
 });
 
 // How to attend, as a discriminated union: `format` selects which fields are
@@ -36,6 +41,59 @@ export const eventLocationSchema = z.discriminatedUnion('format', [
 
 export type EventVenue = z.infer<typeof venueSchema>;
 export type EventLocation = z.infer<typeof eventLocationSchema>;
+
+export const EVENT_SCHEMA_TYPES = [
+  'Event',
+  'BusinessEvent',
+  'EducationEvent',
+  'SocialEvent',
+] as const;
+export type EventSchemaType = (typeof EVENT_SCHEMA_TYPES)[number];
+
+export const EVENT_STATUS_VALUES = [
+  'EventScheduled',
+  'EventCancelled',
+  'EventMovedOnline',
+  'EventPostponed',
+  'EventRescheduled',
+] as const;
+export type EventStatusValue = (typeof EVENT_STATUS_VALUES)[number];
+
+export type EventSchemaPersonOrOrg = {
+  type?: 'Person' | 'Organization';
+  name: string;
+  url?: string;
+};
+
+export type EventOffer = {
+  url: string;
+  price?: number | string;
+  priceCurrency?: string;
+  availability?: 'InStock' | 'SoldOut' | 'PreOrder';
+  validFrom?: Date;
+};
+
+export const EVENT_ADMISSION_LABELS = ['Admission', 'Tickets'] as const;
+export type EventAdmissionLabel = (typeof EVENT_ADMISSION_LABELS)[number];
+
+export type EventSchemaMetadata = {
+  schemaType?: EventSchemaType;
+  status?: EventStatusValue;
+  previousStartDate?: Date;
+  doorTime?: Date;
+  images?: string[];
+  offer?: EventOffer;
+  isAccessibleForFree?: boolean;
+  keywords?: string[];
+  about?: string[];
+  audience?: string[];
+  performer?: EventSchemaPersonOrOrg[];
+  contributor?: EventSchemaPersonOrOrg[];
+  sponsor?: EventSchemaPersonOrOrg[];
+  funder?: EventSchemaPersonOrOrg[];
+  maximumAttendeeCapacity?: number;
+  remainingAttendeeCapacity?: number;
+};
 
 export const FORMAT_LABEL: Record<EventFormat, string> = {
   virtual: 'Virtual',

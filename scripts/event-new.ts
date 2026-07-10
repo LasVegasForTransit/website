@@ -48,17 +48,20 @@ async function run() {
       'Required fields:',
       `  • ${pc.bold('Title')} — what shows on the events page (e.g. "General Meeting").`,
       `  • ${pc.bold('Date / time')} — in Pacific Time. Always set an end time; the .ics builder needs it.`,
-      `  • ${pc.bold('Location')} — either a meeting URL (virtual) or a physical address (in-person).`,
+      `  • ${pc.bold('Location')} — either a meeting URL (virtual) or a full physical address (in-person).`,
       `       If both, put the address in Location and the meeting URL on its own line in Description.`,
       `  • ${pc.bold('Description')} — first paragraph = the one-sentence summary shown on cards.`,
       `       Everything after = the body rendered on the detail page (lists, bold, links all work).`,
       '',
       'Optional:',
       `  • ${pc.bold('RSVP')} — add a line ${pc.cyan('RSVP: https://…')} anywhere in the description.`,
+      `  • ${pc.bold('Admission / tickets')} — add ${pc.cyan('ADMISSION: https://…')} or ${pc.cyan(
+        'TICKETS: https://…',
+      )} only when that link is where people get admission.`,
       '',
       pc.dim(
-        'The build maps these fields to title / date / endDate / format / venue / joinUrl / rsvpUrl.\n' +
-          'Missing a join URL AND a venue will fail the build.',
+        'The build maps these fields to title / date / endDate / location / links / structured data.\n' +
+          'A missing join URL and venue will publish as pending details and appear as a structured-data note.',
       ),
     ].join('\n'),
     'In Google Calendar',

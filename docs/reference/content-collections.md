@@ -30,13 +30,34 @@ Events come from the public LVBT Google Calendar (GCal); there is no MDX frontma
   title: string;                 // from GCal SUMMARY
   date: Date;                    // from GCal DTSTART
   endDate?: Date;                // from GCal DTEND
-  format: 'virtual' | 'in-person' | 'hybrid';  // derived from location / join URL
-  venue?: { name; addressLocality; addressRegion; addressCountry };
-  joinUrl?: URL;                 // Meet/Zoom/Teams/etc. URL
+  location?: {
+    format: 'virtual' | 'in-person' | 'hybrid';  // derived from location / join URL
+    venue?: {
+      name;
+      streetAddress?;
+      addressLocality;
+      addressRegion;
+      postalCode?;
+      addressCountry;
+    };
+    joinUrl?: URL;
+  };
   rsvpUrl?: URL;                 // from a `RSVP: <url>` line in the GCal description
+  admissionUrl?: URL;            // from `ADMISSION: <url>` or `TICKETS: <url>`
+  admissionLabel?: 'Admission' | 'Tickets';
   featured: boolean;             // auto: nearest upcoming event wins
   summary: string;               // first paragraph of the GCal description (HTML stripped); fallback to title
   body?: string;                 // HTML for everything after the first paragraph; rendered on the detail page when no MDX fragment exists
+  schema?: {                     // derived defaults for Schema.org Event JSON-LD
+    schemaType?;
+    status?;
+    images?;
+    isAccessibleForFree?;
+    keywords?;
+    about?;
+    audience?;
+    offer?;
+  };
 }
 ```
 
@@ -80,7 +101,7 @@ startDate: ISO 8601 date
 order: number                     # optional, lower = earlier
 ```
 
-Project bodies use a standard public-brief structure: `## Overview`, `## Motivation`, `## Approach`, and `## What people will see`, with `## Updates` added only when there is dated progress to record. The `Motivation` section explains the public problem, who is affected, why LVBT is acting, and why the work matters now. `What people will see` names the concrete things the page will eventually point to: reports, events, comments, coalitions, chapters, dashboards, briefings, published stories, public relationships, or other recorded results.
+Project bodies use a standard public-brief structure: `## Overview`, `## Motivation`, `## Approach`, and `## Activities`, with `## Updates` added only when there is dated progress to record. The `Motivation` section explains the public problem, who is affected, why LVBT is acting, and why the work matters now. `Activities` names the concrete things the page will eventually point to: reports, events, comments, coalitions, chapters, briefs, evidence logs, media packages, published stories, public relationships, or other recorded results.
 
 ### Letter
 

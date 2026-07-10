@@ -1,5 +1,12 @@
 import { site } from './site';
-import type { EventLocation, EventVenue } from './event-format';
+import { TIMEZONE } from './event-time';
+import type {
+  EventLocation,
+  EventOffer,
+  EventSchemaMetadata,
+  EventSchemaPersonOrOrg,
+  EventVenue,
+} from './event-format';
 
 type JsonLd = Record<string, unknown>;
 
@@ -9,6 +16,7 @@ type JsonLd = Record<string, unknown>;
 // builders and an ImageObject in others.
 const logoUrl = new URL('/logo.png', site.url).toString();
 const logoImageObject = { '@type': 'ImageObject', url: logoUrl };
+const defaultEventImage = new URL('/og-default.png', site.url).toString();
 
 export function organizationSchema(): JsonLd {
   const orgAddress = {
@@ -21,6 +29,7 @@ export function organizationSchema(): JsonLd {
   return {
     '@context': 'https://schema.org',
     '@type': 'Organization',
+    '@id': `${site.url}/#organization`,
     name: site.name,
     alternateName: site.shortName,
     description: site.description,
@@ -69,32 +78,139 @@ interface EventLike {
     endDate?: Date;
     location?: EventLocation;
     rsvpUrl?: string;
+    admissionUrl?: string;
+    admissionLabel?: string;
     image?: string;
+    schema?: EventSchemaMetadata;
   };
   id: string;
 }
 
+function compactObject<T extends Record<string, unknown>>(obj: T): JsonLd {
+  return Object.fromEntries(
+    Object.entries(obj).filter(([, value]) => {
+      if (value === undefined || value === null) return false;
+      if (Array.isArray(value) && value.length === 0) return false;
+      return value !== '';
+    }),
+  );
+}
+
+function absoluteUrl(pathOrUrl: string): string {
+  return new URL(pathOrUrl, site.url).toString();
+}
+
+const SCHEMA_DATETIME_FORMATTER = new Intl.DateTimeFormat('en-CA', {
+  timeZone: TIMEZONE,
+  year: 'numeric',
+  month: '2-digit',
+  day: '2-digit',
+  hour: '2-digit',
+  minute: '2-digit',
+  second: '2-digit',
+  hourCycle: 'h23',
+  timeZoneName: 'longOffset',
+});
+
+function schemaDateTime(date: Date): string {
+  const parts = SCHEMA_DATETIME_FORMATTER.formatToParts(date);
+  const value = (type: string) => parts.find((part) => part.type === type)?.value ?? '';
+  const offset = value('timeZoneName').replace('GMT', '') || 'Z';
+  return `${value('year')}-${value('month')}-${value('day')}T${value('hour')}:${value(
+    'minute',
+  )}:${value('second')}${offset}`;
+}
+
+function schemaDuration(start: Date, end?: Date): string | undefined {
+  if (!end) return undefined;
+  const totalSeconds = Math.max(0, Math.round((end.getTime() - start.getTime()) / 1000));
+  if (totalSeconds === 0) return undefined;
+  const hours = Math.floor(totalSeconds / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const seconds = totalSeconds % 60;
+  return `PT${hours ? `${hours}H` : ''}${minutes ? `${minutes}M` : ''}${
+    seconds ? `${seconds}S` : ''
+  }`;
+}
+
+function personOrOrgSchema(entry: EventSchemaPersonOrOrg): JsonLd {
+  return compactObject({
+    '@type': entry.type ?? 'Person',
+    name: entry.name,
+    url: entry.url,
+  });
+}
+
+function offerSchema(offer: EventOffer): JsonLd {
+  return compactObject({
+    '@type': 'Offer',
+    url: offer.url,
+    price: offer.price ?? 0,
+    priceCurrency: offer.priceCurrency ?? 'USD',
+    availability: offer.availability
+      ? `https://schema.org/${offer.availability}`
+      : 'https://schema.org/InStock',
+    validFrom: offer.validFrom ? schemaDateTime(offer.validFrom) : undefined,
+  });
+}
+
 export function eventSchema(event: EventLike, canonicalUrl: string): JsonLd {
+  const schema = event.data.schema;
+  const images = [
+    ...(schema?.images ?? []),
+    ...(event.data.image ? [event.data.image] : []),
+    defaultEventImage,
+  ].map(absoluteUrl);
+
+  const offer =
+    schema?.offer ?? (event.data.admissionUrl ? { url: event.data.admissionUrl } : undefined);
+
   const base: JsonLd = {
     '@context': 'https://schema.org',
-    '@type': 'Event',
+    '@type': schema?.schemaType ?? 'Event',
+    '@id': `${canonicalUrl}#event`,
     name: event.data.title,
     description: event.data.summary,
-    startDate: event.data.date.toISOString(),
-    ...(event.data.endDate && { endDate: event.data.endDate.toISOString() }),
-    eventStatus: 'https://schema.org/EventScheduled',
-    organizer: { '@type': 'Organization', name: site.name, url: site.url },
+    startDate: schemaDateTime(event.data.date),
+    ...(event.data.endDate && { endDate: schemaDateTime(event.data.endDate) }),
+    duration: schemaDuration(event.data.date, event.data.endDate),
+    eventStatus: `https://schema.org/${schema?.status ?? 'EventScheduled'}`,
+    previousStartDate: schema?.previousStartDate
+      ? schemaDateTime(schema.previousStartDate)
+      : undefined,
+    doorTime: schema?.doorTime ? schemaDateTime(schema.doorTime) : undefined,
+    inLanguage: 'en-US',
+    identifier: {
+      '@type': 'PropertyValue',
+      propertyID: 'lvbt-event-slug',
+      value: event.id,
+    },
+    organizer: {
+      '@type': 'Organization',
+      '@id': `${site.url}/#organization`,
+      name: site.name,
+      url: site.url,
+    },
     url: canonicalUrl,
-    ...(event.data.image && { image: new URL(event.data.image, site.url).toString() }),
+    mainEntityOfPage: canonicalUrl,
+    image: [...new Set(images)],
+    isAccessibleForFree: schema?.isAccessibleForFree ?? true,
+    keywords: schema?.keywords,
+    about: schema?.about?.map((name) => ({ '@type': 'Thing', name })),
+    audience: schema?.audience?.map((audienceType) => ({ '@type': 'Audience', audienceType })),
+    performer: schema?.performer?.map(personOrOrgSchema),
+    contributor: schema?.contributor?.map(personOrOrgSchema),
+    sponsor: schema?.sponsor?.map(personOrOrgSchema),
+    funder: schema?.funder?.map(personOrOrgSchema),
+    maximumAttendeeCapacity: schema?.maximumAttendeeCapacity,
+    remainingAttendeeCapacity: schema?.remainingAttendeeCapacity,
     ...(event.data.rsvpUrl && {
-      offers: {
-        '@type': 'Offer',
-        url: event.data.rsvpUrl,
-        price: '0',
-        priceCurrency: 'USD',
-        availability: 'https://schema.org/InStock',
+      potentialAction: {
+        '@type': 'RegisterAction',
+        target: event.data.rsvpUrl,
       },
     }),
+    ...(offer && { offers: offerSchema(offer) }),
   };
 
   const loc = event.data.location;
@@ -107,11 +223,22 @@ export function eventSchema(event: EventLike, canonicalUrl: string): JsonLd {
   const placeLocation = (venue: EventVenue) => ({
     '@type': 'Place' as const,
     name: venue.name,
+    ...(venue.url && { url: venue.url }),
+    ...(venue.sameAs && { sameAs: venue.sameAs }),
+    ...(venue.latitude !== undefined &&
+      venue.longitude !== undefined && {
+        geo: {
+          '@type': 'GeoCoordinates',
+          latitude: venue.latitude,
+          longitude: venue.longitude,
+        },
+      }),
     address: {
       '@type': 'PostalAddress' as const,
       ...(venue.streetAddress && { streetAddress: venue.streetAddress }),
       addressLocality: venue.addressLocality,
       addressRegion: venue.addressRegion,
+      ...(venue.postalCode && { postalCode: venue.postalCode }),
       addressCountry: venue.addressCountry,
     },
   });

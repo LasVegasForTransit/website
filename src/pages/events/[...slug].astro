@@ -46,12 +46,16 @@ const timeLabel = formatEventTime(event.data.date);
 
 // CTA visibility is driven by the location union — no URL pattern sniffing.
 // A virtual or hybrid location carries a joinUrl, so it shows "Join"; any event
-// with an rsvpUrl shows "RSVP". Both can appear together for a hybrid event
-// that also gates attendance behind a separate registration.
+// with an rsvpUrl shows "RSVP". Admission/ticket links are separate from
+// RSVP because structured data treats those as offers, while RSVP is just
+// registration.
 const location = event.data.location;
 const joinUrl =
   location?.format === 'virtual' || location?.format === 'hybrid' ? location.joinUrl : undefined;
 const showJoin = joinUrl !== undefined;
+const admissionUrl = event.data.admissionUrl;
+const admissionLabel = event.data.admissionLabel ?? 'Admission';
+const showAdmission = admissionUrl !== undefined;
 const showRsvp = event.data.rsvpUrl !== undefined;
 
 // "Live now" / "Today" derive from the event's PT day — see lib/event-time.
@@ -126,7 +130,7 @@ const icsHref = `/events/${event.id}.ics`;
           <span
             data-event-inline
             hidden={!inlineRelative}
-            class="inline-flex whitespace-nowrap font-normal text-[color:var(--color-on-surface-variant)]"
+            class="inline-flex whitespace-nowrap font-normal text-on-surface-variant"
             ><span data-event-inline-text>{inlineRelative ?? ''}</span></span
           >
         </dd>
@@ -142,7 +146,7 @@ const icsHref = `/events/${event.id}.ics`;
         what the event is and where/when it's happening before being asked
         to commit. A definition list (dl) is for data — a button isn't
         data, so it lives outside the dl with no label restating the
-        button text. Order: primary (Join) → registration (RSVP) →
+        button text. Order: primary (Join) → admission → registration (RSVP) →
         utility (Add to calendar, Share). */
     }
     {
@@ -157,10 +161,22 @@ const icsHref = `/events/${event.id}.ics`;
           <a
             href={joinUrl}
             data-print-url={joinUrl}
-            class="press inline-flex items-center bg-primary text-on-primary px-5 py-3 text-sm font-bold no-underline hover:bg-on-surface hover:text-surface"
+            class="press inline-flex items-center bg-primary text-on-primary px-5 py-3 text-sm font-bold no-underline hover:bg-on-surface hover:text-surface focus-visible:bg-on-surface focus-visible:text-surface"
             rel="noopener"
           >
             Join
+          </a>
+        )
+      }
+      {
+        showAdmission && (
+          <a
+            href={admissionUrl}
+            data-print-url={admissionUrl}
+            class="press inline-flex items-center border-2 border-outline px-5 py-3 text-sm font-bold no-underline hover:bg-on-surface hover:text-surface focus-visible:bg-on-surface focus-visible:text-surface"
+            rel="noopener"
+          >
+            {admissionLabel}
           </a>
         )
       }
@@ -169,7 +185,7 @@ const icsHref = `/events/${event.id}.ics`;
           <a
             href={event.data.rsvpUrl}
             data-print-url={event.data.rsvpUrl}
-            class="press inline-flex items-center border-2 border-outline px-5 py-3 text-sm font-bold no-underline hover:bg-on-surface hover:text-surface"
+            class="press inline-flex items-center border-2 border-outline px-5 py-3 text-sm font-bold no-underline hover:bg-on-surface hover:text-surface focus-visible:bg-on-surface focus-visible:text-surface"
             rel="noopener"
           >
             RSVP
@@ -179,7 +195,7 @@ const icsHref = `/events/${event.id}.ics`;
       <a
         href={icsHref}
         data-print-url={icsHref}
-        class="press inline-flex items-center border-2 border-outline px-5 py-3 text-sm font-bold no-underline hover:bg-on-surface hover:text-surface"
+        class="press inline-flex items-center border-2 border-outline px-5 py-3 text-sm font-bold no-underline hover:bg-on-surface hover:text-surface focus-visible:bg-on-surface focus-visible:text-surface"
       >
         Add to calendar →
       </a>
