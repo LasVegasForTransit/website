@@ -16,7 +16,7 @@ const path = normalizePath(Astro.url.pathname);
 <div data-header-sentinel aria-hidden="true" class="h-px"></div>
 <header
   data-site-header
-  class="sticky top-0 z-50 bg-surface/80 border-b border-transparent data-[stuck]:backdrop-blur-md data-[stuck]:backdrop-saturate-150 data-[stuck]:border-outline-variant/15 transition-[border-color] duration-200 ease-out [view-transition-name:site-header]"
+  class="sticky top-0 z-(--z-header) bg-surface/80 border-b border-transparent data-[stuck]:backdrop-blur-md data-[stuck]:backdrop-saturate-150 data-[stuck]:border-outline-variant/15 transition-[border-color] duration-200 ease-out [view-transition-name:site-header]"
 >
   <div class="container-page py-4 flex items-center justify-between gap-6">
     {
@@ -90,7 +90,7 @@ const path = normalizePath(Astro.url.pathname);
   data-nav-overlay
   aria-label="Mobile navigation"
   inert
-  class="md:hidden fixed left-0 right-0 bottom-0 bg-surface z-[65] flex flex-col overflow-y-auto"
+  class="md:hidden fixed left-0 right-0 bottom-0 bg-surface z-(--z-mobile-nav) flex flex-col overflow-y-auto"
   style="top: var(--lvbt-header-h)"
 >
   <ul class="flex-1 list-none m-0 px-6 py-2">

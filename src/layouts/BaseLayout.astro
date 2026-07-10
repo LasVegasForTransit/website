@@ -1,5 +1,8 @@
 ---
 import '../styles/global.css';
+// Must import after global.css: print.css's non-!important declarations win
+// same-specificity screen rules by source order (see its header comment).
+import '../styles/print.css';
 import Header from '../components/site/Header.astro';
 import Footer from '../components/site/Footer.astro';
 import StructuredData from '../components/seo/StructuredData.astro';

@@ -224,9 +224,7 @@ const navSchema = {
                     <p class="font-semibold group-hover:text-primary transition-colors">
                       {entry.name}
                     </p>
-                    <p class="text-body-sm mt-1 text-[color:var(--color-on-surface-variant)]">
-                      {entry.description}
-                    </p>
+                    <p class="text-body-sm mt-1 text-on-surface-variant">{entry.description}</p>
                   </a>
                 </li>
               ))}
@@ -242,7 +240,7 @@ const navSchema = {
         <h2 class="text-title-lg">Projects</h2>
         <a
           href="/projects"
-          class="text-body-sm text-[color:var(--color-on-surface-variant)] hover:text-primary-ink no-underline"
+          class="text-body-sm text-on-surface-variant hover:text-primary-ink no-underline"
         >
           {projects.length} total · open the directory →
         </a>
@@ -255,7 +253,7 @@ const navSchema = {
                 <p class="font-semibold group-hover:text-primary transition-colors leading-snug">
                   {p.data.title}
                 </p>
-                <p class="text-body-sm mt-0.5 text-[color:var(--color-on-surface-variant)]">
+                <p class="text-body-sm mt-0.5 text-on-surface-variant">
                   {statusLabel[p.data.status]}
                 </p>
               </a>
@@ -273,9 +271,7 @@ const navSchema = {
           initiatives.map((i) => (
             <li class="border-b border-outline-variant/15 py-5">
               <p class="font-semibold">{i.data.title}</p>
-              <p class="text-body-sm mt-1 text-[color:var(--color-on-surface-variant)]">
-                {i.data.description}
-              </p>
+              <p class="text-body-sm mt-1 text-on-surface-variant">{i.data.description}</p>
             </li>
           ))
         }
@@ -295,9 +291,7 @@ const navSchema = {
                 class="group block py-5 no-underline"
               >
                 <p class="font-semibold group-hover:text-primary transition-colors">{entry.name}</p>
-                <p class="text-body-sm mt-1 text-[color:var(--color-on-surface-variant)]">
-                  {entry.description}
-                </p>
+                <p class="text-body-sm mt-1 text-on-surface-variant">{entry.description}</p>
               </a>
             </li>
           ))
@@ -316,9 +310,7 @@ const navSchema = {
                 <p class="font-semibold font-mono group-hover:text-primary transition-colors">
                   {entry.name}
                 </p>
-                <p class="text-body-sm mt-1 text-[color:var(--color-on-surface-variant)]">
-                  {entry.description}
-                </p>
+                <p class="text-body-sm mt-1 text-on-surface-variant">{entry.description}</p>
               </a>
             </li>
           ))

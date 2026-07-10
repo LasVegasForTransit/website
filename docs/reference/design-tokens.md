@@ -76,7 +76,7 @@ Device-driven only, via `@media (prefers-color-scheme: dark)` — **no manual to
 JS, no `localStorage`**. The media block re-points the role tokens (and sets
 `color-scheme: dark`). Character is "Valley after dark": a warm near-black canvas, MD3
 tonal elevation (lighter warm-charcoal containers, not drop shadows), and Ember reading
-like a light in the dark — including an opt-in `.glow-ember` / `.press.bg-primary` glow
+like a light in the dark — including a `.press.bg-primary` glow
 applied only in dark. Neutral/content role pairs are held ≥4.5:1, rules ≥3:1, and the
 primary/on-primary brand pair ≥3:1 by
 [`tests/color-contracts.spec.ts`](../../tests/color-contracts.spec.ts), which runs in

@@ -95,6 +95,28 @@ them today. Adding any of them to `global.css` is a deliberate decision, not a d
   hues, and a single-hue sequential ramp for choropleths. To be specified when the first
   chart or map is built.
 
+## Where a style lives
+
+Four styling mechanisms coexist in the codebase. A style goes in the first bucket it
+qualifies for, top to bottom:
+
+1. **Tokens** — raw palette values in `:root`, semantic roles and the type scale in
+   `@theme` (both in `src/styles/global.css`). If a value will ever be reused or
+   theme-flipped, it starts here.
+2. **`@layer components` in `global.css`** — patterns shared by more than one page or
+   component (`.press`, `.lift`, `.prose-doc`, containers). Nothing page-specific.
+3. **Scoped `<style>` in the component or page** — rules only that file needs. Prefer
+   utility classes in markup first; reach for a scoped block when selectors or
+   at-rules can't be expressed as utilities.
+4. **Unlayered top level of `global.css`** — only for rules that must outrank
+   Tailwind's layered utilities, each with a comment saying why.
+   `scripts/audit/brand-tokens.ts` fails the build if a top-level block isn't on its
+   allowlist, so additions are a deliberate two-file change.
+
+No new CSS modules — `BrandContents.module.css` predates this rule and stays as the
+lone exception. Stylesheet lint runs via stylelint (`.stylelintrc.json`) in the
+pre-commit hook and CI.
+
 ## Brand kit notes (Canva / Figma / print)
 
 For graphics made outside the codebase:

@@ -111,7 +111,7 @@
   font-weight: 700;
   color: var(--vp-text-subtle);
   opacity: 0;
-  transition: opacity 150ms ease;
+  transition: opacity 150ms var(--ease-out);
   font-variant-numeric: lining-nums;
 }
 .vision-page .section-anchor:hover .section-anchor__glyph,
@@ -140,12 +140,12 @@
   inset-inline: 0;
   z-index: 40;
   background: color-mix(in srgb, var(--color-surface) 80%, transparent);
-  backdrop-filter: blur(8px) saturate(150%);
-  -webkit-backdrop-filter: blur(8px) saturate(150%);
-  border-bottom: 1px solid color-mix(in srgb, var(--color-outline-variant) 15%, transparent);
+  backdrop-filter: var(--chrome-blur);
+  -webkit-backdrop-filter: var(--chrome-blur);
+  border-bottom: 1px solid var(--chrome-hairline);
   transition:
-    opacity 200ms ease,
-    transform 200ms ease;
+    opacity 200ms var(--ease-out),
+    transform 200ms var(--ease-out);
 }
 .section-progress[hidden] {
   display: block;
@@ -219,8 +219,8 @@
     text-decoration: none;
     line-height: 1.2;
     transition:
-      opacity 120ms ease,
-      color 120ms ease;
+      opacity 120ms var(--ease-out),
+      color 120ms var(--ease-out);
   }
   .vision-toc a:hover {
     opacity: 1;
@@ -283,7 +283,6 @@
   --vp-text-subtle: color-mix(in srgb, var(--color-on-surface) 18%, transparent);
   --vp-prose: var(--color-on-surface);
   --vp-link: var(--color-primary-ink);
-  --vp-cite: var(--color-on-surface-variant);
   --vp-rule: color-mix(in srgb, var(--color-on-surface) 18%, transparent);
 }
 .vision-page .band-ink {
@@ -294,7 +293,6 @@
   --vp-text-subtle: color-mix(in srgb, var(--color-on-slab) 18%, transparent);
   --vp-prose: color-mix(in srgb, var(--color-on-slab) 92%, var(--color-slab));
   --vp-link: var(--color-primary-soft);
-  --vp-cite: var(--color-on-slab-variant);
   --vp-rule: color-mix(in srgb, var(--color-on-slab) 18%, transparent);
 }
 .vision-page .band-primary {
@@ -313,7 +311,6 @@
   --vp-text-subtle: color-mix(in srgb, var(--color-on-primary) 24%, transparent);
   --vp-prose: var(--color-on-primary);
   --vp-link: var(--color-on-primary);
-  --vp-cite: var(--color-on-primary);
   --vp-rule: color-mix(in srgb, var(--color-on-primary) 24%, transparent);
 }
 .vision-page .band-ink ::selection {
@@ -337,9 +334,6 @@
   line-height: 0.95;
   text-wrap: balance;
   max-width: 16ch;
-}
-.vision-page .hero-heading-close {
-  max-width: 22ch;
 }
 .vision-page .hero-lede {
   font-size: clamp(1.2rem, 0.6vw + 1rem, 1.5rem);
@@ -382,24 +376,6 @@
   background: color-mix(in srgb, var(--color-primary) 35%, transparent);
 }
 
-/* ====== Reader's note (frame) ====== */
-.vision-page .reader-note {
-  font-size: 0.95rem;
-  line-height: 1.6;
-  color: var(--vp-text-muted);
-  margin-top: 3.5rem !important;
-  padding-top: 2rem;
-  border-top: 1px solid var(--vp-rule);
-  max-width: 36rem;
-}
-.vision-page .reader-note strong {
-  color: var(--vp-text);
-  font-weight: 700;
-}
-.vision-page .reader-note em {
-  font-style: italic;
-}
-
 /* ====== Tail kicker (renamed from .tail) ====== */
 .vision-page .vision-tail {
   font-size: clamp(1.4rem, 1.1vw + 1rem, 2rem);
@@ -438,4 +414,29 @@
 }
 .vision-page .close-pointers li a {
   font-weight: 800;
+}
+
+/* ====== Content links ======
+   The same body-link treatment global.css gives .body-link / .lede /
+   .prose-doc links, carried here so the sitewide stylesheet ships no
+   vision-page selectors. :where() keeps specificity low so per-section
+   overrides (e.g. .close-pointers li a's weight) win as before. */
+.vision-page :where(.vision-prose a, .close-pointers li a) {
+  color: var(--content-link-color, inherit);
+  font-weight: 600;
+  text-decoration-line: underline;
+  text-decoration-color: var(--content-link-decoration, currentColor);
+  text-decoration-thickness: 0.12em;
+  text-underline-offset: 0.16em;
+  text-decoration-skip-ink: auto;
+  transition:
+    color 160ms var(--ease-out),
+    text-decoration-color 160ms var(--ease-out),
+    text-decoration-thickness 160ms var(--ease-out);
+}
+.vision-page :where(.vision-prose a, .close-pointers li a):hover,
+.vision-page :where(.vision-prose a, .close-pointers li a):focus-visible {
+  color: var(--content-link-hover, var(--color-primary-ink));
+  text-decoration-color: currentColor;
+  text-decoration-thickness: 0.16em;
 }
