@@ -8,11 +8,14 @@ import BaseLayout from '../layouts/BaseLayout.astro';
   title="Page not found"
   description="This LVBT route is not on the map. Find the next useful stop on the Las Vegans for Better Transit website."
   noindex
-  mainClass="flex flex-col bg-accent-soft"
+  mainClass="flex flex-col bg-primary-container text-on-primary-container"
 >
-  <section data-not-found-page class="flex flex-1 bg-accent-soft py-16 md:py-24">
+  <section
+    data-not-found-page
+    class="flex flex-1 bg-primary-container py-16 text-on-primary-container md:py-24"
+  >
     <div class="container-page max-w-3xl">
-      <p class="text-title-md text-accent-ink">404 local</p>
+      <p class="text-title-md text-primary-ink">404 local</p>
       <h1 class="text-display-md mt-4 text-balance">Missed the stop?</h1>
       <p class="lede mt-6 max-w-2xl">
         This route is not on the map. The bus did not ghost you; this page just is not running
@@ -22,14 +25,14 @@ import BaseLayout from '../layouts/BaseLayout.astro';
       <div class="mt-8 flex flex-wrap gap-3">
         <a
           href="/events"
-          class="press inline-flex items-center gap-2 bg-ink px-5 py-3 font-bold text-paper no-underline hover:bg-accent hover:text-ink"
+          class="press inline-flex items-center gap-2 bg-on-surface px-5 py-3 font-bold text-surface no-underline hover:bg-primary hover:text-on-primary focus-visible:bg-primary focus-visible:text-on-primary"
         >
           <Icon name="mdi:calendar-month-outline" class="size-5" aria-hidden="true" />
           Events
         </a>
         <a
           href="/go"
-          class="press inline-flex items-center gap-2 border-2 border-ink bg-paper px-5 py-3 font-bold no-underline hover:bg-ink hover:text-paper"
+          class="press inline-flex items-center gap-2 border-2 border-outline bg-surface px-5 py-3 font-bold no-underline hover:bg-on-surface hover:text-surface"
         >
           <Icon name="mdi:routes" class="size-5" aria-hidden="true" />
           Get involved

@@ -1,5 +1,6 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
+import PageHero from '../components/PageHero.astro';
 import { site } from '../lib/site';
 ---
 
@@ -7,58 +8,69 @@ import { site } from '../lib/site';
   title="Colophon"
   description="How the Las Vegans for Better Transit website is built, hosted, maintained, and credited."
 >
-  <header class="container-page pt-20 pb-12 md:pt-28 md:pb-16">
-    <div class="max-w-4xl">
-      <h1 class="text-display-md">Colophon</h1>
-      <p class="lede mt-6 max-w-2xl">How this website is produced and maintained</p>
-    </div>
-  </header>
+  <PageHero title="Colophon" lede="How this website is produced and maintained" />
   <hr class="rule-thick container-page" />
 
   <section class="container-page py-12 md:py-16">
-    <div class="grid gap-10 md:grid-cols-[minmax(0,1fr)_minmax(16rem,24rem)] md:gap-16">
-      <div class="prose-doc max-w-2xl">
-        <p>
-          This website was designed and built by
-          <a href="https://williecubed.me" rel="noopener">Willie Chalmers III</a>
-          for Las Vegans for Better Transit.
-        </p>
-        <p>
-          The site is intentionally lightweight: static pages, plain links, and public source code
-          where possible. Event data comes from the organization's public Google Calendar, and
-          newsletter issues link out to Beehiiv.
-        </p>
-        <p>
-          Found a typo, broken link, or accessibility issue? Send a note to
-          <a href={`mailto:${site.email.general}`}>{site.email.general}</a>.
-        </p>
-      </div>
+    <div class="prose-doc max-w-2xl">
+      <p>
+        This website was designed and built by
+        <a href="https://williecubed.me" rel="noopener">Willie Chalmers III</a>
+        for Las Vegans for Better Transit.
+      </p>
+      <p>
+        The site is intentionally lightweight: static pages, plain links, and public source code
+        where possible. Event data comes from the organization's public Google Calendar, and
+        newsletter issues link out to Beehiiv.
+      </p>
+      <p>
+        Color, typography, logos, and voice follow the organization's
+        <a href="/brand">brand guidelines</a>.
+      </p>
+      <p>
+        Found a typo, broken link, or accessibility issue? Send a note to
+        <a href={`mailto:${site.email.general}`}>{site.email.general}</a>.
+      </p>
+    </div>
+  </section>
 
-      <aside class="border-t-2 border-ink pt-5 md:border-t-0 md:border-l-2 md:pl-6 md:pt-0">
-        <h2 class="text-headline-sm">Build details</h2>
-        <dl class="mt-5 space-y-5">
-          <div>
-            <dt class="text-title-sm text-mute">Framework</dt>
-            <dd class="text-body-md mt-1 font-semibold">Astro</dd>
-          </div>
-          <div>
-            <dt class="text-title-sm text-mute">Hosting</dt>
-            <dd class="text-body-md mt-1 font-semibold">Cloudflare Pages</dd>
-          </div>
-          <div>
-            <dt class="text-title-sm text-mute">Source</dt>
-            <dd class="text-body-md mt-1">
-              <a
-                href="https://github.com/LasVegasForTransit/website"
-                rel="noopener"
-                class="font-semibold underline underline-offset-4 decoration-2 decoration-accent"
-              >
-                GitHub repository
-              </a>
-            </dd>
-          </div>
-        </dl>
-      </aside>
+  <hr class="rule-thin container-page" />
+
+  <section class="container-page py-12 md:py-16">
+    <h2 class="text-headline-md">Technical details</h2>
+    <p class="lede mt-4 max-w-2xl">
+      The stack is chosen for a grassroots budget: cheap to run, fast on any phone, and simple
+      enough for a volunteer to keep going without a full-time engineer.
+    </p>
+    <div class="prose-doc mt-8 max-w-2xl">
+      <p>
+        The site is <strong>static</strong> wherever possible. Pre-built HTML means there is no server
+        to keep alive or patch, hosting stays close to free, and pages load quickly even on an old phone
+        or a weak connection. That matters when the audience is transit riders, not people sitting on
+        office Wi-Fi.
+      </p>
+      <p>
+        <strong>Astro</strong> builds those pages while keeping JavaScript to a minimum, so the site stays
+        fast and accessible. Content lives in plain text files, so a volunteer can add an event or fix
+        a page without learning a framework first.
+      </p>
+      <p>
+        <strong>Cloudflare Pages</strong> hosts it on a global network at little or no cost, with no lock-in
+        to a pricey team plan. The few dynamic pieces, like membership sign-ups, run as small Cloudflare
+        functions instead of a full back-end that someone would have to maintain.
+      </p>
+      <p>
+        <strong>Tailwind CSS</strong> ties every page to the same design tokens, so the brand stays consistent
+        no matter who is editing. <strong>Public Sans</strong>, an open typeface developed for the
+        U.S. government, keeps the look plainly civic and costs nothing to license.
+      </p>
+      <p>
+        <strong>Playwright</strong> runs automated checks for layout, color contrast, and broken links
+        before anything ships, so a small team can change the site without quietly breaking it. The full
+        source is public on
+        <a href="https://github.com/LasVegasForTransit/website" rel="noopener">GitHub</a>
+        for anyone to inspect, learn from, or build on.
+      </p>
     </div>
   </section>
 </BaseLayout>

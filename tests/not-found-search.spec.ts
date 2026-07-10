@@ -50,13 +50,13 @@ test.describe('not found search recovery', () => {
         mainBottom: Math.round(mainBox.bottom),
         sceneBottom: Math.round(sceneBox.bottom),
         footerTop: Math.round(footerBox.top),
-        sampledAccentScene: sampleElement?.closest('[data-not-found-page]') !== null,
+        sampledPrimaryScene: sampleElement?.closest('[data-not-found-page]') !== null,
       };
     });
 
     expect(coverage.sceneBottom).toBeGreaterThanOrEqual(coverage.mainBottom - 1);
     expect(coverage.footerTop).toBeLessThanOrEqual(coverage.sceneBottom + 1);
-    expect(coverage.sampledAccentScene).toBe(true);
+    expect(coverage.sampledPrimaryScene).toBe(true);
   });
 
   test('builds 404 search results for public pages only', async ({ page }) => {

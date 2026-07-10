@@ -1,5 +1,6 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
+import PageHero from '../components/PageHero.astro';
 import { Icon } from 'astro-icon/components';
 import { site } from '../lib/site';
 import { handleFromUrl } from '../lib/social';
@@ -13,19 +14,19 @@ const { Content } = await render(contactPage);
 // Email channels, each routed to the right inbox. Mirrors the /go card style.
 const channels = [
   {
-    eyebrow: 'Say hello',
+    label: 'Say hello',
     icon: 'mdi:email-outline',
     email: site.email.general,
     blurb: 'Not sure where to send it? Start here.',
   },
   {
-    eyebrow: 'Press and media',
+    label: 'Press and media',
     icon: 'mdi:bullhorn-outline',
     email: site.email.press,
     blurb: 'For reporters working on a transit story.',
   },
   {
-    eyebrow: 'Work together',
+    label: 'Work together',
     icon: 'mdi:handshake-outline',
     email: site.email.partners,
     blurb: 'For organizations that want to team up on a campaign or event.',
@@ -56,14 +57,10 @@ const socials = [
   title="Contact"
   description="Contact Las Vegans for Better Transit for general questions, press requests, partnerships, and rider stories."
 >
-  <header class="container-page pt-20 pb-12 md:pt-28 md:pb-16">
-    <div class="max-w-4xl">
-      <h1 class="text-display-md">Talk to us.</h1>
-      <p class="lede mt-6 max-w-2xl">
-        We're all volunteers, and we answer every message ourselves.
-      </p>
-    </div>
-  </header>
+  <PageHero
+    title="Talk to us."
+    lede="We're all volunteers, and we answer every message ourselves."
+  />
   <hr class="rule-thick container-page" />
 
   {/* EMAIL — intro copy, then a card per inbox */}
@@ -77,15 +74,15 @@ const socials = [
         channels.map((c) => (
           <a
             href={`mailto:${c.email}`}
-            class="group flex flex-col border border-ink bg-paper p-6 no-underline transition-colors hover:bg-ink hover:text-paper focus-visible:bg-ink focus-visible:text-paper"
+            class="group flex flex-col border border-outline bg-surface-container p-6 no-underline transition-colors hover:bg-slab hover:text-on-slab focus-visible:bg-slab focus-visible:text-on-slab"
           >
             <Icon
               name={c.icon}
-              class="size-10 text-accent-ink group-hover:text-accent-soft group-focus-visible:text-accent-soft"
+              class="size-10 text-primary-ink group-hover:text-primary-soft group-focus-visible:text-primary-soft"
               aria-hidden="true"
             />
-            <p class="text-title-lg mt-3">{c.eyebrow}</p>
-            <p class="mt-2 text-sm text-mute leading-relaxed text-pretty group-hover:text-paper/80 group-focus-visible:text-paper/80">
+            <p class="text-title-lg mt-3">{c.label}</p>
+            <p class="mt-2 text-sm text-on-surface-variant leading-relaxed text-pretty group-hover:text-on-slab/80 group-focus-visible:text-on-slab/80">
               {c.blurb}
             </p>
             <span class="mt-auto pt-4 text-sm font-semibold tracking-wide">{c.email} →</span>
@@ -109,15 +106,15 @@ const socials = [
               href={s.url}
               target="_blank"
               rel="noopener noreferrer"
-              class="group flex flex-col border border-ink bg-paper p-6 no-underline transition-colors hover:bg-ink hover:text-paper focus-visible:bg-ink focus-visible:text-paper"
+              class="group flex flex-col border border-outline bg-surface-container p-6 no-underline transition-colors hover:bg-slab hover:text-on-slab focus-visible:bg-slab focus-visible:text-on-slab"
             >
               <Icon
                 name={s.icon}
-                class="size-10 text-accent-ink group-hover:text-accent-soft group-focus-visible:text-accent-soft"
+                class="size-10 text-primary-ink group-hover:text-primary-soft group-focus-visible:text-primary-soft"
                 aria-hidden="true"
               />
               <p class="text-title-lg mt-3">{s.name}</p>
-              <p class="mt-1 text-sm text-mute group-hover:text-paper/80 group-focus-visible:text-paper/80">
+              <p class="mt-1 text-sm text-on-surface-variant group-hover:text-on-slab/80 group-focus-visible:text-on-slab/80">
                 {s.label}
               </p>
             </a>

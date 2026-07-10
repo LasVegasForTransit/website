@@ -1,5 +1,6 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
+import PageHero from '../components/PageHero.astro';
 import { getCollection } from 'astro:content';
 import { site } from '../lib/site';
 import { generalInterestMailto } from '../lib/role-mailto';
@@ -13,29 +14,25 @@ const roles = (await getCollection('roles')).sort(
   title="Join"
   description="Become a free LVBT member or apply for a volunteer team role helping build the Las Vegas transit movement."
 >
-  <header class="container-page pt-20 pb-12 md:pt-28 md:pb-16">
-    <div class="max-w-4xl">
-      <h1 class="text-headline-lg">Join Las&nbsp;Vegans for Better Transit.</h1>
-      <p class="lede mt-6 max-w-2xl">
-        Whether you want to be a supporter on record or take on a real operational role, this is
-        where you start.
-      </p>
-      <div class="mt-8 flex flex-wrap gap-6">
-        <a
-          href="#membership"
-          class="font-bold underline underline-offset-4 decoration-2 decoration-accent"
-        >
-          Become a member ↓
-        </a>
-        <a
-          href="#team"
-          class="font-bold underline underline-offset-4 decoration-2 decoration-accent"
-        >
-          Join the team ↓
-        </a>
-      </div>
+  <PageHero
+    title="Join Las Vegans for Better Transit."
+    lede="Whether you want to be a supporter on record or take on a real operational role, this is where you start."
+  >
+    <div class="mt-8 flex flex-wrap gap-6">
+      <a
+        href="#membership"
+        class="font-bold underline underline-offset-4 decoration-2 decoration-primary"
+      >
+        Become a member ↓
+      </a>
+      <a
+        href="#team"
+        class="font-bold underline underline-offset-4 decoration-2 decoration-primary"
+      >
+        Join the team ↓
+      </a>
     </div>
-  </header>
+  </PageHero>
   <hr class="rule-thick container-page" />
 
   {/* MEMBERSHIP */}
@@ -57,21 +54,20 @@ const roles = (await getCollection('roles')).sort(
         site.membership.formUrl ? (
           <a
             href={site.membership.formUrl}
+            data-print-url={site.membership.formUrl}
             target="_blank"
             rel="noopener"
-            class="press inline-flex items-center gap-1.5 bg-ink text-paper px-6 py-3 font-bold no-underline hover:bg-accent"
+            class="press inline-flex items-center gap-1.5 bg-on-surface text-surface px-6 py-3 font-bold no-underline hover:bg-primary hover:text-on-primary focus-visible:bg-primary focus-visible:text-on-primary"
           >
-            Become a member{' '}
-            <span class="arrow" aria-hidden="true">
-              →
-            </span>
+            Become a member
           </a>
         ) : (
           <p class="leading-relaxed">
             Our membership form isn't available right now. Email{' '}
             <a
               href={generalInterestMailto()}
-              class="font-bold underline underline-offset-4 decoration-2 decoration-accent"
+              data-print-url={site.email.general}
+              class="font-bold underline underline-offset-4 decoration-2 decoration-primary"
             >
               {site.email.general}
             </a>{' '}
@@ -90,14 +86,14 @@ const roles = (await getCollection('roles')).sort(
       these fit exactly, we'll find one that does.
     </p>
 
-    <div class="mt-10 border-t border-ink/15">
+    <div class="mt-10 border-t border-outline-variant/15">
       {
         roles.map((role) => (
-          <div class="py-6 border-b border-ink/15 flex flex-col md:flex-row md:items-baseline gap-4 md:gap-8 reveal">
+          <div class="py-6 border-b border-outline-variant/15 flex flex-col md:flex-row md:items-baseline gap-4 md:gap-8 reveal">
             <div class="md:w-52 shrink-0">
               <a
                 href={`/join/${role.id}`}
-                class="text-title-lg font-bold hover:text-accent transition-colors"
+                class="text-title-lg font-bold hover:text-primary transition-colors"
               >
                 {role.data.title}
               </a>
@@ -106,7 +102,7 @@ const roles = (await getCollection('roles')).sort(
             <p class="flex-1 leading-relaxed">{role.data.summary}</p>
             <a
               href={`/join/${role.id}`}
-              class="shrink-0 text-sm font-bold underline underline-offset-4 decoration-2 decoration-accent"
+              class="shrink-0 text-sm font-bold underline underline-offset-4 decoration-2 decoration-primary"
             >
               View role →
             </a>
@@ -120,7 +116,8 @@ const roles = (await getCollection('roles')).sort(
       <p class="mt-3 leading-relaxed max-w-xl">Get in touch, and we'll find a role for you.</p>
       <a
         href={generalInterestMailto()}
-        class="inline-block mt-6 font-bold underline underline-offset-4 decoration-2 decoration-accent"
+        data-print-url={site.email.general}
+        class="inline-block mt-6 font-bold underline underline-offset-4 decoration-2 decoration-primary"
       >
         Email {site.email.general} →
       </a>
