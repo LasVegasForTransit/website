@@ -1,58 +1,40 @@
 import { expect, test } from '@playwright/test';
-import AxeBuilder from '@axe-core/playwright';
-import { builtSitemapPaths } from './sitemap-paths';
+import { builtHtmlPagePaths } from './sitemap-paths';
+import {
+  axeBlockingViolations,
+  preparePageForA11y,
+  semanticPageAudit,
+  summarizeViolations,
+  unnamedVisibleControls,
+} from './a11y-helpers';
 
-// Same sitemap-driven URL list as screenshots.spec.ts so dynamic content-
-// collection routes are covered automatically. axe runs in one viewport
-// only — accessibility findings don't differ meaningfully across breakpoints
-// for this site, and running 6× would 6× the CI cost for ~no extra signal.
-const paths = builtSitemapPaths(import.meta.url);
+// Build-output driven so noindex utility pages like /qr/ are audited too.
+// axe runs in one viewport only — accessibility findings don't differ
+// meaningfully across breakpoints for this site, and running 6× would 6× the
+// CI cost for ~no extra signal.
+const paths = builtHtmlPagePaths(import.meta.url);
 
 for (const path of paths) {
-  test(`a11y: ${path}`, async ({ page }) => {
+  test(`page accessibility smoke: ${path}`, async ({ page }) => {
     await page.goto(path);
-    await page.waitForLoadState('networkidle');
-    await page.evaluate(() => document.fonts.ready);
-    // Kill animations + transitions so toggling .is-visible below jumps to
-    // the final state instantly. Without this, axe samples during the
-    // 600–700 ms reveal transition and reads in-flight blended colors
-    // (e.g. `--color-mute` × 0.3 over cream) as contrast violations.
-    await page.addStyleTag({
-      content:
-        '*, *::before, *::after { animation: none !important; transition: none !important; }',
-    });
-    // Force scroll-triggered reveals to their final state so axe sees real
-    // contrast/structure, not the hidden initial state.
-    await page.evaluate(() => {
-      document
-        .querySelectorAll('.reveal, .reveal-stat, .reveal-quote')
-        .forEach((el) => el.classList.add('is-visible'));
-    });
+    await preparePageForA11y(page);
 
-    const result = await new AxeBuilder({ page })
-      .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
-      .analyze();
-
-    // Gate on serious + critical only. Minor/moderate findings still appear
-    // in the report but don't fail CI — they're judgment calls.
-    const blocking = result.violations.filter(
-      (v) => v.impact === 'serious' || v.impact === 'critical',
-    );
+    const blocking = await axeBlockingViolations(page);
     if (blocking.length > 0) {
-      const summary = blocking
-        .map((v) => {
-          const nodes = v.nodes
-            .slice(0, 3)
-            .map(
-              (n) =>
-                `      target=${JSON.stringify(n.target)} fg/bg=${n.any[0]?.data?.fgColor ?? '?'}/${n.any[0]?.data?.bgColor ?? '?'} ratio=${n.any[0]?.data?.contrastRatio ?? '?'}`,
-            )
-            .join('\n');
-          return `  - [${v.impact}] ${v.id}: ${v.help} (${v.nodes.length} node${v.nodes.length === 1 ? '' : 's'})\n${nodes}`;
-        })
-        .join('\n');
-      throw new Error(`axe found ${blocking.length} serious/critical violation(s):\n${summary}`);
+      throw new Error(
+        `axe found ${blocking.length} actionable violation(s):\n${summarizeViolations(blocking)}`,
+      );
     }
     expect(blocking).toHaveLength(0);
+
+    const unnamedControls = await unnamedVisibleControls(page);
+    expect(unnamedControls, `${path} should not expose unnamed visible controls`).toEqual([]);
+
+    const semantics = await semanticPageAudit(page);
+
+    expect(semantics.mainCount, `${path} should expose exactly one main landmark`).toBe(1);
+    expect(semantics.h1Text, `${path} should expose exactly one h1`).toHaveLength(1);
+    expect(semantics.skipLinkHasTarget, `${path} skip link should target #main`).toBe(true);
+    expect(semantics.headingJumps, `${path} should not skip heading levels`).toEqual([]);
   });
 }

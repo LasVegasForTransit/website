@@ -37,7 +37,7 @@ export default defineConfig({
     {
       name: 'ui-contracts',
       testMatch:
-        /(body-links|event-metadata|footer-colophon|header-current|not-found-search|typography-contracts)\.spec\.ts$/,
+        /(body-links|color-contracts|event-metadata|footer-colophon|header-current|not-found-search|print-layout|typography-contracts)\.spec\.ts$/,
       use: { ...devices['Desktop Chrome'] },
     },
     {
@@ -72,7 +72,7 @@ export default defineConfig({
     },
     {
       name: 'a11y',
-      testMatch: /a11y\.spec\.ts$/,
+      testMatch: /a11y(?:-[\w-]+)?\.spec\.ts$/,
       use: { ...devices['Desktop Chrome'] },
     },
     {

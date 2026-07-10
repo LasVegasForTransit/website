@@ -1,4 +1,48 @@
-import { expect, test } from '@playwright/test';
+import { expect, test, type Page } from '@playwright/test';
+import { builtHtmlPagePaths } from './sitemap-paths';
+
+const paths = builtHtmlPagePaths(import.meta.url);
+
+async function uppercaseStyleViolations(page: Page): Promise<
+  Array<{
+    tagName: string;
+    text: string;
+    textTransform: string;
+    className: string;
+  }>
+> {
+  return page.locator('body *').evaluateAll((elements) =>
+    elements
+      .filter((element) => {
+        const rect = element.getBoundingClientRect();
+        const style = getComputedStyle(element);
+        return (
+          rect.width > 0 &&
+          rect.height > 0 &&
+          style.visibility !== 'hidden' &&
+          style.display !== 'none'
+        );
+      })
+      .map((element) => {
+        const style = getComputedStyle(element);
+        const text = (element.textContent ?? '').replace(/\s+/g, ' ').trim();
+
+        return {
+          tagName: element.tagName.toLowerCase(),
+          text,
+          textTransform: style.textTransform,
+          className: (element as HTMLElement).className.toString(),
+        };
+      })
+      .filter(({ text, textTransform }) => text && textTransform === 'uppercase')
+      .map(({ tagName, text, textTransform, className }) => ({
+        tagName,
+        text,
+        textTransform,
+        className,
+      })),
+  );
+}
 
 test.describe('typography contracts', () => {
   test('keeps top-level section headings on the larger MD3 headline style', async ({ page }) => {
@@ -25,32 +69,15 @@ test.describe('typography contracts', () => {
     }
   });
 
-  test('does not render overline all-caps labels in site chrome and body content', async ({
-    page,
-  }) => {
-    for (const path of ['/', '/go', '/join', '/colophon', '/contact', '/events', '/qr']) {
-      await page.goto(path);
-      await page.waitForLoadState('networkidle');
+  for (const path of paths) {
+    test(`does not style visible text as uppercase: ${path}`, async ({ page }) => {
+      await page.goto(path, { waitUntil: 'domcontentloaded' });
 
-      const transformed = await page
-        .locator('body p, body span, body a, body button, body dt, body cite')
-        .evaluateAll((elements) =>
-          elements
-            .filter((element) => {
-              const rect = element.getBoundingClientRect();
-              return rect.width > 0 && rect.height > 0;
-            })
-            .map((element) => {
-              const style = getComputedStyle(element);
-              return {
-                text: (element.textContent ?? '').trim(),
-                textTransform: style.textTransform,
-              };
-            })
-            .filter(({ text, textTransform }) => text && textTransform === 'uppercase'),
-        );
+      expect(await uppercaseStyleViolations(page), `${path} screen media`).toEqual([]);
 
-      expect(transformed, path).toEqual([]);
-    }
-  });
+      await page.emulateMedia({ media: 'print' });
+      expect(await uppercaseStyleViolations(page), `${path} print media`).toEqual([]);
+      await page.emulateMedia({ media: 'screen' });
+    });
+  }
 });
