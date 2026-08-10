@@ -30,6 +30,7 @@
     "add:transit-news": "tsx scripts/notion/add-transit-news.ts",
     "event:new": "tsx scripts/event-new.ts",
     "check:docs": "tsx scripts/check-docs-links.ts",
+    "check:repository-tooling": "tsx scripts/check-repository-tooling.ts",
     "check:baseline": "tsx scripts/audit/baseline.ts",
     "check:lighthouse": "lhci autorun",
     "check:html": "html-validate dist/**/*.html",
