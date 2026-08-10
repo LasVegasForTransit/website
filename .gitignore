@@ -21,6 +21,8 @@ pnpm-debug.log*
 .env.production
 
 # bootstrap CLI state
+.lvbt/*
+!.lvbt/repository-tooling.json
 
 # superpowers brainstorming mockups
 .superpowers/
