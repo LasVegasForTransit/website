@@ -2,7 +2,7 @@
 
 Guidance for AI agents (Claude Code, Codex, Gemini, etc.) working in this repo.
 
-This is a single Astro site for Las Vegans for Better Transit, deployed to Cloudflare Pages. Solo project, no PR workflow, no force-push expectations — just careful local commits.
+This is a single Astro site for Las Vegans for Better Transit, deployed to Cloudflare Pages. Changes land through pull requests with linear history and the current `Validate` check.
 
 New to the project (human or agent)? [`docs/tutorials/start-here.md`](./docs/tutorials/start-here.md) orients you, and the [`glossary`](./docs/reference/glossary.md) defines every tool and acronym used across these docs. Contributors here are often students and junior devs — keep docs and explanations accessible (see [`docs/standards/writing-docs.md`](./docs/standards/writing-docs.md)).
 
@@ -89,12 +89,33 @@ Co-Authored-By: <name> <email>   (optional trailer)
 
 ## Workflow expectations
 
-- **Don't push.** This repo runs a single-branch solo workflow with no remote PR ceremony. Edit and commit locally. Don't force-push, don't open PRs, don't auto-amend without explicit instruction.
+- Work on a branch and use a pull request for every change to `main`. Never force-push or delete the default branch.
 - **Don't `git add .` / `-A` / `*`.** Stage explicit paths.
 - **Don't bypass the hooks** with `--no-verify`. If a hook fails, fix what it reports.
 - **Don't `git reset --hard`** ever. Use `git restore --source=HEAD -- path` or `git stash --include-untracked` instead.
 
 Pre-approval to commit applies only when the user has explicitly said "commit" / "commit when done" / similar in the current task. Otherwise, surface the proposed message and wait.
+
+## Create GitHub issues and pull requests
+
+Use the mandatory `github-contribution` skill from the pinned
+`lvbt-contributions` plugin whenever a user authorizes creating an issue or
+pull request. It carries the organization checklist, readable templates, and
+the only approved creation helper:
+
+```bash
+node plugins/lvbt-contributions/scripts/github-create.mjs issue \
+  --type bug|feature --title <title> --body-file <file>
+node plugins/lvbt-contributions/scripts/github-create.mjs pr \
+  --title <title> --body-file <file> --base main
+```
+
+Preview with `--dry-run --json`, remove every bracketed prompt, and inspect the
+complete visible Markdown before creating anything. Do not call
+`gh issue create`, `gh pr create`, equivalent `gh api` routes, or connector
+creation tools directly. Humans use the native organization issue forms and
+pull request template; agents use the same visible structure. There are no
+hidden body markers or GitHub-side prose checks.
 
 ---
 

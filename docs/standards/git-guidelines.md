@@ -115,7 +115,8 @@ Heavier gates that run once per push:
 - `git reset --hard` — permanently destroys uncommitted work. **Never.** If you need to discard, use `git restore --source=HEAD -- path` for specific files, or `git stash --include-untracked` for everything.
 - `git commit -a` — commits without staging review.
 - `git commit --no-verify` — bypasses the hooks. See above.
-- Force-pushing this repo at all (see `MEMORY.md` — no push, no PRs).
+- Force-pushing this repo at all. Push the branch normally and let the required
+  pull request preserve linear history.
 - Project phase numbers in titles (`(Phase 2)`, `(Sprint 4)`). Explain what the change _is_.
 - Internal task IDs in titles. Put them in the footer as `Related to LIN-123`.
 

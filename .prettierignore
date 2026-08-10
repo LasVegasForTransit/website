@@ -4,6 +4,7 @@ dist/
 .turbo/
 .wrangler/
 .lvbt/
+plugins/lvbt-contributions/
 playwright-report/
 test-results/
 tests/snapshots/
