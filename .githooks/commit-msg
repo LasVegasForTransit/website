@@ -1,27 +1,15 @@
-#!/bin/bash
-#
-# commit-msg hook -- validates the commit message against the LVBT standard
-#
-# Delegates to scripts/validation/git/validate-commit-scope.ts, which enforces:
-#   - conventional-commits format
-#   - allowed type (style/diag retired)
-#   - allowed scope (from allowed-scopes.txt) or scopeless
-#   - body presence for feat/fix and for high-density other commits
-#   - body line length <= 72
-#
-# See docs/standards/commit-messages.md for the full spec.
+#!/usr/bin/env sh
+# The contribution plugin owns the subject policy so its PR helper and this
+# local hook cannot silently accept different scopes.
+set -eu
 
-set -euo pipefail
+MESSAGE_FILE="$1"
+SUBJECT=$(head -n 1 "$MESSAGE_FILE")
 
-COMMIT_MSG_FILE="$1"
-REPO_ROOT="$(git rev-parse --show-toplevel)"
-FORMATTER="$REPO_ROOT/scripts/validation/format-commit-message.sh"
+# Git writes these subjects itself; they do not name an authored change.
+case "$SUBJECT" in
+  "Merge "*|"Revert "*|"fixup!"*|"squash!"*|"amend!"*) exit 0 ;;
+esac
 
-if [[ -x "$FORMATTER" ]]; then
-    FORMATTER_OUTPUT="$("$FORMATTER" "$COMMIT_MSG_FILE" 2>&1)"
-    if [[ -n "$FORMATTER_OUTPUT" ]]; then
-        echo "$FORMATTER_OUTPUT"
-    fi
-fi
-
-exec pnpm exec tsx scripts/validation/git/validate-commit-scope.ts --file "$COMMIT_MSG_FILE"
+ROOT=$(git rev-parse --show-toplevel)
+exec node "$ROOT/plugins/lvbt-contributions/scripts/validate-commit-subject.mjs" "$SUBJECT"

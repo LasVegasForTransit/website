@@ -52,7 +52,7 @@ How we write code, commits, and docs. Skim before contributing.
 
 - [Writing docs](./standards/writing-docs.md) — keep docs accessible to students and junior devs
 - [Commit messages](./standards/commit-messages.md) — what goes in a message, what to leave out
-- [Commit scopes](./standards/commit-scopes.md) — the four allowed scopes and why
+- [Commit scopes](./standards/commit-scopes.md) — the shared, closed organization list
 - [Git guidelines](./standards/git-guidelines.md) — staging discipline and the atomic commit pattern
 - [Performance monitoring](./standards/performance-monitoring.md) — budgets, Lighthouse, real-user metrics
 - [Print layout](./standards/print-layout.md) — data attributes that make pages work on paper

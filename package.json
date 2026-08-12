@@ -12,7 +12,7 @@
       "onFail": "download"
     }
   },
-  "packageManager": "pnpm@11.9.0",
+  "packageManager": "pnpm@11.15.1",
   "portless": {
     "name": "lvbt",
     "script": "dev:app",
@@ -29,6 +29,7 @@
     "setup:notion": "tsx scripts/notion/provision-intake-db.ts",
     "add:transit-news": "tsx scripts/notion/add-transit-news.ts",
     "event:new": "tsx scripts/event-new.ts",
+    "check": "pnpm typecheck && pnpm lint:check && pnpm exec stylelint 'src/styles/*.css' 'src/**/*.module.css' && pnpm exec tsx scripts/audit/brand-tokens.ts && pnpm check:docs && pnpm check:repository-tooling && pnpm build",
     "check:docs": "tsx scripts/check-docs-links.ts",
     "check:repository-tooling": "tsx scripts/check-repository-tooling.ts",
     "check:baseline": "tsx scripts/audit/baseline.ts",

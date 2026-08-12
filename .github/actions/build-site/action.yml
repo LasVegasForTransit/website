@@ -1,8 +1,7 @@
 name: Build site
 description: >
-  Run the canonical validation chain (typecheck, lint:check, check:docs) and
-  build the static site to ./dist. Uploads the build as an artifact named
-  dist-<sha> for downstream deploy jobs to download.
+  Run the repository's complete pnpm check and upload the resulting static
+  site as dist-<sha> for downstream deploy jobs to download.
 
   Assumes `setup-node-pnpm` has already run in the same job.
 
@@ -17,34 +16,14 @@ runs:
         restore-keys: |
           astro-${{ runner.os }}-
 
-    - name: Typecheck
-      shell: bash
-      run: pnpm typecheck
-
-    - name: Lint check
-      shell: bash
-      run: pnpm lint:check
-
-    - name: Stylesheet lint
-      shell: bash
-      run: pnpm exec stylelint 'src/styles/*.css' 'src/**/*.module.css'
-
-    - name: Brand token drift check
-      shell: bash
-      run: pnpm exec tsx scripts/audit/brand-tokens.ts
-
-    - name: Validate doc links
-      shell: bash
-      run: pnpm check:docs
-
     # Reads the PUBLIC_LVBT_* deployment config (social/donate/Discord URLs)
     # from the job environment — `vars`/`env` contexts can't be referenced
     # inside a composite action, so the calling workflow's `build` job exports
     # these via its own `env:` block (which propagates into composite steps).
     # See src/lib/site.ts; an unset var hides its link and warns, never fails.
-    - name: Build
+    - name: Check and build
       shell: bash
-      run: pnpm build
+      run: pnpm check
 
     - name: Upload dist artifact
       uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1

@@ -37,8 +37,5 @@ jobs:
       - name: Setup Node + pnpm
         uses: ./.github/actions/setup-node-pnpm
 
-      - name: Verify organization repository tooling
-        run: pnpm check:repository-tooling
-
       - name: Build site
         uses: ./.github/actions/build-site
