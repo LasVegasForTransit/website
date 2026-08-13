@@ -22,9 +22,9 @@ with a website-local scope list.
 ## Commit subjects and pull requests
 
 Use `type(optional-scope): description`, no longer than 72 characters. Scopes
-are optional; the only valid durable boundaries are `web`, `worker`, `core`,
-`pwa`, `dx`, `tooling`, and `ci`. Omit the scope for cross-boundary
-work. Do not turn a page, component, file, task, or role into a scope.
+are optional; the complete website-specific list lives in
+`.lvbt/commit-scopes.txt`. Omit the scope for cross-boundary work. Do not turn
+a page, component, file, task, or role into a scope.
 
 Reserve `feat` for a capability a person can use or observe. A refactor,
 configuration change, or tooling foundation should use the more precise
