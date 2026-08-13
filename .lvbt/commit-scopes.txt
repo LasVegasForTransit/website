@@ -1,0 +1,6 @@
+# One scope per durable website boundary.
+# Omit a scope when a change crosses boundaries.
+web
+content
+dx
+ci

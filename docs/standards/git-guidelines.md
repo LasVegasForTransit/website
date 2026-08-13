@@ -1,6 +1,8 @@
 # Git Workflow Guidelines
 
-> Workflow rules for committing in this repo. **For commit message composition (title, body, what to say and what not to say) see [`commit-messages.md`](./commit-messages.md).** For the scope list see [`commit-scopes.md`](./commit-scopes.md).
+> Workflow rules for committing in this repo. The shared contribution plugin
+> validates commit subjects; see [`commit-messages.md`](./commit-messages.md)
+> and [`commit-scopes.md`](./commit-scopes.md) for the human explanation.
 
 If anything here conflicts with `commit-messages.md`, the commit message guide wins.
 
@@ -42,8 +44,8 @@ For multi-paragraph messages, write the message to a file first (e.g. `/tmp/msg.
 ## Trust the tooling
 
 - The pre-commit and commit-msg hooks are authoritative. If a hook fails, the right move is to **fix what it reports**, not bypass.
-- Don't run `pnpm typecheck` / `pnpm build` proactively over the whole repo. The hooks already gate the relevant subset for staged files; running everything pre-commit is wasted time. Run the full set when you've changed something that affects it (CI workflow, tsconfig, root `package.json`, etc.).
-- Local `pnpm build` is fine for the section you've been working in.
+- The pre-commit hook covers the relevant staged files. Run `pnpm check` before
+  a pull request or push when you need the repository's complete local gate.
 
 ---
 
@@ -51,10 +53,9 @@ For multi-paragraph messages, write the message to a file first (e.g. `/tmp/msg.
 
 `git commit --no-verify` is a flag that tells Git to **skip the hooks** (the automated checks) entirely. It bypasses both the pre-commit and commit-msg hooks. It is **not the right answer** to a hook failure — the hooks are catching a real problem; silencing them just hides it. Fix the underlying issue and re-run the atomic command.
 
-The two legitimate uses of `--no-verify` in this repo:
-
-1. **History rewrites** — editing commits that already exist, rather than making a new one (e.g. fixing the wording of old commit messages). Here the hook context wouldn't apply (e.g. running `git rebase -i --root` to reword pre-existing messages — the commit-msg hook runs on each reword, but the pre-commit hook re-running its full pipeline against unrelated historical states is noise). For that case use `git -c core.hookspath=/tmp/empty-dir rebase -i --root` instead, so commit-msg still validates but pre-commit doesn't fire against unrelated history.
-2. Genuine emergencies you can articulate. There aren't any of these in this repo.
+History rewrites can use an empty temporary pre-commit hook only when the
+rewritten subjects are separately checked with the shared validator. A hook
+bypass is never a substitute for repairing a current change.
 
 ---
 
@@ -75,15 +76,9 @@ The two legitimate uses of `--no-verify` in this repo:
 
 ### `commit-msg`
 
-Validates the message against [`commit-messages.md`](./commit-messages.md):
-
-- Conventional Commits format (`type(scope)?[!]?: description`).
-- Allowed type: `feat fix docs refactor test chore perf`. `style` and `diag` are retired.
-- Allowed scope: one of `content`, `ci`, `docs`, `dx`, or empty.
-- `feat` and `fix` always require a body; other types require a body when staged change density `(files × 2) + (lines × 0.1)` exceeds 10.
-- Body lines ≤ 72 characters. Trailers (`Co-Authored-By:`, etc.) exempt.
-
-Fuzzy-matches near-miss scopes and suggests valid ones. See [`commit-scopes.md`](./commit-scopes.md) for the full scope list and rationale.
+Delegates the subject to the pinned `lvbt-contributions` validator. It accepts
+the shared conventional types, the closed organization scope list, and a
+72-character subject limit. The same code validates pull-request titles.
 
 ### `pre-commit`
 
@@ -100,12 +95,9 @@ If a category isn't represented in the staged set, the gate doesn't fire. Script
 
 ### `pre-push`
 
-Heavier gates that run once per push:
-
-1. Working tree clean (uncommitted changes invalidate build/typecheck results).
-2. Every commit between `BASE..HEAD` matches the conventional-commit regex.
-3. `pnpm typecheck` (full project).
-4. `pnpm build` (full project) — **skipped** when the push only touches paths that can't affect output (`docs/`, `.githooks/`, `allowed-scopes.txt`, root-level `*.md`).
+Runs `pnpm check`, the same complete validation and build path used by CI. It
+then delegates to Git LFS when that tool is installed, because a custom hooks
+path would otherwise replace Git LFS's default pre-push hook.
 
 ---
 
@@ -140,7 +132,6 @@ If you have to do anything more invasive than these, branch first: `git branch b
 ## Related
 
 - [`commit-messages.md`](./commit-messages.md) — what a commit message should say and not say
-- [`commit-scopes.md`](./commit-scopes.md) — the four allowed scopes and rationale
-- [`../../allowed-scopes.txt`](../../allowed-scopes.txt) — the file the hook reads
+- [`commit-scopes.md`](./commit-scopes.md) — the shared organization scopes
 - [`../../.githooks/`](../../.githooks/) — the hooks themselves
 - [`../../AGENTS.md`](../../AGENTS.md) — AI-agent guidance for working in this repo

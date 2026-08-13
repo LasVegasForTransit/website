@@ -56,6 +56,7 @@ hand-held version.
 | Command             | Action                                                                             |
 | ------------------- | ---------------------------------------------------------------------------------- |
 | `pnpm dev`          | Local dev server at https://lvbt.localhost                                         |
+| `pnpm check`        | The complete local validation and production-build path used by CI                 |
 | `pnpm build`        | Build production site to `./dist/`                                                 |
 | `pnpm preview`      | Serve `./dist/` locally                                                            |
 | `pnpm typecheck`    | Type-check the Astro app + bootstrap CLI                                           |
@@ -118,7 +119,7 @@ Three workflows in [`.github/workflows/`](./.github/workflows/), all built on th
 
 | Workflow                | Trigger                               | What it does                                                      |
 | ----------------------- | ------------------------------------- | ----------------------------------------------------------------- |
-| `ci.yml`                | Pull requests + non-main pushes       | Typecheck → lint:check → check:docs → build (no deploy)           |
+| `ci.yml`                | Pull requests + non-main pushes       | `pnpm check` → build artifact (no deploy)                         |
 | `deploy-preview.yml`    | Same-repo PRs on `main`               | Build + `wrangler pages deploy --branch=<head ref>` + comment URL |
 | `deploy-production.yml` | Pushes to `main`, `workflow_dispatch` | Build + `wrangler pages deploy --branch=main`                     |
 

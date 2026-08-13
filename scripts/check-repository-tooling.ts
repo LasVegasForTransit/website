@@ -8,7 +8,7 @@
  * harness wiring, and inheritance boundary.
  */
 import { createHash } from 'node:crypto';
-import { readFile, readdir } from 'node:fs/promises';
+import { access, readFile, readdir } from 'node:fs/promises';
 import { relative, resolve } from 'node:path';
 
 const ROOT = resolve(import.meta.dirname, '..');
@@ -28,6 +28,11 @@ interface PluginManifest {
   version: string;
 }
 
+interface PackageManifest {
+  packageManager?: string;
+  scripts?: Record<string, string | undefined>;
+}
+
 interface Marketplace {
   plugins: Array<{
     name: string;
@@ -41,6 +46,10 @@ interface ClaudeSettings {
     { source?: { source?: string; repo?: string; ref?: string } }
   >;
   enabledPlugins?: Record<string, boolean>;
+}
+
+interface CommitSubjectValidator {
+  commitSubjectError(subject: string): string | undefined;
 }
 
 async function jsonFile<T>(path: string): Promise<T> {
@@ -78,6 +87,40 @@ const lock = await jsonFile<ToolingLock>('.lvbt/repository-tooling.json');
 if (lock.repository !== 'LasVegasForTransit/repository-tooling') {
   fail('the lock points at a non-organization source');
 }
+
+const packageJson = await jsonFile<PackageManifest>('package.json');
+if (packageJson.packageManager !== 'pnpm@11.15.1') {
+  fail('package.json does not use the organization pnpm version');
+}
+if (!packageJson.scripts?.check?.includes('pnpm check:repository-tooling')) {
+  fail('pnpm check does not include repository-tooling validation');
+}
+
+const commitMessageHook = await readFile(resolve(ROOT, '.githooks/commit-msg'), 'utf8');
+if (
+  !commitMessageHook.includes('validate-commit-subject.mjs') ||
+  commitMessageHook.includes('validate-commit-scope')
+) {
+  fail('the commit-msg hook does not use the pinned subject validator');
+}
+
+for (const legacyPath of [
+  'allowed-scopes.txt',
+  'scripts/validation/git/validate-commit-scope.ts',
+  'scripts/validation/format-commit-message.sh',
+]) {
+  const exists = await access(resolve(ROOT, legacyPath))
+    .then(() => true)
+    .catch(() => false);
+  if (exists) {
+    fail(`legacy commit-subject policy remains at ${legacyPath}`);
+  }
+}
+
+const buildAction = await readFile(resolve(ROOT, '.github/actions/build-site/action.yml'), 'utf8');
+if (!buildAction.includes('run: pnpm check')) {
+  fail('continuous integration does not use pnpm check');
+}
 if ((await pluginDigest()) !== lock.sha256) {
   fail('the installed plugin differs from the pinned release');
 }
@@ -93,6 +136,14 @@ if (codex.name !== lock.plugin || claude.name !== lock.plugin) {
 }
 if (codex.version !== lock.version || claude.version !== lock.version) {
   fail('the harness manifests do not match the pinned version');
+}
+
+const { commitSubjectError } = (await import(
+  resolve(PLUGIN_ROOT, 'scripts/validate-commit-subject.mjs')
+)) as CommitSubjectValidator;
+const scopePolicyError = commitSubjectError('chore: validate repository tooling policy');
+if (scopePolicyError) {
+  fail(scopePolicyError);
 }
 
 const marketplace = await jsonFile<Marketplace>('.agents/plugins/marketplace.json');
