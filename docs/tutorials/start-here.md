@@ -75,14 +75,15 @@ You'll mostly work in a few places:
 Find your task and follow its guide. Each guide lists what you need before you
 start:
 
-| I want to…                               | Guide                                                              | Touches code?                |
-| ---------------------------------------- | ------------------------------------------------------------------ | ---------------------------- |
-| Add an event                             | [add-an-event.md](../guides/add-an-event.md)                       | No — it's in Google Calendar |
-| Add a project                            | [add-a-project.md](../guides/add-a-project.md)                     | Yes — a content file         |
-| Add an initiative                        | [add-an-initiative.md](../guides/add-an-initiative.md)             | Yes — a content file         |
-| Edit a long-form page (vision, mission…) | [edit-a-long-form-doc.md](../guides/edit-a-long-form-doc.md)       | Yes — a content file         |
-| Add transit news to Notion               | [add-transit-news.md](../guides/add-transit-news.md)               | Depends on path              |
-| Use an AI assistant to help              | [work-with-ai-assistants.md](../guides/work-with-ai-assistants.md) | —                            |
+| I want to…                               | Guide                                                                      | Touches code?                |
+| ---------------------------------------- | -------------------------------------------------------------------------- | ---------------------------- |
+| Add an event                             | [add-an-event.md](../guides/add-an-event.md)                               | No — it's in Google Calendar |
+| Add a project                            | [add-a-project.md](../guides/add-a-project.md)                             | Yes — a content file         |
+| Add an initiative                        | [add-an-initiative.md](../guides/add-an-initiative.md)                     | Yes — a content file         |
+| Edit a long-form page (vision, mission…) | [edit-a-long-form-doc.md](../guides/edit-a-long-form-doc.md)               | Yes — a content file         |
+| Add transit news to Notion               | [add-transit-news.md](../guides/add-transit-news.md)                       | Depends on path              |
+| Connect the membership form to intake    | [connect-the-membership-form.md](../guides/connect-the-membership-form.md) | No — it's in Apps Script     |
+| Use an AI assistant to help              | [work-with-ai-assistants.md](../guides/work-with-ai-assistants.md)         | —                            |
 
 ## 5. Saving and sharing your change
 

@@ -19,6 +19,56 @@ const FIELD_TITLES = {
 };
 
 function onMembershipFormSubmit(event) {
+  postFormResponse(event.response, intakeConfig());
+}
+
+/**
+ * Replay every stored response through the endpoint. Run by hand from the
+ * editor (select this function, press Run) after an outage — e.g. the
+ * endpoint was returning 503 while a secret was missing — so the people who
+ * submitted during it get subscribed and get their Notion intake page.
+ *
+ * Safe to run repeatedly: the endpoint sends no email when it adds someone,
+ * Beehiiv treats an already-subscribed address as a no-op, and a response
+ * that already has an intake page (matched by Response ID) is skipped rather
+ * than duplicated. To limit the replay, call backfillIntakeSince with the
+ * timestamp of the last response that went through.
+ */
+function backfillMembershipIntake() {
+  backfillIntakeSince(null);
+}
+
+function backfillIntakeSince(after) {
+  const config = intakeConfig();
+  let ok = 0;
+  let skipped = 0;
+  let failed = 0;
+
+  FormApp.getActiveForm()
+    .getResponses()
+    .forEach(function (formResponse) {
+      if (after && formResponse.getTimestamp() <= after) {
+        skipped += 1;
+        return;
+      }
+      const label =
+        formResponse.getTimestamp().toISOString() + ' ' + formResponse.getRespondentEmail();
+      try {
+        postFormResponse(formResponse, config);
+        ok += 1;
+        console.log('ok       ' + label);
+      } catch (err) {
+        failed += 1;
+        console.error('failed   ' + label + ' — ' + err.message);
+      }
+    });
+
+  console.log('Backfill done: ' + ok + ' ok, ' + skipped + ' skipped, ' + failed + ' failed');
+}
+
+// Everything that is the same for every response: script properties plus the
+// form-level values, read once rather than per submission.
+function intakeConfig() {
   const properties = PropertiesService.getScriptProperties();
   const intakeUrl = properties.getProperty('LVBT_MEMBERSHIP_INTAKE_URL');
   const intakeSecret = properties.getProperty('LVBT_MEMBERSHIP_INTAKE_SECRET');
@@ -35,23 +85,33 @@ function onMembershipFormSubmit(event) {
     throw new Error(message);
   }
 
-  const answers = answersByQuestionTitle(event.response);
+  const form = FormApp.getActiveForm();
+  return {
+    intakeUrl: intakeUrl,
+    intakeSecret: intakeSecret,
+    sourceForm: form.getTitle(),
+    rawResponseUrl: spreadsheetUrl(form),
+  };
+}
+
+function postFormResponse(formResponse, config) {
+  const answers = answersByQuestionTitle(formResponse);
   const payload = {
-    email: String(event.response.getRespondentEmail() || '').trim(),
+    email: String(formResponse.getRespondentEmail() || '').trim(),
     name: stringAnswer(answers, FIELD_TITLES.name),
     discord: stringAnswer(answers, FIELD_TITLES.discord),
-    sourceForm: FormApp.getActiveForm().getTitle(),
-    submittedAt: event.response.getTimestamp().toISOString(),
-    responseId: event.response.getId(),
-    rawResponseUrl: spreadsheetUrl(),
+    sourceForm: config.sourceForm,
+    submittedAt: formResponse.getTimestamp().toISOString(),
+    responseId: formResponse.getId(),
+    rawResponseUrl: config.rawResponseUrl,
     answers,
   };
 
-  const response = UrlFetchApp.fetch(intakeUrl, {
+  const response = UrlFetchApp.fetch(config.intakeUrl, {
     method: 'post',
     contentType: 'application/json',
     headers: {
-      Authorization: 'Bearer ' + intakeSecret,
+      Authorization: 'Bearer ' + config.intakeSecret,
     },
     payload: JSON.stringify(payload),
     muteHttpExceptions: true,
@@ -82,12 +142,12 @@ function stringAnswer(answers, title) {
   return String(answers[title] || '').trim();
 }
 
-function spreadsheetUrl() {
+function spreadsheetUrl(form) {
   // getDestinationId() throws ("The form currently has no response
   // destination") when the form isn't linked to a spreadsheet, so we can't
   // call it speculatively — treat "no destination" as an empty URL.
   try {
-    const destinationId = FormApp.getActiveForm().getDestinationId();
+    const destinationId = form.getDestinationId();
     return destinationId ? 'https://docs.google.com/spreadsheets/d/' + destinationId : '';
   } catch (err) {
     return '';

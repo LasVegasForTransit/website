@@ -40,5 +40,8 @@ jobs:
       - name: Verify organization repository tooling
         run: pnpm check:repository-tooling
 
+      - name: Unit tests (Pages Functions)
+        run: pnpm test:unit
+
       - name: Build site
         uses: ./.github/actions/build-site

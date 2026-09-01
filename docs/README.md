@@ -27,6 +27,7 @@ Task-oriented recipes for things you'll do repeatedly. (Diátaxis calls these "h
 - [Add a project](./guides/add-a-project.md)
 - [Add an initiative](./guides/add-an-initiative.md)
 - [Add transit news](./guides/add-transit-news.md) — three ways to push articles into the Notion database
+- [Connect the membership form](./guides/connect-the-membership-form.md) — wire the Google Form's Apps Script to the intake endpoint
 - [Edit a long-form doc](./guides/edit-a-long-form-doc.md)
 - [Work with an AI assistant](./guides/work-with-ai-assistants.md)
 

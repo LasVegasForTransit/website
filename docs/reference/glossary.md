@@ -150,6 +150,11 @@ bug — please add it (see [writing-docs.md](../standards/writing-docs.md)).
   email is really from your domain, so it lands in inboxes instead of spam. SPF
   lists allowed senders; DKIM signs messages; DMARC tells inboxes what to do if a
   message fails the first two.
+- **Apps Script** <a id="apps-script"></a> — Google's built-in JavaScript
+  automation for Forms, Sheets, and Docs. A script attached to a form can run on
+  every submission (a _trigger_) and call outside services; that is how the
+  membership form reaches our intake endpoint. Open it via **Extensions → Apps
+  Script** on the form — see [connect-the-membership-form.md](../guides/connect-the-membership-form.md).
 
 ## Transit & advocacy acronyms
 

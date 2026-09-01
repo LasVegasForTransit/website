@@ -77,32 +77,7 @@ The raw answers are added to the Notion page body for staff context. The Google 
 
 ## Google Forms setup
 
-1. Open the membership Google Form. In its settings, confirm **Collect email addresses** is on — the email is read via `getRespondentEmail()`, not a form question, so without this the pipeline has no email to subscribe.
-2. Open Extensions -> Apps Script.
-3. Paste `scripts/google-apps/membership-intake.gs` into the Apps Script editor and **save** (Cmd/Ctrl+S). The trigger setup below only lists functions from _saved_ code.
-4. Edit `FIELD_TITLES` so the values exactly match the form's question titles. The defaults match the current "Membership Sign-Up" form: name is `What is your preferred name?` and discord is `What's your Discord username?`. (Email is not listed here — it comes from the collected-email setting above.)
-5. In Apps Script, open Project Settings -> Script properties and set:
-
-   | Property                        | Value                                                  |
-   | ------------------------------- | ------------------------------------------------------ |
-   | `LVBT_MEMBERSHIP_INTAKE_URL`    | `https://lasvegasfortransit.org/api/membership-intake` |
-   | `LVBT_MEMBERSHIP_INTAKE_SECRET` | same value as the Cloudflare Pages secret              |
-
-6. Open **Triggers** (clock icon) → **Add Trigger** and set:
-
-   | Field                              | Value                                                                     |
-   | ---------------------------------- | ------------------------------------------------------------------------- |
-   | Choose which function to run       | `onMembershipFormSubmit`                                                  |
-   | Choose which deployment should run | **Head** — runs your latest saved code; no published deployment is needed |
-   | Select event source                | **From form**                                                             |
-   | Select event type                  | **On form submit** — the dialog defaults to "On open", so change it       |
-   | Failure notification settings      | **Notify me immediately**, so a broken submission surfaces fast           |
-
-7. **Save**, then authorize when prompted — review the scopes (external request + forms access) and allow.
-
-> If "Choose which function to run" is empty and Apps Script says it "cannot create a trigger without a target function," the script wasn't saved — save it in the editor (step 3) and reopen the dialog.
-
-> Use this installable trigger, not a _simple_ trigger (a function named `onFormSubmit`). The script makes an external request and reads the respondent's email — actions a simple trigger isn't authorized to do, so it would silently fail.
+The form-side wiring (Apps Script, script properties, the installable trigger) is a one-time task with its own walkthrough: [Connect the membership form to the intake pipeline](../guides/connect-the-membership-form.md). The short version: the form must have **Collect email addresses** on, the script in `scripts/google-apps/membership-intake.gs` must be installed as an **On form submit** trigger, and its `LVBT_MEMBERSHIP_INTAKE_SECRET` property must equal the Pages secret.
 
 If the endpoint returns a non-2xx response, the script throws. Apps Script records the failed execution and sends the trigger owner the standard failure email.
 
@@ -139,40 +114,51 @@ Responses. The **Status** column is the [HTTP status code](./glossary.md#status-
 
 | Status | Body                                                   | Meaning                                                                |
 | ------ | ------------------------------------------------------ | ---------------------------------------------------------------------- |
-| `200`  | `{ "success": true }`                                  | Beehiiv and Notion both accepted it                                    |
+| `200`  | `{ "success": true, "notion": "created" }`             | Beehiiv accepted it and a Notion intake page was created               |
+| `200`  | `{ "success": true, "notion": "existing" }`            | Beehiiv accepted it; a page for this response already existed          |
 | `400`  | `{ "error": "invalid_body" }`                          | JSON body could not be parsed                                          |
 | `400`  | `{ "error": "invalid_email" }`                         | Email missing or malformed                                             |
 | `401`  | `{ "error": "unauthorized" }`                          | Missing or incorrect bearer token                                      |
 | `502`  | `{ "error": "subscription_failed" }`                   | Beehiiv rejected the subscription                                      |
 | `502`  | `{ "error": "notion_sync_failed" }`                    | Notion rejected the page create                                        |
 | `503`  | `{ "error": "service_unavailable", "missing": [...] }` | Required runtime secret is missing; the missing key names are included |
+| `500`  | Cloudflare error page (not JSON)                       | An exception escaped the handler                                       |
+
+The auth check runs before the config check, so only a caller with the correct bearer token sees the `missing` list. The exception is `LVBT_MEMBERSHIP_INTAKE_SECRET` itself: without it nobody can authenticate, so it is always reported.
+
+The endpoint never returns `500` deliberately; if you see one, read the deployment's **Functions** log in the Cloudflare dashboard or run `wrangler pages deployment tail`.
 
 ## Verification
 
 1. Submit a test response from the live Google Form.
 2. Confirm the Apps Script execution succeeded.
-3. Confirm Beehiiv shows the subscriber as `active`. Membership intake uses single opt-in (`double_opt_override: 'off'`): the email is read from Google's verified "Collect email addresses" setting, so it is already a confirmed address and the member joins the list immediately — there is no separate confirmation-click step.
+3. Confirm Beehiiv shows the subscriber as `active`. Adding a member sends them **no email**: no welcome email (`send_welcome_email: false`) and no confirmation click (`double_opt_override: 'off'`), because Google's "Collect email addresses" setting has already verified the address. Any onboarding mail is a Beehiiv automation you set up separately.
 4. Confirm a Notion page was created with the expected properties.
 5. Confirm the complete response remains available in the Google Sheet.
 
 For local handler checks:
 
 ```sh
-node --import tsx --test tests/membership-intake.test.ts
+pnpm test:unit
 pnpm typecheck
 ```
 
-Use `node --import tsx`, not `pnpm exec tsx`, in restricted sandboxes where the `tsx` CLI cannot open its local IPC socket.
+`test:unit` runs the tests through `node --import tsx` rather than the `tsx` CLI, which cannot open its local IPC socket in restricted sandboxes.
 
 ## Failure handling and recovery
 
-The endpoint subscribes the person in Beehiiv first, then creates the Notion page. The two steps are not transactional, so one partial-failure mode is worth knowing:
+Apps Script treats any non-2xx response as a failed execution and emails the trigger owner. The status in that email says what went wrong:
 
-- **Beehiiv succeeds, Notion fails.** The person is already an active subscriber, but no intake page exists. The endpoint returns `502 notion_sync_failed`, the Apps Script execution throws, and the trigger owner gets Apps Script's standard failure email.
+- **`503 service_unavailable`**: a Pages secret is missing. Nothing reached Beehiiv or Notion, and every submission fails the same way until it is fixed. Set the secrets named in `missing` on the **Production** environment of the Pages project that `Deploy production` targets (its account is `CLOUDFLARE_ACCOUNT_ID` in the repo's `production` GitHub environment), redeploy so they bind, then replay as below.
+- **`401 unauthorized`**: the Apps Script `LVBT_MEMBERSHIP_INTAKE_SECRET` property no longer matches the Pages secret.
+- **`502`**: Beehiiv or Notion rejected the request; the body says which. If Beehiiv succeeded and Notion failed, the person is subscribed but has no intake page. Replay fixes that too.
 
-Recover from the Google Sheet, which stays canonical for the full response:
+Replaying is safe because the request is [idempotent](./glossary.md#idempotent): Beehiiv treats a re-subscribe as a no-op (`reactivate_existing: true`) and sends no email, and the endpoint looks up the form's **Response ID** in the Notion data source before creating a page, so a replayed submission answers `"notion": "existing"` instead of creating a duplicate.
 
-1. Open the failed execution in Apps Script (**Extensions → Apps Script → Executions**) to confirm which submission failed.
-2. Create the Notion intake page by hand from the matching Sheet row.
+1. Confirm the outage is over: submit a test response and check that the execution succeeds.
+2. In **Extensions → Apps Script**, select `backfillMembershipIntake` in the toolbar and press **Run**. It replays every stored response and logs one line per response plus a summary. To replay only part of the history, call `backfillIntakeSince(new Date('…'))` from a scratch function instead.
+3. Re-run once any `failed` lines in the execution log have been dealt with.
 
-Prefer manual Notion entry over re-running the execution. A re-run re-POSTs the whole payload: the Beehiiv step is idempotent (safe to run more than once — re-subscribing the same person changes nothing; see [glossary](./glossary.md#idempotent), here via `reactivate_existing: true`), but Notion has no dedupe and would create a **second** page for the same person.
+To create Notion pages without touching Beehiiv at all, `pnpm tsx scripts/notion/backfill-intake.ts <payloads.json>` takes a JSON array of endpoint-shaped bodies and uses the Notion secrets in `.env.local`. It skips submissions that already have a page.
+
+The Google Sheet stays canonical for the full response if a row ever needs to be entered by hand.
