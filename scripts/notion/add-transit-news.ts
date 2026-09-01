@@ -27,11 +27,7 @@ import {
   notionErrorMessage,
   resolveDataSourceId,
 } from './lib/notion-client.js';
-
-function die(msg: string): never {
-  console.error(`\n✖ ${msg}\n`);
-  process.exit(1);
-}
+import { die } from './lib/cli.js';
 
 /** Returns true if a page with this URL already exists in the data source. */
 async function isDuplicate(token: string, dataSourceId: string, url: string): Promise<boolean> {

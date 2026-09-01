@@ -42,6 +42,10 @@ export async function notionFetch(
 
 // Notion responses come back as `unknown`; these read one field safely so the
 // callers stay free of repeated object/null/typeof narrowing.
+export function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
 export function getString(obj: unknown, key: string): string | undefined {
   if (typeof obj === 'object' && obj !== null) {
     const value = (obj as Record<string, unknown>)[key];

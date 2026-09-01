@@ -22,6 +22,7 @@ import {
   intakeDataSourceProperties,
 } from '../../functions/api/_intake-schema.js';
 import { notionFetch, getString, getArray, notionErrorMessage } from './lib/notion-client.js';
+import { die } from './lib/cli.js';
 
 const DB_TITLE = 'Membership intake';
 
@@ -35,11 +36,6 @@ function resultTitle(result: unknown): string {
 function firstDataSourceId(created: unknown): string | undefined {
   const sources = getArray(created, 'data_sources');
   return sources && sources.length > 0 ? getString(sources[0], 'id') : undefined;
-}
-
-function die(message: string): never {
-  console.error(`\n✖ ${message}\n`);
-  process.exit(1);
 }
 
 async function main(): Promise<void> {

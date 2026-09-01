@@ -43,6 +43,7 @@
     "lint": "prettier --write .",
     "lint:check": "prettier --check .",
     "test": "playwright test",
+    "test:unit": "node --import tsx --test tests/*.test.ts",
     "test:update": "playwright test --update-snapshots",
     "test:install": "playwright install --with-deps chromium",
     "prepare": "git config --local core.hooksPath .githooks 2>/dev/null || true"

@@ -25,6 +25,8 @@ import {
   inferTopics,
 } from '../../scripts/notion/lib/transit-topics';
 import { makeParagraphBlocks } from '../../scripts/notion/lib/notion-blocks';
+import { isRecord } from '../../scripts/notion/lib/notion-client';
+import { bearerToken, errorResponse, jsonHeaders, timingSafeEqual } from './_shared';
 
 const NOTION_API = 'https://api.notion.com/v1';
 
@@ -36,36 +38,6 @@ interface Env {
 type JsonError = 'invalid_body' | 'unauthorized' | 'no_page_id' | 'no_url' | 'service_unavailable';
 
 const REQUIRED_SECRETS = ['LVBT_NOTION_API_KEY', 'LVBT_TRANSIT_NEWS_INTAKE_SECRET'] as const;
-
-const jsonHeaders = { 'Content-Type': 'application/json' };
-
-function errorResponse(error: JsonError, status: number): Response {
-  return Response.json({ error }, { status, headers: jsonHeaders });
-}
-
-function bearerToken(request: Request): string {
-  const authorization = request.headers.get('Authorization') ?? '';
-  const match = /^Bearer\s+(.+)$/i.exec(authorization);
-  return match?.[1]?.trim() ?? '';
-}
-
-// Compare without an early-exit per character so a wrong token can't be probed
-// byte-by-byte via response timing.
-function timingSafeEqual(a: string, b: string): boolean {
-  const encoder = new TextEncoder();
-  const aBytes = encoder.encode(a);
-  const bBytes = encoder.encode(b);
-  if (aBytes.length !== bBytes.length) return false;
-  let diff = 0;
-  for (let i = 0; i < aBytes.length; i += 1) {
-    diff |= (aBytes[i] ?? 0) ^ (bBytes[i] ?? 0);
-  }
-  return diff === 0;
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null && !Array.isArray(value);
-}
 
 const NOTION_ID_RE = /^[0-9a-f]{8}-?[0-9a-f]{4}-?[0-9a-f]{4}-?[0-9a-f]{4}-?[0-9a-f]{12}$/i;
 
