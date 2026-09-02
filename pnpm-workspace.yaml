@@ -83,4 +83,26 @@ publicHoistPattern:
 # Security overrides for transitive dependencies the audit flags; drop each
 # once the parent package pulls in the patched release.
 overrides:
-  'fast-uri@<3.1.5': '^3.1.5'
+  'brace-expansion@<1.1.16': '>=1.1.16'
+  'brace-expansion@<1.1.17': '>=1.1.17'
+  'brace-expansion@<1.1.18': '>=1.1.18'
+  'brace-expansion@>=2.0.0 <2.1.2': '>=2.1.2'
+  'brace-expansion@>=2.0.0 <2.1.3': '>=2.1.3'
+  'brace-expansion@>=2.0.0 <2.1.4': '>=2.1.4'
+  'ip-address@<=10.3.0': '>=10.3.1'
+  'js-yaml@>=3.0.0 <3.15.0': '>=3.15.0'
+  'js-yaml@>=3.0.0 <3.15.1': '>=3.15.1'
+  'js-yaml@>=4.0.0 <4.3.0': '>=4.3.0'
+  'js-yaml@>=4.0.0 <4.3.1': '>=4.3.1'
+  'nanoid@<3.3.16': '>=3.3.16'
+  'nanoid@<3.3.18': '>=3.3.18'
+  'postcss@<=8.5.17': '>=8.5.18'
+  'svgo@>=4.0.0 <4.0.2': '>=4.0.2'
+  'tmp@<0.2.6': '>=0.2.6'
+  'ws@>=7.0.0 <7.5.11': '>=7.5.11'
+
+# extract-zip (through @lhci/cli, Lighthouse, Puppeteer) has a high advisory with
+# no patched release; it only ever unpacks Chromium downloads in CI.
+auditConfig:
+  ignoreGhsas:
+    - GHSA-jmr9-qjv8-65gv
