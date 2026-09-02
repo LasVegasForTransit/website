@@ -10,6 +10,9 @@
   },
   "globs": ["**/*.md"],
   "ignores": [
+    // Playwright output.
+    "**/test-results",
+    "**/playwright-report",
     // Generated audit reports (pnpm check:baseline), kept for history.
     "audits",
     ".claude/worktrees",
