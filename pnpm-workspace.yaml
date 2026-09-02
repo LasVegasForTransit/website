@@ -79,3 +79,8 @@ catalog:
 # Lighthouse subprocess can resolve it.
 publicHoistPattern:
   - 'tslib'
+
+# Security overrides for transitive dependencies the audit flags; drop each
+# once the parent package pulls in the patched release.
+overrides:
+  'fast-uri@<3.1.5': '^3.1.5'
