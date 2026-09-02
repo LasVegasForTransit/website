@@ -34,7 +34,7 @@ const skipArg = [...args].find((a) => a.startsWith('--skip='));
 const skip = new Set(skipArg ? skipArg.replace('--skip=', '').split(',') : []);
 
 const ROOT = resolve(process.cwd());
-const DIST = resolve(ROOT, 'dist');
+const DIST = resolve(ROOT, 'apps/site/dist');
 const REPORT_DIR = resolve(ROOT, 'audits');
 
 interface ToolResult {

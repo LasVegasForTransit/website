@@ -26,7 +26,7 @@ interface Finding {
 
 const asJson = process.argv.includes('--json');
 const repoRoot = resolve(process.cwd());
-const publicDir = resolve(repoRoot, 'public');
+const publicDir = resolve(repoRoot, 'apps/site/public');
 
 function loadBudget(): AssetBudget {
   const raw = JSON.parse(readFileSync(resolve(repoRoot, 'perf-budgets.json'), 'utf8')) as {

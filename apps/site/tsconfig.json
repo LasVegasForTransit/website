@@ -1,0 +1,13 @@
+{
+  "extends": "@lvbt/typescript-config/astro.json",
+  "compilerOptions": {
+    // Adoption debt against the organization base: the two flags below are on
+    // in @lvbt/typescript-config and off here until the site's code is made to
+    // pass them (about 250 findings when the standard arrived). Turn one on, fix
+    // what it reports, and delete the line.
+    "noUncheckedIndexedAccess": false,
+    "exactOptionalPropertyTypes": false
+  },
+  "include": [".astro/types.d.ts", "src", "functions", "tests", "*.config.*"],
+  "exclude": ["dist"]
+}

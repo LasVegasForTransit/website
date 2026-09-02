@@ -1,0 +1,263 @@
+{
+  "scripts/audit/baseline.ts": {
+    "@eslint-community/eslint-comments/require-description": {
+      "count": 1
+    },
+    "@typescript-eslint/consistent-type-definitions": {
+      "count": 1
+    }
+  },
+  "scripts/audit/brand-tokens.ts": {
+    "@typescript-eslint/consistent-type-definitions": {
+      "count": 1
+    }
+  },
+  "scripts/audit/build-profile.ts": {
+    "@typescript-eslint/no-unnecessary-condition": {
+      "count": 1
+    }
+  },
+  "scripts/audit/third-party-scan.ts": {
+    "@typescript-eslint/no-non-null-assertion": {
+      "count": 1
+    }
+  },
+  "scripts/bootstrap/cold-start.ts": {
+    "@typescript-eslint/no-non-null-assertion": {
+      "count": 2
+    },
+    "turbo/no-undeclared-env-vars": {
+      "count": 1
+    }
+  },
+  "scripts/bootstrap/lib/cloudflare-api.ts": {
+    "@typescript-eslint/no-non-null-assertion": {
+      "count": 5
+    },
+    "@typescript-eslint/no-unnecessary-condition": {
+      "count": 3
+    },
+    "@typescript-eslint/prefer-regexp-exec": {
+      "count": 2
+    },
+    "max-params": {
+      "count": 1
+    },
+    "no-useless-assignment": {
+      "count": 1
+    },
+    "turbo/no-undeclared-env-vars": {
+      "count": 1
+    }
+  },
+  "scripts/bootstrap/lib/cloudflare.ts": {
+    "@typescript-eslint/no-non-null-assertion": {
+      "count": 3
+    },
+    "turbo/no-undeclared-env-vars": {
+      "count": 6
+    }
+  },
+  "scripts/bootstrap/lib/env-file.ts": {
+    "sonarjs/cognitive-complexity": {
+      "count": 1
+    }
+  },
+  "scripts/bootstrap/lib/load-env.ts": {
+    "@typescript-eslint/prefer-nullish-coalescing": {
+      "count": 1
+    }
+  },
+  "scripts/bootstrap/lib/shell.ts": {
+    "@eslint-community/eslint-comments/require-description": {
+      "count": 1
+    },
+    "@typescript-eslint/no-unnecessary-condition": {
+      "count": 2
+    },
+    "@typescript-eslint/no-unnecessary-type-assertion": {
+      "count": 1
+    }
+  },
+  "scripts/bootstrap/phases/auth.ts": {
+    "complexity": {
+      "count": 1
+    },
+    "max-lines-per-function": {
+      "count": 1
+    },
+    "sonarjs/cognitive-complexity": {
+      "count": 1
+    }
+  },
+  "scripts/bootstrap/phases/deploy.ts": {
+    "@typescript-eslint/prefer-nullish-coalescing": {
+      "count": 2
+    },
+    "@typescript-eslint/prefer-regexp-exec": {
+      "count": 1
+    },
+    "complexity": {
+      "count": 1
+    },
+    "max-lines-per-function": {
+      "count": 1
+    },
+    "sonarjs/cognitive-complexity": {
+      "count": 1
+    },
+    "turbo/no-undeclared-env-vars": {
+      "count": 2
+    }
+  },
+  "scripts/bootstrap/phases/domain.ts": {
+    "@typescript-eslint/no-non-null-assertion": {
+      "count": 7
+    },
+    "@typescript-eslint/no-unnecessary-condition": {
+      "count": 1
+    },
+    "@typescript-eslint/no-unnecessary-type-assertion": {
+      "count": 1
+    },
+    "@typescript-eslint/prefer-nullish-coalescing": {
+      "count": 2
+    },
+    "complexity": {
+      "count": 1
+    },
+    "max-lines": {
+      "count": 1
+    },
+    "max-lines-per-function": {
+      "count": 1
+    },
+    "max-params": {
+      "count": 3
+    },
+    "sonarjs/cognitive-complexity": {
+      "count": 2
+    },
+    "turbo/no-undeclared-env-vars": {
+      "count": 6
+    }
+  },
+  "scripts/bootstrap/phases/env.ts": {
+    "@typescript-eslint/no-non-null-assertion": {
+      "count": 1
+    },
+    "complexity": {
+      "count": 1
+    },
+    "max-lines-per-function": {
+      "count": 1
+    },
+    "sonarjs/cognitive-complexity": {
+      "count": 1
+    }
+  },
+  "scripts/bootstrap/phases/install.ts": {
+    "complexity": {
+      "count": 1
+    },
+    "max-lines-per-function": {
+      "count": 1
+    },
+    "sonarjs/cognitive-complexity": {
+      "count": 1
+    },
+    "turbo/no-undeclared-env-vars": {
+      "count": 2
+    }
+  },
+  "scripts/bootstrap/phases/repo.ts": {
+    "complexity": {
+      "count": 1
+    },
+    "max-lines-per-function": {
+      "count": 1
+    },
+    "sonarjs/cognitive-complexity": {
+      "count": 1
+    }
+  },
+  "scripts/bootstrap/phases/workspace.ts": {
+    "@typescript-eslint/require-await": {
+      "count": 1
+    },
+    "max-lines-per-function": {
+      "count": 1
+    },
+    "sonarjs/cognitive-complexity": {
+      "count": 1
+    }
+  },
+  "scripts/event-new.ts": {
+    "@typescript-eslint/no-unnecessary-type-assertion": {
+      "count": 3
+    },
+    "@typescript-eslint/prefer-regexp-exec": {
+      "count": 1
+    },
+    "@typescript-eslint/use-unknown-in-catch-callback-variable": {
+      "count": 1
+    },
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "scripts/notion/add-transit-news.ts": {
+    "@typescript-eslint/dot-notation": {
+      "count": 4
+    }
+  },
+  "scripts/notion/lib/article-extract.ts": {
+    "@typescript-eslint/prefer-regexp-exec": {
+      "count": 10
+    }
+  },
+  "scripts/notion/lib/notion-client.ts": {
+    "@typescript-eslint/no-unsafe-return": {
+      "count": 1
+    },
+    "no-useless-assignment": {
+      "count": 1
+    }
+  },
+  "scripts/notion/provision-intake-db.ts": {
+    "@typescript-eslint/require-await": {
+      "count": 1
+    },
+    "turbo/no-undeclared-env-vars": {
+      "count": 2
+    }
+  },
+  "scripts/screenshot.ts": {
+    "@typescript-eslint/no-unnecessary-condition": {
+      "count": 3
+    },
+    "@typescript-eslint/no-unnecessary-type-assertion": {
+      "count": 1
+    },
+    "complexity": {
+      "count": 1
+    },
+    "turbo/no-undeclared-env-vars": {
+      "count": 1
+    }
+  },
+  "scripts/workers/transit-news-sync/src/index.ts": {
+    "@typescript-eslint/dot-notation": {
+      "count": 4
+    },
+    "@typescript-eslint/no-unnecessary-condition": {
+      "count": 1
+    },
+    "@typescript-eslint/prefer-nullish-coalescing": {
+      "count": 1
+    },
+    "sonarjs/cognitive-complexity": {
+      "count": 1
+    }
+  }
+}

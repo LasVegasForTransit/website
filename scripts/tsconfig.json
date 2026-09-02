@@ -1,16 +1,13 @@
 {
+  "extends": "@lvbt/typescript-config/node.json",
   "compilerOptions": {
-    "module": "ESNext",
-    "moduleResolution": "Bundler",
-    "target": "ES2022",
-    "strict": true,
-    "noUncheckedIndexedAccess": true,
     "esModuleInterop": true,
-    "resolveJsonModule": true,
-    "isolatedModules": true,
-    "skipLibCheck": true,
-    "noEmit": true,
-    "types": ["node"]
+    // screenshot.ts and the audits evaluate code inside the browser through Playwright.
+    "lib": ["ES2024", "DOM", "DOM.Iterable"],
+    // Adoption debt against the organization base: on in @lvbt/typescript-config,
+    // off here until these scripts are made to pass it. Turn it on, fix what it
+    // reports, and delete the line.
+    "exactOptionalPropertyTypes": false
   },
   "include": ["**/*.ts"]
 }

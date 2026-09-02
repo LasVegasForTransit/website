@@ -1,0 +1,291 @@
+{
+  "functions/api/membership-intake.ts": {
+    "@typescript-eslint/no-base-to-string": {
+      "count": 1
+    },
+    "@typescript-eslint/prefer-nullish-coalescing": {
+      "count": 2
+    }
+  },
+  "functions/api/transit-news-intake.ts": {
+    "@typescript-eslint/dot-notation": {
+      "count": 32
+    },
+    "complexity": {
+      "count": 1
+    },
+    "max-lines-per-function": {
+      "count": 1
+    },
+    "sonarjs/cognitive-complexity": {
+      "count": 1
+    }
+  },
+  "public/scripts/copy-anchor.js": {
+    "@typescript-eslint/no-empty-function": {
+      "count": 1
+    }
+  },
+  "public/scripts/mobile-nav.js": {
+    "@typescript-eslint/no-unused-expressions": {
+      "count": 1
+    }
+  },
+  "public/scripts/newsletter-subscribe.js": {
+    "complexity": {
+      "count": 1
+    },
+    "sonarjs/cognitive-complexity": {
+      "count": 1
+    }
+  },
+  "src/content.config.ts": {
+    "@typescript-eslint/require-await": {
+      "count": 1
+    }
+  },
+  "src/lib/event-format.ts": {
+    "@typescript-eslint/consistent-type-definitions": {
+      "count": 3
+    }
+  },
+  "src/lib/event-time.ts": {
+    "@typescript-eslint/consistent-type-definitions": {
+      "count": 1
+    }
+  },
+  "src/lib/events-loader.ts": {
+    "@typescript-eslint/consistent-type-definitions": {
+      "count": 1
+    },
+    "@typescript-eslint/no-unnecessary-condition": {
+      "count": 15
+    },
+    "@typescript-eslint/no-unnecessary-type-assertion": {
+      "count": 2
+    },
+    "@typescript-eslint/no-unsafe-argument": {
+      "count": 1
+    },
+    "@typescript-eslint/no-unsafe-assignment": {
+      "count": 1
+    },
+    "@typescript-eslint/prefer-optional-chain": {
+      "count": 1
+    },
+    "@typescript-eslint/prefer-regexp-exec": {
+      "count": 5
+    },
+    "@typescript-eslint/unbound-method": {
+      "count": 2
+    },
+    "complexity": {
+      "count": 2
+    },
+    "max-lines-per-function": {
+      "count": 2
+    },
+    "max-params": {
+      "count": 1
+    },
+    "sonarjs/cognitive-complexity": {
+      "count": 1
+    }
+  },
+  "src/lib/newsletter-loader.ts": {
+    "@typescript-eslint/consistent-type-definitions": {
+      "count": 1
+    },
+    "@typescript-eslint/no-base-to-string": {
+      "count": 1
+    },
+    "@typescript-eslint/no-unnecessary-type-assertion": {
+      "count": 1
+    },
+    "@typescript-eslint/unbound-method": {
+      "count": 2
+    }
+  },
+  "src/lib/qr-svg.ts": {
+    "@typescript-eslint/no-non-null-assertion": {
+      "count": 1
+    },
+    "complexity": {
+      "count": 1
+    },
+    "sonarjs/cognitive-complexity": {
+      "count": 1
+    }
+  },
+  "src/lib/site.ts": {
+    "@typescript-eslint/prefer-optional-chain": {
+      "count": 1
+    }
+  },
+  "src/lib/strategy-content.ts": {
+    "@typescript-eslint/consistent-type-definitions": {
+      "count": 1
+    }
+  },
+  "src/lib/structured-data.ts": {
+    "@typescript-eslint/no-unnecessary-type-parameters": {
+      "count": 1
+    },
+    "complexity": {
+      "count": 1
+    },
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "src/pages/llms-full.txt.ts": {
+    "complexity": {
+      "count": 1
+    },
+    "max-lines-per-function": {
+      "count": 1
+    },
+    "sonarjs/cognitive-complexity": {
+      "count": 1
+    }
+  },
+  "src/scripts/event-relative.ts": {
+    "@typescript-eslint/no-unnecessary-condition": {
+      "count": 1
+    },
+    "complexity": {
+      "count": 1
+    },
+    "sonarjs/cognitive-complexity": {
+      "count": 1
+    }
+  },
+  "tests/e2e/body-links.spec.ts": {
+    "@typescript-eslint/consistent-type-definitions": {
+      "count": 2
+    },
+    "@typescript-eslint/no-implied-eval": {
+      "count": 1
+    },
+    "@typescript-eslint/no-non-null-assertion": {
+      "count": 9
+    },
+    "@typescript-eslint/no-unnecessary-condition": {
+      "count": 7
+    },
+    "@typescript-eslint/no-unnecessary-type-assertion": {
+      "count": 1
+    },
+    "@typescript-eslint/no-unsafe-call": {
+      "count": 1
+    },
+    "max-lines": {
+      "count": 1
+    }
+  },
+  "tests/e2e/color-contracts.spec.ts": {
+    "@typescript-eslint/consistent-type-definitions": {
+      "count": 1
+    },
+    "@typescript-eslint/no-non-null-assertion": {
+      "count": 9
+    },
+    "@typescript-eslint/no-unnecessary-condition": {
+      "count": 5
+    },
+    "@typescript-eslint/no-unnecessary-type-assertion": {
+      "count": 9
+    },
+    "@typescript-eslint/prefer-optional-chain": {
+      "count": 2
+    }
+  },
+  "tests/e2e/event-metadata.spec.ts": {
+    "@typescript-eslint/consistent-type-imports": {
+      "count": 2
+    },
+    "@typescript-eslint/no-non-null-assertion": {
+      "count": 1
+    },
+    "@typescript-eslint/no-unnecessary-condition": {
+      "count": 18
+    }
+  },
+  "tests/e2e/footer-colophon.spec.ts": {
+    "@typescript-eslint/no-non-null-assertion": {
+      "count": 10
+    },
+    "@typescript-eslint/no-unnecessary-type-assertion": {
+      "count": 1
+    }
+  },
+  "tests/e2e/not-found-search.spec.ts": {
+    "@typescript-eslint/consistent-type-definitions": {
+      "count": 2
+    },
+    "@typescript-eslint/no-implied-eval": {
+      "count": 1
+    },
+    "@typescript-eslint/no-unsafe-call": {
+      "count": 1
+    }
+  },
+  "tests/e2e/print-layout.spec.ts": {
+    "@typescript-eslint/no-unnecessary-condition": {
+      "count": 23
+    },
+    "complexity": {
+      "count": 2
+    },
+    "max-lines": {
+      "count": 1
+    }
+  },
+  "tests/e2e/support/a11y-helpers.ts": {
+    "@typescript-eslint/no-unnecessary-condition": {
+      "count": 6
+    },
+    "@typescript-eslint/no-unsafe-member-access": {
+      "count": 3
+    }
+  },
+  "tests/e2e/support/sitemap-paths.ts": {
+    "@typescript-eslint/no-unnecessary-condition": {
+      "count": 1
+    }
+  },
+  "tests/e2e/typography-contracts.spec.ts": {
+    "@typescript-eslint/no-unnecessary-condition": {
+      "count": 1
+    },
+    "@typescript-eslint/no-unnecessary-type-conversion": {
+      "count": 1
+    }
+  },
+  "tests/membership-intake.test.ts": {
+    "@typescript-eslint/consistent-type-definitions": {
+      "count": 1
+    },
+    "@typescript-eslint/no-base-to-string": {
+      "count": 4
+    },
+    "@typescript-eslint/no-misused-spread": {
+      "count": 1
+    },
+    "@typescript-eslint/no-unnecessary-type-assertion": {
+      "count": 1
+    },
+    "@typescript-eslint/no-unsafe-argument": {
+      "count": 2
+    },
+    "@typescript-eslint/no-unsafe-assignment": {
+      "count": 2
+    },
+    "@typescript-eslint/no-unsafe-member-access": {
+      "count": 14
+    },
+    "@typescript-eslint/require-await": {
+      "count": 1
+    }
+  }
+}

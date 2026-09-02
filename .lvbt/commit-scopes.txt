@@ -1,0 +1,8 @@
+# One scope per durable boundary in this repository; omit a scope when a
+# change crosses them. Page slugs, component names, short-lived features,
+# and dependency bumps are not scopes.
+site
+content
+docs
+ci
+dx

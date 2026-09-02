@@ -21,10 +21,12 @@ export async function runDeployPhase(
   doctorMode: boolean,
 ): Promise<PhaseResult> {
   const followUpItems: FollowUp[] = [];
-  const distDir = path.join(projectRoot, 'dist');
+  const distDir = path.join(projectRoot, 'apps/site/dist');
 
   if (doctorMode) {
-    log.info(pc.dim('Doctor mode: would provision Cloudflare Pages and push ./dist. Skipped.'));
+    log.info(
+      pc.dim('Doctor mode: would provision Cloudflare Pages and push ./apps/site/dist. Skipped.'),
+    );
     return { success: true, followUpItems: [] };
   }
 
@@ -56,7 +58,7 @@ export async function runDeployPhase(
   let productionBranch = process.env.CLOUDFLARE_PAGES_BRANCH?.trim() || DEFAULT_PRODUCTION_BRANCH;
 
   note(
-    `Provisioning a Cloudflare Pages project and pushing ${pc.cyan('./dist')} as your first build.\nOnce that's done you'll wire auto-deploys-on-push from the dashboard.`,
+    `Provisioning a Cloudflare Pages project and pushing ${pc.cyan('./apps/site/dist')} as your first build.\nOnce that's done you'll wire auto-deploys-on-push from the dashboard.`,
     'Cloudflare Pages',
   );
 
@@ -125,7 +127,7 @@ export async function runDeployPhase(
 
   // Build if dist/ is missing.
   if (!existsSync(distDir)) {
-    log.info(`No ${pc.cyan('./dist')} found — running ${pc.cyan('pnpm build')} first.`);
+    log.info(`No ${pc.cyan('./apps/site/dist')} found — running ${pc.cyan('pnpm build')} first.`);
     const buildResult = runCommand('pnpm build', { cwd: projectRoot });
     if (!buildResult.ok) {
       log.error('pnpm build failed; cannot deploy.');
@@ -141,13 +143,13 @@ export async function runDeployPhase(
   // taskLog keeps wrangler's output inside the TUI: collapses on success,
   // retains on failure. Inheriting stdio would paint over active spinners.
   const deployLog = taskLog({
-    title: `Deploying ${pc.cyan('./dist')} to ${pc.cyan(projectName)}`,
+    title: `Deploying ${pc.cyan('./apps/site/dist')} to ${pc.cyan(projectName)}`,
     limit: 6,
     retainLog: false,
   });
   let liveUrl: string | undefined;
   const deployResult = await runStreamingCommand(
-    `wrangler pages deploy ./dist --project-name=${shellEscape(projectName)} --branch=${shellEscape(productionBranch)} --commit-dirty=true`,
+    `wrangler pages deploy ./apps/site/dist --project-name=${shellEscape(projectName)} --branch=${shellEscape(productionBranch)} --commit-dirty=true`,
     {
       cwd: projectRoot,
       onLine: (line) => {
@@ -164,7 +166,7 @@ export async function runDeployPhase(
     deployLog.error('Deploy failed.', { showLog: true });
     followUpItems.push({
       kind: 'remote',
-      message: `Deploy manually: wrangler pages deploy ./dist --project-name=${projectName} --branch=${productionBranch}`,
+      message: `Deploy manually: wrangler pages deploy ./apps/site/dist --project-name=${projectName} --branch=${productionBranch}`,
     });
     return { success: false, followUpItems };
   }

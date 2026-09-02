@@ -24,19 +24,19 @@ import { resolve } from 'node:path';
 
 const asJson = process.argv.includes('--json');
 const root = resolve(import.meta.dirname, '../..');
-const globalCss = readFileSync(resolve(root, 'src/styles/global.css'), 'utf8');
+const globalCss = readFileSync(resolve(root, 'apps/site/src/styles/global.css'), 'utf8');
 
 // ── Check 1: hex drift ───────────────────────────────────────────────────
 
 /** Files that are allowed to carry brand hexes, and are checked for drift. */
 const HEX_CARRIERS = [
-  'src/pages/brand.astro',
-  'src/pages/qr.astro',
-  'src/lib/qr-svg.ts',
+  'apps/site/src/pages/brand.astro',
+  'apps/site/src/pages/qr.astro',
+  'apps/site/src/lib/qr-svg.ts',
   'scripts/generate-og-image.ts',
-  'tests/a11y-helpers.ts',
-  'tests/body-links.spec.ts',
-  'tests/color-contracts.spec.ts',
+  'apps/site/tests/e2e/support/a11y-helpers.ts',
+  'apps/site/tests/e2e/body-links.spec.ts',
+  'apps/site/tests/e2e/color-contracts.spec.ts',
 ];
 
 /** Deliberate off-palette literals, each with a reason. Entries here must

@@ -1,13 +1,12 @@
 name: Deploy to Cloudflare Pages
 description: >
-  Download the dist artifact built by `build-site`, then deploy it to a
-  Cloudflare Pages project via wrangler. Wrangler is a pinned devDependency
-  (no `pnpm dlx` fetch in CI), so deploys are deterministic.
+  Download the dist artifact built by `build-site`, then deploy it to a Cloudflare Pages project via
+  wrangler. Wrangler is a pinned devDependency (no `pnpm dlx` fetch in CI), so deploys are
+  deterministic.
 
-  Caller must already have `setup-node-pnpm` in the same job and must export
-  CLOUDFLARE_API_TOKEN + CLOUDFLARE_ACCOUNT_ID via the job `env:` block (do
-  NOT pass tokens as inputs — composite-action inputs end up in `with:`,
-  which serializes into workflow logs).
+  Caller must already have `setup-node-pnpm` in the same job and must export CLOUDFLARE_API_TOKEN +
+  CLOUDFLARE_ACCOUNT_ID via the job `env:` block (do NOT pass tokens as inputs — composite-action
+  inputs end up in `with:`, which serializes into workflow logs).
 
 inputs:
   branch:
@@ -30,7 +29,7 @@ runs:
       uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
       with:
         name: dist-${{ github.sha }}
-        path: dist/
+        path: apps/site/dist/
 
     # Job-level `env:` (set by the calling workflow) propagates into composite
     # steps automatically. We deliberately do NOT re-export it here — the
@@ -46,7 +45,7 @@ runs:
           echo "::error::CLOUDFLARE_API_TOKEN / CLOUDFLARE_ACCOUNT_ID not set on the calling job's env block."
           exit 1
         fi
-        out=$(pnpm exec wrangler pages deploy dist \
+        out=$(pnpm exec wrangler pages deploy apps/site/dist \
           --project-name='${{ inputs.project-name }}' \
           --branch='${{ inputs.branch }}' \
           --commit-hash='${{ github.sha }}' \

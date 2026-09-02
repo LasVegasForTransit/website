@@ -1,18 +1,28 @@
 # /vision reading affordances — design
 
-**Date:** 2026-05-11
-**Scope:** `src/pages/vision.astro`, `src/components/vision/*`, `src/styles/vision.css`, `src/styles/global.css`, `src/layouts/BaseLayout.astro`
+**Date:** 2026-05-11 **Scope:** `src/pages/vision.astro`, `src/components/vision/*`,
+`src/styles/vision.css`, `src/styles/global.css`, `src/layouts/BaseLayout.astro`
 
 ## Context
 
-The `/vision` page is 14 named sections plus a Frame hero and a Close — roughly 32,000 px of scroll on desktop. The recent immersive-hero pass made the top of the page work as a destination, but the body still reads as a long undifferentiated scroll. Readers have no sense of position, no way to jump between sections, and no way to share a specific argument with someone else.
+The `/vision` page is 14 named sections plus a Frame hero and a Close — roughly 32,000 px of scroll
+on desktop. The recent immersive-hero pass made the top of the page work as a destination, but the
+body still reads as a long undifferentiated scroll. Readers have no sense of position, no way to
+jump between sections, and no way to share a specific argument with someone else.
 
-This spec adds three coupled affordances that turn the page from a long scroll into a navigable document, without compromising the immersive opening:
+This spec adds three coupled affordances that turn the page from a long scroll into a navigable
+document, without compromising the immersive opening:
 
-1. **Per-section anchor permalinks** — every section is linkable and the heading itself is the link, with a small `§` glyph on hover/focus.
-2. **Section enter reveals** — headings and figures fade in on viewport entry, using the existing `.reveal` infrastructure. Substantive prose is not animated.
-3. **Sticky progress sub-bar** — a thin row below the main header showing `§ 3 / 14 — Twelve minutes.`, appearing once the hero is scrolled past. The denominator is `14` (the named sections Walk–Riders); the Frame hero and the Close are outside the count.
-4. **Side TOC (desktop ≥1024 px)** — a fixed right-side list of all 16 entries (Intro + 14 named sections + Outro), with the current item highlighted via CSS scroll-driven animations. Hidden during the hero and the Close section.
+1. **Per-section anchor permalinks** — every section is linkable and the heading itself is the link,
+   with a small `§` glyph on hover/focus.
+2. **Section enter reveals** — headings and figures fade in on viewport entry, using the existing
+   `.reveal` infrastructure. Substantive prose is not animated.
+3. **Sticky progress sub-bar** — a thin row below the main header showing
+   `§ 3 / 14 — Twelve minutes.`, appearing once the hero is scrolled past. The denominator is `14`
+   (the named sections Walk–Riders); the Frame hero and the Close are outside the count.
+4. **Side TOC (desktop ≥1024 px)** — a fixed right-side list of all 16 entries (Intro + 14 named
+   sections + Outro), with the current item highlighted via CSS scroll-driven animations. Hidden
+   during the hero and the Close section.
 
 Items 1–3 are the original brainstorm picks. Item 4 was added during design review.
 
@@ -22,7 +32,8 @@ Items 1–3 are the original brainstorm picks. Item 4 was added during design re
 - A printable / one-page summary view.
 - Selection-to-share quote affordance.
 - Changing the section ordering or copy.
-- Any equivalent affordance on pages other than `/vision`. The patterns are designed to generalize but only `/vision` carries enough section count to justify the cost.
+- Any equivalent affordance on pages other than `/vision`. The patterns are designed to generalize
+  but only `/vision` carries enough section count to justify the cost.
 
 ## Architecture overview
 
@@ -40,18 +51,24 @@ vision.astro
 └── <style is:inline>         ← NEW, generated from SECTIONS registry
 ```
 
-The `SECTIONS` registry is a small const array in `vision.astro` declaring `{ slug, short }` for each of the 16 entries in render order. Entry 0 is the Frame hero (`short: 'Intro'`), entries 1–14 are the named sections (`'Walk'`, `'Bike'`, …, `'Riders'`), entry 15 is the Close (`short: 'Outro'`). The registry is the single source of truth for:
+The `SECTIONS` registry is a small const array in `vision.astro` declaring `{ slug, short }` for
+each of the 16 entries in render order. Entry 0 is the Frame hero (`short: 'Intro'`), entries 1–14
+are the named sections (`'Walk'`, `'Bike'`, …, `'Riders'`), entry 15 is the Close
+(`short: 'Outro'`). The registry is the single source of truth for:
 
 - The TOC list (all 16 entries)
 - The inline `<style>` block that wires per-section view-timelines to TOC items
 - The TOC's visibility animations (which key off the first and last entries' timelines)
 
-Each section's `id` in the DOM equals its slug, derived by `SectionHead` from the heading text. The registry's slug values must equal those derived slugs — that contract is checked at runtime by a small dev-mode assertion in the progress bar's IO setup.
+Each section's `id` in the DOM equals its slug, derived by `SectionHead` from the heading text. The
+registry's slug values must equal those derived slugs — that contract is checked at runtime by a
+small dev-mode assertion in the progress bar's IO setup.
 
 Two markup-level distinctions matter:
 
 - **All 16 sections carry an `id` (their slug).** That's enough for the TOC.
-- **Only the 14 named sections (Walk–Riders) carry `data-vision-section`.** The progress sub-bar's IO observes exactly that set; Frame and Close are deliberately outside the count.
+- **Only the 14 named sections (Walk–Riders) carry `data-vision-section`.** The progress sub-bar's
+  IO observes exactly that set; Frame and Close are deliberately outside the count.
 
 ## Component changes
 
@@ -62,7 +79,8 @@ Two markup-level distinctions matter:
   - Lowercases, replaces non-`[a-z0-9]+` with `-`, trims leading/trailing `-`
 - Compute `slug = slugify(heading)` once.
 - Add `id={slug}` to the wrapping `<div class="container-narrow">`.
-- Add `data-vision-section-title={heading}` (entity-decoded) to the same wrapper, so the progress bar can read it without DOM scraping.
+- Add `data-vision-section-title={heading}` (entity-decoded) to the same wrapper, so the progress
+  bar can read it without DOM scraping.
 - Replace the bare `<Tag class={headingClass} set:html={heading} />` with:
   ```astro
   <Tag class={headingClass}>
@@ -72,14 +90,20 @@ Two markup-level distinctions matter:
     </a>
   </Tag>
   ```
-- The `set:html` containment moves inside the inner span, so the HTML-entity allowance is unchanged from current behavior.
+- The `set:html` containment moves inside the inner span, so the HTML-entity allowance is unchanged
+  from current behavior.
 
 ### `vision.astro`
 
-- Declare `SECTIONS: ReadonlyArray<{ slug: string; short: string }>` — 16 entries, render order. Slugs match what `SectionHead` produces from each section's heading. The first and last entries are Intro (Frame) and Outro (Close); the middle 14 are the named sections.
+- Declare `SECTIONS: ReadonlyArray<{ slug: string; short: string }>` — 16 entries, render order.
+  Slugs match what `SectionHead` produces from each section's heading. The first and last entries
+  are Intro (Frame) and Outro (Close); the middle 14 are the named sections.
 - Mount `<SectionProgressBar total={14} />` once, above `<article>`.
 - Mount `<VisionToc sections={SECTIONS} />` once, after `</article>`.
-- Emit one inline `<style>` block right after the imports that loops `SECTIONS` and outputs per-section view-timeline + TOC-item highlight rules. The same block emits the TOC's visibility animations, keyed off `SECTIONS[0]` (Intro) and `SECTIONS[15]` (Outro) timelines — no separate `--hero-view` / `--close-view` aliases.
+- Emit one inline `<style>` block right after the imports that loops `SECTIONS` and outputs
+  per-section view-timeline + TOC-item highlight rules. The same block emits the TOC's visibility
+  animations, keyed off `SECTIONS[0]` (Intro) and `SECTIONS[15]` (Outro) timelines — no separate
+  `--hero-view` / `--close-view` aliases.
 
 ### `SectionProgressBar.astro` (new)
 
@@ -145,7 +169,9 @@ const { total } = Astro.props;
 </script>
 ```
 
-The observer's `rootMargin: '0px 0px -50% 0px'` means a section is considered the current one once its top crosses the top half of the viewport — matches the reader's natural "I am reading this" intuition.
+The observer's `rootMargin: '0px 0px -50% 0px'` means a section is considered the current one once
+its top crosses the top half of the viewport — matches the reader's natural "I am reading this"
+intuition.
 
 ### `VisionToc.astro` (new)
 
@@ -174,15 +200,20 @@ No JS. All visibility and highlighting is CSS-driven.
 
 ### Section components (`Walk.astro` … `Riders.astro`)
 
-Each of the 14 named sections' outer `<section>` gets `data-vision-section`. `Frame.astro` and `Close.astro` do not — they're outside the progress count.
+Each of the 14 named sections' outer `<section>` gets `data-vision-section`. `Frame.astro` and
+`Close.astro` do not — they're outside the progress count.
 
 Reveal markup additions (apply to all 16 sections):
 
-- `SectionHead` already wraps in `container-narrow`. Add `class="reveal"` to that wrapper inside `SectionHead.astro` — propagates to every caller.
-- `PhotoPlaceholder` and `VisionFigure`: add `class="reveal"` to their root element in the component files, not at the callsites.
-- `vision-prose` and `vision-tail` are intentionally not revealed — substantive text shouldn't be conditional on scroll observation.
+- `SectionHead` already wraps in `container-narrow`. Add `class="reveal"` to that wrapper inside
+  `SectionHead.astro` — propagates to every caller.
+- `PhotoPlaceholder` and `VisionFigure`: add `class="reveal"` to their root element in the component
+  files, not at the callsites.
+- `vision-prose` and `vision-tail` are intentionally not revealed — substantive text shouldn't be
+  conditional on scroll observation.
 
-Hero exclusion: `Frame.astro`'s `frame-hero` is _not_ wrapped in `.reveal`. The hero is the first-paint surface; no animation needed.
+Hero exclusion: `Frame.astro`'s `frame-hero` is _not_ wrapped in `.reveal`. The hero is the
+first-paint surface; no animation needed.
 
 ## CSS
 
@@ -221,7 +252,9 @@ const tocVisibility = `
 `;
 ```
 
-No special `--hero-view` / `--close-view` aliases — the Intro and Outro view-timelines are reused for both highlighting (TOC item active when entry/exit visible) and visibility (TOC fades in as Intro exits, fades out as Outro enters).
+No special `--hero-view` / `--close-view` aliases — the Intro and Outro view-timelines are reused
+for both highlighting (TOC item active when entry/exit visible) and visibility (TOC fades in as
+Intro exits, fades out as Outro enters).
 
 ### `vision.css` additions
 
@@ -383,7 +416,9 @@ No special `--hero-view` / `--close-view` aliases — the Intro and Outro view-t
 }
 ```
 
-The `--lvbt-header-h` variable is used only as a fallback default for the sub-bar's `top`. The real header height drifts at most ±10 px across breakpoints; `4.5rem` is generous enough that the sub-bar always sits flush under the header without any JS measurement.
+The `--lvbt-header-h` variable is used only as a fallback default for the sub-bar's `top`. The real
+header height drifts at most ±10 px across breakpoints; `4.5rem` is generous enough that the sub-bar
+always sits flush under the header without any JS measurement.
 
 ## Inline anchor copy script
 
@@ -402,22 +437,39 @@ document.addEventListener('click', (e) => {
 });
 ```
 
-`history.replaceState` updates the URL without scrolling (the browser would otherwise jump to the anchor since the heading already has the `id`). The page does not re-scroll because the heading is exactly where the reader already is.
+`history.replaceState` updates the URL without scrolling (the browser would otherwise jump to the
+anchor since the heading already has the `id`). The page does not re-scroll because the heading is
+exactly where the reader already is.
 
 ## Accessibility
 
-- Every `SectionHead` heading-anchor is in the tab order and gets the same hover-glyph affordance on `:focus-visible`.
-- The progress sub-bar is `aria-hidden="true"`. It's a visual orientation aid; screen readers get the same information from the section headings themselves.
-- The TOC is a `<nav aria-label="Sections">` with an ordered list. Screen reader users get the navigable list of sections regardless of viewport width — but on small viewports the visual style is `display: none`, which also hides it from assistive tech. Adjust to `position: absolute; left: -9999px` if we want it screen-reader-visible site-wide; flagged for future review.
-- `prefers-reduced-motion`: existing `.reveal` styles already short-circuit. The TOC visibility fades become instant transitions. The scroll-driven CSS state changes are kept — they're informational, not motion.
-- Color contrast: TOC default opacity `0.55` against cream gives ~3.3:1 contrast for the small label text. Active state at `1.0` is ~10:1. Hover state at `primary` color on cream is ~5.6:1. All meet WCAG AA for non-text and large-text categories; the small inactive type may not meet AA for body text — kept as a deliberate design choice for ambient navigation, with the rationale that this is supplementary wayfinding, not the primary reading surface.
+- Every `SectionHead` heading-anchor is in the tab order and gets the same hover-glyph affordance on
+  `:focus-visible`.
+- The progress sub-bar is `aria-hidden="true"`. It's a visual orientation aid; screen readers get
+  the same information from the section headings themselves.
+- The TOC is a `<nav aria-label="Sections">` with an ordered list. Screen reader users get the
+  navigable list of sections regardless of viewport width — but on small viewports the visual style
+  is `display: none`, which also hides it from assistive tech. Adjust to
+  `position: absolute; left: -9999px` if we want it screen-reader-visible site-wide; flagged for
+  future review.
+- `prefers-reduced-motion`: existing `.reveal` styles already short-circuit. The TOC visibility
+  fades become instant transitions. The scroll-driven CSS state changes are kept — they're
+  informational, not motion.
+- Color contrast: TOC default opacity `0.55` against cream gives ~3.3:1 contrast for the small label
+  text. Active state at `1.0` is ~10:1. Hover state at `primary` color on cream is ~5.6:1. All meet
+  WCAG AA for non-text and large-text categories; the small inactive type may not meet AA for body
+  text — kept as a deliberate design choice for ambient navigation, with the rationale that this is
+  supplementary wayfinding, not the primary reading surface.
 
 ## Browser support
 
-- `view-timeline-name` / `animation-timeline`: Chrome 115+, Firefox 137+, Safari 26. All current as of 2026-05-11.
+- `view-timeline-name` / `animation-timeline`: Chrome 115+, Firefox 137+, Safari 26. All current as
+  of 2026-05-11.
 - `:has()`: not used (the design avoids it deliberately).
 - `clamp()`, `color-mix()`, `backdrop-filter`: already in use across the project.
-- Fallback for missing scroll-driven animations: `@supports not (animation-timeline: view())` rule keeps the TOC visible at all times with no active-item highlighting. Users on older browsers still get a navigable jump menu.
+- Fallback for missing scroll-driven animations: `@supports not (animation-timeline: view())` rule
+  keeps the TOC visible at all times with no active-item highlighting. Users on older browsers still
+  get a navigable jump menu.
 
 ## File-level change list
 
@@ -438,18 +490,32 @@ document.addEventListener('click', (e) => {
 
 End-to-end pass with `pnpm screenshot`:
 
-1. `pnpm screenshot /vision` — hero state. TOC absent, sub-bar absent. (Verifies the hide-on-hero rules.)
-2. `pnpm screenshot /vision --scrolled 1200` — first content section. Sub-bar visible (`§ 2 / 16 — Walk to milk.`), TOC visible with `Walk` highlighted.
-3. `pnpm screenshot /vision --scrolled 16000` — mid-page. TOC visible with the appropriate middle item highlighted; sub-bar shows that section's title.
+1. `pnpm screenshot /vision` — hero state. TOC absent, sub-bar absent. (Verifies the hide-on-hero
+   rules.)
+2. `pnpm screenshot /vision --scrolled 1200` — first content section. Sub-bar visible
+   (`§ 2 / 16 — Walk to milk.`), TOC visible with `Walk` highlighted.
+3. `pnpm screenshot /vision --scrolled 16000` — mid-page. TOC visible with the appropriate middle
+   item highlighted; sub-bar shows that section's title.
 4. `pnpm screenshot /vision --scrolled 31000` — entering Close. TOC fading out, sub-bar fading out.
 5. `pnpm screenshot /vision --w 390 --h 844 --scrolled 1200` — mobile. Sub-bar visible, TOC absent.
-6. Click any heading on the rendered page — URL updates to `/vision#<slug>`, glyph flashes "copied", clipboard contains the full URL.
-7. Open `/vision#bowl-country` in a fresh tab — page loads, scrolls to Bowl, sub-bar shows the correct index/title.
-8. In Chromium devtools, toggle `prefers-reduced-motion`. Reveals snap instead of fading. Scroll-driven state changes still apply.
+6. Click any heading on the rendered page — URL updates to `/vision#<slug>`, glyph flashes "copied",
+   clipboard contains the full URL.
+7. Open `/vision#bowl-country` in a fresh tab — page loads, scrolls to Bowl, sub-bar shows the
+   correct index/title.
+8. In Chromium devtools, toggle `prefers-reduced-motion`. Reveals snap instead of fading.
+   Scroll-driven state changes still apply.
 
 ## Risks and open questions
 
-- **Registry drift.** The `SECTIONS` registry's slugs must equal `SectionHead`'s computed slugs. A heading change will invalidate the registry entry. The dev-mode console error from the progress bar's IO setup catches this on first scroll, but a build-time check would be stronger. Open: should we run a build-time validation pass?
-- **Inline `<style>` block in `vision.astro`.** 16 sections × 2 rules each = 32 generated rules. Astro will inline this in the HTML head; ~3 kB. Acceptable.
-- **Scroll-driven animation reflow cost.** Each view-timeline triggers per-frame style recalc on the items watching it. With 16 timelines, this is meaningful but well-bounded. Real-device profiling on the slowest target machine should confirm before ship.
-- **Sub-bar on desktop redundancy.** The current design keeps both sub-bar and TOC visible on desktop. If this reads as too much chrome, flag for a follow-up to hide the sub-bar above `1024px`.
+- **Registry drift.** The `SECTIONS` registry's slugs must equal `SectionHead`'s computed slugs. A
+  heading change will invalidate the registry entry. The dev-mode console error from the progress
+  bar's IO setup catches this on first scroll, but a build-time check would be stronger. Open:
+  should we run a build-time validation pass?
+- **Inline `<style>` block in `vision.astro`.** 16 sections × 2 rules each = 32 generated rules.
+  Astro will inline this in the HTML head; ~3 kB. Acceptable.
+- **Scroll-driven animation reflow cost.** Each view-timeline triggers per-frame style recalc on the
+  items watching it. With 16 timelines, this is meaningful but well-bounded. Real-device profiling
+  on the slowest target machine should confirm before ship.
+- **Sub-bar on desktop redundancy.** The current design keeps both sub-bar and TOC visible on
+  desktop. If this reads as too much chrome, flag for a follow-up to hide the sub-bar above
+  `1024px`.

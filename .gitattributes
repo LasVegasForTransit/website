@@ -1,1 +1,1 @@
-tests/snapshots/**/*.png filter=lfs diff=lfs merge=lfs -text
+apps/site/tests/e2e/snapshots/**/*.png filter=lfs diff=lfs merge=lfs -text

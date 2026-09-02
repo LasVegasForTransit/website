@@ -17,7 +17,7 @@ import { existsSync } from 'node:fs';
 import { cancel, intro, isCancel, outro, text, confirm, note } from '@clack/prompts';
 import pc from 'picocolors';
 
-import { slugify } from '../src/lib/slugify';
+import { slugify } from '../apps/site/src/lib/slugify';
 
 const REPO_ROOT = path.resolve(import.meta.dirname, '..');
 const BODIES_DIR = path.join(REPO_ROOT, 'src', 'content', 'event-bodies');

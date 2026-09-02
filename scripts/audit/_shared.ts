@@ -44,7 +44,7 @@ export function parseAuditArgs(argv: string[] = process.argv.slice(2)): {
 } {
   const args = new Map(argv.map((a) => a.split('=') as [string, string | undefined]));
   return {
-    distDir: resolve(args.get('--dist') ?? './dist'),
+    distDir: resolve(args.get('--dist') ?? './apps/site/dist'),
     asJson: args.has('--json'),
   };
 }

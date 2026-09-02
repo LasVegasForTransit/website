@@ -1,8 +1,7 @@
 name: Build site
 description: >
-  Run the canonical validation chain (typecheck, lint:check, check:docs) and
-  build the static site to ./dist. Uploads the build as an artifact named
-  dist-<sha> for downstream deploy jobs to download.
+  Build the static site to apps/site/dist (validation is the Validate job). Uploads the build as an
+  artifact named dist-<sha> for downstream deploy jobs to download.
 
   Assumes `setup-node-pnpm` has already run in the same job.
 
@@ -12,36 +11,13 @@ runs:
     - name: Restore Astro cache
       uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
       with:
-        path: .astro
-        key: astro-${{ runner.os }}-${{ hashFiles('astro.config.mjs', 'pnpm-lock.yaml', 'src/content/**') }}
+        path: apps/site/.astro
+        key:
+          astro-${{ runner.os }}-${{ hashFiles('apps/site/astro.config.mjs', 'pnpm-lock.yaml',
+          'apps/site/src/content/**') }}
         restore-keys: |
           astro-${{ runner.os }}-
 
-    - name: Typecheck
-      shell: bash
-      run: pnpm typecheck
-
-    - name: Lint check
-      shell: bash
-      run: pnpm lint:check
-
-    - name: Stylesheet lint
-      shell: bash
-      run: pnpm exec stylelint 'src/styles/*.css' 'src/**/*.module.css'
-
-    - name: Brand token drift check
-      shell: bash
-      run: pnpm exec tsx scripts/audit/brand-tokens.ts
-
-    - name: Validate doc links
-      shell: bash
-      run: pnpm check:docs
-
-    # Reads the PUBLIC_LVBT_* deployment config (social/donate/Discord URLs)
-    # from the job environment — `vars`/`env` contexts can't be referenced
-    # inside a composite action, so the calling workflow's `build` job exports
-    # these via its own `env:` block (which propagates into composite steps).
-    # See src/lib/site.ts; an unset var hides its link and warns, never fails.
     - name: Build
       shell: bash
       run: pnpm build
@@ -50,6 +26,6 @@ runs:
       uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
       with:
         name: dist-${{ github.sha }}
-        path: dist/
+        path: apps/site/dist/
         if-no-files-found: error
         retention-days: 7

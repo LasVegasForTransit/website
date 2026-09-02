@@ -24,7 +24,7 @@ const preset = process.env.LIGHTHOUSE_PRESET ?? '';
 const isMobile = preset === 'mobile' || preset === 'prod';
 const isProd = preset === 'prod';
 
-const DIST_DIR = './dist';
+const DIST_DIR = './apps/site/dist';
 const PROD_ORIGIN = 'https://lasvegasfortransit.org';
 
 // Collection-driven subtrees. Audit each index plus ONE representative

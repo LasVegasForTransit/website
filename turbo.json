@@ -1,0 +1,49 @@
+{
+  "$schema": "https://turborepo.dev/schema.json",
+  "ui": "tui",
+  "globalEnv": ["CI", "AUDIT_PORT", "AUDIT_SKIP_BUILD"],
+  "tasks": {
+    "build": {
+      "dependsOn": ["^build"],
+      "inputs": ["$TURBO_DEFAULT$", ".env*"],
+      "outputs": ["dist/**", ".astro/**"],
+      "env": [
+        "PUBLIC_LVBT_INSTAGRAM",
+        "PUBLIC_LVBT_LINKEDIN",
+        "PUBLIC_LVBT_BLUESKY",
+        "PUBLIC_LVBT_DISCORD",
+        "PUBLIC_LVBT_DONATE_URL",
+        "PUBLIC_LVBT_MEMBERSHIP_FORM_URL",
+        "PUBLIC_LVBT_NEWSLETTER_URL",
+        "PUBLIC_LVBT_NEWSLETTER_FEED_URL",
+        "PUBLIC_CWA_TOKEN"
+      ]
+    },
+    "lint": {
+      "dependsOn": ["^lint"]
+    },
+    "check-types": {
+      "dependsOn": ["^check-types"]
+    },
+    "test": {
+      "dependsOn": ["^build"]
+    },
+    "validate": {
+      "dependsOn": ["^build"]
+    },
+    "test:e2e": {
+      "dependsOn": ["build"],
+      "cache": false,
+      "outputs": ["playwright-report/**", "test-results/**"]
+    },
+    "dev": {
+      "cache": false,
+      "persistent": true
+    },
+    "preview": {
+      "dependsOn": ["build"],
+      "cache": false,
+      "persistent": true
+    }
+  }
+}

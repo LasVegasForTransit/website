@@ -6,7 +6,7 @@
  * the same (current) data-source-era API. Pure fetch + JSON — no Node-only
  * globals — so it stays safe to import anywhere.
  */
-import { NOTION_VERSION } from '../../../functions/api/_intake-schema.js';
+import { NOTION_VERSION } from '../../../apps/site/functions/api/_intake-schema.js';
 
 const NOTION_API = 'https://api.notion.com/v1';
 

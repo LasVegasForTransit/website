@@ -1,25 +1,27 @@
 ---
 name: add-transit-news
 description: >-
-  Add one or more Las Vegas transit news articles to the Notion Transit News
-  database. Handles URL intake: fetches the article, extracts headline/date/
-  publication/topics/location from HTML meta tags, deduplicates by URL, and
-  creates a new Notion page with the article body as paragraph blocks.
+  Add one or more Las Vegas transit news articles to the Notion Transit News database. Handles URL
+  intake: fetches the article, extracts headline/date/ publication/topics/location from HTML meta
+  tags, deduplicates by URL, and creates a new Notion page with the article body as paragraph
+  blocks.
 
-  Also handles the search-first flow: "find Las Vegas transit articles from the
-  past week" → Claude searches, collects URLs, then runs intake on each.
+  Also handles the search-first flow: "find Las Vegas transit articles from the past week" → Claude
+  searches, collects URLs, then runs intake on each.
 ---
 
 # Add Transit News
 
-Add articles to the Notion Transit News database (configured via `LVBT_TRANSIT_NEWS_DB_ID` in `.env.local`).
+Add articles to the Notion Transit News database (configured via `LVBT_TRANSIT_NEWS_DB_ID` in
+`.env.local`).
 
 ## When invoked with URLs
 
 For each URL the user provides:
 
 1. Run `pnpm add:transit-news <url> [url ...]` from the repo root.
-2. Show the terminal output verbatim — the script prints per-URL status (✓ created / — skipped / ✖ error).
+2. Show the terminal output verbatim — the script prints per-URL status (✓ created / — skipped / ✖
+   error).
 3. If any URL errored, report why (HTTP status, missing metadata, etc.) and suggest a fix.
 
 ```bash
@@ -49,18 +51,21 @@ If the user says something like "find transit news from the past week" or "searc
 | Location    | Keyword scan (henderson, north las vegas, clark county, las vegas, nevada)                  |
 | Body text   | `<article>` → `<main>` → `<body>`, scripts/nav/footer stripped                              |
 
-Full extraction priority order: [`docs/reference/transit-news-pipeline.md`](../../docs/reference/transit-news-pipeline.md).
+Full extraction priority order:
+[`docs/reference/transit-news-pipeline.md`](../../docs/operations/reference/transit-news-pipeline.md).
 
 ## Extending the domain or topic maps
 
 If a publication or topic isn't being inferred correctly, edit:
 
-- `scripts/notion/lib/transit-topics.ts` — `DOMAIN_TO_PUBLICATION`, `TOPIC_PATTERNS`, `LOCATION_PATTERNS`
+- `scripts/notion/lib/transit-topics.ts` — `DOMAIN_TO_PUBLICATION`, `TOPIC_PATTERNS`,
+  `LOCATION_PATTERNS`
 
 No config file needed — it's plain TypeScript, takes effect immediately on the next run.
 
 ## Prerequisites
 
 - `LVBT_NOTION_API_KEY` and `LVBT_TRANSIT_NEWS_DB_ID` must be set in `.env.local`
-- The integration must be connected to the Transit News database: open the DB in Notion → ••• → Connections → add your integration
+- The integration must be connected to the Transit News database: open the DB in Notion → ••• →
+  Connections → add your integration
 - Run `pnpm install` once if you haven't (wires hooks and tsx)

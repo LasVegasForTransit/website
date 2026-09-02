@@ -1,77 +1,75 @@
-# LVBT documentation
+# LVBT website documentation
 
-**New here? Start with [Start here](./tutorials/start-here.md)**, and keep the
-[glossary](./reference/glossary.md) open for any unfamiliar tool or acronym.
+**New here? Start with [Start here](./development/tutorials/start-here.md)**, and keep the
+[glossary](./development/reference/glossary.md) open for any unfamiliar tool or acronym.
 
-Docs are sorted by what you need — whether you're learning or doing, and whether
-you want practical steps or the reasoning behind them (a documentation system
-called [Diátaxis](https://diataxis.fr/)):
+Documentation follows [Diátaxis](https://diataxis.fr/) under domain directories: tutorials teach,
+how-to guides complete one task, reference records facts, and explanation gives the why. Domains are
+`development` (working on the code), `operations` (running the site and its pipelines), and
+`product` (the site's content and design). Every document is listed here so it can be found.
 
-|                 | Learning                      | Doing                     |
-| --------------- | ----------------------------- | ------------------------- |
-| **Practical**   | [Tutorials](./tutorials/)     | [Guides](./guides/)       |
-| **Theoretical** | [Explanation](./explanation/) | [Reference](./reference/) |
+## Development
 
-## Tutorials
+- [Start here](./development/tutorials/start-here.md) — from a fresh clone to a passing check and a
+  first commit
+- [First-time setup](./development/tutorials/first-time-setup.md) — the longer path: clone to
+  deployed site with your own domain
+- [Work with an AI assistant](./development/how-to/work-with-ai-assistants.md)
+- [Glossary](./development/reference/glossary.md) — plain-English definitions of every tool and
+  acronym
+- [Local development](./development/reference/local-dev.md) — dev server ports, troubleshooting
+- [Writing docs](./development/reference/writing-docs.md) — keep docs accessible to students and
+  junior devs
+- [Commit messages](./development/reference/commit-messages.md) — what goes in a message, what to
+  leave out
+- [Commit scopes](./development/reference/commit-scopes.md) — the allowed scopes and why
+- [Git guidelines](./development/reference/git-guidelines.md) — staging discipline and the atomic
+  commit pattern
 
-Learning-oriented, hold-your-hand walk-throughs.
+## Operations
 
-- [Start here](./tutorials/start-here.md) — the new-contributor on-ramp: install, run locally, make a first change
-- [First-time setup](./tutorials/first-time-setup.md) — the longer path: clone to deployed site with your own domain
+- [Bootstrap CLI](./operations/reference/bootstrap.md) — provisioning phases, flags, state file
+- [Deployment pipeline](./operations/reference/deployment-pipeline.md) — how code gets from
+  `git push` to lasvegasfortransit.org
+- [Performance monitoring](./operations/reference/performance-monitoring.md) — budgets, Lighthouse,
+  real-user metrics
+- [Membership intake automation](./operations/reference/membership-intake.md) — Google Forms to
+  Beehiiv and Notion
+- [Transit news pipeline](./operations/reference/transit-news-pipeline.md) — schema, extraction
+  logic, and the Cloudflare enrichment function
+- [Newsletter operations](./operations/reference/newsletter-ops.md) — workflow, deliverability, send
+  checklist
 
-## Guides
+## Product
 
-Task-oriented recipes for things you'll do repeatedly. (Diátaxis calls these "how-to guides"; we just say guides.)
+### How-to guides
 
-- [Add an event](./guides/add-an-event.md)
-- [Add a project](./guides/add-a-project.md)
-- [Add an initiative](./guides/add-an-initiative.md)
-- [Add transit news](./guides/add-transit-news.md) — three ways to push articles into the Notion database
-- [Edit a long-form doc](./guides/edit-a-long-form-doc.md)
-- [Work with an AI assistant](./guides/work-with-ai-assistants.md)
+- [Add an event](./product/how-to/add-an-event.md)
+- [Add a project](./product/how-to/add-a-project.md)
+- [Add an initiative](./product/how-to/add-an-initiative.md)
+- [Add transit news](./product/how-to/add-transit-news.md) — three ways to push articles into the
+  Notion database
+- [Edit a long-form doc](./product/how-to/edit-a-long-form-doc.md)
 
-## Reference
+### Reference
 
-Information you look up, not read.
+- [Content collections](./product/reference/content-collections.md) — schemas, folder layout, Zod
+- [Key facts](./product/reference/key-facts.md) — verified numbers used across copy
+- [Transit objection rebuttals](./product/reference/transit-objection-rebuttals.md)
+- [Design tokens](./product/reference/design-tokens.md) — color and type tokens, canvas/band system
+- [Newsletter signup and verification](./product/reference/newsletter-signup.md) — the on-site
+  subscribe form, double opt-in
+- [Print layout](./product/reference/print-layout.md) — data attributes that make pages work on
+  paper
 
-- [Glossary](./reference/glossary.md) — plain-English definitions of every tool and acronym in these docs
-- [Local development](./reference/local-dev.md) — dev server ports, troubleshooting
-- [Content collections](./reference/content-collections.md) — schemas, folder layout, Zod
-- [Bootstrap CLI](./reference/bootstrap.md) — phases, flags, state file
-- [Deployment pipeline](./reference/deployment-pipeline.md) — how code gets from `git push` to lasvegasfortransit.org
-- [Key facts](./reference/key-facts.md) — verified numbers used across copy
-- [Design tokens](./reference/design-tokens.md) — color + type tokens, canvas/band system
-- [Newsletter signup & verification](./reference/newsletter-signup.md) — the on-site subscribe form, Beehiiv config, double opt-in
-- [Membership intake automation](./reference/membership-intake.md) — Google Forms to Beehiiv and Notion
-- [Transit news pipeline](./reference/transit-news-pipeline.md) — schema, extraction logic, and the Cloudflare enrichment function
-- [Newsletter operations](./reference/newsletter-ops.md) — Ghost(Pro) workflow, deliverability, send checklist
+### Explanation
 
-## Standards
-
-How we write code, commits, and docs. Skim before contributing.
-
-- [Writing docs](./standards/writing-docs.md) — keep docs accessible to students and junior devs
-- [Commit messages](./standards/commit-messages.md) — what goes in a message, what to leave out
-- [Commit scopes](./standards/commit-scopes.md) — the four allowed scopes and why
-- [Git guidelines](./standards/git-guidelines.md) — staging discipline and the atomic commit pattern
-- [Performance monitoring](./standards/performance-monitoring.md) — budgets, Lighthouse, real-user metrics
-- [Print layout](./standards/print-layout.md) — data attributes that make pages work on paper
-
-## Explanation
-
-The why behind decisions and conventions.
-
-- [Voice and tone](./explanation/voice-and-tone.md) — editorial north star
-- [Comms strategy](./explanation/comms-strategy.md) — surfaces, audiences, ladder of engagement, innovation pillars
-- [Events pipeline](./explanation/events-pipeline.md) — how events flow from Google Calendar to the site
-- [Membership program](./explanation/membership-program.md) — the program design (a plan, not yet a built system)
-- [Innovation ideas registry](./explanation/innovation-ideas.md) — running list of tools, content formats, and media to consider
-- [Design decisions](./explanation/design-decisions.md) — load-bearing choices that look weird at first
-- [Design system](./explanation/design-system.md) — brand palette, color-usage rules, reserved colors, brand-kit notes
-
-### Decision records
-
-Why we picked what we picked, and the alternatives considered.
-
-- [Newsletter platform](./explanation/decisions/newsletter-platform.md) — Ghost(Pro) over Substack/Beehiiv/email-only ESPs
-- [Staff publishing](./explanation/decisions/staff-publishing.md) — CMS deferred until 2nd contributor; criteria when the time comes
+- [Design system](./product/explanation/design-system.md)
+- [Design decisions](./product/explanation/design-decisions.md)
+- [Voice and tone](./product/explanation/voice-and-tone.md)
+- [Communications strategy](./product/explanation/comms-strategy.md)
+- [Events pipeline](./product/explanation/events-pipeline.md)
+- [Membership program](./product/explanation/membership-program.md)
+- [Innovation ideas](./product/explanation/innovation-ideas.md)
+- Decisions: [newsletter platform](./product/explanation/decisions/newsletter-platform.md),
+  [staff publishing](./product/explanation/decisions/staff-publishing.md)

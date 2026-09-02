@@ -20,7 +20,7 @@ import { parseEnvFile, mergeEnvFile } from '../bootstrap/lib/env-file.js';
 import {
   INTAKE_PROPERTIES,
   intakeDataSourceProperties,
-} from '../../functions/api/_intake-schema.js';
+} from '../../apps/site/functions/api/_intake-schema.js';
 import { notionFetch, getString, getArray, notionErrorMessage } from './lib/notion-client.js';
 
 const DB_TITLE = 'Membership intake';
