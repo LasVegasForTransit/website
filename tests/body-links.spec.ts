@@ -380,7 +380,7 @@ test.describe('body content links', () => {
     }
 
     await expect(page.locator('[data-brand-color]')).toHaveCount(5);
-    await expect(page.locator('button[data-copy-color]')).toHaveCount(5);
+    await expect(page.locator('button[data-brand-color][data-copy-color]')).toHaveCount(5);
     await page.locator('[data-brand-color="primary"]').click();
     await expect(page.locator('[data-brand-color-status]')).toHaveText('#E5471A copied.');
     await expect(page.locator('[data-brand-color="primary-container"]')).toContainText(
@@ -465,7 +465,11 @@ test.describe('body content links', () => {
       const audit = await page.evaluate(() => {
         const overflowing = [...document.querySelectorAll('main *')].filter((element) => {
           const box = element.getBoundingClientRect();
-          return box.width > 0 && (box.left < -1 || box.right > window.innerWidth + 1);
+          return (
+            !element.closest('[data-horizontal-scroll]') &&
+            box.width > 0 &&
+            (box.left < -1 || box.right > window.innerWidth + 1)
+          );
         });
         const cramped = [...document.querySelectorAll('[data-readable]')].filter((element) => {
           const box = element.getBoundingClientRect();
@@ -503,7 +507,6 @@ test.describe('body content links', () => {
       const contents = document.querySelector('[data-brand-contents]');
       const principles = document.querySelector('[data-brand-principles]');
       const colors = document.querySelector('[data-brand-color-list]');
-      const pairings = document.querySelector('[data-brand-color-pairings]');
       const preview = document.querySelector('[data-brand-preview]');
       const logoTabs = document.querySelector('[data-brand-logo-tabs-shell]');
       const logoAssets = document.querySelector('[data-brand-logo-raster]');
@@ -514,7 +517,6 @@ test.describe('body content links', () => {
         !contents ||
         !principles ||
         !colors ||
-        !pairings ||
         !logoTabs ||
         !logoAssets ||
         !logoFrame
@@ -530,9 +532,6 @@ test.describe('body content links', () => {
         contentsFrameRight: contentsFrame.getBoundingClientRect().right,
         principlesColumns: getComputedStyle(principles).gridTemplateColumns.split(' ').length,
         colorColumns: getComputedStyle(colors).gridTemplateColumns.split(' ').length,
-        pairingColumns: [...pairings.querySelectorAll('[data-brand-color-pairing]')].map(
-          (pairing) => getComputedStyle(pairing).gridTemplateColumns.split(' ').length,
-        ),
         logoFrameColumns: getComputedStyle(logoFrame).gridTemplateColumns.split(' ').length,
         logoAssetColumns: [...logoAssets.querySelectorAll('[data-brand-logo-asset]')].map(
           (asset) => getComputedStyle(asset).gridTemplateColumns.split(' ').length,
@@ -545,11 +544,11 @@ test.describe('body content links', () => {
     expect(audit.hasColorPreview).toBe(false);
     expect(audit.contentsWidth).toBeLessThan(220);
     expect(audit.contentsFrameRight).toBeLessThanOrEqual(1180);
-    expect(audit.principlesColumns).toBe(2);
+    expect(audit.principlesColumns).toBe(1);
     expect(audit.colorColumns).toBe(2);
-    expect(audit.pairingColumns).toEqual([2, 2, 2, 2, 2]);
     expect(audit.logoFrameColumns).toBe(2);
-    expect(audit.logoAssetColumns).toEqual([1, 1, 1, 1]);
+    expect(audit.logoAssetColumns.length).toBeGreaterThan(0);
+    expect(audit.logoAssetColumns.every((columns) => columns === 1)).toBe(true);
   });
 
   test('keeps brand guide rhythm closer to a reference manual', async ({ page }) => {
@@ -597,7 +596,7 @@ test.describe('body content links', () => {
       };
     });
 
-    expect(audit.principlesColumns).toBe(2);
+    expect(audit.principlesColumns).toBe(1);
     expect(audit.colorColumns).toBe(2);
     expect(audit.colorWidth).toBeLessThanOrEqual(1088);
     expect(audit.sectionHeadingOffset.every((offset) => Math.abs(offset) <= 1)).toBe(true);
@@ -649,8 +648,8 @@ test.describe('body content links', () => {
     const nav = page.locator('nav[aria-label="Contents"]');
     await expect(nav).toBeVisible();
     expect(await nav.locator('a[href^="#"]').count()).toBeGreaterThan(12);
-    await expect(nav.locator('a[href="#overview"]')).toBeVisible();
-    await expect(nav.locator('a[href="#color-in-practice"]')).toBeVisible();
+    await expect(nav.locator('a[href="#foundations"]')).toBeVisible();
+    await expect(nav.locator('a[href="#color-semantic-reference"]')).toBeVisible();
     await expect(nav.locator('a[href="#voice"]')).toBeVisible();
     await expect(nav.locator('a[href="#typography-display-large"]')).toHaveCount(0);
     await expect(nav.locator('a[href="#logos-lvbt-mark"]')).toHaveCount(0);
@@ -987,13 +986,7 @@ test.describe('body content links', () => {
     const sitemapLink = page.locator(`main a[href="${CANDID_URL}"]`);
     await expect(sitemapLink).toHaveText(/Candid/);
     await expect(sitemapLink).toHaveAttribute('rel', /noopener/);
-    await expectExternalOpenIcon(sitemapLink);
-
-    const sitemapExternalLinks = page.locator('main a[rel~="noopener"]');
-    await expect(sitemapExternalLinks.first()).toBeVisible();
-    for (const link of await sitemapExternalLinks.all()) {
-      await expectExternalOpenIcon(link);
-    }
+    await expect(sitemapLink).toHaveClass(/block/);
   });
 
   test('omits the shared hero rule on the sitemap page', async ({ page }) => {

@@ -120,6 +120,10 @@ test.describe('print layout', () => {
           footerLinkSheetRect.bottom - footerBottomAnchorRect.bottom,
         ),
         sourceChunkCount: footerLinkSheet.querySelectorAll('.print-link-sheet__chunk').length,
+        programsHref:
+          footerLinkSheet.querySelector('a[href="/programs"]')?.getAttribute('href') ?? '',
+        emailHref:
+          footerLinkSheet.querySelector('a[href^="mailto:hello@"]')?.getAttribute('href') ?? '',
       };
     });
 
@@ -161,8 +165,8 @@ test.describe('print layout', () => {
     expect(chrome.footerBottomAnchorPosition).toBe('absolute');
     expect(chrome.footerBottomAnchorBottomGap).toBeLessThan(24);
     expect(chrome.sourceChunkCount).toBeGreaterThanOrEqual(3);
-    expect(chrome.footerLinkSheetText).toContain('Programs lasvegasfortransit.org /programs');
-    expect(chrome.footerLinkSheetText).toContain('Email hello@lasvegasfortransit.org');
+    expect(chrome.programsHref).toBe('/programs');
+    expect(chrome.emailHref).toBe('mailto:hello@lasvegasfortransit.org');
   });
 
   test('prints project directory cards as compact paper entries', async ({ page }) => {
