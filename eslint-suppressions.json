@@ -1,0 +1,670 @@
+{
+  "functions/api/_shared.ts": {
+    "@typescript-eslint/no-unnecessary-type-parameters": {
+      "count": 1
+    }
+  },
+  "functions/api/membership-intake.ts": {
+    "@typescript-eslint/require-await": {
+      "count": 1
+    }
+  },
+  "functions/api/transit-news-intake.ts": {
+    "@typescript-eslint/dot-notation": {
+      "count": 32
+    },
+    "@typescript-eslint/no-unused-vars": {
+      "count": 1
+    },
+    "complexity": {
+      "count": 1
+    },
+    "max-lines-per-function": {
+      "count": 1
+    },
+    "sonarjs/cognitive-complexity": {
+      "count": 1
+    }
+  },
+  "lighthouserc.cjs": {
+    "@typescript-eslint/no-require-imports": {
+      "count": 2
+    },
+    "turbo/no-undeclared-env-vars": {
+      "count": 1
+    }
+  },
+  "playwright.config.ts": {
+    "turbo/no-undeclared-env-vars": {
+      "count": 3
+    }
+  },
+  "public/scripts/brand-guide.js": {
+    "no-undef": {
+      "count": 17
+    }
+  },
+  "public/scripts/copy-anchor.js": {
+    "@typescript-eslint/no-empty-function": {
+      "count": 1
+    },
+    "no-undef": {
+      "count": 7
+    }
+  },
+  "public/scripts/header-stuck.js": {
+    "no-undef": {
+      "count": 3
+    }
+  },
+  "public/scripts/mobile-nav.js": {
+    "@typescript-eslint/no-unused-expressions": {
+      "count": 1
+    },
+    "no-undef": {
+      "count": 8
+    }
+  },
+  "public/scripts/newsletter-subscribe.js": {
+    "complexity": {
+      "count": 1
+    },
+    "no-undef": {
+      "count": 2
+    },
+    "sonarjs/cognitive-complexity": {
+      "count": 1
+    }
+  },
+  "public/scripts/pagefind-search.js": {
+    "no-undef": {
+      "count": 8
+    }
+  },
+  "public/scripts/print-links.js": {
+    "no-undef": {
+      "count": 4
+    }
+  },
+  "public/scripts/projects-initiative-permalink.js": {
+    "no-undef": {
+      "count": 7
+    }
+  },
+  "public/scripts/projects-initiative-stuck.js": {
+    "no-undef": {
+      "count": 5
+    }
+  },
+  "public/scripts/qr-deck.js": {
+    "no-undef": {
+      "count": 8
+    }
+  },
+  "public/scripts/reveal-on-scroll.js": {
+    "no-undef": {
+      "count": 2
+    }
+  },
+  "public/scripts/role-sticky-bar.js": {
+    "no-undef": {
+      "count": 6
+    }
+  },
+  "public/scripts/route-transition.js": {
+    "no-undef": {
+      "count": 6
+    }
+  },
+  "public/scripts/share-button.js": {
+    "no-undef": {
+      "count": 5
+    }
+  },
+  "scripts/audit/baseline.ts": {
+    "@eslint-community/eslint-comments/require-description": {
+      "count": 1
+    },
+    "@typescript-eslint/consistent-type-definitions": {
+      "count": 1
+    }
+  },
+  "scripts/audit/brand-tokens.ts": {
+    "@typescript-eslint/consistent-type-definitions": {
+      "count": 1
+    }
+  },
+  "scripts/audit/build-profile.ts": {
+    "@typescript-eslint/no-unnecessary-condition": {
+      "count": 1
+    }
+  },
+  "scripts/audit/third-party-scan.ts": {
+    "@typescript-eslint/no-non-null-assertion": {
+      "count": 1
+    }
+  },
+  "scripts/bootstrap/cold-start.ts": {
+    "@typescript-eslint/no-non-null-assertion": {
+      "count": 2
+    },
+    "turbo/no-undeclared-env-vars": {
+      "count": 1
+    }
+  },
+  "scripts/bootstrap/lib/cloudflare-api.ts": {
+    "@typescript-eslint/no-non-null-assertion": {
+      "count": 5
+    },
+    "@typescript-eslint/no-unnecessary-condition": {
+      "count": 3
+    },
+    "@typescript-eslint/prefer-regexp-exec": {
+      "count": 2
+    },
+    "max-params": {
+      "count": 1
+    },
+    "no-useless-assignment": {
+      "count": 1
+    },
+    "turbo/no-undeclared-env-vars": {
+      "count": 1
+    }
+  },
+  "scripts/bootstrap/lib/cloudflare.ts": {
+    "@typescript-eslint/no-non-null-assertion": {
+      "count": 3
+    },
+    "turbo/no-undeclared-env-vars": {
+      "count": 6
+    }
+  },
+  "scripts/bootstrap/lib/env-file.ts": {
+    "sonarjs/cognitive-complexity": {
+      "count": 1
+    }
+  },
+  "scripts/bootstrap/lib/load-env.ts": {
+    "@typescript-eslint/prefer-nullish-coalescing": {
+      "count": 1
+    }
+  },
+  "scripts/bootstrap/lib/shell.ts": {
+    "@eslint-community/eslint-comments/require-description": {
+      "count": 1
+    },
+    "@typescript-eslint/no-unnecessary-condition": {
+      "count": 2
+    },
+    "@typescript-eslint/no-unnecessary-type-assertion": {
+      "count": 1
+    }
+  },
+  "scripts/bootstrap/phases/auth.ts": {
+    "complexity": {
+      "count": 1
+    },
+    "max-lines-per-function": {
+      "count": 1
+    },
+    "sonarjs/cognitive-complexity": {
+      "count": 1
+    }
+  },
+  "scripts/bootstrap/phases/deploy.ts": {
+    "@typescript-eslint/prefer-nullish-coalescing": {
+      "count": 2
+    },
+    "@typescript-eslint/prefer-regexp-exec": {
+      "count": 1
+    },
+    "complexity": {
+      "count": 1
+    },
+    "max-lines-per-function": {
+      "count": 1
+    },
+    "sonarjs/cognitive-complexity": {
+      "count": 1
+    },
+    "turbo/no-undeclared-env-vars": {
+      "count": 2
+    }
+  },
+  "scripts/bootstrap/phases/domain.ts": {
+    "@typescript-eslint/no-non-null-assertion": {
+      "count": 7
+    },
+    "@typescript-eslint/no-unnecessary-condition": {
+      "count": 1
+    },
+    "@typescript-eslint/no-unnecessary-type-assertion": {
+      "count": 1
+    },
+    "@typescript-eslint/prefer-nullish-coalescing": {
+      "count": 2
+    },
+    "complexity": {
+      "count": 1
+    },
+    "max-lines": {
+      "count": 1
+    },
+    "max-lines-per-function": {
+      "count": 1
+    },
+    "max-params": {
+      "count": 3
+    },
+    "sonarjs/cognitive-complexity": {
+      "count": 2
+    },
+    "turbo/no-undeclared-env-vars": {
+      "count": 6
+    }
+  },
+  "scripts/bootstrap/phases/env.ts": {
+    "@typescript-eslint/no-non-null-assertion": {
+      "count": 1
+    },
+    "complexity": {
+      "count": 1
+    },
+    "max-lines-per-function": {
+      "count": 1
+    },
+    "sonarjs/cognitive-complexity": {
+      "count": 1
+    }
+  },
+  "scripts/bootstrap/phases/install.ts": {
+    "complexity": {
+      "count": 1
+    },
+    "max-lines-per-function": {
+      "count": 1
+    },
+    "sonarjs/cognitive-complexity": {
+      "count": 1
+    },
+    "turbo/no-undeclared-env-vars": {
+      "count": 2
+    }
+  },
+  "scripts/bootstrap/phases/repo.ts": {
+    "complexity": {
+      "count": 1
+    },
+    "max-lines-per-function": {
+      "count": 1
+    },
+    "sonarjs/cognitive-complexity": {
+      "count": 1
+    }
+  },
+  "scripts/bootstrap/phases/workspace.ts": {
+    "@typescript-eslint/require-await": {
+      "count": 1
+    },
+    "max-lines-per-function": {
+      "count": 1
+    },
+    "sonarjs/cognitive-complexity": {
+      "count": 1
+    }
+  },
+  "scripts/check-docs-links.ts": {
+    "@typescript-eslint/no-non-null-assertion": {
+      "count": 2
+    },
+    "@typescript-eslint/prefer-regexp-exec": {
+      "count": 1
+    },
+    "complexity": {
+      "count": 1
+    },
+    "sonarjs/cognitive-complexity": {
+      "count": 1
+    }
+  },
+  "scripts/event-new.ts": {
+    "@typescript-eslint/no-unnecessary-type-assertion": {
+      "count": 3
+    },
+    "@typescript-eslint/prefer-regexp-exec": {
+      "count": 1
+    },
+    "@typescript-eslint/use-unknown-in-catch-callback-variable": {
+      "count": 1
+    },
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "scripts/notion/add-transit-news.ts": {
+    "@typescript-eslint/dot-notation": {
+      "count": 4
+    }
+  },
+  "scripts/notion/lib/article-extract.ts": {
+    "@typescript-eslint/prefer-regexp-exec": {
+      "count": 10
+    }
+  },
+  "scripts/notion/lib/intake-page.ts": {
+    "@typescript-eslint/no-base-to-string": {
+      "count": 1
+    },
+    "@typescript-eslint/prefer-nullish-coalescing": {
+      "count": 2
+    }
+  },
+  "scripts/notion/lib/notion-client.ts": {
+    "@typescript-eslint/no-unsafe-return": {
+      "count": 1
+    },
+    "no-useless-assignment": {
+      "count": 1
+    }
+  },
+  "scripts/notion/provision-intake-db.ts": {
+    "@typescript-eslint/require-await": {
+      "count": 1
+    },
+    "turbo/no-undeclared-env-vars": {
+      "count": 2
+    }
+  },
+  "scripts/screenshot.ts": {
+    "@typescript-eslint/no-unnecessary-condition": {
+      "count": 3
+    },
+    "@typescript-eslint/no-unnecessary-type-assertion": {
+      "count": 1
+    },
+    "complexity": {
+      "count": 1
+    },
+    "turbo/no-undeclared-env-vars": {
+      "count": 1
+    }
+  },
+  "scripts/validation/git/validate-commit-scope.ts": {
+    "@typescript-eslint/consistent-type-definitions": {
+      "count": 1
+    },
+    "@typescript-eslint/no-non-null-assertion": {
+      "count": 9
+    },
+    "@typescript-eslint/prefer-regexp-exec": {
+      "count": 1
+    }
+  },
+  "scripts/workers/transit-news-sync/src/index.ts": {
+    "@typescript-eslint/dot-notation": {
+      "count": 4
+    },
+    "@typescript-eslint/no-unnecessary-condition": {
+      "count": 1
+    },
+    "@typescript-eslint/prefer-nullish-coalescing": {
+      "count": 1
+    },
+    "sonarjs/cognitive-complexity": {
+      "count": 1
+    }
+  },
+  "src/content.config.ts": {
+    "@typescript-eslint/require-await": {
+      "count": 1
+    }
+  },
+  "src/lib/event-format.ts": {
+    "@typescript-eslint/consistent-type-definitions": {
+      "count": 3
+    }
+  },
+  "src/lib/event-time.ts": {
+    "@typescript-eslint/consistent-type-definitions": {
+      "count": 1
+    }
+  },
+  "src/lib/events-loader.ts": {
+    "@typescript-eslint/consistent-type-definitions": {
+      "count": 1
+    },
+    "@typescript-eslint/no-unnecessary-condition": {
+      "count": 15
+    },
+    "@typescript-eslint/no-unnecessary-type-assertion": {
+      "count": 2
+    },
+    "@typescript-eslint/no-unsafe-argument": {
+      "count": 1
+    },
+    "@typescript-eslint/no-unsafe-assignment": {
+      "count": 1
+    },
+    "@typescript-eslint/prefer-optional-chain": {
+      "count": 1
+    },
+    "@typescript-eslint/prefer-regexp-exec": {
+      "count": 5
+    },
+    "@typescript-eslint/unbound-method": {
+      "count": 2
+    },
+    "complexity": {
+      "count": 2
+    },
+    "max-lines-per-function": {
+      "count": 2
+    },
+    "max-params": {
+      "count": 1
+    },
+    "sonarjs/cognitive-complexity": {
+      "count": 1
+    }
+  },
+  "src/lib/newsletter-loader.ts": {
+    "@typescript-eslint/consistent-type-definitions": {
+      "count": 1
+    },
+    "@typescript-eslint/no-base-to-string": {
+      "count": 1
+    },
+    "@typescript-eslint/no-unnecessary-type-assertion": {
+      "count": 1
+    },
+    "@typescript-eslint/unbound-method": {
+      "count": 2
+    }
+  },
+  "src/lib/qr-svg.ts": {
+    "@typescript-eslint/no-non-null-assertion": {
+      "count": 1
+    },
+    "complexity": {
+      "count": 1
+    },
+    "sonarjs/cognitive-complexity": {
+      "count": 1
+    }
+  },
+  "src/lib/site.ts": {
+    "@typescript-eslint/prefer-optional-chain": {
+      "count": 1
+    }
+  },
+  "src/lib/strategy-content.ts": {
+    "@typescript-eslint/consistent-type-definitions": {
+      "count": 1
+    }
+  },
+  "src/lib/structured-data.ts": {
+    "@typescript-eslint/no-unnecessary-type-parameters": {
+      "count": 1
+    },
+    "complexity": {
+      "count": 1
+    },
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "src/pages/llms-full.txt.ts": {
+    "complexity": {
+      "count": 1
+    },
+    "max-lines-per-function": {
+      "count": 1
+    },
+    "sonarjs/cognitive-complexity": {
+      "count": 1
+    }
+  },
+  "src/scripts/event-relative.ts": {
+    "@typescript-eslint/no-unnecessary-condition": {
+      "count": 1
+    },
+    "complexity": {
+      "count": 1
+    },
+    "sonarjs/cognitive-complexity": {
+      "count": 1
+    }
+  },
+  "tests/a11y-helpers.ts": {
+    "@typescript-eslint/no-unnecessary-condition": {
+      "count": 6
+    },
+    "@typescript-eslint/no-unsafe-member-access": {
+      "count": 3
+    }
+  },
+  "tests/body-links.spec.ts": {
+    "@typescript-eslint/consistent-type-definitions": {
+      "count": 2
+    },
+    "@typescript-eslint/no-implied-eval": {
+      "count": 1
+    },
+    "@typescript-eslint/no-non-null-assertion": {
+      "count": 9
+    },
+    "@typescript-eslint/no-unnecessary-condition": {
+      "count": 7
+    },
+    "@typescript-eslint/no-unnecessary-type-assertion": {
+      "count": 1
+    },
+    "@typescript-eslint/no-unsafe-call": {
+      "count": 1
+    },
+    "max-lines": {
+      "count": 1
+    }
+  },
+  "tests/color-contracts.spec.ts": {
+    "@typescript-eslint/consistent-type-definitions": {
+      "count": 1
+    },
+    "@typescript-eslint/no-non-null-assertion": {
+      "count": 9
+    },
+    "@typescript-eslint/no-unnecessary-condition": {
+      "count": 5
+    },
+    "@typescript-eslint/no-unnecessary-type-assertion": {
+      "count": 9
+    },
+    "@typescript-eslint/prefer-optional-chain": {
+      "count": 2
+    }
+  },
+  "tests/event-metadata.spec.ts": {
+    "@typescript-eslint/consistent-type-imports": {
+      "count": 2
+    },
+    "@typescript-eslint/no-non-null-assertion": {
+      "count": 1
+    },
+    "@typescript-eslint/no-unnecessary-condition": {
+      "count": 18
+    }
+  },
+  "tests/footer-colophon.spec.ts": {
+    "@typescript-eslint/no-non-null-assertion": {
+      "count": 10
+    }
+  },
+  "tests/membership-intake.test.ts": {
+    "@typescript-eslint/consistent-type-definitions": {
+      "count": 1
+    },
+    "@typescript-eslint/no-base-to-string": {
+      "count": 2
+    },
+    "@typescript-eslint/no-explicit-any": {
+      "count": 1
+    },
+    "@typescript-eslint/no-floating-promises": {
+      "count": 18
+    },
+    "@typescript-eslint/no-misused-spread": {
+      "count": 1
+    },
+    "@typescript-eslint/no-unnecessary-type-assertion": {
+      "count": 1
+    },
+    "@typescript-eslint/no-unsafe-argument": {
+      "count": 3
+    },
+    "@typescript-eslint/no-unsafe-member-access": {
+      "count": 23
+    },
+    "@typescript-eslint/no-unsafe-return": {
+      "count": 1
+    },
+    "@typescript-eslint/require-await": {
+      "count": 1
+    }
+  },
+  "tests/not-found-search.spec.ts": {
+    "@typescript-eslint/consistent-type-definitions": {
+      "count": 2
+    },
+    "@typescript-eslint/no-implied-eval": {
+      "count": 1
+    },
+    "@typescript-eslint/no-unsafe-call": {
+      "count": 1
+    }
+  },
+  "tests/print-layout.spec.ts": {
+    "@typescript-eslint/no-unnecessary-condition": {
+      "count": 23
+    },
+    "complexity": {
+      "count": 2
+    },
+    "max-lines": {
+      "count": 1
+    }
+  },
+  "tests/sitemap-paths.ts": {
+    "@typescript-eslint/no-unnecessary-condition": {
+      "count": 1
+    }
+  },
+  "tests/typography-contracts.spec.ts": {
+    "@typescript-eslint/no-unnecessary-condition": {
+      "count": 1
+    },
+    "@typescript-eslint/no-unnecessary-type-conversion": {
+      "count": 1
+    }
+  }
+}

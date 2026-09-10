@@ -2,7 +2,7 @@
 
 Guidance for AI agents (Claude Code, Codex, Gemini, etc.) working in this repo.
 
-This is a single Astro site for Las Vegans for Better Transit, deployed to Cloudflare Pages. Changes land through pull requests with linear history and the current `Validate` check.
+This is the single Astro site for Las Vegans for Better Transit. Cloudflare Pages serves production while the equivalent Workers deployment completes live acceptance. Changes land through pull requests with linear history and the current `Validate` check.
 
 New to the project (human or agent)? [`docs/tutorials/start-here.md`](./docs/tutorials/start-here.md) orients you, and the [`glossary`](./docs/reference/glossary.md) defines every tool and acronym used across these docs. Contributors here are often students and junior devs — keep docs and explanations accessible (see [`docs/standards/writing-docs.md`](./docs/standards/writing-docs.md)).
 
@@ -104,9 +104,9 @@ pull request. It carries the organization checklist, readable templates, and
 the only approved creation helper:
 
 ```bash
-node plugins/lvbt-contributions/scripts/github-create.mjs issue \
+node node_modules/@lvbt/cli/plugins/lvbt-contributions/scripts/github-create.mjs issue \
   --type bug|feature --title <title> --body-file <file>
-node plugins/lvbt-contributions/scripts/github-create.mjs pr \
+node node_modules/@lvbt/cli/plugins/lvbt-contributions/scripts/github-create.mjs pr \
   --title <title> --body-file <file> --base main
 ```
 
@@ -121,9 +121,9 @@ hidden body markers or GitHub-side prose checks.
 
 ## Stack quick map
 
-- Astro 4 + Tailwind v4 (MDX content collections under `src/content/`)
-- Cloudflare Pages (`pnpm dev` starts Astro + a local Wrangler Pages Functions server, with Astro proxying `/api/*` to it)
-- pnpm, Node ≥ 24.18.0
+- Astro 6 + Tailwind v4 (MDX content collections under `src/content/`)
+- Cloudflare Pages in production, with an equivalent Cloudflare Worker built and checked on every change
+- pnpm 11.25.0 and Node 24.20.x
 - Playwright for tests and ad-hoc screenshots
 - `scripts/bootstrap/` is the interactive setup CLI (`pnpm bootstrap`, `pnpm preflight`)
 - `scripts/audit/` is the CI/release audit baseline

@@ -3,8 +3,8 @@ dist/
 .astro/
 .turbo/
 .wrangler/
-.lvbt/
-plugins/lvbt-contributions/
+.lvbt/web-platform/
+worker-configuration.d.ts
 playwright-report/
 test-results/
 tests/snapshots/

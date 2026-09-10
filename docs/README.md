@@ -30,6 +30,8 @@ Task-oriented recipes for things you'll do repeatedly. (Diátaxis calls these "h
 - [Connect the membership form](./guides/connect-the-membership-form.md) — wire the Google Form's Apps Script to the intake endpoint
 - [Edit a long-form doc](./guides/edit-a-long-form-doc.md)
 - [Work with an AI assistant](./guides/work-with-ai-assistants.md)
+- [Test the Workers candidate](./guides/test-the-workers-candidate.md)
+- [Update the repository standard](./guides/update-the-repository-standard.md)
 
 ## Reference
 

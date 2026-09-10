@@ -6,9 +6,9 @@ description: >
 
 inputs:
   node-version:
-    description: Node version (defaults to the engines.node minimum, 22).
+    description: Node version from the LVBT web platform contract.
     required: false
-    default: '22'
+    default: '24.20.0'
 
 runs:
   using: composite
