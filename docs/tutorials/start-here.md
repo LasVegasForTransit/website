@@ -18,7 +18,7 @@ text file and follow a few commands, you can help.
 
 Three things. Install them once:
 
-- **[Node](../reference/glossary.md#node)** version 24.18.0 or newer in the
+- **[Node](../reference/glossary.md#node)** version 24.20.0 or newer in the
   24.x line — runs the project. Get it from [nodejs.org](https://nodejs.org)
   (the "LTS" version is fine). If you use `nvm`, `nvm use` will follow the
   checked-in `.nvmrc`.

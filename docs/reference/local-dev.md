@@ -8,7 +8,7 @@ What you need to run the site on your own computer and how to fix the dev server
 pnpm dev
 ```
 
-`pnpm dev` keeps the runtime pinned to Node `24.18.0` through the repo's
+`pnpm dev` keeps the runtime pinned to Node `24.20.0` through the repo's
 `package.json` and `.nvmrc`, then starts the local servers for you:
 
 - [Portless](./glossary.md#portless) serves the site at `https://lvbt.localhost`
@@ -22,6 +22,14 @@ There are still three moving parts because each does one job a single server can
 | Portless         | `https://lvbt.localhost` | Gives this checkout a stable local HTTPS URL and forwards traffic to Astro                                                                                                                                                     |
 | Astro dev (Vite) | `http://localhost:4320`  | HMR (Hot Module Replacement — live-updates the page as you edit, no full reload; see [glossary](./glossary.md#hmr)), content changes, and `/api/*` proxying                                                                    |
 | Wrangler Pages   | `http://localhost:4321`  | Serves Pages Functions (small backends that run on Cloudflare — see [glossary](./glossary.md#pages-function)); reads `.env.local` secrets. Wrangler is Cloudflare's command-line tool (see [glossary](./glossary.md#wrangler)) |
+
+The production-equivalent Worker runs separately after `pnpm build`:
+
+```sh
+pnpm worker:dev
+```
+
+This command serves the compiled Functions and `dist/` through the checked `wrangler.jsonc` contract. It does not replace the HMR-oriented `pnpm dev` loop.
 
 **Use `https://lvbt.localhost`** for local testing. On the first run, Portless may ask for permission to trust its local HTTPS certificate and bind the proxy port. After that, `pnpm dev` registers `lvbt.localhost` automatically.
 

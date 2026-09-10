@@ -1,0 +1,8 @@
+# One scope per durable boundary in this repository; omit a scope when a
+# change crosses them.
+site
+content
+functions
+docs
+ci
+dx

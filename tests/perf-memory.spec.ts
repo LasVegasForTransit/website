@@ -40,7 +40,6 @@ for (const path of paths) {
     // any deferred work time to complete.
     for (let i = 0; i < 3; i++) {
       await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
-      // eslint-disable-next-line no-await-in-loop
       await page.waitForTimeout(500);
     }
     await page.evaluate(() => window.scrollTo(0, 0));

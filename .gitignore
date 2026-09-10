@@ -22,7 +22,11 @@ pnpm-debug.log*
 
 # bootstrap CLI state
 .lvbt/*
+!.lvbt/commit-scopes.txt
 !.lvbt/repository-tooling.json
+!.lvbt/web-platform.json
+!.lvbt/web-platform/
+!.lvbt/web-platform/**
 
 # superpowers brainstorming mockups
 .superpowers/

@@ -37,11 +37,5 @@ jobs:
       - name: Setup Node + pnpm
         uses: ./.github/actions/setup-node-pnpm
 
-      - name: Verify organization repository tooling
-        run: pnpm check:repository-tooling
-
-      - name: Unit tests (Pages Functions)
-        run: pnpm test:unit
-
-      - name: Build site
-        uses: ./.github/actions/build-site
+      - name: Validate
+        run: pnpm check

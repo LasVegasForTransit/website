@@ -31,7 +31,7 @@ test.describe('footer colophon', () => {
         document
           .querySelectorAll('.reveal, .reveal-stat, .reveal-quote')
           .forEach((el) => el.classList.add('is-visible'));
-        const footer = document.querySelector('footer') as HTMLElement | null;
+        const footer = document.querySelector('footer');
         window.scrollTo({ top: footer?.offsetTop ?? 0, left: 0, behavior: 'instant' });
       });
       await page.waitForFunction(
@@ -132,6 +132,27 @@ test.describe('footer colophon', () => {
     const box = await wordmark.boundingBox();
     expect(box).not.toBeNull();
     expect(box!.width / box!.height).toBeGreaterThan(3.5);
+  });
+
+  test('links to Labs with the standard external-link treatment', async ({ page }) => {
+    await page.goto('/about');
+    await page.waitForLoadState('networkidle');
+
+    const labsLink = page.locator('footer a[href="https://labs.lasvegasfortransit.org/"]');
+    await expect(labsLink).toHaveText('Labs');
+    await expect(labsLink).toHaveAttribute('rel', /noopener/);
+
+    const marker = await labsLink.evaluate((link) => {
+      const pseudo = getComputedStyle(link, '::after');
+      return {
+        content: pseudo.content,
+        maskImage:
+          pseudo.getPropertyValue('mask-image') || pseudo.getPropertyValue('-webkit-mask-image'),
+      };
+    });
+
+    expect(marker.content).not.toBe('none');
+    expect(marker.maskImage).not.toBe('none');
   });
 
   test('keeps the colophon on the standard type scale without overline labels', async ({
