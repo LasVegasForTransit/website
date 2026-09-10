@@ -70,11 +70,28 @@ const eventSchema = {
   mainEntityOfPage: canonical,
 };
 
-// Compact facts row under the hero, in the home page's style.
-const facts: Array<{ value: string; label: string }> = [
-  { value: '1', label: 'trip is all it takes' },
-  { value: String(maxEntries), label: 'giveaway entries, max' },
-  { value: '1 in 3', label: 'people in the U.S. don’t drive' },
+// The three numbers on the hero's route strip. Every figure is sourced:
+// the national one from the Week Without Driving campaign page
+// (weekwithoutdriving.org, America Walks), the Valley ones from
+// docs/reference/key-facts.md. `source` is for maintainers and is not
+// rendered; update key-facts.md and this list together.
+const facts: Array<{ value: string; label: string; source: string; accent?: boolean }> = [
+  {
+    value: '1 in 3',
+    label: 'people in the U.S. don’t drive',
+    source: 'America Walks, weekwithoutdriving.org',
+  },
+  {
+    value: '57.9M',
+    label: 'bus trips a year on RTC',
+    source: 'RTC ridership reports (key-facts.md)',
+  },
+  {
+    value: '42%',
+    label: 'of RTC bus service faces cuts by 2028',
+    source: 'RTC letter to the Nevada Legislature, March 2026 (key-facts.md)',
+    accent: true,
+  },
 ];
 
 const steps = [
@@ -174,74 +191,58 @@ const afterTheWeek = [
 <BaseLayout title={`Week Without Driving ${year}`} description={description}>
   <StructuredData slot="head" data={eventSchema} />
 
-  {/* HERO — the challenge in one line, with the ask and the prize alongside */}
-  <section class="container-page pt-[clamp(3rem,10dvh,7rem)] pb-12 md:pb-16">
-    <div class="grid gap-10 lg:grid-cols-[1.6fr_1fr] lg:gap-14">
-      <div class="reveal">
-        <p class="text-title-sm font-bold text-primary-ink">
-          {dateRange}, {year} · Las&nbsp;Vegas
-        </p>
-        <h1 class="text-display-lg mt-4 text-balance">
-          One week. <span class="text-primary">No driving.</span> See Las&nbsp;Vegas the way a third of
-          your neighbors do.
-        </h1>
-        <p class="lede mt-6 max-w-xl">
-          Take at least one trip without a car between {dateRange}. Post about it. Tag us. That is
-          the whole challenge, and it is open to anyone in the Valley.
-        </p>
-        <div class="mt-8 flex flex-wrap items-center gap-x-6 gap-y-4">
-          <a
-            href="#how-to-participate"
-            class="press inline-flex items-center gap-2 bg-primary px-7 py-4 font-bold text-on-primary no-underline hover:bg-on-surface hover:text-surface focus-visible:bg-on-surface focus-visible:text-surface"
-          >
-            Take the challenge
-            <Icon name="mdi:arrow-down" class="size-4" aria-hidden="true" />
-          </a>
-          <a href="#partners" class="body-link font-semibold">Bring your organization &#8594;</a>
-        </div>
-        <dl class="mt-12 grid grid-cols-3 gap-6 border-t border-outline-variant/20 pt-8">
-          {
-            facts.map((f) => (
-              <div>
-                <dt class="text-display-sm font-extrabold leading-none tnum">{f.value}</dt>
-                <dd class="mt-2 text-body-md leading-snug text-on-surface-variant text-pretty">
-                  {f.label}
-                </dd>
-              </div>
-            ))
-          }
-        </dl>
+  {/* HERO — the stat in the sentence, the numbers as stops on one route */}
+  <section
+    class="container-page flex flex-col pt-[clamp(3rem,9dvh,5.5rem)] pb-12 md:pb-14 lg:min-h-[min(calc(100dvh-5rem),54rem)]"
+    aria-labelledby="hero-heading"
+  >
+    <div class="reveal">
+      <p class="text-title-sm font-bold text-primary-ink">
+        Week Without Driving · Las&nbsp;Vegas · {dateRange}, {year}
+      </p>
+      <h1 id="hero-heading" class="text-display-md mt-5 max-w-[22ch] text-balance">
+        More than <span class="text-primary">1 in 3</span> people in the U.S. don’t drive. For one week,
+        see Las&nbsp;Vegas the way they do.
+      </h1>
+    </div>
+    <div class="reveal mt-7 flex flex-wrap items-end justify-between gap-x-12 gap-y-6">
+      <p class="lede max-w-2xl">
+        Take at least one trip without a car between {dateRange}. Post about it. Tag us. That is the
+        whole challenge, and it is open to anyone in the Valley.
+      </p>
+      <div class="flex flex-wrap items-center gap-x-6 gap-y-4">
+        <a
+          href="#how-to-participate"
+          class="press inline-flex items-center gap-2 bg-primary px-7 py-4 font-bold text-on-primary no-underline hover:bg-on-surface hover:text-surface focus-visible:bg-on-surface focus-visible:text-surface"
+        >
+          Take the challenge
+          <Icon name="mdi:arrow-down" class="size-4" aria-hidden="true" />
+        </a>
+        <a href="#partners" class="body-link font-semibold">Bring your organization &#8594;</a>
       </div>
+    </div>
 
-      <div class="reveal flex flex-col gap-5">
-        <div class="bg-primary-container p-8 text-on-primary-container">
-          <p class="text-title-sm font-bold">The prize</p>
-          <h2 class="text-headline-sm mt-2">A month of free bus rides.</h2>
-          <p class="mt-3 text-body-md leading-relaxed text-pretty">
-            Every day you post about a trip without driving is one entry, up to {maxEntries}. We
-            draw one winner for a one-month RTC pass after the week ends.
-          </p>
-          <a href="#giveaway" class="body-link mt-5 inline-block font-semibold">
-            Giveaway rules &#8594;
-          </a>
-        </div>
-        <div class="bg-slab p-8 text-on-slab">
-          <p class="text-title-sm font-bold text-primary-soft">Part of a national week</p>
-          <h2 class="text-headline-sm mt-2">Organized by {wwd.nationalOrganizer}.</h2>
-          <p class="mt-3 text-body-md leading-relaxed text-on-slab-variant text-pretty">
-            Week Without Driving runs in cities across the country. LVBT is bringing it to
-            Las&nbsp;Vegas for the first time in {year}.
-          </p>
-          <a
-            href={wwd.nationalUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            class="body-link mt-4 inline-block font-semibold text-primary-soft"
-          >
-            About the national week &#8594;
-          </a>
-        </div>
-      </div>
+    {/* Route strip: three sourced numbers as stops on one line */}
+    <div class="reveal mt-auto pt-14 md:pt-20">
+      <dl class="wwd-route">
+        {
+          facts.map((f) => (
+            <div class="wwd-stop">
+              <dt
+                class:list={[
+                  'text-display-sm font-extrabold leading-none tnum',
+                  f.accent && 'text-primary',
+                ]}
+              >
+                {f.value}
+              </dt>
+              <dd class="mt-2 max-w-[22rem] text-body-md leading-snug text-on-surface-variant text-pretty">
+                {f.label}
+              </dd>
+            </div>
+          ))
+        }
+      </dl>
     </div>
   </section>
 
@@ -257,7 +258,7 @@ const afterTheWeek = [
         </h2>
         <div class="mt-6 max-w-2xl space-y-4 leading-relaxed text-pretty">
           <p>
-            Roughly a third of people in the United States don’t drive: kids too young for a
+            More than a third of people in the United States don’t drive: kids too young for a
             license, neighbors who can’t afford a car, people whose disability keeps them out of the
             driver’s seat, seniors who gave up the keys. In Las&nbsp;Vegas, that means a lot of
             people getting across a city built for cars on foot, on a bike, or on a bus that comes
@@ -587,3 +588,72 @@ const afterTheWeek = [
     </div>
   </section>
 </BaseLayout>
+
+<style>
+  /* The hero's route strip. Desktop: one Ember line across the width with a
+     stop dot at each number. Narrow screens: the line runs down the left
+     and the dots sit beside each number, so it still reads as one route. */
+  .wwd-route {
+    --stop: 1.5rem;
+    --line: 0.3125rem;
+    position: relative;
+    display: grid;
+    gap: 2rem;
+  }
+  .wwd-stop {
+    position: relative;
+  }
+  .wwd-stop::before {
+    content: '';
+    position: absolute;
+    width: var(--stop);
+    height: var(--stop);
+    box-sizing: border-box;
+    border-radius: 9999px;
+    background: var(--color-surface);
+    border: var(--line) solid var(--color-primary);
+  }
+  .wwd-stop:last-child::before {
+    background: var(--color-primary);
+  }
+
+  @media (max-width: 47.99rem) {
+    .wwd-route {
+      padding-left: calc(var(--stop) + 1rem);
+    }
+    .wwd-route::before {
+      content: '';
+      position: absolute;
+      left: calc(var(--stop) / 2 - var(--line) / 2);
+      top: 0;
+      bottom: 0;
+      width: var(--line);
+      background: var(--color-primary);
+    }
+    .wwd-stop::before {
+      left: calc(-1 * (var(--stop) + 1rem));
+      top: 0.35rem;
+    }
+  }
+
+  @media (min-width: 48rem) {
+    .wwd-route {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 2.5rem;
+      padding-top: calc(var(--stop) + 1.25rem);
+    }
+    .wwd-route::before {
+      content: '';
+      position: absolute;
+      left: 0;
+      right: 0;
+      top: calc(var(--stop) / 2 - var(--line) / 2);
+      height: var(--line);
+      background: var(--color-primary);
+    }
+    .wwd-stop::before {
+      left: 0;
+      top: calc(-1 * (var(--stop) + 1.25rem));
+    }
+  }
+</style>
