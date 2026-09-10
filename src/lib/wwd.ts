@@ -20,6 +20,84 @@ export const wwd = {
   partners: [] as Array<{ name: string; url?: string }>,
 } as const;
 
+// Links out to the national campaign and local tools, grouped by who they
+// are for. Rendered as the /wwd "Resources" section. URLs checked against
+// weekwithoutdriving.org on 2026-09-10.
+export type ResourceAudience = 'participants' | 'organizations';
+
+export const wwdResources: Array<{
+  audience: ResourceAudience;
+  title: string;
+  blurb: string;
+  url: string;
+  linkLabel: string;
+}> = [
+  {
+    audience: 'participants',
+    title: 'What Week Without Driving is',
+    blurb:
+      'The national campaign in its own words: who it is for and what a week without driving is meant to show.',
+    url: 'https://weekwithoutdriving.org/about/',
+    linkLabel: 'weekwithoutdriving.org/about',
+  },
+  {
+    audience: 'participants',
+    title: 'How to participate',
+    blurb: 'The campaign’s guide to the week, with reflection questions to answer as you go.',
+    url: 'https://weekwithoutdriving.org/participate/',
+    linkLabel: 'weekwithoutdriving.org/participate',
+  },
+  {
+    audience: 'participants',
+    title: 'Join the national list',
+    blurb: 'Sign up with the national campaign for its tools and templates.',
+    url: 'https://weekwithoutdriving.org/join/',
+    linkLabel: 'weekwithoutdriving.org/join',
+  },
+  {
+    audience: 'participants',
+    title: 'Follow the national campaign',
+    blurb: 'Week Without Driving on Instagram. Tag them alongside us.',
+    url: 'https://www.instagram.com/weekwithoutdriving/',
+    linkLabel: '@weekwithoutdriving',
+  },
+  {
+    audience: 'participants',
+    title: 'Plan a bus trip',
+    blurb: 'The RTC trip planner for routes, times, and the bus after the one you want.',
+    url: 'https://www.rtcsnv.com/ways-to-travel/trip-planner/',
+    linkLabel: 'RTC trip planner',
+  },
+  {
+    audience: 'organizations',
+    title: 'Tools to organize',
+    blurb: 'Recorded webinars and monthly office hours for people running the week locally.',
+    url: 'https://weekwithoutdriving.org/organize/',
+    linkLabel: 'weekwithoutdriving.org/organize',
+  },
+  {
+    audience: 'organizations',
+    title: 'Resource Center',
+    blurb: 'Toolkits, templates, and how-to guides from the national campaign, free to use.',
+    url: 'https://weekwithoutdriving.org/resource/',
+    linkLabel: 'weekwithoutdriving.org/resource',
+  },
+  {
+    audience: 'organizations',
+    title: '2026 media advisory',
+    blurb: 'The national announcement for this year’s week, for press and partner communications.',
+    url: 'https://weekwithoutdriving.org/2026/week-without-driving-2026/',
+    linkLabel: 'Read the advisory',
+  },
+  {
+    audience: 'organizations',
+    title: 'Nondrivers Alliance',
+    blurb: 'The coalition behind the week, organizing people who cannot or do not drive.',
+    url: 'https://nondrivers.org/',
+    linkLabel: 'nondrivers.org',
+  },
+];
+
 export const WWD_DATE_RANGE = new Intl.DateTimeFormat('en-US', {
   month: 'long',
   day: 'numeric',
