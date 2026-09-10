@@ -43,12 +43,12 @@ export default defineConfig({
     {
       name: 'mobile-portrait',
       testMatch: /screenshots\.spec\.ts$/,
-      use: { ...devices['iPhone 14'] }, // 390×844, DPR 3
+      use: { ...devices['iPhone 14'], browserName: 'chromium' }, // 390×844, DPR 3
     },
     {
       name: 'mobile-landscape',
       testMatch: /screenshots\.spec\.ts$/,
-      use: { ...devices['iPhone 14 landscape'] }, // 844×390, DPR 3
+      use: { ...devices['iPhone 14 landscape'], browserName: 'chromium' }, // 844×390, DPR 3
     },
     {
       name: 'tablet-portrait',

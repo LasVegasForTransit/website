@@ -1,8 +1,8 @@
 name: Build site
 description: >
   Run the canonical validation chain (typecheck, lint:check, check:docs) and
-  build the static site to ./dist. Uploads the build as an artifact named
-  dist-<sha> for downstream deploy jobs to download.
+  build the site and Worker. Uploads separate static and Worker artifacts for
+  downstream audit and deployment jobs.
 
   Assumes `setup-node-pnpm` has already run in the same job.
 
@@ -51,5 +51,13 @@ runs:
       with:
         name: dist-${{ github.sha }}
         path: dist/
+        if-no-files-found: error
+        retention-days: 7
+
+    - name: Upload Worker artifact
+      uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+      with:
+        name: worker-${{ github.sha }}
+        path: .wrangler/worker/
         if-no-files-found: error
         retention-days: 7

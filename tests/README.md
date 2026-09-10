@@ -27,7 +27,7 @@ or unintentionally (in which case you have a regression to fix).
   conformance suite)
 - Animations disabled, fonts awaited
 
-At the time of writing: 16 routes × 6 viewports × 2 captures = **192
+The suite covers 19 representative routes × 6 viewports × 2 captures = **228
 baseline PNGs**.
 
 ## First-time setup
@@ -47,20 +47,17 @@ pnpm test:install                         # downloads chromium (~150 MB, one-tim
 ## Day-to-day
 
 ```sh
-pnpm test                          # build → preview → run all 32 comparisons
-pnpm test:update                   # refresh baselines after intentional UI changes
+pnpm exec playwright test tests/screenshots.spec.ts
+pnpm exec playwright test tests/screenshots.spec.ts --update-snapshots
 pnpm exec playwright show-report   # open the HTML report (diffs included)
 ```
 
 ## CI status
 
 `snapshotPathTemplate` includes `{platform}`, so each OS keeps its own
-committed baselines under `tests/snapshots/<platform>/`. The macOS set
-(`darwin/`) is committed today; the linux set has to be seeded on a
-matching runner before the `visual-regression` job in
-`.github/workflows/audit.yml` can go hard. Until then the job runs in
-soft-fail mode against `mobile-portrait` + `desktop` — useful as a
-warning channel, not a merge gate.
+committed baselines under `tests/snapshots/<platform>/`. The macOS (`darwin/`)
+and CI (`linux/`) sets are committed. The `visual-regression` job in
+`.github/workflows/audit.yml` runs every viewport as a merge gate.
 
 ### Seeding linux baselines
 
@@ -72,13 +69,20 @@ won't drift on the first CI run:
 docker run --rm -v "$PWD:/work" -w /work \
   mcr.microsoft.com/playwright:v$(node -p "require('@playwright/test/package.json').version")-jammy \
   bash -c "corepack enable && pnpm install --frozen-lockfile && \
-           AUDIT_PORT=4399 pnpm test --update-snapshots \
-             --project=mobile-portrait --project=desktop"
+           set -a && . ./.env.example && set +a && pnpm build && \
+           AUDIT_SKIP_BUILD=1 AUDIT_PORT=4399 \
+             pnpm exec playwright test tests/screenshots.spec.ts \
+             --update-snapshots \
+             --project=mobile-portrait \
+             --project=mobile-landscape \
+             --project=tablet-portrait \
+             --project=tablet-landscape \
+             --project=desktop \
+             --project=desktop-xl"
 ```
 
-That writes PNGs under `tests/snapshots/linux/{mobile-portrait,desktop}/`.
-Commit them, then promote `visual-regression` by deleting its
-`continue-on-error: true` line in `audit.yml`.
+That writes PNGs under `tests/snapshots/linux/`. Review and commit the images
+with the change that required them.
 
 The Playwright config (`../playwright.config.ts`) starts `pnpm preview`
 on port 4321 automatically. If you already have it running locally it
@@ -87,11 +91,11 @@ will be reused; in CI it always starts fresh.
 ## Baseline workflow
 
 1. Make an intentional UI change.
-2. Run `pnpm test`. Failing tests indicate the diffs.
+2. Run `pnpm exec playwright test tests/screenshots.spec.ts`. Failing tests indicate the diffs.
 3. Review the failures via `pnpm exec playwright show-report` — each
    failed test shows expected / actual / diff side-by-side.
-4. If the new output is correct, run `pnpm test:update` to
-   accept it. Commit the regenerated baselines under `tests/snapshots/`.
+4. If the new output is correct, rerun the screenshot test with
+   `--update-snapshots`. Commit the regenerated baselines under `tests/snapshots/`.
 5. If the diff is unintentional, fix the code instead.
 
 ## Folder layout
@@ -122,10 +126,8 @@ expands to `darwin` on macOS and `linux` on the CI runner — so a
 `pnpm test` on either platform reads and writes the right tree without
 extra flags.
 
-## Why visual regression and not just "produce screenshots"?
+## Why baseline comparison
 
-We picked baseline-comparison mode (over emit-fresh-PNGs-each-run) so
-that opening a PR makes any unintentional visual change loud and
-visible — the test fails, the diff is in the report, the reviewer
-sees it. Fresh PNGs would only help an attentive human reviewer who
-remembers what the page looked like yesterday.
+Baseline comparison exposes an unintentional visual change during review. The
+test fails and attaches expected, actual, and diff images without relying on a
+reviewer's memory of the previous page.
