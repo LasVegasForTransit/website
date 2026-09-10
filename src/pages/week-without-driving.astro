@@ -1,0 +1,486 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import PageHero from '../components/PageHero.astro';
+import StatBlock from '../components/StatBlock.astro';
+import StructuredData from '../components/seo/StructuredData.astro';
+import { Icon } from 'astro-icon/components';
+import { site } from '../lib/site';
+import { paths, canonicalUrl } from '../lib/paths';
+import { handleFromUrl } from '../lib/social';
+
+// Week Without Driving is a national challenge run by America Walks. The
+// dates come from weekwithoutdriving.org and change every year; update
+// them here (and in the project entry) each cycle.
+const WEEK_START = new Date('2026-10-01T00:00:00-07:00');
+const WEEK_END = new Date('2026-10-08T23:59:59-07:00');
+const NATIONAL_URL = 'https://weekwithoutdriving.org/';
+const RTC_TRIP_PLANNER_URL = 'https://www.rtcsnv.com/ways-to-travel/trip-planner/';
+const HASHTAG = '#WeekWithoutDriving';
+const MAX_ENTRIES = 8;
+
+const dateRange = new Intl.DateTimeFormat('en-US', {
+  month: 'long',
+  day: 'numeric',
+  timeZone: 'America/Los_Angeles',
+}).formatRange(WEEK_START, WEEK_END);
+const year = WEEK_START.getFullYear();
+
+const instagramUrl = site.social.instagram;
+const instagramHandle = handleFromUrl(instagramUrl);
+// The tag instruction needs a name even when the Instagram URL isn't
+// configured for this build; fall back to the org's short name.
+const tagName = instagramHandle ?? site.shortName;
+
+const partnerMailto = `mailto:${site.email.partners}?subject=${encodeURIComponent(
+  'Week Without Driving partnership',
+)}`;
+const questionsMailto = `mailto:${site.email.general}?subject=${encodeURIComponent(
+  'Week Without Driving question',
+)}`;
+
+const canonical = canonicalUrl(Astro.url.pathname);
+const description = `Take at least one trip without driving during Week Without Driving, ${dateRange}, ${year}. Post it, tag ${tagName}, and enter to win a one-month RTC bus pass.`;
+
+const eventSchema = {
+  '@context': 'https://schema.org',
+  '@type': 'SocialEvent',
+  '@id': `${canonical}#event`,
+  name: `Week Without Driving ${year} in Las Vegas`,
+  description,
+  startDate: '2026-10-01',
+  endDate: '2026-10-08',
+  eventStatus: 'https://schema.org/EventScheduled',
+  eventAttendanceMode: 'https://schema.org/MixedEventAttendanceMode',
+  location: {
+    '@type': 'Place',
+    name: 'Las Vegas Valley',
+    address: {
+      '@type': 'PostalAddress',
+      addressLocality: 'Las Vegas',
+      addressRegion: 'NV',
+      addressCountry: 'US',
+    },
+  },
+  isAccessibleForFree: true,
+  organizer: {
+    '@type': 'Organization',
+    '@id': `${site.url}/#organization`,
+    name: site.name,
+    url: site.url,
+  },
+  superEvent: {
+    '@type': 'Event',
+    name: `Week Without Driving ${year}`,
+    url: NATIONAL_URL,
+    startDate: '2026-10-01',
+    endDate: '2026-10-08',
+  },
+  url: canonical,
+  mainEntityOfPage: canonical,
+};
+
+const steps = [
+  {
+    icon: 'mdi:map-marker-path',
+    title: 'Pick a trip you would normally drive.',
+    body: 'Work, school, groceries, a friend’s place, a night out. One trip is enough. If you want to go the whole week without a car, even better.',
+  },
+  {
+    icon: 'mdi:bus',
+    title: 'Get there another way.',
+    body: 'Ride the bus, walk, bike, scoot, or roll. Try to leave your own car parked. If you have never taken the bus in Las Vegas, this is the week to try.',
+  },
+  {
+    icon: 'mdi:instagram',
+    title: 'Post about it and tag us.',
+    body: `Share a story, reel, or post about how it went. Tag ${tagName} and use ${HASHTAG} so we can find it and share it.`,
+  },
+  {
+    icon: 'mdi:ticket-confirmation-outline',
+    title: 'Earn an entry in the giveaway.',
+    body: `Every day you post counts as one entry, up to ${MAX_ENTRIES}. We draw the winner after the week ends.`,
+  },
+];
+
+const prizes = [
+  { name: 'One-month RTC bus pass', note: 'Ride anywhere in the Valley for a month, on us.' },
+  { name: 'LVBT sticker pack', note: 'For your laptop, water bottle, or bike.' },
+  { name: 'LVBT T-shirt', note: 'If we can make it happen. We are working on it.' },
+];
+
+const tips = [
+  {
+    title: 'Plan the trip before you leave.',
+    body: 'Use the RTC trip planner or Google Maps transit directions. Check the time of the bus after the one you want, too, so you know your backup.',
+    href: RTC_TRIP_PLANNER_URL,
+    linkLabel: 'Open the RTC trip planner',
+  },
+  {
+    title: 'Give yourself more time than you think.',
+    body: 'Many routes run every 30 minutes or less often. Missing a bus by one minute can mean a long wait in the sun. That wait is part of the story. Post about it.',
+  },
+  {
+    title: 'Pay with the rideRTC app or at the stop.',
+    body: 'Buy a pass in the app before you board so you are not fumbling for cash. Ticket vending machines are at some stations and transit centers.',
+  },
+  {
+    title: 'Notice what makes the trip hard.',
+    body: 'A missing sidewalk, a stop with no shade, a crossing that takes three light cycles. Those details are exactly what we want people to see.',
+  },
+];
+
+const afterTheWeek = [
+  {
+    title: 'A recap video',
+    body: 'Our media committee will cut the best participant posts and our own stories into one video.',
+  },
+  {
+    title: 'A written recap',
+    body: 'A blog post on what people found, what surprised them, and what it says about getting around the Valley.',
+  },
+  {
+    title: 'An archive on this page',
+    body: 'This page will link to the recap and to the posts from the week so the record stays public.',
+  },
+];
+---
+
+<BaseLayout title="Week Without Driving" description={description}>
+  <StructuredData slot="head" data={eventSchema} />
+
+  <PageHero
+    title="Week Without Driving."
+    lede={`${dateRange}, ${year}. Take at least one trip without driving. Post about it. Show Las&nbsp;Vegas what getting around without a car is really like.`}
+  >
+    <div class="mt-8 flex flex-wrap items-center gap-x-6 gap-y-4">
+      <a
+        href="#how-to-participate"
+        class="press inline-flex items-center gap-2 bg-on-surface px-7 py-4 font-bold text-surface no-underline hover:bg-primary hover:text-on-primary focus-visible:bg-primary focus-visible:text-on-primary"
+      >
+        How to participate
+        <Icon name="mdi:arrow-down" class="size-4" aria-hidden="true" />
+      </a>
+      {
+        instagramUrl && (
+          <a
+            href={instagramUrl}
+            data-print-url={instagramUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            class="font-bold underline underline-offset-4 decoration-2 decoration-primary"
+          >
+            Follow {instagramHandle} on Instagram
+          </a>
+        )
+      }
+    </div>
+  </PageHero>
+
+  {/* AT A GLANCE — the three numbers a participant needs */}
+  <section class="container-page py-12 md:py-16" aria-labelledby="at-a-glance">
+    <h2 id="at-a-glance" class="sr-only">At a glance</h2>
+    <div class="grid gap-10 sm:grid-cols-3">
+      <StatBlock
+        value="1"
+        label="trip is all it takes"
+        context="One bus ride counts. So does one walk to the store."
+      />
+      <StatBlock
+        value={String(MAX_ENTRIES)}
+        label="giveaway entries, max"
+        context="One entry for every day you post and tag us."
+      />
+      <StatBlock value="$0" label="to join" context="No signup, no form. Post and tag us." />
+    </div>
+  </section>
+
+  <hr class="rule-thick container-page" />
+
+  {/* WHAT IT IS */}
+  <section class="container-page py-12 md:py-16" aria-labelledby="what-it-is">
+    <div class="grid gap-10 md:grid-cols-[2fr_1fr] md:gap-16">
+      <div>
+        <h2 id="what-it-is" class="text-headline-lg">What Week Without Driving is.</h2>
+        <div class="mt-6 max-w-2xl space-y-4 leading-relaxed text-pretty">
+          <p>
+            <a href={NATIONAL_URL} target="_blank" rel="noopener noreferrer">Week Without Driving</a
+            > is a national challenge run by America Walks. For one week, people who normally drive get
+            around another way and see their city the way people who can’t drive see it every day: the
+            kid too young for a license, the neighbor who can’t afford a car, the person whose disability
+            keeps them out of the driver’s seat, the senior who gave up the keys.
+          </p>
+          <p>
+            Roughly a third of people in the United States don’t drive. In Las&nbsp;Vegas, that
+            means a lot of people getting around a city built for cars, on foot, on a bike, or on a
+            bus that comes every half hour.
+          </p>
+          <p>
+            LVBT is joining for the first time in {year}. Our version is simple: take a trip without
+            driving, post about it, and tag us. Your post is the point. The more people see what it
+            takes to get across the Valley without a car, the harder it is for anyone to say the
+            system works fine.
+          </p>
+        </div>
+      </div>
+      <aside
+        class="border-t-2 border-outline pt-6 md:border-t-0 md:border-l md:border-outline-variant/20 md:pl-10 md:pt-0"
+      >
+        <p class="text-title-sm text-on-surface-variant">When</p>
+        <p class="mt-2 text-lg font-semibold">{dateRange}, {year}</p>
+        <p class="mt-6 text-title-sm text-on-surface-variant">Where</p>
+        <p class="mt-2 text-lg font-semibold">Anywhere in the Las&nbsp;Vegas Valley</p>
+        <p class="mt-6 text-title-sm text-on-surface-variant">Who</p>
+        <p class="mt-2 text-lg font-semibold">
+          Anyone. Especially people who have never taken the bus.
+        </p>
+        <p class="mt-6 text-title-sm text-on-surface-variant">National organizer</p>
+        <p class="mt-2">
+          <a href={NATIONAL_URL} target="_blank" rel="noopener noreferrer" class="font-semibold"
+            >America Walks</a
+          >
+        </p>
+      </aside>
+    </div>
+  </section>
+
+  {/* HOW TO PARTICIPATE — dark band, the page's primary ask */}
+  <section
+    id="how-to-participate"
+    class="scroll-mt-24 bg-slab text-on-slab"
+    aria-labelledby="how-to-participate-heading"
+  >
+    <div class="container-page py-16 md:py-24">
+      <h2 id="how-to-participate-heading" class="text-headline-lg">How to participate.</h2>
+      <p class="mt-4 max-w-2xl leading-relaxed text-on-slab/80 text-pretty">
+        Four steps. No signup form. The challenge starts the moment you leave your car parked.
+      </p>
+      <ol class="mt-10 grid gap-6 md:grid-cols-2">
+        {
+          steps.map((step, index) => (
+            <li class="flex gap-5 border border-on-slab/20 p-6 reveal">
+              <div class="flex shrink-0 flex-col items-center gap-3">
+                <span
+                  class="flex size-10 items-center justify-center bg-primary text-on-primary font-black tnum"
+                  aria-hidden="true"
+                >
+                  {index + 1}
+                </span>
+                <Icon name={step.icon} class="size-8 text-primary-soft" aria-hidden="true" />
+              </div>
+              <div>
+                <h3 class="text-title-lg">
+                  <span class="sr-only">Step {index + 1}: </span>
+                  {step.title}
+                </h3>
+                <p class="mt-2 leading-relaxed text-on-slab/80 text-pretty">{step.body}</p>
+              </div>
+            </li>
+          ))
+        }
+      </ol>
+      <div class="mt-10 flex flex-wrap items-center gap-x-8 gap-y-4">
+        <p class="text-title-md">
+          Tag <span class="text-primary-soft">{tagName}</span> and use
+          <span class="text-primary-soft">{HASHTAG}</span>
+        </p>
+        {
+          instagramUrl && (
+            <a
+              href={instagramUrl}
+              data-print-url={instagramUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              class="press inline-flex items-center gap-2 bg-primary px-6 py-3 font-bold text-on-primary no-underline"
+            >
+              <Icon name="mdi:instagram" class="size-5" aria-hidden="true" />
+              Open our Instagram
+            </a>
+          )
+        }
+      </div>
+    </div>
+  </section>
+
+  {/* GIVEAWAY */}
+  <section class="container-page py-16 md:py-24" aria-labelledby="giveaway">
+    <div class="grid gap-10 md:grid-cols-[1fr_1fr] md:gap-16">
+      <div>
+        <h2 id="giveaway" class="text-headline-lg">The giveaway.</h2>
+        <p class="mt-4 max-w-xl leading-relaxed text-pretty">
+          Every day you post about a trip without driving and tag us, you get one entry. Post all
+          {' '}{MAX_ENTRIES} days and you have {MAX_ENTRIES} entries. We draw one winner after the week
+          ends.
+        </p>
+        <ul
+          class="mt-8 divide-y divide-outline-variant/15 border-t border-b border-outline-variant/15"
+        >
+          {
+            prizes.map((prize) => (
+              <li class="flex items-start gap-4 py-4">
+                <Icon
+                  name="mdi:gift-outline"
+                  class="mt-0.5 size-6 shrink-0 text-primary-ink"
+                  aria-hidden="true"
+                />
+                <div>
+                  <p class="font-bold leading-tight">{prize.name}</p>
+                  <p class="mt-1 text-sm text-on-surface-variant leading-relaxed">{prize.note}</p>
+                </div>
+              </li>
+            ))
+          }
+        </ul>
+      </div>
+      <div class="border border-outline bg-surface-container p-6 md:p-8">
+        <h3 class="text-title-lg">How entries work</h3>
+        <ul class="mt-4 space-y-3 leading-relaxed text-pretty">
+          <li class="flex gap-3">
+            <Icon
+              name="mdi:check"
+              class="mt-1 size-5 shrink-0 text-primary-ink"
+              aria-hidden="true"
+            />
+            <span>
+              A post counts when it is about a trip you took without driving during {dateRange}, and
+              it tags {tagName}.
+            </span>
+          </li>
+          <li class="flex gap-3">
+            <Icon
+              name="mdi:check"
+              class="mt-1 size-5 shrink-0 text-primary-ink"
+              aria-hidden="true"
+            />
+            <span>One entry per person per day, up to {MAX_ENTRIES} entries.</span>
+          </li>
+          <li class="flex gap-3">
+            <Icon
+              name="mdi:check"
+              class="mt-1 size-5 shrink-0 text-primary-ink"
+              aria-hidden="true"
+            />
+            <span>
+              Stories count. If your account is private, send the story to us directly so we can log
+              it.
+            </span>
+          </li>
+          <li class="flex gap-3">
+            <Icon
+              name="mdi:check"
+              class="mt-1 size-5 shrink-0 text-primary-ink"
+              aria-hidden="true"
+            />
+            <span>
+              We draw the winner in the week after the challenge ends and contact them on Instagram.
+            </span>
+          </li>
+          <li class="flex gap-3">
+            <Icon
+              name="mdi:check"
+              class="mt-1 size-5 shrink-0 text-primary-ink"
+              aria-hidden="true"
+            />
+            <span
+              >You need to be able to pick up or use the prize in the Las&nbsp;Vegas Valley.</span
+            >
+          </li>
+        </ul>
+        <p class="mt-6 text-sm text-on-surface-variant leading-relaxed">
+          Questions about the rules?{' '}
+          <a
+            href={questionsMailto}
+            data-print-url={site.email.general}
+            class="font-bold underline underline-offset-4 decoration-2 decoration-primary"
+          >
+            Email {site.email.general}
+          </a>
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <hr class="rule-thick container-page" />
+
+  {/* FIRST-TRIP TIPS — for people who have never ridden */}
+  <section class="container-page py-16 md:py-24" aria-labelledby="first-trip">
+    <h2 id="first-trip" class="text-headline-lg">Never taken the bus here? Start with this.</h2>
+    <p class="mt-4 max-w-2xl leading-relaxed text-pretty">
+      Most people who drive in Las&nbsp;Vegas have never ridden an RTC bus. That is fine. The
+      challenge is the trip, not being an expert.
+    </p>
+    <div class="mt-10 grid gap-4 md:grid-cols-2">
+      {
+        tips.map((tip) => (
+          <div class="flex flex-col border border-outline bg-surface-container p-6 reveal">
+            <h3 class="text-title-lg">{tip.title}</h3>
+            <p class="mt-2 leading-relaxed text-on-surface-variant text-pretty">{tip.body}</p>
+            {tip.href && (
+              <a
+                href={tip.href}
+                data-print-url={tip.href}
+                target="_blank"
+                rel="noopener noreferrer"
+                class="mt-auto pt-4 text-sm font-bold underline underline-offset-4 decoration-2 decoration-primary"
+              >
+                {tip.linkLabel} →
+              </a>
+            )}
+          </div>
+        ))
+      }
+    </div>
+  </section>
+
+  {/* PARTNERS */}
+  <section class="bg-surface-container" aria-labelledby="partners">
+    <div class="container-page py-16 md:py-24">
+      <div class="grid gap-8 md:grid-cols-[1fr_auto] md:items-center">
+        <div>
+          <h2 id="partners" class="text-headline-lg">Bring your organization.</h2>
+          <p class="mt-4 max-w-xl leading-relaxed text-pretty">
+            We want agencies, city and county departments, schools, employers, and other nonprofits
+            to take the challenge with us. Ask your team to take one trip without driving and post
+            about it, and we will share what you make. If you want to co-host something during the
+            week, we would love to hear from you.
+          </p>
+        </div>
+        <div class="md:justify-self-end">
+          <a
+            href={partnerMailto}
+            data-print-url={site.email.partners}
+            class="press inline-flex items-center gap-2 bg-on-surface px-7 py-4 font-bold text-surface no-underline hover:bg-primary hover:text-on-primary focus-visible:bg-primary focus-visible:text-on-primary"
+          >
+            Partner with us
+          </a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  {/* AFTER THE WEEK */}
+  <section class="container-page py-16 md:py-24" aria-labelledby="after">
+    <h2 id="after" class="text-headline-lg">What happens after the week.</h2>
+    <p class="mt-4 max-w-2xl leading-relaxed text-pretty">
+      The posts are the point, so we are not letting them disappear after a day.
+    </p>
+    <div class="mt-10 grid gap-8 md:grid-cols-3">
+      {
+        afterTheWeek.map((item) => (
+          <div class="border-t-2 border-outline pt-5">
+            <h3 class="text-title-lg">{item.title}</h3>
+            <p class="mt-2 leading-relaxed text-on-surface-variant text-pretty">{item.body}</p>
+          </div>
+        ))
+      }
+    </div>
+    <p class="mt-10 leading-relaxed">
+      Want the longer version of why we are doing this?{' '}
+      <a
+        href={paths.project('week-without-driving')}
+        class="font-bold underline underline-offset-4 decoration-2 decoration-primary"
+      >
+        Read the project page →
+      </a>
+    </p>
+  </section>
+</BaseLayout>
