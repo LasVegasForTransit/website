@@ -22,12 +22,22 @@ jobs:
   guard:
     name: Same-repo guard
     runs-on: ubuntu-latest
-    if: github.event.pull_request.head.repo.full_name == github.repository
+    if: >-
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      vars.CLOUDFLARE_ACCOUNT_ID != ''
     outputs:
       run: ${{ steps.set.outputs.run }}
     steps:
       - id: set
-        run: echo "run=true" >> "$GITHUB_OUTPUT"
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        run: |
+          if [ -n "$CLOUDFLARE_API_TOKEN" ]; then
+            echo "run=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "run=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::Pages previews are not configured for this repository."
+          fi
 
   build:
     name: Build
