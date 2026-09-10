@@ -35,8 +35,6 @@ interface Env {
   LVBT_TRANSIT_NEWS_INTAKE_SECRET: string;
 }
 
-type JsonError = 'invalid_body' | 'unauthorized' | 'no_page_id' | 'no_url' | 'service_unavailable';
-
 const REQUIRED_SECRETS = ['LVBT_NOTION_API_KEY', 'LVBT_TRANSIT_NEWS_INTAKE_SECRET'] as const;
 
 const NOTION_ID_RE = /^[0-9a-f]{8}-?[0-9a-f]{4}-?[0-9a-f]{4}-?[0-9a-f]{4}-?[0-9a-f]{12}$/i;
