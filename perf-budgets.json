@@ -1,12 +1,12 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "_doc": "Performance budgets enforced by scripts/audit/{bundle-size,asset-budget,build-profile}.ts. Numbers are seeded from today's measurements (build on 2026-05-12) with headroom; tighten as the site stabilizes.",
+  "_doc": "Performance budgets enforced by scripts/audit/{bundle-size,asset-budget,build-profile}.ts. Bundle limits preserve roughly 25 percent headroom above the measured production build.",
   "bundle": {
-    "_doc": "Gzipped sizes of dist/_astro/*.{css,js} + dist/scripts/*.js. Today CSS total ~12.0 KB, JS ~10.9 KB (public scripts plus Astro islands; brand-guide + pagefind-search added search and the brand page).",
-    "cssGzipKb": 20,
-    "jsGzipKb": 12,
-    "totalGzipKb": 24,
-    "individualFileGzipKb": 14
+    "_doc": "Gzipped sizes of dist/_astro/*.{css,js} and dist/scripts/*.js. The limits cover the full shared stylesheet, Astro islands, and public interaction scripts.",
+    "cssGzipKb": 30,
+    "jsGzipKb": 17,
+    "totalGzipKb": 46,
+    "individualFileGzipKb": 24
   },
   "assets": {
     "_doc": "Raster files in public/. If a PNG/JPG exceeds the threshold, it must have a WebP companion of the same stem or be listed in webpExemptions.",

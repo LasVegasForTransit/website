@@ -13,9 +13,6 @@
     "@typescript-eslint/dot-notation": {
       "count": 32
     },
-    "@typescript-eslint/no-unused-vars": {
-      "count": 1
-    },
     "complexity": {
       "count": 1
     },

@@ -1,5 +1,5 @@
 import { existsSync, copyFileSync } from 'node:fs';
-import { randomBytes } from 'node:crypto';
+import { randomUUID } from 'node:crypto';
 import path from 'node:path';
 import { log, text } from '@clack/prompts';
 import pc from 'picocolors';
@@ -50,7 +50,7 @@ const PROMPTED_KEYS: Record<string, EnvKeyConfig> = {
     required: false,
     // Minted here rather than prompted: there is no dashboard to copy it from,
     // and both sides just need the same opaque value.
-    generate: () => randomBytes(32).toString('hex'),
+    generate: () => `${randomUUID()}${randomUUID()}`.replaceAll('-', ''),
     postFill:
       'Paste this same value into Apps Script → Project Settings → Script properties as LVBT_MEMBERSHIP_INTAKE_SECRET.',
   },
