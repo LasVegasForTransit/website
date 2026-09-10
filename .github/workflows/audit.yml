@@ -267,17 +267,7 @@ jobs:
             --project=tablet-landscape \
             --project=desktop \
             --project=desktop-xl \
-            --update-snapshots \
             --reporter=line
-
-      - name: Upload Linux baselines
-        if: always()
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
-        with:
-          name: linux-visual-baselines-${{ github.sha }}
-          path: tests/snapshots/linux/
-          if-no-files-found: error
-          retention-days: 7
 
       - name: Upload Playwright report on failure
         if: failure()
