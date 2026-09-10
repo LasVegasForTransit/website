@@ -61,6 +61,12 @@ async function expectPage(
     'permissions-policy',
   ])
     expectHeader(response, header);
+
+  const policy = response.headers.get('content-security-policy') ?? '';
+  if (!policy.includes("script-src 'self' 'wasm-unsafe-eval'"))
+    fail(`The CSP on ${response.url} does not permit Pagefind WebAssembly.`);
+  if (policy.includes("'unsafe-eval'"))
+    fail(`The CSP on ${response.url} grants unrestricted script evaluation.`);
 }
 
 async function firstCalendarPath(root: string): Promise<string> {
