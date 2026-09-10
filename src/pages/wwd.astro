@@ -5,7 +5,7 @@ import { Icon } from 'astro-icon/components';
 import { site } from '../lib/site';
 import { paths, canonicalUrl } from '../lib/paths';
 import { handleFromUrl } from '../lib/social';
-import { wwd, WWD_DATE_RANGE } from '../lib/wwd';
+import { wwd, wwdResources, WWD_DATE_RANGE } from '../lib/wwd';
 
 // Week Without Driving campaign page. This is LVBT's participant-facing
 // home for the challenge and the placeholder for a future standalone
@@ -163,7 +163,7 @@ const partnerWays = [
   {
     icon: 'mdi:share-variant-outline',
     title: 'Share it with your audience',
-    body: 'We will send you ready-to-post graphics and captions. One post from your account before the week starts is the single most useful thing a partner can do.',
+    body: 'One post from your account before the week starts is the single most useful thing a partner can do. The national Resource Center below has toolkits and templates you can use as they are.',
   },
   {
     icon: 'mdi:bus-clock',
@@ -204,6 +204,16 @@ const afterTheWeek = [
         More than <span class="text-primary">1 in 3</span> people in the U.S. don’t drive. For one week,
         see Las&nbsp;Vegas the way they do.
       </h1>
+      <p class="mt-5 text-body-md text-on-surface-variant">
+        Part of the national{' '}
+        <a
+          href={wwd.nationalUrl}
+          data-print-url={wwd.nationalUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          class="body-link">Week Without Driving</a
+        >, organized by {wwd.nationalOrganizer}.
+      </p>
     </div>
     <div class="reveal mt-7 flex flex-wrap items-end justify-between gap-x-12 gap-y-6">
       <p class="lede max-w-2xl">
@@ -258,11 +268,10 @@ const afterTheWeek = [
         </h2>
         <div class="mt-6 max-w-2xl space-y-4 leading-relaxed text-pretty">
           <p>
-            More than a third of people in the United States don’t drive: kids too young for a
-            license, neighbors who can’t afford a car, people whose disability keeps them out of the
-            driver’s seat, seniors who gave up the keys. In Las&nbsp;Vegas, that means a lot of
-            people getting across a city built for cars on foot, on a bike, or on a bus that comes
-            every half hour.
+            Kids too young for a license. Neighbors who can’t afford a car. People whose disability
+            keeps them out of the driver’s seat. Seniors who gave up the keys. In Las&nbsp;Vegas,
+            that means a lot of people getting across a city built for cars on foot, on a bike, or
+            on a bus that comes every half hour.
           </p>
           <p>
             Week Without Driving asks everyone else to try it. Not to suffer, and not to prove a
@@ -289,6 +298,18 @@ const afterTheWeek = [
         </p>
         <p class="mt-6 text-title-sm text-on-surface-variant">Cost</p>
         <p class="mt-2 text-lg font-semibold">Free. No signup, no form.</p>
+        <p class="mt-6 text-title-sm text-on-surface-variant">National organizer</p>
+        <p class="mt-2 text-lg font-semibold">
+          <a
+            href={wwd.nationalUrl}
+            data-print-url={wwd.nationalUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            class="body-link"
+          >
+            {wwd.nationalOrganizer}
+          </a>
+        </p>
       </aside>
     </div>
   </section>
@@ -456,6 +477,61 @@ const afterTheWeek = [
     </div>
   </section>
 
+  {/* RESOURCES — the national campaign's material and local tools */}
+  <section
+    id="resources"
+    class="container-page scroll-mt-24 border-t border-outline-variant/15 py-16 md:py-24"
+    aria-labelledby="resources-heading"
+  >
+    <div class="reveal max-w-3xl">
+      <h2 id="resources-heading" class="text-headline-lg">Resources.</h2>
+      <p class="lede mt-4">
+        Week Without Driving is a national campaign, and most of what you need already exists. Start
+        with the campaign’s own material, then use ours for the Las&nbsp;Vegas specifics.
+      </p>
+    </div>
+    <div class="mt-10 grid gap-12 lg:grid-cols-2 lg:gap-16">
+      {
+        (
+          [
+            ['participants', 'For participants'],
+            ['organizations', 'For organizations'],
+          ] as const
+        ).map(([audience, heading]) => (
+          <div class="reveal">
+            <h3 class="border-b-2 border-outline pb-3 text-title-lg">{heading}</h3>
+            <ul class="divide-y divide-outline-variant/15">
+              {wwdResources
+                .filter((r) => r.audience === audience)
+                .map((r) => (
+                  <li>
+                    <a
+                      href={r.url}
+                      data-print-url={r.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      class="group block py-5 no-underline"
+                    >
+                      <span class="block font-semibold transition-colors group-hover:text-primary-ink group-focus-visible:text-primary-ink">
+                        {r.title}
+                      </span>
+                      <span class="mt-1 block text-body-sm leading-relaxed text-on-surface-variant text-pretty">
+                        {r.blurb}
+                      </span>
+                      <span class="mt-2 inline-flex items-center gap-1 text-sm font-semibold text-primary-ink">
+                        {r.linkLabel}
+                        <Icon name="mdi:open-in-new" class="size-3.5" aria-hidden="true" />
+                      </span>
+                    </a>
+                  </li>
+                ))}
+            </ul>
+          </div>
+        ))
+      }
+    </div>
+  </section>
+
   {/* PARTNERS — the ask to other organizations */}
   <section
     id="partners"
@@ -581,8 +657,8 @@ const afterTheWeek = [
         <blockquote
           class="border-l-[6px] border-primary py-2 pl-6 text-headline-md font-medium leading-snug text-balance md:pl-10"
         >
-          The bus that comes every half hour is not an inconvenience for a week. For a third of the
-          Valley, it is the schedule.
+          The bus that comes every half hour is not an inconvenience for a week. For the people who
+          ride it every day, it is the schedule.
         </blockquote>
       </div>
     </div>
