@@ -43,12 +43,14 @@ export default defineConfig({
     {
       name: 'mobile-portrait',
       testMatch: /screenshots\.spec\.ts$/,
-      use: { ...devices['iPhone 14'], browserName: 'chromium' }, // 390×844, DPR 3
+      use: { ...devices['iPhone 14'], browserName: 'chromium' }, // viewport 390×664
     },
     {
       name: 'mobile-landscape',
       testMatch: /screenshots\.spec\.ts$/,
-      use: { ...devices['iPhone 14 landscape'], browserName: 'chromium' }, // 844×390, DPR 3
+      // 750 is still below md:, so this shares a layout band with
+      // mobile-portrait; the tablet projects cover 768–1023.
+      use: { ...devices['iPhone 14 landscape'], browserName: 'chromium' }, // viewport 750×340
     },
     {
       name: 'tablet-portrait',
