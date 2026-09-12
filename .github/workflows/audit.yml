@@ -52,7 +52,9 @@ jobs:
     name: Lighthouse
     needs: build
     runs-on: ubuntu-latest
-    timeout-minutes: 12
+    # Twenty routes at three runs each lands just past twelve minutes and
+    # grows with the site. The ceiling only caps a hung run.
+    timeout-minutes: 25
     steps:
       - name: Checkout
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
@@ -84,7 +86,8 @@ jobs:
     name: Lighthouse (mobile)
     needs: build
     runs-on: ubuntu-latest
-    timeout-minutes: 12
+    # Same shape as the desktop job; mobile throttling makes it slower.
+    timeout-minutes: 25
     steps:
       - name: Checkout
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
@@ -223,8 +226,14 @@ jobs:
       - name: Checkout
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
-          lfs: true
           persist-credentials: false
+
+      # The baselines are Git LFS objects; as pointer files they fail as
+      # "Could not decode expected image as PNG". Only this runner's
+      # platform is compared, so pull that subtree rather than every object
+      # under tests/snapshots (~110 MB against a 1 GB/month LFS allowance).
+      - name: Fetch the Linux baselines from LFS
+        run: git lfs pull --include "tests/snapshots/linux/**"
 
       - name: Setup Node + pnpm
         uses: ./.github/actions/setup-node-pnpm
