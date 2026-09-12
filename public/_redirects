@@ -5,6 +5,10 @@
 # preferable for crawlers. This rule overrides the static HTML when deployed.
 /sitemap.xml    /sitemap-index.xml  301
 /get-involved   /go                 301
-/week-without-driving   /wwd        301
+# The campaign's own address. Temporary (302) because the main site is
+# expected to get a programme page of its own at /wwd later; /wwd itself is
+# redirected in functions/_middleware.ts, which can match on hostname.
+/week-without-driving    https://lvwwd.org/  302
+/week-without-driving/   https://lvwwd.org/  302
 # Street interviews on transit was folded into Bus Buddies.
 /projects/social-media-just-talking   /projects/bus-buddies   301
