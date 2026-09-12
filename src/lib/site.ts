@@ -46,6 +46,12 @@ export const site = {
     label: 'Donate',
     url: urlFromEnv('PUBLIC_LVBT_DONATE_URL'),
   },
+  // The Week Without Driving campaign's own address. This project still
+  // serves it (see functions/_middleware.ts) until the standalone Worker
+  // takes the hostname — see docs/reference/week-without-driving-site.md.
+  weekWithoutDriving: {
+    url: 'https://lvwwd.org/',
+  },
   // Candid nonprofit profile — the third-party transparency record linked from
   // the About page. This is stable public organization metadata, not deploy
   // configuration.

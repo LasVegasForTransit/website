@@ -27,11 +27,28 @@ function context(url: string) {
 }
 
 test('leaves the main site alone', async () => {
-  const { ctx, calls } = context('https://lasvegasfortransit.org/wwd/');
+  const { ctx, calls } = context('https://lasvegasfortransit.org/projects/');
   const response = await onRequest(ctx);
   assert.equal(await response.text(), 'next');
   assert.equal(calls.next, 1);
   assert.deepEqual(calls.assets, []);
+});
+
+test('sends the main site campaign path to the campaign host', async () => {
+  for (const path of ['/wwd', '/wwd/']) {
+    const { ctx, calls } = context(`https://lasvegasfortransit.org${path}?utm_source=x`);
+    const response = await onRequest(ctx);
+    assert.equal(response.status, 302);
+    assert.equal(response.headers.get('location'), 'https://lvwwd.org/?utm_source=x');
+    assert.equal(calls.next, 0);
+  }
+});
+
+test('still renders the campaign page on a preview host', async () => {
+  const { ctx, calls } = context('https://abc123.lvbt-website-5zh.pages.dev/wwd/');
+  const response = await onRequest(ctx);
+  assert.equal(await response.text(), 'next');
+  assert.equal(calls.next, 1);
 });
 
 test('redirects www to the apex, keeping the path', async () => {
