@@ -34,7 +34,17 @@ const skippedDuplicates = new Set(
     .filter((children) => children.length > 1)
     .flatMap((children) => children.slice(1)),
 );
-const paths = allPaths.filter((path) => !skippedDuplicates.has(path));
+// Pages whose content is fetched from a third party at build time, plus the
+// events index, which filters on the current date. Their pixels change with
+// no code change — a newly published newsletter issue, an organizer editing
+// the calendar, or simply a date passing — so comparing them would fail this
+// gate on pull requests that changed none of it. Everything that renders from
+// the repository stays in scope.
+const EXTERNALLY_SOURCED = /^\/(events|newsletter)(\/|$)/;
+
+const paths = allPaths.filter(
+  (path) => !skippedDuplicates.has(path) && !EXTERNALLY_SOURCED.test(path),
+);
 
 if (skippedDuplicates.size > 0) {
   console.log(
