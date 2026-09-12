@@ -14,8 +14,8 @@ or unintentionally (in which case you have a regression to fix).
   Widths align to the Tailwind breakpoints actually used in the
   codebase (`md:` 768, `lg:` 1024), so each viewport lands in a
   distinct layout band:
-  - `mobile-portrait` — iPhone 14, 390×844 (DPR 3) — below `md:`
-  - `mobile-landscape` — iPhone 14, 844×390 (DPR 3) — between `md:` and `lg:` (rotated)
+  - `mobile-portrait` — iPhone 14, viewport 390×664, rendered in Chromium — below `md:`
+  - `mobile-landscape` — iPhone 14 rotated, viewport 750×340, rendered in Chromium — also below `md:`, since 750 < 768
   - `tablet-portrait` — iPad Air portrait, 820×1180 — between `md:` and `lg:`
   - `tablet-landscape` — iPad Air landscape, 1180×820 — above `lg:`
   - `desktop` — Desktop Chrome, 1280×720 — above `lg:`
