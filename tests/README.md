@@ -61,28 +61,18 @@ and CI (`linux/`) sets are committed. The `visual-regression` job in
 
 ### Seeding linux baselines
 
-The official Playwright Docker image matches the version of Chromium
-that ships in the ubuntu runner, so capturing there gives PNGs that
-won't drift on the first CI run:
+Run the **Seed baselines** workflow from the Actions tab against your
+branch, download the `baselines-<sha>` artifact it uploads, and commit the
+images under `tests/snapshots/linux/` with the change that required them.
+The run writes every project, so review the diff before committing.
 
-```sh
-docker run --rm -v "$PWD:/work" -w /work \
-  mcr.microsoft.com/playwright:v$(node -p "require('@playwright/test/package.json').version")-jammy \
-  bash -c "corepack enable && pnpm install --frozen-lockfile && \
-           set -a && . ./.env.example && set +a && pnpm build && \
-           AUDIT_SKIP_BUILD=1 AUDIT_PORT=4399 \
-             pnpm exec playwright test tests/screenshots.spec.ts \
-             --update-snapshots \
-             --project=mobile-portrait \
-             --project=mobile-landscape \
-             --project=tablet-portrait \
-             --project=tablet-landscape \
-             --project=desktop \
-             --project=desktop-xl"
-```
-
-That writes PNGs under `tests/snapshots/linux/`. Review and commit the images
-with the change that required them.
+Do this in CI rather than locally. The images have to come from the same
+operating system, CPU architecture and Chromium build as the
+`visual-regression` job: a Playwright container on an Apple Silicon
+machine renders on aarch64 while the runners are amd64, and the two
+rasterize text differently, so images seeded on a laptop fail as soon as
+they reach CI. The workflow also builds with the same `PUBLIC_LVBT_*`
+variables the audit uses, which a local build would otherwise omit.
 
 The Playwright config (`../playwright.config.ts`) starts `pnpm preview`
 on port 4321 automatically. If you already have it running locally it
@@ -117,7 +107,7 @@ tests/
     │   ├── tablet-landscape/
     │   ├── desktop/
     │   └── desktop-xl/
-    └── linux/                # seeded on a Playwright Docker runner; see
+    └── linux/                # seeded by the Seed baselines workflow; see
                               # "Seeding linux baselines" above
 ```
 
