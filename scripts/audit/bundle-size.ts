@@ -19,6 +19,8 @@ interface BundleBudget {
   jsGzipKb: number;
   totalGzipKb: number;
   individualFileGzipKb: number;
+  /** Files allowed their own ceiling, keyed by the stem the build hashes. */
+  perFileExceptions?: Record<string, number>;
 }
 
 interface FileMeasure {
@@ -87,10 +89,16 @@ if (totalGz > budget.totalGzipKb * KB) {
     `Bundle total ${(totalGz / KB).toFixed(2)} KB gz > ${budget.totalGzipKb} KB budget`,
   );
 }
+// The build hashes filenames, so an exception matches on the stem before
+// the hash (BaseLayout.B8C0Ux9f.css -> BaseLayout).
+const exceptions = Object.entries(budget.perFileExceptions ?? {});
 for (const f of files) {
-  if (f.gzipBytes > budget.individualFileGzipKb * KB) {
+  const name = f.path.split('/').pop() ?? f.path;
+  const limitKb =
+    exceptions.find(([stem]) => name.startsWith(`${stem}.`))?.[1] ?? budget.individualFileGzipKb;
+  if (f.gzipBytes > limitKb * KB) {
     breaches.push(
-      `${f.path}: ${(f.gzipBytes / KB).toFixed(2)} KB gz > ${budget.individualFileGzipKb} KB per-file budget`,
+      `${f.path}: ${(f.gzipBytes / KB).toFixed(2)} KB gz > ${limitKb} KB per-file budget`,
     );
   }
 }

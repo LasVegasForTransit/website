@@ -2,11 +2,14 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "_doc": "Performance budgets enforced by scripts/audit/{bundle-size,asset-budget,build-profile}.ts. Bundle limits preserve roughly 25 percent headroom above the measured production build.",
   "bundle": {
-    "_doc": "Gzipped sizes of dist/_astro/*.{css,js} and dist/scripts/*.js. The limits cover the full shared stylesheet, Astro islands, and public interaction scripts.",
+    "_doc": "Gzipped sizes of dist/_astro/*.{css,js} and dist/scripts/*.js. The limits cover the full shared stylesheet, Astro islands, and public interaction scripts. The shared BaseLayout stylesheet every page loads carries its own ceiling in perFileExceptions; the general per-file limit stays near the rest of the distribution, where the next largest artifact is about 2 KB.",
     "cssGzipKb": 30,
     "jsGzipKb": 17,
     "totalGzipKb": 46,
-    "individualFileGzipKb": 24
+    "individualFileGzipKb": 14,
+    "perFileExceptions": {
+      "BaseLayout": 21
+    }
   },
   "assets": {
     "_doc": "Raster files in public/. If a PNG/JPG exceeds the threshold, it must have a WebP companion of the same stem or be listed in webpExemptions.",
