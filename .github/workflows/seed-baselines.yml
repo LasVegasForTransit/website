@@ -1,0 +1,81 @@
+# Regenerates the committed screenshot baselines for the platform CI
+# compares against, and uploads them for review before they are committed.
+#
+# The baselines have to come from the same operating system, CPU
+# architecture and Chromium build as the visual-regression job. A laptop
+# cannot produce them: an Apple Silicon container renders on aarch64 while
+# these runners are amd64, and the two rasterize text differently, so
+# locally seeded images fail the moment they reach CI.
+#
+# Run it from the Actions tab against the branch whose change made the old
+# baselines wrong, download the artifact, and commit the images.
+name: Seed baselines
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: seed-baselines-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  seed:
+    name: Seed baselines
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    # The same values the audit's build job bakes in, so the images match
+    # what the visual job renders rather than a build missing those links.
+    env:
+      PUBLIC_LVBT_INSTAGRAM: ${{ vars.PUBLIC_LVBT_INSTAGRAM }}
+      PUBLIC_LVBT_LINKEDIN: ${{ vars.PUBLIC_LVBT_LINKEDIN }}
+      PUBLIC_LVBT_BLUESKY: ${{ vars.PUBLIC_LVBT_BLUESKY }}
+      PUBLIC_LVBT_DISCORD: ${{ vars.PUBLIC_LVBT_DISCORD }}
+      PUBLIC_LVBT_DONATE_URL: ${{ vars.PUBLIC_LVBT_DONATE_URL }}
+      PUBLIC_LVBT_MEMBERSHIP_FORM_URL: ${{ vars.PUBLIC_LVBT_MEMBERSHIP_FORM_URL }}
+      PUBLIC_LVBT_NEWSLETTER_URL: ${{ vars.PUBLIC_LVBT_NEWSLETTER_URL }}
+      PUBLIC_LVBT_NEWSLETTER_FEED_URL: ${{ vars.PUBLIC_LVBT_NEWSLETTER_FEED_URL }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+
+      # Existing baselines are Git LFS objects. Without them every image is
+      # written from scratch instead of only the ones that changed.
+      - name: Fetch the Linux baselines from LFS
+        run: git lfs pull --include "tests/snapshots/linux/**"
+
+      - name: Setup Node + pnpm
+        uses: ./.github/actions/setup-node-pnpm
+
+      - name: Build site
+        uses: ./.github/actions/build-site
+
+      - name: Install Playwright Chromium
+        run: pnpm test:install
+
+      # Playwright reports an updated image as a failed comparison, so this
+      # step is expected to be red; the artifact below is the output.
+      - name: Write the baselines
+        continue-on-error: true
+        env:
+          AUDIT_SKIP_BUILD: '1'
+        run: |
+          pnpm exec playwright test \
+            --project=mobile-portrait \
+            --project=mobile-landscape \
+            --project=tablet-portrait \
+            --project=tablet-landscape \
+            --project=desktop \
+            --project=desktop-xl \
+            --update-snapshots \
+            --reporter=line
+
+      - name: Upload the baselines
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: baselines-${{ github.sha }}
+          path: tests/snapshots/linux/
