@@ -33,7 +33,7 @@
   },
   "playwright.config.ts": {
     "turbo/no-undeclared-env-vars": {
-      "count": 3
+      "count": 4
     }
   },
   "public/scripts/brand-guide.js": {

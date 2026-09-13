@@ -44,6 +44,9 @@ jobs:
       - name: Setup Node + pnpm
         uses: ./.github/actions/setup-node-pnpm
 
+      - name: Install Chromium
+        run: pnpm exec playwright install --with-deps chromium
+
       - name: Build and validate
         run: pnpm check
 
@@ -66,6 +69,19 @@ jobs:
             sleep 5
           done
           exit 1
+
+      - name: Compare with Pages
+        env:
+          PREVIEW_URL: ${{ steps.upload.outputs.url }}
+        run: >-
+          pnpm worker:test:live
+          --pages https://lasvegasfortransit.org
+          --worker "$PREVIEW_URL"
+
+      - name: Browser acceptance
+        env:
+          PLAYWRIGHT_BASE_URL: ${{ steps.upload.outputs.url }}
+        run: pnpm worker:test:browser
 
       - name: Upsert pull request comment
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0

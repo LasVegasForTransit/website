@@ -28,6 +28,8 @@
     "worker:types": "wrangler types worker-configuration.d.ts --include-runtime=false --check",
     "worker:check": "wrangler deploy --dry-run --outdir .wrangler/deploy-dry-run",
     "worker:test": "tsx scripts/audit/worker-parity.ts",
+    "worker:test:live": "tsx scripts/audit/worker-live-parity.ts",
+    "worker:test:browser": "playwright test",
     "worker:preview": "tsx scripts/deploy/worker-preview.ts",
     "worker:upload": "pnpm build && wrangler versions upload",
     "worker:deploy": "pnpm build && wrangler deploy",

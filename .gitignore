@@ -34,6 +34,7 @@ pnpm-debug.log*
 # claude code: ignore only the per-machine local settings; shared
 # .claude config (settings.json, commands, agents) can be committed
 .claude/settings.local.json
+.claude/worktrees/
 
 # antigravity (gemini ide) project link — symlinks to ~/.gemini, per-machine
 .antigravitycli/

@@ -27,6 +27,16 @@ Create the `worker-preview` GitHub environment. Add `CLOUDFLARE_WORKERS_API_TOKE
 
 Set the repository variable `CLOUDFLARE_WORKERS_PREVIEW_ENABLED` to `true` after `pnpm worker:upload` succeeds for `lvbt-website`. Re-run the pull request workflow and open the `Worker candidate` link in its comment.
 
+The preview workflow compares the Worker with the Pages production origin, then runs the complete Playwright suite against the Worker URL. The same checks run locally against an uploaded candidate:
+
+```sh
+pnpm worker:test:live \
+  --pages https://lasvegasfortransit.org \
+  --worker https://<version>-lvbt-website.<account>.workers.dev
+PLAYWRIGHT_BASE_URL=https://<version>-lvbt-website.<account>.workers.dev \
+  pnpm worker:test:browser
+```
+
 Inspect the navigation at phone and desktop widths. Check the browser console, refresh a nested route, follow the sitemap redirect, open an event calendar file, and exercise each API with test credentials. Confirm Cloudflare Web Analytics does not record the preview hostname.
 
 ## Record acceptance

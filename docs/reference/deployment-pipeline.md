@@ -21,7 +21,7 @@ The checked configuration lives in `wrangler.jsonc`. It exposes no custom domain
 
 Every pull request receives ordinary validation. Same-repository pull requests also receive the existing Pages preview.
 
-The `Deploy Worker preview` workflow runs when the repository variable `CLOUDFLARE_WORKERS_PREVIEW_ENABLED` is `true`. Its token comes only from the `worker-preview` GitHub environment. The workflow uploads a Worker version without deploying it, verifies the versioned preview URL, and updates one pull request comment. Forks never receive the token.
+The `Deploy Worker preview` workflow runs when the repository variable `CLOUDFLARE_WORKERS_PREVIEW_ENABLED` is `true`. Its token comes only from the `worker-preview` GitHub environment. The workflow uploads a Worker version without deploying it, verifies the versioned preview URL, compares its HTTP contract with Pages, runs the Playwright accessibility and visual suites against the edge deployment, and updates one pull request comment. Forks never receive the token.
 
 The preview environment contains:
 
