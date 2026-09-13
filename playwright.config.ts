@@ -7,7 +7,8 @@ import { defineConfig, devices } from '@playwright/test';
 // collision silently reuses the dev server and tests run against whatever
 // checkout that server is serving, not the worktree's fresh dist.
 const PORT = Number(process.env.AUDIT_PORT ?? '4321');
-const BASE_URL = `http://localhost:${PORT}`;
+const REMOTE_BASE_URL = process.env.PLAYWRIGHT_BASE_URL?.trim();
+const BASE_URL = REMOTE_BASE_URL?.length ? REMOTE_BASE_URL : `http://localhost:${PORT}`;
 
 export default defineConfig({
   testDir: './tests',
@@ -89,19 +90,21 @@ export default defineConfig({
       use: { ...devices['Desktop Chrome'] },
     },
   ],
-  webServer: {
-    // AUDIT_SKIP_BUILD lets the baseline orchestrator (which already builds
-    // up front) reuse that dist instead of triggering a rebuild here. A
-    // mid-test rebuild rewrites dist/sitemap-0.xml under tests/a11y.spec.ts,
-    // which reads it at module load and ENOENTs across late-spawning workers.
-    command:
-      process.env.AUDIT_SKIP_BUILD === '1'
-        ? `pnpm preview --port ${PORT}`
-        : `pnpm build && pnpm preview --port ${PORT}`,
-    url: BASE_URL,
-    reuseExistingServer: !process.env.CI,
-    timeout: 180_000,
-    stdout: 'pipe',
-    stderr: 'pipe',
-  },
+  webServer: REMOTE_BASE_URL
+    ? undefined
+    : {
+        // AUDIT_SKIP_BUILD lets the baseline orchestrator (which already builds
+        // up front) reuse that dist instead of triggering a rebuild here. A
+        // mid-test rebuild rewrites dist/sitemap-0.xml under tests/a11y.spec.ts,
+        // which reads it at module load and ENOENTs across late-spawning workers.
+        command:
+          process.env.AUDIT_SKIP_BUILD === '1'
+            ? `pnpm preview --port ${PORT}`
+            : `pnpm build && pnpm preview --port ${PORT}`,
+        url: BASE_URL,
+        reuseExistingServer: !process.env.CI,
+        timeout: 180_000,
+        stdout: 'pipe',
+        stderr: 'pipe',
+      },
 });
