@@ -171,26 +171,5 @@ const canonical = canonicalUrl(Astro.url.pathname);
     {chrome === 'site' && <script is:inline src="/scripts/reveal-on-scroll.js" defer />}
     {chrome === 'site' && <script is:inline src="/scripts/copy-anchor.js" defer />}
     {chrome === 'site' && <script is:inline src="/scripts/print-links.js" defer />}
-    {
-      /* Cloudflare Web Analytics. Real-user CWV + page-view counts to
-         complement the synthetic Lighthouse runs in CI. Gated on
-         PUBLIC_CWA_TOKEN so local dev (no token in .env.local) ships
-         no beacon and the CSP stays tight. The token is baked into
-         the static HTML — that's how CWA is designed; the dashboard
-         tokens are not secret credentials. `defer` (not `async`) so
-         the beacon never competes with first-paint work. */
-    }
-    {
-      import.meta.env.PUBLIC_CWA_TOKEN && (
-        <script
-          is:inline
-          defer
-          src="https://static.cloudflareinsights.com/beacon.min.js"
-          data-cf-beacon={JSON.stringify({
-            token: import.meta.env.PUBLIC_CWA_TOKEN,
-          })}
-        />
-      )
-    }
   </body>
 </html>

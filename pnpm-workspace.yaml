@@ -20,6 +20,7 @@ catalog:
   '@cloudflare/workers-types': 5.20260901.1
   '@iconify-json/mdi': 1.2.3
   '@lhci/cli': 0.15.1
+  '@lvbt/analytics': https://github.com/LasVegasForTransit/analytics/releases/download/v0.1.0/lvbt-analytics-0.1.0.tgz
   '@playwright/test': 1.62.1
   '@tailwindcss/typography': 0.5.20
   '@tailwindcss/vite': 4.3.3
