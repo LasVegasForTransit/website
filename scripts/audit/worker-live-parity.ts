@@ -24,8 +24,24 @@ function htmlMetadata(html: string): { canonical: string | null; title: string |
   return { canonical, title };
 }
 
-export function previewIncludesAnalytics(html: string): boolean {
-  return html.includes('static.cloudflareinsights.com/beacon.min.js');
+const analyticsSignatures = [
+  'static.cloudflareinsights.com/beacon.min.js',
+  'events.lasvegasfortransit.org',
+];
+
+export async function previewIncludesAnalytics(
+  html: string,
+  loadScript: (pathname: string) => Promise<string> = () => Promise.resolve(''),
+): Promise<boolean> {
+  if (analyticsSignatures.some((signature) => html.includes(signature))) return true;
+
+  const scriptPaths = [...html.matchAll(/<script\s+[^>]*src=["']([^"']+)["'][^>]*>/gi)]
+    .map((match) => match[1])
+    .filter((pathname): pathname is string => pathname?.startsWith('/') === true);
+  const scripts = await Promise.all(scriptPaths.map(loadScript));
+  return scripts.some((script) =>
+    analyticsSignatures.some((signature) => script.includes(signature)),
+  );
 }
 
 export async function compareResponses(
@@ -125,7 +141,11 @@ async function run(): Promise<void> {
   }
 
   const previewHome = await (await request(worker, '/')).text();
-  if (previewIncludesAnalytics(previewHome))
+  if (
+    await previewIncludesAnalytics(previewHome, async (pathname) =>
+      (await request(worker, pathname)).text(),
+    )
+  )
     differences.push('/: Worker preview includes Cloudflare Web Analytics');
 
   const result = { cases: cases.length, differences, ok: differences.length === 0, pages, worker };

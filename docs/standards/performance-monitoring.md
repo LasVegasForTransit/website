@@ -82,23 +82,24 @@ directive. The config still checks the other production SEO audits directly.
 
 This is the field side: speed measured from real visitors. CWA = Cloudflare Web Analytics, a privacy-respecting RUM tool (no cookies, no fingerprinting — it doesn't track individuals). It works via a **beacon**: a tiny script that quietly sends measurements back to a server. The site ships `beacon.min.js` from
 `static.cloudflareinsights.com` and POSTs (sends) CWV samples to
-`cloudflareinsights.com`. Both origins are **allow-listed** (explicitly permitted) in
+`cloudflareinsights.com`. The shared LVBT analytics client also sends declared interaction events
+to `events.lasvegasfortransit.org`. All three origins are **allow-listed** (explicitly permitted) in
 [`public/_headers`](../../public/_headers) under our CSP (Content Security Policy — a security header that whitelists which outside servers the page may talk to, see [glossary](../reference/glossary.md#csp)): `script-src` lists where scripts may load from, `connect-src` lists where the page may send data. Without these two entries, the browser would block the beacon.
 
 Activation:
 
 - Get the site token from the Cloudflare dashboard (Analytics → Web
   Analytics → your site → "Token").
-- Add it as `PUBLIC_CWA_TOKEN` in Cloudflare Pages env vars (environment
-  variables — named settings kept outside the code, see
-  [glossary](../reference/glossary.md#env-var)), for production _and_
-  preview.
-- For local dev, `pnpm bootstrap --phase env` prompts for the value and
-  writes it to `.env.local`.
+- Add it as the `PUBLIC_LVBT_CWA_TOKEN` GitHub Actions variable (a named setting
+  kept outside the code, see [glossary](../reference/glossary.md#env-var)).
+- The production workflow sets `LVBT_REQUIRE_ANALYTICS=1`, which both enables
+  the shared analytics integration and fails the build when the token is absent.
+- Preview, CI, and local builds do not set that production gate, so they omit
+  both the analytics client and the Cloudflare beacon.
 
-[`src/layouts/BaseLayout.astro`](../../src/layouts/BaseLayout.astro) gates the
-`<script>` tag on `import.meta.env.PUBLIC_CWA_TOKEN`. No token, no
-beacon — the strict default CSP holds.
+[`astro.config.mjs`](../../astro.config.mjs) loads `@lvbt/analytics/astro` only
+for that gated production build. The package owns the beacon and the shared
+LVBT event collector; individual layouts do not carry analytics scripts.
 
 Token rotation (replacing the secret token with a fresh one and retiring
 the old): rotate yearly or sooner if a leak is suspected. Generate

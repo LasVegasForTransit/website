@@ -65,12 +65,19 @@ void test('reports response contract differences', async () => {
   ]);
 });
 
-void test('detects Cloudflare Web Analytics on a preview page', () => {
+void test('detects Cloudflare Web Analytics on a preview page', async () => {
   assert.equal(
-    previewIncludesAnalytics(
+    await previewIncludesAnalytics(
       '<script src="https://static.cloudflareinsights.com/beacon.min.js"></script>',
     ),
     true,
   );
-  assert.equal(previewIncludesAnalytics('<main>Preview</main>'), false);
+  assert.equal(
+    await previewIncludesAnalytics(
+      '<script type="module" src="/_astro/analytics.js"></script>',
+      () => Promise.resolve('const collector = "https://events.lasvegasfortransit.org";'),
+    ),
+    true,
+  );
+  assert.equal(await previewIncludesAnalytics('<main>Preview</main>'), false);
 });

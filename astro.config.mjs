@@ -5,6 +5,7 @@ import sitemap from '@astrojs/sitemap';
 import { EnumChangefreq } from 'sitemap';
 import tailwindcss from '@tailwindcss/vite';
 import icon from 'astro-icon';
+import { analyticsIntegrations } from './src/lib/analytics';
 
 // Sitemap signals are intentionally URL-pattern based, not frontmatter-driven.
 // Reading collection frontmatter from astro.config.mjs is fragile (would need
@@ -76,6 +77,8 @@ export default defineConfig({
     // actually referenced via `<Icon name="…" />` end up in the bundle. Used
     // for the event format pill and reusable for any future iconography.
     icon(),
+    // eslint-disable-next-line turbo/no-undeclared-env-vars -- Production-only build gate; this single-package repo has no Turbo task config.
+    ...analyticsIntegrations(process.env.LVBT_REQUIRE_ANALYTICS === '1'),
   ],
   // /sitemap.xml is the URL most humans (and some lazy crawlers) type, but
   // @astrojs/sitemap publishes the index at /sitemap-index.xml. Astro emits a
