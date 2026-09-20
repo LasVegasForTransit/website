@@ -29,7 +29,7 @@ const analyticsSignatures = [
   'events.lasvegasfortransit.org',
 ];
 
-export async function previewIncludesAnalytics(
+export async function pageIncludesAnalytics(
   html: string,
   loadScript: (pathname: string) => Promise<string> = () => Promise.resolve(''),
 ): Promise<boolean> {
@@ -81,6 +81,25 @@ export async function compareResponses(
   return differences;
 }
 
+export function parityCases(includeApis = true): Array<{ method?: string; pathname: string }> {
+  const cases: Array<{ method?: string; pathname: string }> = [
+    { pathname: '/' },
+    { pathname: '/about/' },
+    { pathname: '/not-a-real-page' },
+    { pathname: '/get-involved' },
+    { pathname: '/sitemap.xml' },
+    { pathname: '/week-without-driving' },
+    { pathname: '/projects/social-media-just-talking' },
+  ];
+  if (includeApis)
+    cases.push(
+      { pathname: '/api/subscribe', method: 'POST' },
+      { pathname: '/api/membership-intake', method: 'POST' },
+      { pathname: '/api/transit-news-intake', method: 'POST' },
+    );
+  return cases;
+}
+
 function origin(value: string | undefined, option: string): string {
   if (!value) throw new Error(`Pass ${option} with an HTTPS origin.`);
   const parsed = new URL(value);
@@ -110,6 +129,7 @@ async function run(): Promise<void> {
     options: {
       json: { type: 'boolean', default: false },
       pages: { type: 'string' },
+      'skip-api': { type: 'boolean', default: false },
       worker: { type: 'string' },
     },
   });
@@ -117,19 +137,8 @@ async function run(): Promise<void> {
   const worker = origin(values.worker, '--worker');
   if (pages === worker) throw new Error('--pages and --worker must identify different origins.');
 
-  const cases: Array<{ method?: string; pathname: string }> = [
-    { pathname: '/' },
-    { pathname: '/about/' },
-    { pathname: '/not-a-real-page' },
-    { pathname: '/get-involved' },
-    { pathname: '/sitemap.xml' },
-    { pathname: '/week-without-driving' },
-    { pathname: '/projects/social-media-just-talking' },
-    { pathname: await firstCalendarPath() },
-    { pathname: '/api/subscribe', method: 'POST' },
-    { pathname: '/api/membership-intake', method: 'POST' },
-    { pathname: '/api/transit-news-intake', method: 'POST' },
-  ];
+  const cases = parityCases(!values['skip-api']);
+  cases.push({ pathname: await firstCalendarPath() });
 
   const differences: string[] = [];
   for (const testCase of cases) {
@@ -140,13 +149,15 @@ async function run(): Promise<void> {
     differences.push(...(await compareResponses(testCase.pathname, reference, candidate)));
   }
 
-  const previewHome = await (await request(worker, '/')).text();
-  if (
-    await previewIncludesAnalytics(previewHome, async (pathname) =>
-      (await request(worker, pathname)).text(),
-    )
-  )
-    differences.push('/: Worker preview includes Cloudflare Web Analytics');
+  const [pagesHome, workerHome] = await Promise.all([
+    request(pages, '/').then((response) => response.text()),
+    request(worker, '/').then((response) => response.text()),
+  ]);
+  const [pagesAnalytics, workerAnalytics] = await Promise.all([
+    pageIncludesAnalytics(pagesHome, async (pathname) => (await request(pages, pathname)).text()),
+    pageIncludesAnalytics(workerHome, async (pathname) => (await request(worker, pathname)).text()),
+  ]);
+  if (pagesAnalytics !== workerAnalytics) differences.push('/: analytics integration differs');
 
   const result = { cases: cases.length, differences, ok: differences.length === 0, pages, worker };
   process.stdout.write(

@@ -36,6 +36,8 @@ jobs:
       PUBLIC_LVBT_MEMBERSHIP_FORM_URL: ${{ vars.PUBLIC_LVBT_MEMBERSHIP_FORM_URL }}
       PUBLIC_LVBT_NEWSLETTER_URL: ${{ vars.PUBLIC_LVBT_NEWSLETTER_URL }}
       PUBLIC_LVBT_NEWSLETTER_FEED_URL: ${{ vars.PUBLIC_LVBT_NEWSLETTER_FEED_URL }}
+      PUBLIC_LVBT_CWA_TOKEN: ${{ vars.PUBLIC_LVBT_CWA_TOKEN }}
+      LVBT_REQUIRE_ANALYTICS: '1'
     steps:
       - name: Checkout
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
@@ -78,6 +80,7 @@ jobs:
           pnpm worker:test:live
           --pages https://lasvegasfortransit.org
           --worker "$PREVIEW_URL"
+          --skip-api
 
       - name: Browser acceptance
         env:
