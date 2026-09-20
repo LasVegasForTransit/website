@@ -37,6 +37,16 @@ Application secrets bind directly to the Worker before endpoint acceptance. Buil
 
 `Deploy production` publishes `dist/` to the `lvbt-website` Pages project from `main`. The custom hostnames `lasvegasfortransit.org` and `www.lasvegasfortransit.org` remain attached to Pages through the acceptance period.
 
+After a successful Pages deployment, `Deploy Worker candidate` uploads the same `main` commit as a
+versioned Worker when `CLOUDFLARE_WORKERS_CANDIDATE_ENABLED` is `true`. It compares the candidate
+with the production Pages origin, runs the browser acceptance suite, and records the commit, Worker
+version, and preview URL in the workflow summary. The workflow uses `wrangler versions upload`; it
+does not create a deployment or edit a route.
+
+The `worker-candidate` environment contains the same account variable and narrowly scoped
+`CLOUDFLARE_WORKERS_API_TOKEN` secret as `worker-preview`. Keeping the environments separate permits
+independent approvals and credential rotation. A manual run is accepted only from `main`.
+
 Workers cutover requires a candidate built from the current `main` commit and a recorded previous Pages deployment. DNS, TLS, redirects, headers, analytics, static pages, 404 handling, and every API route are checked against the version preview before the hostname route changes. The Pages project stays available until the Worker passes the same checks on the production hostname.
 
 ## Rollback

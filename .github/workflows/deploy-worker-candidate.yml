@@ -1,0 +1,105 @@
+name: Deploy Worker candidate
+
+on:
+  workflow_run:
+    workflows: [Deploy production]
+    types: [completed]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  deployments: write
+  packages: read
+
+concurrency:
+  group: deploy-worker-candidate
+  cancel-in-progress: false
+
+jobs:
+  candidate:
+    name: Upload and verify candidate
+    if: >-
+      vars.CLOUDFLARE_WORKERS_CANDIDATE_ENABLED == 'true' &&
+      ((github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main') ||
+      (github.event_name == 'workflow_run' &&
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.head_branch == 'main'))
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    environment:
+      name: worker-candidate
+      url: ${{ steps.upload.outputs.url }}
+    env:
+      CANDIDATE_SHA: ${{ github.event.workflow_run.head_sha || github.sha }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_WORKERS_API_TOKEN }}
+      PUBLIC_LVBT_INSTAGRAM: ${{ vars.PUBLIC_LVBT_INSTAGRAM }}
+      PUBLIC_LVBT_LINKEDIN: ${{ vars.PUBLIC_LVBT_LINKEDIN }}
+      PUBLIC_LVBT_BLUESKY: ${{ vars.PUBLIC_LVBT_BLUESKY }}
+      PUBLIC_LVBT_DISCORD: ${{ vars.PUBLIC_LVBT_DISCORD }}
+      PUBLIC_LVBT_DONATE_URL: ${{ vars.PUBLIC_LVBT_DONATE_URL }}
+      PUBLIC_LVBT_MEMBERSHIP_FORM_URL: ${{ vars.PUBLIC_LVBT_MEMBERSHIP_FORM_URL }}
+      PUBLIC_LVBT_NEWSLETTER_URL: ${{ vars.PUBLIC_LVBT_NEWSLETTER_URL }}
+      PUBLIC_LVBT_NEWSLETTER_FEED_URL: ${{ vars.PUBLIC_LVBT_NEWSLETTER_FEED_URL }}
+    steps:
+      - name: Checkout deployed commit
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          ref: ${{ env.CANDIDATE_SHA }}
+          persist-credentials: false
+
+      - name: Setup Node + pnpm
+        uses: ./.github/actions/setup-node-pnpm
+
+      - name: Install Chromium
+        run: pnpm exec playwright install --with-deps chromium
+
+      - name: Build and validate
+        run: pnpm check
+
+      - name: Upload Worker version
+        id: upload
+        run: >-
+          pnpm worker:preview
+          --alias candidate
+          --message "Candidate $CANDIDATE_SHA"
+
+      - name: Wait for candidate
+        env:
+          PREVIEW_URL: ${{ steps.upload.outputs.url }}
+        run: |
+          set -euo pipefail
+          for _ in 1 2 3 4 5 6; do
+            if curl --fail --silent --show-error --max-time 15 "$PREVIEW_URL" > /dev/null; then
+              exit 0
+            fi
+            sleep 5
+          done
+          exit 1
+
+      - name: Compare with Pages
+        env:
+          PREVIEW_URL: ${{ steps.upload.outputs.url }}
+        run: >-
+          pnpm worker:test:live
+          --pages https://lasvegasfortransit.org
+          --worker "$PREVIEW_URL"
+
+      - name: Browser acceptance
+        env:
+          PLAYWRIGHT_BASE_URL: ${{ steps.upload.outputs.url }}
+        run: pnpm worker:test:browser
+
+      - name: Record candidate
+        env:
+          PREVIEW_URL: ${{ steps.upload.outputs.url }}
+          VERSION_ID: ${{ steps.upload.outputs.version }}
+        run: |
+          {
+            echo '### Worker candidate verified'
+            echo
+            echo "- Commit: \`$CANDIDATE_SHA\`"
+            echo "- Version: \`$VERSION_ID\`"
+            echo "- Preview: $PREVIEW_URL"
+            echo '- Reference: https://lasvegasfortransit.org'
+          } >> "$GITHUB_STEP_SUMMARY"

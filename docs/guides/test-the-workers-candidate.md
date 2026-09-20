@@ -39,6 +39,20 @@ PLAYWRIGHT_BASE_URL=https://<version>-lvbt-website.<account>.workers.dev \
 
 Inspect the navigation at phone and desktop widths. Check the browser console, refresh a nested route, follow the sitemap redirect, open an event calendar file, and exercise each API with test credentials. Confirm Cloudflare Web Analytics does not record the preview hostname.
 
+## Verify a main candidate
+
+Create a separate `worker-candidate` GitHub environment with `CLOUDFLARE_ACCOUNT_ID` and
+`CLOUDFLARE_WORKERS_API_TOKEN`. Set `CLOUDFLARE_WORKERS_CANDIDATE_ENABLED` to `true` only after the
+preview workflow passes.
+
+Each successful Pages production run then starts `Deploy Worker candidate` for the same commit. The
+workflow uploads a version with the stable `candidate` preview alias, compares it with Pages, and
+runs the browser suite. It does not attach a route. Use **Run workflow** on `main` to repeat the check
+without publishing Pages again.
+
+Copy the commit, version, and preview URL from the workflow summary into the cutover change. Keep the
+candidate workflow disabled after cutover unless parallel Pages comparison is still required.
+
 ## Record acceptance
 
 Record the commit, Worker version, Pages deployment, preview URL, and check time in the cutover change. Compare these behaviors before attaching the production hostname:
