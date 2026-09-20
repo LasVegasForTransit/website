@@ -31,6 +31,7 @@ async function main(): Promise<void> {
     options: {
       alias: { type: 'string' },
       message: { type: 'string' },
+      secrets: { type: 'boolean', default: false },
     },
   });
   const alias = values.alias;
@@ -40,7 +41,8 @@ async function main(): Promise<void> {
   const directory = await mkdtemp(path.join(os.tmpdir(), 'lvbt-worker-preview-'));
   const receiptPath = path.join(directory, 'wrangler.jsonl');
   const secretsPath = path.join(directory, 'secrets.json');
-  await writeFile(secretsPath, `${JSON.stringify(workerSecrets())}\n`, { mode: 0o600 });
+  if (values.secrets)
+    await writeFile(secretsPath, `${JSON.stringify(workerSecrets())}\n`, { mode: 0o600 });
   await execute(
     'pnpm',
     [
@@ -52,8 +54,7 @@ async function main(): Promise<void> {
       alias,
       '--message',
       values.message ?? `Website preview ${alias}`,
-      '--secrets-file',
-      secretsPath,
+      ...(values.secrets ? ['--secrets-file', secretsPath] : []),
     ],
     {
       env: {

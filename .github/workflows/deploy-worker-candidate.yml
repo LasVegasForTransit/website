@@ -71,6 +71,7 @@ jobs:
           pnpm worker:preview
           --alias candidate
           --message "Candidate $CANDIDATE_SHA"
+          --secrets
 
       - name: Wait for candidate
         env:
