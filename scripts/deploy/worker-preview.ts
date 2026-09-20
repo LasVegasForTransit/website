@@ -9,6 +9,23 @@ import { previewUploadReceipt } from '@lvbt/web-platform/release';
 
 const execute = promisify(execFile);
 
+const workerSecretNames = [
+  'LVBT_BEEHIIV_API_KEY',
+  'LVBT_BEEHIIV_PUBLICATION_ID',
+  'LVBT_MEMBERSHIP_INTAKE_SECRET',
+  'LVBT_NOTION_API_KEY',
+  'LVBT_NOTION_DATA_SOURCE_ID',
+  'LVBT_TRANSIT_NEWS_INTAKE_SECRET',
+] as const;
+
+function workerSecrets(): Record<string, string> {
+  const entries = workerSecretNames.map((name) => [name, process.env[name]?.trim()] as const);
+  const missing = entries.filter(([, value]) => !value).map(([name]) => name);
+  if (missing.length > 0)
+    throw new Error(`Set the Worker candidate secrets: ${missing.join(', ')}.`);
+  return Object.fromEntries(entries) as Record<string, string>;
+}
+
 async function main(): Promise<void> {
   const { values } = parseArgs({
     options: {
@@ -22,6 +39,8 @@ async function main(): Promise<void> {
 
   const directory = await mkdtemp(path.join(os.tmpdir(), 'lvbt-worker-preview-'));
   const receiptPath = path.join(directory, 'wrangler.jsonl');
+  const secretsPath = path.join(directory, 'secrets.json');
+  await writeFile(secretsPath, `${JSON.stringify(workerSecrets())}\n`, { mode: 0o600 });
   await execute(
     'pnpm',
     [
@@ -33,6 +52,8 @@ async function main(): Promise<void> {
       alias,
       '--message',
       values.message ?? `Website preview ${alias}`,
+      '--secrets-file',
+      secretsPath,
     ],
     {
       env: {
