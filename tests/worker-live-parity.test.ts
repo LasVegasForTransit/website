@@ -1,7 +1,11 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
-import { compareResponses, previewIncludesAnalytics } from '../scripts/audit/worker-live-parity';
+import {
+  compareResponses,
+  pageIncludesAnalytics,
+  parityCases,
+} from '../scripts/audit/worker-live-parity';
 
 const securityHeaders = {
   'content-security-policy': "default-src 'self'",
@@ -65,19 +69,26 @@ void test('reports response contract differences', async () => {
   ]);
 });
 
-void test('detects Cloudflare Web Analytics on a preview page', async () => {
+void test('detects the shared analytics integration in built pages', async () => {
   assert.equal(
-    await previewIncludesAnalytics(
+    await pageIncludesAnalytics(
       '<script src="https://static.cloudflareinsights.com/beacon.min.js"></script>',
     ),
     true,
   );
   assert.equal(
-    await previewIncludesAnalytics(
-      '<script type="module" src="/_astro/analytics.js"></script>',
-      () => Promise.resolve('const collector = "https://events.lasvegasfortransit.org";'),
+    await pageIncludesAnalytics('<script type="module" src="/_astro/analytics.js"></script>', () =>
+      Promise.resolve('const collector = "https://events.lasvegasfortransit.org";'),
     ),
     true,
   );
-  assert.equal(await previewIncludesAnalytics('<main>Preview</main>'), false);
+  assert.equal(await pageIncludesAnalytics('<main>Preview</main>'), false);
+});
+
+void test('keeps protected API parity out of pull request previews', () => {
+  assert.equal(parityCases().filter(({ pathname }) => pathname.startsWith('/api/')).length, 3);
+  assert.equal(
+    parityCases(false).some(({ pathname }) => pathname.startsWith('/api/')),
+    false,
+  );
 });
