@@ -6,8 +6,22 @@ packages:
 
 minimumReleaseAge: 1440
 
+minimumReleaseAgeExclude:
+  - '@lasvegasfortransit/analytics@0.1.0'
+
+packageExtensions:
+  '@lasvegasfortransit/analytics@0.1.0':
+    peerDependenciesMeta:
+      '@playwright/test':
+        optional: true
+      astro:
+        optional: true
+      react:
+        optional: true
+      vite:
+        optional: true
+
 overrides:
-  '@lasvegasfortransit/analytics': link:../../analytics/platform/packages/analytics
   sharp: 0.35.4
   smol-toml: 1.8.0
   svgo: 4.1.0
