@@ -97,7 +97,7 @@ Activation:
 - Preview, CI, and local builds do not set that production gate, so they omit
   both the analytics client and the Cloudflare beacon.
 
-[`astro.config.mjs`](../../astro.config.mjs) loads `@lvbt/analytics/astro` only
+[`astro.config.mjs`](../../astro.config.mjs) loads `@lasvegasfortransit/analytics/astro` only
 for that gated production build. The package owns the beacon and the shared
 LVBT event collector; individual layouts do not carry analytics scripts.
 

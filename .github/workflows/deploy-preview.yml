@@ -6,8 +6,9 @@ on:
 
 permissions:
   contents: read
-  pull-requests: write
   deployments: write
+  packages: read
+  pull-requests: write
 
 # Newer pushes to the same PR cancel an in-flight preview deploy.
 concurrency:

@@ -8,6 +8,7 @@ on:
 permissions:
   contents: read
   deployments: write
+  packages: read
 
 # Never cancel a prod deploy in flight — let it finish, then queue the next.
 concurrency:

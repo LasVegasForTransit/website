@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { test } from 'node:test';
 
-import { csp } from '@lvbt/analytics';
+import { csp } from '@lasvegasfortransit/analytics';
 import { analyticsIntegrations } from '../src/lib/analytics';
 
 function integrationNames(requireAnalytics: boolean): string[] {
@@ -10,8 +10,8 @@ function integrationNames(requireAnalytics: boolean): string[] {
 }
 
 void test('enables LVBT analytics only for the required production build', () => {
-  assert.equal(integrationNames(false).includes('@lvbt/analytics'), false);
-  assert.equal(integrationNames(true).includes('@lvbt/analytics'), true);
+  assert.equal(integrationNames(false).includes('@lasvegasfortransit/analytics'), false);
+  assert.equal(integrationNames(true).includes('@lasvegasfortransit/analytics'), true);
 });
 
 void test('allows every analytics endpoint through the production CSP', async () => {

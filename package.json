@@ -73,7 +73,7 @@
   "dependencies": {
     "@astrojs/mdx": "catalog:",
     "@astrojs/sitemap": "catalog:",
-    "@lvbt/analytics": "catalog:",
+    "@lasvegasfortransit/analytics": "catalog:",
     "@tailwindcss/typography": "catalog:",
     "@tailwindcss/vite": "catalog:",
     "astro": "catalog:",

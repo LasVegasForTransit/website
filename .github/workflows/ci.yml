@@ -7,6 +7,7 @@ on:
 # Least-privilege defaults; jobs widen only what they need.
 permissions:
   contents: read
+  packages: read
 
 # Cancel in-progress CI when a newer commit lands on the same ref.
 concurrency:
