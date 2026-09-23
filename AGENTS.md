@@ -121,7 +121,7 @@ hidden body markers or GitHub-side prose checks.
 
 ## Stack quick map
 
-- Astro 6 + Tailwind v4 (MDX content collections under `src/content/`)
+- Astro 7 + Tailwind v4 (MDX content collections under `src/content/`)
 - Cloudflare Pages in production, with an equivalent Cloudflare Worker built and checked on every change
 - pnpm 11.25.0 and Node 24.20.x
 - Playwright for tests and ad-hoc screenshots
