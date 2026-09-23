@@ -16,29 +16,38 @@ export interface NotionResponse {
   json: unknown;
 }
 
-export async function notionFetch(
-  token: string,
-  method: string,
-  pathname: string,
-  body?: unknown,
-): Promise<NotionResponse> {
-  const res = await fetch(`${NOTION_API}/${pathname}`, {
-    method,
-    headers: {
-      Authorization: `Bearer ${token}`,
-      'Notion-Version': NOTION_VERSION,
-      'Content-Type': 'application/json',
-    },
-    body: body === undefined ? undefined : JSON.stringify(body),
-  });
-  let json: unknown = null;
-  try {
-    json = await res.json();
-  } catch {
-    json = null;
-  }
-  return { ok: res.ok, status: res.status, json };
+/**
+ * A Notion API caller that sends requests with `fetcher`. Tests pass a fake;
+ * everything else uses `notionFetch`.
+ */
+export function notionClient(fetcher?: typeof fetch) {
+  return async (
+    token: string,
+    method: string,
+    pathname: string,
+    body?: unknown,
+  ): Promise<NotionResponse> => {
+    // Looked up per call, so a test that swaps the global fetch is honored.
+    const res = await (fetcher ?? fetch)(`${NOTION_API}/${pathname}`, {
+      method,
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'Notion-Version': NOTION_VERSION,
+        'Content-Type': 'application/json',
+      },
+      body: body === undefined ? undefined : JSON.stringify(body),
+    });
+    let json: unknown = null;
+    try {
+      json = await res.json();
+    } catch {
+      json = null;
+    }
+    return { ok: res.ok, status: res.status, json };
+  };
 }
+
+export const notionFetch = notionClient();
 
 // Notion responses come back as `unknown`; these read one field safely so the
 // callers stay free of repeated object/null/typeof narrowing.

@@ -45,7 +45,7 @@ Information you look up, not read.
 - [Deployment pipeline](./reference/deployment-pipeline.md) — how code gets from `git push` to lasvegasfortransit.org
 - [Key facts](./reference/key-facts.md) — verified numbers used across copy
 - [Design tokens](./reference/design-tokens.md) — color + type tokens, canvas/band system
-- [Newsletter signup & verification](./reference/newsletter-signup.md) — the on-site subscribe form, Beehiiv config, double opt-in
+- [Joining LVBT on the website](./reference/newsletter-signup.md) — the join form and newsletter box, what they store, and how to verify them
 - [Membership intake automation](./reference/membership-intake.md) — Google Forms to Beehiiv and Notion
 - [The Week Without Driving campaign host](./reference/week-without-driving-site.md) — what lvwwd.org serves, and how to move it onto its own Worker
 - [Transit news pipeline](./reference/transit-news-pipeline.md) — schema, extraction logic, and the Cloudflare enrichment function

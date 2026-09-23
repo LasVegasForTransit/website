@@ -46,7 +46,6 @@ export const en = {
     hint: 'This helps us invite you to things near you. We never share it outside LVBT.',
     ratherNotSay: "I'd rather not say",
     submit: 'Continue',
-    expired: 'This step has expired. You are already a member, so there is nothing more to do.',
   },
   welcome: {
     title: "You're in",

@@ -1,15 +1,15 @@
-/* Wires up [data-newsletter-form] forms: intercepts submit, POSTs JSON
- * to /api/subscribe (a Cloudflare Pages Function in functions/api/),
- * and surfaces success / invalid_email / generic-failure into the
- * adjacent [data-form-status] element. Idempotent — re-wires after
- * astro:page-load view-transition swaps without double-binding.
+/* Wires up [data-newsletter-form] forms: intercepts submit, posts the form
+ * to the join handler (/join/member/) asking for JSON, and shows the result
+ * in the adjacent [data-form-status] element. Subscribing makes someone an
+ * LVBT member. The status texts come from the message catalog through data
+ * attributes on the status element. Without this script the form still
+ * works: it posts normally and lands on the welcome page. Idempotent —
+ * re-wires after astro:page-load view-transition swaps without
+ * double-binding.
  *
  * Lives in public/scripts/ rather than as a hoisted <script> in the
  * component because the site's CSP is `script-src 'self'` (see
- * public/_headers). Astro inlines short hoisted scripts, which the CSP
- * blocks in production — without this script running, the form falls
- * back to native submission and the page "refreshes". Same pattern as
- * header-stuck.js / share-button.js.
+ * public/_headers). Same pattern as header-stuck.js / share-button.js.
  */
 (() => {
   function wire() {
@@ -22,53 +22,45 @@
       // [data-form-status] is a sibling of the form, not a descendant —
       // walk up to the embed wrapper to find it.
       const status = form.parentElement?.querySelector('[data-form-status]') ?? null;
-      const originalLabel = btn ? btn.textContent : 'Subscribe';
+      const text = (name, fallback) => status?.dataset[name] || fallback;
+      const originalLabel = btn ? btn.textContent : '';
+
+      const restore = () => {
+        if (!btn) return;
+        btn.disabled = false;
+        btn.textContent = originalLabel;
+      };
 
       form.addEventListener('submit', async (e) => {
         e.preventDefault();
-        const input = form.elements.namedItem('email');
-        const email = input && 'value' in input ? input.value.trim() : '';
-
         if (btn) {
           btn.disabled = true;
-          btn.textContent = 'Subscribing…';
+          btn.textContent = text('sending', originalLabel);
         }
         if (status) status.textContent = '';
 
         try {
-          const res = await fetch('/api/subscribe', {
+          const res = await fetch(form.action, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email }),
+            headers: { Accept: 'application/json' },
+            body: new FormData(form),
           });
-
           const data = await res.json().catch(() => ({}));
 
-          if (data && data.success) {
+          if (data && data.status === 'joined') {
             form.reset();
-            if (btn) btn.textContent = 'Check your inbox ✓';
-            if (status)
-              status.textContent =
-                'Almost there — check your inbox and click the link to confirm your subscription.';
+            restore();
+            if (status) status.textContent = text('success', '');
             return;
           }
-
           if (status) {
             status.textContent =
-              data && data.error === 'invalid_email'
-                ? "That doesn't look like a valid email address."
-                : 'Something went wrong. Please try again.';
+              data && data.status === 'invalid' ? text('invalidEmail', '') : text('error', '');
           }
-          if (btn) {
-            btn.disabled = false;
-            btn.textContent = originalLabel;
-          }
+          restore();
         } catch {
-          if (status) status.textContent = 'Something went wrong. Please try again.';
-          if (btn) {
-            btn.disabled = false;
-            btn.textContent = originalLabel;
-          }
+          if (status) status.textContent = text('error', '');
+          restore();
         }
       });
     }

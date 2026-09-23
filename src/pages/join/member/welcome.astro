@@ -1,0 +1,33 @@
+---
+// The confirmation page after joining. Served through
+// functions/join/member/welcome.ts, which fills in the name and email this
+// browser just submitted.
+import BaseLayout from '../../../layouts/BaseLayout.astro';
+import { t } from '../../../../platform/messages';
+import { site } from '../../../lib/site';
+
+const linkClass = 'font-bold underline underline-offset-4 decoration-2 decoration-primary';
+---
+
+<BaseLayout title={t('welcome.title')} noindex>
+  <section class="container-page pt-12 pb-16 md:pt-16 md:pb-24">
+    <div class="max-w-2xl">
+      <h1 class="text-headline-lg" data-slot="heading">{t('welcome.heading')}</h1>
+      <p class="lede mt-4" data-slot="sent-to" hidden></p>
+      <p class="mt-6 border-2 border-primary-ink p-4" data-slot="address-notice" hidden></p>
+      <h2 class="text-title-lg mt-10">{t('welcome.nextStepsHeading')}</h2>
+      <ul class="mt-4 space-y-3">
+        <li><a href="/events" class={linkClass}>{t('welcome.nextEvents')}</a></li>
+        {
+          site.social.discord && (
+            <li>
+              <a href={site.social.discord} class={linkClass}>
+                {t('welcome.nextDiscord')}
+              </a>
+            </li>
+          )
+        }
+      </ul>
+    </div>
+  </section>
+</BaseLayout>

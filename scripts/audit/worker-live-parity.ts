@@ -93,7 +93,6 @@ export function parityCases(includeApis = true): Array<{ method?: string; pathna
   ];
   if (includeApis)
     cases.push(
-      { pathname: '/api/subscribe', method: 'POST' },
       { pathname: '/api/membership-intake', method: 'POST' },
       { pathname: '/api/transit-news-intake', method: 'POST' },
     );

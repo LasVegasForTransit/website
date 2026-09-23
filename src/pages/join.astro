@@ -4,6 +4,7 @@ import PageHero from '../components/PageHero.astro';
 import { getCollection } from 'astro:content';
 import { site } from '../lib/site';
 import { generalInterestMailto } from '../lib/role-mailto';
+import { membershipUrl, membershipPrintUrl } from '../lib/membership';
 
 const roles = (await getCollection('roles')).sort(
   (a, b) => (a.data.order ?? 99) - (b.data.order ?? 99),
@@ -38,9 +39,7 @@ const roles = (await getCollection('roles')).sort(
   <section id="membership" class="container-page pt-16 pb-12 md:pt-24 md:pb-16">
     <h2 class="text-headline-lg max-w-3xl">Become a member.</h2>
     <div class="mt-6 max-w-2xl space-y-4 leading-relaxed">
-      <p>
-        Membership is free and takes a minute. Fill out the membership form and you're on the rolls.
-      </p>
+      <p>Membership is free and takes a minute. Join on this site and you're on the rolls.</p>
       <p>
         You'll get our newsletter — the easiest way to keep up with the 2028 service cuts, the 2027
         legislative session, and the times we need people to show up. And the more members we have,
@@ -49,31 +48,13 @@ const roles = (await getCollection('roles')).sort(
       </p>
     </div>
     <div class="mt-8">
-      {
-        site.membership.formUrl ? (
-          <a
-            href={site.membership.formUrl}
-            data-print-url={site.membership.formUrl}
-            target="_blank"
-            rel="noopener"
-            class="press inline-flex items-center gap-1.5 bg-on-surface text-surface px-6 py-3 font-bold no-underline hover:bg-primary hover:text-on-primary focus-visible:bg-primary focus-visible:text-on-primary"
-          >
-            Become a member
-          </a>
-        ) : (
-          <p class="leading-relaxed">
-            Our membership form isn't available right now. Email{' '}
-            <a
-              href={generalInterestMailto()}
-              data-print-url={site.email.general}
-              class="font-bold underline underline-offset-4 decoration-2 decoration-primary"
-            >
-              {site.email.general}
-            </a>{' '}
-            and we'll add you.
-          </p>
-        )
-      }
+      <a
+        href={membershipUrl}
+        data-print-url={membershipPrintUrl}
+        class="press inline-flex items-center gap-1.5 bg-on-surface text-surface px-6 py-3 font-bold no-underline hover:bg-primary hover:text-on-primary focus-visible:bg-primary focus-visible:text-on-primary"
+      >
+        Become a member
+      </a>
     </div>
   </section>
 
