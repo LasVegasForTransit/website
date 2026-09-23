@@ -16,6 +16,8 @@
       "/join/member/*",
       "/join/remove",
       "/join/remove/*",
+      "/prototypes/join",
+      "/prototypes/join/*",
     ],
   },
   "observability": {

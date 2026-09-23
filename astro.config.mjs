@@ -5,6 +5,8 @@ import sitemap from '@astrojs/sitemap';
 import { EnumChangefreq } from 'sitemap';
 import tailwindcss from '@tailwindcss/vite';
 import icon from 'astro-icon';
+import { rm } from 'node:fs/promises';
+import { fileURLToPath } from 'node:url';
 import { analyticsIntegrations } from './src/lib/analytics';
 
 // Sitemap signals are intentionally URL-pattern based, not frontmatter-driven.
@@ -20,7 +22,9 @@ const sitemapFilter = (page) => {
   // The join steps after the form, the email-removal page and the
   // preview-only pattern gallery have nothing to index.
   const privatePaths = ['/qr', '/join/member/region', '/join/member/welcome', '/join/remove'];
-  return !privatePaths.includes(path) && !path.startsWith('/patterns');
+  return (
+    !privatePaths.includes(path) && !path.startsWith('/patterns') && !path.startsWith('/prototypes')
+  );
 };
 
 /**
@@ -65,6 +69,21 @@ const sitemapSerialize = (item) => {
   return item;
 };
 
+// Prototypes are ordinary pages under src/pages/prototypes/, so a build that
+// isn't meant to have them deletes them once it finishes (the pattern gallery
+// leaves itself out through getStaticPaths). See src/lib/preview-pages.ts.
+/** @returns {import('astro').AstroIntegration} */
+const previewPagesOnlyWhereAllowed = () => ({
+  name: 'lvbt-preview-pages',
+  hooks: {
+    'astro:build:done': async ({ dir }) => {
+      if (process.env.PUBLIC_LVBT_PREVIEW_PAGES === '1') return;
+      const root = fileURLToPath(dir);
+      await rm(`${root}prototypes`, { recursive: true, force: true });
+    },
+  },
+});
+
 export default defineConfig({
   site: 'https://lasvegasfortransit.org',
   integrations: [
@@ -80,6 +99,7 @@ export default defineConfig({
     // actually referenced via `<Icon name="…" />` end up in the bundle. Used
     // for the event format pill and reusable for any future iconography.
     icon(),
+    previewPagesOnlyWhereAllowed(),
     // eslint-disable-next-line turbo/no-undeclared-env-vars -- Production-only build gate; this single-package repo has no Turbo task config.
     ...analyticsIntegrations(process.env.LVBT_REQUIRE_ANALYTICS === '1'),
   ],
