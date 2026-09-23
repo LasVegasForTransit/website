@@ -1,5 +1,11 @@
 # Membership Google Form as the source of truth for new members
 
+> **Superseded on 2026-09-23.** The Organizing Platform's person record is now
+> the canonical record of who joined, and the Google Form is a supported
+> fallback that reaches it through a versioned intake interface. See the
+> [Organizing Platform decision record](../../explanation/decisions/organizing-platform.md)
+> and [membership-intake.md](../../reference/membership-intake.md).
+
 **Date:** 2026-06-14
 **Status:** Approved design, pending spec review
 
