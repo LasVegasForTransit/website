@@ -62,7 +62,7 @@ function withCookie(cookies: string[]): Request {
   return new Request('https://lasvegasfortransit.org/account/', { headers: { Cookie: pairs } });
 }
 
-void test('a member gets one code email; an unknown address gets none and the same answer', async () => {
+void test('a member gets one code email; an unknown address gets the same answer', async () => {
   const db = memoryDb();
   await member(db);
   const { sent, fetcher } = fakeResend();
@@ -80,7 +80,6 @@ void test('a member gets one code email; an unknown address gets none and the sa
   assert.equal(known.kind, 'sent');
   assert.equal(unknown.kind, 'sent');
   assert.deepEqual(Object.keys(known.step).sort(), Object.keys(unknown.step).sort());
-  assert.equal(unknown.send, undefined);
 
   await known.send?.();
   assert.equal(sent.length, 1);
@@ -91,6 +90,28 @@ void test('a member gets one code email; an unknown address gets none and the sa
   assert.ok(code, 'the code is in the subject');
   assert.match(email.text, new RegExp(`Your LVBT sign-in code is ${code}\\.`));
   assert.match(email.text, /\/sign-in\/link\/[\w-]{40,}/);
+});
+
+void test('an unknown address is invited to join by email, at most once a day, with no code', async () => {
+  const db = memoryDb();
+  const { sent, fetcher } = fakeResend();
+  const ask = () =>
+    askForCode(env(db), { email: 'Nobody@Example.org', callerAddress: CALLER }, fetcher);
+
+  const first = await ask();
+  assert.equal(first.kind, 'sent');
+  await first.send?.();
+  const second = await ask();
+  assert.equal(second.kind, 'sent');
+  assert.equal(second.send, undefined, 'a second ask the same day sends nothing');
+
+  assert.equal(sent.length, 1);
+  const [email] = sent;
+  assert.ok(email);
+  assert.deepEqual(email.to, ['nobody@example.org']);
+  assert.equal(email.subject, 'Join LVBT to sign in');
+  assert.match(email.text, /\/join\/member\//);
+  assert.doesNotMatch(email.text, /\d{6}|\/sign-in\/link\//);
 });
 
 void test('a correct code signs in once, with exactly the cookie attributes', async () => {
