@@ -24,6 +24,13 @@ const TARGET_LABEL: Record<SecretTarget, string> = {
 
 type Inventory = Record<SecretTarget, Set<string> | null>;
 
+export function canGenerateSecret(secret: PlatformSecret, inventory: Inventory): boolean {
+  return (
+    secret.generate === true &&
+    secret.targets.every((target) => inventory[target]?.has(secret.name) === false)
+  );
+}
+
 function workerSecretNames(projectRoot: string): Set<string> | null {
   const result = runCommand(
     `pnpm -s exec wrangler secret list --name ${WORKER_NAME} --format json`,
@@ -168,12 +175,15 @@ function instructions(secret: PlatformSecret): string {
 }
 
 // A generated value, a pasted value, or null when the person skips it.
-async function obtainValue(secret: PlatformSecret): Promise<string | null> {
-  if (secret.generate) {
+async function obtainValue(secret: PlatformSecret, generate: boolean): Promise<string | null> {
+  if (generate) {
     log.info(`${pc.bold(secret.name)}: generated a new random value.`);
     return `${randomUUID()}${randomUUID()}`.replaceAll('-', '');
   }
-  note(instructions(secret), secret.name);
+  const existingValueWarning = secret.generate
+    ? 'This secret is already set elsewhere or a target could not be checked. Paste the same existing value; generating a new one here would break the integration. Leave the prompt empty if you cannot retrieve it.'
+    : '';
+  note([existingValueWarning, instructions(secret)].filter(Boolean).join('\n\n'), secret.name);
   if (secret.url && (await promptConfirm('Open that page in your browser?', true))) {
     openInBrowser(secret.url);
   }
@@ -193,10 +203,11 @@ async function obtainValue(secret: PlatformSecret): Promise<string | null> {
 async function finishAfterSet(
   secret: PlatformSecret,
   value: string,
+  generated: boolean,
   followUpItems: FollowUp[],
 ): Promise<void> {
   if (!secret.afterSet) return;
-  if (!secret.generate) {
+  if (!generated) {
     followUpItems.push({ kind: 'remote', message: secret.afterSet });
     return;
   }
@@ -265,7 +276,8 @@ export async function runSecretsPhase(
     const targets = missingTargets(secret, inventory).filter((target) => inventory[target]);
     if (targets.length === 0) continue;
 
-    const value = await obtainValue(secret);
+    const generated = canGenerateSecret(secret, inventory);
+    const value = await obtainValue(secret, generated);
     if (!value) {
       skipped += 1;
       followUpItems.push({
@@ -279,7 +291,7 @@ export async function runSecretsPhase(
         log.success(`${secret.name} → ${TARGET_LABEL[target]}`);
       }
     }
-    await finishAfterSet(secret, value, followUpItems);
+    await finishAfterSet(secret, value, generated, followUpItems);
   }
 
   return {
