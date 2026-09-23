@@ -167,6 +167,58 @@ jobs:
           AUDIT_SKIP_BUILD: '1'
         run: pnpm check:a11y
 
+  long-text:
+    name: Long text (en-XA)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    # Builds every member-facing message in the en-XA pseudo-language, about 40
+    # percent longer and accented, and checks that the join and sign-in pages
+    # still fit a 320-pixel phone. See platform/messages/README.md.
+    env:
+      PUBLIC_LVBT_INSTAGRAM: ${{ vars.PUBLIC_LVBT_INSTAGRAM }}
+      PUBLIC_LVBT_LINKEDIN: ${{ vars.PUBLIC_LVBT_LINKEDIN }}
+      PUBLIC_LVBT_BLUESKY: ${{ vars.PUBLIC_LVBT_BLUESKY }}
+      PUBLIC_LVBT_DISCORD: ${{ vars.PUBLIC_LVBT_DISCORD }}
+      PUBLIC_LVBT_DONATE_URL: ${{ vars.PUBLIC_LVBT_DONATE_URL }}
+      PUBLIC_LVBT_MEMBERSHIP_FORM_URL: ${{ vars.PUBLIC_LVBT_MEMBERSHIP_FORM_URL }}
+      PUBLIC_LVBT_NEWSLETTER_URL: ${{ vars.PUBLIC_LVBT_NEWSLETTER_URL }}
+      PUBLIC_LVBT_NEWSLETTER_FEED_URL: ${{ vars.PUBLIC_LVBT_NEWSLETTER_FEED_URL }}
+      LVBT_PSEUDO_LOCALE: '1'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+
+      - name: Setup Node + pnpm
+        uses: ./.github/actions/setup-node-pnpm
+
+      # A plain build, not the shared build-site step: that step uploads the
+      # build as this commit's site artifact, which the screenshot and deploy
+      # jobs use, and they must get the English build.
+      - name: Build site in en-XA
+        run: pnpm build
+
+      - name: Cache Playwright browsers
+        id: pw-cache
+        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
+
+      - name: Install Playwright Chromium
+        if: steps.pw-cache.outputs.cache-hit != 'true'
+        run: pnpm test:install
+
+      - name: Install system deps for headless Chromium
+        if: steps.pw-cache.outputs.cache-hit == 'true'
+        run: pnpm exec playwright install-deps chromium
+
+      - name: Check the join and sign-in pages
+        env:
+          AUDIT_SKIP_BUILD: '1'
+        run: pnpm exec playwright test tests/a11y-pseudo-locale.spec.ts --project=a11y
+
   perf-memory:
     name: Runtime memory
     needs: build
