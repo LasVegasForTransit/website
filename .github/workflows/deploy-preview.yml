@@ -57,6 +57,8 @@ jobs:
       PUBLIC_LVBT_MEMBERSHIP_FORM_URL: ${{ vars.PUBLIC_LVBT_MEMBERSHIP_FORM_URL }}
       PUBLIC_LVBT_NEWSLETTER_URL: ${{ vars.PUBLIC_LVBT_NEWSLETTER_URL }}
       PUBLIC_LVBT_NEWSLETTER_FEED_URL: ${{ vars.PUBLIC_LVBT_NEWSLETTER_FEED_URL }}
+      # Build the preview-only app pattern gallery, so it is checked and reviewable.
+      PUBLIC_LVBT_PATTERN_GALLERY: '1'
     steps:
       - name: Checkout
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
