@@ -5,7 +5,7 @@ import path from 'node:path';
 import { promisify } from 'node:util';
 import { parseArgs } from 'node:util';
 
-import { previewUploadReceipt } from '@lvbt/web-platform/release';
+import { previewUploadReceipt } from '@lasvegasfortransit/web-platform/release';
 
 const execute = promisify(execFile);
 
