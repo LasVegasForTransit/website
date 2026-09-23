@@ -2,13 +2,14 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "_doc": "Performance budgets enforced by scripts/audit/{bundle-size,asset-budget,build-profile}.ts. Bundle limits preserve roughly 25 percent headroom above the measured production build.",
   "bundle": {
-    "_doc": "Gzipped sizes of dist/_astro/*.{css,js} and dist/scripts/*.js. The limits cover the full shared stylesheet, Astro islands, and public interaction scripts. The shared BaseLayout stylesheet every page loads carries its own ceiling in perFileExceptions; the general per-file limit stays near the rest of the distribution, where the next largest artifact is about 2 KB.",
+    "_doc": "Gzipped sizes of dist/_astro/*.{css,js} and dist/scripts/*.js. The limits cover the full shared stylesheet, Astro islands, and public interaction scripts. The shared BaseLayout stylesheet every page loads carries its own ceiling in perFileExceptions; the general per-file limit stays near the rest of the distribution, where the next largest artifact is about 2 KB. The app patterns' enhancement script (public/scripts/app-enhance.js) has its own 3 KB ceiling from the Build for the bus standard.",
     "cssGzipKb": 30,
     "jsGzipKb": 17,
     "totalGzipKb": 46,
     "individualFileGzipKb": 14,
     "perFileExceptions": {
-      "BaseLayout": 21
+      "BaseLayout": 21,
+      "app-enhance": 3
     }
   },
   "assets": {
@@ -17,7 +18,7 @@
     "webpExemptions": ["favicon.ico"]
   },
   "build": {
-    "_doc": "Peak resident set size of pnpm build, in MB. Report-only (null): single-run peak RSS swings with machine load and GC timing — samples have ranged ~80–170 MB on the same tree — so a hard threshold flaps on noise instead of signalling a real regression. The durable signal is the trend in audits/build-stats.jsonl, where a sustained jump shows up. Set a number here to re-enable a hard local gate (build-profile.ts is local-only; not a CI merge gate).",
+    "_doc": "Peak resident set size of pnpm build, in MB. Report-only (null): single-run peak RSS swings with machine load and GC timing \u2014 samples have ranged ~80\u2013170 MB on the same tree \u2014 so a hard threshold flaps on noise instead of signalling a real regression. The durable signal is the trend in audits/build-stats.jsonl, where a sustained jump shows up. Set a number here to re-enable a hard local gate (build-profile.ts is local-only; not a CI merge gate).",
     "peakRssMb": null
   },
   "runtime": {
