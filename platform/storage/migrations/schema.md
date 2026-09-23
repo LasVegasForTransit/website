@@ -73,7 +73,7 @@ One timestamped thing a person did, such as joining. Events are only ever added:
 
 ## review_queue
 
-A possible match between two people that a staff member confirms (`merged`) or rejects (`kept_separate`).
+A possible match between two people that a staff member confirms (`merged`) or rejects (`kept_separate`). `reason` says why the pair was queued, and `details` holds anything the incoming record said that couldn't be stored on the new person, such as an email another person already has. Each pair is queued once per reason. The rules are in `platform/storage/person-service.md`, "Matching".
 
 ## merges
 
