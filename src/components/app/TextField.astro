@@ -1,0 +1,93 @@
+---
+// A text field with its label, optional hint and error. The label and hint
+// are tied to the field for screen readers. The error message is always in
+// the page but hidden, so a server can show it by removing `hidden` (the join
+// handlers do this with HTMLRewriter) or a page can pass `error` to show it.
+// Copy rules: docs/explanation/app-copy.md#hints and #errors.
+import { errorClass, hintClass, inputClass, labelClass } from './styles';
+
+interface Props {
+  name: string;
+  label: string;
+  type?: 'text' | 'email' | 'tel' | 'code';
+  hint?: string;
+  /** The error message for this field. Shown when `showError` is true. */
+  error?: string;
+  showError?: boolean;
+  value?: string;
+  autocomplete?: string;
+  required?: boolean;
+  disabled?: boolean;
+  width?: 'full' | 'short' | 'code';
+  /** Keep this field out of saved drafts, for sensitive answers. */
+  noDraft?: boolean;
+}
+
+const {
+  name,
+  label,
+  type = 'text',
+  hint,
+  error,
+  showError = false,
+  value,
+  autocomplete,
+  required = false,
+  disabled = false,
+  width = 'full',
+  noDraft = false,
+} = Astro.props;
+
+const isCode = type === 'code';
+const inputType = isCode ? 'text' : type;
+const inputmode = isCode
+  ? 'numeric'
+  : type === 'email'
+    ? 'email'
+    : type === 'tel'
+      ? 'tel'
+      : undefined;
+const hintId = hint ? `${name}-hint` : undefined;
+const errorId = error ? `${name}-error` : undefined;
+const describedBy =
+  [showError ? errorId : undefined, hintId].filter(Boolean).join(' ') || undefined;
+const widthClass = {
+  full: 'max-w-md',
+  short: 'max-w-[10rem]',
+  code: 'max-w-[8rem] tracking-[0.3em]',
+}[width];
+---
+
+<div>
+  <label for={name} class={labelClass}>{label}</label>
+  {
+    hint && (
+      <p id={hintId} class={hintClass}>
+        {hint}
+      </p>
+    )
+  }
+  {
+    error && (
+      <p id={errorId} data-error-for={name} hidden={!showError} class={errorClass}>
+        {error}
+      </p>
+    )
+  }
+  <input
+    id={name}
+    name={name}
+    type={inputType}
+    inputmode={inputmode}
+    autocomplete={isCode ? 'one-time-code' : autocomplete}
+    spellcheck={type === 'email' || isCode ? 'false' : undefined}
+    maxlength={isCode ? 6 : undefined}
+    value={value}
+    required={required}
+    disabled={disabled}
+    aria-describedby={describedBy}
+    aria-invalid={showError ? 'true' : undefined}
+    data-no-draft={isCode || noDraft ? '' : undefined}
+    class:list={[inputClass, widthClass]}
+  />
+</div>

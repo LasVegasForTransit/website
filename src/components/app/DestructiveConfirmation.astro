@@ -1,0 +1,31 @@
+---
+// Confirm or go back, for anything that can't be undone. It is its own page
+// or an inline section, never a pop-up dialog, so it works without
+// JavaScript and with any screen reader.
+import { buttonClass, linkClass } from './styles';
+
+interface Props {
+  heading: string;
+  action: string;
+  confirmLabel: string;
+  backHref: string;
+  backLabel: string;
+  hidden?: Record<string, string>;
+}
+
+const { heading, action, confirmLabel, backHref, backLabel, hidden = {} } = Astro.props;
+---
+
+<section aria-labelledby="destructive-heading" class="border-2 border-primary-ink p-6">
+  <h2 id="destructive-heading" class="text-title-lg">{heading}</h2>
+  <div class="mt-3"><slot /></div>
+  <form method="post" action={action} class="mt-6 flex flex-wrap items-center gap-6">
+    {
+      Object.entries(hidden).map(([name, value]) => (
+        <input type="hidden" name={name} value={value} />
+      ))
+    }
+    <button type="submit" class={buttonClass.destructive}>{confirmLabel}</button>
+    <a href={backHref} class={linkClass}>{backLabel}</a>
+  </form>
+</section>

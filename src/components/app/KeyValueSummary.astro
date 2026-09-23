@@ -1,0 +1,35 @@
+---
+// A person's details as a description list, each with a "Change" link whose
+// text says what it changes (docs/explanation/app-copy.md#links).
+import { linkClass } from './styles';
+
+interface Row {
+  key: string;
+  value: string;
+  change?: { href: string; label: string };
+}
+
+interface Props {
+  rows: Row[];
+}
+
+const { rows } = Astro.props;
+---
+
+<dl class="border-t border-outline">
+  {
+    rows.map((row) => (
+      <div class="grid gap-2 border-b border-outline py-4 sm:grid-cols-[12rem_1fr_auto] sm:gap-6">
+        <dt class="font-bold">{row.key}</dt>
+        <dd>{row.value}</dd>
+        {row.change && (
+          <dd>
+            <a href={row.change.href} class={linkClass}>
+              {row.change.label}
+            </a>
+          </dd>
+        )}
+      </div>
+    ))
+  }
+</dl>

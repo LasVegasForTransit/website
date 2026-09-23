@@ -1,0 +1,27 @@
+---
+// A button. Its label starts with a verb that says what happens
+// (docs/explanation/app-copy.md#buttons). Submit buttons carry a busy label:
+// the enhancement script shows it and blocks a second submit while the first
+// is on its way.
+import { buttonClass } from './styles';
+
+interface Props {
+  variant?: 'primary' | 'secondary' | 'destructive';
+  type?: 'submit' | 'button';
+  busyLabel?: string;
+  name?: string;
+  value?: string;
+}
+
+const { variant = 'primary', type = 'submit', busyLabel, name, value } = Astro.props;
+---
+
+<button
+  type={type}
+  name={name}
+  value={value}
+  data-busy-label={busyLabel}
+  class={buttonClass[variant]}
+>
+  <slot />
+</button>

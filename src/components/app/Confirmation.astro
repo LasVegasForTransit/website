@@ -1,0 +1,40 @@
+---
+// The page after a form succeeds: what happened, then what happens next
+// (docs/explanation/app-copy.md#confirmations). `clearDrafts` names the form
+// whose saved draft the enhancement script can now discard.
+import { linkClass } from './styles';
+
+interface Props {
+  heading: string;
+  nextStepsHeading?: string;
+  nextSteps?: { href: string; label: string }[];
+  clearDrafts?: string;
+  /** 1 on a real confirmation page; 2 where the page already has an h1. */
+  headingLevel?: 1 | 2;
+}
+
+const { heading, nextStepsHeading, nextSteps = [], clearDrafts, headingLevel = 1 } = Astro.props;
+const Heading = headingLevel === 1 ? 'h1' : 'h2';
+const SubHeading = headingLevel === 1 ? 'h2' : 'h3';
+---
+
+<div data-clear-drafts={clearDrafts}>
+  <Heading class="text-headline-lg" data-slot="heading">{heading}</Heading>
+  <slot />
+  {
+    nextSteps.length > 0 && (
+      <>
+        <SubHeading class="text-title-lg mt-10">{nextStepsHeading}</SubHeading>
+        <ul class="mt-4 space-y-3">
+          {nextSteps.map((step) => (
+            <li>
+              <a href={step.href} class={linkClass}>
+                {step.label}
+              </a>
+            </li>
+          ))}
+        </ul>
+      </>
+    )
+  }
+</div>
