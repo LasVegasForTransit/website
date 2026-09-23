@@ -1,0 +1,29 @@
+---
+// Change your area, from a home address used once and deleted, or a ZIP
+// code. Served through functions/account/area/index.ts.
+import AccountFormPage from '../../components/app/AccountFormPage.astro';
+import TextField from '../../components/app/TextField.astro';
+import { t } from '../../../platform/messages';
+---
+
+<AccountFormPage
+  title={t('account.areaTitle')}
+  intro={t('account.areaIntro')}
+  action="/account/area/"
+  errors={[{ field: 'zip', message: t('account.zipError') }]}
+>
+  <TextField
+    name="address"
+    label={t('account.addressLabel')}
+    hint={t('account.addressHint')}
+    autocomplete="street-address"
+    noDraft
+  />
+  <TextField
+    name="zip"
+    label={t('account.zipLabel')}
+    autocomplete="postal-code"
+    width="short"
+    error={t('account.zipError')}
+  />
+</AccountFormPage>

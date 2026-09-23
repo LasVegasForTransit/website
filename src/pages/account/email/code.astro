@@ -1,0 +1,24 @@
+---
+// Change your email: step two, the code sent to the new address. Served
+// through functions/account/email/code/index.ts.
+import AccountFormPage from '../../../components/app/AccountFormPage.astro';
+import TextField from '../../../components/app/TextField.astro';
+import { t } from '../../../../platform/messages';
+---
+
+<AccountFormPage
+  title={t('account.emailCodeTitle')}
+  action="/account/email/code/"
+  errors={[{ field: 'code', message: t('signIn.codeError') }]}
+  submitLabel={t('account.confirm')}
+  busyLabel={t('account.saving')}
+>
+  <TextField
+    name="code"
+    label={t('signIn.codeLabel')}
+    type="code"
+    width="code"
+    required
+    error={t('signIn.codeError')}
+  />
+</AccountFormPage>

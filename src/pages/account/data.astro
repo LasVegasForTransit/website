@@ -1,0 +1,21 @@
+---
+// Download your data. The button posts to functions/account/data/index.ts,
+// which answers with the file.
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import Button from '../../components/app/Button.astro';
+import { linkClass } from '../../components/app/styles';
+import { t } from '../../../platform/messages';
+---
+
+<BaseLayout title={t('account.dataTitle')} noindex>
+  <section class="container-page pt-12 pb-16 md:pt-16 md:pb-24">
+    <div class="max-w-2xl">
+      <p><a href="/account/" class={linkClass}>{t('account.back')}</a></p>
+      <h1 class="text-headline-lg mt-6">{t('account.dataTitle')}</h1>
+      <p class="lede mt-4">{t('account.dataBody')}</p>
+      <form method="post" action="/account/data/" class="mt-8">
+        <Button>{t('account.download')}</Button>
+      </form>
+    </div>
+  </section>
+</BaseLayout>

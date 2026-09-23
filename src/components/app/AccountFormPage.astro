@@ -1,0 +1,56 @@
+---
+// One account edit page: heading, optional introduction, notices, error
+// summary, the form's fields (the slot), a Save button and the way back.
+// Posts to its own address, where functions/account/* handle it.
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import Button from './Button.astro';
+import ErrorSummary from './ErrorSummary.astro';
+import Notice from './Notice.astro';
+import OfflineNotice from './OfflineNotice.astro';
+import { linkClass } from './styles';
+import { t } from '../../../platform/messages';
+
+interface Props {
+  title: string;
+  intro?: string;
+  action: string;
+  errors?: { field: string; message: string }[];
+  submitLabel?: string;
+  busyLabel?: string;
+}
+
+const {
+  title,
+  intro,
+  action,
+  errors = [],
+  submitLabel = t('account.save'),
+  busyLabel = t('account.saving'),
+} = Astro.props;
+---
+
+<BaseLayout title={title} noindex>
+  <section class="container-page pt-12 pb-16 md:pt-16 md:pb-24">
+    <div class="max-w-2xl">
+      <p><a href="/account/" class={linkClass}>{t('account.back')}</a></p>
+      <h1 class="text-headline-lg mt-6">{title}</h1>
+      {intro && <p class="lede mt-4">{intro}</p>}
+      <p class="lede mt-4 break-words" data-slot="intro" hidden></p>
+      <div class="mt-8 space-y-4">
+        <Notice kind="error" hidden dataSlot="notice" />
+        <OfflineNotice heading={t('join.offlineHeading')} body={t('join.offlineBody')} />
+      </div>
+      {
+        errors.length > 0 && (
+          <ErrorSummary heading={t('account.errorSummaryHeading')} errors={errors} />
+        )
+      }
+      <form method="post" action={action} novalidate data-enhance class="mt-8 space-y-8">
+        <slot />
+        <Button busyLabel={busyLabel}>{submitLabel}</Button>
+      </form>
+      <slot name="after" />
+    </div>
+  </section>
+  <script is:inline src="/scripts/app-enhance.js" defer></script>
+</BaseLayout>

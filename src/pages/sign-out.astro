@@ -1,0 +1,21 @@
+---
+// Shown after signing out. The sign-out button posts to
+// functions/sign-out/index.ts, which ends the session and redirects here.
+import BaseLayout from '../layouts/BaseLayout.astro';
+import Confirmation from '../components/app/Confirmation.astro';
+import { linkClass } from '../components/app/styles';
+import { t } from '../../platform/messages';
+---
+
+<BaseLayout title={t('signIn.signedOutTitle')} noindex>
+  <section class="container-page pt-12 pb-16 md:pt-16 md:pb-24">
+    <div class="max-w-2xl">
+      <Confirmation heading={t('signIn.signedOut')}>
+        <ul class="mt-8 space-y-3">
+          <li><a href="/" class={linkClass}>{t('signIn.home')}</a></li>
+          <li><a href="/sign-in/" class={linkClass}>{t('signIn.signInAgain')}</a></li>
+        </ul>
+      </Confirmation>
+    </div>
+  </section>
+</BaseLayout>

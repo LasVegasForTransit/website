@@ -1,0 +1,28 @@
+---
+// Delete your account: what happens, then a fresh code to make sure it's
+// them. Served through functions/account/delete/index.ts.
+import BaseLayout from '../../../layouts/BaseLayout.astro';
+import Button from '../../../components/app/Button.astro';
+import Notice from '../../../components/app/Notice.astro';
+import { linkClass } from '../../../components/app/styles';
+import { t } from '../../../../platform/messages';
+---
+
+<BaseLayout title={t('account.deleteTitle')} noindex>
+  <section class="container-page pt-12 pb-16 md:pt-16 md:pb-24">
+    <div class="max-w-2xl">
+      <p><a href="/account/" class={linkClass}>{t('account.back')}</a></p>
+      <h1 class="text-headline-lg mt-6">{t('account.deleteTitle')}</h1>
+      <p class="lede mt-4">{t('account.deleteBody')}</p>
+      <p class="mt-4" data-slot="volunteer-note" hidden>{t('account.volunteerNote')}</p>
+      <p class="mt-4"><a href="/account/data/" class={linkClass}>{t('account.download')}</a></p>
+      <div class="mt-8"><Notice kind="error" hidden dataSlot="notice" /></div>
+      <form method="post" action="/account/delete/" class="mt-8 flex flex-wrap items-center gap-6">
+        <Button variant="destructive" busyLabel={t('signIn.sending')}>
+          {t('account.deleteSendCode')}
+        </Button>
+        <a href="/account/" class={linkClass}>{t('account.keep')}</a>
+      </form>
+    </div>
+  </section>
+</BaseLayout>

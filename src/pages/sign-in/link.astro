@@ -1,0 +1,31 @@
+---
+// The page the sign-in email's button opens, at /sign-in/link/<token>.
+// Served through functions/sign-in/link/[token].ts. Signing in takes one
+// more tap here, a form POST, because email security scanners open every link
+// in an email; a link that signed in on GET would be used up by the scanner.
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import Button from '../../components/app/Button.astro';
+import Notice from '../../components/app/Notice.astro';
+import { buttonClass } from '../../components/app/styles';
+import { t } from '../../../platform/messages';
+---
+
+<BaseLayout title={t('signIn.linkTitle')} noindex>
+  <section class="container-page pt-12 pb-16 md:pt-16 md:pb-24">
+    <div class="max-w-2xl">
+      <h1 class="text-headline-lg">{t('signIn.linkHeading')}</h1>
+      <div data-slot="ready">
+        <p class="lede mt-4">{t('signIn.linkBody')}</p>
+        <form method="post" action="" data-slot="link-form" class="mt-8">
+          <input type="hidden" name="next" value="" data-slot="next" />
+          <Button busyLabel={t('signIn.codeSending')}>{t('signIn.linkSubmit')}</Button>
+        </form>
+      </div>
+      <div data-slot="expired" hidden class="mt-8 space-y-6">
+        <Notice kind="error">{t('signIn.linkExpired')}</Notice>
+        <p><a href="/sign-in/" class={buttonClass.primary}>{t('signIn.resend')}</a></p>
+      </div>
+    </div>
+  </section>
+  <script is:inline src="/scripts/app-enhance.js" defer></script>
+</BaseLayout>

@@ -19,12 +19,11 @@ import { analyticsIntegrations } from './src/lib/analytics';
 /** @param {string} page */
 const sitemapFilter = (page) => {
   const path = new URL(page).pathname.replace(/\/$/, '') || '/';
-  // The join steps after the form, the email-removal page and the
-  // preview-only pattern gallery have nothing to index.
+  // The join steps after the form, the email-removal page, sign-in, member
+  // accounts and the preview-only pattern gallery have nothing to index.
   const privatePaths = ['/qr', '/join/member/region', '/join/member/welcome', '/join/remove'];
-  return (
-    !privatePaths.includes(path) && !path.startsWith('/patterns') && !path.startsWith('/prototypes')
-  );
+  const privatePrefixes = ['/patterns', '/prototypes', '/sign-in', '/sign-out', '/account'];
+  return !privatePaths.includes(path) && !privatePrefixes.some((prefix) => path.startsWith(prefix));
 };
 
 /**
