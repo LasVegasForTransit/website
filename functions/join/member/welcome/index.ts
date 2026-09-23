@@ -4,7 +4,15 @@
 // submitted, read from the signed join-step cookie.
 
 import { t } from '../../../../platform/messages';
-import { builtPage, finish, platformEnv, readJoinStep, showText, type JoinEnv } from '../../_page';
+import {
+  builtPage,
+  finish,
+  platformEnv,
+  readJoinStep,
+  showEmailText,
+  showText,
+  type JoinEnv,
+} from '../../_page';
 
 export const onRequestGet: PagesFunction<JoinEnv> = async ({ env, request }) => {
   const page = await builtPage(env, request, '/join/member/welcome/');
@@ -22,7 +30,7 @@ export const onRequestGet: PagesFunction<JoinEnv> = async ({ env, request }) => 
   if (step.email) {
     rewriter = rewriter.on(
       '[data-slot="sent-to"]',
-      showText(t('welcome.sentTo', { email: step.email })),
+      showEmailText(t('welcome.sentTo', { email: step.email })),
     );
   }
   if (step.address === 'not_placed') {

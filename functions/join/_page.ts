@@ -85,6 +85,23 @@ export function showText(text: string): HTMLRewriterElementContentHandlers {
   };
 }
 
+/**
+ * Like showText, for text that contains the visitor's email address.
+ * Cloudflare's email obfuscation would otherwise replace the address with
+ * "[email protected]" for anyone without JavaScript, so the element is wrapped
+ * in the comments that switch obfuscation off for it.
+ */
+export function showEmailText(text: string): HTMLRewriterElementContentHandlers {
+  return {
+    element(element) {
+      element.setInnerContent(text);
+      element.removeAttribute('hidden');
+      element.before('<!--email_off-->', { html: true });
+      element.after('<!--/email_off-->', { html: true });
+    },
+  };
+}
+
 export function show(): HTMLRewriterElementContentHandlers {
   return {
     element(element) {
