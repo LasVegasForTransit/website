@@ -1,0 +1,58 @@
+---
+// "Check your email": the one-time code form. Served through
+// functions/sign-in/code/index.ts, which fills in the address this browser
+// asked for and, after a wrong code, the error. The code field takes paste
+// and the phone's suggested code, and is never saved in a draft.
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import Button from '../../components/app/Button.astro';
+import ErrorSummary from '../../components/app/ErrorSummary.astro';
+import Notice from '../../components/app/Notice.astro';
+import OfflineNotice from '../../components/app/OfflineNotice.astro';
+import TextField from '../../components/app/TextField.astro';
+import { buttonClass, linkClass } from '../../components/app/styles';
+import { t } from '../../../platform/messages';
+---
+
+<BaseLayout title={t('signIn.codeTitle')} noindex>
+  <section class="container-page pt-12 pb-16 md:pt-16 md:pb-24">
+    <div class="max-w-2xl">
+      <h1 class="text-headline-lg">{t('signIn.codeHeading')}</h1>
+      <p class="lede mt-4 [overflow-wrap:anywhere]" data-slot="sent-to" hidden></p>
+      <div class="mt-8 space-y-4">
+        <Notice kind="error" hidden dataSlot="notice" />
+        <OfflineNotice heading={t('join.offlineHeading')} body={t('join.offlineBody')} />
+      </div>
+      <ErrorSummary
+        heading={t('signIn.errorSummaryHeading')}
+        errors={[{ field: 'code', message: t('signIn.codeError') }]}
+      />
+      <form
+        method="post"
+        action="/sign-in/code/"
+        novalidate
+        data-enhance
+        data-slot="code-form"
+        class="mt-8 space-y-8"
+      >
+        <TextField
+          name="code"
+          label={t('signIn.codeLabel')}
+          hint={t('signIn.codeHint')}
+          type="code"
+          width="code"
+          required
+          error={t('signIn.codeError')}
+        />
+        <Button busyLabel={t('signIn.codeSending')}>{t('signIn.codeSubmit')}</Button>
+      </form>
+      <form method="post" action="/sign-in/" class="mt-10">
+        <input type="hidden" name="email" value="" data-slot="resend-email" />
+        <input type="hidden" name="next" value="" data-slot="next" />
+        <button type="submit" class={buttonClass.secondary}>{t('signIn.resend')}</button>
+      </form>
+      <p class="mt-6"><a href="/sign-in/" class={linkClass}>{t('signIn.differentEmail')}</a></p>
+      <p class="mt-6">{t('signIn.spamNote')}</p>
+    </div>
+  </section>
+  <script is:inline src="/scripts/app-enhance.js" defer></script>
+</BaseLayout>

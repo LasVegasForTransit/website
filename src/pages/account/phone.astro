@@ -1,0 +1,21 @@
+---
+// Change or remove your phone number. Served through functions/account/phone/index.ts.
+import AccountFormPage from '../../components/app/AccountFormPage.astro';
+import TextField from '../../components/app/TextField.astro';
+import { t } from '../../../platform/messages';
+---
+
+<AccountFormPage
+  title={t('account.phoneTitle')}
+  action="/account/phone/"
+  errors={[{ field: 'phone', message: t('account.phoneError') }]}
+>
+  <TextField
+    name="phone"
+    label={t('account.phoneLabel')}
+    hint={t('account.phoneHint')}
+    type="tel"
+    autocomplete="tel-national"
+    error={t('account.phoneError')}
+  />
+</AccountFormPage>

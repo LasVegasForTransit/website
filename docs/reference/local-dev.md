@@ -58,6 +58,26 @@ pnpm worker:dev
 
 Then open `/join/member` at the printed address. Joining needs the Beehiiv secrets in `.dev.vars` (Wrangler's local secrets file, which git ignores); without them the form shows "We couldn't finish joining you just now", which is the right behavior.
 
+### Sign in and try the account pages locally
+
+Sign-in runs in the same Worker. Put these lines in `.dev.vars`. The values are for your computer only, so any text will do:
+
+```sh
+LVBT_SIGN_IN_SECRET=local-sign-in-secret
+LVBT_LINK_SIGNING_SECRET=local-link-secret
+LVBT_DEV_LOG_CODES=1
+```
+
+With `LVBT_DEV_LOG_CODES=1` and no Resend key, every email that carries a code is printed in the terminal running `pnpm worker:dev` instead of being sent, for example `email (development) to ana@example.org: 123456 is your LVBT sign-in code`. Never set `LVBT_DEV_LOG_CODES` on a deployed Worker.
+
+To have someone to sign in as, join at `/join/member` (with the Beehiiv secrets), or add a person to the local database:
+
+```sh
+pnpm exec wrangler d1 execute lvbt-platform --local --command "INSERT INTO people (id, given_name, email, membership_status, created_at, updated_at) VALUES ('01LOCALTESTPERSON000000000', 'Ana', 'ana@example.org', 'member', datetime('now'), datetime('now'))"
+```
+
+Then open `/sign-in`, enter that email and type the code from the terminal. Each address can ask for 5 codes an hour, the same as on the live site.
+
 ### `/api/membership-intake` returns an error locally
 
 Wrangler reads the intake, Beehiiv, and Notion secrets from `.env.local`:

@@ -1,0 +1,17 @@
+---
+// Shown once an account is deleted and the browser signed out.
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import Confirmation from '../../components/app/Confirmation.astro';
+import { linkClass } from '../../components/app/styles';
+import { t } from '../../../platform/messages';
+---
+
+<BaseLayout title={t('account.deletedTitle')} noindex>
+  <section class="container-page pt-12 pb-16 md:pt-16 md:pb-24">
+    <div class="max-w-2xl">
+      <Confirmation heading={t('account.deleted')}>
+        <p class="mt-8"><a href="/" class={linkClass}>{t('signIn.home')}</a></p>
+      </Confirmation>
+    </div>
+  </section>
+</BaseLayout>

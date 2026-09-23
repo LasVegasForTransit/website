@@ -7,7 +7,7 @@ import { nowIso, ulid } from '../core/ids';
 import { membershipStatus, type ConsentScope, type MembershipStatus } from '../core/membership';
 import { mayReplaceRegion, type RegionId, type RegionSource } from '../core/regions';
 import type { Db, SqlValue } from './db';
-import { normalizeEmail, ownedFields } from './field-ownership';
+import { normalizeEmail, ownedFields, type FieldName } from './field-ownership';
 
 export { normalizeEmail } from './field-ownership';
 
@@ -29,6 +29,7 @@ export type ConsentSource =
   | 'newsletter_box'
   | 'google_form'
   | 'external_form'
+  | 'account'
   | 'beehiiv'
   | 'paper'
   | 'check_in'
@@ -190,11 +191,13 @@ export class PersonService {
    */
   async updateFields(
     id: string,
-    input: { source: Source; fields: PersonFields; onlyEmpty?: boolean },
+    input: { source: Source; fields: PersonFields; onlyEmpty?: boolean; allowClear?: boolean },
   ): Promise<Person | null> {
-    let fields = ownedFields(input.source, input.fields, this.warn).filter(
-      ([, value]) => value !== null && value !== '',
-    );
+    // Empty values are skipped unless the caller means to clear a field, as a
+    // member does when they remove their phone number.
+    let fields = ownedFields(input.source, input.fields, this.warn)
+      .map(([name, value]): [FieldName, SqlValue] => [name, value === '' ? null : value])
+      .filter(([, value]) => input.allowClear === true || value !== null);
     if (input.onlyEmpty) {
       const current = await this.getPerson(id);
       if (!current) return null;
@@ -388,6 +391,9 @@ export class PersonService {
       this.db
         .prepare('UPDATE identities SET external_email = NULL, updated_at = ? WHERE person_id = ?')
         .bind(now, id),
+      // Signing them out everywhere, and making any code already sent useless.
+      this.db.prepare('DELETE FROM sessions WHERE person_id = ?').bind(id),
+      this.db.prepare('DELETE FROM sign_in_codes WHERE person_id = ?').bind(id),
     ]);
   }
 
