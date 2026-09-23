@@ -1,0 +1,204 @@
+---
+// The join form. Built once, then served through the join handler
+// (functions/join/member/index.ts), which fills in a one-time form token and,
+// after a failed submit, the visitor's input and the errors. Every text comes
+// from the message catalog. It works with no JavaScript.
+import BaseLayout from '../../../layouts/BaseLayout.astro';
+import { t } from '../../../../platform/messages';
+
+const interests = [
+  ['events', t('join.interestEvents')],
+  ['meetings', t('join.interestMeetings')],
+  ['volunteering', t('join.interestVolunteering')],
+  ['news', t('join.interestNews')],
+] as const;
+
+const errorFields = [
+  ['email', t('join.emailError')],
+  ['zip', t('join.zipError')],
+  ['phone', t('join.phoneError')],
+  ['consent', t('join.consentError')],
+] as const;
+
+const inputClass =
+  'mt-2 block w-full max-w-md px-4 py-3 border-2 border-on-surface bg-surface text-on-surface aria-[invalid=true]:border-primary-ink';
+const labelClass = 'block font-bold';
+const hintClass = 'mt-1 text-sm max-w-md';
+const errorClass = 'mt-2 font-bold text-primary-ink';
+---
+
+<BaseLayout title={t('join.title')} description={t('join.description')}>
+  <section class="container-page pt-12 pb-16 md:pt-16 md:pb-24">
+    <div class="max-w-2xl">
+      <h1 class="text-headline-lg">{t('join.heading')}</h1>
+      <p class="lede mt-4">{t('join.intro')}</p>
+
+      <div data-slot="notice" hidden class="mt-8 border-2 border-primary-ink p-4" role="alert">
+      </div>
+
+      <div
+        data-slot="error-summary"
+        hidden
+        class="mt-8 border-2 border-primary-ink p-4"
+        role="alert"
+        tabindex="-1"
+        aria-labelledby="error-summary-heading"
+      >
+        <h2 id="error-summary-heading" class="text-title-lg">{t('join.errorSummaryHeading')}</h2>
+        <ul class="mt-3 list-disc pl-5">
+          {
+            errorFields.map(([field, message]) => (
+              <li data-summary-for={field} hidden>
+                <a
+                  href={`#${field}`}
+                  class="font-bold underline underline-offset-4 decoration-2 decoration-primary-ink"
+                >
+                  {message}
+                </a>
+              </li>
+            ))
+          }
+        </ul>
+      </div>
+
+      <form method="post" action="/join/member/" novalidate class="mt-8 space-y-8">
+        <input type="hidden" name="origin" value="join_form" />
+        <input type="hidden" name="form_token" value="" data-slot="form-token" />
+
+        <div>
+          <label for="email" class={labelClass}>{t('join.emailLabel')}</label>
+          <p id="email-error" data-error-for="email" hidden class={errorClass}>
+            {t('join.emailError')}
+          </p>
+          <input
+            id="email"
+            name="email"
+            type="email"
+            autocomplete="email"
+            inputmode="email"
+            spellcheck="false"
+            required
+            class={inputClass}
+          />
+        </div>
+
+        <div class="grid gap-6 sm:grid-cols-2 max-w-md sm:max-w-none">
+          <div>
+            <label for="given_name" class={labelClass}>{t('join.givenNameLabel')}</label>
+            <input
+              id="given_name"
+              name="given_name"
+              type="text"
+              autocomplete="given-name"
+              class={inputClass}
+            />
+          </div>
+          <div>
+            <label for="family_name" class={labelClass}>{t('join.familyNameLabel')}</label>
+            <input
+              id="family_name"
+              name="family_name"
+              type="text"
+              autocomplete="family-name"
+              class={inputClass}
+            />
+          </div>
+        </div>
+
+        <div>
+          <label for="zip" class={labelClass}>{t('join.zipLabel')}</label>
+          <p id="zip-hint" class={hintClass}>{t('join.zipHint')}</p>
+          <p id="zip-error" data-error-for="zip" hidden class={errorClass}>{t('join.zipError')}</p>
+          <input
+            id="zip"
+            name="zip"
+            type="text"
+            inputmode="numeric"
+            autocomplete="postal-code"
+            maxlength="5"
+            aria-describedby="zip-hint"
+            class={`${inputClass} max-w-[10rem]`}
+          />
+        </div>
+
+        <fieldset>
+          <legend class="text-title-lg">{t('join.reachHeading')}</legend>
+          <div class="mt-4 space-y-6">
+            <div>
+              <label for="phone" class={labelClass}>{t('join.phoneLabel')}</label>
+              <p id="phone-error" data-error-for="phone" hidden class={errorClass}>
+                {t('join.phoneError')}
+              </p>
+              <input
+                id="phone"
+                name="phone"
+                type="tel"
+                autocomplete="tel-national"
+                class={inputClass}
+              />
+            </div>
+            <div>
+              <label for="address" class={labelClass}>{t('join.addressLabel')}</label>
+              <p id="address-hint" class={hintClass}>{t('join.addressHint')}</p>
+              <input
+                id="address"
+                name="address"
+                type="text"
+                autocomplete="street-address"
+                aria-describedby="address-hint"
+                class={inputClass}
+              />
+            </div>
+          </div>
+        </fieldset>
+
+        <fieldset>
+          <legend class="text-title-lg">{t('join.interestsHeading')}</legend>
+          <div class="mt-4 space-y-3">
+            {
+              interests.map(([value, label]) => (
+                <label class="flex items-start gap-3">
+                  <input
+                    type="checkbox"
+                    name="interests"
+                    value={value}
+                    class="mt-1 size-5 shrink-0 accent-primary"
+                  />
+                  <span>{label}</span>
+                </label>
+              ))
+            }
+          </div>
+        </fieldset>
+
+        <div aria-hidden="true" class="absolute -left-[10000px] size-px overflow-hidden">
+          <label for="website">{t('join.honeypotLabel')}</label>
+          <input id="website" name="website" type="text" tabindex="-1" autocomplete="off" />
+        </div>
+
+        <div>
+          <p id="consent-error" data-error-for="consent" hidden class={errorClass}>
+            {t('join.consentError')}
+          </p>
+          <label for="consent" class="flex items-start gap-3 font-bold">
+            <input
+              id="consent"
+              name="consent"
+              type="checkbox"
+              value="yes"
+              class="mt-1 size-5 shrink-0 accent-primary"
+            />
+            <span>{t('join.consentLabel')}</span>
+          </label>
+        </div>
+
+        <button
+          type="submit"
+          class="press inline-flex items-center gap-1.5 bg-on-surface text-surface px-6 py-3 font-bold hover:bg-primary hover:text-on-primary focus-visible:bg-primary focus-visible:text-on-primary"
+        >
+          {t('join.submit')}
+        </button>
+      </form>
+    </div>
+  </section>
+</BaseLayout>

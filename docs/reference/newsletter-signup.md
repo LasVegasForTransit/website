@@ -1,78 +1,75 @@
-# Newsletter signup & verification
+# Joining LVBT on the website
 
-How the on-site subscribe form captures an email and how to configure it so a **verification ([double opt-in](./glossary.md#double-opt-in)) email** is actually sent. We force it so we only keep real, consenting addresses — which keeps our sender reputation healthy and bounce rates low.
+This page explains how someone becomes an LVBT member on lasvegasfortransit.org, through the join form at `/join/member` or the newsletter box shown across the site. Read it before changing either form, or when a new member says something went wrong.
 
-> **Newsletter ≠ membership.** This inline box is the lighter, email-only path (homepage and `/go`). Becoming a _member_ goes through the Google Form — a separate flow that collects more and feeds Beehiiv + Notion. See [membership-intake.md](./membership-intake.md). Don't re-merge the two by dropping this box back onto `/join`.
-
-> **Platform note.** This documents the _signup capture_ that ships in the site today, which submits to **Beehiiv** (the newsletter platform we currently send email through, via its API; see [glossary](./glossary.md#beehiiv)). The authoring/send workflow in [newsletter-ops.md](./newsletter-ops.md) and the [platform decision record](../explanation/decisions/newsletter-platform.md) describe **Ghost(Pro)** (a different hosted newsletter platform chosen for the long-form journal; see [glossary](./glossary.md#ghost)). Those are out of sync with the running code — reconcile the platform choice before relying on the Ghost docs.
+For now, being on LVBT's mailing list is what makes someone a member. Both forms subscribe the person in [Beehiiv](./glossary.md#beehiiv) (the newsletter platform) and record them, with evidence of their consent, in the platform database. The Google Form still works as a fallback; see [membership intake](./membership-intake.md).
 
 ## How it works
 
 ```
-NewsletterEmbed.astro (form)
-  → POST /api/subscribe            functions/api/subscribe.ts  (Cloudflare Pages Function)
-    → POST https://api.beehiiv.com/v2/publications/{id}/subscriptions
+/join/member (join form)  ─┐
+newsletter box            ─┴─> POST /join/member/
+                                 1. discard if the hidden honeypot field is filled
+                                 2. refuse the 11th join from one connection in an hour
+                                 3. check the fields
+                                 4. an address? turn it into a census block, then forget it
+                                 5. subscribe in Beehiiv
+                                 6. record the person, their consent and "joined" in the database
+                                 7. set their region from the address, if it shows one
+                                 8. send the confirmation email and add a Notion row for staff
+                               -> /join/member/region/   when their region is still unknown
+                               -> /join/member/welcome/  "You're in."
 ```
 
-- **Form:** `src/components/NewsletterEmbed.astro` — a native HTML form, no third-party embed.
-- **Client wiring:** `public/scripts/newsletter-subscribe.js` — intercepts submit, POSTs JSON to `/api/subscribe`, shows the status message.
-- **Server handler:** `functions/api/subscribe.ts` — validates the email and calls Beehiiv. The request body it sends:
+- **Pages:** `src/pages/join/member/index.astro`, `region.astro` and `welcome.astro`, and `src/pages/join/remove/index.astro`. They are built once, like every other page.
+- **Handlers:** `functions/join/`. Each handler fetches its built page and fills in the parts that change per visitor: a one-time form token, the visitor's input and errors after a failed submit, their name on the welcome page. It uses Cloudflare's HTMLRewriter, so the visitor gets finished HTML in one request and everything works with JavaScript turned off.
+- **Joining logic:** `platform/join.ts`, with the person record in `platform/storage/`. See the [schema](../../platform/storage/migrations/schema.md) and the [person service](../../platform/storage/person-service.md).
+- **Text:** every word comes from the [message catalog](../../platform/messages/README.md).
+- **Newsletter box:** `src/components/NewsletterEmbed.astro` posts to the same handler with the consent wording `newsletter-box-v1`. Its small script, `public/scripts/newsletter-subscribe.js`, shows the result in place; without the script the box posts normally and lands on the welcome page.
 
-  ```jsonc
-  {
-    "email": "…",
-    "reactivate_existing": true,
-    "send_welcome_email": true,
-    "double_opt_override": "on", // forces the verification email
-  }
-  ```
+## What is stored, and what isn't
 
-`double_opt_override: "on"` (a Beehiiv field that forces the double opt-in flow per request, even if the publication's own toggle is off) is the load-bearing field. **Without it, Beehiiv creates API subscriptions as `active` immediately and sends no verification email at all.** With it, the subscriber is created as `validating` and Beehiiv emails a confirmation link; they become `active` only after clicking. The welcome email (`send_welcome_email`) follows confirmation.
+The person's email address, any name, phone number and ZIP code they typed, and their interests. Their consent is recorded with the exact wording version (`join-form-v1` or `newsletter-box-v1`), so LVBT can always show what someone agreed to.
 
-## Required configuration
+A street address is never stored. It is sent once to the free [US Census Geocoder](https://geocoding.geo.census.gov/geocoder/), which returns the census block the address falls in, and then forgotten. Only the 15-digit block code, its census year and the ZIP code are kept. Logs say "an address" rather than the address.
 
-### 1. Secrets (Cloudflare Pages)
+The caller's IP address is never stored either: the hourly limit counts a keyed hash of it.
 
-Set both as **Secrets** (Cloudflare's name for an encrypted env var whose value is hidden after you save it — used for API keys and passwords) in the Cloudflare Pages dashboard → project → Settings → Environment variables (Production **and** Preview). They are server-side only — never baked into the static HTML. Mirrored in `.env.local` for local dev (see [local-dev.md](./local-dev.md)).
+## Regions
 
-| Key                           | Where to get it                                                           |
-| ----------------------------- | ------------------------------------------------------------------------- |
-| `LVBT_BEEHIIV_API_KEY`        | Beehiiv → Settings → API → create a key scoped to **Subscribers (write)** |
-| `LVBT_BEEHIIV_PUBLICATION_ID` | Beehiiv → Settings → Publication → the ID starting with `pub_`            |
+When the Geocoder places an address in Henderson, North Las Vegas, Boulder City or one of Clark County's unincorporated places, the region is set exactly. Addresses inside the City of Las Vegas span several regions, so those members, and members who gave no address, choose their region on the next step, or "I'd rather not say". ZIP codes will set a region once the ZIP crosswalk is loaded into the `zip_regions` table.
 
-### 2. Beehiiv dashboard
+## Confirmation email and removal link
 
-`double_opt_override: "on"` forces the double opt-in flow regardless of the publication toggle, but Beehiiv still needs the pieces that make the email send and land:
+The confirmation email is sent through Resend when `LVBT_RESEND_API_KEY` is set (see [platform secrets](./platform-secrets.md)). Until then, Beehiiv's own welcome email confirms the subscription instead.
 
-- **Confirmation email** — Beehiiv → Settings → Subscribe flow / double opt-in. Confirm a confirmation email template exists and is enabled; brand it (logo, from-name, subject) so it doesn't look like spam.
-- **Sender domain authentication (SPF / DKIM — DNS records that prove your email really comes from your domain so it lands in inboxes instead of spam; see [glossary](./glossary.md#email-auth))** — Beehiiv → Settings → sending domain. Until the sending domain is authenticated, verification emails go to spam or fail. This is the most common reason a subscriber "got nothing."
-- **Welcome email (optional)** — `send_welcome_email: true` only does something if a Welcome Email automation is built and active in Beehiiv. It is _not_ the verification email; it sends after confirmation.
+The email's "Not you? Remove this email" link is signed and lasts 30 days. Opening it only shows a button, because email security scanners open links automatically. Pressing the button withdraws the newsletter consent, unsubscribes the address in Beehiiv, and deletes the person if joining was the only thing they ever did with LVBT.
 
-## Verifying it works
+## Verify it works
 
-1. Subscribe with a real address on the live site (or `pnpm dev` locally with secrets set).
-2. In Beehiiv → Subscribers (or via the API), the new subscriber should show status **`validating`**, not `active`. `validating` means the confirmation email was dispatched.
-3. The confirmation email should arrive; clicking the link flips the subscriber to `active`.
+1. Join at `https://lasvegasfortransit.org/join/member` with a test address you control.
+2. The welcome page says "You're in." and names your address.
+3. In Beehiiv → Subscribers, the address shows as `active`.
+4. Check the database:
 
-API spot check with `curl` (a command-line tool for making HTTP requests; read-only here — it just lists recent subscribers and their status). Set `$PUB` to your publication ID and `$KEY` to your API key first:
+   ```sh
+   pnpm exec wrangler d1 execute lvbt-platform --remote --command "SELECT id, membership_status, region_id FROM people ORDER BY created_at DESC LIMIT 5"
+   ```
 
-```sh
-curl -fsS "https://api.beehiiv.com/v2/publications/$PUB/subscriptions?limit=5&order_by=created&direction=desc" \
-  -H "Authorization: Bearer $KEY"
-```
+5. Open the removal link from the email and press the button, so the test member is removed again.
 
 ## Troubleshooting
 
-| Symptom                                            | Cause                                                                 | Fix                                                                                                |
-| -------------------------------------------------- | --------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------- |
-| New subscribers show `active` and no email arrives | `double_opt_override` not sent (old deploy, or the field was removed) | Confirm `functions/api/subscribe.ts` sends `"double_opt_override": "on"` and the deploy is current |
-| Status is `validating` but no email lands          | Sending domain not authenticated, or confirmation email disabled      | Authenticate SPF/DKIM in Beehiiv; enable + brand the confirmation email; check spam                |
-| Form shows "Something went wrong"                  | Beehiiv API rejected the call                                         | Check Cloudflare Pages function logs — the handler logs the Beehiiv status + body on non-2xx       |
-| Works in prod, not locally                         | Secrets missing from `.env.local`                                     | Add `LVBT_BEEHIIV_*`; `pnpm preflight` reports config state                                        |
+| Symptom                                      | Cause                                                                | Fix                                                                                                                       |
+| -------------------------------------------- | -------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| "We couldn't finish joining you just now"    | Beehiiv refused the subscription, or its secrets are missing         | Check the Cloudflare Pages function logs for "Beehiiv subscribe failed" and run `pnpm bootstrap --doctor --phase secrets` |
+| Every join shows that message                | The `PLATFORM_DB` binding or `LVBT_LINK_SIGNING_SECRET` is missing   | The logs say which; the binding is set on the Pages project, the secret through `pnpm bootstrap --phase secrets`          |
+| No confirmation email                        | `LVBT_RESEND_API_KEY` isn't set, or the Resend domain isn't verified | Set the key; until then Beehiiv's welcome email is sent instead                                                           |
+| The region step says it has expired          | More than an hour passed, or cookies are blocked                     | The person is already a member; they can set their region later from their account                                        |
+| A join returns a server error after a deploy | A migration wasn't applied                                           | Run the migrations in the [schema](../../platform/storage/migrations/schema.md)                                           |
 
 ## Related
 
-- [Membership intake automation](./membership-intake.md) — Google Forms submissions that subscribe members and sync Notion
-- [Newsletter operations](./newsletter-ops.md) — authoring/send workflow (currently Ghost-oriented; see platform note above)
-- [Decision: newsletter platform](../explanation/decisions/newsletter-platform.md)
-- [Local development](./local-dev.md) — env vars, dev server
+- [Membership intake automation](./membership-intake.md): the Google Form fallback and how to switch the front door
+- [Platform secrets](./platform-secrets.md)
+- [Newsletter operations](./newsletter-ops.md)

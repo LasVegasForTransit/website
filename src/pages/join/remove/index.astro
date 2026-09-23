@@ -1,0 +1,26 @@
+---
+// The "Not you? Remove this email" page. Opening the link only shows a
+// button, because email security scanners open links on their own; pressing
+// it removes the email. Served through functions/join/remove/index.ts.
+import BaseLayout from '../../../layouts/BaseLayout.astro';
+import { t } from '../../../../platform/messages';
+---
+
+<BaseLayout title={t('remove.title')} noindex>
+  <section class="container-page pt-12 pb-16 md:pt-16 md:pb-24">
+    <div class="max-w-2xl">
+      <h1 class="text-headline-lg" data-slot="heading">{t('remove.heading')}</h1>
+      <p class="lede mt-4" data-slot="body" hidden></p>
+      <p class="lede mt-4" data-slot="result" hidden role="status"></p>
+      <form method="post" action="/join/remove/" data-slot="remove-form" hidden class="mt-8">
+        <input type="hidden" name="token" value="" data-slot="token" />
+        <button
+          type="submit"
+          class="press inline-flex items-center gap-1.5 bg-on-surface text-surface px-6 py-3 font-bold hover:bg-primary hover:text-on-primary focus-visible:bg-primary focus-visible:text-on-primary"
+        >
+          {t('remove.submit')}
+        </button>
+      </form>
+    </div>
+  </section>
+</BaseLayout>

@@ -18,11 +18,13 @@ Apps Script is Google's built-in JavaScript automation attached to a Form or She
 
 For v1, the Google Form response sheet remains the canonical full-response record. The Cloudflare Pages Function is the owned pipeline boundary: it validates the request, subscribes the person in Beehiiv, and creates an operational Notion page for follow-up.
 
-## Where the form is surfaced
+## Switching the membership front door
 
-The Google Form is the canonical front door for new members. The site links to it from the `/join` "Become a member" CTA and the `/qr` presenter deck's "Join" slide. The public link is configured once, as the `forms.gle` short link, in `PUBLIC_LVBT_MEMBERSHIP_FORM_URL` (see `.env.example` and `src/lib/site.ts`). The short link is used because the QR encoder caps at 84 bytes; it resolves to the canonical `https://docs.google.com/forms/d/e/1FAIpQLSfE28qUHn9A_cYpEtz4OV9NvQLkhlVVwaMvho_fCS_SI34CwQ/viewform`. If the var is unset, `/join` falls back to the general-interest email and the QR "Join" slide is omitted.
+The website's own join form at `/join/member` is LVBT's front door: the `/join` "Become a member" button and the `/qr` presenter deck's "Join" slide both point to it, and the QR code encodes `https://lasvegasfortransit.org/join/member`. How it works is in [joining LVBT on the website](./newsletter-signup.md).
 
-The inline newsletter box (`NewsletterEmbed` → `/api/subscribe`) is a separate, lighter path for email-only updates and is not part of membership intake — see [newsletter-signup.md](./newsletter-signup.md).
+One setting switches both links to an outside form instead: `PUBLIC_LVBT_MEMBERSHIP_FORM_URL` (a GitHub Actions variable, read at build time; see `src/lib/membership.ts`). Leave it unset to use the website's form. Set it to an outside form's address, such as the Google Form's short link `https://forms.gle/4N8gRU2wDK6G8BKH8`, and redeploy to send people there. Use a short link, because the QR encoder caps at 84 bytes.
+
+Any outside form must send its submissions to this intake endpoint, as the Google Form does below, so its members still reach Beehiiv and Notion.
 
 ## Required Cloudflare Pages secrets
 
