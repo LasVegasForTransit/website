@@ -17,7 +17,7 @@ Dates and times use `formatDate` and `formatTime`, which always read in Pacific 
 
 ## Add a message
 
-1. Add the key to `en.ts`, under the screen it belongs to. Write the text to the copy standard: plain words, complete sentences.
+1. Add the key to `en.ts`, under the screen it belongs to. Write the text to the [copy standard for app screens](../../docs/explanation/app-copy.md).
 2. Use it in code with `t('screen.key')`.
 3. Run `pnpm test:unit`. A test fails if a key used in code is missing from the catalog, or if a catalog key is used nowhere, and names the key.
 
