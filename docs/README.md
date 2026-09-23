@@ -68,6 +68,7 @@ How we write code, commits, and docs. Skim before contributing.
 The why behind decisions and conventions.
 
 - [Voice and tone](./explanation/voice-and-tone.md) — editorial north star
+- [Copy for app screens](./explanation/app-copy.md) — buttons, errors, hints, dates and the pre-testing checklist for app screens
 - [Comms strategy](./explanation/comms-strategy.md) — surfaces, audiences, ladder of engagement, innovation pillars
 - [Events pipeline](./explanation/events-pipeline.md) — how events flow from Google Calendar to the site
 - [Membership program](./explanation/membership-program.md) — the program design (a plan, not yet a built system)
