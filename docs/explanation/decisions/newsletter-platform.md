@@ -81,7 +81,12 @@ The path the analysis took, in order — useful so future-you can spot when an a
 - **Ghost(Pro) → self-hosted Ghost:** Ghost has full export/import for posts, members, subscriptions. Custom domain stays the same; subscribers don't notice. ~1–2 days focused work.
 - **Ghost(Pro) → another platform entirely:** subscriber CSV export works at any size; content export is more involved (Ghost's mobiledoc/Lexical format → portable HTML/markdown).
 
-## Related
+## Addendum: LVBT uses Beehiiv (2026-09-23)
 
-- [Comms strategy](../comms-strategy.md) — strategic frame
-- [Newsletter operations](../../reference/newsletter-ops.md) — workflow, deliverability, send checklist
+The comparison above is kept as written, as the record of how this decision was first reached. In practice, LVBT's newsletter has run on Beehiiv, not Ghost(Pro), since the website's first newsletter sign-up form, and it still does. Its web address is `mail.lasvegasfortransit.org`. This record doesn't capture why the recommendation wasn't followed; if that matters for a future decision, ask the people who set up the newsletter.
+
+The website's code works with Beehiiv because that's where LVBT's mailing list lives. Joining LVBT on the website subscribes the person in Beehiiv, in the same step that creates their record and records their consent (see [membership intake](../../reference/membership-intake.md)). Being on the mailing list is what makes someone a member today, so the two are kept in step. The [Organizing Platform decision record](./organizing-platform.md) keeps Beehiiv behind its own integration, so the newsletter could move to another service later without changing the platform's rules.
+
+Transactional email is separate from the newsletter and doesn't go through Beehiiv. That means any email sent to one person because of something they did, such as a sign-in code or a welcome message. It goes through Resend, sent from `notify.lasvegasfortransit.org`, so a delivery problem there can't harm the newsletter's sending reputation. The Organizing Platform decision record explains that choice.
+
+The "Trigger conditions to revisit" above were written for Ghost(Pro) and no longer apply. A future decision about the newsletter platform belongs in a new decision record.
