@@ -6,7 +6,15 @@
 
 import { t } from '../../../platform/messages';
 import { checkRemovalToken, removeEmail } from '../../../platform/remove';
-import { builtPage, finish, platformEnv, show, showText, type JoinEnv } from '../_page';
+import {
+  builtPage,
+  finish,
+  platformEnv,
+  show,
+  showEmailText,
+  showText,
+  type JoinEnv,
+} from '../_page';
 
 const PAGE = '/join/remove/';
 
@@ -24,7 +32,7 @@ export const onRequestGet: PagesFunction<JoinEnv> = async ({ env, request }) => 
 
   const page = await builtPage(env, request, PAGE);
   const rewriter = new HTMLRewriter()
-    .on('[data-slot="body"]', showText(t('remove.body', { email: check.email })))
+    .on('[data-slot="body"]', showEmailText(t('remove.body', { email: check.email })))
     .on('[data-slot="remove-form"]', show())
     .on('[data-slot="token"]', {
       element(element) {
