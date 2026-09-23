@@ -79,3 +79,4 @@ Why we picked what we picked, and the alternatives considered.
 
 - [Newsletter platform](./explanation/decisions/newsletter-platform.md) — Ghost(Pro) over Substack/Beehiiv/email-only ESPs
 - [Staff publishing](./explanation/decisions/staff-publishing.md) — CMS deferred until 2nd contributor; criteria when the time comes
+- [Organizing platform](./explanation/decisions/organizing-platform.md) — where platform code lives, rendering on request, one D1 database, one job runner, the bus-ready budgets

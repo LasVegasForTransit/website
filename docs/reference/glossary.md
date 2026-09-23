@@ -89,6 +89,26 @@ bug — please add it (see [writing-docs.md](../standards/writing-docs.md)).
   receiving a form submission. Think "one API endpoint = one file."
 - **Wrangler** <a id="wrangler"></a> — Cloudflare's command-line tool, used to run
   the functions locally and to deploy. `pnpm dev` runs it for you.
+- **Cloudflare Workers** <a id="cloudflare-workers"></a> — Cloudflare's service for
+  running small server programs close to visitors. A Worker can also serve
+  prebuilt files (static assets). The site is moving here from Pages; see the
+  [platform decision record](../explanation/decisions/organizing-platform.md).
+- **rendering on request** <a id="rendering-on-request"></a> — building a page's
+  HTML on the server when someone asks for it, instead of once at build time.
+  Astro calls it on-demand rendering; the opposite is prerendering.
+- **D1** <a id="d1"></a> — Cloudflare's serverless SQL database, used by the
+  Organizing Platform to store people and their consent.
+- **binding** <a id="binding"></a> — the name a Worker uses to reach a Cloudflare
+  resource, such as `PLATFORM_DB` for the platform database.
+- **migration** <a id="migration"></a> — a numbered SQL file that changes the
+  database's structure one step at a time.
+- **cron trigger** <a id="cron-trigger"></a> — a Cloudflare setting that starts a
+  Worker on a timetable, such as every 15 minutes.
+- **Cloudflare Access** <a id="cloudflare-access"></a> — a Cloudflare service that
+  makes people sign in before they can reach a website at all. Free for up to 50
+  users; it guards the staff console.
+- **ULID** <a id="ulid"></a> — a unique identifier that sorts by the time it was
+  created, such as `01M35Q2TBK5023XN8YW77PCMZS`.
 - **DNS** <a id="dns"></a> — the system that maps a domain name
   (`lasvegasfortransit.org`) to a server. The "phone book" of the internet.
 - **CNAME** <a id="cname"></a> — a type of DNS record that points one domain name at
