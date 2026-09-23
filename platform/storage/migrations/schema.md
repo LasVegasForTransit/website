@@ -42,15 +42,15 @@ One row per human LVBT knows about, whether or not they are a member.
 
 Evidence that a person agreed to something.
 
-| Column                             | Meaning                                                                      |
-| ---------------------------------- | ---------------------------------------------------------------------------- |
-| `id`, `person_id`                  | The record and the person it belongs to.                                     |
-| `scope`                            | What they agreed to: `newsletter`, `event_reminders` or `volunteer_contact`. |
-| `given_at`                         | When they agreed.                                                            |
-| `source`                           | Where they agreed, such as `join_form`, `newsletter_box` or `google_form`.   |
-| `method`                           | How: `checkbox`, `double_opt_in`, `paper_signature` or `unknown`.            |
-| `wording_version`                  | The exact wording they saw, such as `join-form-v1`.                          |
-| `withdrawn_at`, `withdrawn_source` | When and where they took it back, if they did.                               |
+| Column                             | Meaning                                                                                                           |
+| ---------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
+| `id`, `person_id`                  | The record and the person it belongs to.                                                                          |
+| `scope`                            | What they agreed to: `newsletter`, `event_reminders` or `volunteer_contact`.                                      |
+| `given_at`                         | When they agreed.                                                                                                 |
+| `source`                           | Where they agreed, such as `join_form`, `newsletter_box`, `google_form` or `external_form` (any other form tool). |
+| `method`                           | How: `checkbox`, `double_opt_in`, `paper_signature` or `unknown`.                                                 |
+| `wording_version`                  | The exact wording they saw, such as `join-form-v1`.                                                               |
+| `withdrawn_at`, `withdrawn_source` | When and where they took it back, if they did.                                                                    |
 
 ## field_sources
 
@@ -90,3 +90,7 @@ The versioned definition of who counts as a member. Version 1: anyone with an ac
 ## rate_limits and form_submissions
 
 `rate_limits` counts attempts per hashed caller per hour, so the join form can refuse an eleventh join from one connection. The caller is stored only as a keyed hash, never as an IP address. `form_submissions` remembers each join form's one-time token, so submitting the same form twice joins the person once.
+
+## intake_submissions
+
+One row per submission to the intake interface, keyed by the idempotency key the form tool sent, with the answer LVBT gave. A repeat within 30 days gets the same answer and changes nothing. See [connect a form tool](../../../docs/guides/connect-a-form-tool.md).

@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import { afterEach, test } from 'node:test';
 
 import { onRequestPost } from '../functions/api/membership-intake';
+import { memoryDb } from './platform-db';
 
 type FetchCall = {
   url: string;
@@ -364,4 +365,28 @@ test('reports a missing intake secret since no caller could authenticate', async
     missing: ['LVBT_MEMBERSHIP_INTAKE_SECRET'],
   });
   assert.equal(calls.length, 0);
+});
+
+void test('records the Google Form response in the person record when the database is bound', async () => {
+  mockFetch();
+  const db = memoryDb();
+  const response = await onRequestPost(
+    context(
+      {
+        email: 'Rider@Example.com',
+        name: 'Test Rider',
+        submittedAt: '2026-06-15T18:00:00.000Z',
+        responseId: 'form-response-id',
+      },
+      { ...baseEnv, PLATFORM_DB: db } as typeof baseEnv,
+    ),
+  );
+  assert.equal(response.status, 200);
+  const person = db.raw.prepare('SELECT given_name, email, membership_status FROM people').get();
+  assert.deepEqual(
+    { ...person },
+    { given_name: 'Test', email: 'rider@example.com', membership_status: 'member' },
+  );
+  const consent = db.raw.prepare('SELECT source, wording_version FROM consent_records').get();
+  assert.deepEqual({ ...consent }, { source: 'google_form', wording_version: 'gform-2026-06' });
 });
