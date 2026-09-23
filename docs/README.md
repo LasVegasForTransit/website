@@ -24,6 +24,7 @@ Learning-oriented, hold-your-hand walk-throughs.
 Task-oriented recipes for things you'll do repeatedly. (Diátaxis calls these "how-to guides"; we just say guides.)
 
 - [Connect a form tool](./guides/connect-a-form-tool.md) — send sign-ups from any outside form to LVBT's member list
+- [Run a usability test](./guides/run-a-usability-test.md) — recruit testers, run a session, and record findings for a prototype
 - [Add an event](./guides/add-an-event.md)
 - [Add a project](./guides/add-a-project.md)
 - [Add an initiative](./guides/add-an-initiative.md)
