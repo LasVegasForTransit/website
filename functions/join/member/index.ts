@@ -6,100 +6,21 @@
 // script runs and as an ordinary form when it doesn't.
 
 import { ulid } from '../../../platform/core/ids';
-import { readJoinForm, type JoinErrors, type JoinInput } from '../../../platform/core/join-form';
+import { readJoinForm } from '../../../platform/core/join-form';
 import { processJoin, type JoinOutcome } from '../../../platform/join';
 import { t } from '../../../platform/messages';
-import {
-  builtPage,
-  finish,
-  joinStepCookie,
-  platformEnv,
-  redirect,
-  show,
-  showText,
-  wantsJson,
-  type JoinEnv,
-} from '../_page';
+import { renderJoinForm, type FormState } from '../_form';
+import { joinStepCookie, platformEnv, redirect, wantsJson, type JoinEnv } from '../_page';
 
 const FORM_PATH = '/join/member/';
 
-interface FormState {
-  formToken: string;
-  input?: JoinInput;
-  errors?: JoinErrors;
-  notice?: string;
-}
-
-const TEXT_FIELDS: [string, keyof JoinInput][] = [
-  ['email', 'email'],
-  ['given_name', 'givenName'],
-  ['family_name', 'familyName'],
-  ['zip', 'zip'],
-  ['phone', 'phone'],
-  ['address', 'address'],
-];
-
-async function renderForm(
+function renderForm(
   env: JoinEnv,
   request: Request,
   state: FormState,
   status: number,
 ): Promise<Response> {
-  const page = await builtPage(env, request, FORM_PATH);
-  let rewriter = new HTMLRewriter().on('[data-slot="form-token"]', {
-    element(element) {
-      element.setAttribute('value', state.formToken);
-    },
-  });
-
-  const { input, errors = {} } = state;
-  if (input) {
-    for (const [name, key] of TEXT_FIELDS) {
-      const value = String(input[key]);
-      rewriter = rewriter.on(`input[name="${name}"]`, {
-        element(element) {
-          element.setAttribute('value', value);
-        },
-      });
-    }
-    for (const interest of input.interests) {
-      rewriter = rewriter.on(`input[name="interests"][value="${interest}"]`, {
-        element(element) {
-          element.setAttribute('checked', '');
-        },
-      });
-    }
-    if (input.consent) {
-      rewriter = rewriter.on('input[name="consent"]', {
-        element(element) {
-          element.setAttribute('checked', '');
-        },
-      });
-    }
-  }
-
-  const failed = Object.keys(errors);
-  if (failed.length > 0) {
-    rewriter = rewriter.on('[data-slot="error-summary"]', show());
-    for (const field of failed) {
-      rewriter = rewriter
-        .on(`[data-summary-for="${field}"]`, show())
-        .on(`[data-error-for="${field}"]`, show())
-        .on(`#${field}`, {
-          element(element) {
-            element.setAttribute('aria-invalid', 'true');
-            const described = element.getAttribute('aria-describedby');
-            element.setAttribute(
-              'aria-describedby',
-              described ? `${field}-error ${described}` : `${field}-error`,
-            );
-          },
-        });
-    }
-  }
-  if (state.notice) rewriter = rewriter.on('[data-slot="notice"]', showText(state.notice));
-
-  return finish(rewriter.transform(page), status);
+  return renderJoinForm(env, request, { ...state, path: FORM_PATH }, status);
 }
 
 function jsonOutcome(outcome: JoinOutcome): Response {

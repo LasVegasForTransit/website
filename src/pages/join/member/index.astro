@@ -1,17 +1,11 @@
 ---
-// The join form. Built once, then served through the join handler
+// The join form page. Built once, then served through the join handler
 // (functions/join/member/index.ts), which fills in a one-time form token and,
-// after a failed submit, the visitor's input and the errors. Built from the
-// app patterns; every text comes from the message catalog. It works with no
-// JavaScript; with it, typing survives a reload and a dropped connection.
+// after a failed submit, the visitor's input and the errors. Every text comes
+// from the message catalog. It works with no JavaScript; with it, typing
+// survives a reload and a dropped connection.
 import BaseLayout from '../../../layouts/BaseLayout.astro';
-import Button from '../../../components/app/Button.astro';
-import ChoiceGroup from '../../../components/app/ChoiceGroup.astro';
-import ErrorSummary from '../../../components/app/ErrorSummary.astro';
-import Notice from '../../../components/app/Notice.astro';
-import OfflineNotice from '../../../components/app/OfflineNotice.astro';
-import TextField from '../../../components/app/TextField.astro';
-import { choiceClass, errorClass } from '../../../components/app/styles';
+import JoinForm from '../../../components/join/JoinForm.astro';
 import { t } from '../../../../platform/messages';
 ---
 
@@ -20,109 +14,7 @@ import { t } from '../../../../platform/messages';
     <div class="max-w-2xl">
       <h1 class="text-headline-lg">{t('join.heading')}</h1>
       <p class="lede mt-4">{t('join.intro')}</p>
-
-      <div class="mt-8 space-y-4">
-        <Notice kind="error" hidden dataSlot="notice" />
-        <OfflineNotice heading={t('join.offlineHeading')} body={t('join.offlineBody')} />
-      </div>
-
-      <ErrorSummary
-        heading={t('join.errorSummaryHeading')}
-        errors={[
-          { field: 'email', message: t('join.emailError') },
-          { field: 'zip', message: t('join.zipError') },
-          { field: 'phone', message: t('join.phoneError') },
-          { field: 'consent', message: t('join.consentError') },
-        ]}
-      />
-
-      <form method="post" action="/join/member/" novalidate data-enhance class="mt-8 space-y-8">
-        <input type="hidden" name="origin" value="join_form" />
-        <input type="hidden" name="form_token" value="" data-slot="form-token" />
-
-        <TextField
-          name="email"
-          label={t('join.emailLabel')}
-          type="email"
-          autocomplete="email"
-          required
-          error={t('join.emailError')}
-        />
-
-        <div class="grid gap-6 sm:grid-cols-2 max-w-md sm:max-w-none">
-          <TextField name="given_name" label={t('join.givenNameLabel')} autocomplete="given-name" />
-          <TextField
-            name="family_name"
-            label={t('join.familyNameLabel')}
-            autocomplete="family-name"
-          />
-        </div>
-
-        <TextField
-          name="zip"
-          label={t('join.zipLabel')}
-          hint={t('join.zipHint')}
-          autocomplete="postal-code"
-          width="short"
-          error={t('join.zipError')}
-        />
-
-        <fieldset>
-          <legend class="text-title-lg">{t('join.reachHeading')}</legend>
-          <div class="mt-4 space-y-6">
-            <TextField
-              name="phone"
-              label={t('join.phoneLabel')}
-              type="tel"
-              autocomplete="tel-national"
-              error={t('join.phoneError')}
-            />
-            <TextField
-              name="address"
-              label={t('join.addressLabel')}
-              hint={t('join.addressHint')}
-              autocomplete="street-address"
-              noDraft
-            />
-          </div>
-        </fieldset>
-
-        <ChoiceGroup
-          name="interests"
-          legend={t('join.interestsHeading')}
-          type="checkbox"
-          options={[
-            { value: 'events', label: t('join.interestEvents') },
-            { value: 'meetings', label: t('join.interestMeetings') },
-            { value: 'volunteering', label: t('join.interestVolunteering') },
-            { value: 'news', label: t('join.interestNews') },
-          ]}
-        />
-
-        <div aria-hidden="true" class="absolute -left-[10000px] size-px overflow-hidden">
-          <label for="website">{t('join.honeypotLabel')}</label>
-          <input
-            id="website"
-            name="website"
-            type="text"
-            tabindex="-1"
-            autocomplete="off"
-            data-no-draft
-          />
-        </div>
-
-        <div>
-          <p id="consent-error" data-error-for="consent" hidden class={errorClass}>
-            {t('join.consentError')}
-          </p>
-          <label for="consent" class="flex items-start gap-3 font-bold">
-            <input id="consent" name="consent" type="checkbox" value="yes" class={choiceClass} />
-            <span>{t('join.consentLabel')}</span>
-          </label>
-        </div>
-
-        <Button busyLabel={t('join.sending')}>{t('join.submit')}</Button>
-      </form>
+      <JoinForm action="/join/member/" />
     </div>
   </section>
   <script is:inline src="/scripts/app-enhance.js" defer></script>

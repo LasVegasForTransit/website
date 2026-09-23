@@ -41,6 +41,11 @@ const { caption, columns, rows } = Astro.props;
     font-weight: 700;
   }
 
+  /* Long values such as identifiers break rather than push the page sideways. */
+  .app-table td {
+    overflow-wrap: anywhere;
+  }
+
   @media (max-width: 40rem) {
     .app-table thead {
       position: absolute;

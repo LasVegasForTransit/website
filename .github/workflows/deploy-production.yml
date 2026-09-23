@@ -45,6 +45,15 @@ jobs:
       - name: Build site
         uses: ./.github/actions/build-site
 
+      # The pattern gallery and prototypes exist only on previews. A
+      # production build that contains them must never deploy.
+      - name: Check preview-only pages are absent
+        run: |
+          if [ -e dist/patterns ] || [ -e dist/prototypes ]; then
+            echo "::error::dist/patterns or dist/prototypes is in the production build."
+            exit 1
+          fi
+
   deploy:
     name: Deploy to Cloudflare Pages
     needs: build

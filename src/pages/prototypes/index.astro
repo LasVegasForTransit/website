@@ -1,0 +1,53 @@
+---
+// The prototype index: every prototype with its status, last change and
+// Docket task, read from the metadata files in src/prototypes/.
+import PrototypeLayout from '../../components/app/PrototypeLayout.astro';
+import DataTable from '../../components/app/DataTable.astro';
+import { listPrototypes } from '../../lib/prototypes';
+
+const rows = listPrototypes().map((prototype) => ({
+  name: prototype.name,
+  status: prototype.status,
+  updated: prototype.updated,
+  task: `${prototype.taskTitle} (${prototype.task})`,
+  path: prototype.path,
+}));
+---
+
+<PrototypeLayout title="Prototypes">
+  <section class="container-page pt-12 pb-16 md:pt-16 md:pb-24">
+    <div class="max-w-3xl">
+      <h1 class="text-headline-lg">Prototypes</h1>
+      <p class="lede mt-4">
+        Test versions of new flows, for trying with real people before they're built. They use
+        made-up data and save nothing. This page is on previews only.
+      </p>
+      <ul class="mt-8 space-y-2" data-prototype-index>
+        {
+          rows.map((row) => (
+            <li>
+              <a
+                href={row.path}
+                class="font-bold underline underline-offset-4 decoration-2 decoration-primary"
+              >
+                {row.name}
+              </a>
+            </li>
+          ))
+        }
+      </ul>
+      <div class="mt-10">
+        <DataTable
+          caption="Every prototype"
+          columns={[
+            { key: 'name', label: 'Prototype' },
+            { key: 'status', label: 'Status' },
+            { key: 'updated', label: 'Last changed' },
+            { key: 'task', label: 'Docket task' },
+          ]}
+          rows={rows}
+        />
+      </div>
+    </div>
+  </section>
+</PrototypeLayout>

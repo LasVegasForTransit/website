@@ -1,11 +1,8 @@
 // The pattern gallery: one page per app pattern, showing every state with
-// usage, accessibility and copy notes. It is built only in local development
-// and in builds that set PUBLIC_LVBT_PATTERN_GALLERY=1 (pull request previews
-// and the CI audit), never in production.
+// usage, accessibility and copy notes. Built only where preview pages are
+// (see src/lib/preview-pages.ts), never in production.
 
-export const galleryEnabled =
-  // eslint-disable-next-line turbo/no-undeclared-env-vars -- Astro's own development flag, not a build input.
-  import.meta.env.DEV || import.meta.env.PUBLIC_LVBT_PATTERN_GALLERY === '1';
+export { previewPagesEnabled as galleryEnabled } from './preview-pages';
 
 export interface PatternDoc {
   slug: string;
