@@ -8,10 +8,19 @@ import { membershipStatus, type ConsentScope, type MembershipStatus } from '../c
 import { mayReplaceRegion, type RegionId, type RegionSource } from '../core/regions';
 import type { Db, SqlValue } from './db';
 import { normalizeEmail, ownedFields, type FieldName } from './field-ownership';
+import {
+  decideMatch,
+  linkMethodFor,
+  queueForReview,
+  type IncomingRecord,
+  type MatchDecision,
+} from './matching';
 
 export { normalizeEmail } from './field-ownership';
 
 export const PERSON_SERVICE_VERSION = 1;
+
+export type UpsertAction = 'linked' | 'created' | 'created_and_queued';
 
 export type Source =
   | 'join_form'
@@ -140,49 +149,74 @@ export class PersonService {
   }
 
   /**
-   * Find the person a record from `source` belongs to, or create them, then
-   * apply the fields that source owns and any consent it brings. Matching,
-   * version 1: an identity already linked on that platform, then the same
-   * normalized email address.
+   * Find the person a record belongs to, or create them, using the matching
+   * rules in matching.ts. Then apply the fields its source owns and any
+   * consent it brings. An existing person's filled-in fields are never
+   * overwritten here.
    */
-  async upsertFromSource(input: {
-    source: Source;
-    fields: PersonFields;
-    consent?: {
-      scope: ConsentScope;
-      source: ConsentSource;
-      method: ConsentMethod;
-      wordingVersion: string;
-    };
-  }): Promise<{ person: Person; action: 'linked' | 'created' }> {
-    const email = input.fields.email ? normalizeEmail(input.fields.email) : null;
-    const existing = email ? await this.findByEmail(email) : null;
+  async upsertFromSource(
+    input: IncomingRecord & {
+      consent?: {
+        scope: ConsentScope;
+        source: ConsentSource;
+        method: ConsentMethod;
+        wordingVersion: string;
+      };
+    },
+  ): Promise<{ person: Person; action: UpsertAction }> {
+    const decision = await decideMatch(this.db, input);
+    const now = nowIso();
     let personId: string;
-    let action: 'linked' | 'created';
-    if (existing) {
-      personId = existing.id;
-      action = 'linked';
+    let action: UpsertAction = 'linked';
+    if (decision.kind === 'existing') {
+      personId = decision.personId;
       await this.updateFields(personId, {
         source: input.source,
         fields: input.fields,
         onlyEmpty: true,
       });
     } else {
-      personId = ulid();
-      const now = nowIso();
+      personId = await this.createFromDecision(input, decision, now);
+      action = decision.review.length > 0 ? 'created_and_queued' : 'created';
+    }
+    const emailStored = !(decision.kind === 'new' && decision.withholdEmail);
+    if (input.emailVerified === true && emailStored) {
       await this.db
-        .prepare('INSERT INTO people (id, created_at, updated_at) VALUES (?, ?, ?)')
-        .bind(personId, now, now)
+        .prepare(
+          'UPDATE people SET email_verified_at = coalesce(email_verified_at, ?) WHERE id = ?',
+        )
+        .bind(now, personId)
         .run();
-      action = 'created';
-      await this.updateFields(personId, { source: input.source, fields: input.fields });
+    }
+    if (input.identity) {
+      await this.linkIdentity(personId, { ...input.identity, linkMethod: linkMethodFor(decision) });
     }
     if (input.consent) {
-      await this.recordConsent(personId, { ...input.consent, givenAt: nowIso() });
+      await this.recordConsent(personId, { ...input.consent, givenAt: now });
     }
     const person = await this.getPerson(personId);
     if (!person) throw new Error('person service: person vanished during upsert');
     return { person, action };
+  }
+
+  // A new person from an incoming record, queued for review when they look
+  // like someone LVBT already knows.
+  private async createFromDecision(
+    input: IncomingRecord,
+    decision: Extract<MatchDecision, { kind: 'new' }>,
+    now: string,
+  ): Promise<string> {
+    const personId = ulid();
+    await this.db
+      .prepare('INSERT INTO people (id, created_at, updated_at) VALUES (?, ?, ?)')
+      .bind(personId, now, now)
+      .run();
+    const withheld = decision.withholdEmail ? input.fields.email : undefined;
+    const fields = withheld ? { ...input.fields, email: undefined } : input.fields;
+    await this.updateFields(personId, { source: input.source, fields });
+    const details = withheld ? { email: normalizeEmail(withheld) } : null;
+    await queueForReview(this.db, personId, { ...decision, details }, now);
+    return personId;
   }
 
   /**
