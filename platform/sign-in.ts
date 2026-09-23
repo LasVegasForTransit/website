@@ -8,6 +8,7 @@ import {
   createSession,
   endSession,
   linkIsLive,
+  mayTellStranger,
   readSession,
   requestCode,
   useLink,
@@ -201,8 +202,18 @@ export async function askForCode(
     return { kind: 'rate_limited', retryAfter: formatTime(outcome.retryAfter) };
   }
   const step: SignInStep = { email, requestId: ulid(), next: safeNext(input.next) };
-  if (outcome.kind === 'no_person') return { kind: 'sent', step };
   const origin = input.origin ?? SITE_ORIGIN;
+  // Someone who isn't a member hears about it only in their own inbox: the
+  // page they see is the same either way.
+  if (outcome.kind === 'no_person') {
+    if (!(await mayTellStranger(env, email))) return { kind: 'sent', step };
+    const joinLink = `${origin}/join/member/`;
+    return {
+      kind: 'sent',
+      step,
+      send: () => sendCodeEmail(env, notMemberEmail(email, joinLink), fetcher),
+    };
+  }
   const link = `${origin}/sign-in/link/${outcome.issued.linkToken}${
     step.next === ACCOUNT_PATH ? '' : `?next=${encodeURIComponent(step.next)}`
   }`;
@@ -243,6 +254,23 @@ export function signInEmail(to: string, code: string, link: string): Email {
     html:
       `<p style="font-size:18px">${escapeHtml(body)}</p>` +
       `<p><a href="${escapeHtml(link)}" style="display:inline-block;padding:12px 20px;background:#111;color:#fff;font-weight:bold;text-decoration:none">${escapeHtml(button)}</a></p>` +
+      `<p>${escapeHtml(ignore)}</p><p>${escapeHtml(signOff)}</p>`,
+  };
+}
+
+export function notMemberEmail(to: string, joinLink: string): Email {
+  const body = t('email.notMemberBody');
+  const button = t('email.notMemberButton');
+  const ignore = t('email.notMemberIgnore');
+  const signOff = t('email.signOff');
+  return {
+    to,
+    subject: t('email.notMemberSubject'),
+    template: 'sign_in_not_member',
+    text: `${body}\n\n${button}: ${joinLink}\n\n${ignore}\n\n${signOff}`,
+    html:
+      `<p style="font-size:18px">${escapeHtml(body)}</p>` +
+      `<p><a href="${escapeHtml(joinLink)}" style="display:inline-block;padding:12px 20px;background:#111;color:#fff;font-weight:bold;text-decoration:none">${escapeHtml(button)}</a></p>` +
       `<p>${escapeHtml(ignore)}</p><p>${escapeHtml(signOff)}</p>`,
   };
 }

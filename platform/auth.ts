@@ -6,7 +6,7 @@
 import { ulid } from './core/ids';
 import { hashWithSecret } from './core/signing';
 import type { Db } from './storage/db';
-import { withinHourlyLimit } from './storage/limits';
+import { withinDailyLimit, withinHourlyLimit } from './storage/limits';
 import { normalizeEmail } from './storage/person-service';
 
 export type CodePurpose = 'sign_in' | 'confirm_email' | 'delete_account';
@@ -133,6 +133,21 @@ export async function requestCode(
     ),
   ]);
   return { kind: 'issued', personId, issued };
+}
+
+/**
+ * Whether an address that belongs to no one may be sent the "not a member
+ * yet" email now: once a day per address, so the sign-in form can't be used
+ * to fill a stranger's inbox.
+ */
+export function mayTellStranger(
+  env: AuthEnv,
+  email: string,
+  now: Date = new Date(),
+): Promise<boolean> {
+  return hash(env, 'stranger-notice', normalizeEmail(email)).then((bucket) =>
+    withinDailyLimit(env.PLATFORM_DB, bucket, 1, now),
+  );
 }
 
 export type CheckOutcome =

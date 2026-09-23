@@ -11,9 +11,11 @@ interface Props {
   busyLabel?: string;
   name?: string;
   value?: string;
+  /** Fill the width of the form, for a short form in a narrow card. */
+  block?: boolean;
 }
 
-const { variant = 'primary', type = 'submit', busyLabel, name, value } = Astro.props;
+const { variant = 'primary', type = 'submit', busyLabel, name, value, block = false } = Astro.props;
 ---
 
 <button
@@ -21,7 +23,7 @@ const { variant = 'primary', type = 'submit', busyLabel, name, value } = Astro.p
   name={name}
   value={value}
   data-busy-label={busyLabel}
-  class={buttonClass[variant]}
+  class:list={[buttonClass[variant], block && 'w-full']}
 >
   <slot />
 </button>
