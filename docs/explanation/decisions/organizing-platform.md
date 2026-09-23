@@ -147,7 +147,7 @@ What this rules out:
 
 ### 10. Transactional email goes through one sending function and Resend's free plan
 
-Transactional email is any email sent to one person because of something they did, such as a sign-in code or an event reminder. All of it goes through one shared sending function using Resend's free plan, which allows 3,000 emails a month and 100 a day. It is sent from a dedicated mail subdomain, `mail.lasvegasfortransit.org`, so it cannot harm the reputation of LVBT's main address. The newsletter stays in Beehiiv.
+Transactional email is any email sent to one person because of something they did, such as a sign-in code or an event reminder. All of it goes through one shared sending function using Resend's free plan, which allows 3,000 emails a month and 100 a day. It is sent from a dedicated subdomain, `notify.lasvegasfortransit.org`, so it cannot harm the reputation of LVBT's main address. (`mail.lasvegasfortransit.org` is already the newsletter's web address in Beehiiv.) The newsletter stays in Beehiiv.
 
 If LVBT outgrows the free plan, the next step is Cloudflare Email on Workers Paid at $5 a month, not Resend Pro at $20 a month. Only the sending function changes.
 

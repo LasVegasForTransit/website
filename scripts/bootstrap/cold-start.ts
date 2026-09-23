@@ -17,6 +17,7 @@
  *   repo      — gh repo create + push (skipped if origin already set)
  *   deploy    — wrangler pages project create + first deploy
  *   domain    — verify lasvegasfortransit.org points at the Pages project
+ *   secrets   — report and set every server-side secret the site and platform need
  */
 
 import path from 'node:path';
@@ -38,6 +39,7 @@ import { runEnvPhase } from './phases/env.js';
 import { runRepoPhase } from './phases/repo.js';
 import { runDeployPhase } from './phases/deploy.js';
 import { runDomainPhase } from './phases/domain.js';
+import { runSecretsPhase } from './phases/secrets.js';
 
 interface PhaseSpec {
   id: PhaseId;
@@ -90,6 +92,12 @@ const PHASES: readonly PhaseSpec[] = [
     id: 'domain',
     title: 'Custom domain',
     what: 'Checking whether your domain points at the Pages project, and handing you the link to attach it if not.',
+    local: false,
+  },
+  {
+    id: 'secrets',
+    title: 'Platform secrets',
+    what: 'Checking every server-side secret on the Worker, Pages and GitHub, asking for each missing one once, and storing it everywhere it is needed.',
     local: false,
   },
 ] as const;
@@ -193,6 +201,8 @@ async function runPhaseById(
       return runDeployPhase(projectRoot, args.doctorMode);
     case 'domain':
       return runDomainPhase(projectRoot, args.doctorMode);
+    case 'secrets':
+      return runSecretsPhase(projectRoot, args.doctorMode);
   }
 }
 

@@ -18,7 +18,8 @@ export type CapabilityId =
 
 export type CommandGroup = 'dev' | 'build' | 'deploy';
 
-export type PhaseId = 'install' | 'auth' | 'workspace' | 'env' | 'repo' | 'deploy' | 'domain';
+export type PhaseId =
+  'install' | 'auth' | 'workspace' | 'env' | 'repo' | 'deploy' | 'domain' | 'secrets';
 
 export type CapabilityStatus = 'ready' | 'failed' | 'deferred' | 'skipped';
 
