@@ -96,7 +96,7 @@ $9/mo. Custom domain. Modern editor, hosted email, members system. We own and ca
 
 ### Site stack: Astro + Cloudflare full-stack
 
-Already locked: Astro 5 + MDX + Tailwind v4 + TypeScript (strict) on Cloudflare Pages. Extends to Workers + cron, and Cloudflare's storage trio — **D1** (a SQL database), **KV** (a simple key-value store for small fast lookups), and **R2** (file/object storage for large media) — plus Access for Google Workspace SSO (single sign-on — staff log in once with their Workspace account) on any future internal admin URLs (free up to 50 users).
+Already locked: Astro 7 + MDX + Tailwind v4 + TypeScript (strict) on Cloudflare, moving from Pages to Workers (see the [organizing platform decision](./decisions/organizing-platform.md)). Extends to Worker cron triggers, and Cloudflare's storage trio — **D1** (a SQL database), **KV** (a simple key-value store for small fast lookups), and **R2** (file/object storage for large media) — plus Access for Google Workspace SSO (single sign-on — staff log in once with their Workspace account) on any future internal admin URLs (free up to 50 users).
 
 The pillar builds use this stack — Worker crons for data ingestion, D1 for structured data, R2 for heavy assets, Access for any admin tools that need staff identity. Nothing exotic to add when the time comes.
 
