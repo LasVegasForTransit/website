@@ -250,24 +250,62 @@ If a metric wouldn't change a decision, don't track it.
 
 ## How this maps to what we already have
 
-Deliberately thin — this is a PM spec, not an implementation plan. But for
-grounding: the systems exist to back rungs 0–2 today.
+Deliberately thin — this is a PM spec, not an implementation plan. This section
+was written before the [Organizing
+Platform](./decisions/organizing-platform.md) (the decision record
+that fixes how the platform is built) existed; it's updated here to say what
+that platform actually provides today, and what's still planned.
 
-- **The roster already lives in Notion** (the app the team uses for shared databases and notes — see [glossary](../reference/glossary.md#notion)), created per-member by the intake pipeline
-  ([membership-intake.md](../reference/membership-intake.md)). Adding `Stage`,
-  `Role`, an events-attended signal, and a `Lapsing` flag to that record covers
-  most of this spec's state model.
-- **Events already flow through a public calendar** ([events-pipeline.md](./events-pipeline.md)).
-  The missing primitive is **attendance capture** — a check-in (QR at the door, a
-  form, an RSVP reconciliation) that writes back to the member record. That single
-  signal powers attendance metrics, Regular detection, and lapse alerts.
-- **Discord** is the natural home for roles/belonging; roles can mirror rungs and
-  teams.
-- **Newsletter segments** (Beehiiv, our newsletter-sending platform — see [glossary](../reference/glossary.md#beehiiv)) can carry recognition and re-engagement flows.
+- **The roster lives in the person record**, one row per person LVBT knows
+  about, in the platform's Cloudflare D1 database — not in Notion. It's read
+  and written only through the [person
+  service](../../platform/storage/person-service.md), and every
+  sign-up, from any form, lands there (see
+  [membership-intake.md](../reference/membership-intake.md)). Adding `Stage`,
+  `Role`, an events-attended signal, and a `Lapsing` flag to that record still
+  covers most of this spec's state model — the record just isn't Notion
+  anymore. (Notion still holds a working queue for staff follow-up on new
+  sign-ups, until the staff console's own follow-up queue ships; that's a
+  separate thing from the roster.)
+- **Events already flow through a public calendar**
+  ([events-pipeline.md](./events-pipeline.md)). Attendance capture — a
+  check-in that writes back to the person record — is not built yet. It's
+  planned as the **Event Attendance Record** project. That single signal will
+  power attendance metrics, Regular detection, and lapse alerts, same as this
+  document originally described.
+- **Discord** is the natural home for roles/belonging, but roles don't sync
+  automatically yet. Linking a member's Discord account and mirroring rungs
+  and teams as roles is planned as the **Discord Account Linking and Role
+  Sync** project.
+- **Newsletter segments** (Beehiiv, our newsletter-sending platform — see
+  [glossary](../reference/glossary.md#beehiiv)) can carry recognition and
+  re-engagement flows, as before.
+- **Member sign-in already exists.** A member signs in with a one-time code
+  emailed to them at `/sign-in` — there's no password — and manages their own
+  record at `/account`: their name, phone, area, email, and mailing-list
+  status. This is rungs 3–4's login prerequisite, built earlier than this
+  document assumed it would be needed, because members needed a way to manage
+  their own data regardless of where they sit on the ladder.
 
-Nothing here requires the gated-content/auth system. Rungs 3–4 (lead access,
-private planning spaces) are where login starts to matter — defer that until there
-are enough leads to need it.
+### The interim definition of "member" differs from rung 1
+
+Today, LVBT's platform treats **"subscribed to the newsletter"** as the
+definition of a member — that's what sets `membership_status` to `member` in
+the person record. This is an interim rule, not a permanent one: it will hold
+until the **LVBT Membership Model Design** project decides what "member"
+should mean and whether that matches this ladder.
+
+That interim rule is looser than this document's rung 1, **Member**, which
+requires opting in through the membership form and appearing in the roster —
+a newsletter subscription alone is closer to rung 0, **Subscriber**, in the
+ladder above. Don't assume the two match until the Membership Model Design
+project says they do. Until then, "member" in the platform's data and
+"Member" on this ladder are two different things that happen to share a word.
+
+Nothing above requires the gated-content/auth system that doesn't exist yet.
+Sign-in and account management, as noted above, already do exist; what's still
+missing is staff-facing tooling (the console) and the automation projects
+named above.
 
 ---
 
