@@ -4,6 +4,12 @@
 // hoisted <script> tags, which CSP blocks in production. Without that
 // script running, submit falls through to native form posting and the
 // page "refreshes". Same pattern as Header.astro / ShareButton.astro.
+//
+// Subscribing makes someone an LVBT member, so the box posts to the join
+// handler (/join/member/) with the newsletter-box consent wording. Without
+// JavaScript it is an ordinary form that lands on the welcome page.
+import { t } from '../../platform/messages';
+
 interface Props {
   variant?: 'light' | 'dark';
   // `compact` drops the box framing and the internal heading/pitch,
@@ -40,8 +46,12 @@ const { variant = 'light', compact = false, stack = false } = Astro.props;
       !compact && 'mt-6',
     ]}
     data-newsletter-form
+    method="post"
+    action="/join/member/"
     novalidate
   >
+    <input type="hidden" name="origin" value="newsletter_box" />
+    <input type="hidden" name="consent" value="yes" />
     <input
       type="email"
       name="email"
@@ -62,10 +72,21 @@ const { variant = 'light', compact = false, stack = false } = Astro.props;
         stack ? 'self-start px-4 py-2 text-sm' : 'px-6 py-3',
       ]}
     >
-      Subscribe
+      {t('newsletterBox.submit')}
     </button>
   </form>
-  <p id="newsletter-status" role="status" aria-live="polite" data-form-status class="mt-3 text-sm">
+  <p class="mt-3 text-sm">{t('newsletterBox.memberNote')}</p>
+  <p
+    id="newsletter-status"
+    role="status"
+    aria-live="polite"
+    data-form-status
+    data-sending={t('newsletterBox.sending')}
+    data-success={t('newsletterBox.success')}
+    data-error={t('newsletterBox.error')}
+    data-invalid-email={t('newsletterBox.invalidEmail')}
+    class="mt-3 text-sm"
+  >
   </p>
 </div>
 

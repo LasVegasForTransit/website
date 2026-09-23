@@ -6,6 +6,7 @@ import { qrSvg } from '../lib/qr-svg';
 import { site } from '../lib/site';
 import { displayUrl } from '../lib/paths';
 import { handleFromUrl } from '../lib/social';
+import { membershipDisplayUrl, membershipPrintUrl } from '../lib/membership';
 
 type QrSlide = {
   id: string;
@@ -53,16 +54,14 @@ const socialSlides: QrSlide[] = [
   },
 ].filter((slide): slide is QrSlide => Boolean(slide));
 
-const joinSlide: QrSlide | undefined = site.membership.formUrl
-  ? {
-      id: 'join',
-      label: 'Join',
-      title: 'Become a member',
-      url: site.membership.formUrl,
-      displayUrl: 'lasvegasfortransit.org/join',
-      hint: 'Scan to fill out the membership form.',
-    }
-  : undefined;
+const joinSlide: QrSlide = {
+  id: 'join',
+  label: 'Join',
+  title: 'Become a member',
+  url: membershipPrintUrl,
+  displayUrl: membershipDisplayUrl,
+  hint: 'Scan to join LVBT in a minute.',
+};
 
 const slides: QrSlide[] = [
   {
@@ -73,7 +72,7 @@ const slides: QrSlide[] = [
     displayUrl: displayUrl(site.url),
     hint: 'Scan to open the LVBT website.',
   },
-  ...(joinSlide ? [joinSlide] : []),
+  joinSlide,
   ...socialSlides,
 ];
 

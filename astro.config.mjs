@@ -17,7 +17,10 @@ import { analyticsIntegrations } from './src/lib/analytics';
 /** @param {string} page */
 const sitemapFilter = (page) => {
   const path = new URL(page).pathname.replace(/\/$/, '') || '/';
-  return path !== '/qr';
+  // The join steps after the form, and the email-removal page, are
+  // per-visitor pages with nothing to index.
+  const privatePaths = ['/qr', '/join/member/region', '/join/member/welcome', '/join/remove'];
+  return !privatePaths.includes(path);
 };
 
 /**

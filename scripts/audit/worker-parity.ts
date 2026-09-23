@@ -98,7 +98,7 @@ async function verify(baseUrl: string, root: string): Promise<void> {
   const calendar = await fetch(`${baseUrl}${await firstCalendarPath(root)}`);
   expectHeader(calendar, 'content-type', 'text/calendar; charset=utf-8');
 
-  const api = await fetch(`${baseUrl}/api/subscribe`, {
+  const api = await fetch(`${baseUrl}/api/membership-intake`, {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
     body: '{}',
@@ -111,7 +111,7 @@ async function verify(baseUrl: string, root: string): Promise<void> {
     !('error' in apiBody) ||
     apiBody.error !== 'service_unavailable'
   )
-    fail('The compiled /api/subscribe route did not execute in the Worker.');
+    fail('The compiled /api/membership-intake route did not execute in the Worker.');
 }
 
 async function stop(process: ChildProcess): Promise<void> {

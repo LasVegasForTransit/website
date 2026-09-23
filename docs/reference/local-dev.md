@@ -47,16 +47,16 @@ lsof -ti:4320,4321 | xargs kill -9
 
 Then re-run `pnpm dev`.
 
-### `/api/subscribe` returns an error locally
+### Try the join form locally
 
-Wrangler reads secrets from `.env.local`. Make sure both are set:
+The join form's handlers and the platform database run in the Worker, so try them with a production-like build:
 
+```sh
+pnpm exec wrangler d1 migrations apply lvbt-platform --local   # once, and after new migrations
+pnpm worker:dev
 ```
-LVBT_BEEHIIV_API_KEY=...
-LVBT_BEEHIIV_PUBLICATION_ID=pub_...
-```
 
-Run `pnpm preflight` to check the current state of all config values.
+Then open `/join/member` at the printed address. Joining needs the Beehiiv secrets in `.dev.vars` (Wrangler's local secrets file, which git ignores); without them the form shows "We couldn't finish joining you just now", which is the right behavior.
 
 ### `/api/membership-intake` returns an error locally
 
