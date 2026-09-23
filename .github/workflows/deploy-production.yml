@@ -45,12 +45,18 @@ jobs:
       - name: Build site
         uses: ./.github/actions/build-site
 
-      # The pattern gallery and prototypes exist only on previews. A
-      # production build that contains them must never deploy.
+      # The pattern gallery, prototypes and the en-XA test language exist only
+      # on previews and the audit. A production build with any of them must
+      # never deploy.
       - name: Check preview-only pages are absent
         run: |
           if [ -e dist/patterns ] || [ -e dist/prototypes ]; then
             echo "::error::dist/patterns or dist/prototypes is in the production build."
+            exit 1
+          fi
+          # The en-XA long-text language is for the audit only.
+          if grep -rlq 'lang="en-XA"' dist --include='*.html'; then
+            echo "::error::The production build is in the en-XA test language. Unset LVBT_PSEUDO_LOCALE."
             exit 1
           fi
 
