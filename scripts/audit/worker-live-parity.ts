@@ -88,6 +88,7 @@ export function parityCases(includeApis = true): Array<{ method?: string; pathna
     { pathname: '/not-a-real-page' },
     { pathname: '/get-involved' },
     { pathname: '/sitemap.xml' },
+    { pathname: '/wwd' },
     { pathname: '/week-without-driving' },
     { pathname: '/projects/social-media-just-talking' },
   ];

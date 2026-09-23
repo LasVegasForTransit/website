@@ -109,6 +109,7 @@ export default defineConfig({
   redirects: {
     '/sitemap.xml': '/sitemap-index.xml',
     '/get-involved': '/go',
+    '/wwd': 'https://lvwwd.org/',
     '/week-without-driving': 'https://lvwwd.org/',
   },
   vite: {

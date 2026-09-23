@@ -5,9 +5,12 @@
 # preferable for crawlers. This rule overrides the static HTML when deployed.
 /sitemap.xml    /sitemap-index.xml  301
 /get-involved   /go                 301
-# The campaign's own address. Temporary (302) because the main site is
-# expected to get a programme page of its own at /wwd later; /wwd itself is
-# redirected in functions/_middleware.ts, which can match on hostname.
+# Week Without Driving is its own site now, served by the lvwwd Worker
+# (see docs/reference/week-without-driving-site.md). These are the only
+# ties this repo keeps to it: old links to the campaign redirect to its
+# real home. Temporary (302), not permanent, in case that ever changes.
+/wwd                     https://lvwwd.org/  302
+/wwd/                    https://lvwwd.org/  302
 /week-without-driving    https://lvwwd.org/  302
 /week-without-driving/   https://lvwwd.org/  302
 # Street interviews on transit was folded into Bus Buddies.
