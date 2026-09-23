@@ -136,6 +136,11 @@ export const PLATFORM_SECRETS: readonly PlatformSecret[] = [
     purpose: 'Proves a transit news submission came from the Notion automation.',
     use: 'live',
     generate: true,
+    steps: [
+      'Open the LVBT transit news automation in Notion and inspect its webhook action.',
+      'Copy the value after "Bearer " in its Authorization header. Enter that same value here.',
+      'If the value is unavailable, stop and rotate the secret across Notion, Pages, Worker and GitHub together.',
+    ],
     afterSet:
       'Paste the same value into the Notion transit news automation webhook header as "Authorization: Bearer <value>".',
     neededFor: 'Transit news intake',

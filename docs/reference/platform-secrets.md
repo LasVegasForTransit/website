@@ -12,7 +12,9 @@ You don't need to set secrets by hand. Run:
 pnpm bootstrap --phase secrets
 ```
 
-It checks the Worker, the Pages project and the `worker-candidate` GitHub environment, and sorts what is missing into three groups: needed now by a live feature, needed before the Worker takes over production, and needed later by features that aren't built yet. You choose how far to go. For each value it shows a link and numbered steps, offers to open the page in your browser, then stores what you paste everywhere it is needed. Values it can make itself, such as random signing keys, are generated for you. Leave a prompt empty to skip that secret for now; re-run the command later to finish.
+It checks the Worker, the Pages project and the `worker-candidate` GitHub environment. Missing values are grouped by urgency: live features, the Worker switch-over, and features not yet built. Choose how far to go.
+
+For each value, the guide shows its source and setup steps, then stores it wherever it is missing. Random signing keys are generated only when every target is known to be empty. If a shared secret already exists or a target cannot be checked, the guide asks for the existing value instead. Leave a prompt empty to skip that secret; re-run the command later to finish.
 
 To only see the report, without changing anything:
 
