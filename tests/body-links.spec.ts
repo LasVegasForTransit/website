@@ -921,7 +921,7 @@ test.describe('body content links', () => {
     expect(flyer.gridColumnCount).toBeGreaterThanOrEqual(2);
     expect(flyer.narrowestValue).toBeGreaterThanOrEqual(130);
     expect(flyer.text).toContain('lasvegasfortransit.org');
-    if (hasJoinSlide) expect(flyer.text).toContain('lasvegasfortransit.org/join');
+    if (hasJoinSlide) expect(flyer.text).toContain('lasvegasfortransit.org/join/member');
     expect(flyer.text).not.toContain(MEMBERSHIP_FORM_URL.replace(/^https?:\/\//, ''));
   });
 
