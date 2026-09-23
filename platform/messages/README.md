@@ -32,7 +32,15 @@ t('screen.tries', { count: 4 }); // "You have 4 tries left."
 
 ## Test with longer text
 
-`createTranslator(en, 'en-XA')` renders every message about 40 percent longer, with accented letters, like `[Ĵöïñ ĹVBŢ · · ·]`. It shows where a layout would break in a longer language without anyone needing to speak one. It is for tests and local development only.
+The pseudo-language `en-XA` renders every message about 40 percent longer, with accented letters, like `[Ĵöïñ ĹVBŢ · · ·]`. It shows where a layout would break in a longer language without anyone needing to speak one.
+
+To see the whole site in it, build with `LVBT_PSEUDO_LOCALE=1`:
+
+```sh
+LVBT_PSEUDO_LOCALE=1 pnpm build && pnpm preview
+```
+
+Every page built this way says `lang="en-XA"`. The audit's "Long text (en-XA)" job builds the site like this on every pull request and checks that the join and sign-in pages still fit a 320-pixel phone with nothing cut off. The production deploy refuses a build in `en-XA`. Messages the server fills in on request, such as an error after a wrong code, stay in English in this build.
 
 ## Add a language later
 

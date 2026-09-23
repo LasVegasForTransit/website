@@ -9,6 +9,7 @@ import StructuredData from '../components/seo/StructuredData.astro';
 import { site } from '../lib/site';
 import { organizationSchema } from '../lib/structured-data';
 import { canonicalUrl } from '../lib/paths';
+import { LOCALE } from '../../platform/messages';
 
 interface Props {
   title?: string;
@@ -65,7 +66,7 @@ const canonical = canonicalUrl(Astro.url.pathname);
     below restores graceful degradation for visitors without JS: reveals
     snap to visible instead of getting stuck hidden. */
 }
-<html lang="en" class="reveal-ready">
+<html lang={LOCALE} class="reveal-ready">
   <head>
     <meta charset="UTF-8" />
     <noscript>

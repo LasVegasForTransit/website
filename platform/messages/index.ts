@@ -84,10 +84,21 @@ export function createTranslator(catalog: unknown, locale: Locale = 'en') {
   };
 }
 
-const english = createTranslator(en);
+/**
+ * The language pages are built in. `en-XA` only when LVBT_PSEUDO_LOCALE=1 is
+ * set for a build, which the audit's long-text check does; production never
+ * sets it, and its deploy fails if a page says lang="en-XA".
+ */
+export const LOCALE: Locale =
+  (globalThis as { process?: { env?: Record<string, string | undefined> } }).process?.env
+    ?.LVBT_PSEUDO_LOCALE === '1'
+    ? 'en-XA'
+    : 'en';
+
+const translate = createTranslator(en, LOCALE);
 
 export function t(key: MessageKey, values?: MessageValues): string {
-  return english(key, values);
+  return translate(key, values);
 }
 
 export function formatDate(date: Date): string {
