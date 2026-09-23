@@ -443,7 +443,7 @@ test.describe('print layout', () => {
     });
 
     expect(links.membershipPrintUrl).toMatch(
-      /^(https:\/\/forms\.gle\/|hello@lasvegasfortransit\.org$)/,
+      /^(https:\/\/lasvegasfortransit\.org\/join\/member$|https:\/\/forms\.gle\/)/,
     );
     expect(links.membershipPrintUrl).not.toContain('subject=');
     expect(links.membershipPrintUrl).not.toContain('body=');
