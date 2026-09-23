@@ -37,6 +37,7 @@ Task-oriented recipes for things you'll do repeatedly. (Diátaxis calls these "h
 
 Information you look up, not read.
 
+- [Platform secrets](./reference/platform-secrets.md) — every server-side secret, what it is for, and how `pnpm bootstrap --phase secrets` sets it
 - [Glossary](./reference/glossary.md) — plain-English definitions of every tool and acronym in these docs
 - [Local development](./reference/local-dev.md) — dev server ports, troubleshooting
 - [Content collections](./reference/content-collections.md) — schemas, folder layout, Zod

@@ -44,6 +44,7 @@ The setup runs as a sequence of _phases_ — self-contained steps that each get 
 | `repo`      | Creates a GitHub repo via `gh repo create` and wires `origin` to the [SSH URL](./glossary.md#ssh)                                                                                  |
 | `deploy`    | Provisions a Cloudflare Pages project and deploys `./dist`                                                                                                                         |
 | `domain`    | Attaches [apex](./glossary.md#apex-domain) + www to the Pages project; auto-creates [DNS](./glossary.md#dns) via the Cloudflare API                                                |
+| `secrets`   | Reports every server-side secret missing from the Worker, Pages and GitHub, asks for each once, and stores it everywhere — see [platform secrets](./platform-secrets.md)           |
 
 ## State file
 
