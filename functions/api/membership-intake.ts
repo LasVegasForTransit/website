@@ -11,10 +11,13 @@ import {
   intakeFieldsFromBody,
   intakeLookupQuery,
   intakePage,
+  type IntakeFields,
 } from '../../scripts/notion/lib/intake-page';
+import { googleFormSubmission, processIntake } from '../../platform/intake';
 import { bearerToken, errorResponse, jsonHeaders, timingSafeEqual } from './_shared';
 
 interface Env {
+  PLATFORM_DB?: D1Database;
   LVBT_BEEHIIV_API_KEY: string;
   LVBT_BEEHIIV_PUBLICATION_ID: string;
   LVBT_MEMBERSHIP_INTAKE_SECRET: string;
@@ -96,6 +99,20 @@ async function callUpstream<T extends { ok: boolean; status: number }>(
 
 const notionDetail = async (res: NotionResponse) => notionErrorMessage(res.json);
 
+// Record the sign-up in the person record through the versioned intake. Best
+// effort: the person is already subscribed, and a database problem must not
+// make the Google Form retry and subscribe them again.
+async function recordInPersonRecord(env: Env, fields: IntakeFields): Promise<void> {
+  if (!env.PLATFORM_DB) return;
+  try {
+    await processIntake({ ...env, PLATFORM_DB: env.PLATFORM_DB }, googleFormSubmission(fields), {
+      subscribe: false,
+    });
+  } catch (error) {
+    console.error('/api/membership-intake: person record write failed', error);
+  }
+}
+
 export const onRequestPost: PagesFunction<Env> = async (context) => {
   const { env, request } = context;
 
@@ -143,6 +160,7 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
   if (!beehiiv.ok) return beehiiv.error;
   // Workers holds the connection until the body is consumed or cancelled.
   await beehiiv.value.body?.cancel().catch(() => undefined);
+  await recordInPersonRecord(env, fields);
   if (!lookup.ok) return lookup.error;
 
   if ((getArray(lookup.value.json, 'results') ?? []).length > 0) {

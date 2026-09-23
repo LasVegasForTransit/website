@@ -7,6 +7,9 @@ import { nowIso, ulid } from '../core/ids';
 import { membershipStatus, type ConsentScope, type MembershipStatus } from '../core/membership';
 import { mayReplaceRegion, type RegionId, type RegionSource } from '../core/regions';
 import type { Db, SqlValue } from './db';
+import { normalizeEmail, ownedFields } from './field-ownership';
+
+export { normalizeEmail } from './field-ownership';
 
 export const PERSON_SERVICE_VERSION = 1;
 
@@ -14,6 +17,7 @@ export type Source =
   | 'join_form'
   | 'newsletter_box'
   | 'google_form'
+  | 'external_form'
   | 'beehiiv'
   | 'member'
   | 'staff'
@@ -21,7 +25,14 @@ export type Source =
   | 'import';
 
 export type ConsentSource =
-  'join_form' | 'newsletter_box' | 'google_form' | 'beehiiv' | 'paper' | 'check_in' | 'import';
+  | 'join_form'
+  | 'newsletter_box'
+  | 'google_form'
+  | 'external_form'
+  | 'beehiiv'
+  | 'paper'
+  | 'check_in'
+  | 'import';
 
 export type ConsentMethod = 'checkbox' | 'double_opt_in' | 'paper_signature' | 'unknown';
 
@@ -56,49 +67,8 @@ export interface Person {
   updated_at: string;
 }
 
-type FieldName = keyof PersonFields;
-
-// Which sources may change which fields. Anything not listed is ignored with
-// a warning, so, for example, Beehiiv can never overwrite a name a member
-// typed on their account page.
-const FIELD_OWNERS: Record<FieldName, readonly Source[]> = {
-  given_name: ['join_form', 'google_form', 'member', 'staff', 'paper', 'import'],
-  family_name: ['join_form', 'google_form', 'member', 'staff', 'paper', 'import'],
-  email: ['join_form', 'newsletter_box', 'google_form', 'member', 'staff', 'import'],
-  phone: ['join_form', 'google_form', 'member', 'staff', 'paper', 'import'],
-  zip: ['join_form', 'member', 'staff'],
-  census_block: ['join_form', 'member', 'staff'],
-  census_block_vintage: ['join_form', 'member', 'staff'],
-  place_name: ['join_form', 'member', 'staff'],
-  preferred_language: ['member', 'staff'],
-};
-
 const PERSON_COLUMNS =
   'id, given_name, family_name, email, phone, zip, census_block, census_block_vintage, place_name, preferred_language, membership_status, membership_rules_version, region_id, region_source, created_at, updated_at';
-
-export function normalizeEmail(email: string): string {
-  return email.trim().toLowerCase();
-}
-
-function ownedFields(
-  source: Source,
-  fields: PersonFields,
-  warn: (message: string) => void,
-): [FieldName, SqlValue][] {
-  const allowed: [FieldName, SqlValue][] = [];
-  for (const [name, value] of Object.entries(fields) as [FieldName, SqlValue | undefined][]) {
-    if (value === undefined) continue;
-    if (!FIELD_OWNERS[name].includes(source)) {
-      warn(`person service: source ${source} may not change ${name}; ignored`);
-      continue;
-    }
-    allowed.push([
-      name,
-      name === 'email' && typeof value === 'string' ? normalizeEmail(value) : value,
-    ]);
-  }
-  return allowed;
-}
 
 export class PersonService {
   constructor(
