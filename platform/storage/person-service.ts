@@ -8,6 +8,13 @@ import { membershipStatus, type ConsentScope, type MembershipStatus } from '../c
 import { mayReplaceRegion, type RegionId, type RegionSource } from '../core/regions';
 import type { Db, SqlValue } from './db';
 import { normalizeEmail, ownedFields, type FieldName } from './field-ownership';
+import { findPeople, type PeopleQuery } from './people-search';
+import {
+  engagementCounts,
+  recordEvent,
+  type EngagementCounts,
+  type EngagementInput,
+} from './engagement';
 import {
   decideMatch,
   linkMethodFor,
@@ -77,7 +84,7 @@ export interface Person {
   updated_at: string;
 }
 
-const PERSON_COLUMNS =
+export const PERSON_COLUMNS =
   'id, given_name, family_name, email, phone, zip, census_block, census_block_vintage, place_name, preferred_language, membership_status, membership_rules_version, region_id, region_source, created_at, updated_at';
 
 export class PersonService {
@@ -86,11 +93,21 @@ export class PersonService {
     private readonly warn: (message: string) => void = console.warn,
   ) {}
 
-  async getPerson(id: string): Promise<Person | null> {
-    return this.db
+  async getPerson(id: string): Promise<Person | null>;
+  async getPerson(
+    id: string,
+    options: { withCounts: true; now?: Date },
+  ): Promise<(Person & { counts: EngagementCounts }) | null>;
+  async getPerson(
+    id: string,
+    options?: { withCounts?: boolean; now?: Date },
+  ): Promise<Person | (Person & { counts: EngagementCounts }) | null> {
+    const person = await this.db
       .prepare(`SELECT ${PERSON_COLUMNS} FROM people WHERE id = ? AND deleted_at IS NULL`)
       .bind(id)
       .first<Person>();
+    if (!person || !options?.withCounts) return person;
+    return { ...person, counts: await engagementCounts(this.db, id, options.now) };
   }
 
   async findByEmail(email: string): Promise<Person | null> {
@@ -100,52 +117,9 @@ export class PersonService {
       .first<Person>();
   }
 
-  async findPeople(query: {
-    text?: string;
-    email?: string;
-    membershipStatus?: MembershipStatus;
-    zip?: string;
-    regionId?: RegionId;
-    limit: number;
-    cursor?: string;
-  }): Promise<{ people: Person[]; nextCursor: string | null }> {
-    const where = ['deleted_at IS NULL'];
-    const values: SqlValue[] = [];
-    if (query.email) {
-      where.push('email = ?');
-      values.push(normalizeEmail(query.email));
-    }
-    if (query.membershipStatus) {
-      where.push('membership_status = ?');
-      values.push(query.membershipStatus);
-    }
-    if (query.zip) {
-      where.push('zip = ?');
-      values.push(query.zip);
-    }
-    if (query.regionId) {
-      where.push('region_id = ?');
-      values.push(query.regionId);
-    }
-    if (query.text) {
-      where.push(
-        "(given_name || ' ' || coalesce(family_name, '') || ' ' || coalesce(email, '')) LIKE ?",
-      );
-      values.push(`%${query.text}%`);
-    }
-    if (query.cursor) {
-      where.push('id > ?');
-      values.push(query.cursor);
-    }
-    const limit = Math.max(1, Math.min(query.limit, 200));
-    const { results } = await this.db
-      .prepare(
-        `SELECT ${PERSON_COLUMNS} FROM people WHERE ${where.join(' AND ')} ORDER BY id LIMIT ?`,
-      )
-      .bind(...values, limit + 1)
-      .all<Person>();
-    const page = results.slice(0, limit);
-    return { people: page, nextCursor: results.length > limit ? (page.at(-1)?.id ?? null) : null };
+  /** A page of people matching a query, never including deleted people. See people-search.ts. */
+  findPeople(query: PeopleQuery): Promise<{ people: Person[]; nextCursor: string | null }> {
+    return findPeople(this.db, query);
   }
 
   /**
@@ -280,13 +254,14 @@ export class PersonService {
     // An active consent already covers this; a second row would add nothing.
     if (!active) {
       const now = nowIso();
+      const consentId = ulid();
       await this.db
         .prepare(
           `INSERT INTO consent_records (id, person_id, scope, given_at, source, method, wording_version, created_at, updated_at)
            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         )
         .bind(
-          ulid(),
+          consentId,
           id,
           input.scope,
           input.givenAt,
@@ -297,6 +272,14 @@ export class PersonService {
           now,
         )
         .run();
+      if (input.scope === 'newsletter') {
+        await recordEvent(this.db, id, {
+          type: 'subscribed',
+          occurredAt: input.givenAt,
+          source: input.source,
+          reference: consentId,
+        });
+      }
     }
     return this.recomputeMembership(id);
   }
@@ -305,44 +288,29 @@ export class PersonService {
     id: string,
     input: { scope: ConsentScope; source: string; withdrawnAt: string },
   ): Promise<Person | null> {
-    await this.db
+    const { results } = await this.db
       .prepare(
         `UPDATE consent_records SET withdrawn_at = ?, withdrawn_source = ?, updated_at = ?
-         WHERE person_id = ? AND scope = ? AND withdrawn_at IS NULL`,
+         WHERE person_id = ? AND scope = ? AND withdrawn_at IS NULL RETURNING id`,
       )
       .bind(input.withdrawnAt, input.source, nowIso(), id, input.scope)
-      .run();
+      .all<{ id: string }>();
+    if (input.scope === 'newsletter') {
+      for (const consent of results) {
+        await recordEvent(this.db, id, {
+          type: 'unsubscribed',
+          occurredAt: input.withdrawnAt,
+          source: input.source,
+          reference: consent.id,
+        });
+      }
+    }
     return this.recomputeMembership(id);
   }
 
-  async recordEngagement(
-    id: string,
-    input: {
-      type: string;
-      occurredAt: string;
-      source: string;
-      reference?: string;
-      details?: Record<string, unknown>;
-    },
-  ): Promise<string> {
-    const eventId = ulid();
-    await this.db
-      .prepare(
-        `INSERT INTO engagement_events (id, person_id, type, occurred_at, source, reference, details, created_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-      )
-      .bind(
-        eventId,
-        id,
-        input.type,
-        input.occurredAt,
-        input.source,
-        input.reference ?? null,
-        input.details ? JSON.stringify(input.details) : null,
-        nowIso(),
-      )
-      .run();
-    return eventId;
+  /** Add an event to the engagement log. See engagement.ts. */
+  recordEngagement(id: string, input: EngagementInput): Promise<string> {
+    return recordEvent(this.db, id, input);
   }
 
   async linkIdentity(
@@ -400,7 +368,7 @@ export class PersonService {
     if (identity) return true;
     const event = await this.db
       .prepare(
-        "SELECT 1 AS found FROM engagement_events WHERE person_id = ? AND type <> 'joined' LIMIT 1",
+        "SELECT 1 AS found FROM engagement_events WHERE person_id = ? AND type NOT IN ('joined', 'subscribed', 'unsubscribed') LIMIT 1",
       )
       .bind(id)
       .first();

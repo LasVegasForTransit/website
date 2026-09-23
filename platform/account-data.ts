@@ -127,11 +127,6 @@ export async function deleteAccount(
     withdrawnAt: nowIso(),
   });
   await unsubscribeEverywhere(env, person.id, fetcher);
-  await people.recordEngagement(person.id, {
-    type: 'account_deleted',
-    occurredAt: nowIso(),
-    source: 'member',
-  });
   await people.deletePerson(person.id);
   await endAllSessions(env, person.id);
   return { kind: 'ok' };
