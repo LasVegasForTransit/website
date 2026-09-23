@@ -1,0 +1,27 @@
+---
+// What shows where a list would be when it has nothing in it: what would be
+// here and how it gets here (docs/explanation/app-copy.md#empty-states).
+import { linkClass } from './styles';
+
+interface Props {
+  heading: string;
+  body: string;
+  action?: { href: string; label: string };
+}
+
+const { heading, body, action } = Astro.props;
+---
+
+<div class="border-2 border-dashed border-outline p-6">
+  <p class="font-bold">{heading}</p>
+  <p class="mt-2">{body}</p>
+  {
+    action && (
+      <p class="mt-4">
+        <a href={action.href} class={linkClass}>
+          {action.label}
+        </a>
+      </p>
+    )
+  }
+</div>

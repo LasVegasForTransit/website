@@ -1,0 +1,18 @@
+---
+// Shown by the enhancement script when the browser reports it is offline. It
+// is hidden in the built page, so without JavaScript nothing changes.
+import Notice from './Notice.astro';
+
+interface Props {
+  heading: string;
+  body: string;
+}
+
+const { heading, body } = Astro.props;
+---
+
+<div data-offline-notice hidden>
+  <Notice kind="warning" heading={heading}>
+    <p>{body}</p>
+  </Notice>
+</div>

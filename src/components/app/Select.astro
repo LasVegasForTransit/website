@@ -1,0 +1,54 @@
+---
+// A native select with its label, hint and error. Use it for a long list of
+// choices; for five or fewer, use a ChoiceGroup so every choice is visible.
+import { errorClass, hintClass, inputClass, labelClass } from './styles';
+
+interface Props {
+  name: string;
+  label: string;
+  options: { value: string; label: string }[];
+  selected?: string;
+  hint?: string;
+  error?: string;
+  showError?: boolean;
+}
+
+const { name, label, options, selected, hint, error, showError = false } = Astro.props;
+const hintId = hint ? `${name}-hint` : undefined;
+const errorId = error ? `${name}-error` : undefined;
+const describedBy =
+  [showError ? errorId : undefined, hintId].filter(Boolean).join(' ') || undefined;
+---
+
+<div>
+  <label for={name} class={labelClass}>{label}</label>
+  {
+    hint && (
+      <p id={hintId} class={hintClass}>
+        {hint}
+      </p>
+    )
+  }
+  {
+    error && (
+      <p id={errorId} data-error-for={name} hidden={!showError} class={errorClass}>
+        {error}
+      </p>
+    )
+  }
+  <select
+    id={name}
+    name={name}
+    aria-describedby={describedBy}
+    aria-invalid={showError ? 'true' : undefined}
+    class:list={[inputClass, 'max-w-md']}
+  >
+    {
+      options.map((option) => (
+        <option value={option.value} selected={option.value === selected}>
+          {option.label}
+        </option>
+      ))
+    }
+  </select>
+</div>
