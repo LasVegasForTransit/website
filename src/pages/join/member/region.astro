@@ -1,8 +1,10 @@
 ---
 // The region step, shown right after joining only when LVBT couldn't tell
 // the new member's part of the valley from their address or ZIP code. Served
-// through functions/join/member/region.ts.
+// through functions/join/member/region/index.ts.
 import BaseLayout from '../../../layouts/BaseLayout.astro';
+import Button from '../../../components/app/Button.astro';
+import ChoiceGroup from '../../../components/app/ChoiceGroup.astro';
 import { REGIONS } from '../../../../platform/core/regions';
 import { t } from '../../../../platform/messages';
 ---
@@ -10,41 +12,18 @@ import { t } from '../../../../platform/messages';
 <BaseLayout title={t('region.title')} noindex>
   <section class="container-page pt-12 pb-16 md:pt-16 md:pb-24">
     <div class="max-w-2xl">
-      <form method="post" action="/join/member/region/">
-        <fieldset aria-describedby="region-hint">
-          <legend><h1 class="text-headline-lg">{t('region.question')}</h1></legend>
-          <p id="region-hint" class="lede mt-4">{t('region.hint')}</p>
-          <div class="mt-8 space-y-3">
-            {
-              REGIONS.map((region) => (
-                <label class="flex items-start gap-3">
-                  <input
-                    type="radio"
-                    name="region"
-                    value={region.id}
-                    class="mt-1 size-5 shrink-0 accent-primary"
-                  />
-                  <span>{region.name}</span>
-                </label>
-              ))
-            }
-            <label class="flex items-start gap-3">
-              <input
-                type="radio"
-                name="region"
-                value="none"
-                class="mt-1 size-5 shrink-0 accent-primary"
-              />
-              <span>{t('region.ratherNotSay')}</span>
-            </label>
-          </div>
-        </fieldset>
-        <button
-          type="submit"
-          class="press mt-8 inline-flex items-center gap-1.5 bg-on-surface text-surface px-6 py-3 font-bold hover:bg-primary hover:text-on-primary focus-visible:bg-primary focus-visible:text-on-primary"
-        >
-          {t('region.submit')}
-        </button>
+      <form method="post" action="/join/member/region/" class="space-y-8">
+        <ChoiceGroup
+          name="region"
+          legend={t('region.question')}
+          hint={t('region.hint')}
+          legendAsHeading
+          options={[
+            ...REGIONS.map((region) => ({ value: region.id, label: region.name })),
+            { value: 'none', label: t('region.ratherNotSay') },
+          ]}
+        />
+        <Button>{t('region.submit')}</Button>
       </form>
     </div>
   </section>

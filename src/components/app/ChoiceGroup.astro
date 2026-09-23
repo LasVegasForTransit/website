@@ -1,0 +1,80 @@
+---
+// Related radio buttons or checkboxes in a fieldset with a legend. Set
+// `legendAsHeading` when the question is the page's main heading, so the page
+// keeps exactly one h1. Copy rules: docs/explanation/app-copy.md.
+import { choiceClass, errorClass, hintClass } from './styles';
+
+interface Option {
+  value: string;
+  label: string;
+  checked?: boolean;
+}
+
+interface Props {
+  name: string;
+  legend: string;
+  type?: 'radio' | 'checkbox';
+  options: Option[];
+  hint?: string;
+  error?: string;
+  showError?: boolean;
+  legendAsHeading?: boolean;
+}
+
+const {
+  name,
+  legend,
+  type = 'radio',
+  options,
+  hint,
+  error,
+  showError = false,
+  legendAsHeading = false,
+} = Astro.props;
+const hintId = hint ? `${name}-hint` : undefined;
+const errorId = error ? `${name}-error` : undefined;
+const describedBy =
+  [showError ? errorId : undefined, hintId].filter(Boolean).join(' ') || undefined;
+---
+
+<fieldset id={name} aria-describedby={describedBy}>
+  <legend>
+    {
+      legendAsHeading ? (
+        <h1 class="text-headline-lg">{legend}</h1>
+      ) : (
+        <span class="text-title-lg">{legend}</span>
+      )
+    }
+  </legend>
+  {
+    hint && (
+      <p id={hintId} class:list={[hintClass, legendAsHeading && 'lede mt-4']}>
+        {hint}
+      </p>
+    )
+  }
+  {
+    error && (
+      <p id={errorId} data-error-for={name} hidden={!showError} class={errorClass}>
+        {error}
+      </p>
+    )
+  }
+  <div class="mt-4 space-y-3">
+    {
+      options.map((option) => (
+        <label class="flex items-start gap-3">
+          <input
+            type={type}
+            name={name}
+            value={option.value}
+            checked={option.checked}
+            class={choiceClass}
+          />
+          <span>{option.label}</span>
+        </label>
+      ))
+    }
+  </div>
+</fieldset>

@@ -29,6 +29,9 @@ export const en = {
     consentLabel:
       "Add me to LVBT's mailing list. This makes me an LVBT member. I can unsubscribe at any time.",
     submit: 'Join LVBT',
+    sending: 'Joining…',
+    offlineHeading: "You're offline",
+    offlineBody: "What you typed is still here. We'll send it as soon as you're back online.",
     honeypotLabel: 'Leave this field empty',
     errorSummaryHeading: 'There is a problem',
     consentError: "To become a member, tick the box to join LVBT's mailing list.",

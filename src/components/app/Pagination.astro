@@ -1,0 +1,35 @@
+---
+// Previous and next page links with the current position. Page links are
+// ordinary URLs, so any page can be bookmarked.
+import { linkClass } from './styles';
+
+interface Props {
+  current: number;
+  total: number;
+  /** The address of page n, for example (n) => `?page=${n}`. */
+  href: (page: number) => string;
+  label: string;
+  previousLabel: string;
+  nextLabel: string;
+}
+
+const { current, total, href, label, previousLabel, nextLabel } = Astro.props;
+---
+
+<nav aria-label={label} class="flex flex-wrap items-center gap-6">
+  {
+    current > 1 && (
+      <a href={href(current - 1)} rel="prev" class={linkClass}>
+        {previousLabel}
+      </a>
+    )
+  }
+  <p aria-current="page">{`Page ${current} of ${total}`}</p>
+  {
+    current < total && (
+      <a href={href(current + 1)} rel="next" class={linkClass}>
+        {nextLabel}
+      </a>
+    )
+  }
+</nav>

@@ -1,0 +1,31 @@
+---
+// A notice: success, information, warning or error. Errors and warnings are
+// announced at once (role="alert"); the others politely (role="status").
+// Pass `hidden` and `dataSlot` to leave an empty notice for a server to fill in.
+interface Props {
+  kind?: 'success' | 'info' | 'warning' | 'error';
+  heading?: string;
+  hidden?: boolean;
+  dataSlot?: string;
+}
+
+const { kind = 'info', heading, hidden = false, dataSlot } = Astro.props;
+const urgent = kind === 'error' || kind === 'warning';
+const border = {
+  success: 'border-on-surface',
+  info: 'border-outline',
+  warning: 'border-primary',
+  error: 'border-primary-ink',
+}[kind];
+---
+
+<div
+  data-slot={dataSlot}
+  data-notice={kind}
+  hidden={hidden}
+  role={urgent ? 'alert' : 'status'}
+  class:list={['border-2 border-l-8 p-4', border]}
+>
+  {heading && <p class="font-bold">{heading}</p>}
+  <slot />
+</div>

@@ -1,0 +1,46 @@
+---
+// The bar signed-in people see: who they are, their places, and signing out.
+// Navigation is a list of links and signing out is a form button, so neither
+// needs JavaScript.
+import { buttonClass, linkClass } from './styles';
+
+interface Props {
+  name: string;
+  role: 'member' | 'staff';
+  roleLabel: string;
+  links: { href: string; label: string; current?: boolean }[];
+  signOutAction: string;
+  signOutLabel: string;
+  navLabel: string;
+}
+
+const { name, roleLabel, links, signOutAction, signOutLabel, navLabel } = Astro.props;
+---
+
+<div class="border-b-2 border-on-surface py-3">
+  <div class="container-page flex flex-wrap items-center justify-between gap-4">
+    <p><span class="font-bold">{name}</span> · {roleLabel}</p>
+    <nav aria-label={navLabel}>
+      <ul class="flex flex-wrap items-center gap-6">
+        {
+          links.map((link) => (
+            <li>
+              <a
+                href={link.href}
+                aria-current={link.current ? 'page' : undefined}
+                class={linkClass}
+              >
+                {link.label}
+              </a>
+            </li>
+          ))
+        }
+        <li>
+          <form method="post" action={signOutAction}>
+            <button type="submit" class={buttonClass.secondary}>{signOutLabel}</button>
+          </form>
+        </li>
+      </ul>
+    </nav>
+  </div>
+</div>

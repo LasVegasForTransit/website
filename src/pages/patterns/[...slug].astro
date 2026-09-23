@@ -1,0 +1,498 @@
+---
+// The pattern gallery (see src/lib/pattern-gallery.ts). One page per pattern
+// with every state, plus an index. Not built in production.
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import Button from '../../components/app/Button.astro';
+import ChoiceGroup from '../../components/app/ChoiceGroup.astro';
+import Confirmation from '../../components/app/Confirmation.astro';
+import DataTable from '../../components/app/DataTable.astro';
+import DestructiveConfirmation from '../../components/app/DestructiveConfirmation.astro';
+import EmptyState from '../../components/app/EmptyState.astro';
+import ErrorSummary from '../../components/app/ErrorSummary.astro';
+import KeyValueSummary from '../../components/app/KeyValueSummary.astro';
+import Notice from '../../components/app/Notice.astro';
+import OfflineNotice from '../../components/app/OfflineNotice.astro';
+import Pagination from '../../components/app/Pagination.astro';
+import SearchFilters from '../../components/app/SearchFilters.astro';
+import Select from '../../components/app/Select.astro';
+import SignedInHeader from '../../components/app/SignedInHeader.astro';
+import StepHeader from '../../components/app/StepHeader.astro';
+import TextField from '../../components/app/TextField.astro';
+import { linkClass } from '../../components/app/styles';
+import { galleryEnabled, PATTERNS, type PatternDoc } from '../../lib/pattern-gallery';
+
+export function getStaticPaths() {
+  if (!galleryEnabled) return [];
+  return [
+    { params: { slug: undefined }, props: { pattern: undefined } },
+    { params: { slug: 'submitted' }, props: { pattern: undefined } },
+    ...PATTERNS.map((pattern) => ({ params: { slug: pattern.slug }, props: { pattern } })),
+  ];
+}
+
+const { pattern } = Astro.props as { pattern?: PatternDoc };
+const slug = Astro.params.slug;
+const title = pattern ? `${pattern.title} · Patterns` : 'App patterns';
+const regions = [
+  { value: '', label: 'Any region' },
+  { value: 'downtown', label: 'Downtown' },
+  { value: 'east_las_vegas', label: 'East Las Vegas' },
+  { value: 'summerlin', label: 'Summerlin' },
+];
+const people = [
+  { name: 'Ana Reyes', region: 'East Las Vegas', joined: 'Sat, Oct 5', status: 'Member' },
+  { name: 'Bo Chen', region: 'Summerlin', joined: 'Tue, Sep 22', status: 'Member' },
+  { name: 'Carmen Ortiz', region: 'Downtown', joined: 'Mon, Aug 3', status: 'Former member' },
+];
+const section = 'mt-10 space-y-6';
+const stateHeading = 'text-title-lg';
+---
+
+<BaseLayout title={title} noindex>
+  <section class="container-page pt-12 pb-16 md:pt-16 md:pb-24">
+    <div class="max-w-3xl">
+      <p><a href="/patterns/" class={linkClass}>All patterns</a></p>
+
+      {
+        !pattern && slug === 'submitted' && (
+          <Confirmation
+            heading="Form received."
+            nextStepsHeading="What next"
+            nextSteps={[{ href: '/patterns/', label: 'Back to all patterns' }]}
+            clearDrafts="/patterns/submitted/"
+          >
+            <p class="lede mt-4">This page stands in for a real confirmation.</p>
+          </Confirmation>
+        )
+      }
+
+      {
+        !pattern && slug !== 'submitted' && (
+          <>
+            <h1 class="text-headline-lg mt-6">App patterns</h1>
+            <p class="lede mt-4">
+              The building blocks for LVBT's app screens. Each works without JavaScript, on a
+              320-pixel-wide screen and with a screen reader. This gallery is on previews only.
+            </p>
+            <ul class="mt-8 space-y-2" data-pattern-index>
+              {PATTERNS.map((item) => (
+                <li>
+                  <a href={`/patterns/${item.slug}/`} class={linkClass}>
+                    {item.title}
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </>
+        )
+      }
+
+      {
+        pattern && (
+          <>
+            <h1 class="text-headline-lg mt-6">{pattern.title}</h1>
+            <dl class="mt-6 space-y-3">
+              <div>
+                <dt class="font-bold">Use it</dt>
+                <dd>{pattern.use}</dd>
+              </div>
+              <div>
+                <dt class="font-bold">Don't use it</dt>
+                <dd>{pattern.avoid}</dd>
+              </div>
+              <div>
+                <dt class="font-bold">Accessibility</dt>
+                <dd>{pattern.accessibility}</dd>
+              </div>
+              <div>
+                <dt class="font-bold">Copy rules</dt>
+                <dd>
+                  {pattern.copy.map((rule, index) => (
+                    <>
+                      {index > 0 && ', '}
+                      <a
+                        href={`https://github.com/LasVegasForTransit/website/blob/main/docs/explanation/app-copy.md#${rule.anchor}`}
+                        class={linkClass}
+                      >
+                        {rule.label}
+                      </a>
+                    </>
+                  ))}
+                </dd>
+              </div>
+            </dl>
+          </>
+        )
+      }
+
+      {
+        pattern?.slug === 'text-field' && (
+          <form method="get" action="/patterns/submitted/" data-enhance class={section}>
+            <h2 class={stateHeading}>States</h2>
+            <TextField
+              name="empty"
+              label="Email address (empty)"
+              type="email"
+              autocomplete="email"
+            />
+            <TextField
+              name="filled"
+              label="First name (filled)"
+              value="Ana"
+              autocomplete="given-name"
+            />
+            <TextField
+              name="hinted"
+              label="ZIP code (with hint)"
+              hint="Helps us invite you to things near you."
+              width="short"
+              autocomplete="postal-code"
+            />
+            <TextField
+              name="errored"
+              label="Email address (with error)"
+              type="email"
+              value="ana@"
+              error="Enter an email address like name@example.com"
+              showError
+            />
+            <TextField
+              name="disabled"
+              label="Member since (disabled)"
+              value="Sat, Oct 5"
+              disabled
+            />
+            <TextField
+              name="code"
+              label="Sign-in code"
+              type="code"
+              hint="We sent 6 digits to your email."
+            />
+            <Button busyLabel="Sending…">Send the form</Button>
+          </form>
+        )
+      }
+
+      {
+        pattern?.slug === 'choice-group' && (
+          <form method="get" action="/patterns/submitted/" data-enhance class={section}>
+            <h2 class={stateHeading}>States</h2>
+            <ChoiceGroup
+              name="interests"
+              legend="What are you interested in? (default)"
+              type="checkbox"
+              options={[
+                { value: 'events', label: 'Coming to events' },
+                { value: 'meetings', label: 'Speaking up at public meetings' },
+              ]}
+            />
+            <ChoiceGroup
+              name="region"
+              legend="Which part of the valley do you live in? (with error)"
+              options={regions.slice(1)}
+              error="Choose a part of the valley, or I'd rather not say"
+              showError
+            />
+            <Button>Send the form</Button>
+          </form>
+        )
+      }
+
+      {
+        pattern?.slug === 'select' && (
+          <form method="get" action="/patterns/submitted/" class={section}>
+            <h2 class={stateHeading}>States</h2>
+            <Select name="region-default" label="Region (default)" options={regions} />
+            <Select
+              name="region-error"
+              label="Region (with error)"
+              options={regions}
+              error="Choose a region"
+              showError
+            />
+            <Button>Send the form</Button>
+          </form>
+        )
+      }
+
+      {
+        pattern?.slug === 'error-summary' && (
+          <div class={section}>
+            <h2 class={stateHeading}>One error</h2>
+            <ErrorSummary
+              heading="There is a problem"
+              errors={[{ field: 'email', message: 'Enter an email address like name@example.com' }]}
+              show={['email']}
+            />
+            <h2 class={stateHeading}>Several errors</h2>
+            <form method="get" action="/patterns/submitted/" class="space-y-6">
+              <TextField
+                name="email"
+                label="Email address"
+                type="email"
+                error="Enter an email address like name@example.com"
+                showError
+              />
+              <TextField
+                name="zip"
+                label="ZIP code"
+                width="short"
+                error="Enter a 5-digit ZIP code, like 89104"
+                showError
+              />
+              <Button>Send the form</Button>
+            </form>
+          </div>
+        )
+      }
+
+      {
+        pattern?.slug === 'button' && (
+          <form method="get" action="/patterns/submitted/" data-enhance class={section}>
+            <h2 class={stateHeading}>Variants</h2>
+            <div class="flex flex-wrap gap-4">
+              <Button busyLabel="Joining…">Join LVBT</Button>
+              <Button variant="secondary" type="button">
+                Go back
+              </Button>
+              <Button variant="destructive" type="button">
+                Delete my account
+              </Button>
+            </div>
+            <p>
+              Tab to a button to see its focus outline. Pressing "Join LVBT" shows its busy label,
+              and a second press does nothing while the form sends.
+            </p>
+          </form>
+        )
+      }
+
+      {
+        pattern?.slug === 'notice' && (
+          <div class={section}>
+            <Notice kind="success" heading="Saved">
+              <p>Your contact preferences are up to date.</p>
+            </Notice>
+            <Notice kind="info" heading="Heads up">
+              <p>Sign-in codes last 15 minutes.</p>
+            </Notice>
+            <Notice kind="warning" heading="Almost there">
+              <p>Add your ZIP code to hear about events near you.</p>
+            </Notice>
+            <Notice kind="error" heading="That didn't work">
+              <p>
+                We couldn't save your changes. Your details are still here; try again in a minute.
+              </p>
+            </Notice>
+          </div>
+        )
+      }
+
+      {
+        pattern?.slug === 'offline-notice' && (
+          <div class={section}>
+            <OfflineNotice
+              heading="You're offline"
+              body="What you typed is saved on this phone. We'll send it when you're back online."
+            />
+            <p>Turn on airplane mode to see the notice appear above.</p>
+            <form method="get" action="/patterns/submitted/" data-enhance class="space-y-6">
+              <TextField name="note" label="Anything to tell us?" />
+              <Button busyLabel="Sending…">Send the form</Button>
+            </form>
+          </div>
+        )
+      }
+
+      {
+        pattern?.slug === 'step-header' && (
+          <div class={section}>
+            <StepHeader
+              label="Joining steps"
+              current={2}
+              steps={['Your details', 'Your area', 'Done']}
+            />
+          </div>
+        )
+      }
+
+      {
+        pattern?.slug === 'confirmation' && (
+          <div class={section}>
+            <Confirmation
+              headingLevel={2}
+              heading="You're in, Ana."
+              nextStepsHeading="What next"
+              nextSteps={[
+                { href: '/events/', label: 'See upcoming events' },
+                { href: '/patterns/', label: 'Back to all patterns' },
+              ]}
+            >
+              <p class="lede mt-4">We've sent a confirmation to ana@example.org.</p>
+            </Confirmation>
+          </div>
+        )
+      }
+
+      {
+        pattern?.slug === 'destructive-confirmation' && (
+          <div class={section}>
+            <DestructiveConfirmation
+              heading="Delete your LVBT account?"
+              action="/patterns/submitted/"
+              confirmLabel="Delete my account"
+              backHref="/patterns/"
+              backLabel="Keep my account"
+            >
+              <p>This removes your details and your membership. It can't be undone.</p>
+            </DestructiveConfirmation>
+          </div>
+        )
+      }
+
+      {
+        pattern?.slug === 'empty-state' && (
+          <div class={section}>
+            <EmptyState
+              heading="No events yet"
+              body="Events you check in to will show here."
+              action={{ href: '/events/', label: 'See upcoming events' }}
+            />
+            <EmptyState
+              heading="No one matches"
+              body="Try a different name or clear the filters."
+            />
+          </div>
+        )
+      }
+
+      {
+        pattern?.slug === 'data-table' && (
+          <div class={section}>
+            <DataTable
+              caption="New members"
+              columns={[
+                { key: 'name', label: 'Name' },
+                { key: 'region', label: 'Region' },
+                { key: 'joined', label: 'Joined' },
+                { key: 'status', label: 'Status' },
+              ]}
+              rows={people}
+            />
+            <p>Narrow the window below 640 pixels to see each row stack into labeled lines.</p>
+          </div>
+        )
+      }
+
+      {
+        pattern?.slug === 'search-filters' && (
+          <div class={section}>
+            <h2 class={stateHeading}>No filters</h2>
+            <SearchFilters
+              action="/patterns/search-filters/"
+              searchLabel="Search people"
+              filters={[{ name: 'region', label: 'Region', options: regions }]}
+              submitLabel="Search"
+              clearLabel="Clear filters"
+            />
+            <h2 class={stateHeading}>Filters applied, no results</h2>
+            <EmptyState
+              heading="No one matches"
+              body="Try a different name or clear the filters."
+            />
+          </div>
+        )
+      }
+
+      {
+        pattern?.slug === 'pagination' && (
+          <div class={section}>
+            <Pagination
+              current={1}
+              total={5}
+              href={(page) => `?page=${page}`}
+              label="Pages (first)"
+              previousLabel="Previous page"
+              nextLabel="Next page"
+            />
+            <Pagination
+              current={3}
+              total={5}
+              href={(page) => `?page=${page}`}
+              label="Pages (middle)"
+              previousLabel="Previous page"
+              nextLabel="Next page"
+            />
+            <Pagination
+              current={5}
+              total={5}
+              href={(page) => `?page=${page}`}
+              label="Pages (last)"
+              previousLabel="Previous page"
+              nextLabel="Next page"
+            />
+          </div>
+        )
+      }
+
+      {
+        pattern?.slug === 'signed-in-header' && (
+          <div class={section}>
+            <SignedInHeader
+              name="Ana Reyes"
+              role="member"
+              roleLabel="Member"
+              navLabel="Your account (member)"
+              links={[
+                { href: '/patterns/signed-in-header/', label: 'Your account', current: true },
+                { href: '/events/', label: 'Events' },
+              ]}
+              signOutAction="/patterns/submitted/"
+              signOutLabel="Sign out"
+            />
+            <SignedInHeader
+              name="Bo Chen"
+              role="staff"
+              roleLabel="Staff"
+              navLabel="Staff console (staff)"
+              links={[
+                { href: '/patterns/signed-in-header/', label: 'People' },
+                { href: '/patterns/data-table/', label: 'New members' },
+              ]}
+              signOutAction="/patterns/submitted/"
+              signOutLabel="Sign out"
+            />
+          </div>
+        )
+      }
+
+      {
+        pattern?.slug === 'key-value-summary' && (
+          <div class={section}>
+            <KeyValueSummary
+              rows={[
+                {
+                  key: 'Name',
+                  value: 'Ana Reyes',
+                  change: { href: '#', label: 'Change your name' },
+                },
+                {
+                  key: 'Email',
+                  value: 'ana@example.org',
+                  change: { href: '#', label: 'Change your email address' },
+                },
+                {
+                  key: 'Area',
+                  value: '89110 · East Las Vegas',
+                  change: { href: '#', label: 'Change your area' },
+                },
+                { key: 'Member since', value: 'Sat, Oct 5' },
+              ]}
+            />
+          </div>
+        )
+      }
+    </div>
+  </section>
+  <script is:inline src="/scripts/app-enhance.js" defer></script>
+</BaseLayout>

@@ -1,0 +1,72 @@
+---
+// A data table that stacks into labeled rows on narrow screens instead of
+// scrolling sideways. Each cell carries its column name, which the stacked
+// layout shows before the value.
+interface Props {
+  caption: string;
+  columns: { key: string; label: string }[];
+  rows: Record<string, string>[];
+}
+
+const { caption, columns, rows } = Astro.props;
+---
+
+<table class="app-table w-full border-collapse text-left">
+  <caption class="text-title-lg pb-3 text-left">{caption}</caption>
+  <thead>
+    <tr>{columns.map((column) => <th scope="col">{column.label}</th>)}</tr>
+  </thead>
+  <tbody>
+    {
+      rows.map((row) => (
+        <tr>
+          {columns.map((column) => (
+            <td data-label={column.label}>{row[column.key]}</td>
+          ))}
+        </tr>
+      ))
+    }
+  </tbody>
+</table>
+
+<style>
+  .app-table th,
+  .app-table td {
+    border-bottom: 1px solid var(--color-outline);
+    padding: 0.75rem 1rem 0.75rem 0;
+    vertical-align: top;
+  }
+
+  .app-table th {
+    font-weight: 700;
+  }
+
+  @media (max-width: 40rem) {
+    .app-table thead {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      overflow: hidden;
+      clip-path: inset(50%);
+    }
+
+    .app-table tr {
+      display: block;
+      border-bottom: 2px solid var(--color-outline);
+      padding: 0.5rem 0;
+    }
+
+    .app-table td {
+      display: grid;
+      grid-template-columns: minmax(6rem, 40%) 1fr;
+      gap: 0.75rem;
+      border-bottom: 0;
+      padding: 0.25rem 0;
+    }
+
+    .app-table td::before {
+      content: attr(data-label);
+      font-weight: 700;
+    }
+  }
+</style>

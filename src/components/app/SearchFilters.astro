@@ -1,0 +1,48 @@
+---
+// Search and filters as a plain GET form, so results can be bookmarked and
+// shared, and work without JavaScript.
+import { buttonClass, inputClass, labelClass, linkClass } from './styles';
+
+interface Filter {
+  name: string;
+  label: string;
+  options: { value: string; label: string }[];
+  selected?: string;
+}
+
+interface Props {
+  action: string;
+  searchLabel: string;
+  query?: string;
+  filters?: Filter[];
+  submitLabel: string;
+  clearLabel: string;
+}
+
+const { action, searchLabel, query = '', filters = [], submitLabel, clearLabel } = Astro.props;
+---
+
+<form method="get" action={action} role="search" class="flex flex-wrap items-end gap-4">
+  <div class="grow basis-64">
+    <label for="q" class={labelClass}>{searchLabel}</label>
+    <input id="q" name="q" type="search" value={query} class={inputClass} />
+  </div>
+  {
+    filters.map((filter) => (
+      <div class="basis-48">
+        <label for={filter.name} class={labelClass}>
+          {filter.label}
+        </label>
+        <select id={filter.name} name={filter.name} class={inputClass}>
+          {filter.options.map((option) => (
+            <option value={option.value} selected={option.value === filter.selected}>
+              {option.label}
+            </option>
+          ))}
+        </select>
+      </div>
+    ))
+  }
+  <button type="submit" class={buttonClass.primary}>{submitLabel}</button>
+  <a href={action} class:list={[linkClass, 'py-3']}>{clearLabel}</a>
+</form>
