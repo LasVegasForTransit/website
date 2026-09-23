@@ -24,7 +24,7 @@ The website's own join form at `/join/member` is LVBT's front door: the `/join` 
 
 One setting switches both links to an outside form instead: `PUBLIC_LVBT_MEMBERSHIP_FORM_URL` (a GitHub Actions variable, read at build time; see `src/lib/membership.ts`). Leave it unset to use the website's form. Set it to an outside form's address, such as the Google Form's short link `https://forms.gle/4N8gRU2wDK6G8BKH8`, and redeploy to send people there. Use a short link, because the QR encoder caps at 84 bytes.
 
-Any outside form must send its submissions to this intake endpoint, as the Google Form does below, so its members still reach Beehiiv and Notion.
+Any outside form must send its submissions to the versioned intake interface, as described in [connect a form tool](../guides/connect-a-form-tool.md), so its members reach Beehiiv and the person record. The Google Form uses the older address below, which records its submissions in the person record too.
 
 ## Required Cloudflare Pages secrets
 
