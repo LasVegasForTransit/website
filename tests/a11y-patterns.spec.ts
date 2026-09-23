@@ -1,8 +1,9 @@
 // Checks every page of the app pattern gallery: WCAG 2.2 A and AA rules, reflow
 // at 320 CSS pixels, keyboard reachability with a visible focus change, and
-// names and error descriptions on every field. The page list comes from the
-// gallery's own index, so a new pattern is checked as soon as it is listed.
-// The gallery exists only in builds with PUBLIC_LVBT_PATTERN_GALLERY=1; other
+// names and error descriptions on every field, and the same for every
+// prototype. The page lists come from the gallery's and the prototypes' own
+// indexes, so a new pattern or prototype is checked as soon as it is listed.
+// The gallery exists only in builds with PUBLIC_LVBT_PREVIEW_PAGES=1; other
 // builds skip these checks.
 import AxeBuilder from '@axe-core/playwright';
 import { existsSync } from 'node:fs';
@@ -11,12 +12,19 @@ import { preparePageForA11y } from './a11y-helpers';
 
 const galleryBuilt = existsSync(new URL('../dist/patterns/index.html', import.meta.url));
 
-async function galleryPages(page: Page): Promise<string[]> {
-  await page.goto('/patterns/');
+async function indexedPages(page: Page, index: string, list: string): Promise<string[]> {
+  await page.goto(index);
   const hrefs = await page
-    .locator('[data-pattern-index] a')
+    .locator(`${list} a`)
     .evaluateAll((links) => links.map((link) => link.getAttribute('href') ?? ''));
-  return ['/patterns/', ...hrefs.filter(Boolean)];
+  return [index, ...hrefs.filter(Boolean)];
+}
+
+async function galleryPages(page: Page): Promise<string[]> {
+  return [
+    ...(await indexedPages(page, '/patterns/', '[data-pattern-index]')),
+    ...(await indexedPages(page, '/prototypes/', '[data-prototype-index]')),
+  ];
 }
 
 async function focusChanges(page: Page): Promise<string[]> {

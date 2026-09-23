@@ -1,0 +1,24 @@
+---
+// Prototype of the join confirmation, with made-up details.
+import PrototypeLayout from '../../../components/app/PrototypeLayout.astro';
+import Confirmation from '../../../components/app/Confirmation.astro';
+import { t } from '../../../../platform/messages';
+---
+
+<PrototypeLayout title={t('welcome.title')}>
+  <section class="container-page pt-12 pb-16 md:pt-16 md:pb-24">
+    <div class="max-w-2xl">
+      <Confirmation
+        heading={t('welcome.headingNamed', { name: 'Ana' })}
+        nextStepsHeading={t('welcome.nextStepsHeading')}
+        nextSteps={[
+          { href: '/prototypes/', label: 'Back to all prototypes' },
+          { href: '/prototypes/join/', label: 'Try the join form again' },
+        ]}
+        clearDrafts="/prototypes/join/"
+      >
+        <p class="lede mt-4">{t('welcome.sentTo', { email: 'ana@example.org' })}</p>
+      </Confirmation>
+    </div>
+  </section>
+</PrototypeLayout>

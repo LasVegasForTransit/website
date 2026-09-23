@@ -1,0 +1,18 @@
+---
+// Prototype of the join form: the same form as /join/member, posting to a
+// prototype-only handler (functions/prototypes/join/index.ts) that checks the
+// fields the same way and saves nothing.
+import PrototypeLayout from '../../../components/app/PrototypeLayout.astro';
+import JoinForm from '../../../components/join/JoinForm.astro';
+import { t } from '../../../../platform/messages';
+---
+
+<PrototypeLayout title={t('join.title')}>
+  <section class="container-page pt-12 pb-16 md:pt-16 md:pb-24">
+    <div class="max-w-2xl">
+      <h1 class="text-headline-lg">{t('join.heading')}</h1>
+      <p class="lede mt-4">{t('join.intro')}</p>
+      <JoinForm action="/prototypes/join/" />
+    </div>
+  </section>
+</PrototypeLayout>
