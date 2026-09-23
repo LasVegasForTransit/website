@@ -10,7 +10,13 @@
     "directory": "./dist",
     "binding": "ASSETS",
     "not_found_handling": "404-page",
-    "run_worker_first": ["/api/*"],
+    "run_worker_first": [
+      "/api/*",
+      "/join/member",
+      "/join/member/*",
+      "/join/remove",
+      "/join/remove/*",
+    ],
   },
   "observability": {
     "enabled": true,
@@ -23,6 +29,7 @@
       "binding": "PLATFORM_DB",
       "database_name": "lvbt-platform",
       "database_id": "dcde8dbd-d827-4405-85b4-97bc2accc906",
+      "migrations_dir": "platform/storage/migrations",
     },
   ],
   "env": {
@@ -32,6 +39,7 @@
           "binding": "PLATFORM_DB",
           "database_name": "lvbt-platform-preview",
           "database_id": "8bb072e7-9865-487a-8867-d97fdb2ea00b",
+          "migrations_dir": "platform/storage/migrations",
         },
       ],
     },

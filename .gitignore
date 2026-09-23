@@ -62,3 +62,7 @@ playwright/.cache/
 .lighthouseci/
 .lighthouseci-mobile/
 .lighthouseci-prod/
+
+# Local Worker and Pages secrets (wrangler dev)
+.dev.vars
+.dev.vars.*
