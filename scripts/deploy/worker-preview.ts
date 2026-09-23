@@ -31,12 +31,19 @@ async function main(): Promise<void> {
     options: {
       alias: { type: 'string' },
       message: { type: 'string' },
+      env: { type: 'string' },
       secrets: { type: 'boolean', default: false },
     },
   });
   const alias = values.alias;
   if (!alias || !/^[a-z][a-z0-9-]*$/.test(alias))
     throw new Error('Pass a lowercase Worker preview alias with --alias.');
+  // Pull request previews use the `preview` environment: a separate Worker bound to the preview
+  // database. Without --env the version is uploaded to the production Worker.
+  const environment = values.env;
+  if (environment !== undefined && environment !== 'preview')
+    throw new Error('The only Worker environment is --env preview.');
+  const workerName = environment ? `lvbt-website-${environment}` : 'lvbt-website';
 
   const directory = await mkdtemp(path.join(os.tmpdir(), 'lvbt-worker-preview-'));
   const receiptPath = path.join(directory, 'wrangler.jsonl');
@@ -54,6 +61,7 @@ async function main(): Promise<void> {
       alias,
       '--message',
       values.message ?? `Website preview ${alias}`,
+      ...(environment ? ['--env', environment] : []),
       ...(values.secrets ? ['--secrets-file', secretsPath] : []),
     ],
     {
@@ -66,7 +74,7 @@ async function main(): Promise<void> {
     },
   );
 
-  const receipt = previewUploadReceipt(await readFile(receiptPath, 'utf8'), 'lvbt-website');
+  const receipt = previewUploadReceipt(await readFile(receiptPath, 'utf8'), workerName);
   // eslint-disable-next-line turbo/no-undeclared-env-vars -- GitHub creates this step output file.
   const output = process.env.GITHUB_OUTPUT;
   if (output)

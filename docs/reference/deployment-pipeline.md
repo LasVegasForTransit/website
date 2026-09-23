@@ -21,17 +21,28 @@ The checked configuration lives in `wrangler.jsonc`. It exposes no custom domain
 
 Every pull request receives ordinary validation. Same-repository pull requests also receive the existing Pages preview.
 
-The `Deploy Worker preview` workflow runs when the repository variable `CLOUDFLARE_WORKERS_PREVIEW_ENABLED` is `true`. Its token comes only from the `worker-preview` GitHub environment. The workflow uploads a Worker version without deploying it, verifies the versioned preview URL, compares its HTTP contract with Pages, runs the Playwright accessibility and visual suites against the edge deployment, and updates one pull request comment. Forks never receive the token.
+The `Deploy Worker preview` workflow runs when the repository variable `CLOUDFLARE_WORKERS_PREVIEW_ENABLED` is `true`. Its token comes only from the `worker-preview` GitHub environment. The workflow uploads a version of the separate `lvbt-website-preview` Worker without deploying it. That Worker is the `preview` environment in `wrangler.jsonc` and uses the preview platform database, so test data never reaches the production database. The workflow verifies the versioned preview URL, compares its HTTP contract with Pages, runs the Playwright accessibility and visual suites against the edge deployment, and updates one pull request comment. Forks never receive the token.
 
 The preview environment contains:
 
-| Setting                              | Kind                | Purpose                                                       |
-| ------------------------------------ | ------------------- | ------------------------------------------------------------- |
-| `CLOUDFLARE_ACCOUNT_ID`              | variable            | Selects the LVBT Cloudflare account                           |
-| `CLOUDFLARE_WORKERS_API_TOKEN`       | secret              | Uploads versions for `lvbt-website` without editing zones     |
-| `CLOUDFLARE_WORKERS_PREVIEW_ENABLED` | repository variable | Enables the candidate workflow after credentials are verified |
+| Setting                              | Kind                | Purpose                                                                              |
+| ------------------------------------ | ------------------- | ------------------------------------------------------------------------------------ |
+| `CLOUDFLARE_ACCOUNT_ID`              | variable            | Selects the LVBT Cloudflare account                                                  |
+| `CLOUDFLARE_WORKERS_API_TOKEN`       | secret              | Uploads versions for `lvbt-website` and `lvbt-website-preview` without editing zones |
+| `CLOUDFLARE_WORKERS_PREVIEW_ENABLED` | repository variable | Enables the candidate workflow after credentials are verified                        |
 
 Application secrets bind directly to the Worker before endpoint acceptance. Build-time `PUBLIC_LVBT_*` variables remain GitHub Actions variables and are included in the generated HTML.
+
+## Platform database
+
+The Organizing Platform keeps its data in Cloudflare D1 (a SQL database; see the [glossary](./glossary.md#d1)). Code reaches it through the `PLATFORM_DB` [binding](./glossary.md#binding), which `wrangler.jsonc` points at a different database for each Worker:
+
+| Worker                 | Used by                                       | Database                |
+| ---------------------- | --------------------------------------------- | ----------------------- |
+| `lvbt-website`         | production, and the `main` candidate versions | `lvbt-platform`         |
+| `lvbt-website-preview` | pull request previews                         | `lvbt-platform-preview` |
+
+Both databases are on the free plan in Western North America. `pnpm dev` and `pnpm worker:dev` use a local copy that Wrangler keeps in `.wrangler/`, so local work never touches either one. The [platform decision record](../explanation/decisions/organizing-platform.md) explains why there is one database.
 
 ## Production
 

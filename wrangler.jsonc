@@ -15,4 +15,25 @@
   "observability": {
     "enabled": true,
   },
+  // The Organizing Platform database. Production uses lvbt-platform; pull request previews
+  // upload to the separate lvbt-website-preview Worker, which uses lvbt-platform-preview so test
+  // data never mixes with real people. See docs/explanation/decisions/organizing-platform.md.
+  "d1_databases": [
+    {
+      "binding": "PLATFORM_DB",
+      "database_name": "lvbt-platform",
+      "database_id": "dcde8dbd-d827-4405-85b4-97bc2accc906",
+    },
+  ],
+  "env": {
+    "preview": {
+      "d1_databases": [
+        {
+          "binding": "PLATFORM_DB",
+          "database_name": "lvbt-platform-preview",
+          "database_id": "8bb072e7-9865-487a-8867-d97fdb2ea00b",
+        },
+      ],
+    },
+  },
 }
