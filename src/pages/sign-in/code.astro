@@ -4,6 +4,7 @@
 // asked for and, after a wrong code, the error. The code field takes paste
 // and the phone's suggested code, and is never saved in a draft.
 import BaseLayout from '../../layouts/BaseLayout.astro';
+import PageHero from '../../components/PageHero.astro';
 import Button from '../../components/app/Button.astro';
 import ErrorSummary from '../../components/app/ErrorSummary.astro';
 import Notice from '../../components/app/Notice.astro';
@@ -14,44 +15,55 @@ import { t } from '../../../platform/messages';
 ---
 
 <BaseLayout title={t('signIn.codeTitle')} noindex>
-  <section class="container-page pt-12 pb-16 md:pt-16 md:pb-24">
-    <div class="max-w-2xl">
-      <h1 class="text-headline-lg">{t('signIn.codeHeading')}</h1>
-      <p class="lede mt-4 [overflow-wrap:anywhere]" data-slot="sent-to" hidden></p>
-      <div class="mt-8 space-y-4">
-        <Notice kind="error" hidden dataSlot="notice" />
-        <OfflineNotice heading={t('join.offlineHeading')} body={t('join.offlineBody')} />
-      </div>
-      <ErrorSummary
-        heading={t('signIn.errorSummaryHeading')}
-        errors={[{ field: 'code', message: t('signIn.codeError') }]}
-      />
-      <form
-        method="post"
-        action="/sign-in/code/"
-        novalidate
-        data-enhance
-        data-slot="code-form"
-        class="mt-8 space-y-8"
+  <PageHero title={t('signIn.codeHeading')}>
+    <p class="lede mt-6 max-w-2xl [overflow-wrap:anywhere]" data-slot="sent-to" hidden></p>
+  </PageHero>
+  <section class="container-page py-12 md:py-16">
+    <div class="max-w-[30rem]">
+      <div
+        class="border border-outline bg-surface-container p-6 md:p-8 [&>[data-error-summary]]:mt-0 [&>[data-error-summary]:not([hidden])]:mb-6"
       >
-        <TextField
-          name="code"
-          label={t('signIn.codeLabel')}
-          hint={t('signIn.codeHint')}
-          type="code"
-          width="code"
-          required
-          error={t('signIn.codeError')}
+        <div class="space-y-4 [&:has(>:not([hidden]))]:mb-6">
+          <Notice kind="error" hidden dataSlot="notice" />
+          <OfflineNotice heading={t('join.offlineHeading')} body={t('join.offlineBody')} />
+        </div>
+        <ErrorSummary
+          heading={t('signIn.errorSummaryHeading')}
+          errors={[{ field: 'code', message: t('signIn.codeError') }]}
         />
-        <Button busyLabel={t('signIn.codeSending')}>{t('signIn.codeSubmit')}</Button>
-      </form>
-      <form method="post" action="/sign-in/" class="mt-10">
-        <input type="hidden" name="email" value="" data-slot="resend-email" />
-        <input type="hidden" name="next" value="" data-slot="next" />
-        <button type="submit" class={buttonClass.secondary}>{t('signIn.resend')}</button>
-      </form>
-      <p class="mt-6"><a href="/sign-in/" class={linkClass}>{t('signIn.differentEmail')}</a></p>
-      <p class="mt-6">{t('signIn.spamNote')}</p>
+        <form
+          method="post"
+          action="/sign-in/code/"
+          novalidate
+          data-enhance
+          data-slot="code-form"
+          class="space-y-6"
+        >
+          <TextField
+            name="code"
+            label={t('signIn.codeLabel')}
+            hint={t('signIn.codeHint')}
+            type="code"
+            width="code"
+            required
+            error={t('signIn.codeError')}
+          />
+          <Button busyLabel={t('signIn.codeSending')} block>{t('signIn.codeSubmit')}</Button>
+        </form>
+      </div>
+      <p class="mt-8">{t('signIn.spamNote')}</p>
+      <div class="mt-6 flex flex-wrap items-center gap-x-6 gap-y-4">
+        <form method="post" action="/sign-in/">
+          <input type="hidden" name="email" value="" data-slot="resend-email" />
+          <input type="hidden" name="next" value="" data-slot="next" />
+          <button type="submit" class={buttonClass.secondary}>{t('signIn.resend')}</button>
+        </form>
+        <a href="/sign-in/" class={linkClass}>{t('signIn.differentEmail')}</a>
+      </div>
+      <p class="mt-8 border-t border-outline-variant/40 pt-6">
+        {t('signIn.notMemberNote')}{' '}
+        <a href="/join/member/" class={linkClass}>{t('signIn.joinLink')}</a>
+      </p>
     </div>
   </section>
   <script is:inline src="/scripts/app-enhance.js" defer></script>
