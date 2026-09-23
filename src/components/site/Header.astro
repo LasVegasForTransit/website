@@ -1,5 +1,6 @@
 ---
 import { navMain } from '../../lib/site';
+import { t } from '../../../platform/messages';
 
 const normalizePath = (value: string) => {
   const normalized = value.replace(/\/$/, '');
@@ -52,6 +53,31 @@ const path = normalizePath(Astro.url.pathname);
         }
       </ul>
     </nav>
+    {
+      /* Sign-in state. Public pages are prebuilt, so they ship both states:
+        signed-in-state.js shows the right one from the non-secret
+        lvbt_signed_in cookie, and pages rendered on request set it on the
+        server. Without JavaScript a public page shows "Sign in", which
+        sends a signed-in member straight to their account. */
+    }
+    <div class="hidden md:flex items-center gap-5 text-sm font-semibold">
+      <a href="/sign-in/" data-auth="signed-out" class="nav-link no-underline hover:text-primary">
+        {t('header.signIn')}
+      </a>
+      <a
+        href="/account/"
+        data-auth="signed-in"
+        hidden
+        class="nav-link no-underline hover:text-primary"
+      >
+        {t('header.account')}
+      </a>
+      <form method="post" action="/sign-out/" data-auth="signed-in" hidden>
+        <button type="submit" class="nav-link font-semibold hover:text-primary">
+          {t('header.signOut')}
+        </button>
+      </form>
+    </div>
     <a
       href="/go"
       data-header-cta
@@ -113,6 +139,17 @@ const path = normalizePath(Astro.url.pathname);
         })
     }
   </ul>
+  <div class="px-6 pt-4 flex flex-wrap items-center gap-6 text-lg font-bold">
+    <a href="/sign-in/" data-auth="signed-out" class="no-underline hover:text-primary">
+      {t('header.signIn')}
+    </a>
+    <a href="/account/" data-auth="signed-in" hidden class="no-underline hover:text-primary">
+      {t('header.account')}
+    </a>
+    <form method="post" action="/sign-out/" data-auth="signed-in" hidden>
+      <button type="submit" class="font-bold hover:text-primary">{t('header.signOut')}</button>
+    </form>
+  </div>
   <div class="px-6 pb-8 pt-4">
     <a
       href="/go"
@@ -134,3 +171,4 @@ const path = normalizePath(Astro.url.pathname);
 }
 <script is:inline src="/scripts/header-stuck.js" defer></script>
 <script is:inline src="/scripts/mobile-nav.js" defer></script>
+<script is:inline src="/scripts/signed-in-state.js" defer></script>

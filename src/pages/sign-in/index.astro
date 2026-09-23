@@ -1,0 +1,45 @@
+---
+// The sign-in page. Built once, then served through
+// functions/sign-in/index.ts, which sends signed-in members straight on, and
+// after a failed submit fills in the email and the error. Every text comes
+// from the message catalog, and it works with no JavaScript.
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import Button from '../../components/app/Button.astro';
+import ErrorSummary from '../../components/app/ErrorSummary.astro';
+import Notice from '../../components/app/Notice.astro';
+import OfflineNotice from '../../components/app/OfflineNotice.astro';
+import TextField from '../../components/app/TextField.astro';
+import { linkClass } from '../../components/app/styles';
+import { t } from '../../../platform/messages';
+---
+
+<BaseLayout title={t('signIn.title')} description={t('signIn.description')} noindex>
+  <section class="container-page pt-12 pb-16 md:pt-16 md:pb-24">
+    <div class="max-w-2xl">
+      <h1 class="text-headline-lg">{t('signIn.heading')}</h1>
+      <p class="lede mt-4">{t('signIn.intro')}</p>
+      <div class="mt-8 space-y-4">
+        <Notice kind="error" hidden dataSlot="notice" />
+        <OfflineNotice heading={t('join.offlineHeading')} body={t('join.offlineBody')} />
+      </div>
+      <ErrorSummary
+        heading={t('signIn.errorSummaryHeading')}
+        errors={[{ field: 'email', message: t('signIn.emailError') }]}
+      />
+      <form method="post" action="/sign-in/" novalidate data-enhance class="mt-8 space-y-8">
+        <input type="hidden" name="next" value="" data-slot="next" />
+        <TextField
+          name="email"
+          label={t('signIn.emailLabel')}
+          type="email"
+          autocomplete="email"
+          required
+          error={t('signIn.emailError')}
+        />
+        <Button busyLabel={t('signIn.sending')}>{t('signIn.submit')}</Button>
+      </form>
+      <p class="mt-8"><a href="/join/member/" class={linkClass}>{t('signIn.joinLink')}</a></p>
+    </div>
+  </section>
+  <script is:inline src="/scripts/app-enhance.js" defer></script>
+</BaseLayout>

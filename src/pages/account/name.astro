@@ -1,0 +1,13 @@
+---
+// Change your name. Served through functions/account/name/index.ts.
+import AccountFormPage from '../../components/app/AccountFormPage.astro';
+import TextField from '../../components/app/TextField.astro';
+import { t } from '../../../platform/messages';
+---
+
+<AccountFormPage title={t('account.nameTitle')} action="/account/name/">
+  <div class="grid gap-6 sm:grid-cols-2 max-w-md sm:max-w-none">
+    <TextField name="given_name" label={t('account.givenNameLabel')} autocomplete="given-name" />
+    <TextField name="family_name" label={t('account.familyNameLabel')} autocomplete="family-name" />
+  </div>
+</AccountFormPage>

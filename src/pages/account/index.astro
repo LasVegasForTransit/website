@@ -1,0 +1,84 @@
+---
+// The member's account page. Built once as a template, then served through
+// functions/account/index.ts, which fills in this member's details and shows
+// the sections that apply to them. Never cached: it is one person's data.
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import Button from '../../components/app/Button.astro';
+import KeyValueSummary from '../../components/app/KeyValueSummary.astro';
+import Notice from '../../components/app/Notice.astro';
+import { buttonClass, hintClass, linkClass } from '../../components/app/styles';
+import { t } from '../../../platform/messages';
+
+const change = (href: string) => ({ href, label: t('account.change') });
+---
+
+<BaseLayout title={t('account.title')} noindex>
+  <section class="container-page pt-12 pb-16 md:pt-16 md:pb-24">
+    <div class="max-w-2xl">
+      <h1 class="text-headline-lg">{t('account.heading')}</h1>
+      <p class="lede mt-4" data-slot="greeting">{t('account.greeting')}</p>
+      <div class="mt-8">
+        <Notice kind="success" hidden dataSlot="notice" />
+      </div>
+
+      <h2 class="text-title-lg mt-10">{t('account.membershipHeading')}</h2>
+      <p class="mt-3" data-slot="member-since" hidden></p>
+      <div data-slot="rejoin" hidden>
+        <p class="mt-3">{t('account.notOnList')}</p>
+        <form method="post" action="/account/mailing-list/" class="mt-4 space-y-4">
+          <input type="hidden" name="action" value="rejoin" />
+          <p class={hintClass}>{t('account.rejoinConsent')}</p>
+          <Button busyLabel={t('account.saving')}>{t('account.rejoin')}</Button>
+        </form>
+      </div>
+
+      <h2 class="text-title-lg mt-10">{t('account.detailsHeading')}</h2>
+      <div class="mt-4">
+        <KeyValueSummary
+          rows={[
+            {
+              key: t('account.name'),
+              value: t('account.notGiven'),
+              dataSlot: 'name',
+              change: change('/account/name/'),
+            },
+            {
+              key: t('account.email'),
+              value: t('account.notGiven'),
+              dataSlot: 'email',
+              change: change('/account/email/'),
+            },
+            {
+              key: t('account.phone'),
+              value: t('account.notGiven'),
+              dataSlot: 'phone',
+              change: change('/account/phone/'),
+            },
+            {
+              key: t('account.area'),
+              value: t('account.notGiven'),
+              dataSlot: 'area',
+              change: change('/account/area/'),
+            },
+            { key: t('account.language'), value: t('account.languageValue') },
+          ]}
+        />
+      </div>
+      <p class={`${hintClass} mt-3`}>{t('account.languageNote')}</p>
+
+      <div data-slot="mailing-list" hidden>
+        <h2 class="text-title-lg mt-10">{t('account.listHeading')}</h2>
+        <p class="mt-3">{t('account.onList')}</p>
+        <p class="mt-4">
+          <a href="/account/mailing-list/" class={buttonClass.secondary}>{t('account.leave')}</a>
+        </p>
+      </div>
+
+      <h2 class="text-title-lg mt-10">{t('account.dataHeading')}</h2>
+      <ul class="mt-4 space-y-3">
+        <li><a href="/account/data/" class={linkClass}>{t('account.download')}</a></li>
+        <li><a href="/account/delete/" class={linkClass}>{t('account.delete')}</a></li>
+      </ul>
+    </div>
+  </section>
+</BaseLayout>

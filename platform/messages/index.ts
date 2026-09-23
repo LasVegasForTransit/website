@@ -99,6 +99,16 @@ export function formatDate(date: Date): string {
   }).format(date);
 }
 
+/** A date with its year, like "Oct 5, 2026". */
+export function formatFullDate(date: Date): string {
+  return new Intl.DateTimeFormat('en-US', {
+    timeZone: TIME_ZONE,
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+  }).format(date);
+}
+
 export function formatTime(date: Date): string {
   return new Intl.DateTimeFormat('en-US', {
     timeZone: TIME_ZONE,

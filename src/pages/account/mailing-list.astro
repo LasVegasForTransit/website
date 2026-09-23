@@ -1,0 +1,29 @@
+---
+// Leaving the mailing list asks first, on its own page, because it ends
+// membership. Served through functions/account/mailing-list/index.ts.
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import DestructiveConfirmation from '../../components/app/DestructiveConfirmation.astro';
+import { linkClass } from '../../components/app/styles';
+import { t } from '../../../platform/messages';
+---
+
+<BaseLayout title={t('account.leaveTitle')} noindex>
+  <section class="container-page pt-12 pb-16 md:pt-16 md:pb-24">
+    <div class="max-w-2xl">
+      <p><a href="/account/" class={linkClass}>{t('account.back')}</a></p>
+      <h1 class="text-headline-lg mt-6">{t('account.leaveTitle')}</h1>
+      <div class="mt-8">
+        <DestructiveConfirmation
+          heading={t('account.leave')}
+          action="/account/mailing-list/"
+          confirmLabel={t('account.leave')}
+          backHref="/account/"
+          backLabel={t('account.stay')}
+          hidden={{ action: 'leave' }}
+        >
+          <p>{t('account.leaveBody')}</p>
+        </DestructiveConfirmation>
+      </div>
+    </div>
+  </section>
+</BaseLayout>

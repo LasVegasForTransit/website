@@ -70,6 +70,12 @@ export function normalizePhone(raw: string): string | null {
   return null;
 }
 
+/** A stored US phone number as people write it: (702) 555-0123. */
+export function formatPhone(e164: string): string {
+  const match = /^\+1(\d{3})(\d{3})(\d{4})$/.exec(e164);
+  return match ? `(${match[1]}) ${match[2]}-${match[3]}` : e164;
+}
+
 export function validateJoin(input: JoinInput): JoinErrors {
   const errors: JoinErrors = {};
   if (!EMAIL_PATTERN.test(input.email)) errors.email = input.email ? 'invalid' : 'required';
