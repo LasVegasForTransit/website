@@ -81,7 +81,7 @@ What this rules out:
 
 Once rendering on request is turned on, the site deploys to Cloudflare Workers with static assets instead of Cloudflare Pages. The adapter requires this. The switch uses the existing [Workers candidate checks](../../guides/test-the-workers-candidate.md), which already prove that the Worker serves the same pages, headers, redirects and API responses as Pages. The move happens in the task that turns on rendering on request, not in this record.
 
-The three existing request handlers keep their URLs and behavior. They become Astro endpoints that render on request. Newsletter subscribe, membership intake and transit-news intake keep working until the tasks that replace them ship. The host routing that serves `lvwwd.org` from this site also keeps working, as Astro middleware.
+The three existing request handlers keep their URLs and behavior. They become Astro endpoints that render on request. Newsletter subscribe, membership intake and transit-news intake keep working until the tasks that replace them ship.
 
 What this rules out:
 
