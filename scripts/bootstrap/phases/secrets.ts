@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import { spawnSync } from 'node:child_process';
-import { log, note, password } from '@clack/prompts';
+import { log, note, password, select } from '@clack/prompts';
 import pc from 'picocolors';
 import type { FollowUp, PhaseResult } from '../lib/types.js';
 import { runCommand } from '../lib/shell.js';
@@ -111,17 +111,35 @@ function writeSecret(
   return true;
 }
 
+// When a missing secret is needed: `now` when a live feature on the current
+// production host (Pages) lacks it, `switch` when only the Worker that takes
+// over production lacks it, `later` when only an unbuilt feature uses it.
+type Stage = 'now' | 'switch' | 'later';
+
+const STAGE_HEADING: Record<Stage, string> = {
+  now: 'Needed now: a live feature is waiting for these',
+  switch: 'Needed before the Worker takes over production',
+  later: 'Needed later: for features that are not built yet',
+};
+
+function stageOf(secret: PlatformSecret, inventory: Inventory): Stage {
+  if (secret.use === 'future') return 'later';
+  return missingTargets(secret, inventory).includes('pages') ? 'now' : 'switch';
+}
+
 function printReport(inventory: Inventory): void {
   const unreadable = (Object.keys(inventory) as SecretTarget[]).filter((t) => !inventory[t]);
   const lines: string[] = [];
-  for (const secret of PLATFORM_SECRETS) {
-    const missing = missingTargets(secret, inventory);
-    const status =
-      missing.length === 0
-        ? pc.green('set everywhere')
-        : pc.yellow(`missing on ${missing.map((t) => TARGET_LABEL[t]).join(', ')}`);
-    lines.push(`${secret.name}  ${status}`);
-    if (missing.length > 0) lines.push(pc.dim(`  needed for: ${secret.neededFor}`));
+  const pending = PLATFORM_SECRETS.filter((secret) => missingTargets(secret, inventory).length > 0);
+  const done = PLATFORM_SECRETS.length - pending.length;
+  lines.push(pc.green(`${done} of ${PLATFORM_SECRETS.length} set everywhere they are needed.`));
+  for (const stage of ['now', 'switch', 'later'] as const) {
+    const group = pending.filter((secret) => stageOf(secret, inventory) === stage);
+    if (group.length === 0) continue;
+    lines.push('', pc.bold(STAGE_HEADING[stage]));
+    for (const secret of group) {
+      lines.push(`  ${secret.name}  ${pc.dim(`(${secret.neededFor})`)}`);
+    }
   }
   if (unreadable.length > 0) {
     lines.push('');
@@ -134,13 +152,31 @@ function printReport(inventory: Inventory): void {
   note(lines.join('\n'), 'Platform secrets');
 }
 
+function openInBrowser(url: string): void {
+  const opener = process.platform === 'darwin' ? 'open' : 'xdg-open';
+  spawnSync(opener, [url], { stdio: 'ignore' });
+}
+
+function instructions(secret: PlatformSecret): string {
+  const lines = [secret.purpose];
+  if (secret.url) lines.push('', `${pc.bold('Open:')} ${pc.cyan(secret.url)}`);
+  if (secret.steps?.length) {
+    lines.push('');
+    secret.steps.forEach((step, index) => lines.push(`${index + 1}. ${step}`));
+  }
+  return lines.join('\n');
+}
+
 // A generated value, a pasted value, or null when the person skips it.
 async function obtainValue(secret: PlatformSecret): Promise<string | null> {
   if (secret.generate) {
     log.info(`${pc.bold(secret.name)}: generated a new random value.`);
     return `${randomUUID()}${randomUUID()}`.replaceAll('-', '');
   }
-  note(`${secret.purpose}\n\n${pc.bold('Where to get it:')} ${secret.source ?? ''}`, secret.name);
+  note(instructions(secret), secret.name);
+  if (secret.url && (await promptConfirm('Open that page in your browser?', true))) {
+    openInBrowser(secret.url);
+  }
   const entered = await promptOrExit(
     password({
       message: `Paste ${secret.name} (leave empty to skip for now)`,
@@ -171,6 +207,38 @@ async function finishAfterSet(
   if (show) note(value, `${secret.name} (copy it now; it is not stored locally)`);
 }
 
+// Asks how far to go, then returns the secrets to ask for, most urgent first.
+async function chooseSecrets(
+  missing: PlatformSecret[],
+  inventory: Inventory,
+  followUpItems: FollowUp[],
+): Promise<PlatformSecret[]> {
+  const stages = new Set(missing.map((secret) => stageOf(secret, inventory)));
+  const scope = (await promptOrExit(
+    select<Stage>({
+      message: 'Which values do you want to set now?',
+      initialValue: stages.has('now') ? 'now' : stages.has('switch') ? 'switch' : 'later',
+      options: [
+        { value: 'now', label: 'Only what live features need', hint: STAGE_HEADING.now },
+        { value: 'switch', label: 'Those, plus what the Worker switch-over needs' },
+        { value: 'later', label: 'Everything, including features not built yet' },
+      ],
+    }),
+  )) as Stage;
+  const order: Stage[] = ['now', 'switch', 'later'];
+  const pending = missing
+    .filter((secret) => order.indexOf(stageOf(secret, inventory)) <= order.indexOf(scope))
+    .sort((a, b) => order.indexOf(stageOf(a, inventory)) - order.indexOf(stageOf(b, inventory)));
+  const left = missing.length - pending.length;
+  if (left > 0) {
+    followUpItems.push({
+      kind: 'remote',
+      message: `${left} more secret(s) can wait. Set them later with: pnpm bootstrap --phase secrets`,
+    });
+  }
+  return pending;
+}
+
 export async function runSecretsPhase(
   projectRoot: string,
   doctorMode: boolean,
@@ -178,15 +246,19 @@ export async function runSecretsPhase(
   const inventory = takeInventory(projectRoot);
   printReport(inventory);
 
-  const followUpItems: FollowUp[] = PLATFORM_MANUAL_STEPS.map((message) => ({
-    kind: 'remote',
-    message,
-  }));
-  const pending = PLATFORM_SECRETS.filter((secret) => missingTargets(secret, inventory).length > 0);
+  // The only manual step today is the read:packages scope; skip it once granted.
+  const scopes = runCommand('gh auth status', { cwd: projectRoot });
+  const hasPackages = `${scopes.stdout}${scopes.stderr}`.includes('read:packages');
+  const followUpItems: FollowUp[] = PLATFORM_MANUAL_STEPS.filter(
+    (step) => !(hasPackages && step.includes('read:packages')),
+  ).map((message) => ({ kind: 'remote', message }));
+  const missing = PLATFORM_SECRETS.filter((secret) => missingTargets(secret, inventory).length > 0);
 
-  if (doctorMode || pending.length === 0) {
-    return { success: pending.length === 0, followUpItems };
+  if (doctorMode || missing.length === 0) {
+    return { success: missing.length === 0, followUpItems };
   }
+
+  const pending = await chooseSecrets(missing, inventory, followUpItems);
 
   let skipped = 0;
   for (const secret of pending) {
