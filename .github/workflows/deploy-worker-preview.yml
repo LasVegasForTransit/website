@@ -59,6 +59,7 @@ jobs:
         run: >-
           pnpm worker:preview
           --alias pr-${{ github.event.pull_request.number }}
+          --env preview
           --message "PR #${{ github.event.pull_request.number }} at ${{ github.sha }}"
 
       - name: Verify preview

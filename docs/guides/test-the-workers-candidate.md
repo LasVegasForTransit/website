@@ -25,15 +25,15 @@ Open the printed local URL. Visit the home page, an ordinary content page, and a
 
 Create the `worker-preview` GitHub environment. Add `CLOUDFLARE_WORKERS_API_TOKEN` as its secret and `CLOUDFLARE_ACCOUNT_ID` as an environment or repository variable. The token needs Worker script version upload access and no zone-edit permission.
 
-Set the repository variable `CLOUDFLARE_WORKERS_PREVIEW_ENABLED` to `true` after `pnpm worker:upload` succeeds for `lvbt-website`. Re-run the pull request workflow and open the `Worker candidate` link in its comment.
+Set the repository variable `CLOUDFLARE_WORKERS_PREVIEW_ENABLED` to `true` after `pnpm worker:upload --env preview` succeeds for `lvbt-website-preview`, the separate Worker that pull request previews use. Re-run the pull request workflow and open the `Worker candidate` link in its comment.
 
 The preview workflow compares the Worker with the Pages production origin, then runs the complete Playwright suite against the Worker URL. The same checks run locally against an uploaded candidate:
 
 ```sh
 pnpm worker:test:live \
   --pages https://lasvegasfortransit.org \
-  --worker https://<version>-lvbt-website.<account>.workers.dev
-PLAYWRIGHT_BASE_URL=https://<version>-lvbt-website.<account>.workers.dev \
+  --worker https://<version>-lvbt-website-preview.<account>.workers.dev
+PLAYWRIGHT_BASE_URL=https://<version>-lvbt-website-preview.<account>.workers.dev \
   pnpm worker:test:browser
 ```
 
