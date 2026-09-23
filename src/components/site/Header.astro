@@ -60,31 +60,33 @@ const path = normalizePath(Astro.url.pathname);
         server. Without JavaScript a public page shows "Sign in", which
         sends a signed-in member straight to their account. */
     }
-    <div class="hidden md:flex items-center gap-5 text-sm font-semibold">
-      <a href="/sign-in/" data-auth="signed-out" class="nav-link no-underline hover:text-primary">
-        {t('header.signIn')}
-      </a>
+    <div class="hidden md:flex items-center gap-6">
+      <div class="flex items-center gap-5 text-sm font-semibold">
+        <a href="/sign-in/" data-auth="signed-out" class="nav-link no-underline hover:text-primary">
+          {t('header.signIn')}
+        </a>
+        <a
+          href="/account/"
+          data-auth="signed-in"
+          hidden
+          class="nav-link no-underline hover:text-primary"
+        >
+          {t('header.account')}
+        </a>
+        <form method="post" action="/sign-out/" data-auth="signed-in" hidden>
+          <button type="submit" class="nav-link font-semibold hover:text-primary">
+            {t('header.signOut')}
+          </button>
+        </form>
+      </div>
       <a
-        href="/account/"
-        data-auth="signed-in"
-        hidden
-        class="nav-link no-underline hover:text-primary"
+        href="/go"
+        data-header-cta
+        class="press inline-flex items-center gap-1.5 bg-on-surface text-surface px-4 py-2 text-sm font-bold no-underline hover:bg-primary hover:text-on-primary focus-visible:bg-primary focus-visible:text-on-primary"
       >
-        {t('header.account')}
+        Get involved <span class="arrow" aria-hidden="true">→</span>
       </a>
-      <form method="post" action="/sign-out/" data-auth="signed-in" hidden>
-        <button type="submit" class="nav-link font-semibold hover:text-primary">
-          {t('header.signOut')}
-        </button>
-      </form>
     </div>
-    <a
-      href="/go"
-      data-header-cta
-      class="press hidden md:inline-flex items-center gap-1.5 bg-on-surface text-surface px-4 py-2 text-sm font-bold no-underline hover:bg-primary hover:text-on-primary focus-visible:bg-primary focus-visible:text-on-primary"
-    >
-      Get involved <span class="arrow" aria-hidden="true">→</span>
-    </a>
     {/* Mobile controls: Join CTA (hidden when nav open) + hamburger toggle */}
     <div class="md:hidden flex items-center gap-3">
       <a

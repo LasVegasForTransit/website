@@ -4,41 +4,68 @@
 // after a failed submit fills in the email and the error. Every text comes
 // from the message catalog, and it works with no JavaScript.
 import BaseLayout from '../../layouts/BaseLayout.astro';
+import PageHero from '../../components/PageHero.astro';
 import Button from '../../components/app/Button.astro';
 import ErrorSummary from '../../components/app/ErrorSummary.astro';
 import Notice from '../../components/app/Notice.astro';
 import OfflineNotice from '../../components/app/OfflineNotice.astro';
 import TextField from '../../components/app/TextField.astro';
 import { linkClass } from '../../components/app/styles';
+import { Icon } from 'astro-icon/components';
 import { t } from '../../../platform/messages';
+
+const accountItems = [
+  { icon: 'mdi:account-edit-outline', text: t('signIn.accountDetails') },
+  { icon: 'mdi:map-marker-outline', text: t('signIn.accountArea') },
+  { icon: 'mdi:download-outline', text: t('signIn.accountLeave') },
+];
 ---
 
 <BaseLayout title={t('signIn.title')} description={t('signIn.description')} noindex>
-  <section class="container-page pt-12 pb-16 md:pt-16 md:pb-24">
-    <div class="max-w-2xl">
-      <h1 class="text-headline-lg">{t('signIn.heading')}</h1>
-      <p class="lede mt-4">{t('signIn.intro')}</p>
-      <div class="mt-8 space-y-4">
-        <Notice kind="error" hidden dataSlot="notice" />
-        <OfflineNotice heading={t('join.offlineHeading')} body={t('join.offlineBody')} />
+  <PageHero title={t('signIn.heading')} lede={t('signIn.intro')} />
+  <section class="container-page py-12 md:py-16">
+    <div class="grid gap-12 lg:grid-cols-[minmax(0,1fr)_minmax(0,30rem)] lg:gap-20">
+      <div>
+        <h2 class="text-headline-sm">{t('signIn.accountHeading')}</h2>
+        <ul class="mt-6 space-y-5 list-none p-0">
+          {
+            accountItems.map((item) => (
+              <li class="flex gap-4">
+                <Icon name={item.icon} class="size-6 shrink-0 text-primary" aria-hidden="true" />
+                <span>{item.text}</span>
+              </li>
+            ))
+          }
+        </ul>
       </div>
-      <ErrorSummary
-        heading={t('signIn.errorSummaryHeading')}
-        errors={[{ field: 'email', message: t('signIn.emailError') }]}
-      />
-      <form method="post" action="/sign-in/" novalidate data-enhance class="mt-8 space-y-8">
-        <input type="hidden" name="next" value="" data-slot="next" />
-        <TextField
-          name="email"
-          label={t('signIn.emailLabel')}
-          type="email"
-          autocomplete="email"
-          required
-          error={t('signIn.emailError')}
+      <div
+        class="border border-outline bg-surface-container p-6 md:p-8 [&>[data-error-summary]]:mt-0 [&>[data-error-summary]:not([hidden])]:mb-6"
+      >
+        <div class="space-y-4 [&:has(>:not([hidden]))]:mb-6">
+          <Notice kind="error" hidden dataSlot="notice" />
+          <OfflineNotice heading={t('join.offlineHeading')} body={t('join.offlineBody')} />
+        </div>
+        <ErrorSummary
+          heading={t('signIn.errorSummaryHeading')}
+          errors={[{ field: 'email', message: t('signIn.emailError') }]}
         />
-        <Button busyLabel={t('signIn.sending')}>{t('signIn.submit')}</Button>
-      </form>
-      <p class="mt-8"><a href="/join/member/" class={linkClass}>{t('signIn.joinLink')}</a></p>
+        <form method="post" action="/sign-in/" novalidate data-enhance class="space-y-6">
+          <input type="hidden" name="next" value="" data-slot="next" />
+          <TextField
+            name="email"
+            label={t('signIn.emailLabel')}
+            type="email"
+            autocomplete="email"
+            required
+            error={t('signIn.emailError')}
+          />
+          <Button busyLabel={t('signIn.sending')} block>{t('signIn.submit')}</Button>
+        </form>
+        <p class="mt-6 border-t border-outline-variant/40 pt-6">
+          {t('signIn.joinPrompt')}{' '}
+          <a href="/join/member/" class={linkClass}>{t('signIn.joinLink')}</a>
+        </p>
+      </div>
     </div>
   </section>
   <script is:inline src="/scripts/app-enhance.js" defer></script>

@@ -7,7 +7,7 @@ import type { Db } from './db';
  * Count one attempt for `bucket` in the current hour and report whether the
  * caller is still within `limit`. The bucket is a hash, never a raw address.
  */
-export async function withinHourlyLimit(
+export function withinHourlyLimit(
   db: Db,
   bucket: string,
   limit: number,
@@ -15,7 +15,27 @@ export async function withinHourlyLimit(
 ): Promise<boolean> {
   const window = new Date(now);
   window.setUTCMinutes(0, 0, 0);
-  const windowStart = window.toISOString();
+  return countInWindow(db, bucket, limit, window);
+}
+
+/** The same, counted per UTC day. */
+export function withinDailyLimit(
+  db: Db,
+  bucket: string,
+  limit: number,
+  now: Date = new Date(),
+): Promise<boolean> {
+  const window = new Date(now);
+  window.setUTCHours(0, 0, 0, 0);
+  return countInWindow(db, bucket, limit, window);
+}
+
+async function countInWindow(
+  db: Db,
+  bucket: string,
+  limit: number,
+  window: Date,
+): Promise<boolean> {
   const stamp = nowIso();
   const row = await db
     .prepare(
@@ -24,7 +44,7 @@ export async function withinHourlyLimit(
        ON CONFLICT (bucket, window_start) DO UPDATE SET count = count + 1, updated_at = excluded.updated_at
        RETURNING count`,
     )
-    .bind(bucket, windowStart, stamp, stamp)
+    .bind(bucket, window.toISOString(), stamp, stamp)
     .first<{ count: number }>();
   return (row?.count ?? 1) <= limit;
 }
