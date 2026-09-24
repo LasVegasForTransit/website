@@ -49,7 +49,7 @@ export async function runDomainPhase(
   const inferredExtras = parseHostList(process.env.LVBT_EXTRA_HOSTS, inferredApex);
 
   note(
-    `Attaches your domain to ${pc.cyan(inferredProject)} and writes every DNS record automatically.\n\nDNS write requires a Cloudflare API token with ${pc.cyan('Zone.DNS:Edit')} (wrangler's\nOAuth scopes don't include DNS). One-time setup: a paste prompt opens later\nand saves the token to ${pc.cyan('.env.local')} — every run after that is hands-off.\n\nIf the zone lives in another Cloudflare account, you'll be prompted to\nswitch wrangler users in-session.`,
+    `Attaches your domain to ${pc.cyan(inferredProject)} and writes any DNS record that is missing.\n\nWriting DNS needs a Cloudflare API token with ${pc.cyan('Zone · DNS · Edit')}, because wrangler's\nsign-in cannot write DNS. Only if a record is missing, a prompt shows how to\nmake one and saves it to ${pc.cyan('.env.local')} on this machine; later runs reuse it.\n\nIf the zone lives in another Cloudflare account, you'll be prompted to\nswitch wrangler users in-session.`,
     'Custom domain',
   );
 
@@ -180,7 +180,7 @@ export async function runDomainPhase(
       if (needCname.length > 0) {
         await wireCnames(
           needCname,
-          zone.zoneId,
+          { id: zone.zoneId, name: zone.zoneName ?? apex },
           cnameTarget,
           accountId,
           projectRoot,
@@ -346,27 +346,35 @@ async function renderAttachTask(
   return captured;
 }
 
+interface ZoneRef {
+  id: string;
+  name: string;
+}
+
 /**
  * Write a CNAME for every host. Requires a Cloudflare API token with
- * `Zone.DNS:Edit` — wrangler's OAuth flow doesn't expose DNS write at all
+ * Zone · DNS · Edit — wrangler's OAuth flow doesn't expose DNS write at all
  * (`wrangler login --scopes-list` confirms zone:read is the only zone scope).
  * If no token is configured, drives a one-time paste flow that saves it to
  * `.env.local` so subsequent runs are fully automatic.
  */
 async function wireCnames(
   hosts: string[],
-  zoneId: string,
+  zone: ZoneRef,
   target: string,
   accountId: string,
   projectRoot: string,
   followUps: FollowUp[],
 ): Promise<void> {
-  let apiToken = await ensureApiToken(accountId, projectRoot, { reason: 'initial' });
+  const zoneId = zone.id;
+  let apiToken = await ensureApiToken(accountId, projectRoot, {
+    reason: 'initial',
+    zoneName: zone.name,
+  });
   if (!apiToken) {
     followUps.push({
       kind: 'auth',
-      message:
-        'Provide CLOUDFLARE_API_TOKEN (Zone.DNS:Edit) and re-run `pnpm bootstrap --phase domain`.',
+      message: `Create a Cloudflare API token from the "Edit zone DNS" template for ${zone.name}, then re-run \`pnpm bootstrap --phase domain\`.`,
     });
     return;
   }
@@ -392,14 +400,17 @@ async function wireCnames(
       const authBlocked = r.status === 401 || r.status === 403;
 
       if (authBlocked && allowAuthRetry) {
-        log.error(`Token rejected (HTTP ${r.status}) — needs Zone.DNS:Edit on ${host}'s zone.`);
+        log.error(`Token rejected (HTTP ${r.status}): it needs Zone · DNS · Edit on ${zone.name}.`);
         logSubline(pc.dim(detail));
         clearCloudflareApiToken(projectRoot);
-        const fresh = await ensureApiToken(accountId, projectRoot, { reason: 'auth-retry' });
+        const fresh = await ensureApiToken(accountId, projectRoot, {
+          reason: 'auth-retry',
+          zoneName: zone.name,
+        });
         if (!fresh) {
           followUps.push({
             kind: 'auth',
-            message: `Re-create CLOUDFLARE_API_TOKEN with Zone.DNS:Edit and re-run.`,
+            message: `Create a new token from the "Edit zone DNS" template for ${zone.name} and re-run.`,
           });
           return;
         }
@@ -413,7 +424,7 @@ async function wireCnames(
       followUps.push({
         kind: authBlocked ? 'auth' : 'remote',
         message: authBlocked
-          ? `Re-create CLOUDFLARE_API_TOKEN with Zone.DNS:Edit on ${host}'s zone, then re-run.`
+          ? `Create a new token from the "Edit zone DNS" template for ${zone.name}, then re-run.`
           : `Add CNAME ${host} → ${target} (proxied) at ${tokenDashboardUrl(accountId).replace('/api-tokens', `/${zoneId}/dns`)} and re-run.`,
       });
       break;
@@ -467,22 +478,31 @@ async function fetchDomainStatuses(
   return out;
 }
 
-function tokenPromptBody(accountId: string): string {
+function tokenPromptBody(accountId: string, zoneName: string): string {
   return [
-    'Cloudflare API token needed (wrangler OAuth has no DNS scope).',
+    `A DNS record for ${zoneName} is missing, and wrangler's sign-in cannot write DNS.`,
+    'Make a Cloudflare API token that can, once:',
     '',
-    `  1. Open ${pc.cyan(tokenDashboardUrl(accountId))}`,
-    `  2. ${pc.bold('Create Token')} → use the ${pc.bold('"Edit zone DNS"')} template`,
-    `     (or ${pc.bold('Custom token')} → Zone → DNS → Edit)`,
-    '  3. Scope to your zone, Continue, Create',
-    '  4. Copy the token from the success screen',
-    '  5. Paste below — saved to .env.local for future runs',
+    `  1. Open ${pc.cyan(tokenDashboardUrl(accountId))} (Manage Account → API Tokens`,
+    '     for the "Las Vegas for Better Transit" account).',
+    `  2. Click ${pc.bold('Create Token')}. Next to ${pc.bold('Edit zone DNS')}, click ${pc.bold('Use template')}.`,
+    `  3. Token name: ${pc.bold(`${zoneName} DNS (bootstrap)`)}.`,
+    `  4. Permissions: keep the one row the template adds: ${pc.bold('Zone · DNS · Edit')}.`,
+    `  5. Zone Resources: ${pc.bold(`Include · Specific zone · ${zoneName}`)}.`,
+    `  6. Click ${pc.bold('Continue to summary')}, then ${pc.bold('Create Token')}.`,
+    '  7. Copy the token (Cloudflare shows it only once) and paste it below.',
+    '',
+    `It is saved as CLOUDFLARE_API_TOKEN in ${pc.cyan('.env.local')} on this machine only (readable`,
+    'only by you, never committed), so later runs do not ask again. It is not the',
+    'deploy token that GitHub Actions uses.',
   ].join('\n');
 }
 
 interface TokenPromptOptions {
   /** 'initial' = first time asking; 'auth-retry' = previous token was rejected by CF. */
   reason: 'initial' | 'auth-retry';
+  /** The zone the token must be able to edit, e.g. lasvegasfortransit.org. */
+  zoneName: string;
 }
 
 /**
@@ -506,17 +526,15 @@ async function ensureApiToken(
     clearCloudflareApiToken(projectRoot);
   }
 
-  if (opts.reason === 'initial') {
-    note(tokenPromptBody(accountId), 'Cloudflare API token');
-    tryOpenInBrowser(tokenDashboardUrl(accountId));
-  }
+  note(tokenPromptBody(accountId, opts.zoneName), 'Cloudflare API token');
+  if (opts.reason === 'initial') tryOpenInBrowser(tokenDashboardUrl(accountId));
 
   const pasted = await rt().prompts.password({
     id: 'CLOUDFLARE_API_TOKEN',
     message:
       opts.reason === 'auth-retry'
         ? 'Paste a new token (the previous one was rejected):'
-        : 'Paste the Cloudflare API token:',
+        : 'Paste the Cloudflare API token (hidden as you type):',
     validate: validatePastedToken,
   });
   const token = pasted.trim();

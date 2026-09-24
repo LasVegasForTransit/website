@@ -1,8 +1,13 @@
+/* eslint-disable max-lines -- one data entry per secret, each with its click-by-click steps; splitting it would scatter the list. */
 // Every server-side secret the website and the Organizing Platform need, where
 // each one comes from, and where it must be stored. `pnpm bootstrap --phase
 // secrets` reads this list: it reports what is missing, asks for each value
 // once, and writes it to every target. See
 // docs/reference/platform-secrets.md for the same list in prose.
+//
+// Everything LVBT owns in another service lives under an LVBT organization,
+// team or group, never a personal account, so the next maintainer can reach
+// it. The steps below say which one for each service.
 
 export type SecretTarget =
   // The production Worker that serves lasvegasfortransit.org after cutover.
@@ -18,15 +23,38 @@ export type SecretTarget =
  */
 export type SecretUse = 'live' | 'future';
 
+/**
+ * A setup step outside any secret that must be done first, and that
+ * bootstrap cannot check for itself. Bootstrap shows the steps, asks the
+ * question, and remembers a "yes" in .lvbt/dev-readiness.json so it never
+ * asks again.
+ */
+export interface GuidedStep {
+  /** Stable key the confirmation is remembered under. */
+  id: string;
+  title: string;
+  url?: string;
+  steps: readonly string[];
+  /** Yes/no question asked after the steps. */
+  question: string;
+}
+
 export interface PlatformSecret {
   name: string;
-  /** What the platform uses it for, in one line. */
+  /** What the value is for, in one plain sentence. */
   purpose: string;
   use: SecretUse;
+  /**
+   * When it is fine to leave the value empty for now, and what stays broken
+   * until it is set. `future` secrets without one get the generic note.
+   */
+  skipNote?: string;
   /** The page to open first. Bootstrap offers to open it in the browser. */
   url?: string;
   /** Numbered, click-by-click steps to find or create the value. */
   steps?: readonly string[];
+  /** Must be done before the value can exist; asked about once. */
+  prerequisite?: GuidedStep;
   /** Minted by bootstrap instead of asked for. */
   generate?: boolean;
   /** Extra step after setting, for values that must also live elsewhere. */
@@ -37,26 +65,73 @@ export interface PlatformSecret {
   validate?: (value: string) => string | undefined;
 }
 
+export const FUTURE_SKIP_NOTE =
+  'Only a feature that is not built yet uses this, so it is fine to leave it empty now. Bootstrap asks again next time.';
+
+/** The "fine to skip?" note bootstrap shows next to a secret's prompt. */
+export function skipNoteFor(secret: PlatformSecret): string {
+  return secret.skipNote ?? (secret.use === 'future' ? FUTURE_SKIP_NOTE : '');
+}
+
 const minLength = (length: number) => (value: string) =>
   value.length < length ? `Expected at least ${length} characters.` : undefined;
 
 const INTAKE_TARGETS = ['pages', 'worker', 'github:worker-candidate'] as const;
 const PLATFORM_TARGETS = ['pages', 'worker'] as const;
 
+const STAFF_CONSOLE_SKIP =
+  'The staff console is not live yet, so it is fine to leave this empty now. Bootstrap asks again next time.';
+
+const DISCORD_SKIP =
+  'Discord linking and roles are not built yet, so it is fine to leave all five Discord values empty now. Bootstrap asks again next time.';
+
+const GOOGLE_SIGN_IN_SKIP =
+  'Staff and volunteer sign-in with Google is not built yet, so it is fine to leave this empty now. Bootstrap asks again next time.';
+
+// Cloudflare and GitHub never show a stored secret again, so a random signing
+// key that exists on some targets but not others cannot be copied. The fix
+// is a fresh value everywhere.
+const regenerateSteps = (name: string, consequence: string): readonly string[] => [
+  'You only see this if the value is already stored somewhere, or a target could not be checked. Cloudflare and GitHub never show a stored secret again, so there is nothing to copy.',
+  `Leave this prompt empty. If a target could not be checked, fix the sign-in and run bootstrap again. Otherwise run \`pnpm bootstrap --phase secrets --rotate ${name}\` to make a new value and store it everywhere. ${consequence}`,
+];
+
+const STAFF_CONSOLE_GROUP: GuidedStep = {
+  id: 'staff-console-google-group',
+  title: 'Google Group for the staff console',
+  url: 'https://admin.google.com/ac/groups',
+  steps: [
+    'This group decides who can open the staff console. You need a Google Workspace admin who can manage groups.',
+    'Open https://admin.google.com and go to Menu → Directory → Groups.',
+    'If "Staff console" (staff-console@lasvegasfortransit.org) is listed, it already exists: skip to the step about members.',
+    'Otherwise click "Create group". Group name: Staff console. Group email: staff-console, with the domain lasvegasfortransit.org. Description: People who can open the LVBT staff console. Group owners: yourself. Click "Next".',
+    'Tick "Security", because this group controls access. Click "Next".',
+    'Access type: "Restricted". Who can join the group: "Only invited users". Leave external members off. Click "Create Group".',
+    'Open the group, then "Members" → "Add members". Type each staff member\'s @lasvegasfortransit.org address and click "Add To Group". Only lasvegasfortransit.org Workspace accounts can sign in through Access, so a personal Gmail address does not work even inside the group.',
+    'Later, to add someone, come back to Directory → Groups → Staff console → Members → "Add members". To remove someone, point to them in the member list and click "Remove", or tick them and click "Remove members".',
+  ],
+  question: 'Does the "Staff console" group exist, with its members added?',
+};
+
 export const PLATFORM_SECRETS: readonly PlatformSecret[] = [
   {
     name: 'LVBT_RESEND_API_KEY',
-    purpose: 'Sends transactional email: sign-in codes, confirmations and reminders.',
+    purpose:
+      'Lets the site send email, such as sign-in codes, confirmations and reminders, from notify.lasvegasfortransit.org through Resend.',
     use: 'live',
+    skipNote:
+      'Skip only if you cannot finish the Resend setup today: member sign-in and reminder emails do not send until this is set.',
     url: 'https://resend.com/domains',
     steps: [
-      'Sign in to Resend (create a free account with your LVBT Google account if there is none).',
-      'On the Domains page, click "Add Domain", type notify.lasvegasfortransit.org and click "Add".',
-      'If Resend offers to set up the records with Cloudflare, accept and approve it in the Cloudflare window. Otherwise add each record it lists at https://dash.cloudflare.com → lasvegasfortransit.org → DNS → Records.',
-      'Wait until the domain says "Verified". This usually takes a few minutes.',
-      'Open https://resend.com/api-keys and click "Create API Key".',
-      'Name it "LVBT website", choose "Sending access" and the domain notify.lasvegasfortransit.org, then click "Add".',
-      'Copy the key. It starts with re_ and is shown only once.',
+      'Sign in at https://resend.com/login with your @lasvegasfortransit.org address. LVBT keeps one Resend team: if you are new, ask a maintainer to invite you to it rather than making your own. Only if LVBT has no Resend team at all, sign up at https://resend.com/signup with your @lasvegasfortransit.org address.',
+      'On the Domains page, look for notify.lasvegasfortransit.org. If its status says "Verified", skip to the step about the API key. If it is listed but not verified, open it and skip to the step about DNS records.',
+      'Otherwise click "Add Domain". Type notify.lasvegasfortransit.org. For Region choose "North Virginia (us-east-1)". Click "Add".',
+      'Resend now lists the DNS records the domain needs. The easiest way to add them is to click "Sign in to Cloudflare" on that page, choose the "Las Vegas for Better Transit" account, and approve. Resend adds the records for you.',
+      'To add them by hand instead, open https://dash.cloudflare.com → lasvegasfortransit.org → DNS → Records and click "Add record" once for each record Resend lists. Copy the type, name and content exactly as Resend shows them, with TTL "Auto" and Proxy status "DNS only". Because this is a subdomain the names end in .notify; Cloudflare adds .lasvegasfortransit.org by itself, so do not type that part. Today they are: MX named send.notify with mail server feedback-smtp.us-east-1.amazonses.com and priority 10; TXT named send.notify with content v=spf1 include:amazonses.com ~all; and TXT named resend._domainkey.notify with the long p=... value Resend shows.',
+      'Resend also recommends a DMARC record: TXT with content v=DMARC1; p=none;. In the Cloudflare records list, check for a TXT record named _dmarc first. If lasvegasfortransit.org already has one, keep it and skip this record, because it covers notify.lasvegasfortransit.org too. If there is none, add it with the name Resend shows.',
+      'Back in Resend, click "Verify DNS Records" and wait until the status says "Verified". That usually takes a few minutes; DNS can take up to 72 hours. If it is still waiting, leave this prompt empty and run bootstrap again later.',
+      'Open https://resend.com/api-keys and click "Create API Key". Name: LVBT website. Permission: "Sending access". Domain: notify.lasvegasfortransit.org. Click "Add".',
+      'Copy the key and paste it here. It starts with re_ and Resend shows it only once.',
     ],
     neededFor: 'Member sign-in, event reminders',
     targets: PLATFORM_TARGETS,
@@ -64,14 +139,17 @@ export const PLATFORM_SECRETS: readonly PlatformSecret[] = [
   },
   {
     name: 'LVBT_BEEHIIV_API_KEY',
-    purpose: 'Subscribes new members to the newsletter and reads subscription changes.',
+    purpose:
+      "Lets the site add new members to LVBT's newsletter in Beehiiv and read changes to their subscription.",
     use: 'live',
+    skipNote:
+      'Skip only if you cannot sign in to Beehiiv today: joining and newsletter signup fail until this is set.',
     url: 'https://app.beehiiv.com/settings/workspace/api',
     steps: [
-      'Sign in to Beehiiv as a workspace Owner or Admin.',
+      'Sign in to Beehiiv as an Owner or Admin of the LVBT workspace.',
       'Under "API Keys", click "Create New API Key".',
       'Name it "LVBT website" and click "Create New Key".',
-      'Copy the key now. Beehiiv shows it only once. Then click "I\'ve saved the key".',
+      'Copy the key now and paste it here. Beehiiv shows it only once. Then click "I\'ve saved the key".',
     ],
     neededFor: 'Joining, newsletter signup, mailing list sync',
     targets: INTAKE_TARGETS,
@@ -79,12 +157,14 @@ export const PLATFORM_SECRETS: readonly PlatformSecret[] = [
   },
   {
     name: 'LVBT_BEEHIIV_PUBLICATION_ID',
-    purpose: 'Names the LVBT publication in Beehiiv API calls.',
+    purpose: "Tells Beehiiv which publication, LVBT's newsletter, the site's requests are about.",
     use: 'live',
+    skipNote:
+      'Skip only if you cannot sign in to Beehiiv today: joining and newsletter signup fail until this is set.',
     url: 'https://app.beehiiv.com/settings/workspace/api',
     steps: [
       'On the same Beehiiv API page, find "Publication ID".',
-      'Copy it. For LVBT it is pub_d3178023-f8d5-4e9d-a768-0c4eaa6b7280.',
+      'Copy it and paste it here. It starts with pub_; for LVBT it is pub_d3178023-f8d5-4e9d-a768-0c4eaa6b7280.',
     ],
     neededFor: 'Joining, newsletter signup, mailing list sync',
     targets: INTAKE_TARGETS,
@@ -92,13 +172,17 @@ export const PLATFORM_SECRETS: readonly PlatformSecret[] = [
   },
   {
     name: 'LVBT_MEMBERSHIP_INTAKE_SECRET',
-    purpose: 'Proves a membership intake request came from the Google Form.',
+    purpose:
+      "Proves that a membership sign-up came from LVBT's Google Form, so no one else can post sign-ups to the site.",
     use: 'live',
+    skipNote:
+      'Skip only if you cannot open the Apps Script project today: sign-ups from the Google Form and other connected form tools fail until this is set.',
     url: 'https://script.google.com/home',
     steps: [
+      'This must be the value the Google Form already uses. Do not make up a new one, or the form stops working.',
       'Open the Apps Script project attached to the LVBT membership Google Form. From the form, that is the ⋮ menu → "Apps Script".',
       'Click "Project Settings", the gear icon on the left.',
-      'Scroll to "Script Properties" and copy the value of LVBT_MEMBERSHIP_INTAKE_SECRET.',
+      'Scroll to "Script Properties", copy the value of LVBT_MEMBERSHIP_INTAKE_SECRET, and paste it here.',
     ],
     neededFor: 'The Google Form fallback',
     targets: INTAKE_TARGETS,
@@ -106,13 +190,16 @@ export const PLATFORM_SECRETS: readonly PlatformSecret[] = [
   },
   {
     name: 'LVBT_NOTION_API_KEY',
-    purpose: 'Writes new members to the Notion intake database for staff follow-up.',
+    purpose:
+      "Lets the site write each new member and each transit news submission into LVBT's Notion workspace for staff follow-up.",
     use: 'live',
+    skipNote:
+      'Skip only if you cannot reach Notion today: staff do not see new members or transit news submissions in Notion until this is set.',
     url: 'https://www.notion.so/profile/integrations',
     steps: [
-      'Sign in to Notion as an LVBT workspace owner.',
+      'Sign in to Notion as an owner of the LVBT workspace.',
       'Click the integration connected to the Membership intake database. To check its name, open https://www.notion.so/6bad03ffdebf4072a34a6408d3e7180d → ••• → Connections.',
-      'Under "Internal Integration Secret", click "Show", then "Copy".',
+      'Under "Internal Integration Secret", click "Show", then "Copy", and paste it here. It starts with ntn_.',
     ],
     neededFor: 'Joining (staff follow-up), transit news intake',
     targets: INTAKE_TARGETS,
@@ -120,12 +207,15 @@ export const PLATFORM_SECRETS: readonly PlatformSecret[] = [
   },
   {
     name: 'LVBT_NOTION_DATA_SOURCE_ID',
-    purpose: 'Names the Notion intake data source that new members are written to.',
+    purpose:
+      'Tells Notion which table, the Membership intake data source, new members are written to.',
     use: 'live',
+    skipNote:
+      'Skip only if you cannot reach Notion today: staff do not see new members in Notion until this is set.',
     url: 'https://www.notion.so/6bad03ffdebf4072a34a6408d3e7180d',
     steps: [
       'Open the Membership intake database.',
-      'Click ••• → "Copy data source ID". For LVBT it is 6e3df57f-d336-4c0c-a814-a0be68c7f455.',
+      'Click ••• → "Copy data source ID" and paste it here. For LVBT it is 6e3df57f-d336-4c0c-a814-a0be68c7f455.',
     ],
     neededFor: 'Joining (staff follow-up)',
     targets: INTAKE_TARGETS,
@@ -133,13 +223,15 @@ export const PLATFORM_SECRETS: readonly PlatformSecret[] = [
   },
   {
     name: 'LVBT_TRANSIT_NEWS_INTAKE_SECRET',
-    purpose: 'Proves a transit news submission came from the Notion automation.',
+    purpose: "Proves that a transit news submission came from LVBT's Notion automation.",
     use: 'live',
+    skipNote:
+      'Skip only if you cannot open the Notion automation today: transit news submissions fail until this is set.',
     generate: true,
     steps: [
       'Open the LVBT transit news automation in Notion and inspect its webhook action.',
-      'Copy the value after "Bearer " in its Authorization header. Enter that same value here.',
-      'If the value is unavailable, stop and rotate the secret across Notion, Pages, Worker and GitHub together.',
+      'Copy the value after "Bearer " in its Authorization header and paste that same value here.',
+      'If the value is unavailable, leave this empty and run `pnpm bootstrap --phase secrets --rotate LVBT_TRANSIT_NEWS_INTAKE_SECRET`. It makes a new value, stores it on Pages, the Worker and GitHub together, and shows it once so you can paste it into the automation.',
     ],
     afterSet:
       'Paste the same value into the Notion transit news automation webhook header as "Authorization: Bearer <value>".',
@@ -148,32 +240,46 @@ export const PLATFORM_SECRETS: readonly PlatformSecret[] = [
   },
   {
     name: 'LVBT_SIGN_IN_SECRET',
-    purpose: 'Keys the one-way hash that sign-in codes are stored under.',
+    purpose:
+      'Scrambles sign-in codes before they are stored, so a copy of the database cannot be used to sign in.',
     use: 'live',
+    skipNote: 'Member sign-in does not work until this is set.',
     generate: true,
+    steps: regenerateSteps(
+      'LVBT_SIGN_IN_SECRET',
+      'Anyone waiting for a sign-in code at that moment must ask for a new one.',
+    ),
     neededFor: 'Member sign-in',
     targets: PLATFORM_TARGETS,
   },
   {
     name: 'LVBT_LINK_SIGNING_SECRET',
     purpose:
-      'Signs one-purpose links, such as "Not you? Remove this email", so they cannot be forged.',
+      'Signs one-purpose links, such as "Not you? Remove this email", so no one can forge them.',
     use: 'live',
+    skipNote: 'Joining and sign-in links do not work until this is set.',
     generate: true,
+    steps: regenerateSteps(
+      'LVBT_LINK_SIGNING_SECRET',
+      'Links already sent by email stop working, so people use the newest email instead.',
+    ),
     neededFor: 'Joining (removal link), member sign-in links',
     targets: PLATFORM_TARGETS,
   },
   {
     name: 'LVBT_GOOGLE_OAUTH_CLIENT_ID',
-    purpose: 'Lets staff and volunteers sign in with their LVBT Google account.',
+    purpose:
+      'Identifies the website\'s own "Sign in with Google" button to Google, for staff and volunteers.',
     use: 'future',
+    skipNote: GOOGLE_SIGN_IN_SKIP,
     url: 'https://console.cloud.google.com/auth/clients',
     steps: [
-      'Sign in with an LVBT Workspace admin account and choose the LVBT project at the top of the page (create one named "LVBT website" if there is none).',
-      'If Google asks you to configure the consent screen first: App name "Las Vegans for Better Transit", support email your LVBT address, Audience "Internal", then "Create".',
-      'Click "Create client". Application type: "Web application". Name: "LVBT website".',
-      'Under "Authorized redirect URIs", click "Add URI" and enter https://lasvegasfortransit.org/auth/google/callback. Click "Create".',
-      'Copy the Client ID. It ends with .apps.googleusercontent.com. Keep the dialog open for the client secret, which comes next.',
+      'Open https://console.cloud.google.com/ signed in with your @lasvegasfortransit.org account. In the project picker at the top, choose "LVBT Access", the LVBT project under the lasvegasfortransit.org organization that Cloudflare Access sign-in also uses. If there is none, click "New project", name it LVBT Access, keep the organization lasvegasfortransit.org, and click "Create". Never use a project under a personal account; the next maintainer could not reach it.',
+      'Open https://console.cloud.google.com/auth/overview. If it says the app is not configured, click "Get started": App name "LVBT volunteer sign-in", User support email your @lasvegasfortransit.org address, Audience "Internal", contact email your address, agree, and click "Create".',
+      'Open https://console.cloud.google.com/auth/branding. If "App logo" is empty, upload the square LVBT logo from the "Marketing & Communications" shared drive in Google Drive (a square PNG under 1 MB; 120 by 120 pixels shows best) and click "Save".',
+      'Open https://console.cloud.google.com/auth/clients. If a client named "LVBT website" is listed, open it and copy its Client ID; for the secret, see the next value.',
+      'Otherwise click "Create client". Application type: "Web application". Name: LVBT website. Under "Authorized redirect URIs", click "Add URI" and enter exactly https://lasvegasfortransit.org/auth/google/callback. Click "Create".',
+      'Copy the Client ID and paste it here. It ends with .apps.googleusercontent.com. Keep the dialog open: the Client secret, asked for next, is shown only now.',
     ],
     neededFor: 'Staff and volunteer sign-in',
     targets: PLATFORM_TARGETS,
@@ -184,12 +290,14 @@ export const PLATFORM_SECRETS: readonly PlatformSecret[] = [
   },
   {
     name: 'LVBT_GOOGLE_OAUTH_CLIENT_SECRET',
-    purpose: 'Pairs with the Google OAuth client ID.',
+    purpose:
+      'Proves to Google that sign-in requests come from the LVBT website and not from someone reusing its client ID.',
     use: 'future',
+    skipNote: GOOGLE_SIGN_IN_SKIP,
     url: 'https://console.cloud.google.com/auth/clients',
     steps: [
-      'In the dialog from the last step, copy the Client secret.',
-      'If you closed it: click the "LVBT website" client, then "Add secret" under Client secrets, and copy the new one.',
+      'In the dialog from the last step, copy the Client secret and paste it here.',
+      'If you closed it: Google shows a secret only once. Click the "LVBT website" client, click "Add secret" under Client secrets, and copy the new one.',
     ],
     neededFor: 'Staff and volunteer sign-in',
     targets: PLATFORM_TARGETS,
@@ -197,13 +305,17 @@ export const PLATFORM_SECRETS: readonly PlatformSecret[] = [
   },
   {
     name: 'LVBT_ACCESS_TEAM_DOMAIN',
-    purpose: 'Names the Cloudflare Access team that guards the staff console.',
+    purpose:
+      'The address Cloudflare Access signs people in at, which the staff console checks every sign-in against.',
     use: 'future',
+    skipNote: STAFF_CONSOLE_SKIP,
     url: 'https://one.dash.cloudflare.com/',
     steps: [
-      'Open Cloudflare Zero Trust. The first time, it asks for a team name: use "lvbt", and choose the Free plan.',
-      'Go to Settings → Custom Pages and find "Team domain".',
-      'Copy the domain. It looks like lvbt.cloudflareaccess.com.',
+      'Sign in to Cloudflare and choose the "Las Vegas for Better Transit" account. The page that opens is Cloudflare One (Cloudflare used to call it Zero Trust). It is already set up for LVBT.',
+      'On the Overview page, find "Account details". It shows two different things: "Team domain" (lvbt.cloudflareaccess.com) and "Team name" ("Las Vegans for Better Transit", only a label). This value is the team domain.',
+      'Click the copy icon next to "Team domain" and paste it here: lvbt.cloudflareaccess.com, without https://.',
+      'Do not change the team domain with its pencil icon. Changing it breaks Access sign-in and Google sign-in until every copy of this value and the Google OAuth client are updated to match.',
+      'Only if Cloudflare ever asks you to set up Cloudflare One from scratch: type lvbt as the team domain, so it becomes lvbt.cloudflareaccess.com; type "Las Vegans for Better Transit" if it asks for a team name; choose the Zero Trust Free plan (it asks for payment details but does not charge).',
     ],
     neededFor: 'Staff console',
     targets: PLATFORM_TARGETS,
@@ -212,13 +324,25 @@ export const PLATFORM_SECRETS: readonly PlatformSecret[] = [
   },
   {
     name: 'LVBT_ACCESS_AUD',
-    purpose: 'Lets the staff console verify that Cloudflare Access signed the request.',
+    purpose:
+      "Tells the staff console which Cloudflare Access application guards it, so it accepts only that application's sign-ins.",
     use: 'future',
+    skipNote: STAFF_CONSOLE_SKIP,
     url: 'https://one.dash.cloudflare.com/',
+    prerequisite: STAFF_CONSOLE_GROUP,
     steps: [
-      'In Zero Trust, go to Access → Applications.',
-      'Click the staff.lasvegasfortransit.org application. If there is none yet, it is created by the plan "Put the staff subdomain behind Cloudflare Access"; skip this value until then.',
-      'On the "Overview" tab, copy "Application Audience (AUD) Tag".',
+      'These steps take about 20 minutes and need a Google Workspace admin. The Staff Google Group from the previous step must exist first.',
+      'Google sign-in for Cloudflare. In Cloudflare One, open Integrations → Identity providers (or press ⌘K and search "Identity providers"). If "Google Workspace" is listed, go to the next step. Otherwise follow https://developers.cloudflare.com/cloudflare-one/integrations/identity-providers/google-workspace/ with these values: the Google OAuth client is a "Web application" named "Cloudflare Access", its Authorized JavaScript origin is https://lvbt.cloudflareaccess.com and its Authorized redirect URI is https://lvbt.cloudflareaccess.com/cdn-cgi/access/callback; the Workspace domain is lasvegasfortransit.org. Click "Test" when done.',
+      'The application. In Cloudflare One, open Access controls → Applications. If "LVBT staff console" is listed, click it, open "Configure", and skip to the last step. Use exactly that name, so the next person finds it instead of making a second one.',
+      'Otherwise click "Create new application". In the "Add an application" dialog, under "Self-hosted and private", pick the "Public DNS" tab (not "Private destinations"), then click "Continue with Self-hosted and private".',
+      'Destinations: add one public hostname: Subdomain staff, Domain lasvegasfortransit.org from the dropdown, Path empty. The whole staff subdomain is the console, so no path is needed. If the page shows a "Private IPs" row, click "+ Add public hostname" and remove the empty private row.',
+      'Leave "Allow access through browser-based RDP, SSH, or VNC sessions" off.',
+      'Access policies (it says "No policy associated"): click "Create new policy". Name: Staff console members. Action: "Allow". Add one Include rule: "Google Workspace groups" with the value staff-console@lasvegasfortransit.org. Save it. If the policy opens in another tab, come back and pick it from "Add current policies". If "Google Workspace groups" is not offered, the Google sign-in step above is not finished; until it is, use an "Emails" rule listing each staff member\'s address instead, and switch to the group rule later.',
+      'Skip "Policy tester".',
+      'Authentication, on the Identity tab: turn off "Accept all available identity providers", choose "Google Workspace" in "Choose available identity providers", and turn on "Apply instant authentication". Leave "Authenticate with Cloudflare One Client" off. If Google Workspace is not in the list, the Google sign-in step above is not finished; choose "One-time PIN" for now.',
+      'Skip "Preview".',
+      'Details: Name LVBT staff console. Session Duration "24 hours" (the default). Click "Create".',
+      'Open the application\'s "Configure" page, then the "Additional settings" tab. Copy "Application Audience (AUD) Tag" (64 lowercase letters and digits) and paste it here.',
     ],
     neededFor: 'Staff console',
     targets: PLATFORM_TARGETS,
@@ -226,77 +350,97 @@ export const PLATFORM_SECRETS: readonly PlatformSecret[] = [
   },
   {
     name: 'LVBT_DISCORD_APPLICATION_ID',
-    purpose: 'Identifies the LVBT Discord application for linking and commands.',
+    purpose:
+      "Identifies LVBT's Discord app, which will link members' Discord accounts and manage their roles.",
     use: 'future',
-    url: 'https://discord.com/developers/applications',
+    skipNote: DISCORD_SKIP,
+    url: 'https://discord.com/developers/teams',
     steps: [
-      'Sign in with the Discord account that owns the LVBT server.',
-      'Open the "LVBT" application, or click "New Application", name it "LVBT" and click "Create".',
-      'On "General Information", copy the Application ID.',
+      'The app belongs to an LVBT team, not to one person: an app on a "Personal" team belongs to one account, and nobody else can manage it after that person leaves. Open https://discord.com/developers/teams while signed in to Discord (the "Teams" link is at the top right of the Developer Portal).',
+      'Discord requires two-factor authentication on your account to create or join a team. Turn it on under User Settings → My Account if Discord asks.',
+      'If "Las Vegans for Better Transit" is under "My Teams", you are already in the team; go to the next step. If the team exists but you are not in it, ask its owner or an admin to invite you from the team\'s page. If there is no team at all, click "New Team", type the name Las Vegans for Better Transit and click "Create".',
+      'Every team member can see the team\'s apps, and admins can change them, so add only trusted maintainers. Invite other maintainers as "Admin"; only the one owner can delete the team or its apps.',
+      'Give the team the LVBT logo if its page offers an icon: in Google Drive, open the shared drive "Marketing & Communications", find the square LVBT logo (a PNG at least 512 by 512 pixels), download it and upload it as the team icon. Skip this if you cannot reach that drive.',
+      'Open https://discord.com/developers/applications. If an "LVBT" app is listed under the team, click it and go to the step about the Application ID.',
+      'If LVBT already has an app on someone\'s Personal team, move it instead of making a second one: that person opens it, and at the bottom of "General Information" clicks "Transfer App to Team" and picks Las Vegans for Better Transit. This cannot be undone.',
+      'Otherwise click "+ Create" at the top, then "Create blank app" (ignore the templates). Name: LVBT. Team: "Las Vegans for Better Transit", not "Personal". Tick the box agreeing to the Discord Developer Terms of Service and Developer Policy, then click "Create".',
+      'On the app\'s "General Information" page, under "App Icon", upload the same square LVBT logo and click "Save Changes". Discord shows this icon on the bot and on the "Connect Discord" screen.',
+      'On the same page, copy the Application ID (a long number) and paste it here. It is not secret; bootstrap stores it with the others so everything is in one place.',
     ],
     neededFor: 'Discord linking and roles',
     targets: PLATFORM_TARGETS,
   },
   {
     name: 'LVBT_DISCORD_PUBLIC_KEY',
-    purpose: 'Verifies that slash-command requests came from Discord.',
+    purpose: 'Lets the site check that a Discord command request really came from Discord.',
     use: 'future',
+    skipNote: DISCORD_SKIP,
     url: 'https://discord.com/developers/applications',
-    steps: ['In the same application, on "General Information", copy the Public Key.'],
+    steps: [
+      'Skip this if you skipped the Application ID.',
+      'In the LVBT app, on "General Information", copy the Public Key (a long string of letters and numbers) and paste it here. It is not secret either.',
+    ],
     neededFor: 'Discord link command',
     targets: PLATFORM_TARGETS,
   },
   {
     name: 'LVBT_DISCORD_CLIENT_SECRET',
-    purpose: 'Completes the "Connect Discord" sign-in.',
+    purpose: 'Lets the site finish "Connect Discord", when a member links their Discord account.',
     use: 'future',
+    skipNote: DISCORD_SKIP,
     url: 'https://discord.com/developers/applications',
     steps: [
-      'In the same application, open "OAuth2" on the left.',
-      'Under "Redirects", click "Add Redirect", enter https://lasvegasfortransit.org/account/discord/callback and click "Save Changes".',
-      'Under "Client Secret", click "Reset Secret", confirm, and copy it.',
+      'Skip this if you skipped the Application ID.',
+      'In the LVBT app, open "OAuth2" on the left.',
+      'Under "Client Secret", click "Reset Secret", confirm, copy it and paste it here. This one is secret: treat it like a password. Discord shows it only once.',
+      'Resetting it again later makes the old one stop working, and "Connect Discord" fails until you store the new one with `pnpm bootstrap --phase secrets --rotate LVBT_DISCORD_CLIENT_SECRET`.',
     ],
     neededFor: 'Discord linking',
     targets: PLATFORM_TARGETS,
   },
   {
     name: 'LVBT_DISCORD_BOT_TOKEN',
-    purpose: 'Grants and removes LVBT-managed roles in the server.',
+    purpose: "Lets LVBT's Discord bot give and remove LVBT-managed roles in the server.",
     use: 'future',
+    skipNote: DISCORD_SKIP,
     url: 'https://discord.com/developers/applications',
     steps: [
-      'In the same application, open "Bot" on the left.',
-      'Turn on "Server Members Intent" and click "Save Changes".',
-      'Click "Reset Token", confirm, and copy the token.',
+      'Skip this if you skipped the Application ID.',
+      'In the LVBT app, open "Bot" on the left.',
+      'Click "Reset Token", confirm, copy the token and paste it here. This one is secret: treat it like a password. Discord shows it only once.',
+      'Resetting it again later makes the old one stop working, and role changes stop until you store the new one with `pnpm bootstrap --phase secrets --rotate LVBT_DISCORD_BOT_TOKEN`.',
     ],
     neededFor: 'Discord roles',
     targets: PLATFORM_TARGETS,
   },
   {
     name: 'LVBT_DISCORD_GUILD_ID',
-    purpose: 'Names the LVBT Discord server.',
+    purpose: "Tells the site which Discord server is LVBT's.",
     use: 'future',
+    skipNote: DISCORD_SKIP,
     url: 'https://discord.com/channels/@me',
     steps: [
-      'In Discord, open User Settings (the gear by your name) → Advanced, and turn on "Developer Mode".',
-      'Right-click the LVBT server icon on the left and click "Copy Server ID".',
+      'Skip this if you skipped the Application ID.',
+      'In the Discord app, open User Settings (the gear by your name) → Advanced, and turn on "Developer Mode".',
+      'Right-click the LVBT server icon on the left, click "Copy Server ID" (a long number) and paste it here. It is not secret.',
     ],
     neededFor: 'Discord roles',
     targets: PLATFORM_TARGETS,
   },
   {
     name: 'LVBT_GOOGLE_SERVICE_ACCOUNT_KEY',
-    purpose: 'Creates volunteer Workspace accounts and manages Google Group membership.',
+    purpose:
+      'Lets the site create volunteer Google Workspace accounts and manage Google Group membership.',
     use: 'future',
     url: 'https://console.cloud.google.com/iam-admin/serviceaccounts',
     steps: [
-      'Choose the LVBT project at the top of the page.',
+      'In the project picker at the top, choose "LVBT Access", the LVBT project under the lasvegasfortransit.org organization.',
       'Turn on the Admin SDK: open https://console.cloud.google.com/apis/library/admin.googleapis.com and click "Enable".',
-      'Back on Service Accounts, click "Create service account", name it "lvbt-website-admin", click "Create and continue", skip roles, and click "Done".',
+      'Back on Service Accounts, click "Create service account", name it lvbt-website-admin, click "Create and continue", skip roles, and click "Done".',
       'Click the new account. On "Details", copy the "Unique ID" (a long number).',
       'Open "Keys" → "Add key" → "Create new key" → JSON → "Create". A .json file downloads.',
       'Open https://admin.google.com/ac/owl/domainwidedelegation → "Add new". Client ID: the Unique ID. OAuth scopes: https://www.googleapis.com/auth/admin.directory.user,https://www.googleapis.com/auth/admin.directory.group. Click "Authorize".',
-      'Open the downloaded .json file in a text editor, select all, copy, and paste it here. Then delete the file.',
+      'Open the downloaded .json file in a text editor, select all, copy, and paste it here. Then delete the file; never put it in the repository.',
     ],
     neededFor: 'Volunteer management',
     targets: PLATFORM_TARGETS,
@@ -305,7 +449,7 @@ export const PLATFORM_SECRETS: readonly PlatformSecret[] = [
   },
   {
     name: 'LVBT_GOOGLE_ADMIN_SUBJECT',
-    purpose: 'The Workspace admin the service account acts as.',
+    purpose: 'Names the Workspace super admin whose permissions the service account acts with.',
     use: 'future',
     url: 'https://admin.google.com/ac/users',
     steps: [
@@ -320,13 +464,13 @@ export const PLATFORM_SECRETS: readonly PlatformSecret[] = [
   },
   {
     name: 'LVBT_GIVEBUTTER_API_KEY',
-    purpose: 'Reads donations so staff see giving alongside everything else.',
+    purpose: 'Lets the site read donations so staff can see giving next to everything else.',
     use: 'future',
     url: 'https://givebutter.com/dashboard',
     steps: [
-      'Sign in to Givebutter as an Admin.',
+      'Sign in to Givebutter as an Admin of the LVBT account.',
       'Go to Settings → Integrations → API Keys.',
-      'Click "Create New API Key", name it "LVBT website", and copy the key. It is shown only once.',
+      'Click "Create New API Key", name it "LVBT website", copy the key and paste it here. It is shown only once.',
     ],
     neededFor: 'Donor support',
     targets: PLATFORM_TARGETS,

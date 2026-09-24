@@ -224,7 +224,7 @@ async function runPhaseById(
     case 'domain':
       return runDomainPhase(projectRoot, args.doctorMode);
     case 'secrets':
-      return runSecretsPhase(projectRoot, args.doctorMode, { rotate: args.rotate });
+      return runSecretsPhase(projectRoot, args.doctorMode, { rotate: args.rotate, state });
   }
 }
 
