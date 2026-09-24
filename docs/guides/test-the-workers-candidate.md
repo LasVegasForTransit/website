@@ -1,6 +1,6 @@
 # Test the Workers candidate
 
-The Workers candidate runs beside the Pages production site. These checks establish equivalence without changing DNS or the production route.
+A candidate is a version of the production Worker that receives a versioned preview URL before deployment. It uses the production bindings, so browser tests use non-destructive data. The public hostnames stay on the previously deployed version until candidate checks pass.
 
 ## Check locally
 
@@ -31,12 +31,13 @@ Under the `worker-preview` environment's **Environment secrets**, click **Add en
 
 Set the repository variable `CLOUDFLARE_WORKERS_PREVIEW_ENABLED` to `true` after `pnpm worker:upload --env preview` succeeds for `lvbt-website-preview`, the separate Worker that pull request previews use. Re-run the pull request workflow and open the `Worker candidate` link in its comment.
 
-The preview workflow compares the Worker with the Pages production origin, then runs the complete Playwright suite against the Worker URL. The same checks run locally against an uploaded candidate:
+The preview workflow runs the complete Playwright suite against the Worker URL. The same checks run locally against an uploaded candidate:
 
 ```sh
 pnpm worker:test:live \
   --pages https://lasvegasfortransit.org \
-  --worker https://<version>-lvbt-website-preview.<account>.workers.dev
+  --worker https://<version>-lvbt-website-preview.<account>.workers.dev \
+  --skip-api
 PLAYWRIGHT_BASE_URL=https://<version>-lvbt-website-preview.<account>.workers.dev \
   pnpm worker:test:browser
 ```
@@ -47,43 +48,28 @@ Inspect the navigation at phone and desktop widths. Check the browser console, r
 
 Create a separate `worker-candidate` GitHub environment the same way: **Settings → Environments → New environment**, type `worker-candidate`, **Configure environment**. It needs its own `CLOUDFLARE_WORKERS_API_TOKEN` environment secret — create a second custom token exactly as above (**Account · Workers Scripts · Edit**, scoped to the LVBT account; name it `lvbt-website candidate (GitHub Actions)` so it reads differently from the preview one in the token list) and add it under this environment's **Environment secrets**. It reads the same `CLOUDFLARE_ACCOUNT_ID` repository variable created above — do not make a second copy. Set the repository variable `CLOUDFLARE_WORKERS_CANDIDATE_ENABLED` to `true` only after the preview workflow passes.
 
-Each successful Pages production run then starts `Deploy Worker candidate` for the same commit. The
-workflow uploads a version with the stable `candidate` preview alias, compares it with Pages, and
-runs the browser suite. It does not attach a route. Use **Run workflow** on `main` to repeat the check
-without publishing Pages again.
+Each successful `Deploy production` build starts `Deploy Worker candidate` for the same commit. The workflow uploads a version with the stable `candidate` preview alias and runs the browser suite. With `LVBT_WORKERS_PRODUCTION_ENABLED=true`, it deploys that version only after confirming that `main` still points at the tested commit. Use **Run workflow** on `main` to repeat the release without another build trigger.
 
-Copy the commit, version, and preview URL from the workflow summary into the cutover change.
+Record the commit, version, and preview URL from the workflow summary with the release.
 
-## Switch production
+## Check production
 
-Confirm the current `main` commit has a passing candidate run and record the Pages deployment ID.
-Keep the Pages custom domains and DNS records in place during the first switch. Set the repository
-variable `LVBT_WORKERS_PRODUCTION_ENABLED` to `true`, then run `Deploy Worker candidate` on `main`.
-The workflow deploys the verified Worker version and compares it with the production hostname.
+After `Deploy Worker candidate` succeeds, compare `https://lasvegasfortransit.org` with the version URL recorded in its workflow summary. Check `https://www.lasvegasfortransit.org` redirects to the apex over valid TLS. Follow a content link, refresh a nested page, inspect an unknown path, and check an event calendar file. Confirm that production includes the Cloudflare Web Analytics beacon while version previews do not.
 
-Attach `lasvegasfortransit.org/*` and `www.lasvegasfortransit.org/*` to `lvbt-website` as Worker
-routes. Check both hostnames over HTTPS, including `/`, a content page, an unknown path, redirects,
-calendar files, and the intake endpoints. Confirm analytics appears on the production hostname and
-not on the version preview. Keep the Pages project available as the fallback until these checks
-pass. Remove either route to send that hostname back to Pages if the Worker fails live checks.
-
-After the route overlay proves stable, replace the Pages CNAMEs and domain attachments with Worker
-custom domains. Check TLS and the same HTTP contract again before retiring the Pages deployment.
-Cloudflare requires the Pages CNAME to be removed before a Worker custom domain can use that
-hostname.
+The `lvbt-website` Worker owns both public hostnames as custom domains. The Pages project has no custom-domain attachment. Its `lvbt-website-5zh.pages.dev` address remains available for emergency rollback; an ordinary release regression rolls back the Worker version without changing DNS. The [deployment pipeline](../reference/deployment-pipeline.md#rollback) records the recovery path.
 
 ## Record acceptance
 
-Record the commit, Worker version, Pages deployment, preview URL, and check time in the cutover change. Compare these behaviors before attaching the production hostname:
+Record the commit, Worker version, preview URL, and check time in the release record. Compare these behaviors before and after deployment:
 
-| Surface               | Required result                                               |
-| --------------------- | ------------------------------------------------------------- |
-| `/` and content pages | Status, HTML, canonical metadata, and navigation match Pages  |
-| unknown path          | Branded `404.html` with status 404                            |
-| `_headers`            | Security and cache headers match Pages                        |
-| `_redirects`          | Every permanent redirect returns 301 to the same location     |
-| `/events/*.ics`       | `text/calendar; charset=utf-8`                                |
-| `/api/*`              | Status, CORS, validation, and downstream behavior match Pages |
-| analytics             | Production hostname included; preview hostname excluded       |
+| Surface               | Required result                                                       |
+| --------------------- | --------------------------------------------------------------------- |
+| `/` and content pages | Status, HTML, canonical metadata, and navigation match the candidate  |
+| unknown path          | Branded `404.html` with status 404                                    |
+| `_headers`            | Security and cache headers match the candidate                        |
+| `_redirects`          | Every permanent redirect returns 301 to the same location             |
+| `/events/*.ics`       | `text/calendar; charset=utf-8`                                        |
+| `/api/*`              | Status, CORS, validation, and downstream behavior match the candidate |
+| analytics             | Production hostname included; preview hostname excluded               |
 
-Keep the Pages deployment and its hostname attachment intact until the post-cutover production check passes.
+Keep the previous Worker version and the Pages fallback available until the production check passes.

@@ -60,13 +60,13 @@ The email's "Not you? Remove this email" link is signed and lasts 30 days. Openi
 
 ## Troubleshooting
 
-| Symptom                                      | Cause                                                                | Fix                                                                                                                       |
-| -------------------------------------------- | -------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
-| "We couldn't finish joining you just now"    | Beehiiv refused the subscription, or its secrets are missing         | Check the Cloudflare Pages function logs for "Beehiiv subscribe failed" and run `pnpm bootstrap --doctor --phase secrets` |
-| Every join shows that message                | The `PLATFORM_DB` binding or `LVBT_LINK_SIGNING_SECRET` is missing   | The logs say which; the binding is set on the Pages project, the secret through `pnpm bootstrap --phase secrets`          |
-| No confirmation email                        | `LVBT_RESEND_API_KEY` isn't set, or the Resend domain isn't verified | Set the key; until then Beehiiv's welcome email is sent instead                                                           |
-| The region step says it has expired          | More than an hour passed, or cookies are blocked                     | The person is already a member; they can set their region later from their account                                        |
-| A join returns a server error after a deploy | A migration wasn't applied                                           | Run the migrations in the [schema](../../platform/storage/migrations/schema.md)                                           |
+| Symptom                                      | Cause                                                                | Fix                                                                                                                   |
+| -------------------------------------------- | -------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------- |
+| "We couldn't finish joining you just now"    | Beehiiv refused the subscription, or its secrets are missing         | Check the `lvbt-website` Worker logs for "Beehiiv subscribe failed" and run `pnpm bootstrap --doctor --phase secrets` |
+| Every join shows that message                | The `PLATFORM_DB` binding or `LVBT_LINK_SIGNING_SECRET` is missing   | The logs say which; the binding is set in `wrangler.jsonc`, the secret through `pnpm bootstrap --phase secrets`       |
+| No confirmation email                        | `LVBT_RESEND_API_KEY` isn't set, or the Resend domain isn't verified | Set the key; until then Beehiiv's welcome email is sent instead                                                       |
+| The region step says it has expired          | More than an hour passed, or cookies are blocked                     | The person is already a member; they can set their region later from their account                                    |
+| A join returns a server error after a deploy | A migration wasn't applied                                           | Run the migrations in the [schema](../../platform/storage/migrations/schema.md)                                       |
 
 ## Related
 

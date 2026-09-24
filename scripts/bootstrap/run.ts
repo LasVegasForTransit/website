@@ -10,6 +10,8 @@
  */
 
 import { intro, log, note, outro } from '@clack/prompts';
+import { existsSync, readFileSync } from 'node:fs';
+import path from 'node:path';
 import pc from 'picocolors';
 import { detectOs } from './lib/os.js';
 import { loadEnvLocal } from './lib/load-env.js';
@@ -27,6 +29,8 @@ import { runEnvPhase } from './phases/env.js';
 import { runRepoPhase } from './phases/repo.js';
 import { runDeployPhase } from './phases/deploy.js';
 import { runDomainPhase } from './phases/domain.js';
+import { runWorkerDeployPhase } from './phases/worker-deploy.js';
+import { runWorkerDomainPhase } from './phases/worker-domain.js';
 import { runSecretsPhase } from './phases/secrets.js';
 
 interface PhaseSpec {
@@ -72,14 +76,14 @@ const PHASES: readonly PhaseSpec[] = [
   },
   {
     id: 'deploy',
-    title: 'Cloudflare Pages',
-    what: 'Checking that the Pages project exists and has a production deployment. It creates the project and pushes the first build only when they are missing.',
+    title: 'Production deployment',
+    what: 'Checking the production deployment and deploying the first build only when it is missing.',
     local: false,
   },
   {
     id: 'domain',
     title: 'Custom domain',
-    what: 'Checking whether your domain points at the Pages project, and attaching and wiring only the hosts that are missing.',
+    what: 'Checking the production hostnames and attaching only those that are missing.',
     local: false,
   },
   {
@@ -100,7 +104,7 @@ export interface CliArgs {
   resume: boolean;
   localOnly: boolean;
   phase: PhaseId | null;
-  /** Push ./dist to Pages production even when a production deployment exists. */
+  /** Deploy this checkout even when a production deployment exists. */
   redeploy: boolean;
   /** Secret names to replace with a new value, even though they are already set. */
   rotate: readonly string[];
@@ -232,12 +236,26 @@ async function runPhaseById(
     case 'repo':
       return runRepoPhase(projectRoot, args.doctorMode);
     case 'deploy':
-      return runDeployPhase(projectRoot, args.doctorMode, { redeploy: args.redeploy });
+      return productionHosting(projectRoot) === 'worker'
+        ? runWorkerDeployPhase(projectRoot, args.doctorMode, { redeploy: args.redeploy })
+        : runDeployPhase(projectRoot, args.doctorMode, { redeploy: args.redeploy });
     case 'domain':
-      return runDomainPhase(projectRoot, args.doctorMode);
+      return productionHosting(projectRoot) === 'worker'
+        ? runWorkerDomainPhase(projectRoot, args.doctorMode)
+        : runDomainPhase(projectRoot, args.doctorMode);
     case 'secrets':
       return runSecretsPhase(projectRoot, args.doctorMode, { rotate: args.rotate, state });
   }
+}
+
+function productionHosting(projectRoot: string): 'worker' | 'pages' {
+  const file = path.join(projectRoot, 'scripts', 'bootstrap', 'config', 'production-hosting.json');
+  if (!existsSync(file)) throw new UsageError(`Missing hosting configuration: ${file}`);
+  const value = JSON.parse(readFileSync(file, 'utf8')) as { mode?: unknown };
+  if (value.mode !== 'worker' && value.mode !== 'pages') {
+    throw new UsageError(`${file} must declare mode as worker or pages.`);
+  }
+  return value.mode;
 }
 
 function isLocalPhase(phaseId: PhaseId): boolean {
@@ -325,6 +343,7 @@ export interface BootstrapOutcome {
 }
 
 export async function runBootstrap(args: CliArgs, projectRoot: string): Promise<BootstrapOutcome> {
+  productionHosting(projectRoot);
   // Hydrate process.env from .env.local so persisted choices (e.g.
   // CLOUDFLARE_ACCOUNT_ID) survive across runs.
   loadEnvLocal(projectRoot);

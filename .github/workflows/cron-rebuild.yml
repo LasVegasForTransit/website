@@ -7,9 +7,8 @@ name: cron-rebuild
 #
 
 # Cadence: twice daily at 02:00 and 14:00 UTC — roughly 7am and 7pm PT
-# during PDT, 6am and 6pm during PST. 60 builds/month, well under
-# Cloudflare Pages Free's 500/month ceiling. Tighten the cron if events
-# start changing more often than morning/evening.
+# during PDT, 6am and 6pm during PST. Tighten the cron if events start
+# changing more often than morning/evening.
 #
 # Pipeline doc: docs/explanation/events-pipeline.md
 

@@ -19,4 +19,4 @@ These are intentional, considered documents — meaning each was deliberately wr
 1. **Required:** read [explanation/voice-and-tone.md](../explanation/voice-and-tone.md) before drafting, so your edit matches the house voice.
 2. **Required when you touch numbers** (ridership, dates, dollar amounts): cross-reference [reference/key-facts.md](../reference/key-facts.md) — the same numbers anchor multiple files, so they must stay in sync.
 3. Commit messages should explain **why** the change was made, not what changed.
-4. Push to `main`. Cloudflare Pages deploys in ~60 seconds.
+4. Push to `main`. GitHub Actions builds the site and deploys the verified Worker version.

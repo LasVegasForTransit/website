@@ -17,9 +17,9 @@ to** — not a spreadsheet, and not Notion.
 > [Beehiiv](./glossary.md#beehiiv) (our newsletter platform) account with an
 > API key, a Notion workspace where you can create a connection (for staff
 > follow-up, until the staff console replaces it — see
-> [below](#staff-follow-up-in-notion)), and access to the Cloudflare Pages
-> project to set secrets. The fastest setup path (`pnpm bootstrap --phase secrets`)
-> is described under [Required Cloudflare Pages secrets](#required-cloudflare-pages-secrets).
+> [below](#staff-follow-up-in-notion)), and access to the LVBT Cloudflare
+> account to set Worker secrets. The fastest setup path (`pnpm bootstrap --phase secrets`)
+> is described under [Required Cloudflare secrets](#required-cloudflare-secrets).
 
 ## How someone joins
 
@@ -102,12 +102,12 @@ the request shape, every response you might get back, and a `curl` command you
 can use to test it before wiring up the real form. You do not need to touch
 any code to connect a new form tool.
 
-## Required Cloudflare Pages secrets
+## Required Cloudflare secrets
 
 The fastest path is `pnpm bootstrap --phase secrets` (see [platform
 secrets](./platform-secrets.md)). It checks which of these the live site
-already has, asks for each missing one once, and stores it on the Pages
-project, the Worker and the `worker-candidate` GitHub environment. It never
+already has, asks for each missing one once, and stores it on the production
+Worker, the Pages fallback and the `worker-candidate` GitHub environment. It never
 replaces a value that is already stored. For `LVBT_MEMBERSHIP_INTAKE_SECRET`
 it asks for the value the Apps Script already uses, so the form keeps
 working.
@@ -147,7 +147,7 @@ form to the intake pipeline](../guides/connect-the-membership-form.md). The
 short version: the form must have **Collect email addresses** on, the script
 in `scripts/google-apps/membership-intake.gs` must be installed as an **On
 form submit** trigger, and its `LVBT_MEMBERSHIP_INTAKE_SECRET` property must
-equal the Pages secret.
+equal the production Worker secret.
 
 If the endpoint returns a non-2xx response, the script throws. Apps Script
 records the failed execution and sends the trigger owner the standard failure
@@ -182,7 +182,7 @@ below and saves them in `.env.local` on your machine.
    `LVBT_NOTION_PARENT_PAGE_ID`.
 
 > The new Notion Developer Platform (May 2026) adds an `ntn` CLI and hosted
-> Workers, but a server that writes to Notion — our Cloudflare Pages Function
+> Workers, but a server that writes to Notion — the site's compiled API function
 > — still authenticates with a connection access token, so these steps don't
 > change.
 
@@ -308,14 +308,12 @@ CLI, which cannot open its local IPC socket in restricted sandboxes.
 Apps Script treats any non-2xx response as a failed execution and emails the
 trigger owner. The status in that email says what went wrong:
 
-- **`503 service_unavailable`**: a Pages secret is missing. Nothing reached
+- **`503 service_unavailable`**: a Worker secret is missing. Nothing reached
   Beehiiv or Notion, and every submission fails the same way until it is
-  fixed. Set the secrets named in `missing` on the **Production** environment
-  of the Pages project that `Deploy production` targets (its account is
-  `CLOUDFLARE_ACCOUNT_ID` in the repo's `production` GitHub environment),
-  redeploy so they bind, then replay as below.
+  fixed. Run `pnpm bootstrap --phase secrets` to set the names in `missing`
+  on the production Worker, deploy the resulting Worker version, then replay as below.
 - **`401 unauthorized`**: the Apps Script `LVBT_MEMBERSHIP_INTAKE_SECRET`
-  property no longer matches the Pages secret.
+  property no longer matches the Worker secret.
 - **`502`**: Beehiiv or Notion rejected the request; the body says which. If
   Beehiiv succeeded and Notion failed, the person is subscribed and in the
   person record, but has no Notion follow-up page. Replay fixes that too.

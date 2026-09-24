@@ -1,18 +1,16 @@
 # Bootstrap CLI reference
 
-The bootstrap CLI is the one command that sets up the whole project for you. It exists so a new contributor doesn't have to run a dozen manual steps (install tools, create accounts, wire up GitHub and Cloudflare) by hand and in the right order — it does them in sequence and checks what's already done. It's a multi-phase CLI (command-line tool, run in your terminal) written in TypeScript (JavaScript with type labels — see [glossary](./glossary.md#typescript)) that walks the LVBT website from a fresh checkout to a deployed site. Source: `scripts/bootstrap/`.
+`pnpm bootstrap` checks the local toolchain, the website repository, and the production Cloudflare resources in sequence. It provisions missing resources after confirmation and leaves existing deployments alone. The implementation lives in `scripts/bootstrap/`.
 
 For the narrative walk-through, see [tutorials/first-time-setup.md](../tutorials/first-time-setup.md).
 
 ## Before you start
 
-The full setup (through the `deploy` and `domain` phases) needs a few accounts and
-tools. The `install` and `auth` phases check these for you, but it's smoother to
-have them ready:
+The remote phases require access to the LVBT GitHub organization and Cloudflare account. The `install` and `auth` phases check the required tools and sign-ins:
 
 - A **GitHub account** with an [SSH key set up](./glossary.md#ssh) — the `repo`
   phase pushes over SSH.
-- A **Cloudflare account** — the `deploy` and `domain` phases use it.
+- Access to the **LVBT Cloudflare account** — the `deploy` and `domain` phases use it.
 - [`gh`](./glossary.md#gh) (GitHub's CLI) and [`wrangler`](./glossary.md#wrangler)
   (Cloudflare's CLI), installed and logged in.
 
@@ -35,34 +33,34 @@ pnpm bootstrap --phase secrets --rotate LVBT_SIGN_IN_SECRET   # replace secrets 
 
 ## Running it again is safe
 
-The bootstrap is [idempotent](./glossary.md#idempotent): every step checks what already exists, then does only what is missing. You can run it on a finished setup at any time. It changes nothing and reports every phase as ready. In particular, a re-run:
+The bootstrap is [idempotent](./glossary.md#idempotent): each phase reads current state before making a change. On a finished setup, a second run reports every phase as ready. It:
 
 - never asks for, generates or replaces a secret that is already stored;
-- never creates a second Pages project, domain attachment or DNS record;
+- never creates a duplicate Worker deployment or domain attachment;
 - never pushes the site to production again;
 - never rewrites `.env.local` or `wrangler.jsonc` when nothing in them changes.
 
 Here is what each phase checks, and what it does only when something is missing:
 
-| Phase       | Checks first                                                                  | Changes only when missing                                                  |
-| ----------- | ----------------------------------------------------------------------------- | -------------------------------------------------------------------------- |
-| `install`   | Whether each tool is installed and new enough                                 | Offers to install the missing tool                                         |
-| `auth`      | `gh auth status` and `wrangler whoami`                                        | Offers to sign in                                                          |
-| `workspace` | Nothing remote                                                                | Always runs `pnpm install --frozen-lockfile` and a `pnpm build` smoke test |
-| `env`       | Which `.env.local` values are still empty or placeholders                     | Asks only for those, and writes only the ones you fill in                  |
-| `repo`      | Whether `origin` is already set                                               | Creates or connects the GitHub repository and pushes                       |
-| `deploy`    | Whether the Pages project exists and has a production deployment              | Creates the project and pushes `./dist` as its first deployment            |
-| `domain`    | Which hosts are attached to the Pages project, and which CNAMEs already exist | Attaches only unattached hosts and writes only missing CNAMEs              |
-| `secrets`   | Which secrets each target already has                                         | Asks for each missing secret once and stores it only where it is missing   |
+| Phase       | Checks first                                              | Changes only when missing                                                  |
+| ----------- | --------------------------------------------------------- | -------------------------------------------------------------------------- |
+| `install`   | Whether each tool is installed and new enough             | Offers to install the missing tool                                         |
+| `auth`      | `gh auth status` and `wrangler whoami`                    | Offers to sign in                                                          |
+| `workspace` | Nothing remote                                            | Always runs `pnpm install --frozen-lockfile` and a `pnpm build` smoke test |
+| `env`       | Which `.env.local` values are empty or placeholders       | Asks only for those, and writes only the ones you fill in                  |
+| `repo`      | Whether `origin` is already set                           | Creates or connects the GitHub repository and pushes                       |
+| `deploy`    | Whether `lvbt-website` has a production Worker deployment | Builds and deploys the Worker after confirmation                           |
+| `domain`    | Whether apex and `www` route to the production Worker     | Attaches missing Worker custom domains after confirmation                  |
+| `secrets`   | Which secrets each target already has                     | Asks for each missing secret once and stores it only where it is missing   |
 
 Replacing something that already exists is always your explicit choice, never a default:
 
-- `--redeploy` builds the site and pushes `./dist` to the Pages production branch even though a production deployment exists. Day to day you don't need it: every push to `main` deploys through the "Deploy production" GitHub Actions workflow.
+- `--redeploy` builds and deploys this checkout to the production Worker even when it already has a deployment. Routine releases go through the GitHub Actions pipeline instead.
 - `--rotate NAME[,NAME]` replaces the named secrets everywhere they are stored. See [replace a secret on purpose](./platform-secrets.md#replace-a-secret-on-purpose).
 
 ### Picking up after a partial run
 
-If a run stops partway, because you pressed Ctrl+C, skipped a secret, or a command failed, run it again. Each phase checks the real state of GitHub, Cloudflare and your files, not a record of what it meant to do, so the next run does exactly the work that is left. For example, if the deploy failed after the project was created, the next run sees the project, does not create it again, and only pushes the deployment. If you skipped one secret, the next run asks for that secret alone.
+If a run stops partway, run it again. Each phase checks GitHub, Cloudflare, or local state before acting. A failed Worker deployment is retried without reattaching domains; a skipped secret is asked for on the next run.
 
 The summary at the end lists any phase that is not finished as `partial`, with the `pnpm bootstrap --phase <id>` command that finishes it.
 
@@ -77,40 +75,34 @@ The setup runs as a sequence of _phases_ — self-contained steps that each get 
 | `workspace` | Runs `pnpm install --frozen-lockfile` (installs the exact pinned versions from the [lockfile](./glossary.md#lockfile); fails instead of updating it) and a `pnpm build` smoke test |
 | `env`       | Creates `.env.local` from `.env.example`; prompts for values that are still placeholders. These are for your machine only                                                          |
 | `repo`      | Creates a GitHub repo via `gh repo create` and wires `origin` to the [SSH URL](./glossary.md#ssh)                                                                                  |
-| `deploy`    | Creates the Cloudflare Pages project and its first production deployment, if they don't exist                                                                                      |
-| `domain`    | Attaches the [apex](./glossary.md#apex-domain) domain and any extra hosts to the Pages project; creates missing [DNS](./glossary.md#dns) records via the Cloudflare API            |
-| `secrets`   | Reports every server-side secret missing from the Worker, Pages and GitHub, asks for each once, and stores it everywhere — see [platform secrets](./platform-secrets.md)           |
+| `deploy`    | Checks for a production `lvbt-website` Worker deployment and builds and deploys one when absent                                                                                    |
+| `domain`    | Confirms that the [apex](./glossary.md#apex-domain) and `www` hostnames belong to that Worker; attaches missing custom domains through the Cloudflare API                          |
+| `secrets`   | Reports server-side secrets missing from the Worker, Pages fallback and GitHub, asks for each once, and stores it where needed — see [platform secrets](./platform-secrets.md)     |
 
 The `env` phase never touches production. The server-side values in `.env.local` (Beehiiv, Notion, and a random intake secret for testing) are only for `pnpm dev` and local scripts. The live site gets its secrets from the `secrets` phase, and its public `PUBLIC_LVBT_*` values from GitHub Actions variables (the repository's Settings → Secrets and variables → Actions → Variables tab).
 
-### The DNS token the domain phase may ask for
+### Production domains
 
-Wrangler's sign-in cannot write DNS records. Only when a CNAME record is missing, the domain phase asks for a Cloudflare API token that can:
+The checked-in `scripts/bootstrap/config/production-hosting.json` selects Worker hosting. Bootstrap stops before any phase if this file is missing or invalid. The domain phase checks `lasvegasfortransit.org` and `www.lasvegasfortransit.org` through Cloudflare's Worker-domain API. It leaves a hostname owned by another Worker untouched. Cloudflare creates the DNS record and certificate when a missing custom domain is attached; the phase never writes a Pages CNAME.
 
-1. Open `https://dash.cloudflare.com/<account-id>/api-tokens` (Manage Account → API Tokens for the LVBT account, "Las Vegans for Better Transit"). The phase opens it for you.
-2. Click **Create Token**. Next to **Edit zone DNS**, click **Use template**.
-3. Name it `lasvegasfortransit.org DNS (bootstrap)`.
-4. Keep the one permission row the template adds: **Zone · DNS · Edit**.
-5. Under Zone Resources, choose **Include · Specific zone · lasvegasfortransit.org**.
-6. Click **Continue to summary**, then **Create Token**, and copy the token. Cloudflare shows it only once.
-7. Paste it at the prompt. It is saved as `CLOUDFLARE_API_TOKEN` in `.env.local` on your machine (readable only by you, never committed), so later runs reuse it. It is not the deploy token GitHub Actions uses, and bootstrap never passes it to wrangler.
+The prior Pages deployment remains reachable at its `pages.dev` address for emergency recovery. Restoring its public hostnames is a separate, deliberate [rollback operation](./deployment-pipeline.md#rollback).
 
 ## State file
 
 The bootstrap keeps a record of its last run in `.lvbt/dev-readiness.json` (a local, git-ignored file in the `.lvbt/` folder). It holds per-phase status (`complete | partial | failed | skipped`), per-tool readiness, setup steps you confirmed that bootstrap cannot check for itself, such as creating the staff console's Google Group, so it asks about each of those only once, and the last value it stored for each platform secret that is not a credential (an ID, a domain or a public key), so the `secrets` phase can show it back. It never holds a credential. `--resume` reads this file and skips phases marked `complete`. The file is rewritten at the end of every run with fresh timestamps; that is expected, because it is a run record, not configuration.
 
-`.env.local` doubles as the cross-phase persistence layer for values that need to survive between phases (e.g. `CLOUDFLARE_PAGES_PROJECT`, `CLOUDFLARE_ACCOUNT_ID`). `run.ts` hydrates `process.env` from it at startup, and the bootstrap writes to it only when a value actually changes.
+`.env.local` keeps local values that survive between phases, including the selected `CLOUDFLARE_ACCOUNT_ID`. `run.ts` loads it at startup and writes a value only when it changes. Hosting mode comes from the tracked production-hosting configuration, not from a local environment variable.
 
 ## Defaults
 
-| Knob                     | Default                                   | Override                                     |
-| ------------------------ | ----------------------------------------- | -------------------------------------------- |
-| GitHub repo              | `<parent-dir>/<dir>` (filesystem-derived) | Prompt accepts `<owner>/<name>`              |
-| GitHub visibility        | public                                    | Prompt                                       |
-| Cloudflare Pages project | `lvbt-website`                            | `CLOUDFLARE_PAGES_PROJECT` env var or prompt |
-| Production branch        | `main`                                    | `CLOUDFLARE_PAGES_BRANCH` env var or prompt  |
-| Apex domain              | `lasvegasfortransit.org`                  | `LVBT_DOMAIN` env var or prompt              |
-| Cloudflare account       | auto-selected if only one                 | `CLOUDFLARE_ACCOUNT_ID` env var or prompt    |
+| Knob               | Default                                   | Override                                           |
+| ------------------ | ----------------------------------------- | -------------------------------------------------- |
+| GitHub repo        | `<parent-dir>/<dir>` (filesystem-derived) | Prompt accepts `<owner>/<name>`                    |
+| GitHub visibility  | public                                    | Prompt                                             |
+| Production Worker  | `lvbt-website`                            | Set in `scripts/bootstrap/lib/defaults.ts`         |
+| Production branch  | `main`                                    | GitHub Actions workflow                            |
+| Public hostnames   | apex and `www.lasvegasfortransit.org`     | Set in `scripts/bootstrap/phases/worker-domain.ts` |
+| Cloudflare account | auto-selected if only one                 | `CLOUDFLARE_ACCOUNT_ID` env var or prompt          |
 
 ## Adding a new phase
 

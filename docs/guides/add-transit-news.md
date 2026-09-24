@@ -73,7 +73,7 @@ Claude will search, show you a list, ask for confirmation, then run the script o
 ## Path 3 — Notion form (anyone, no CLI)
 
 A public Notion form where anyone — volunteers, the public — pastes an article
-URL. A Cloudflare Pages Function (a small backend script that runs on Cloudflare — see [glossary](../reference/glossary.md#pages-function)) (`/api/transit-news-intake`) enriches the
+URL. An API function compiled into the production Worker (`/api/transit-news-intake`) enriches the
 submission automatically: it fetches the URL and fills in headline, date,
 publication, topics, location, and the full article body.
 
@@ -104,7 +104,7 @@ A _webhook_ is an automated message one service sends another when something hap
 
 - Run `pnpm bootstrap --phase secrets`. If `LVBT_TRANSIT_NEWS_INTAKE_SECRET`
   is not set anywhere yet, bootstrap generates a random value, stores it on the
-  Pages project, the Worker and GitHub, and offers to show it once. Copy it for
+  production Worker, Pages fallback and GitHub, and offers to show it once. Copy it for
   step 3. It also asks for `LVBT_NOTION_API_KEY` if that is missing.
 - If the secret is already set but nobody has the value, run
   `pnpm bootstrap --phase secrets --rotate LVBT_TRANSIT_NEWS_INTAKE_SECRET` to

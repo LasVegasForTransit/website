@@ -12,7 +12,7 @@ You don't need to set secrets by hand. Run:
 pnpm bootstrap --phase secrets
 ```
 
-It checks the Worker, the Pages project and the `worker-candidate` GitHub environment. Missing values are grouped by urgency: live features, the Worker switch-over, and features not yet built. Choose how far to go. Two values that no feature reads yet, for volunteer management, are listed under "Not asked for" and never asked for; see [Google service account](#google-service-account).
+It checks the production Worker, the Pages fallback, and the `worker-candidate` GitHub environment. Missing values are grouped by urgency: live features and features not yet built. Choose how far to go. Two values that no feature reads yet, for volunteer management, are listed under "Not asked for" and never asked for; see [Google service account](#google-service-account).
 
 For each value, the guide shows what it is for, whether it is fine to skip it for now, where bootstrap stores it, and click-by-click steps to find or create it. You paste the value once and bootstrap stores it on every target that is missing it. Random signing keys are generated only when every target is known to be empty. If a shared secret already exists or a target cannot be checked, the guide asks for the existing value instead. Leave a prompt empty to skip that secret; re-run the command later to finish.
 
@@ -41,11 +41,11 @@ Bootstrap first checks that it can read every place the secret is stored, so a s
 
 ## Where each secret lives
 
-| Target                                | What it serves                                                       |
-| ------------------------------------- | -------------------------------------------------------------------- |
-| Pages project `lvbt-website`          | Production today                                                     |
-| Worker `lvbt-website`                 | Production after the move from Pages to Workers, and main candidates |
-| GitHub environment `worker-candidate` | The workflow that uploads main candidates for comparison with Pages  |
+| Target                                | What it serves                                        |
+| ------------------------------------- | ----------------------------------------------------- |
+| Worker `lvbt-website`                 | Production site and candidate versions                |
+| Pages project `lvbt-website`          | Emergency rollback at its `pages.dev` address         |
+| GitHub environment `worker-candidate` | The workflow that uploads and deploys main candidates |
 
 Pull request previews run on the separate `lvbt-website-preview` Worker without these secrets, so preview API routes answer `503` by design.
 
