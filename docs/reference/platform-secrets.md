@@ -81,9 +81,9 @@ The single source of truth is `scripts/bootstrap/config/platform-secrets.ts`. Th
 
 ## Set up each service from scratch
 
-The sections below say how to create each value when the service has never been set up for LVBT. Bootstrap shows the same steps when it asks. Where something already exists, use it: the steps say what to look for first, so you never make a second copy.
+The sections below say how to create each value when the service has never been set up for LVBT. Bootstrap shows the same steps when it asks. Where something already exists, use it: the steps say what to look for first, so you never make a second copy. Whenever a step has you copy something, paste it where it goes (the bootstrap prompt, a dashboard field or your browser) before you copy anything else.
 
-Everything LVBT owns in another service belongs to an LVBT organization, team or group, never to a personal account, so the next maintainer can reach it. The name is "Las Vegans for Better Transit" everywhere: the Cloudflare account (the LVBT account), the Resend and Discord teams, and the Cloudflare One team name. Google Cloud projects sit under the lasvegasfortransit.org organization. Where a service offers an icon, use the square LVBT logo from the "Marketing & Communications" shared drive in Google Drive.
+Everything LVBT owns in another service belongs to an LVBT organization, team or group, never to a personal account, so the next maintainer can reach it. The name is "Las Vegans for Better Transit" everywhere: the Cloudflare account (the LVBT account), the Resend and Discord teams, and the Cloudflare One team name. Everything on Google Cloud lives in one project, **LVBT Core** (ID `lvbt-core`), under the lasvegasfortransit.org organization; create a project with that name only if it does not exist. Where a service offers an icon, use the square LVBT logo from the "Marketing & Communications" shared drive in Google Drive.
 
 ### Resend: sending email
 
@@ -93,9 +93,9 @@ Everything LVBT owns in another service belongs to an LVBT organization, team or
 2. On the [Domains page](https://resend.com/domains), look for `notify.lasvegasfortransit.org`. If it says "Verified", skip to step 7.
 3. Otherwise click **Add Domain**, type `notify.lasvegasfortransit.org`, choose the region **North Virginia (us-east-1)**, and click **Add**.
 4. Resend lists the DNS records the domain needs (see [glossary](./glossary.md#dns)). The easiest way to add them is **Sign in to Cloudflare** on that page: choose the LVBT account ("Las Vegans for Better Transit") and approve.
-5. To add them by hand, open the Cloudflare dashboard → `lasvegasfortransit.org` → DNS → Records, and click **Add record** once for each record Resend lists, with TTL "Auto" and Proxy status "DNS only". Copy each name exactly as Resend shows it; Cloudflare adds `.lasvegasfortransit.org` by itself. Today the records are an MX record (mail server) named `send.notify` pointing to `feedback-smtp.us-east-1.amazonses.com` with priority `10`, a TXT record (text) named `send.notify` with `v=spf1 include:amazonses.com ~all`, and a TXT record named `resend._domainkey.notify` with the long `p=...` value Resend shows. These are the SPF and DKIM records described in the [glossary](./glossary.md#email-auth).
+5. To add them by hand, open the Cloudflare dashboard → `lasvegasfortransit.org` → DNS → Records, and add one record at a time: click **Add record**, choose the type, copy the record's name from Resend and paste it into the Name box, then copy its content (or mail server) and paste it into the matching box, set TTL "Auto" and Proxy status "DNS only", and click **Save** before starting the next record. Use each name exactly as Resend shows it; Cloudflare adds `.lasvegasfortransit.org` by itself. Today the records are an MX record (mail server) named `send.notify` pointing to `feedback-smtp.us-east-1.amazonses.com` with priority `10`, a TXT record (text) named `send.notify` with `v=spf1 include:amazonses.com ~all`, and a TXT record named `resend._domainkey.notify` with the long `p=...` value Resend shows. These are the SPF and DKIM records described in the [glossary](./glossary.md#email-auth).
 6. Resend also recommends a DMARC record, a TXT record with `v=DMARC1; p=none;`. If Cloudflare already lists a TXT record named `_dmarc`, keep it and skip this one: it covers the `notify` subdomain too. Otherwise add it with the name Resend shows. Then click **Verify DNS Records** and wait for "Verified". That usually takes minutes; DNS can take up to 72 hours, and you can skip the key and come back.
-7. Open <https://resend.com/api-keys>, click **Create API Key**, name it `LVBT website`, choose **Sending access** and the domain `notify.lasvegasfortransit.org`, and click **Add**. Copy the key; Resend shows it only once.
+7. Open <https://resend.com/api-keys>, click **Create API Key**, name it `LVBT website`, choose **Sending access** and the domain `notify.lasvegasfortransit.org`, and click **Add**. Copy the key and paste it at the bootstrap prompt; Resend shows it only once.
 
 ### Beehiiv, Apps Script and Notion
 
@@ -113,12 +113,13 @@ These already exist for LVBT, so you copy values rather than create anything.
 
 `LVBT_GOOGLE_OAUTH_CLIENT_ID` and `LVBT_GOOGLE_OAUTH_CLIENT_SECRET` are for the website's own "Sign in with Google" button. That feature is not built yet, so both are fine to skip.
 
-1. Open <https://console.cloud.google.com/> signed in with your @lasvegasfortransit.org account. In the project picker, choose **LVBT Access**, the project under the lasvegasfortransit.org organization. If there is none, click **New project**, name it `LVBT Access`, keep the organization lasvegasfortransit.org, and click **Create**.
-2. Open <https://console.cloud.google.com/auth/overview>. If it says the app is not configured, click **Get started**: App name `LVBT volunteer sign-in`, your @lasvegasfortransit.org address as User support email and contact email, Audience **Internal**, agree to the policy, then **Create**. "Internal" means only lasvegasfortransit.org accounts can sign in, and Google does not need to review the app.
-3. Open <https://console.cloud.google.com/auth/branding>. If **App logo** is empty, upload the square LVBT logo (a square image under 1 MB; 120 by 120 pixels shows best). Set **Application home page** to `https://lasvegasfortransit.org`. Leave the privacy policy and terms of service links empty; Google requires them only for public apps. Under **Authorized domains**, click **Add domain** and enter `lasvegasfortransit.org` if it is not listed, because Google accepts sign-in addresses only on these domains. Click **Save**.
+1. Open <https://console.cloud.google.com/?project=lvbt-core> signed in with an LVBT Workspace admin account, and check that the project picker at the top says **LVBT Core**. Only if that project does not exist, click **New project**, name it `LVBT Core`, keep the organization lasvegasfortransit.org, and click **Create**. Dismiss any "Start your Free Trial" banner: none of this needs billing.
+2. Open <https://console.cloud.google.com/auth/overview?project=lvbt-core>. If it says the app is not configured, click **Get started**: App name `LVBT volunteer sign-in`, your @lasvegasfortransit.org address as User support email and contact email, Audience **Internal**, agree to the policy, then **Create**. "Internal" means only lasvegasfortransit.org accounts can sign in, and Google does not need to review the app.
+3. Open <https://console.cloud.google.com/auth/branding?project=lvbt-core>. If **App logo** is empty, upload the square LVBT logo (a square image under 1 MB; 120 by 120 pixels shows best). Set **Application home page** to `https://lasvegasfortransit.org`. Leave the privacy policy and terms of service links empty; Google requires them only for public apps. Under **Authorized domains**, click **Add domain** and enter `lasvegasfortransit.org` if it is not listed, because Google accepts sign-in addresses only on these domains. Click **Save**.
 4. Skip the **Audience** and **Data Access** pages. Signing in uses only the basic email, profile and openid permissions, which need no setup.
-5. Open <https://console.cloud.google.com/auth/clients>. If a client named `LVBT website` exists, use it. Otherwise click **Create client**, choose **Web application**, and name it `LVBT website`. Leave **Authorized JavaScript origins** empty; the website signs people in from its server. Under **Authorized redirect URIs**, click **Add URI** and enter `https://lasvegasfortransit.org/auth/google/callback`. Click **Create**.
-6. Copy the Client ID (it ends with `.apps.googleusercontent.com`) and the Client secret. Google shows the secret only once; if you lose it, open the client and click **Add secret**.
+5. Open <https://console.cloud.google.com/auth/clients?project=lvbt-core>. If a client named `LVBT website` exists, open it. Otherwise click **Create client**, choose **Web application**, and name it `LVBT website`. Leave **Authorized JavaScript origins** empty; the website signs people in from its server. Under **Authorized redirect URIs**, click **Add URI** and enter `https://lasvegasfortransit.org/auth/google/callback`. Click **Create**, and keep the dialog that opens.
+6. Copy the Client ID (it ends with `.apps.googleusercontent.com`) and paste it at the `LVBT_GOOGLE_OAUTH_CLIENT_ID` prompt.
+7. At the next prompt, `LVBT_GOOGLE_OAUTH_CLIENT_SECRET`, copy the Client secret from the same dialog and paste it. Google shows the secret only once; if you closed the dialog, open the client, click **Add secret**, then copy the new secret and paste it.
 
 ### Cloudflare One: the Access team domain
 
@@ -142,7 +143,16 @@ Only if Cloudflare ever asks you to set up Cloudflare One from scratch: type `lv
 
 To add someone later, come back to the group's **Members** page and click **Add members**. To remove someone, point to them in the list and click **Remove**, or tick them and click **Remove members**.
 
-**Google sign-in for Access.** In Cloudflare One, open Integrations → Identity providers. If "Google Workspace" is listed, this is done. Otherwise follow [Cloudflare's Google Workspace guide](https://developers.cloudflare.com/cloudflare-one/integrations/identity-providers/google-workspace/) with these values: a Google OAuth client of type **Web application** named `Cloudflare Access`, Authorized JavaScript origin `https://lvbt.cloudflareaccess.com`, Authorized redirect URI `https://lvbt.cloudflareaccess.com/cdn-cgi/access/callback`, and Workspace domain `lasvegasfortransit.org`. Click **Test** when done.
+**Google sign-in for Access.** This lets people sign in to Access with their LVBT Google account and lets Access read which groups they are in. It needs a Google Workspace super admin who can also edit the LVBT Core project. In Cloudflare One, open Integrations → Identity providers: if "Google Workspace" is listed, this part is done.
+
+1. Open <https://console.cloud.google.com/apis/library/admin.googleapis.com?project=lvbt-core> and click **Enable** on "Admin SDK API" (it says **Manage** if it is already on). Access needs it to read group membership.
+2. Set up the sign-in screen as in steps 1 and 2 of [Google sign-in for the website](#google-sign-in-for-the-website), if it is not set up yet.
+3. Open <https://admin.google.com/ac/owl> (Security → Access and data control → API controls), click **Settings**, turn on **Trust internal apps**, and save.
+4. In Cloudflare One, go to Integrations → Identity providers, click **Add new identity provider**, then **Google Workspace**, and leave that form open.
+5. In another tab, open <https://console.cloud.google.com/auth/clients?project=lvbt-core> and click **Create client**: **Web application**, named `Cloudflare Access`. Under **Authorized JavaScript origins**, add `https://lvbt.cloudflareaccess.com`. Under **Authorized redirect URIs**, add `https://lvbt.cloudflareaccess.com/cdn-cgi/access/callback`. Click **Create**.
+6. Copy the Client ID and paste it into **App ID** in the Cloudflare form. Then copy the Client secret and paste it into **Client secret**. Neither is stored in GitHub or on a Worker.
+7. Type `lasvegasfortransit.org` as the **Google Workspace domain** and click **Save**. Cloudflare shows a link: open it signed in as the Workspace super admin and approve it, so Access can read group membership.
+8. Back in Integrations → Identity providers, click **Test** next to Google Workspace. It should show your identity and your groups.
 
 **The Access application.**
 
@@ -171,8 +181,8 @@ The five `LVBT_DISCORD_*` values are for Discord linking and roles, which are no
 1. Open <https://discord.com/developers/applications>. If an **LVBT Bot** app is listed under the team, open it and skip to step 4.
 2. If LVBT's app sits on someone's Personal team, move it instead of making a second one: that person opens it and clicks **Transfer App to Team** at the bottom of **General Information**. This cannot be undone.
 3. Otherwise click **+ Create** at the top, then **Create blank app** (ignore the game and bot templates). Name `LVBT Bot`; Team **Las Vegans for Better Transit**, not "Personal"; tick the box agreeing to the Discord Developer Terms of Service and Developer Policy; click **Create**.
-4. On **General Information**, under **App Icon**, upload the square LVBT logo and click **Save Changes**. Discord shows this icon on the bot and on the "Connect Discord" screen. Copy the **Application ID** and the **Public Key**. Neither is secret; bootstrap stores them with the others.
-5. Open **OAuth2**. Leave **Public Client** off: it is for apps without a server, such as phone apps, that cannot keep a secret. Under **Redirects**, click **Add Redirect**, enter `https://lasvegasfortransit.org/account/discord/callback`, and click **Save Changes**. Under **Client Secret**, click **Reset Secret**, confirm, and copy it. It is shown only once.
+4. On **General Information**, under **App Icon**, upload the square LVBT logo and click **Save Changes**. Discord shows this icon on the bot and on the "Connect Discord" screen. Copy the **Application ID** and paste it at the `LVBT_DISCORD_APPLICATION_ID` prompt. At the next prompt, copy the **Public Key** from the same page and paste it. Neither is secret; bootstrap stores them with the others.
+5. Open **OAuth2**. Leave **Public Client** off: it is for apps without a server, such as phone apps, that cannot keep a secret. Under **Redirects**, click **Add Redirect**, enter `https://lasvegasfortransit.org/account/discord/callback`, and click **Save Changes**. Under **Client Secret**, click **Reset Secret**, confirm, then copy it and paste it at the `LVBT_DISCORD_CLIENT_SECRET` prompt. It is shown only once.
 
 **The bot.**
 
@@ -181,14 +191,27 @@ The five `LVBT_DISCORD_*` values are for Discord linking and roles, which are no
 3. Under **Privileged Gateway Intents**, turn **Server Members Intent** on, because the website uses it to look up who is in the server. Leave **Presence Intent** and **Message Content Intent** off. Click **Save Changes**.
 4. The **Bot Permissions** box further down is only a calculator; leave it. **App Verification** on the left only matters once a bot is in 100 or more servers; ignore it.
 5. Open **Installation**. Under installation contexts, keep only **Guild Install**. Under its default install settings, add the scopes `bot` and `applications.commands` and the permission **Manage Roles**, and save.
-6. Copy the install link on that page, open it, choose the LVBT server, and click **Authorize**. You need the "Manage Server" permission in that server.
+6. Copy the install link on that page and paste it into your browser's address bar, choose the LVBT server, and click **Authorize**. You need the "Manage Server" permission in that server.
 7. In Discord, open the LVBT server's **Server Settings → Roles** and drag the **LVBT Bot** role above every role the website gives out. A bot can only give roles below its own.
-8. Back on **Bot**, click **Reset Token**, confirm, and copy the token. Treat it like a password; it is shown only once.
+8. Back on **Bot**, click **Reset Token**, confirm, then copy the token and paste it at the `LVBT_DISCORD_BOT_TOKEN` prompt. Treat it like a password; it is shown only once.
 
-**The server ID.** In the Discord app, open User Settings (the gear by your name) → Advanced and turn on **Developer Mode**. Right-click the LVBT server icon and click **Copy Server ID**.
+**The server ID.** In the Discord app, open User Settings (the gear by your name) → Advanced and turn on **Developer Mode**. Right-click the LVBT server icon, click **Copy Server ID**, and paste it at the `LVBT_DISCORD_GUILD_ID` prompt.
 
 The client secret and the bot token are the two real secrets here. Resetting either later makes the old one stop working, so store the new one with `pnpm bootstrap --phase secrets --rotate LVBT_DISCORD_CLIENT_SECRET` (or `LVBT_DISCORD_BOT_TOKEN`).
 
-### Google service account and Givebutter
+### Google service account
 
-`LVBT_GOOGLE_SERVICE_ACCOUNT_KEY` and `LVBT_GOOGLE_ADMIN_SUBJECT` are for volunteer management, and `LVBT_GIVEBUTTER_API_KEY` is for donor support. None of these features is built yet. Bootstrap shows the full steps when you choose to set them; the service account lives in the **LVBT Access** Google Cloud project, and its downloaded key file must be deleted after you paste it, never committed.
+`LVBT_GOOGLE_SERVICE_ACCOUNT_KEY` lets the website create volunteer Workspace accounts and manage Google Group membership, acting as a Workspace admin, and `LVBT_GOOGLE_ADMIN_SUBJECT` names that admin. Volunteer management is not built yet, so both are fine to skip. The service account already exists: `lvbt-website-admin@lvbt-core.iam.gserviceaccount.com`, named "LVBT Website Admin". Step 3 needs a Google Workspace super admin.
+
+1. Open <https://console.cloud.google.com/iam-admin/serviceaccounts?project=lvbt-core> and check that the project picker says **LVBT Core**. Dismiss any "Start your Free Trial" banner: none of this needs billing. Turn on the Admin SDK at <https://console.cloud.google.com/apis/library/admin.googleapis.com?project=lvbt-core> (it says **Manage** if it is already on).
+2. If `lvbt-website-admin@lvbt-core.iam.gserviceaccount.com` is listed, use it. Otherwise click **Create service account**: name `LVBT Website Admin`, ID `lvbt-website-admin`, description `Manages member data on the LVBT website`. Click **Create and continue**, skip the optional permissions and access steps, and click **Done**. It needs no project roles; its power comes from step 3.
+3. Allow it to act for Workspace before making any key. On the account, open ⋮ (Actions) → **Manage details** and copy the **Unique ID**, a long number. As a Workspace super admin, open <https://admin.google.com/ac/owl/domainwidedelegation> (Security → Access and data control → API controls → Manage Domain Wide Delegation). If that number is already listed with both scopes below, skip to step 4. Otherwise click **Add new**, paste the number into **Client ID**, paste `https://www.googleapis.com/auth/admin.directory.user,https://www.googleapis.com/auth/admin.directory.group` into **OAuth scopes**, and click **Authorize**.
+4. Back on the account, open ⋮ → **Manage keys** → **Add key** → **Create new key** → **JSON** → **Create**. A `.json` file downloads. If Google says key creation is disabled, that is the default organization policy "Disable service account key creation". Someone with the Organization Policy Administrator role opens IAM & Admin → **Organization Policies**, finds that policy, clicks **Manage policy**, overrides it for the LVBT Core project only so it is **Not enforced**, and saves; then try again.
+5. Open the downloaded file in a text editor, select all, copy, and paste it at the `LVBT_GOOGLE_SERVICE_ACCOUNT_KEY` prompt. Then delete the file, and never email or share it: anyone holding it can manage LVBT's Workspace users and groups.
+6. At the `LVBT_GOOGLE_ADMIN_SUBJECT` prompt, type the @lasvegasfortransit.org address of a Workspace super admin, such as your own.
+
+To replace the key later, make a new one in step 4, store it with `pnpm bootstrap --phase secrets --rotate LVBT_GOOGLE_SERVICE_ACCOUNT_KEY`, then delete the old key under **Manage keys**.
+
+### Givebutter
+
+`LVBT_GIVEBUTTER_API_KEY` lets the site read donations so staff can see giving next to everything else. Donor support is not built yet, so it is fine to skip. Sign in to Givebutter as an Admin of the LVBT account, go to Settings → Integrations → API Keys, click **Create New API Key**, name it `LVBT website`, then copy the key and paste it at the prompt. It is shown only once.

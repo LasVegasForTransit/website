@@ -121,6 +121,10 @@ The bootstrap keeps a record of its last run in `.lvbt/dev-readiness.json` (a lo
 5. Check before you act: read the current state first and change only what is missing. Anything that replaces an existing value needs its own opt-in flag.
 6. Make every command, API call, prompt and secret write through the helpers in `lib/` (they go through the runtime described below), and teach the fake world in `tests/bootstrap-fake-world.ts` to answer the new calls. The whole-bootstrap test then checks that your phase changes nothing on a second run.
 
+## Writing guided steps
+
+When the bootstrap sends someone to a dashboard, its steps name every button, field and toggle exactly as the service shows them, and say what to type or choose in each. Order the steps so each copied value is pasted where it goes (the bootstrap prompt, a dashboard field, a file or a browser) before anything else is copied; when a value goes to two places, have the person paste it into both first. Anything LVBT owns in another service belongs to an LVBT organization, team or group, never a personal account. The secret guides live in `scripts/bootstrap/config/platform-secrets.ts`.
+
 ## Implementation notes
 
 - `cold-start.ts` is the command-line entry point; `run.ts` holds the phase list and the flow as a function, `runBootstrap`.
