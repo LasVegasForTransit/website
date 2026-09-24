@@ -440,16 +440,11 @@ export const PLATFORM_SECRETS: readonly PlatformSecret[] = [
     purpose:
       'Lets the website create volunteer Workspace accounts and manage Google Group membership, acting as a Workspace admin.',
     use: 'future',
-    skipNote:
-      'Volunteer management is not built yet. You can leave this empty now; bootstrap asks again next time.',
     url: 'https://console.cloud.google.com/iam-admin/serviceaccounts?project=lvbt-core',
     steps: [
-      'You need a Google Workspace super admin for step 4.',
-      'In Google Cloud, choose the "LVBT Core" project (ID lvbt-core) at the top. Dismiss any "Start your Free Trial" banner: none of this needs billing. Turn on the Admin SDK: open https://console.cloud.google.com/apis/library/admin.googleapis.com?project=lvbt-core and click "Enable" (it says "Manage" if it is already on).',
-      'Open IAM & Admin → Service Accounts. If lvbt-website-admin@lvbt-core.iam.gserviceaccount.com is listed, use it. Otherwise click "Create service account": name "LVBT Website Admin", ID lvbt-website-admin, description "Manages member data on the LVBT website". Click "Create and continue", skip the optional permissions and access steps, and click "Done". It needs no project roles; its power comes from step 4.',
-      'Allow it to act for Workspace, before making any key. On the account, open ⋮ (Actions) → "Manage details" and copy the "Unique ID" (a long number). Then, as a Workspace super admin, open https://admin.google.com/ac/owl/domainwidedelegation (Security → Access and data control → API controls → Manage Domain Wide Delegation). If that number is already listed with both scopes below, skip to step 5. Otherwise click "Add new", paste the number into "Client ID", paste https://www.googleapis.com/auth/admin.directory.user,https://www.googleapis.com/auth/admin.directory.group into "OAuth scopes", and click "Authorize".',
-      'Now the key. Back on the account, open ⋮ → "Manage keys" → "Add key" → "Create new key" → "JSON" → "Create". A .json file downloads. If Google says key creation is disabled, that is a default organization policy: someone with the Organization Policy Administrator role opens IAM & Admin → "Organization Policies", finds "Disable service account key creation", clicks "Manage policy", overrides it for the LVBT Core project only so it is "Not enforced", saves, and you try again.',
-      'Open the downloaded .json file in a text editor, select all, copy, and paste it here. Then delete the file, and never email or share it: anyone holding it can manage LVBT\'s Workspace users and groups. To replace a key later, create a new one, store it here, then delete the old key under "Manage keys".',
+      'Skip this: leave it empty. Nothing uses it yet; it is for volunteer management, which is not built.',
+      'Do not create a service account key, and do not turn off the "Disable service account key creation" organization policy (iam.disableServiceAccountKeyCreation) to make one. Google enforces it by default because a leaked key file gives full control of whatever it can reach, here LVBT\'s Workspace users and groups.',
+      'When volunteer management is built, it will use Workload Identity Federation from a GitHub Actions job, which needs no key file at all. Until then, a Workspace admin adds and removes people in https://admin.google.com by hand.',
     ],
     neededFor: 'Volunteer management',
     targets: PLATFORM_TARGETS,
@@ -462,8 +457,7 @@ export const PLATFORM_SECRETS: readonly PlatformSecret[] = [
     use: 'future',
     url: 'https://admin.google.com/ac/users',
     steps: [
-      'This is the Workspace super admin that the lvbt-website-admin service account in the "LVBT Core" Google Cloud project (ID lvbt-core) acts as. It must be a real super admin account, not a group.',
-      "Enter that person's @lasvegasfortransit.org email address, such as your own if you are a super admin.",
+      'Skip this: leave it empty. It pairs with LVBT_GOOGLE_SERVICE_ACCOUNT_KEY, which nothing uses yet.',
     ],
     neededFor: 'Volunteer management',
     targets: PLATFORM_TARGETS,
