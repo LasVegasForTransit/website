@@ -80,10 +80,10 @@ const INTAKE_TARGETS = ['pages', 'worker', 'github:worker-candidate'] as const;
 const PLATFORM_TARGETS = ['pages', 'worker'] as const;
 
 const STAFF_CONSOLE_SKIP =
-  'The staff console is not live yet, so it is fine to leave this empty now. Bootstrap asks again next time.';
+  'The staff console is not live yet. You can leave this empty now; bootstrap asks again next time.';
 
 const DISCORD_SKIP =
-  'Discord linking and roles are not built yet, so it is fine to leave all five Discord values empty now. Bootstrap asks again next time.';
+  'Discord linking and roles are not built yet, so it is fine to leave this empty now; bootstrap asks again next time.';
 
 const GOOGLE_SIGN_IN_SKIP =
   'Staff and volunteer sign-in with Google is not built yet, so it is fine to leave this empty now. Bootstrap asks again next time.';
@@ -275,10 +275,11 @@ export const PLATFORM_SECRETS: readonly PlatformSecret[] = [
     url: 'https://console.cloud.google.com/auth/clients',
     steps: [
       'Open https://console.cloud.google.com/ signed in with your @lasvegasfortransit.org account. In the project picker at the top, choose "LVBT Access", the LVBT project under the lasvegasfortransit.org organization that Cloudflare Access sign-in also uses. If there is none, click "New project", name it LVBT Access, keep the organization lasvegasfortransit.org, and click "Create". Never use a project under a personal account; the next maintainer could not reach it.',
-      'Open https://console.cloud.google.com/auth/overview. If it says the app is not configured, click "Get started": App name "LVBT volunteer sign-in", User support email your @lasvegasfortransit.org address, Audience "Internal", contact email your address, agree, and click "Create".',
-      'Open https://console.cloud.google.com/auth/branding. If "App logo" is empty, upload the square LVBT logo from the "Marketing & Communications" shared drive in Google Drive (a square PNG under 1 MB; 120 by 120 pixels shows best) and click "Save".',
+      'Open https://console.cloud.google.com/auth/overview. If it says the app is not configured, click "Get started": App name "LVBT volunteer sign-in", User support email your @lasvegasfortransit.org address, Audience "Internal", contact email your address, agree to the policy, and click "Create". "Internal" means only lasvegasfortransit.org accounts can sign in, and Google does not need to review the app.',
+      'Open https://console.cloud.google.com/auth/branding. "App logo": if it is empty, upload the square LVBT logo from the "Marketing & Communications" shared drive in Google Drive (a square PNG under 1 MB; 120 by 120 pixels shows best). "Application home page": https://lasvegasfortransit.org. Leave the privacy policy and terms of service links empty; Google requires them only for public apps. Under "Authorized domains", click "Add domain" and enter lasvegasfortransit.org if it is not listed, because Google accepts sign-in addresses only on these domains. Click "Save".',
+      'Skip the "Audience" and "Data Access" pages. Signing in uses only the basic email, profile and openid permissions, which need no setup.',
       'Open https://console.cloud.google.com/auth/clients. If a client named "LVBT website" is listed, open it and copy its Client ID; for the secret, see the next value.',
-      'Otherwise click "Create client". Application type: "Web application". Name: LVBT website. Under "Authorized redirect URIs", click "Add URI" and enter exactly https://lasvegasfortransit.org/auth/google/callback. Click "Create".',
+      'Otherwise click "Create client". Application type: "Web application". Name: LVBT website. Leave "Authorized JavaScript origins" empty; the website signs people in from its server. Under "Authorized redirect URIs", click "Add URI" and enter exactly https://lasvegasfortransit.org/auth/google/callback. Click "Create".',
       'Copy the Client ID and paste it here. It ends with .apps.googleusercontent.com. Keep the dialog open: the Client secret, asked for next, is shown only now.',
     ],
     neededFor: 'Staff and volunteer sign-in',
@@ -306,16 +307,16 @@ export const PLATFORM_SECRETS: readonly PlatformSecret[] = [
   {
     name: 'LVBT_ACCESS_TEAM_DOMAIN',
     purpose:
-      'The address Cloudflare Access signs people in at, which the staff console checks every sign-in against.',
+      'The address Cloudflare Access signs people in at; the staff console checks that sign-ins come from it.',
     use: 'future',
     skipNote: STAFF_CONSOLE_SKIP,
     url: 'https://one.dash.cloudflare.com/',
     steps: [
-      'Sign in to Cloudflare and choose the LVBT account ("Las Vegans for Better Transit"). The page that opens is Cloudflare One (Cloudflare used to call it Zero Trust). It is already set up for LVBT.',
-      'On the Overview page, find "Account details". It shows two different things: "Team domain" (lvbt.cloudflareaccess.com) and "Team name" ("Las Vegans for Better Transit", only a label). This value is the team domain.',
+      'Sign in to Cloudflare and choose the LVBT account ("Las Vegans for Better Transit"). The page that opens is Cloudflare One (Cloudflare used to call it Zero Trust).',
+      'If Cloudflare asks you to set up Cloudflare One first: it asks for a team domain. Type lvbt, so the team domain becomes lvbt.cloudflareaccess.com, and choose the Free plan. The team name it may also ask for is only a label; use "Las Vegans for Better Transit".',
+      'On the Overview page, find "Account details". It shows two different things: "Team domain" (lvbt.cloudflareaccess.com) and "Team name" (a label). This value is the team domain.',
       'Click the copy icon next to "Team domain" and paste it here: lvbt.cloudflareaccess.com, without https://.',
       'Do not change the team domain with its pencil icon. Changing it breaks Access sign-in and Google sign-in until every copy of this value and the Google OAuth client are updated to match.',
-      'Only if Cloudflare ever asks you to set up Cloudflare One from scratch: type lvbt as the team domain, so it becomes lvbt.cloudflareaccess.com; type "Las Vegans for Better Transit" if it asks for a team name; choose the Zero Trust Free plan (it asks for payment details but does not charge).',
     ],
     neededFor: 'Staff console',
     targets: PLATFORM_TARGETS,
@@ -351,21 +352,19 @@ export const PLATFORM_SECRETS: readonly PlatformSecret[] = [
   {
     name: 'LVBT_DISCORD_APPLICATION_ID',
     purpose:
-      "Identifies LVBT's Discord app, which will link members' Discord accounts and manage their roles.",
+      "Identifies LVBT's Discord app, LVBT Bot, which will link members' Discord accounts and manage their roles.",
     use: 'future',
-    skipNote: DISCORD_SKIP,
+    skipNote:
+      'Discord linking and roles are not built yet. You can leave this and the next four Discord values empty now; bootstrap asks again next time.',
     url: 'https://discord.com/developers/teams',
     steps: [
-      'The app belongs to an LVBT team, not to one person: an app on a "Personal" team belongs to one account, and nobody else can manage it after that person leaves. Open https://discord.com/developers/teams while signed in to Discord (the "Teams" link is at the top right of the Developer Portal).',
-      'Discord requires two-factor authentication on your account to create or join a team. Turn it on under User Settings → My Account if Discord asks.',
-      'If "Las Vegans for Better Transit" is under "My Teams", you are already in the team; go to the next step. If the team exists but you are not in it, ask its owner or an admin to invite you from the team\'s page. If there is no team at all, click "New Team", type the name Las Vegans for Better Transit and click "Create".',
-      'Every team member can see the team\'s apps, and admins can change them, so add only trusted maintainers. Invite other maintainers as "Admin"; only the one owner can delete the team or its apps.',
+      'The app belongs to an LVBT team, not to one person, so the next maintainer can manage it. Open https://discord.com/developers/teams while signed in to Discord.',
+      'If "Las Vegans for Better Transit" is under "My Teams", you are already in the team; go to the next step. If the team exists but you are not in it, ask someone in it to invite you from the team\'s page. If there is no team at all, click "New Team", name it "Las Vegans for Better Transit" and click "Create". Every team member has admin rights over the team\'s apps, so add only trusted maintainers. Discord may ask you to turn on two-factor authentication.',
       'Give the team the LVBT logo if its page offers an icon: in Google Drive, open the shared drive "Marketing & Communications", find the square LVBT logo (a PNG at least 512 by 512 pixels), download it and upload it as the team icon. Skip this if you cannot reach that drive.',
-      'Open https://discord.com/developers/applications. If an "LVBT" app is listed under the team, click it and go to the step about the Application ID.',
-      'If LVBT already has an app on someone\'s Personal team, move it instead of making a second one: that person opens it, and at the bottom of "General Information" clicks "Transfer App to Team" and picks Las Vegans for Better Transit. This cannot be undone.',
-      'Otherwise click "+ Create" at the top, then "Create blank app" (ignore the templates). Name: LVBT. Team: "Las Vegans for Better Transit", not "Personal". Tick the box agreeing to the Discord Developer Terms of Service and Developer Policy, then click "Create".',
-      'On the app\'s "General Information" page, under "App Icon", upload the same square LVBT logo and click "Save Changes". Discord shows this icon on the bot and on the "Connect Discord" screen.',
-      'On the same page, copy the Application ID (a long number) and paste it here. It is not secret; bootstrap stores it with the others so everything is in one place.',
+      'Open https://discord.com/developers/applications. If an "LVBT Bot" app is listed under the team, click it and go to the last step.',
+      'Otherwise click "+ Create" at the top, then "Create blank app" (ignore the game and bot templates). Name: "LVBT Bot". Team: "Las Vegans for Better Transit", not "Personal". Tick the box agreeing to the Discord Developer Terms of Service and Developer Policy, then click "Create". If LVBT already has an app on someone\'s Personal team, move it to the team instead of making a second one.',
+      'On the app\'s "General Information" page, under "App Icon", upload the same square LVBT logo from the Marketing & Communications shared drive and click "Save Changes". Discord shows this icon on the bot and on the "Connect Discord" screen.',
+      'On the same page, copy the Application ID (a long number).',
     ],
     neededFor: 'Discord linking and roles',
     targets: PLATFORM_TARGETS,
@@ -378,7 +377,7 @@ export const PLATFORM_SECRETS: readonly PlatformSecret[] = [
     url: 'https://discord.com/developers/applications',
     steps: [
       'Skip this if you skipped the Application ID.',
-      'In the LVBT app, on "General Information", copy the Public Key (a long string of letters and numbers) and paste it here. It is not secret either.',
+      'In the LVBT Bot app, on "General Information", copy the Public Key (a long string of letters and numbers).',
     ],
     neededFor: 'Discord link command',
     targets: PLATFORM_TARGETS,
@@ -391,25 +390,31 @@ export const PLATFORM_SECRETS: readonly PlatformSecret[] = [
     url: 'https://discord.com/developers/applications',
     steps: [
       'Skip this if you skipped the Application ID.',
-      'In the LVBT app, open "OAuth2" on the left.',
+      'In the LVBT Bot app, open "OAuth2" on the left.',
       'Leave "Public Client" off. It is for apps without a server, such as phone apps, that cannot keep the client secret private; the website keeps it on the server.',
-      'Under "Client Secret", click "Reset Secret", confirm, copy it and paste it here. This one is secret: treat it like a password. Discord shows it only once.',
-      'Resetting it again later makes the old one stop working, and "Connect Discord" fails until you store the new one with `pnpm bootstrap --phase secrets --rotate LVBT_DISCORD_CLIENT_SECRET`.',
+      'Under "Redirects", click "Add Redirect", enter https://lasvegasfortransit.org/account/discord/callback and click "Save Changes".',
+      'Under "Client Secret", click "Reset Secret", confirm, and copy it. Discord shows it only once. Resetting it later breaks "Connect Discord" until the new one is stored here.',
     ],
     neededFor: 'Discord linking',
     targets: PLATFORM_TARGETS,
   },
   {
     name: 'LVBT_DISCORD_BOT_TOKEN',
-    purpose: "Lets LVBT's Discord bot give and remove LVBT-managed roles in the server.",
+    purpose: 'Lets the website give and remove LVBT-managed roles in the Discord server.',
     use: 'future',
     skipNote: DISCORD_SKIP,
     url: 'https://discord.com/developers/applications',
     steps: [
       'Skip this if you skipped the Application ID.',
-      'In the LVBT app, open "Bot" on the left.',
-      'Click "Reset Token", confirm, copy the token and paste it here. This one is secret: treat it like a password. Discord shows it only once.',
-      'Resetting it again later makes the old one stop working, and role changes stop until you store the new one with `pnpm bootstrap --phase secrets --rotate LVBT_DISCORD_BOT_TOKEN`.',
+      'In the LVBT Bot app, open "Bot" on the left.',
+      'Icon: upload the square LVBT logo from the "Marketing & Communications" shared drive (1024 by 1024, PNG). Banner is optional: use the 680 by 240 LVBT banner if the drive has one. Username: "LVBT Bot".',
+      'Under "Authorization Flow", turn "Public Bot" off, so only the team can add the bot to a server. Leave "Requires OAuth2 Code Grant" and "Private Channel Obfuscation" off.',
+      'Under "Privileged Gateway Intents", turn "Server Members Intent" on (the website uses it to look up who is in the server). Leave "Presence Intent" and "Message Content Intent" off. Click "Save Changes".',
+      'The "Bot Permissions" box further down is only a calculator; leave it. The bot gets its one permission when it is installed, in the next step. "App Verification" on the left only matters once a bot is in 100 or more servers; ignore it.',
+      'Open "Installation" on the left. Under installation contexts, keep only "Guild Install". Under its default install settings, add the scopes "bot" and "applications.commands" and the permission "Manage Roles", and save.',
+      'Copy the install link on that page, open it, choose the LVBT server and click "Authorize". You need the "Manage Server" permission in that server.',
+      'In Discord, open the LVBT server\'s Server Settings → Roles and drag the "LVBT Bot" role above every role the website gives out. A bot can only give roles below its own.',
+      'Back on "Bot", click "Reset Token", confirm, and copy the token. Discord shows it only once; treat it like a password. Resetting it later stops role changes until the new one is stored here.',
     ],
     neededFor: 'Discord roles',
     targets: PLATFORM_TARGETS,
@@ -423,7 +428,7 @@ export const PLATFORM_SECRETS: readonly PlatformSecret[] = [
     steps: [
       'Skip this if you skipped the Application ID.',
       'In the Discord app, open User Settings (the gear by your name) → Advanced, and turn on "Developer Mode".',
-      'Right-click the LVBT server icon on the left, click "Copy Server ID" (a long number) and paste it here. It is not secret.',
+      'Right-click the LVBT server icon on the left and click "Copy Server ID" (a long number).',
     ],
     neededFor: 'Discord roles',
     targets: PLATFORM_TARGETS,
