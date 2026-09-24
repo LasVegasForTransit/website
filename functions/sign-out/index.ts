@@ -8,11 +8,13 @@ import { clearedSessionCookies, fromThisSite, signOut } from '../../platform/sig
 import { redirect, SECURITY_HEADERS } from '../join/_page';
 import { appendCookies, platformSignIn, refused, type SignInPagesEnv } from '../sign-in/_shared';
 
-export const onRequestGet: PagesFunction<SignInPagesEnv> = () =>
-  new Response(null, {
-    status: 308,
-    headers: { ...SECURITY_HEADERS, Location: '/sign-out/' },
-  });
+export const onRequestGet: PagesFunction<SignInPagesEnv> = ({ request, next }) =>
+  new URL(request.url).pathname === '/sign-out'
+    ? new Response(null, {
+        status: 308,
+        headers: { ...SECURITY_HEADERS, Location: '/sign-out/' },
+      })
+    : next();
 
 export const onRequestPost: PagesFunction<SignInPagesEnv> = async ({ env, request }) => {
   if (!fromThisSite(request)) return refused();
