@@ -87,6 +87,7 @@ void test('detects the shared analytics integration in built pages', async () =>
 
 void test('keeps protected API parity out of pull request previews', () => {
   assert.equal(parityCases().filter(({ pathname }) => pathname.startsWith('/api/')).length, 2);
+  assert.ok(parityCases().some(({ pathname }) => pathname === '/sign-out'));
   assert.equal(
     parityCases(false).some(({ pathname }) => pathname.startsWith('/api/')),
     false,
