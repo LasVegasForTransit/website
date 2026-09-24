@@ -15,6 +15,7 @@ import { validateHostname, validatePagesProjectName } from '../lib/validators.js
 import { DEFAULT_APEX_DOMAIN, DEFAULT_PAGES_PROJECT } from '../lib/defaults.js';
 import {
   attachPagesDomain,
+  findCname,
   findZoneIdForName,
   getPagesProject,
   isDomainAlreadyAttachedError,
@@ -140,11 +141,7 @@ export async function runDomainPhase(
       return { success: false, followUpItems };
     }
 
-    const attachPromises = hosts.map((h) => attachDomainCall(accountId, project, h, oauthToken));
-    lastAttachOutcomes = [];
-    for (let i = 0; i < hosts.length; i++) {
-      lastAttachOutcomes.push(await renderAttachTask(hosts[i]!, project, attachPromises[i]!));
-    }
+    lastAttachOutcomes = await attachMissingHosts(accountId, project, hosts, oauthToken);
     if (lastAttachOutcomes.every((o) => o.kind === 'failed')) {
       log.error(
         `Couldn't attach any hosts under account ${accountId} — likely no access to the Pages project from this user.`,
@@ -179,8 +176,16 @@ export async function runDomainPhase(
       if (alreadyActive.length > 0) {
         log.success(`Already wired: ${alreadyActive.map((h) => pc.cyan(h)).join(', ')}.`);
       }
-      if (pending.length > 0) {
-        await wireCnames(pending, zone.zoneId, cnameTarget, accountId, projectRoot, followUpItems);
+      const needCname = await hostsWithoutCname(pending, zone.zoneId, cnameTarget, oauthToken);
+      if (needCname.length > 0) {
+        await wireCnames(
+          needCname,
+          zone.zoneId,
+          cnameTarget,
+          accountId,
+          projectRoot,
+          followUpItems,
+        );
       }
       break;
     }
@@ -247,9 +252,59 @@ function parseHostList(raw: string | undefined, apex: string): string[] {
 }
 
 /**
- * Issue the Pages-attach call. We don't pre-list — `attachPagesDomain` returns
- * CF_ERROR.PAGES_DOMAIN_ALREADY_ATTACHED for the duplicate case, and we treat
- * that as a benign already-done outcome.
+ * Attach only the hosts Pages doesn't list yet. When the list can't be read,
+ * every host is attached, and Cloudflare's "already attached" answer counts
+ * as done, so a host is never attached twice either way.
+ */
+async function attachMissingHosts(
+  accountId: string,
+  project: string,
+  hosts: string[],
+  token: string,
+): Promise<AttachOutcome[]> {
+  const listed = await listPagesDomains(accountId, project, token);
+  const attached = listed.ok && listed.data ? new Set(listed.data.map((d) => d.name)) : null;
+  const outcomes: AttachOutcome[] = [];
+  for (const host of hosts) {
+    if (attached?.has(host)) {
+      log.info(`${pc.cyan(host)} already attached.`);
+      outcomes.push({ kind: 'already_attached', domain: host });
+      continue;
+    }
+    outcomes.push(
+      await renderAttachTask(host, project, attachDomainCall(accountId, project, host, token)),
+    );
+  }
+  return outcomes;
+}
+
+/**
+ * Hosts whose CNAME is not yet in place, checked with wrangler's sign-in so a
+ * host that is only waiting for its certificate doesn't trigger a request for
+ * the DNS token. If that sign-in can't read DNS records, every host counts as
+ * needing a CNAME and the token path below checks again before writing.
+ */
+async function hostsWithoutCname(
+  hosts: string[],
+  zoneId: string,
+  target: string,
+  token: string,
+): Promise<string[]> {
+  const needed: string[] = [];
+  for (const host of hosts) {
+    const lookup = await findCname(zoneId, host, token);
+    if (lookup.ok && lookup.record?.content === target && lookup.record.proxied === true) {
+      log.success(`CNAME ${pc.cyan(host)} → ${pc.cyan(target)} is already in place.`);
+      continue;
+    }
+    needed.push(host);
+  }
+  return needed;
+}
+
+/**
+ * Issue the Pages-attach call. `attachPagesDomain` returns one of the
+ * "already attached" codes for a duplicate, which counts as done.
  */
 async function attachDomainCall(
   accountId: string,
