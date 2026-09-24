@@ -10,23 +10,105 @@ import { ensureCloudflareAccount } from '../lib/cloudflare.js';
 import { mergeEnvFile } from '../lib/env-file.js';
 import { validatePagesProjectName, validateGitBranch } from '../lib/validators.js';
 import { DEFAULT_PAGES_PROJECT, DEFAULT_PRODUCTION_BRANCH } from '../lib/defaults.js';
-import { CF_ERROR } from '../lib/cloudflare-api.js';
+import { CF_ERROR, getPagesProject } from '../lib/cloudflare-api.js';
 
-interface PagesSecret {
-  key: string;
-  label: string;
+export interface DeployOptions {
+  /** Push ./dist to production even when a production deployment already exists. */
+  redeploy?: boolean;
+}
+
+/** What Cloudflare says about the Pages project, checked before anything is changed. */
+type PagesState =
+  | { kind: 'missing' }
+  | { kind: 'empty' }
+  | { kind: 'deployed'; url?: string; createdOn?: string }
+  | { kind: 'unknown'; detail: string };
+
+/**
+ * Does the project exist, and does it have a production deployment? Asks the
+ * Cloudflare API with wrangler's sign-in first. When that sign-in can't be
+ * read, falls back to wrangler's own production deployment list, which
+ * cannot tell "no project" from "no access", so that case stays unknown.
+ */
+async function readPagesState(accountId: string | undefined, project: string): Promise<PagesState> {
+  const token = rt().wranglerOAuthToken();
+  if (accountId && token) {
+    const r = await getPagesProject(accountId, project, token);
+    if (r.ok && r.data) {
+      const production = r.data.canonical_deployment;
+      return production
+        ? { kind: 'deployed', url: production.url, createdOn: production.created_on }
+        : { kind: 'empty' };
+    }
+    if (r.status === 404) return { kind: 'missing' };
+  }
+
+  const list = runCommand(
+    `wrangler pages deployment list --project-name=${shellEscape(project)} --environment=production --json`,
+  );
+  if (list.ok) {
+    try {
+      const rows = JSON.parse(list.stdout.slice(list.stdout.indexOf('['))) as {
+        Deployment?: string;
+      }[];
+      const first = rows[0];
+      return first ? { kind: 'deployed', url: first.Deployment } : { kind: 'empty' };
+    } catch {
+      // Unreadable output; report unknown below.
+    }
+  }
+  return {
+    kind: 'unknown',
+    detail: summarizeOutputLine(list),
+  };
+}
+
+function describeDeployment(state: { url?: string; createdOn?: string }): string {
+  const parts = [
+    state.url ? pc.cyan(state.url) : '',
+    state.createdOn ? `(${state.createdOn})` : '',
+  ];
+  return parts.filter(Boolean).join(' ');
 }
 
 export async function runDeployPhase(
   projectRoot: string,
   doctorMode: boolean,
+  options: DeployOptions = {},
 ): Promise<PhaseResult> {
   const followUpItems: FollowUp[] = [];
-  const distDir = path.join(projectRoot, 'dist');
+  let projectName = process.env.CLOUDFLARE_PAGES_PROJECT?.trim() || DEFAULT_PAGES_PROJECT;
+  let productionBranch = process.env.CLOUDFLARE_PAGES_BRANCH?.trim() || DEFAULT_PRODUCTION_BRANCH;
 
   if (doctorMode) {
-    log.info(pc.dim('Doctor mode: would provision Cloudflare Pages and push ./dist. Skipped.'));
-    return { success: true, followUpItems: [] };
+    // eslint-disable-next-line turbo/no-undeclared-env-vars -- the bootstrap's saved account choice, never read by a build.
+    const savedAccount = process.env.CLOUDFLARE_ACCOUNT_ID?.trim();
+    if (!savedAccount) {
+      log.info(
+        pc.dim(
+          'Doctor mode: no Cloudflare account saved yet, so the Pages project was not checked.',
+        ),
+      );
+      return { success: true, followUpItems };
+    }
+    const state = await readPagesState(savedAccount, projectName);
+    if (state.kind === 'deployed') {
+      log.success(`Pages project ${pc.cyan(projectName)} is live ${describeDeployment(state)}`);
+    } else if (state.kind === 'unknown') {
+      log.warn(`Could not check Pages project ${projectName}: ${state.detail}`);
+    } else {
+      log.warn(
+        state.kind === 'missing'
+          ? `Pages project ${projectName} does not exist yet.`
+          : `Pages project ${projectName} has no production deployment yet.`,
+      );
+      followUpItems.push({
+        kind: 'remote',
+        message:
+          'Create the Pages project and its first deployment: `pnpm bootstrap --phase deploy`',
+      });
+    }
+    return { success: followUpItems.length === 0, followUpItems };
   }
 
   const whoami = runCommand('wrangler whoami');
@@ -53,78 +135,190 @@ export async function runDeployPhase(
   }
   const accountId = accountResolution.accountId;
 
-  let projectName = process.env.CLOUDFLARE_PAGES_PROJECT?.trim() || DEFAULT_PAGES_PROJECT;
-  let productionBranch = process.env.CLOUDFLARE_PAGES_BRANCH?.trim() || DEFAULT_PRODUCTION_BRANCH;
+  // Check first. A finished setup has a project and a production deployment,
+  // and a re-run leaves both alone unless --redeploy asks for a new push.
+  let state = await readPagesState(accountId, projectName);
 
-  note(
-    `Provisioning a Cloudflare Pages project and pushing ${pc.cyan('./dist')} as your first build.\nOnce that's done you'll wire auto-deploys-on-push from the dashboard.`,
-    'Cloudflare Pages',
-  );
+  if (state.kind === 'missing') {
+    note(
+      `There is no Pages project named ${pc.cyan(projectName)} in this account yet.\nI'll create it and push ${pc.cyan('./dist')} as its first production deployment.`,
+      'Cloudflare Pages',
+    );
+    const proceed = await promptConfirm(
+      'deploy.proceed',
+      'Create the project and deploy now?',
+      true,
+    );
+    if (!proceed) {
+      log.info(pc.dim('Skipping. Deploy deferred.'));
+      followUpItems.push({
+        kind: 'remote',
+        message: 'Create the Cloudflare Pages project: `pnpm bootstrap --phase deploy`',
+      });
+      return { success: false, followUpItems };
+    }
 
-  const proceed = await promptConfirm('deploy.proceed', 'Provision and deploy now?', true);
-  if (!proceed) {
-    log.info(pc.dim('Skipping. Deploy deferred.'));
-    followUpItems.push({
-      kind: 'remote',
-      message: 'Provision Cloudflare Pages: `pnpm bootstrap --phase deploy`',
+    const projectNameRaw = await rt().prompts.text({
+      id: 'deploy.project',
+      message: 'Cloudflare Pages project name (press Enter to keep the default)',
+      placeholder: projectName,
+      defaultValue: projectName,
+      validate: validatePagesProjectName,
     });
+    const branchRaw = await rt().prompts.text({
+      id: 'deploy.branch',
+      message: 'Production branch (press Enter to keep the default)',
+      placeholder: productionBranch,
+      defaultValue: productionBranch,
+      validate: validateGitBranch,
+    });
+    const chosenProject = projectNameRaw.trim() || projectName;
+    productionBranch = branchRaw.trim() || productionBranch;
+    if (chosenProject !== projectName) {
+      projectName = chosenProject;
+      state = await readPagesState(accountId, projectName);
+    }
+    persistProject(projectRoot, projectName, productionBranch);
+  }
+
+  if (state.kind === 'deployed' && !options.redeploy) {
+    log.success(
+      `Pages project ${pc.cyan(projectName)} exists and production is deployed ${describeDeployment(state)}`,
+    );
+    log.info(
+      pc.dim(
+        'Nothing to do. New code reaches production through the Deploy production workflow on every push to main. To push this checkout on purpose, run `pnpm bootstrap --phase deploy --redeploy`.',
+      ),
+    );
     return { success: true, followUpItems };
   }
 
-  const projectNameRaw = await rt().prompts.text({
-    id: 'deploy.project',
-    message: 'Cloudflare Pages project name',
-    placeholder: projectName,
-    defaultValue: projectName,
-    validate: validatePagesProjectName,
-  });
-  if (projectNameRaw.trim()) {
-    projectName = projectNameRaw.trim();
-  }
-
-  const branchRaw = await rt().prompts.text({
-    id: 'deploy.branch',
-    message: 'Production branch',
-    placeholder: productionBranch,
-    defaultValue: productionBranch,
-    validate: validateGitBranch,
-  });
-  if (branchRaw.trim()) {
-    productionBranch = branchRaw.trim();
-  }
-
-  // Try to create. We don't probe first — wrangler's project list has missed
-  // entries that creation rejected as duplicates, so probing was lying to us.
-  // For "already exists" we look only for the numeric Cloudflare error code in
-  // wrangler's stderr — wrangler doesn't expose API errors structurally yet,
-  // but the code itself is a stable Cloudflare contract regardless of locale
-  // or wrangler's prose around it.
-  const createSpinner = spinner();
-  createSpinner.start(`Ensuring Pages project ${projectName} exists...`);
-  const createResult = runCommand(
-    `wrangler pages project create ${shellEscape(projectName)} --production-branch=${shellEscape(productionBranch)}`,
-  );
-  if (createResult.ok) {
-    createSpinner.stop(`Created Pages project ${pc.cyan(projectName)}.`);
-  } else {
-    const raw = (createResult.stderr || createResult.stdout).trim();
-    const alreadyExists = raw.includes(`code: ${CF_ERROR.PAGES_PROJECT_NAME_TAKEN}`);
-    if (alreadyExists) {
-      createSpinner.stop(`Pages project ${pc.cyan(projectName)} already exists — using it.`);
-    } else {
-      createSpinner.stop('Could not create the Pages project');
-      if (raw) log.error(raw.split('\n').slice(0, 4).join('\n'));
+  if (state.kind === 'unknown') {
+    log.warn(`Couldn't check whether ${projectName} already has a production deployment.`);
+    if (state.detail) logSubline(pc.dim(state.detail));
+    const anyway = await promptConfirm(
+      'deploy.unknown-state',
+      'Create the project if it is missing and push ./dist to production anyway?',
+      false,
+    );
+    if (!anyway) {
       followUpItems.push({
-        kind: 'remote',
-        message: `Resolve the wrangler error above, then re-run \`pnpm bootstrap --phase deploy\`.`,
+        kind: 'auth',
+        message:
+          'Sign in again with `wrangler login`, then re-run `pnpm bootstrap --phase deploy` so it can check the Pages project.',
       });
       return { success: false, followUpItems };
     }
   }
 
-  // Build if dist/ is missing.
-  if (!existsSync(distDir)) {
-    log.info(`No ${pc.cyan('./dist')} found — running ${pc.cyan('pnpm build')} first.`);
+  if (state.kind === 'empty') {
+    log.info(`Pages project ${pc.cyan(projectName)} exists but has no production deployment yet.`);
+    const deployNow = await promptConfirm(
+      'deploy.first-deploy',
+      'Push ./dist as the first production deployment now?',
+      true,
+    );
+    if (!deployNow) {
+      followUpItems.push({
+        kind: 'remote',
+        message: 'Push the first production deployment: `pnpm bootstrap --phase deploy`',
+      });
+      return { success: false, followUpItems };
+    }
+  }
+
+  const created = state.kind === 'missing' || state.kind === 'unknown';
+  if (created && !createProject(projectName, productionBranch, followUpItems)) {
+    return { success: false, followUpItems };
+  }
+
+  const deployed = await deployDist(
+    { projectRoot, projectName, productionBranch, build: options.redeploy === true },
+    followUpItems,
+  );
+  if (!deployed) return { success: false, followUpItems };
+
+  log.info(
+    pc.dim(
+      'Server-side secrets are not part of a deploy. `pnpm bootstrap --phase secrets` checks them and stores any that are missing.',
+    ),
+  );
+
+  if (state.kind === 'missing') {
+    const dashboardUrl = accountId
+      ? `https://dash.cloudflare.com/${accountId}/pages/view/${projectName}`
+      : 'https://dash.cloudflare.com/';
+    followUpItems.push({
+      kind: 'remote',
+      message: `From now on, every push to main deploys through the "Deploy production" GitHub Actions workflow. It needs the CLOUDFLARE_API_TOKEN secret and CLOUDFLARE_ACCOUNT_ID variable listed in docs/reference/deployment-pipeline.md. Do not also connect the project to Git at ${dashboardUrl}, or each push would deploy twice.`,
+    });
+  }
+
+  return { success: true, followUpItems };
+}
+
+// ── helpers ─────────────────────────────────────────────────────────────────
+
+// Saves the names so the domain phase and later runs reuse them. A no-op when
+// .env.local already holds these values.
+function persistProject(projectRoot: string, projectName: string, productionBranch: string): void {
+  mergeEnvFile(
+    path.join(projectRoot, '.env.local'),
+    new Map([
+      ['CLOUDFLARE_PAGES_PROJECT', projectName],
+      ['CLOUDFLARE_PAGES_BRANCH', productionBranch],
+    ]),
+  );
+}
+
+/**
+ * Create the project. When the check above could not tell whether it exists,
+ * Cloudflare's "name taken" error code (read from wrangler's stderr, since
+ * wrangler has no JSON error output for this command) means it already does.
+ */
+function createProject(
+  projectName: string,
+  productionBranch: string,
+  followUpItems: FollowUp[],
+): boolean {
+  const createSpinner = spinner();
+  createSpinner.start(`Creating Pages project ${projectName}...`);
+  const createResult = runCommand(
+    `wrangler pages project create ${shellEscape(projectName)} --production-branch=${shellEscape(productionBranch)}`,
+  );
+  if (createResult.ok) {
+    createSpinner.stop(`Created Pages project ${pc.cyan(projectName)}.`);
+    return true;
+  }
+  const raw = (createResult.stderr || createResult.stdout).trim();
+  if (raw.includes(`code: ${CF_ERROR.PAGES_PROJECT_NAME_TAKEN}`)) {
+    createSpinner.stop(`Pages project ${pc.cyan(projectName)} already exists — using it.`);
+    return true;
+  }
+  createSpinner.stop('Could not create the Pages project');
+  if (raw) log.error(raw.split('\n').slice(0, 4).join('\n'));
+  followUpItems.push({
+    kind: 'remote',
+    message: `Resolve the wrangler error above, then re-run \`pnpm bootstrap --phase deploy\`.`,
+  });
+  return false;
+}
+
+interface DeployTarget {
+  projectRoot: string;
+  projectName: string;
+  productionBranch: string;
+  /** Build even when ./dist exists. A redeploy does, so it never pushes a stale build. */
+  build: boolean;
+}
+
+async function deployDist(
+  { projectRoot, projectName, productionBranch, build }: DeployTarget,
+  followUpItems: FollowUp[],
+): Promise<boolean> {
+  const distDir = path.join(projectRoot, 'dist');
+  if (build || !existsSync(distDir)) {
+    log.info(`Running ${pc.cyan('pnpm build')} before deploying.`);
     const buildResult = runCommand('pnpm build', { cwd: projectRoot });
     if (!buildResult.ok) {
       log.error('pnpm build failed; cannot deploy.');
@@ -133,7 +327,7 @@ export async function runDeployPhase(
         kind: 'local',
         message: 'Fix build errors and re-run `pnpm bootstrap --phase deploy`.',
       });
-      return { success: false, followUpItems };
+      return false;
     }
   }
 
@@ -163,85 +357,15 @@ export async function runDeployPhase(
     deployLog.error('Deploy failed.', { showLog: true });
     followUpItems.push({
       kind: 'remote',
-      message: `Deploy manually: wrangler pages deploy ./dist --project-name=${projectName} --branch=${productionBranch}`,
+      message: `Re-run \`pnpm bootstrap --phase deploy\` once the error above is fixed. It checks first, so it will not create the project twice.`,
     });
-    return { success: false, followUpItems };
+    return false;
   }
 
-  liveUrl = liveUrl ?? readLastDeploymentUrl(projectName);
   deployLog.success(
     liveUrl ? `Deployed to ${pc.cyan(liveUrl)}` : `Deployed to ${pc.cyan(projectName)}.`,
   );
-
-  // Pages Functions secrets are runtime-only — never baked into static HTML,
-  // so they must be pushed separately from the deploy itself.
-  const PAGES_SECRETS: PagesSecret[] = [
-    { key: 'LVBT_BEEHIIV_API_KEY', label: 'Beehiiv API key' },
-    { key: 'LVBT_BEEHIIV_PUBLICATION_ID', label: 'Beehiiv publication ID' },
-    { key: 'LVBT_MEMBERSHIP_INTAKE_SECRET', label: 'Membership intake shared secret' },
-    { key: 'LVBT_NOTION_API_KEY', label: 'Notion API key' },
-    { key: 'LVBT_NOTION_DATA_SOURCE_ID', label: 'Notion intake data source ID' },
-  ];
-  await Promise.all(
-    PAGES_SECRETS.map(async ({ key, label }) => {
-      const value = process.env[key]?.trim();
-      if (!value) {
-        log.warn(`${label} not set in .env.local — skipping secret upload.`);
-        followUpItems.push({
-          kind: 'remote',
-          message: `Add ${key} as a Secret in Cloudflare Pages → Settings → Environment Variables, then redeploy.`,
-        });
-        return;
-      }
-      const secretResult = await runStreamingCommand(
-        `printf '%s' ${shellEscape(value)} | wrangler pages secret put ${shellEscape(key)} --project-name=${shellEscape(projectName)}`,
-      );
-      if (secretResult.ok) {
-        log.success(`Uploaded secret ${pc.cyan(key)}`);
-      } else {
-        log.warn(`Could not upload ${pc.cyan(key)} — add it manually in Cloudflare Pages.`);
-        followUpItems.push({
-          kind: 'remote',
-          message: `Run: printf '%s' "<value>" | wrangler pages secret put ${key} --project-name=${projectName}`,
-        });
-      }
-    }),
-  );
-
-  // Persist resolved values so domain phase + future runs reuse them.
-  mergeEnvFile(
-    path.join(projectRoot, '.env.local'),
-    new Map([
-      ['CLOUDFLARE_PAGES_PROJECT', projectName],
-      ['CLOUDFLARE_PAGES_BRANCH', productionBranch],
-    ]),
-  );
-
-  // Deep link to the dashboard's Git wiring page — wrangler doesn't expose this.
-  const gitWiringUrl = accountId
-    ? `https://dash.cloudflare.com/${accountId}/pages/view/${projectName}/settings/builds-deployments`
-    : `https://dash.cloudflare.com/?to=/:account/pages/view/${projectName}/settings/builds-deployments`;
-  followUpItems.push({
-    kind: 'remote',
-    message: `Wire auto-deploys (push-to-main): ${gitWiringUrl}`,
-  });
-
-  return { success: true, followUpItems };
-}
-
-// ── helpers ─────────────────────────────────────────────────────────────────
-
-function readLastDeploymentUrl(projectName: string): string | undefined {
-  const r = runCommand(
-    `wrangler pages deployment list --project-name=${shellEscape(projectName)} --json`,
-  );
-  if (!r.ok || !r.stdout.trim()) return undefined;
-  try {
-    const deployments = JSON.parse(r.stdout) as Array<{ url?: string }>;
-    return deployments[0]?.url;
-  } catch {
-    return undefined;
-  }
+  return true;
 }
 
 /** Pick the live `https://<hash>.<project>.pages.dev` URL out of wrangler's output. */
