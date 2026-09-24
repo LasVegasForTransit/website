@@ -142,6 +142,13 @@ export function parseArgs(argv: readonly string[]): CliArgs {
       `Unknown secret name(s) for --rotate: ${unknown.join(', ')}. The names are listed in docs/reference/platform-secrets.md.`,
     );
   }
+  const listOnly = new Set(PLATFORM_SECRETS.filter((s) => s.listOnly).map((s) => s.name));
+  const unused = rotate.filter((name) => listOnly.has(name));
+  if (unused.length > 0) {
+    throw new UsageError(
+      `No feature uses ${unused.join(', ')} yet, so bootstrap does not store it. docs/reference/platform-secrets.md explains why.`,
+    );
+  }
 
   return {
     doctorMode: argv.includes('--doctor'),

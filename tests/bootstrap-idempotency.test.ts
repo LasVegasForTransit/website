@@ -183,8 +183,17 @@ void test('a second run of the whole bootstrap changes nothing and reports ready
           : target === 'pages'
             ? setup.world.pagesSecrets
             : setup.world.githubSecrets;
-      assert.ok(stored.has(secret.name), `${secret.name} should be stored on ${target}`);
+      assert.equal(
+        stored.has(secret.name),
+        secret.listOnly !== true,
+        `${secret.name} on ${target}: stored unless no feature uses it yet`,
+      );
     }
+  }
+  const listOnly = PLATFORM_SECRETS.filter((s) => s.listOnly === true).map((s) => s.name);
+  assert.ok(listOnly.length > 0);
+  for (const name of listOnly) {
+    assert.equal(setup.world.secretPrompts().includes(name), false, `${name} is never asked for`);
   }
 
   const before = snapshot(setup.root);
@@ -279,9 +288,10 @@ void test('--rotate replaces only the named secrets, everywhere they are stored'
   ]);
 });
 
-void test('--rotate refuses names that are not platform secrets', () => {
+void test('--rotate refuses unknown names and values no feature uses', () => {
   assert.throws(() => parseArgs(['--rotate', 'NOT_A_SECRET']), UsageError);
   assert.throws(() => parseArgs(['--rotate']), UsageError);
+  assert.throws(() => parseArgs(['--rotate', 'LVBT_GOOGLE_SERVICE_ACCOUNT_KEY']), UsageError);
   assert.deepEqual(parseArgs(['--rotate=LVBT_SIGN_IN_SECRET']).rotate, ['LVBT_SIGN_IN_SECRET']);
 });
 

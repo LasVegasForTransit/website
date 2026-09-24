@@ -27,6 +27,11 @@ const TARGET_LABEL: Record<SecretTarget, string> = {
 
 type Inventory = Record<SecretTarget, Set<string> | null>;
 
+// The secrets bootstrap asks for, and the ones it only lists because no
+// feature reads them yet.
+const ASKED = PLATFORM_SECRETS.filter((secret) => secret.listOnly !== true);
+const LISTED_ONLY = PLATFORM_SECRETS.filter((secret) => secret.listOnly === true);
+
 export function canGenerateSecret(secret: PlatformSecret, inventory: Inventory): boolean {
   return (
     secret.generate === true &&
@@ -135,9 +140,9 @@ function stageOf(secret: PlatformSecret, inventory: Inventory): Stage {
 function printReport(inventory: Inventory): void {
   const unreadable = (Object.keys(inventory) as SecretTarget[]).filter((t) => !inventory[t]);
   const lines: string[] = [];
-  const pending = PLATFORM_SECRETS.filter((secret) => missingTargets(secret, inventory).length > 0);
-  const done = PLATFORM_SECRETS.length - pending.length;
-  lines.push(pc.green(`${done} of ${PLATFORM_SECRETS.length} set everywhere they are needed.`));
+  const pending = ASKED.filter((secret) => missingTargets(secret, inventory).length > 0);
+  const done = ASKED.length - pending.length;
+  lines.push(pc.green(`${done} of ${ASKED.length} set everywhere they are needed.`));
   for (const stage of ['now', 'switch', 'later'] as const) {
     const group = pending.filter((secret) => stageOf(secret, inventory) === stage);
     if (group.length === 0) continue;
@@ -145,6 +150,13 @@ function printReport(inventory: Inventory): void {
     for (const secret of group) {
       lines.push(`  ${secret.name}  ${pc.dim(`(${secret.neededFor})`)}`);
     }
+  }
+  if (LISTED_ONLY.length > 0) {
+    lines.push('', pc.bold('Not asked for: no feature uses these yet'));
+    for (const secret of LISTED_ONLY) {
+      lines.push(`  ${secret.name}  ${pc.dim(`(${secret.neededFor})`)}`);
+    }
+    lines.push(pc.dim('  Leave them empty. docs/reference/platform-secrets.md explains why.'));
   }
   if (unreadable.length > 0) {
     lines.push('');
@@ -375,7 +387,7 @@ export async function runSecretsPhase(
   const followUpItems: FollowUp[] = PLATFORM_MANUAL_STEPS.filter(
     (step) => !(hasPackages && step.includes('read:packages')),
   ).map((message) => ({ kind: 'remote', message }));
-  const missing = PLATFORM_SECRETS.filter((secret) => missingTargets(secret, inventory).length > 0);
+  const missing = ASKED.filter((secret) => missingTargets(secret, inventory).length > 0);
 
   if (doctorMode) {
     return { success: missing.length === 0, followUpItems };
@@ -384,7 +396,7 @@ export async function runSecretsPhase(
   // Replacing a value that is already set happens only on request.
   let skipped = 0;
   const rotate = new Set(options.rotate ?? []);
-  for (const secret of PLATFORM_SECRETS.filter((s) => rotate.has(s.name))) {
+  for (const secret of ASKED.filter((s) => rotate.has(s.name))) {
     if (!(await rotateSecret(projectRoot, secret, inventory, followUpItems))) skipped += 1;
   }
 

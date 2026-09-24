@@ -62,6 +62,12 @@ export interface PlatformSecret {
   prerequisite?: GuidedStep;
   /** Minted by bootstrap instead of asked for. */
   generate?: boolean;
+  /**
+   * Nothing reads this yet, so bootstrap lists it in its report but never
+   * asks for it, and --rotate refuses it. Remove the flag when a feature
+   * starts using the value.
+   */
+  listOnly?: boolean;
   /** Extra step after setting, for values that must also live elsewhere. */
   afterSet?: string;
   /** Which feature needs it, so the report can say what stays blocked. */
@@ -440,6 +446,7 @@ export const PLATFORM_SECRETS: readonly PlatformSecret[] = [
     purpose:
       'Lets the website create volunteer Workspace accounts and manage Google Group membership, acting as a Workspace admin.',
     use: 'future',
+    listOnly: true,
     url: 'https://console.cloud.google.com/iam-admin/serviceaccounts?project=lvbt-core',
     steps: [
       'Skip this: leave it empty. Nothing uses it yet; it is for volunteer management, which is not built.',
@@ -455,6 +462,7 @@ export const PLATFORM_SECRETS: readonly PlatformSecret[] = [
     name: 'LVBT_GOOGLE_ADMIN_SUBJECT',
     purpose: 'Names the Workspace super admin whose permissions the service account acts with.',
     use: 'future',
+    listOnly: true,
     url: 'https://admin.google.com/ac/users',
     steps: [
       'Skip this: leave it empty. It pairs with LVBT_GOOGLE_SERVICE_ACCOUNT_KEY, which nothing uses yet.',
