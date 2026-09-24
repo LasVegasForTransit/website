@@ -484,7 +484,7 @@ function tokenPromptBody(accountId: string, zoneName: string): string {
     'Make a Cloudflare API token that can, once:',
     '',
     `  1. Open ${pc.cyan(tokenDashboardUrl(accountId))} (Manage Account → API Tokens`,
-    '     for the "Las Vegas for Better Transit" account).',
+    '     for the LVBT account, "Las Vegans for Better Transit").',
     `  2. Click ${pc.bold('Create Token')}. Next to ${pc.bold('Edit zone DNS')}, click ${pc.bold('Use template')}.`,
     `  3. Token name: ${pc.bold(`${zoneName} DNS (bootstrap)`)}.`,
     `  4. Permissions: keep the one row the template adds: ${pc.bold('Zone · DNS · Edit')}.`,
