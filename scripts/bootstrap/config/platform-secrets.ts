@@ -460,19 +460,21 @@ export const PLATFORM_SECRETS: readonly PlatformSecret[] = [
   },
   {
     name: 'LVBT_GOOGLE_ADMIN_SUBJECT',
-    purpose: 'Names the Workspace super admin whose permissions the service account acts with.',
+    purpose:
+      'The Workspace admin account the website acts as when it manages volunteer accounts and groups: root@lasvegasfortransit.org.',
     use: 'future',
     listOnly: true,
     url: 'https://admin.google.com/ac/users',
     steps: [
-      'Skip this: leave it empty. It pairs with LVBT_GOOGLE_SERVICE_ACCOUNT_KEY, which nothing uses yet.',
+      'Skip this for now: leave it empty. It pairs with LVBT_GOOGLE_SERVICE_ACCOUNT_KEY, which nothing uses yet.',
+      "When volunteer management is built, the value is root@lasvegasfortransit.org, LVBT's root Workspace super admin. Never use a person's own admin address: if that person leaves or loses admin rights, every change the website makes stops working, and the audit log would show the website's changes as theirs.",
     ],
     neededFor: 'Volunteer management',
     targets: PLATFORM_TARGETS,
     validate: (value) =>
-      value.endsWith('@lasvegasfortransit.org')
+      value === 'root@lasvegasfortransit.org'
         ? undefined
-        : 'Expected an @lasvegasfortransit.org address.',
+        : "Use root@lasvegasfortransit.org, LVBT's root Workspace admin, not a person's address.",
   },
   {
     name: 'LVBT_GIVEBUTTER_API_KEY',
