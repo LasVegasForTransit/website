@@ -82,17 +82,16 @@ bug — please add it (see [writing-docs.md](../standards/writing-docs.md)).
 
 ## Hosting & DNS (how the site gets online)
 
-- **Cloudflare Pages** <a id="cloudflare-pages"></a> — the service that hosts our
-  website and serves it to visitors. It also runs our small backend functions.
-- **Pages Function** <a id="pages-function"></a> — a small backend script that runs
-  on Cloudflare (in `functions/api/`). It handles things a static page can't, like
-  receiving a form submission. Think "one API endpoint = one file."
+- **Cloudflare Pages** <a id="cloudflare-pages"></a> — the former website host. Its
+  `pages.dev` deployment remains available for emergency rollback.
+- **Pages Function** <a id="pages-function"></a> — a backend script in
+  `functions/api/`. Wrangler compiles these scripts into the production Worker;
+  each handles a request that static HTML cannot, such as a form submission.
 - **Wrangler** <a id="wrangler"></a> — Cloudflare's command-line tool, used to run
   the functions locally and to deploy. `pnpm dev` runs it for you.
-- **Cloudflare Workers** <a id="cloudflare-workers"></a> — Cloudflare's service for
-  running small server programs close to visitors. A Worker can also serve
-  prebuilt files (static assets). The site is moving here from Pages; see the
-  [platform decision record](../explanation/decisions/organizing-platform.md).
+- **Cloudflare Workers** <a id="cloudflare-workers"></a> — Cloudflare's runtime for
+  the production website. The `lvbt-website` Worker serves prebuilt pages and
+  runs the compiled API functions.
 - **rendering on request** <a id="rendering-on-request"></a> — building a page's
   HTML on the server when someone asks for it, instead of once at build time.
   Astro calls it on-demand rendering; the opposite is prerendering.

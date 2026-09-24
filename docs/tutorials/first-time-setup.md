@@ -1,6 +1,6 @@
 # First-time setup
 
-This is the walk-through for getting the LVBT site from a fresh checkout to a live deploy. It covers what `pnpm bootstrap` will do, what it'll ask you, and what to expect at each step.
+This walkthrough takes a website checkout through local setup and checks the existing LVBT production resources. `pnpm bootstrap` presents each missing action before it changes GitHub or Cloudflare.
 
 If you just want the flag list, see [reference/bootstrap.md](../reference/bootstrap.md) instead. **Just want to edit content, not deploy your own copy of the whole site?** You probably don't need this page — see [Start here](./start-here.md).
 
@@ -8,9 +8,9 @@ If you just want the flag list, see [reference/bootstrap.md](../reference/bootst
 
 You need:
 
-- A terminal with [`node`](../reference/glossary.md#node) (≥22), [`pnpm`](../reference/glossary.md#pnpm) (≥10), `gh` (the GitHub command-line tool), and [`wrangler`](../reference/glossary.md#wrangler) (Cloudflare's command-line tool). The `install` phase will offer to install missing tools.
+- A terminal with [`node`](../reference/glossary.md#node) 24.20.0, [`pnpm`](../reference/glossary.md#pnpm) 11.25.0, `gh` (the GitHub command-line tool), and [`wrangler`](../reference/glossary.md#wrangler) (Cloudflare's command-line tool). The `install` phase offers to install missing tools.
 - A GitHub account (for the `repo` phase).
-- A Cloudflare account with at least one **zone** (a [domain Cloudflare manages](../reference/glossary.md#zone)) if you want it to set up [DNS](../reference/glossary.md#dns) for you (the `domain` phase). Otherwise the bootstrap tells you which [CNAME](../reference/glossary.md#cname) record to add wherever you bought your domain (your "registrar").
+- Access to the LVBT Cloudflare account and the `lasvegasfortransit.org` [zone](../reference/glossary.md#zone).
 
 ## Run it
 
@@ -33,9 +33,9 @@ pnpm bootstrap
 
 5. **repo** — If `origin` isn't set yet, creates a GitHub repo via `gh repo create` and wires `origin` to its **SSH URL** (the `git@github.com:…` address Git pushes to, which relies on your SSH key being set up). Auto-creates an initial commit if the working tree has none. Defaults the name to `<parent-dir>/<dir>` (so `~/Projects/LasVegansForTransit/website` becomes `LasVegansForTransit/website`).
 
-6. **deploy** — Checks whether the Cloudflare Pages project (default name `lvbt-website`, default branch `main`) exists and already has a production deployment. If both are there, it does nothing. Otherwise it creates the project and deploys `./dist` once. After that, every push to `main` deploys through GitHub Actions.
+6. **deploy** — Checks for a production deployment of the `lvbt-website` Worker. If one exists, it does nothing. Otherwise it offers to build and deploy the Worker. Routine releases from `main` run through GitHub Actions.
 
-7. **domain** — Attaches your [apex domain](../reference/glossary.md#apex-domain) (the bare `lasvegasfortransit.org`, no `www.`) and any extra hostnames to the Pages project via the Cloudflare API, skipping any that are already attached. If your DNS [zone](../reference/glossary.md#zone) is in the same Cloudflare account, it creates the missing [CNAME](../reference/glossary.md#cname) records. If not, it tells you which CNAME to add at your registrar.
+7. **domain** — Confirms that the [apex domain](../reference/glossary.md#apex-domain) and `www` belong to the production Worker. It offers to attach missing custom domains; Cloudflare handles their DNS records and certificates. A hostname already owned by another service is left untouched.
 
 8. **secrets** — Checks every server-side secret the live site needs and asks for each missing one once, with click-by-click steps. See [platform secrets](../reference/platform-secrets.md).
 

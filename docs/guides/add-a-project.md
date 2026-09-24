@@ -42,4 +42,4 @@ Steps:
 
 5. **Goals render automatically** at the end of the page from the frontmatter `goals:` array via `src/components/ProjectGoals.astro`. Do **not** add a `## Goals` section in the body — it would duplicate the auto-render.
 6. **Three statuses, kept simple.** `planned` (committed but not started), `in-progress` (working on it), `done` (achieved). If a goal genuinely changes scope, edit the text or remove it. Misses and scope changes go in `## Updates`, not in new status types.
-7. Commit. Push to `main`. Cloudflare Pages deploys in ~60 seconds.
+7. Commit. Push to `main`. GitHub Actions builds the site and deploys the verified Worker version.

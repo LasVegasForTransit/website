@@ -20,8 +20,8 @@
  *   workspace — pnpm install + pnpm build smoke
  *   env       — write .env.local; prompt for Beehiiv/donate/social URLs
  *   repo      — gh repo create + push (skipped if origin already set)
- *   deploy    — create the Pages project and first deploy, only if missing
- *   domain    — attach lasvegasfortransit.org to the Pages project, only if missing
+ *   deploy    — check the production Worker and deploy only when missing
+ *   domain    — attach apex and www to the Worker only when missing
  *   secrets   — report and set every server-side secret the site and platform need
  *
  * The flow itself lives in `run.ts`.

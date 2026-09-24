@@ -85,9 +85,9 @@ If you rename a calendar event, the URL changes. That's working as intended — 
 
 ## Rebuild cadence
 
-A GitHub Actions (GitHub's built-in automation that runs scripts on a schedule or on each push) scheduled workflow — a "cron" job, meaning it runs on a fixed timetable — at [`.github/workflows/cron-rebuild.yml`](../../.github/workflows/cron-rebuild.yml) fires twice a day (roughly morning and evening PT) and dispatches the `Deploy production` workflow. The Pages build re-fetches the calendar on its way through.
+A GitHub Actions (GitHub's built-in automation that runs scripts on a schedule or on each push) scheduled workflow — a "cron" job, meaning it runs on a fixed timetable — at [`.github/workflows/cron-rebuild.yml`](../../.github/workflows/cron-rebuild.yml) fires twice a day (roughly morning and evening PT) and dispatches the `Deploy production` workflow. The build re-fetches the calendar before the Worker version is deployed.
 
-Why twice a day: event metadata changes a few times a week at most; a morning and an evening rebuild keep the site current without burning Cloudflare Pages Free's 500-builds/month budget (twice daily = 60/month). Tighten the cron in the workflow file if events start moving faster than that.
+Why twice a day: event metadata changes a few times a week at most; morning and evening rebuilds keep the site current without unnecessary deployments. Tighten the cron in the workflow file if events start moving faster than that.
 
 Why GitHub Actions and not a Cloudflare Worker: the trigger needs zero long-lived credentials this way. The workflow uses the auto-issued `GITHUB_TOKEN`, scope-limited to `actions: write` on this repo. No PATs, no Worker secrets, no API token rotation. Logs surface in the Actions UI alongside every other deploy.
 

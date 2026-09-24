@@ -1,3 +1,4 @@
+/* eslint-disable max-lines -- one composite fake runtime for the end-to-end bootstrap tests. */
 // A pretend GitHub, Cloudflare and local toolchain for running the whole
 // bootstrap in a test. It answers the commands and API calls the bootstrap
 // makes, keeps what they change, and records every call that changes
@@ -80,6 +81,8 @@ export class FakeWorld {
   readonly repos = new Set<string>();
   origin: string | null = null;
   readonly projects = new Map<string, PagesProjectState>();
+  workerDeployed = false;
+  readonly workerDomains = new Map<string, string>();
   readonly workerSecrets = new Set<string>();
   readonly pagesSecrets = new Set<string>();
   readonly githubSecrets = new Set<string>();
@@ -285,6 +288,8 @@ export class FakeWorld {
   }
 
   private cloud(command: string): CommandResult {
+    const workerResult = this.workerCommand(command);
+    if (workerResult) return workerResult;
     if (command === 'wrangler whoami') {
       return ok(
         [
@@ -332,6 +337,20 @@ export class FakeWorld {
       return ok(JSON.stringify([...this.githubSecrets].map((name) => ({ name }))));
     }
     throw new Error(`Unexpected command: ${command}`);
+  }
+
+  private workerCommand(command: string): CommandResult | null {
+    if (command === 'wrangler deployments list --name lvbt-website --json') {
+      return this.workerDeployed
+        ? ok('[{"id":"worker-deployment-fake"}]')
+        : fail('Worker not found');
+    }
+    if (command === 'pnpm worker:deploy') {
+      this.mutate('worker deploy lvbt-website');
+      this.workerDeployed = true;
+      return ok('Worker deployed');
+    }
+    return null;
   }
 
   private runWithInput(command: string, input: string): CommandResult {
@@ -400,12 +419,44 @@ export class FakeWorld {
       if (project[1] !== FAKE_ACCOUNT_ID) return cfError(403, 10000, 'Authentication error');
       return this.pagesApi(method, decodeURIComponent(project[2]), Boolean(project[3]), body);
     }
+    if (route === `/accounts/${FAKE_ACCOUNT_ID}/workers/domains`) {
+      return this.workerDomainsApi(method, query, body);
+    }
+    if (route === `/accounts/${FAKE_ACCOUNT_ID}/workers/scripts/lvbt-website/deployments`) {
+      return this.workerDeployed
+        ? cfResult({ deployments: [{ id: 'worker-deployment-fake' }] })
+        : cfError(404, 10007, 'Worker not found');
+    }
     if (route === '/zones') {
       return cfResult(query.get('name') === this.zone.name ? [this.zone] : []);
     }
     const records = /^\/zones\/([^/]+)\/dns_records(?:\/([^/]+))?$/.exec(route);
     if (records?.[1] === this.zone.id) return this.dnsApi(method, query, records[2], body);
     throw new Error(`Unexpected Cloudflare API call: ${method} ${route}`);
+  }
+
+  private workerDomainsApi(method: string, query: URLSearchParams, body: unknown): Response {
+    if (method === 'GET') {
+      const hostname = query.get('hostname');
+      return cfResult(
+        [...this.workerDomains]
+          .filter(([host]) => !hostname || host === hostname)
+          .map(([host, service]) => ({
+            hostname: host,
+            service,
+            zone_id: this.zone.id,
+            zone_name: this.zone.name,
+          })),
+      );
+    }
+    const domain = body as { hostname: string; service: string };
+    this.mutate(`worker domain ${domain.hostname}`);
+    this.workerDomains.set(domain.hostname, domain.service);
+    return cfResult({
+      ...domain,
+      zone_id: this.zone.id,
+      zone_name: this.zone.name,
+    });
   }
 
   private pagesApi(method: string, name: string, domains: boolean, body: unknown): Response {

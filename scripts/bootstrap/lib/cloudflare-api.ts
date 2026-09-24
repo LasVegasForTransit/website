@@ -143,6 +143,47 @@ export async function listPagesDomains(
   );
 }
 
+export interface WorkerDomain {
+  hostname: string;
+  service: string;
+  zone_id: string;
+  zone_name: string;
+}
+
+export async function listWorkerDomains(
+  accountId: string,
+  hostname: string,
+  token: string,
+): Promise<CfResponse<WorkerDomain[]>> {
+  return cfRequest(
+    `/accounts/${encodeURIComponent(accountId)}/workers/domains?hostname=${encodeURIComponent(hostname)}`,
+    { token },
+  );
+}
+
+export async function attachWorkerDomain(
+  accountId: string,
+  domain: WorkerDomain,
+  token: string,
+): Promise<CfResponse<WorkerDomain>> {
+  return cfRequest(`/accounts/${encodeURIComponent(accountId)}/workers/domains`, {
+    method: 'PUT',
+    body: domain,
+    token,
+  });
+}
+
+export async function listWorkerDeployments(
+  accountId: string,
+  workerName: string,
+  token: string,
+): Promise<CfResponse<{ deployments: Array<{ id: string }> }>> {
+  return cfRequest(
+    `/accounts/${encodeURIComponent(accountId)}/workers/scripts/${encodeURIComponent(workerName)}/deployments`,
+    { token },
+  );
+}
+
 interface CfZoneAccountRef {
   id: string;
 }

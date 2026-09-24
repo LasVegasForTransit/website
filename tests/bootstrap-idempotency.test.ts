@@ -26,7 +26,7 @@ import {
   UsageError,
   type BootstrapOutcome,
 } from '../scripts/bootstrap/run.js';
-import { FakeWorld, fakeValueFor, type Answer } from './bootstrap-fake-world.js';
+import { FAKE_ACCOUNT_ID, FakeWorld, fakeValueFor, type Answer } from './bootstrap-fake-world.js';
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const CONFIG_FILES = ['.env.local', '.env.example', 'wrangler.jsonc', 'package.json'];
@@ -82,6 +82,11 @@ function freshSetup(name: string): Setup {
   for (const file of ['.env.example', 'wrangler.jsonc', 'package.json']) {
     copyFileSync(path.join(repoRoot, file), path.join(root, file));
   }
+  mkdirSync(path.join(root, 'scripts', 'bootstrap', 'config'), { recursive: true });
+  writeFileSync(
+    path.join(root, 'scripts', 'bootstrap', 'config', 'production-hosting.json'),
+    '{"mode":"pages"}\n',
+  );
   return { root, home, world: new FakeWorld(root, home) };
 }
 
@@ -221,6 +226,61 @@ void test('a second run of the whole bootstrap changes nothing and reports ready
   assert.deepEqual(snapshot(setup.root), before, 'config files should be untouched');
   assertNoSecretPrinted(setup, second.printed);
   assertReady(second);
+});
+
+void test('Worker hosting deploys and attaches without provisioning Pages', async () => {
+  const setup = freshSetup('worker-production');
+  writeFileSync(
+    path.join(setup.root, 'scripts', 'bootstrap', 'config', 'production-hosting.json'),
+    '{"mode":"worker"}\n',
+  );
+
+  const deploy = await runOnce(setup, ['--phase', 'deploy']);
+  const deployMutations = [...setup.world.mutations];
+  const domain = await runOnce(setup, ['--phase', 'domain'], firstRunAnswers());
+
+  assert.equal(deploy.results.deploy?.success, true);
+  assert.equal(domain.results.domain?.success, true);
+  assert.equal(setup.world.projects.size, 0, 'Pages must remain a rollback artifact');
+  assert.ok(deployMutations.includes('worker deploy lvbt-website'));
+  assert.ok(setup.world.mutations.includes('worker domain lasvegasfortransit.org'));
+  assert.ok(
+    [...deployMutations, ...setup.world.mutations].every(
+      (mutation) => !mutation.startsWith('pages '),
+    ),
+  );
+});
+
+void test('Worker hosting reruns and doctor checks do not change Cloudflare', async () => {
+  const setup = freshSetup('worker-idempotent');
+  writeFileSync(
+    path.join(setup.root, 'scripts', 'bootstrap', 'config', 'production-hosting.json'),
+    '{"mode":"worker"}\n',
+  );
+  setup.world.workerDeployed = true;
+  setup.world.workerDomains.set('lasvegasfortransit.org', 'lvbt-website');
+  setup.world.workerDomains.set('www.lasvegasfortransit.org', 'lvbt-website');
+  writeFileSync(path.join(setup.root, '.env.local'), `CLOUDFLARE_ACCOUNT_ID=${FAKE_ACCOUNT_ID}\n`);
+
+  const deploy = await runOnce(setup, ['--phase', 'deploy']);
+  assert.equal(deploy.results.deploy?.success, true);
+  assert.deepEqual(setup.world.mutations, []);
+
+  const deployDoctor = await runOnce(setup, ['--phase', 'deploy', '--doctor', '--redeploy']);
+  assert.equal(deployDoctor.results.deploy?.success, true);
+  assert.deepEqual(setup.world.mutations, []);
+
+  const domain = await runOnce(setup, ['--phase', 'domain', '--doctor']);
+  assert.equal(domain.results.domain?.success, true);
+  assert.deepEqual(setup.world.mutations, []);
+});
+
+void test('missing hosting configuration cannot fall back to Pages', async () => {
+  const setup = freshSetup('missing-hosting');
+  rmSync(path.join(setup.root, 'scripts', 'bootstrap', 'config', 'production-hosting.json'));
+
+  await assert.rejects(() => runOnce(setup, ['--phase', 'deploy']), UsageError);
+  assert.deepEqual(setup.world.mutations, []);
 });
 
 void test('values that are not secret are asked for in plain view and shown back; secrets never are', async () => {

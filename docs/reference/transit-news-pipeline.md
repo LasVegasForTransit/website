@@ -125,13 +125,13 @@ in the enrichment function is a possible future addition.)
 ## Layer 3 — Notion form + Cloudflare enrichment
 
 The public, zero-CLI path. A Notion form view collects submissions; a Cloudflare
-Pages Function enriches each one. Runs on infrastructure the site already uses —
+API function enriches each one. It runs in the production Worker —
 no Notion Workers beta required.
 
 **Function:** `functions/api/transit-news-intake.ts`
 **Endpoint:** `POST /api/transit-news-intake`
 **Auth:** `Authorization: Bearer <LVBT_TRANSIT_NEWS_INTAKE_SECRET>` ([timing-safe](./glossary.md#timing-safe) compare)
-**Secrets:** `LVBT_NOTION_API_KEY`, `LVBT_TRANSIT_NEWS_INTAKE_SECRET` (Cloudflare Pages env)
+**Secrets:** `LVBT_NOTION_API_KEY`, `LVBT_TRANSIT_NEWS_INTAKE_SECRET` (production Worker)
 
 ### Endpoint contract
 

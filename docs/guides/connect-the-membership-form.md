@@ -11,7 +11,7 @@ submission fails, is in
 > **Before you start.** You need edit access to the form and the value of
 > `LVBT_MEMBERSHIP_INTAKE_SECRET` that the live site uses. If the form is
 > being connected for the first time, make a new value (see [membership
-> intake](../reference/membership-intake.md#required-cloudflare-pages-secrets))
+> intake](../reference/membership-intake.md#required-cloudflare-secrets))
 > and store it with `pnpm bootstrap --phase secrets`. Never use the value in
 > your own `.env.local`; it is a local test value only.
 
@@ -26,7 +26,7 @@ submission fails, is in
    | Property                        | Value                                                  |
    | ------------------------------- | ------------------------------------------------------ |
    | `LVBT_MEMBERSHIP_INTAKE_URL`    | `https://lasvegasfortransit.org/api/membership-intake` |
-   | `LVBT_MEMBERSHIP_INTAKE_SECRET` | same value as the Cloudflare Pages secret              |
+   | `LVBT_MEMBERSHIP_INTAKE_SECRET` | same value as the production Worker secret             |
 
 6. Open **Triggers** (clock icon) → **Add Trigger** and set:
 

@@ -2,7 +2,7 @@
 
 GitHub Actions owns builds and deployment. A change is built from a clean checkout, validated, and sent to Cloudflare with the package and Wrangler versions recorded in the repository.
 
-Cloudflare Pages remains the production origin during the Workers acceptance period. The Workers candidate uses the same Astro output, Pages Functions, headers, redirects, and hostname contract. No production route points to the Worker before the live checklist passes.
+The `lvbt-website` Worker serves `lasvegasfortransit.org` and `www.lasvegasfortransit.org` through Cloudflare custom domains. The former Pages project stays available at `lvbt-website-5zh.pages.dev` as a rollback artifact; it owns neither public hostname.
 
 ## Build contract
 
@@ -15,13 +15,13 @@ Cloudflare Pages remains the production origin during the Workers acceptance per
 - the permanent `/get-involved` redirect;
 - execution of the compiled subscription API.
 
-The checked configuration lives in `wrangler.jsonc`. It exposes no custom domain or route, so uploading a candidate cannot move production traffic.
+The checked Worker configuration lives in `wrangler.jsonc`. Production custom domains are attached to the existing Worker in Cloudflare. Version uploads do not change those domains, and the deployment token cannot edit DNS or routes.
 
 ## Pull requests
 
-Every pull request receives ordinary validation. Same-repository pull requests also receive the existing Pages preview.
+Every pull request receives ordinary validation. Same-repository pull requests also receive Pages and Worker previews.
 
-The `Deploy Worker preview` workflow runs when the repository variable `CLOUDFLARE_WORKERS_PREVIEW_ENABLED` is `true`. Its token comes only from the `worker-preview` GitHub environment. The workflow uploads a version of the separate `lvbt-website-preview` Worker without deploying it. That Worker is the `preview` environment in `wrangler.jsonc` and uses the preview platform database, so test data never reaches the production database. The workflow verifies the versioned preview URL, compares its HTTP contract with Pages, runs the Playwright accessibility and visual suites against the edge deployment, and updates one pull request comment. Forks never receive the token.
+The `Deploy Worker preview` workflow runs when the repository variable `CLOUDFLARE_WORKERS_PREVIEW_ENABLED` is `true`. Its token comes only from the `worker-preview` GitHub environment. The workflow uploads a version of the separate `lvbt-website-preview` Worker without deploying it. That Worker is the `preview` environment in `wrangler.jsonc` and uses the preview platform database, so test data never reaches the production database. The workflow verifies the versioned preview URL, runs the Playwright accessibility and visual suites against the edge deployment, and updates one pull request comment. Forks never receive the token. The Pages comparison runs only when Workers production is disabled.
 
 The preview environment contains:
 
@@ -48,45 +48,19 @@ Both databases are on the free plan in Western North America. `pnpm dev` and `pn
 
 ## Production
 
-`Deploy production` builds `main`. While `LVBT_WORKERS_PRODUCTION_ENABLED` is unset, it also publishes `dist/` to the `lvbt-website` Pages project. Pages remains the fallback origin during Worker acceptance.
+`Deploy production` builds `main`. With `LVBT_WORKERS_PRODUCTION_ENABLED=true`, its Pages job is skipped. The Pages project remains online at its `pages.dev` address but receives no new production builds.
 
-Its `deploy` job declares `environment: production`, but that only makes the deployment show up under the repository's **Environments** tab with its own history — add required reviewers under **Settings → Environments → production** if you want a manual approval gate there. The two values it needs are plain repository-level settings, not scoped to that one environment, because `deploy-preview.yml`'s fork-safety job (which has no environment of its own) also reads them:
+After a successful build, `Deploy Worker candidate` uploads the same `main` commit as a versioned Worker. It runs the browser acceptance suite, records the commit, version, and preview URL, and confirms that `main` still points at the verified commit before deploying that version. The final check compares the production hostname with the version preview. A manual run is accepted only from `main`.
 
-| Setting                 | Kind                | Purpose                                                                                                                                                                                           |
-| ----------------------- | ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `CLOUDFLARE_ACCOUNT_ID` | repository variable | Selects the LVBT Cloudflare account; not secret, so its value is shown in plain text wherever GitHub lists variables                                                                              |
-| `CLOUDFLARE_API_TOKEN`  | repository secret   | Deploys to Cloudflare Pages (`wrangler pages deploy`); shared with `deploy-preview.yml`'s `preview` environment job, so it must stay a repository secret rather than move into either environment |
+The `worker-candidate` GitHub environment contains `CLOUDFLARE_WORKERS_API_TOKEN`, scoped to the LVBT account with Workers Scripts Edit permission. It reads the account ID from the repository-level `CLOUDFLARE_ACCOUNT_ID` variable. The separate `worker-preview` environment has its own token. Neither token can change zone DNS or Worker routes. The repository-level `CLOUDFLARE_API_TOKEN` remains for Pages pull request previews; it is not used for production Worker deployment.
 
-Create the token: open `https://dash.cloudflare.com/<account-id>/api-tokens`, click **Create Token**, then **Create Custom Token** → **Get started** (Cloudflare has no ready-made template for Pages alone). Under **Permissions**, add one row: **Account · Cloudflare Pages · Edit**. Under **Account Resources**, choose **Include** and the LVBT account, not "All accounts". Leave **Zone Resources** at its default — this token needs no zone permission. Leave the TTL empty so deploys keep working. Click **Continue to summary**, then **Create Token**, and copy it: Cloudflare shows it only once. Store it with `gh secret set CLOUDFLARE_API_TOKEN` (paste the value at the prompt; never pass it as a command-line argument). Store the account ID, which is not secret, with `gh variable set CLOUDFLARE_ACCOUNT_ID`.
-
-After a successful production build, `Deploy Worker candidate` uploads the same `main` commit as a
-versioned Worker when `CLOUDFLARE_WORKERS_CANDIDATE_ENABLED` is `true`. Before cutover it compares
-the candidate with Pages. It then runs the browser acceptance suite and records the commit, Worker
-version, and preview URL in the workflow summary. With `LVBT_WORKERS_PRODUCTION_ENABLED` unset, the
-workflow only uploads a version and does not edit a route or create a deployment.
-
-With `LVBT_WORKERS_PRODUCTION_ENABLED` set to `true`, the workflow skips the comparison with the
-older Pages fallback, confirms that `main` still points at the verified commit, and deploys that
-exact Worker version. It then compares the production hostname with the version preview. The
-preview excludes analytics, so this final comparison checks responses but not analytics insertion.
-
-The `worker-candidate` environment needs its own `CLOUDFLARE_WORKERS_API_TOKEN` environment secret
-(create it the same way as `worker-preview`'s, in [test the Workers
-candidate](../guides/test-the-workers-candidate.md)) and reads the same `CLOUDFLARE_ACCOUNT_ID`
-repository variable as `worker-preview`. Giving each environment its own token means rotating one
-never touches the other. A manual run is accepted only from `main`.
-
-Workers cutover requires a candidate built from the current `main` commit and a recorded Pages
-deployment. DNS, TLS, redirects, headers, analytics, static pages, 404 handling, and every API
-route are checked against the version preview before the hostname route changes. The Pages project
-stays available until the Worker passes the same checks on the production hostname.
+Cloudflare owns the DNS records and certificates for the two Worker custom domains. The former `/*` overlay routes and Pages custom-domain associations are absent. The Pages deployment remains reachable through its `pages.dev` address for emergency recovery.
 
 ## Rollback
 
-Before cutover, rollback selects the preceding successful Pages deployment. During the route
-overlay, removing the two website Worker routes immediately returns traffic to the Pages fallback.
-For a Worker-only release regression, `wrangler rollback <VERSION_ID> --message <reason>` sends all
-Worker traffic to the recorded version without changing routes or DNS.
+For a Worker release regression, `wrangler rollback <VERSION_ID> --message <reason>` sends all Worker traffic to the recorded version without changing custom domains or DNS. Verify both public hostnames afterward.
+
+If the Worker itself cannot serve traffic, remove each Worker custom domain, restore the Pages custom-domain association and its proxied Pages CNAME, then verify TLS and the site contract on both hostnames. The Pages deployment remains accessible at `lvbt-website-5zh.pages.dev` throughout this procedure. Restoring Pages changes routing and requires a separate incident decision; it is not the response to an ordinary bad release.
 
 The rollback version must retain every binding used by that release. Deleted or incompatible storage bindings prevent Cloudflare from applying an older version.
 

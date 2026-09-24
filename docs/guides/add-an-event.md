@@ -17,7 +17,7 @@ Events live in the LVBT (Las Vegans for Better Transit) Google Calendar, not in 
    - **Date / time** — in Pacific Time (Las Vegas's time zone, UTC−8/−7). Always set an end time.
    - **Location** — a meeting URL (virtual), a full physical address (in-person), or both (hybrid — put the address in Location and the meeting URL in Description). For physical events, use the full Google-style address so the site can publish a real postal address in structured data.
    - **Description** — the first paragraph becomes the card / lede summary (keep it to one sentence). Everything after that paragraph becomes the body on the detail page; format it however you want with GCal's rich-text editor (the toolbar for bold, lists, links — like a mini word processor). Add `RSVP: https://…` if registration goes through an external sign-up form. Add `ADMISSION: https://…` or `TICKETS: https://…` only when the link is where people get admission or tickets, even for a free event.
-3. Save. The next scheduled rebuild (within ~1 hour) picks it up. To rush it, trigger a redeploy from the Cloudflare Pages dashboard.
+3. Save. The scheduled rebuild runs twice a day. For a same-day correction, run the `cron-rebuild` workflow from GitHub Actions; it dispatches the production build.
 
 ## When an event needs more than what GCal can hold
 
