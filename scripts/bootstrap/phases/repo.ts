@@ -1,6 +1,6 @@
 import path from 'node:path';
 import { existsSync } from 'node:fs';
-import { log, note, spinner, text } from '@clack/prompts';
+import { log, note, spinner } from '@clack/prompts';
 import pc from 'picocolors';
 import type { FollowUp, PhaseResult } from '../lib/types.js';
 import {
@@ -9,7 +9,8 @@ import {
   shellEscape,
   summarizeOutputLine,
 } from '../lib/shell.js';
-import { promptOrExit, promptConfirm, logSubline } from '../lib/ui.js';
+import { promptConfirm, logSubline } from '../lib/ui.js';
+import { rt } from '../lib/runtime.js';
 import { inferRepoDefaults } from '../lib/repo-defaults.js';
 import { validateOwnerRepo } from '../lib/validators.js';
 
@@ -53,7 +54,11 @@ export async function runRepoPhase(projectRoot: string, doctorMode: boolean): Pr
     'GitHub',
   );
 
-  const proceed = await promptConfirm('Connect or create the GitHub repo now?', true);
+  const proceed = await promptConfirm(
+    'repo.proceed',
+    'Connect or create the GitHub repo now?',
+    true,
+  );
   if (!proceed) {
     log.info(pc.dim('Skipping. Repo step deferred.'));
     followUpItems.push({
@@ -103,18 +108,14 @@ export async function runRepoPhase(projectRoot: string, doctorMode: boolean): Pr
   while (attempts < 5) {
     attempts += 1;
 
-    const fullNameRaw = await promptOrExit(
-      text({
-        message: 'GitHub repo (owner/name)',
-        placeholder: defaults.fullName,
-        defaultValue: fullName,
-        validate: validateOwnerRepo,
-      }),
-    );
-    fullName =
-      typeof fullNameRaw === 'string' && fullNameRaw.trim()
-        ? fullNameRaw.trim()
-        : defaults.fullName;
+    const fullNameRaw = await rt().prompts.text({
+      id: 'repo.name',
+      message: 'GitHub repo (owner/name)',
+      placeholder: defaults.fullName,
+      defaultValue: fullName,
+      validate: validateOwnerRepo,
+    });
+    fullName = fullNameRaw.trim() || defaults.fullName;
 
     const probe = spinner();
     probe.start(`Checking github.com/${fullName} ...`);
@@ -122,9 +123,17 @@ export async function runRepoPhase(projectRoot: string, doctorMode: boolean): Pr
     if (status.kind === 'accessible') {
       probe.stop(`Repo ${pc.cyan(fullName)} exists`);
       log.info(`${pc.bold('Found existing repo:')} ${pc.cyan(status.url)}`);
-      const connect = await promptConfirm('Wire this repo as `origin` (SSH) and push?', true);
+      const connect = await promptConfirm(
+        'repo.connect-existing',
+        'Wire this repo as `origin` (SSH) and push?',
+        true,
+      );
       if (!connect) {
-        const tryDifferent = await promptConfirm('Pick a different name?', true);
+        const tryDifferent = await promptConfirm(
+          'repo.try-different',
+          'Pick a different name?',
+          true,
+        );
         if (tryDifferent) continue;
         followUpItems.push({
           kind: 'remote',
@@ -158,11 +167,16 @@ export async function runRepoPhase(projectRoot: string, doctorMode: boolean): Pr
     }
 
     const createIt = await promptConfirm(
+      'repo.create',
       `Try to create ${fullName}? (If the repo actually exists but you can't see it, this will fail with a clear error.)`,
       true,
     );
     if (!createIt) {
-      const tryDifferent = await promptConfirm('Pick a different name?', true);
+      const tryDifferent = await promptConfirm(
+        'repo.try-different',
+        'Pick a different name?',
+        true,
+      );
       if (tryDifferent) continue;
       log.info(pc.dim('Skipping. Repo creation deferred.'));
       followUpItems.push({
@@ -172,7 +186,7 @@ export async function runRepoPhase(projectRoot: string, doctorMode: boolean): Pr
       return { success: true, followUpItems };
     }
 
-    const isPublic = await promptConfirm('Make the repo public?', true);
+    const isPublic = await promptConfirm('repo.public', 'Make the repo public?', true);
     const visibility = isPublic ? '--public' : '--private';
 
     const s = spinner();
@@ -208,10 +222,15 @@ export async function runRepoPhase(projectRoot: string, doctorMode: boolean): Pr
     const rawErr = (createResult.stderr || createResult.stdout).trim();
     if (rawErr) log.error(rawErr.split('\n').slice(0, 6).join('\n'));
 
-    const tryDifferent = await promptConfirm('Try again with a different name?', true);
+    const tryDifferent = await promptConfirm(
+      'repo.try-different',
+      'Try again with a different name?',
+      true,
+    );
     if (tryDifferent) continue;
 
     const tryInteractive = await promptConfirm(
+      'repo.interactive',
       'Drop into the interactive `gh repo create` flow?',
       false,
     );
@@ -289,6 +308,7 @@ async function ensureInitialCommit(projectRoot: string): Promise<CommitGuardResu
 
   log.warn('No commits yet. Pushing requires at least one commit.');
   const makeIt = await promptConfirm(
+    'repo.initial-commit',
     'Make an initial commit now (`git add . && git commit -m "Initial commit"`)?',
     true,
   );

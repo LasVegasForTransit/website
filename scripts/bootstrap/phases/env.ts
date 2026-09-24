@@ -1,11 +1,12 @@
 import { existsSync, copyFileSync } from 'node:fs';
 import { randomUUID } from 'node:crypto';
 import path from 'node:path';
-import { log, text } from '@clack/prompts';
+import { log } from '@clack/prompts';
 import pc from 'picocolors';
 import type { FollowUp, PhaseResult } from '../lib/types.js';
 import { parseEnvFile, mergeEnvFile } from '../lib/env-file.js';
-import { promptOrExit, promptConfirm, printToolTable, type ToolRow } from '../lib/ui.js';
+import { promptConfirm, printToolTable, type ToolRow } from '../lib/ui.js';
+import { rt } from '../lib/runtime.js';
 import type { ReadinessState } from '../state.js';
 
 interface EnvKeyConfig {
@@ -188,6 +189,7 @@ export async function runEnvPhase(
 
   // Step 3: single up-front gate
   const fillInNow = await promptConfirm(
+    'env.fill',
     `Fill in the ${placeholderKeys.length} placeholder value(s) now? (n keeps placeholders — re-run with \`pnpm bootstrap --phase env\` later.)`,
     false,
   );
@@ -220,22 +222,21 @@ export async function runEnvPhase(
 
     // Hint is surrounding context (where to find the value, what blank means).
     log.info(pc.dim(config.hint));
-    const value = await promptOrExit(
-      text({
-        // Placeholder is the greyed example inside the input — never submitted.
-        message: `${config.prompt} ${pc.dim('(blank to skip)')}`,
-        placeholder: config.example,
-        validate: (raw: string | undefined) => {
-          const trimmed = (raw ?? '').trim();
-          if (!trimmed) {
-            return config.required ? `${config.prompt} is required.` : undefined;
-          }
-          return config.validate ? config.validate(trimmed) : undefined;
-        },
-      }),
-    );
+    const value = await rt().prompts.text({
+      id: key,
+      // Placeholder is the greyed example inside the input — never submitted.
+      message: `${config.prompt} ${pc.dim('(blank to skip)')}`,
+      placeholder: config.example,
+      validate: (raw: string | undefined) => {
+        const trimmed = (raw ?? '').trim();
+        if (!trimmed) {
+          return config.required ? `${config.prompt} is required.` : undefined;
+        }
+        return config.validate ? config.validate(trimmed) : undefined;
+      },
+    });
 
-    if (typeof value === 'string' && value.trim()) {
+    if (value.trim()) {
       updates.set(key, value.trim());
     }
   }
@@ -298,6 +299,7 @@ export async function runEnvPhase(
   }
   if (lines.length > 0) {
     const sync = await promptConfirm(
+      'env.sync-reminder',
       'Add a follow-up reminder to sync these vars to Cloudflare Pages?',
       true,
     );

@@ -1,5 +1,6 @@
-import { cancel, confirm, isCancel, note } from '@clack/prompts';
+import { note } from '@clack/prompts';
 import pc from 'picocolors';
+import { rt } from './runtime.js';
 
 export function logSubline(message: string): void {
   process.stdout.write(`${pc.gray('│')}  ${message}\n`);
@@ -32,23 +33,11 @@ export function printToolTable(title: string, rows: ToolRow[]): void {
   note(lines.join('\n'), title);
 }
 
-export async function promptOrExit<T>(
-  promise: Promise<T>,
-  cancelMessage = 'Bootstrap cancelled.',
-): Promise<T> {
-  const result = await promise;
-  if (isCancel(result)) {
-    cancel(cancelMessage);
-    process.exit(1);
-  }
-  return result;
-}
-
+/** Yes/no question. `id` names the question for tests; the terminal never shows it. */
 export async function promptConfirm(
+  id: string,
   message: string,
   initialValue: boolean,
-  cancelMessage?: string,
 ): Promise<boolean> {
-  const result = await promptOrExit(confirm({ message, initialValue }), cancelMessage);
-  return result === true;
+  return rt().prompts.confirm({ id, message, initialValue });
 }

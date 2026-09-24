@@ -1,15 +1,9 @@
 import path from 'node:path';
-import { promises as dns } from 'node:dns';
-import { log, note, password, select, text } from '@clack/prompts';
+import { log, note } from '@clack/prompts';
 import pc from 'picocolors';
 import type { FollowUp, PhaseResult } from '../lib/types.js';
-import {
-  printToolTable,
-  promptConfirm,
-  promptOrExit,
-  logSubline,
-  type ToolRow,
-} from '../lib/ui.js';
+import { printToolTable, promptConfirm, logSubline, type ToolRow } from '../lib/ui.js';
+import { rt } from '../lib/runtime.js';
 import {
   clearCloudflareAccount,
   clearCloudflareApiToken,
@@ -25,7 +19,6 @@ import {
   getPagesProject,
   isDomainAlreadyAttachedError,
   listPagesDomains,
-  readWranglerOAuthToken,
   upsertCname,
 } from '../lib/cloudflare-api.js';
 
@@ -70,47 +63,41 @@ export async function runDomainPhase(
   const fastPathSatisfied = await tryFastPath(inferredApex, inferredExtras, inferredProject);
   if (fastPathSatisfied) {
     const reconfigure = await promptConfirm(
+      'domain.reconfigure',
       'Reconfigure anyway? (add a hostname, change project, etc.)',
       false,
     );
     if (!reconfigure) return { success: true, followUpItems };
   }
 
-  const domainRaw = await promptOrExit(
-    text({
-      message: 'Apex domain',
-      placeholder: inferredApex,
-      defaultValue: inferredApex,
-      validate: validateHostname,
-    }),
-  );
-  const apex =
-    typeof domainRaw === 'string' && domainRaw.trim()
-      ? domainRaw.trim().toLowerCase()
-      : inferredApex;
+  const domainRaw = await rt().prompts.text({
+    id: 'domain.apex',
+    message: 'Apex domain',
+    placeholder: inferredApex,
+    defaultValue: inferredApex,
+    validate: validateHostname,
+  });
+  const apex = domainRaw.trim() ? domainRaw.trim().toLowerCase() : inferredApex;
 
   // Extra hostnames are explicit opt-in. Common case is `www.<apex>`, but it's
   // not assumed — orgs that publish apex-only (or use `app.`, `staging.`) need
   // to be free of a hidden www default. Blank = apex only.
-  const extrasRaw = await promptOrExit(
-    text({
-      message: 'Additional hostnames (comma-separated, blank = apex only)',
-      placeholder: `e.g. www.${apex}`,
-      defaultValue: inferredExtras.join(','),
-    }),
-  );
-  const extras = parseHostList(typeof extrasRaw === 'string' ? extrasRaw : '', apex);
+  const extrasRaw = await rt().prompts.text({
+    id: 'domain.extra-hosts',
+    message: 'Additional hostnames (comma-separated, blank = apex only)',
+    placeholder: `e.g. www.${apex}`,
+    defaultValue: inferredExtras.join(','),
+  });
+  const extras = parseHostList(extrasRaw, apex);
 
-  const projectRaw = await promptOrExit(
-    text({
-      message: 'Cloudflare Pages project',
-      placeholder: inferredProject,
-      defaultValue: inferredProject,
-      validate: validatePagesProjectName,
-    }),
-  );
-  const project =
-    typeof projectRaw === 'string' && projectRaw.trim() ? projectRaw.trim() : inferredProject;
+  const projectRaw = await rt().prompts.text({
+    id: 'domain.project',
+    message: 'Cloudflare Pages project',
+    placeholder: inferredProject,
+    defaultValue: inferredProject,
+    validate: validatePagesProjectName,
+  });
+  const project = projectRaw.trim() ? projectRaw.trim() : inferredProject;
 
   const hosts = [apex, ...extras];
 
@@ -143,7 +130,7 @@ export async function runDomainPhase(
     const accountId = accountResolution.accountId;
     lastAccountId = accountId;
 
-    const oauthToken = readWranglerOAuthToken();
+    const oauthToken = rt().wranglerOAuthToken();
     if (!oauthToken) {
       log.warn(
         `Couldn't read wrangler's OAuth token from disk — falling back to a dashboard link.`,
@@ -392,7 +379,7 @@ async function tryFastPath(apex: string, extras: string[], project: string): Pro
   const accountId = process.env.CLOUDFLARE_ACCOUNT_ID?.trim();
   if (!accountId || !apex || !project) return false;
 
-  const oauthToken = readWranglerOAuthToken();
+  const oauthToken = rt().wranglerOAuthToken();
   if (!oauthToken) return false;
 
   const hosts = [apex, ...extras];
@@ -469,15 +456,14 @@ async function ensureApiToken(
     tryOpenInBrowser(tokenDashboardUrl(accountId));
   }
 
-  const pasted = (await promptOrExit(
-    password({
-      message:
-        opts.reason === 'auth-retry'
-          ? 'Paste a new token (the previous one was rejected):'
-          : 'Paste the Cloudflare API token:',
-      validate: validatePastedToken,
-    }),
-  )) as string;
+  const pasted = await rt().prompts.password({
+    id: 'CLOUDFLARE_API_TOKEN',
+    message:
+      opts.reason === 'auth-retry'
+        ? 'Paste a new token (the previous one was rejected):'
+        : 'Paste the Cloudflare API token:',
+    validate: validatePastedToken,
+  });
   const token = pasted.trim();
 
   process.env.CLOUDFLARE_API_TOKEN = token;
@@ -541,13 +527,12 @@ async function diagnoseAndRecover(
       },
     ];
 
-    const choice = (await promptOrExit(
-      select({
-        message: 'Pick how to fix the account mismatch:',
-        options,
-        initialValue: 'switch',
-      }),
-    )) as RecoveryChoice;
+    const choice = await rt().prompts.select<RecoveryChoice>({
+      id: 'domain.account-mismatch',
+      message: 'Pick how to fix the account mismatch:',
+      options,
+      initialValue: 'switch',
+    });
 
     if (choice === 'switch') {
       clearCloudflareAccount(projectRoot);
@@ -723,9 +708,12 @@ interface PollOptions {
 
 async function pollHostLive(host: string, opts: PollOptions): Promise<LiveStatus> {
   const deadline = Date.now() + opts.maxWaitMs;
+  // The attempt cap only matters when sleeping takes no time (tests); in a
+  // terminal the deadline ends the loop first.
+  const maxAttempts = Math.floor(opts.maxWaitMs / opts.intervalMs) + 1;
   let lastIp: string | undefined;
   let lastHttpError: string | undefined;
-  while (Date.now() < deadline) {
+  for (let attempt = 0; attempt < maxAttempts && Date.now() < deadline; attempt++) {
     const ips = await safeResolve4(host);
     if (ips.length > 0) {
       lastIp = ips[0];
@@ -736,7 +724,7 @@ async function pollHostLive(host: string, opts: PollOptions): Promise<LiveStatus
       lastHttpError = http.error;
     }
     if (Date.now() + opts.intervalMs >= deadline) break;
-    await new Promise<void>((r) => setTimeout(r, opts.intervalMs));
+    await rt().sleep(opts.intervalMs);
   }
   if (lastIp) {
     return { kind: 'dns_only', ip: lastIp, httpError: lastHttpError ?? 'timed out' };
@@ -750,7 +738,7 @@ async function tryFetch(url: string, timeoutMs: number): Promise<FetchProbeResul
   try {
     // GET (not HEAD): Cloudflare sometimes serves cached error pages without a
     // body for HEADs.
-    const res = await fetch(url, { method: 'GET', signal: ctrl.signal, redirect: 'follow' });
+    const res = await rt().fetch(url, { method: 'GET', signal: ctrl.signal, redirect: 'follow' });
     return {
       ok: res.ok,
       status: res.status,
@@ -769,18 +757,11 @@ function sortedJoin(xs: string[]): string {
   return [...xs].sort().join(',');
 }
 
-async function safeResolveNs(host: string): Promise<string[]> {
-  try {
-    return await dns.resolveNs(host);
-  } catch {
-    return [];
-  }
+// Both lookups answer [] when the name does not resolve.
+function safeResolveNs(host: string): Promise<string[]> {
+  return rt().resolveNs(host);
 }
 
-async function safeResolve4(host: string): Promise<string[]> {
-  try {
-    return await dns.resolve4(host);
-  } catch {
-    return [];
-  }
+function safeResolve4(host: string): Promise<string[]> {
+  return rt().resolve4(host);
 }

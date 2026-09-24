@@ -1,8 +1,8 @@
 import path from 'node:path';
-import { log, select } from '@clack/prompts';
+import { log } from '@clack/prompts';
 import { runCommand, runInteractiveCommand } from './shell.js';
 import { mergeEnvFile } from './env-file.js';
-import { promptOrExit } from './ui.js';
+import { rt } from './runtime.js';
 
 export interface CloudflareAccount {
   id: string;
@@ -37,7 +37,7 @@ const SWITCH_USERS = '__lvbt_switch_wrangler_users__';
  * on exit codes to know when the table is unavailable.
  */
 export async function ensureCloudflareAccount(projectRoot: string): Promise<AccountResolution> {
-  if (!process.stdout.isTTY && process.env.CLOUDFLARE_ACCOUNT_ID?.trim()) {
+  if (!rt().isInteractive() && process.env.CLOUDFLARE_ACCOUNT_ID?.trim()) {
     return { ok: true, accountId: process.env.CLOUDFLARE_ACCOUNT_ID.trim() };
   }
 
@@ -60,24 +60,23 @@ export async function ensureCloudflareAccount(projectRoot: string): Promise<Acco
   // for the user to verify (account name + first 8 chars of id) without us
   // having to dump the full 32-char id on a follow-up line that would wrap on
   // narrow terminals and trip up subsequent clack spinner rendering.
-  const chosen = (await promptOrExit(
-    select({
-      message: 'Cloudflare account for this project:',
-      options: [
-        ...accounts.map((a) => ({
-          value: a.id,
-          label: `${a.name} · ${a.id.slice(0, 8)}`,
-          hint: a.id,
-        })),
-        {
-          value: SWITCH_USERS,
-          label: 'Switch wrangler users (logout + login)',
-          hint: 'use a different Cloudflare login entirely',
-        },
-      ],
-      initialValue,
-    }),
-  )) as string;
+  const chosen = await rt().prompts.select({
+    id: 'cloudflare.account',
+    message: 'Cloudflare account for this project:',
+    options: [
+      ...accounts.map((a) => ({
+        value: a.id,
+        label: `${a.name} · ${a.id.slice(0, 8)}`,
+        hint: a.id,
+      })),
+      {
+        value: SWITCH_USERS,
+        label: 'Switch wrangler users (logout + login)',
+        hint: 'use a different Cloudflare login entirely',
+      },
+    ],
+    initialValue,
+  });
 
   if (chosen === SWITCH_USERS) {
     const logoutOk = runInteractiveCommand('wrangler logout');
@@ -149,6 +148,8 @@ function parseAccounts(stdout: string): CloudflareAccount[] {
   return accounts;
 }
 
+// A no-op when .env.local already holds this account, so a re-run that picks
+// the same account leaves the file untouched.
 function persistChoice(projectRoot: string, accountId: string): void {
   const target = path.join(projectRoot, '.env.local');
   mergeEnvFile(target, new Map([['CLOUDFLARE_ACCOUNT_ID', accountId]]));

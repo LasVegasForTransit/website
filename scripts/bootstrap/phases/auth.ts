@@ -66,7 +66,11 @@ export async function runAuthPhase(
       rows.length = 0;
     }
 
-    const shouldAuth = await promptConfirm(`${cap.label} is not authenticated. Log in now?`, true);
+    const shouldAuth = await promptConfirm(
+      `auth.${cap.id}`,
+      `${cap.label} is not authenticated. Log in now?`,
+      true,
+    );
 
     if (!shouldAuth) {
       rows.push({ label: cap.label, status: 'deferred', detail: 'login deferred' });

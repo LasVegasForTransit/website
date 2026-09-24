@@ -1,10 +1,10 @@
 import { randomUUID } from 'node:crypto';
-import { spawnSync } from 'node:child_process';
-import { log, note, password, select } from '@clack/prompts';
+import { log, note } from '@clack/prompts';
 import pc from 'picocolors';
 import type { FollowUp, PhaseResult } from '../lib/types.js';
 import { runCommand } from '../lib/shell.js';
-import { promptConfirm, promptOrExit } from '../lib/ui.js';
+import { promptConfirm } from '../lib/ui.js';
+import { rt } from '../lib/runtime.js';
 import {
   PLATFORM_MANUAL_STEPS,
   PLATFORM_SECRETS,
@@ -105,14 +105,9 @@ function writeSecret(
   name: string,
   value: string,
 ): boolean {
-  const result = spawnSync('/bin/sh', ['-c', setCommand(target, name)], {
-    cwd: projectRoot,
-    input: value,
-    encoding: 'utf8',
-    stdio: ['pipe', 'pipe', 'pipe'],
-  });
-  if (result.status !== 0) {
-    log.error(`Could not set ${name} on ${TARGET_LABEL[target]}: ${result.stderr.trim()}`);
+  const result = rt().runWithInput(setCommand(target, name), value, { cwd: projectRoot });
+  if (!result.ok) {
+    log.error(`Could not set ${name} on ${TARGET_LABEL[target]}: ${result.stderr}`);
     return false;
   }
   return true;
@@ -159,11 +154,6 @@ function printReport(inventory: Inventory): void {
   note(lines.join('\n'), 'Platform secrets');
 }
 
-function openInBrowser(url: string): void {
-  const opener = process.platform === 'darwin' ? 'open' : 'xdg-open';
-  spawnSync(opener, [url], { stdio: 'ignore' });
-}
-
 function instructions(secret: PlatformSecret): string {
   const lines = [secret.purpose];
   if (secret.url) lines.push('', `${pc.bold('Open:')} ${pc.cyan(secret.url)}`);
@@ -184,19 +174,21 @@ async function obtainValue(secret: PlatformSecret, generate: boolean): Promise<s
     ? 'This secret is already set elsewhere or a target could not be checked. Paste the same existing value; generating a new one here would break the integration. Leave the prompt empty if you cannot retrieve it.'
     : '';
   note([existingValueWarning, instructions(secret)].filter(Boolean).join('\n\n'), secret.name);
-  if (secret.url && (await promptConfirm('Open that page in your browser?', true))) {
-    openInBrowser(secret.url);
+  if (
+    secret.url &&
+    (await promptConfirm(`${secret.name}.open`, 'Open that page in your browser?', true))
+  ) {
+    rt().openUrl(secret.url);
   }
-  const entered = await promptOrExit(
-    password({
-      message: `Paste ${secret.name} (leave empty to skip for now)`,
-      validate: (raw) => {
-        const trimmed = (raw ?? '').trim();
-        return trimmed ? secret.validate?.(trimmed) : undefined;
-      },
-    }),
-  );
-  const value = String(entered).trim();
+  const entered = await rt().prompts.password({
+    id: secret.name,
+    message: `Paste ${secret.name} (leave empty to skip for now)`,
+    validate: (raw) => {
+      const trimmed = (raw ?? '').trim();
+      return trimmed ? secret.validate?.(trimmed) : undefined;
+    },
+  });
+  const value = entered.trim();
   return value || null;
 }
 
@@ -212,6 +204,7 @@ async function finishAfterSet(
     return;
   }
   const show = await promptConfirm(
+    `${secret.name}.show-generated`,
     `${secret.afterSet} Show the generated value once so you can copy it?`,
     true,
   );
@@ -225,17 +218,16 @@ async function chooseSecrets(
   followUpItems: FollowUp[],
 ): Promise<PlatformSecret[]> {
   const stages = new Set(missing.map((secret) => stageOf(secret, inventory)));
-  const scope = (await promptOrExit(
-    select<Stage>({
-      message: 'Which values do you want to set now?',
-      initialValue: stages.has('now') ? 'now' : stages.has('switch') ? 'switch' : 'later',
-      options: [
-        { value: 'now', label: 'Only what live features need', hint: STAGE_HEADING.now },
-        { value: 'switch', label: 'Those, plus what the Worker switch-over needs' },
-        { value: 'later', label: 'Everything, including features not built yet' },
-      ],
-    }),
-  )) as Stage;
+  const scope = await rt().prompts.select<Stage>({
+    id: 'secrets.scope',
+    message: 'Which values do you want to set now?',
+    initialValue: stages.has('now') ? 'now' : stages.has('switch') ? 'switch' : 'later',
+    options: [
+      { value: 'now', label: 'Only what live features need', hint: STAGE_HEADING.now },
+      { value: 'switch', label: 'Those, plus what the Worker switch-over needs' },
+      { value: 'later', label: 'Everything, including features not built yet' },
+    ],
+  });
   const order: Stage[] = ['now', 'switch', 'later'];
   const pending = missing
     .filter((secret) => order.indexOf(stageOf(secret, inventory)) <= order.indexOf(scope))

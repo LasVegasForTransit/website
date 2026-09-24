@@ -135,31 +135,17 @@
       "count": 1
     }
   },
-  "scripts/bootstrap/cold-start.ts": {
-    "@typescript-eslint/no-non-null-assertion": {
-      "count": 2
-    },
-    "turbo/no-undeclared-env-vars": {
-      "count": 1
-    }
-  },
   "scripts/bootstrap/lib/cloudflare-api.ts": {
     "@typescript-eslint/no-non-null-assertion": {
-      "count": 5
+      "count": 3
     },
     "@typescript-eslint/no-unnecessary-condition": {
       "count": 3
-    },
-    "@typescript-eslint/prefer-regexp-exec": {
-      "count": 2
     },
     "max-params": {
       "count": 1
     },
     "no-useless-assignment": {
-      "count": 1
-    },
-    "turbo/no-undeclared-env-vars": {
       "count": 1
     }
   },
@@ -173,17 +159,6 @@
   },
   "scripts/bootstrap/lib/load-env.ts": {
     "@typescript-eslint/prefer-nullish-coalescing": {
-      "count": 1
-    }
-  },
-  "scripts/bootstrap/lib/shell.ts": {
-    "@eslint-community/eslint-comments/require-description": {
-      "count": 1
-    },
-    "@typescript-eslint/no-unnecessary-condition": {
-      "count": 2
-    },
-    "@typescript-eslint/no-unnecessary-type-assertion": {
       "count": 1
     }
   },
