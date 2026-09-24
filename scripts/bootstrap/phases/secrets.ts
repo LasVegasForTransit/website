@@ -8,9 +8,12 @@ import { rt } from '../lib/runtime.js';
 import {
   PLATFORM_MANUAL_STEPS,
   PLATFORM_SECRETS,
+  skipNoteFor,
+  type GuidedStep,
   type PlatformSecret,
   type SecretTarget,
 } from '../config/platform-secrets.js';
+import { isConfirmed, markConfirmed, type ReadinessState } from '../state.js';
 
 const WORKER_NAME = 'lvbt-website';
 const PAGES_PROJECT = 'lvbt-website';
@@ -154,14 +157,46 @@ function printReport(inventory: Inventory): void {
   note(lines.join('\n'), 'Platform secrets');
 }
 
+function numbered(steps: readonly string[]): string[] {
+  return steps.map((step, index) => `${index + 1}. ${step}`);
+}
+
+// What the value is for, when skipping is fine, where bootstrap stores it,
+// and the click-by-click steps to get it.
 function instructions(secret: PlatformSecret): string {
-  const lines = [secret.purpose];
+  const lines = [`${pc.bold('What it is for:')} ${secret.purpose}`];
+  const skip = skipNoteFor(secret);
+  if (skip) lines.push(`${pc.bold('Fine to skip?')} ${skip}`);
+  lines.push(
+    `${pc.bold('Stored on:')} ${secret.targets.map((t) => TARGET_LABEL[t]).join(', ')}. You paste it once; bootstrap stores it everywhere.`,
+  );
   if (secret.url) lines.push('', `${pc.bold('Open:')} ${pc.cyan(secret.url)}`);
-  if (secret.steps?.length) {
-    lines.push('');
-    secret.steps.forEach((step, index) => lines.push(`${index + 1}. ${step}`));
-  }
+  if (secret.steps?.length) lines.push('', ...numbered(secret.steps));
   return lines.join('\n');
+}
+
+/**
+ * A setup step bootstrap cannot check for itself. Shown until the person
+ * confirms it is done; the "yes" is remembered in the bootstrap state file,
+ * so a later run never asks again.
+ */
+async function confirmPrerequisite(
+  step: GuidedStep,
+  state: ReadinessState | undefined,
+): Promise<boolean> {
+  if (state && isConfirmed(state, step.id)) return true;
+  const lines = [...numbered(step.steps)];
+  if (step.url) lines.unshift(`${pc.bold('Open:')} ${pc.cyan(step.url)}`, '');
+  note(lines.join('\n'), `First: ${step.title}`);
+  if (
+    step.url &&
+    (await promptConfirm(`${step.id}.open`, 'Open that page in your browser?', true))
+  ) {
+    rt().openUrl(step.url);
+  }
+  const done = await promptConfirm(step.id, step.question, false);
+  if (done && state) markConfirmed(state, step.id);
+  return done;
 }
 
 type ValueMode = 'missing' | 'rotate';
@@ -312,6 +347,8 @@ async function chooseSecrets(
 export interface SecretsOptions {
   /** Secret names to replace even though they are already set. */
   rotate?: readonly string[];
+  /** Bootstrap state, where confirmed setup steps are remembered. */
+  state?: ReadinessState;
 }
 
 // Targets that lack the secret and can be written to now.
@@ -361,6 +398,14 @@ export async function runSecretsPhase(
   const pending =
     actionable.length > 0 ? await chooseSecrets(actionable, inventory, followUpItems) : [];
   for (const secret of pending) {
+    if (secret.prerequisite && !(await confirmPrerequisite(secret.prerequisite, options.state))) {
+      skipped += 1;
+      followUpItems.push({
+        kind: 'remote',
+        message: `${secret.name} waits for "${secret.prerequisite.title}". Do that, then re-run: pnpm bootstrap --phase secrets`,
+      });
+      continue;
+    }
     const targets = settableTargets(secret, inventory);
     const generated = canGenerateSecret(secret, inventory);
     const value = await obtainValue(secret, generated);

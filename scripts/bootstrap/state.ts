@@ -17,6 +17,11 @@ export interface ReadinessState {
   capabilities: Partial<Record<CapabilityId, CapabilityState>>;
   commandReadiness: Record<CommandGroup, 'ready' | 'blocked'>;
   phases: Partial<Record<PhaseId, PhaseState>>;
+  /**
+   * Setup steps outside bootstrap's reach that the person confirmed done,
+   * such as creating a Google Group. Bootstrap asks about each only once.
+   */
+  confirmations?: Record<string, { confirmedAt: string }>;
 }
 
 function stateFilePath(projectRoot: string): string {
@@ -58,6 +63,14 @@ export function markPhase(
     completedAt: new Date().toISOString(),
     details,
   };
+}
+
+export function isConfirmed(state: ReadinessState, id: string): boolean {
+  return state.confirmations?.[id] !== undefined;
+}
+
+export function markConfirmed(state: ReadinessState, id: string): void {
+  state.confirmations = { ...state.confirmations, [id]: { confirmedAt: new Date().toISOString() } };
 }
 
 export function markCapability(
