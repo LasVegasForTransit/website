@@ -126,7 +126,7 @@ export const PLATFORM_SECRETS: readonly PlatformSecret[] = [
       'Sign in at https://resend.com/login with your @lasvegasfortransit.org address. LVBT keeps one Resend team: if you are new, ask a maintainer to invite you to it rather than making your own. Only if LVBT has no Resend team at all, sign up at https://resend.com/signup with your @lasvegasfortransit.org address.',
       'On the Domains page, look for notify.lasvegasfortransit.org. If its status says "Verified", skip to the step about the API key. If it is listed but not verified, open it and skip to the step about DNS records.',
       'Otherwise click "Add Domain". Type notify.lasvegasfortransit.org. For Region choose "North Virginia (us-east-1)". Click "Add".',
-      'Resend now lists the DNS records the domain needs. The easiest way to add them is to click "Sign in to Cloudflare" on that page, choose the "Las Vegas for Better Transit" account, and approve. Resend adds the records for you.',
+      'Resend now lists the DNS records the domain needs. The easiest way to add them is to click "Sign in to Cloudflare" on that page, choose the LVBT account ("Las Vegans for Better Transit"), and approve. Resend adds the records for you.',
       'To add them by hand instead, open https://dash.cloudflare.com → lasvegasfortransit.org → DNS → Records and click "Add record" once for each record Resend lists. Copy the type, name and content exactly as Resend shows them, with TTL "Auto" and Proxy status "DNS only". Because this is a subdomain the names end in .notify; Cloudflare adds .lasvegasfortransit.org by itself, so do not type that part. Today they are: MX named send.notify with mail server feedback-smtp.us-east-1.amazonses.com and priority 10; TXT named send.notify with content v=spf1 include:amazonses.com ~all; and TXT named resend._domainkey.notify with the long p=... value Resend shows.',
       'Resend also recommends a DMARC record: TXT with content v=DMARC1; p=none;. In the Cloudflare records list, check for a TXT record named _dmarc first. If lasvegasfortransit.org already has one, keep it and skip this record, because it covers notify.lasvegasfortransit.org too. If there is none, add it with the name Resend shows.',
       'Back in Resend, click "Verify DNS Records" and wait until the status says "Verified". That usually takes a few minutes; DNS can take up to 72 hours. If it is still waiting, leave this prompt empty and run bootstrap again later.',
@@ -311,7 +311,7 @@ export const PLATFORM_SECRETS: readonly PlatformSecret[] = [
     skipNote: STAFF_CONSOLE_SKIP,
     url: 'https://one.dash.cloudflare.com/',
     steps: [
-      'Sign in to Cloudflare and choose the "Las Vegas for Better Transit" account. The page that opens is Cloudflare One (Cloudflare used to call it Zero Trust). It is already set up for LVBT.',
+      'Sign in to Cloudflare and choose the LVBT account ("Las Vegans for Better Transit"). The page that opens is Cloudflare One (Cloudflare used to call it Zero Trust). It is already set up for LVBT.',
       'On the Overview page, find "Account details". It shows two different things: "Team domain" (lvbt.cloudflareaccess.com) and "Team name" ("Las Vegans for Better Transit", only a label). This value is the team domain.',
       'Click the copy icon next to "Team domain" and paste it here: lvbt.cloudflareaccess.com, without https://.',
       'Do not change the team domain with its pencil icon. Changing it breaks Access sign-in and Google sign-in until every copy of this value and the Google OAuth client are updated to match.',
