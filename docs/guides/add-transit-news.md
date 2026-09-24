@@ -102,10 +102,14 @@ A _webhook_ is an automated message one service sends another when something hap
 
 **2. Set the Cloudflare secret**
 
-- Generate a random secret: `openssl rand -hex 32` (`openssl` is a command-line tool preinstalled on macOS and Linux; this prints a random 64-character value to use as the secret)
-- In the Cloudflare Pages dashboard → Settings → Environment Variables, add
-  `LVBT_TRANSIT_NEWS_INTAKE_SECRET` (the value above) and confirm
-  `LVBT_NOTION_API_KEY` is set.
+- Run `pnpm bootstrap --phase secrets`. If `LVBT_TRANSIT_NEWS_INTAKE_SECRET`
+  is not set anywhere yet, bootstrap generates a random value, stores it on the
+  Pages project, the Worker and GitHub, and offers to show it once. Copy it for
+  step 3. It also asks for `LVBT_NOTION_API_KEY` if that is missing.
+- If the secret is already set but nobody has the value, run
+  `pnpm bootstrap --phase secrets --rotate LVBT_TRANSIT_NEWS_INTAKE_SECRET` to
+  make a new one everywhere, then use it in step 3. See [platform
+  secrets](../reference/platform-secrets.md).
 
 **3. Create the Notion automation**
 

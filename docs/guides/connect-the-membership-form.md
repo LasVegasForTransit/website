@@ -9,8 +9,11 @@ submission fails, is in
 [membership-intake.md](../reference/membership-intake.md).
 
 > **Before you start.** You need edit access to the form and the value of
-> `LVBT_MEMBERSHIP_INTAKE_SECRET` from whoever set up the Cloudflare Pages
-> secrets (or run `pnpm bootstrap --phase env`, which mints and echoes it).
+> `LVBT_MEMBERSHIP_INTAKE_SECRET` that the live site uses. If the form is
+> being connected for the first time, make a new value (see [membership
+> intake](../reference/membership-intake.md#required-cloudflare-pages-secrets))
+> and store it with `pnpm bootstrap --phase secrets`. Never use the value in
+> your own `.env.local`; it is a local test value only.
 
 ---
 
