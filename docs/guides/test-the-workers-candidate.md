@@ -50,8 +50,25 @@ workflow uploads a version with the stable `candidate` preview alias, compares i
 runs the browser suite. It does not attach a route. Use **Run workflow** on `main` to repeat the check
 without publishing Pages again.
 
-Copy the commit, version, and preview URL from the workflow summary into the cutover change. Keep the
-candidate workflow disabled after cutover unless parallel Pages comparison is still required.
+Copy the commit, version, and preview URL from the workflow summary into the cutover change.
+
+## Switch production
+
+Confirm the current `main` commit has a passing candidate run and record the Pages deployment ID.
+Keep the Pages custom domains and DNS records in place during the first switch. Set the repository
+variable `LVBT_WORKERS_PRODUCTION_ENABLED` to `true`, then run `Deploy Worker candidate` on `main`.
+The workflow deploys the verified Worker version and compares it with the production hostname.
+
+Attach `lasvegasfortransit.org/*` and `www.lasvegasfortransit.org/*` to `lvbt-website` as Worker
+routes. Check both hostnames over HTTPS, including `/`, a content page, an unknown path, redirects,
+calendar files, and the intake endpoints. Confirm analytics appears on the production hostname and
+not on the version preview. Keep the Pages project available as the fallback until these checks
+pass. Remove either route to send that hostname back to Pages if the Worker fails live checks.
+
+After the route overlay proves stable, replace the Pages CNAMEs and domain attachments with Worker
+custom domains. Check TLS and the same HTTP contract again before retiring the Pages deployment.
+Cloudflare requires the Pages CNAME to be removed before a Worker custom domain can use that
+hostname.
 
 ## Record acceptance
 

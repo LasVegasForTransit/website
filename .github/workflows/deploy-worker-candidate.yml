@@ -88,6 +88,7 @@ jobs:
           exit 1
 
       - name: Compare with Pages
+        if: vars.LVBT_WORKERS_PRODUCTION_ENABLED != 'true'
         env:
           PREVIEW_URL: ${{ steps.upload.outputs.url }}
         run: >-
@@ -111,5 +112,28 @@ jobs:
             echo "- Commit: \`$CANDIDATE_SHA\`"
             echo "- Version: \`$VERSION_ID\`"
             echo "- Preview: $PREVIEW_URL"
-            echo '- Reference: https://lasvegasfortransit.org'
+            echo '- Pages reference: https://lvbt-website-5zh.pages.dev'
           } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Deploy verified Worker
+        if: vars.LVBT_WORKERS_PRODUCTION_ENABLED == 'true'
+        env:
+          VERSION_ID: ${{ steps.upload.outputs.version }}
+        run: |
+          set -euo pipefail
+          CURRENT_SHA="$(git ls-remote "https://github.com/${{ github.repository }}.git" refs/heads/main | cut -f1)"
+          if [ "$CURRENT_SHA" != "$CANDIDATE_SHA" ]; then
+            echo "::error::main moved during candidate verification; refusing to deploy $CANDIDATE_SHA"
+            exit 1
+          fi
+          pnpm exec wrangler versions deploy "$VERSION_ID" --name lvbt-website --env "" --message "Production $CANDIDATE_SHA" --yes
+
+      - name: Verify production hostname
+        if: vars.LVBT_WORKERS_PRODUCTION_ENABLED == 'true'
+        env:
+          PREVIEW_URL: ${{ steps.upload.outputs.url }}
+        run: >-
+          pnpm worker:test:live
+          --pages "$PREVIEW_URL"
+          --worker https://lasvegasfortransit.org
+          --skip-analytics

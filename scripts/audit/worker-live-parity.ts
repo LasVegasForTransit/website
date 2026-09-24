@@ -129,6 +129,7 @@ async function run(): Promise<void> {
       json: { type: 'boolean', default: false },
       pages: { type: 'string' },
       'skip-api': { type: 'boolean', default: false },
+      'skip-analytics': { type: 'boolean', default: false },
       worker: { type: 'string' },
     },
   });
@@ -148,15 +149,19 @@ async function run(): Promise<void> {
     differences.push(...(await compareResponses(testCase.pathname, reference, candidate)));
   }
 
-  const [pagesHome, workerHome] = await Promise.all([
-    request(pages, '/').then((response) => response.text()),
-    request(worker, '/').then((response) => response.text()),
-  ]);
-  const [pagesAnalytics, workerAnalytics] = await Promise.all([
-    pageIncludesAnalytics(pagesHome, async (pathname) => (await request(pages, pathname)).text()),
-    pageIncludesAnalytics(workerHome, async (pathname) => (await request(worker, pathname)).text()),
-  ]);
-  if (pagesAnalytics !== workerAnalytics) differences.push('/: analytics integration differs');
+  if (!values['skip-analytics']) {
+    const [pagesHome, workerHome] = await Promise.all([
+      request(pages, '/').then((response) => response.text()),
+      request(worker, '/').then((response) => response.text()),
+    ]);
+    const [pagesAnalytics, workerAnalytics] = await Promise.all([
+      pageIncludesAnalytics(pagesHome, async (pathname) => (await request(pages, pathname)).text()),
+      pageIncludesAnalytics(workerHome, async (pathname) =>
+        (await request(worker, pathname)).text(),
+      ),
+    ]);
+    if (pagesAnalytics !== workerAnalytics) differences.push('/: analytics integration differs');
+  }
 
   const result = { cases: cases.length, differences, ok: differences.length === 0, pages, worker };
   process.stdout.write(
