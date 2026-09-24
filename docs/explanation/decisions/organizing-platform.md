@@ -2,7 +2,7 @@
 
 This record fixes how the Organizing Platform is built: where its code lives, how its pages render, where its data is kept, how its scheduled jobs run, and which speed budgets every screen must meet. Read it before you pick up any platform task. Dozens of tasks depend on these answers, and they should never have to be worked out twice.
 
-The Organizing Platform is the set of signed-in tools LVBT is adding to this website: joining and managing a membership, one record per supporter, event check-in, Discord roles, volunteer management and a staff console. The work is planned in the Organizing Platform Launch initiative. Each decision below has a short reason and a list of what it rules out.
+The Organizing Platform is the set of signed-in tools LVBT is adding to this website: joining and managing a membership, one record per supporter, event check-in, Discord roles, volunteer management and a staff console. Each decision below has a short reason and a list of what it rules out.
 
 **Decision:** The platform lives in this repository as three apps and a set of shared packages. It runs on Cloudflare Workers, keeps its data in one Cloudflare D1 database, and runs recurring jobs from one scheduled trigger. Public pages stay prebuilt, and signed-in pages are rendered on request. Everything stays on Cloudflare's free plan.
 
@@ -28,7 +28,7 @@ Two facts shaped the hosting decision:
 - **Migration:** a numbered SQL file that changes the database's structure one step at a time. Running every migration in order rebuilds the database from nothing.
 - **Cron trigger:** a Cloudflare setting that starts a Worker on a timetable, such as every 15 minutes.
 - **Cloudflare Access:** a Cloudflare service that asks people to sign in before they can reach a website at all. It is free for up to 50 users.
-- **ULID:** a unique identifier that sorts by the time it was created, for example ``.
+- **ULID:** a unique identifier that sorts by the time it was created.
 - **Domain core:** the shared code that holds LVBT's own rules about people, identities, consent, membership and committees.
 - **Integration:** shared code that translates between one outside service, such as Beehiiv or Discord, and the domain core.
 - **Idempotent:** safe to repeat. Submitting an idempotent form twice gives the same result as submitting it once.
@@ -129,10 +129,13 @@ What this rules out:
 
 Secrets, such as API keys, are set in Cloudflare with Wrangler (see the [glossary](../../reference/glossary.md#wrangler)) or in the Cloudflare dashboard. They are never committed. Every secret's name and purpose is listed in `.env.example`, the committed template of settings, with no real values.
 
+Google Workspace access will use no key file (decided 2026-09-23). Volunteer management needs to act as a Workspace admin to create accounts and manage Google Groups. The usual way is a service account key: a downloaded file that works like a password that never expires. LVBT keeps Google's default policy that blocks creating these keys (`iam.disableServiceAccountKeyCreation`), because a leaked copy would give control of every LVBT Workspace account and group. Instead, when the feature is built, a GitHub Actions job will use Workload Identity Federation. GitHub vouches for the job to Google, Google lets the job act as the `lvbt-website-admin` service account in the LVBT Core project, and Google's IAM Credentials API signs the request that lets that account act for a Workspace admin (domain-wide delegation). The job runs in GitHub Actions because a Cloudflare Worker cannot prove its identity to Google this way. Until then, Workspace admins manage accounts and groups by hand, and `LVBT_GOOGLE_SERVICE_ACCOUNT_KEY` and `LVBT_GOOGLE_ADMIN_SUBJECT` stay empty.
+
 What this rules out:
 
 - secrets in code, in the Wrangler configuration file;
-- sharing secrets in chat instead of setting them in Cloudflare.
+- sharing secrets in chat instead of setting them in Cloudflare;
+- Google service account key files, and turning off the policy that blocks them.
 
 ### 9. Records use ULIDs, and times are stored in UTC
 
