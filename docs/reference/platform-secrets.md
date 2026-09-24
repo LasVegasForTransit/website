@@ -133,39 +133,36 @@ Only if Cloudflare ever asks you to set up Cloudflare One from scratch: type `lv
 
 ### The staff console: Google Group, Google sign-in and the Access application
 
-`LVBT_ACCESS_AUD` tells the staff console which Cloudflare Access application guards it. The staff console is not live yet, so it is fine to skip. Setting it up takes about 20 minutes and needs a Google Workspace admin. Bootstrap walks you through the Google Group first and asks once whether it exists; it remembers a "yes" and never asks again.
+`LVBT_ACCESS_AUD` tells the staff console which Cloudflare Access application guards it, so it accepts only that application's sign-ins. The staff console is not live yet, so it is fine to leave this empty now; bootstrap asks again next time. The value only exists once the Access application in part 4 is created. That takes about 20 minutes and needs a Google Workspace super admin. Do the parts in order; each needs the one before it. After showing these steps, bootstrap asks once whether part 1 is done and remembers a "yes".
 
-**The Google Group.** The group decides who can open the staff console.
+**Part 1, the Google Group that decides who gets in.**
 
-1. Open <https://admin.google.com> → Menu → Directory → Groups. If **Staff console** (`staff-console@lasvegasfortransit.org`) is listed, skip to step 5.
-2. Click **Create group**. Group name `Staff console`; group email `staff-console` with the domain lasvegasfortransit.org; description `People who can open the LVBT staff console`; you as group owner. Click **Next**.
-3. Tick **Security**, because the group controls access. Click **Next**.
-4. Access type **Restricted**; **Who can join the group**: **Only invited users**; external members off. Click **Create Group**.
-5. Open the group → **Members** → **Add members**, type each person's @lasvegasfortransit.org address, and click **Add To Group**. Only lasvegasfortransit.org accounts can sign in through Access, so a personal Gmail address does not work even inside the group.
+1. At <https://admin.google.com>, go to Menu → Directory → Groups. If **Staff console** (`staff-console@lasvegasfortransit.org`) is listed, skip to step 3.
+2. Click **Create group**: Group name `Staff console`, Group email `staff-console`, Description `People who can open the LVBT staff console`, Group owner yourself. Click **Next**, tick **Security**, click **Next**, choose **Restricted**, set **Who can join the group** to **Only invited users**, and create it.
+3. Open the group and click **Add members**: yourself, so you can test, and each person's @lasvegasfortransit.org address. Personal Gmail addresses cannot sign in, even in the group.
 
 To add someone later, come back to the group's **Members** page and click **Add members**. To remove someone, point to them in the list and click **Remove**, or tick them and click **Remove members**.
 
-**Google sign-in for Access.** This lets people sign in to Access with their LVBT Google account and lets Access read which groups they are in. It needs a Google Workspace super admin who can also edit the LVBT Core project. In Cloudflare One, open Integrations → Identity providers: if "Google Workspace" is listed, this part is done.
+**Part 2, let Google trust LVBT's own sign-in apps.** Still in <https://admin.google.com>, go to Security → Access and data control → API controls. Under **Settings**, tick **Trust internal apps** and click **Save**. Without it, Google can refuse the Cloudflare sign-in.
 
-1. Open <https://console.cloud.google.com/apis/library/admin.googleapis.com?project=lvbt-core> and click **Enable** on "Admin SDK API" (it says **Manage** if it is already on). Access needs it to read group membership.
-2. Set up the sign-in screen as in steps 1 and 2 of [Google sign-in for the website](#google-sign-in-for-the-website), if it is not set up yet.
-3. Open <https://admin.google.com/ac/owl> (Security → Access and data control → API controls), click **Settings**, turn on **Trust internal apps**, and save.
-4. In Cloudflare One, go to Integrations → Identity providers, click **Add new identity provider**, then **Google Workspace**, and leave that form open.
-5. In another tab, open <https://console.cloud.google.com/auth/clients?project=lvbt-core> and click **Create client**: **Web application**, named `Cloudflare Access`. Under **Authorized JavaScript origins**, add `https://lvbt.cloudflareaccess.com`. Under **Authorized redirect URIs**, add `https://lvbt.cloudflareaccess.com/cdn-cgi/access/callback`. Click **Create**.
-6. Copy the Client ID and paste it into **App ID** in the Cloudflare form. Then copy the Client secret and paste it into **Client secret**. Neither is stored in GitHub or on a Worker.
-7. Type `lasvegasfortransit.org` as the **Google Workspace domain** and click **Save**. Cloudflare shows a link: open it signed in as the Workspace super admin and approve it, so Access can read group membership.
-8. Back in Integrations → Identity providers, click **Test** next to Google Workspace. It should show your identity and your groups.
+**Part 3, a Google sign-in client for Cloudflare.**
 
-**The Access application.**
+1. Open <https://console.cloud.google.com/apis/library/admin.googleapis.com?project=lvbt-core> and click **Enable** if it does not already say "API Enabled". Cloudflare uses this Admin SDK API to read group membership.
+2. Open <https://console.cloud.google.com/auth/clients?project=lvbt-core> and click **Create client**. Application type **Web application**, Name `Cloudflare Access`. Under **Authorized JavaScript origins**, click **Add URI** and enter `https://lvbt.cloudflareaccess.com`. Under **Authorized redirect URIs**, click **Add URI** and enter `https://lvbt.cloudflareaccess.com/cdn-cgi/access/callback`. Click **Create**. Leave the dialog showing the Client ID and Client secret open; do not copy anything yet.
+3. In another tab, open Cloudflare One → Integrations → Identity providers (press ⌘K or Ctrl+K and search "Identity providers" if the sidebar hides it). If "Google Workspace" is already listed, skip to step 5. Otherwise click **Add new identity provider**, then **Google Workspace**. Name: `Google Workspace`.
+4. Copy the Client ID from the Google dialog and paste it into **App ID**. Then copy the Client secret and paste it into **Client secret**. Google Workspace domain: `lasvegasfortransit.org`. Leave the optional settings alone and click **Save**. If Google asks you to allow access, sign in with your LVBT admin account and allow it. Neither value is stored in GitHub or on a Worker.
+5. Back on Identity providers, click **Test** next to Google Workspace. It should show your LVBT address and list `staff-console@lasvegasfortransit.org` among your groups. If the groups are missing, re-check parts 2 and 3 and that you added yourself in part 1.
 
-1. In Cloudflare One, open Access controls → Applications. If **LVBT staff console** is listed, open its **Configure** page and skip to step 8. Always use exactly that name, so the next person finds it instead of making a second one.
-2. Click **Create new application**. In the dialog, choose **Self-hosted and private**, then the **Public DNS** tab (not "Private destinations"), then **Continue with Self-hosted and private**.
-3. Under **Destinations**, use a public hostname: subdomain `staff`, domain `lasvegasfortransit.org`, path empty. The whole subdomain is the console. If you see a "Private IPs" row instead, click **+ Add public hostname** and remove the empty private row. Leave **Allow access through browser-based RDP, SSH, or VNC sessions** off.
-4. Under **Access policies** (it says "No policy associated"), click **Create new policy**. Name `Staff console members`, action **Allow**, and an Include rule: **Google Workspace groups** = `staff-console@lasvegasfortransit.org`. Save it. If the policy opens in another tab, come back and pick it from **Add current policies**. If "Google Workspace groups" is not offered, Google sign-in for Access is not finished; finish it, or until then use an **Emails** rule listing each staff member's address and switch to the group rule later.
+**Part 4, the application.**
+
+1. In Cloudflare One, open Access controls → Applications. If **LVBT staff console** is listed, click it, open **Configure**, and skip to step 8. Always use exactly that name, so the next person finds it instead of making a second one.
+2. Otherwise click **Create new application** at the top right. An account with no applications yet shows only a prerequisites list, which parts 1 to 3 have now done. In the dialog, choose **Self-hosted and private**, then the **Public DNS** tab (not "Private destinations"), then **Continue with Self-hosted and private**.
+3. Under **Destinations**, use a public hostname: subdomain `staff`, domain `lasvegasfortransit.org`, path empty. The whole subdomain is the console. If lasvegasfortransit.org is not in the domain list, you are in the wrong Cloudflare account; switch to the LVBT account and start part 4 again. If you see a "Private IPs" row instead, click **+ Add public hostname** and remove the empty private row. Leave **Allow access through browser-based RDP, SSH, or VNC sessions** off.
+4. Under **Access policies**, click **Create new policy**. Name `Staff console members`, Action **Allow**, and an Include rule: **Google Workspace groups** = `staff-console@lasvegasfortransit.org`. Save it. If the policy opens in another tab, come back and pick it from **Add current policies**. If "Google Workspace groups" is not offered, part 3 is not finished.
 5. Skip **Policy tester**.
-6. Under **Authentication** (Identity tab), turn off **Accept all available identity providers**, choose **Google Workspace** in **Choose available identity providers**, and turn on **Apply instant authentication**. Leave **Authenticate with Cloudflare One Client** off. If Google Workspace is not in the list, Google sign-in for Access is not finished.
-7. Skip **Preview**. Under **Details**, set Name to `LVBT staff console` and Session Duration to **24 hours**, then click **Create**.
-8. On the application's **Configure** page, open the **Additional settings** tab and copy **Application Audience (AUD) Tag**, a long string of letters and numbers.
+6. Under **Authentication** (Identity tab), turn off **Accept all available identity providers**, choose **Google Workspace** in **Choose available identity providers**, and turn on **Apply instant authentication**. Leave **Authenticate with Cloudflare One Client** off.
+7. Skip **Preview**. Under **Details**, set Name to `LVBT staff console` and Session Duration to **24 hours**. Click **Create**.
+8. Open the application's **Configure** page, then the **Additional settings** tab. Copy **Application Audience (AUD) Tag**, a long string of letters and numbers, and paste it at the bootstrap prompt.
 
 ### Discord
 
