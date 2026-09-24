@@ -69,7 +69,7 @@ export function fakeValueFor(name: string): string {
   if (name === 'LVBT_GOOGLE_OAUTH_CLIENT_ID') return 'fake-client.apps.googleusercontent.com';
   if (name === 'LVBT_ACCESS_TEAM_DOMAIN') return 'lvbt-test.cloudflareaccess.com';
   if (name === 'LVBT_GOOGLE_SERVICE_ACCOUNT_KEY') return '{"type":"service_account","fake":true}';
-  if (name === 'LVBT_GOOGLE_ADMIN_SUBJECT') return 'fake-admin@lasvegasfortransit.org';
+  if (name === 'LVBT_GOOGLE_ADMIN_SUBJECT') return 'root@lasvegasfortransit.org';
   if (name === 'CLOUDFLARE_API_TOKEN') return 'fake_dns_token_0123456789abcdef';
   if (name.startsWith('PUBLIC_')) return `https://example.test/${name.toLowerCase()}`;
   return `fake-${name.toLowerCase()}-0123456789abcdef0123456789abcdef`;

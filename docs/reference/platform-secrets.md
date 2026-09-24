@@ -207,6 +207,8 @@ Do not create a service account key for them, and do not turn off the "Disable s
 
 When volunteer management is built, it will sign in to Google with no key file at all, using Workload Identity Federation from a GitHub Actions job; the [platform decision record](../explanation/decisions/organizing-platform.md#8-secrets-live-in-cloudflare-and-are-never-committed) explains how. The service account it will use already exists: `lvbt-website-admin@lvbt-core.iam.gserviceaccount.com` ("LVBT Website Admin") in the LVBT Core project. Until then, a Workspace admin adds and removes volunteer accounts and group members by hand at <https://admin.google.com>.
 
+`LVBT_GOOGLE_ADMIN_SUBJECT` names the Workspace admin account the website acts as. Its value will be `root@lasvegasfortransit.org`, LVBT's root Workspace super admin, and never a person's own admin address, for three reasons. The website keeps working when staff change, instead of breaking the day that person leaves or loses admin rights. The Workspace audit log shows the website's automated changes under the system account, not under a volunteer's name. And if the website's access were ever misused, it could not act as a real person and reach their mailbox and files.
+
 ### Givebutter
 
 `LVBT_GIVEBUTTER_API_KEY` lets the site read donations so staff can see giving next to everything else. Donor support is not built yet, so it is fine to skip. Sign in to Givebutter as an Admin of the LVBT account, go to Settings → Integrations → API Keys, click **Create New API Key**, name it `LVBT website`, then copy the key and paste it at the prompt. It is shown only once.
