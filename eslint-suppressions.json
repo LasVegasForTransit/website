@@ -171,11 +171,6 @@
       "count": 6
     }
   },
-  "scripts/bootstrap/lib/env-file.ts": {
-    "sonarjs/cognitive-complexity": {
-      "count": 1
-    }
-  },
   "scripts/bootstrap/lib/load-env.ts": {
     "@typescript-eslint/prefer-nullish-coalescing": {
       "count": 1
