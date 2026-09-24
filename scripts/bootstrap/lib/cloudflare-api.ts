@@ -10,9 +10,7 @@
  * go direct.
  */
 
-import { existsSync, readFileSync } from 'node:fs';
-import path from 'node:path';
-import os from 'node:os';
+import { rt } from './runtime.js';
 
 const CF_API_BASE = 'https://api.cloudflare.com/client/v4';
 
@@ -39,46 +37,6 @@ export function isDomainAlreadyAttachedError(errors: Array<{ code: number }>): b
   return errors.some((e) => PAGES_DOMAIN_ALREADY_ATTACHED_CODES.has(e.code));
 }
 
-/**
- * Read wrangler's OAuth token from its on-disk config. The path varies by
- * wrangler version + OS; we try the known locations in order and parse the
- * minimal subset of TOML we need (just `oauth_token = "..."`). Returns null
- * if no non-expired token is found.
- */
-export function readWranglerOAuthToken(): string | null {
-  const home = os.homedir();
-  const candidates = [
-    process.env.WRANGLER_HOME,
-    path.join(home, 'Library', 'Preferences', '.wrangler'),
-    path.join(home, '.config', '.wrangler'),
-    path.join(home, '.wrangler'),
-  ].filter((p): p is string => typeof p === 'string' && p.length > 0);
-
-  for (const dir of candidates) {
-    const filePath = path.join(dir, 'config', 'default.toml');
-    if (!existsSync(filePath)) continue;
-    try {
-      const contents = readFileSync(filePath, 'utf8');
-      const tokenMatch = contents.match(/^\s*oauth_token\s*=\s*"([^"]+)"/m);
-      if (!tokenMatch) continue;
-      const token = tokenMatch[1]!;
-
-      const expMatch = contents.match(/^\s*expiration_time\s*=\s*"([^"]+)"/m);
-      if (expMatch) {
-        const exp = Date.parse(expMatch[1]!);
-        if (!Number.isNaN(exp) && exp <= Date.now()) {
-          // Expired; another candidate may have a fresher token, keep looking.
-          continue;
-        }
-      }
-      return token;
-    } catch {
-      continue;
-    }
-  }
-  return null;
-}
-
 interface CfRequestOptions {
   method?: 'GET' | 'POST' | 'PUT' | 'DELETE';
   body?: unknown;
@@ -93,7 +51,7 @@ interface CfResponse<T> {
 }
 
 async function cfRequest<T>(pathname: string, opts: CfRequestOptions): Promise<CfResponse<T>> {
-  const res = await fetch(`${CF_API_BASE}${pathname}`, {
+  const res = await rt().fetch(`${CF_API_BASE}${pathname}`, {
     method: opts.method ?? 'GET',
     headers: {
       Authorization: `Bearer ${opts.token}`,
@@ -135,6 +93,14 @@ export async function attachPagesDomain(
   );
 }
 
+/** One Pages deployment, as the project endpoint embeds it. */
+export interface PagesDeploymentSummary {
+  id: string;
+  url?: string;
+  created_on?: string;
+  environment?: string;
+}
+
 export interface PagesProject {
   name: string;
   /** The actual public hostname Pages serves on, with CF's random suffix
@@ -144,6 +110,8 @@ export interface PagesProject {
   subdomain: string;
   domains: string[];
   production_branch?: string;
+  /** "Most recent production deployment of the project"; null before the first one. */
+  canonical_deployment?: PagesDeploymentSummary | null;
 }
 
 export async function getPagesProject(

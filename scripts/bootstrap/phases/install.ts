@@ -65,6 +65,7 @@ export async function runInstallPhase(
     }
 
     const shouldInstall = await promptConfirm(
+      `install.${cap.id}`,
       `${cap.label} is not installed${isRequired ? ' (required)' : ''}. Install it?`,
       isRequired,
     );

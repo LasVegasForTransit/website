@@ -1,10 +1,11 @@
 import path from 'node:path';
 import { existsSync } from 'node:fs';
-import { log, note, spinner, taskLog, text } from '@clack/prompts';
+import { log, note, spinner, taskLog } from '@clack/prompts';
 import pc from 'picocolors';
 import type { FollowUp, PhaseResult } from '../lib/types.js';
 import { runCommand, runStreamingCommand, shellEscape, summarizeOutputLine } from '../lib/shell.js';
-import { promptOrExit, promptConfirm, logSubline } from '../lib/ui.js';
+import { promptConfirm, logSubline } from '../lib/ui.js';
+import { rt } from '../lib/runtime.js';
 import { ensureCloudflareAccount } from '../lib/cloudflare.js';
 import { mergeEnvFile } from '../lib/env-file.js';
 import { validatePagesProjectName, validateGitBranch } from '../lib/validators.js';
@@ -60,7 +61,7 @@ export async function runDeployPhase(
     'Cloudflare Pages',
   );
 
-  const proceed = await promptConfirm('Provision and deploy now?', true);
+  const proceed = await promptConfirm('deploy.proceed', 'Provision and deploy now?', true);
   if (!proceed) {
     log.info(pc.dim('Skipping. Deploy deferred.'));
     followUpItems.push({
@@ -70,27 +71,25 @@ export async function runDeployPhase(
     return { success: true, followUpItems };
   }
 
-  const projectNameRaw = await promptOrExit(
-    text({
-      message: 'Cloudflare Pages project name',
-      placeholder: projectName,
-      defaultValue: projectName,
-      validate: validatePagesProjectName,
-    }),
-  );
-  if (typeof projectNameRaw === 'string' && projectNameRaw.trim()) {
+  const projectNameRaw = await rt().prompts.text({
+    id: 'deploy.project',
+    message: 'Cloudflare Pages project name',
+    placeholder: projectName,
+    defaultValue: projectName,
+    validate: validatePagesProjectName,
+  });
+  if (projectNameRaw.trim()) {
     projectName = projectNameRaw.trim();
   }
 
-  const branchRaw = await promptOrExit(
-    text({
-      message: 'Production branch',
-      placeholder: productionBranch,
-      defaultValue: productionBranch,
-      validate: validateGitBranch,
-    }),
-  );
-  if (typeof branchRaw === 'string' && branchRaw.trim()) {
+  const branchRaw = await rt().prompts.text({
+    id: 'deploy.branch',
+    message: 'Production branch',
+    placeholder: productionBranch,
+    defaultValue: productionBranch,
+    validate: validateGitBranch,
+  });
+  if (branchRaw.trim()) {
     productionBranch = branchRaw.trim();
   }
 
