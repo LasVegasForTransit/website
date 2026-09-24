@@ -60,6 +60,13 @@ export interface PlatformSecret {
   steps?: readonly string[];
   /** Must be done before the value can exist; asked about once. */
   prerequisite?: GuidedStep;
+  /**
+   * False for values that are not credentials: IDs, domains, public keys and
+   * addresses that anyone can see anyway. Bootstrap asks for them in plain
+   * view and shows them back so they can be checked. Everything else is
+   * asked for with hidden input and never shown. Defaults to true.
+   */
+  sensitive?: boolean;
   /** Minted by bootstrap instead of asked for. */
   generate?: boolean;
   /**
@@ -78,6 +85,11 @@ export interface PlatformSecret {
 
 export const FUTURE_SKIP_NOTE =
   'Only a feature that is not built yet uses this, so it is fine to leave it empty now. Bootstrap asks again next time.';
+
+/** Whether a value is a credential that must be hidden. */
+export function isSensitive(secret: PlatformSecret): boolean {
+  return secret.sensitive !== false;
+}
 
 /** The "fine to skip?" note bootstrap shows next to a secret's prompt. */
 export function skipNoteFor(secret: PlatformSecret): string {
@@ -170,6 +182,7 @@ export const PLATFORM_SECRETS: readonly PlatformSecret[] = [
     name: 'LVBT_BEEHIIV_PUBLICATION_ID',
     purpose: "Tells Beehiiv which publication, LVBT's newsletter, the site's requests are about.",
     use: 'live',
+    sensitive: false,
     skipNote:
       'Skip only if you cannot sign in to Beehiiv today: joining and newsletter signup fail until this is set.',
     url: 'https://app.beehiiv.com/settings/workspace/api',
@@ -221,6 +234,7 @@ export const PLATFORM_SECRETS: readonly PlatformSecret[] = [
     purpose:
       'Tells Notion which table, the Membership intake data source, new members are written to.',
     use: 'live',
+    sensitive: false,
     skipNote:
       'Skip only if you cannot reach Notion today: staff do not see new members in Notion until this is set.',
     url: 'https://www.notion.so/6bad03ffdebf4072a34a6408d3e7180d',
@@ -282,6 +296,7 @@ export const PLATFORM_SECRETS: readonly PlatformSecret[] = [
     purpose:
       'Identifies the website\'s own "Sign in with Google" button to Google, for staff and volunteers.',
     use: 'future',
+    sensitive: false,
     skipNote: GOOGLE_SIGN_IN_SKIP,
     url: 'https://console.cloud.google.com/auth/clients?project=lvbt-core',
     steps: [
@@ -320,6 +335,7 @@ export const PLATFORM_SECRETS: readonly PlatformSecret[] = [
     purpose:
       'The address Cloudflare Access signs people in at; the staff console checks that sign-ins come from it.',
     use: 'future',
+    sensitive: false,
     skipNote: STAFF_CONSOLE_SKIP,
     url: 'https://one.dash.cloudflare.com/',
     steps: [
@@ -339,6 +355,7 @@ export const PLATFORM_SECRETS: readonly PlatformSecret[] = [
     purpose:
       "Tells the staff console which Cloudflare Access application guards it, so it accepts only that application's sign-ins.",
     use: 'future',
+    sensitive: false,
     skipNote: STAFF_CONSOLE_SKIP,
     url: 'https://one.dash.cloudflare.com/',
     prerequisite: STAFF_CONSOLE_GROUP,
@@ -362,6 +379,7 @@ export const PLATFORM_SECRETS: readonly PlatformSecret[] = [
     purpose:
       "Identifies LVBT's Discord app, LVBT Bot, which will link members' Discord accounts and manage their roles.",
     use: 'future',
+    sensitive: false,
     skipNote:
       'Discord linking and roles are not built yet. You can leave this and the next four Discord values empty now; bootstrap asks again next time.',
     url: 'https://discord.com/developers/teams',
@@ -381,6 +399,7 @@ export const PLATFORM_SECRETS: readonly PlatformSecret[] = [
     name: 'LVBT_DISCORD_PUBLIC_KEY',
     purpose: 'Lets the site check that a Discord command request really came from Discord.',
     use: 'future',
+    sensitive: false,
     skipNote: DISCORD_SKIP,
     url: 'https://discord.com/developers/applications',
     steps: [
@@ -431,6 +450,7 @@ export const PLATFORM_SECRETS: readonly PlatformSecret[] = [
     name: 'LVBT_DISCORD_GUILD_ID',
     purpose: "Tells the site which Discord server is LVBT's.",
     use: 'future',
+    sensitive: false,
     skipNote: DISCORD_SKIP,
     url: 'https://discord.com/channels/@me',
     steps: [
@@ -463,6 +483,7 @@ export const PLATFORM_SECRETS: readonly PlatformSecret[] = [
     purpose:
       'The Workspace super-admin account the website acts as when it manages volunteer accounts and groups.',
     use: 'future',
+    sensitive: false,
     listOnly: true,
     url: 'https://admin.google.com/ac/users',
     steps: [

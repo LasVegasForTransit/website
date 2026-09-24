@@ -17,7 +17,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { after, before, test } from 'node:test';
 import { fileURLToPath } from 'node:url';
-import { PLATFORM_SECRETS } from '../scripts/bootstrap/config/platform-secrets.js';
+import { PLATFORM_SECRETS, isSensitive } from '../scripts/bootstrap/config/platform-secrets.js';
 import { mergeEnvFile } from '../scripts/bootstrap/lib/env-file.js';
 import { withRuntime } from '../scripts/bootstrap/lib/runtime.js';
 import {
@@ -139,14 +139,26 @@ async function runOnce(
   return { ...value, printed };
 }
 
-function assertNoSecretPrinted(setup: Setup, printed: string): void {
+// Terminal output with colors, box borders and line breaks removed, so a
+// value wrapped across lines inside a box still matches.
+function flatten(text: string): string {
+  // eslint-disable-next-line no-control-regex -- ANSI color codes start with the ESC character.
+  return text.replace(/\x1b\[[\d;]*[a-zA-Z]/g, '').replace(/[│┃|\s]/g, '');
+}
+
+function secretValues(setup: Setup): string[] {
   const localIntake = /^LVBT_MEMBERSHIP_INTAKE_SECRET=(.+)$/m.exec(
     readFileSync(path.join(setup.root, '.env.local'), 'utf8'),
   )?.[1];
-  const values = [...setup.world.secretValues(), ...(localIntake ? [localIntake] : [])];
+  return [...setup.world.secretValues(), ...(localIntake ? [localIntake] : [])];
+}
+
+function assertNoSecretPrinted(setup: Setup, printed: string): void {
+  const values = secretValues(setup);
   assert.ok(values.length > 0);
+  const shown = flatten(printed);
   for (const value of values) {
-    assert.equal(printed.includes(value), false, 'a secret value was printed');
+    assert.equal(shown.includes(flatten(value)), false, 'a secret value was printed');
   }
 }
 
@@ -193,7 +205,7 @@ void test('a second run of the whole bootstrap changes nothing and reports ready
   const listOnly = PLATFORM_SECRETS.filter((s) => s.listOnly === true).map((s) => s.name);
   assert.ok(listOnly.length > 0);
   for (const name of listOnly) {
-    assert.equal(setup.world.secretPrompts().includes(name), false, `${name} is never asked for`);
+    assert.equal(setup.world.valuePrompts().includes(name), false, `${name} is never asked for`);
   }
 
   const before = snapshot(setup.root);
@@ -209,6 +221,36 @@ void test('a second run of the whole bootstrap changes nothing and reports ready
   assert.deepEqual(snapshot(setup.root), before, 'config files should be untouched');
   assertNoSecretPrinted(setup, second.printed);
   assertReady(second);
+});
+
+void test('values that are not secret are asked for in plain view and shown back; secrets never are', async () => {
+  const setup = freshSetup('visible-values');
+  const asked = PLATFORM_SECRETS.filter((s) => s.listOnly !== true && s.generate !== true);
+  assert.ok(asked.some((s) => isSensitive(s)) && asked.some((s) => !isSensitive(s)));
+
+  const first = await runOnce(setup, [], firstRunAnswers());
+  for (const secret of asked) {
+    const kinds = setup.world.promptKinds(secret.name);
+    const expected = isSensitive(secret) ? 'password' : 'text';
+    assert.ok(kinds.length > 0, `${secret.name} is asked for`);
+    assert.ok(
+      kinds.every((kind) => kind === expected),
+      `${secret.name} is asked for with ${expected} input`,
+    );
+  }
+
+  const second = await runOnce(setup);
+  const shown = flatten(second.printed);
+  for (const secret of asked.filter((s) => !isSensitive(s))) {
+    assert.ok(shown.includes(flatten(fakeValueFor(secret.name))), `${secret.name} is shown`);
+  }
+  assertNoSecretPrinted(setup, first.printed);
+  assertNoSecretPrinted(setup, second.printed);
+
+  const stateFile = readFileSync(path.join(setup.root, '.lvbt', 'dev-readiness.json'), 'utf8');
+  for (const value of secretValues(setup)) {
+    assert.equal(stateFile.includes(value), false, 'no credential is kept in the state file');
+  }
 });
 
 void test('a run while a domain waits for its certificate attaches and writes nothing', async () => {
@@ -232,7 +274,7 @@ void test('a run after a skipped secret asks only for that secret', async () => 
 
   await runOnce(setup, [], { ...answers, LVBT_ACCESS_AUD: fakeValueFor('LVBT_ACCESS_AUD') });
 
-  assert.deepEqual(setup.world.secretPrompts(), ['LVBT_ACCESS_AUD']);
+  assert.deepEqual(setup.world.valuePrompts(), ['LVBT_ACCESS_AUD']);
   assert.deepEqual([...setup.world.mutations].sort(), [
     'pages secret LVBT_ACCESS_AUD',
     'worker secret LVBT_ACCESS_AUD',

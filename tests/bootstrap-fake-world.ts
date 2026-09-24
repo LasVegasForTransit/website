@@ -118,9 +118,19 @@ export class FakeWorld {
     return [...this.hidden].filter((value) => !this.visible.has(value));
   }
 
-  /** Secret names the password prompts asked for in the current run. */
+  /** Names the hidden (password) prompts asked for in the current run. */
   secretPrompts(): string[] {
     return this.prompts.filter((p) => p.kind === 'password').map((p) => p.id);
+  }
+
+  /** Names every value prompt, hidden or visible, asked for in the current run. */
+  valuePrompts(): string[] {
+    return this.prompts.filter((p) => p.kind === 'password' || p.kind === 'text').map((p) => p.id);
+  }
+
+  /** Every way the current run asked for `id`. */
+  promptKinds(id: string): PromptKind[] {
+    return this.prompts.filter((p) => p.id === id).map((p) => p.kind);
   }
 
   runtime(): BootstrapRuntime {

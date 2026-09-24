@@ -22,6 +22,13 @@ export interface ReadinessState {
    * such as creating a Google Group. Bootstrap asks about each only once.
    */
   confirmations?: Record<string, { confirmedAt: string }>;
+  /**
+   * The last value bootstrap stored for each platform secret that is not a
+   * credential (an ID, a domain, a public key), so a later run can show it.
+   * Cloudflare and GitHub never show a stored value again. Credentials are
+   * never recorded here.
+   */
+  recordedValues?: Record<string, { value: string; storedAt: string }>;
 }
 
 function stateFilePath(projectRoot: string): string {
@@ -71,6 +78,17 @@ export function isConfirmed(state: ReadinessState, id: string): boolean {
 
 export function markConfirmed(state: ReadinessState, id: string): void {
   state.confirmations = { ...state.confirmations, [id]: { confirmedAt: new Date().toISOString() } };
+}
+
+export function recordedValue(state: ReadinessState, name: string): string | undefined {
+  return state.recordedValues?.[name]?.value;
+}
+
+export function recordValue(state: ReadinessState, name: string, value: string): void {
+  state.recordedValues = {
+    ...state.recordedValues,
+    [name]: { value, storedAt: new Date().toISOString() },
+  };
 }
 
 export function markCapability(

@@ -3,29 +3,32 @@ import { log, note } from '@clack/prompts';
 import pc from 'picocolors';
 import type { FollowUp, PhaseResult } from '../lib/types.js';
 import { runCommand } from '../lib/shell.js';
+import {
+  TARGET_LABEL,
+  missingTargets,
+  settableTargets,
+  takeInventory,
+  writeEverywhere,
+  type Inventory,
+} from '../lib/secret-store.js';
 import { promptConfirm } from '../lib/ui.js';
 import { rt } from '../lib/runtime.js';
 import {
   PLATFORM_MANUAL_STEPS,
   PLATFORM_SECRETS,
+  isSensitive,
   skipNoteFor,
   type GuidedStep,
   type PlatformSecret,
   type SecretTarget,
 } from '../config/platform-secrets.js';
-import { isConfirmed, markConfirmed, type ReadinessState } from '../state.js';
-
-const WORKER_NAME = 'lvbt-website';
-const PAGES_PROJECT = 'lvbt-website';
-const GITHUB_ENVIRONMENT = 'worker-candidate';
-
-const TARGET_LABEL: Record<SecretTarget, string> = {
-  worker: `Worker ${WORKER_NAME}`,
-  pages: `Pages ${PAGES_PROJECT}`,
-  'github:worker-candidate': `GitHub environment ${GITHUB_ENVIRONMENT}`,
-};
-
-type Inventory = Record<SecretTarget, Set<string> | null>;
+import {
+  isConfirmed,
+  markConfirmed,
+  recordValue,
+  recordedValue,
+  type ReadinessState,
+} from '../state.js';
 
 // The secrets bootstrap asks for, and the ones it only lists because no
 // feature reads them yet.
@@ -37,88 +40,6 @@ export function canGenerateSecret(secret: PlatformSecret, inventory: Inventory):
     secret.generate === true &&
     secret.targets.every((target) => inventory[target]?.has(secret.name) === false)
   );
-}
-
-function workerSecretNames(projectRoot: string): Set<string> | null {
-  const result = runCommand(
-    `pnpm -s exec wrangler secret list --name ${WORKER_NAME} --format json`,
-    {
-      cwd: projectRoot,
-    },
-  );
-  if (!result.ok) return null;
-  try {
-    const parsed = JSON.parse(result.stdout.slice(result.stdout.indexOf('['))) as {
-      name: string;
-    }[];
-    return new Set(parsed.map((entry) => entry.name));
-  } catch {
-    return null;
-  }
-}
-
-function pagesSecretNames(projectRoot: string): Set<string> | null {
-  const result = runCommand(
-    `pnpm -s exec wrangler pages secret list --project-name ${PAGES_PROJECT}`,
-    { cwd: projectRoot },
-  );
-  if (!result.ok) return null;
-  const names = [...result.stdout.matchAll(/^\s+-\s+([A-Z0-9_]+):/gm)].flatMap((match) =>
-    match[1] ? [match[1]] : [],
-  );
-  return new Set(names);
-}
-
-function githubSecretNames(projectRoot: string): Set<string> | null {
-  const result = runCommand(`gh secret list --env ${GITHUB_ENVIRONMENT} --json name`, {
-    cwd: projectRoot,
-  });
-  if (!result.ok) return null;
-  try {
-    return new Set((JSON.parse(result.stdout) as { name: string }[]).map((entry) => entry.name));
-  } catch {
-    return null;
-  }
-}
-
-function takeInventory(projectRoot: string): Inventory {
-  return {
-    worker: workerSecretNames(projectRoot),
-    pages: pagesSecretNames(projectRoot),
-    'github:worker-candidate': githubSecretNames(projectRoot),
-  };
-}
-
-function missingTargets(secret: PlatformSecret, inventory: Inventory): SecretTarget[] {
-  return secret.targets.filter((target) => !inventory[target]?.has(secret.name));
-}
-
-function setCommand(target: SecretTarget, name: string): string {
-  switch (target) {
-    case 'worker':
-      // A new version carries the secret without deploying it, so this is safe
-      // while production is still served by Pages.
-      return `pnpm -s exec wrangler versions secret put ${name} --name ${WORKER_NAME} --message "Set ${name}"`;
-    case 'pages':
-      return `pnpm -s exec wrangler pages secret put ${name} --project-name ${PAGES_PROJECT}`;
-    case 'github:worker-candidate':
-      return `gh secret set ${name} --env ${GITHUB_ENVIRONMENT}`;
-  }
-}
-
-// Values travel on stdin only, so they never appear in a process list or a log.
-function writeSecret(
-  projectRoot: string,
-  target: SecretTarget,
-  name: string,
-  value: string,
-): boolean {
-  const result = rt().runWithInput(setCommand(target, name), value, { cwd: projectRoot });
-  if (!result.ok) {
-    log.error(`Could not set ${name} on ${TARGET_LABEL[target]}: ${result.stderr}`);
-    return false;
-  }
-  return true;
 }
 
 // When a missing secret is needed: `now` when a live feature on the current
@@ -137,7 +58,22 @@ function stageOf(secret: PlatformSecret, inventory: Inventory): Stage {
   return missingTargets(secret, inventory).includes('pages') ? 'now' : 'switch';
 }
 
-function printReport(inventory: Inventory): void {
+// The value to show for a secret that is not a credential. Cloudflare and
+// GitHub never show a stored value, so this is the one bootstrap last stored
+// from this machine, if it did.
+function shownValue(secret: PlatformSecret, state: ReadinessState | undefined): string {
+  const value = state ? recordedValue(state, secret.name) : undefined;
+  return value ?? 'value not recorded on this machine';
+}
+
+// One report line for a missing secret; a non-credential shows the value
+// bootstrap last stored, when it has one.
+function pendingLine(secret: PlatformSecret, state: ReadinessState | undefined): string {
+  const last = !isSensitive(secret) && state ? recordedValue(state, secret.name) : undefined;
+  return `  ${secret.name}  ${pc.dim(`(${secret.neededFor})`)}${last ? `  last stored: ${last}` : ''}`;
+}
+
+function printReport(inventory: Inventory, state: ReadinessState | undefined): void {
   const unreadable = (Object.keys(inventory) as SecretTarget[]).filter((t) => !inventory[t]);
   const lines: string[] = [];
   const pending = ASKED.filter((secret) => missingTargets(secret, inventory).length > 0);
@@ -146,10 +82,21 @@ function printReport(inventory: Inventory): void {
   for (const stage of ['now', 'switch', 'later'] as const) {
     const group = pending.filter((secret) => stageOf(secret, inventory) === stage);
     if (group.length === 0) continue;
-    lines.push('', pc.bold(STAGE_HEADING[stage]));
-    for (const secret of group) {
-      lines.push(`  ${secret.name}  ${pc.dim(`(${secret.neededFor})`)}`);
+    lines.push('', pc.bold(STAGE_HEADING[stage]), ...group.map((s) => pendingLine(s, state)));
+  }
+  const visible = ASKED.filter(
+    (secret) => !isSensitive(secret) && missingTargets(secret, inventory).length === 0,
+  );
+  if (visible.length > 0) {
+    lines.push('', pc.bold('Set, and not secret, so shown here to check'));
+    for (const secret of visible) {
+      lines.push(`  ${secret.name}  ${shownValue(secret, state)}`);
     }
+    lines.push(
+      pc.dim(
+        '  Cloudflare and GitHub never show a stored value, so these are the values bootstrap last stored from this machine (kept in .lvbt/dev-readiness.json). Credentials are never shown or kept.',
+      ),
+    );
   }
   if (LISTED_ONLY.length > 0) {
     lines.push('', pc.bold('Not asked for: no feature uses these yet'));
@@ -175,8 +122,9 @@ function numbered(steps: readonly string[]): string[] {
 
 // What the value is for, when skipping is fine, where bootstrap stores it,
 // and the click-by-click steps to get it.
-function instructions(secret: PlatformSecret): string {
+function instructions(secret: PlatformSecret, current?: string): string {
   const lines = [`${pc.bold('What it is for:')} ${secret.purpose}`];
+  if (current) lines.push(`${pc.bold('Last stored from this machine:')} ${current}`);
   const skip = skipNoteFor(secret);
   if (skip) lines.push(`${pc.bold('Fine to skip?')} ${skip}`);
   lines.push(
@@ -220,51 +168,55 @@ const ROTATE_WARNING =
   'You asked to replace this value. Paste the NEW value. It replaces the current one everywhere it is stored, so the old one stops working.';
 
 // A generated value, a pasted value, or null when the person skips it.
+// Credentials are typed into hidden input; other values are shown as typed,
+// and a value bootstrap stored before is offered as the default.
 async function obtainValue(
   secret: PlatformSecret,
   generate: boolean,
-  mode: ValueMode = 'missing',
+  { mode = 'missing', state }: { mode?: ValueMode; state?: ReadinessState } = {},
 ): Promise<string | null> {
   if (generate) {
     log.info(`${pc.bold(secret.name)}: generated a new random value.`);
     return `${randomUUID()}${randomUUID()}`.replaceAll('-', '');
   }
+  const sensitive = isSensitive(secret);
+  const current = !sensitive && state ? recordedValue(state, secret.name) : undefined;
   const warning = mode === 'rotate' ? ROTATE_WARNING : secret.generate ? REUSE_WARNING : '';
-  note([warning, instructions(secret)].filter(Boolean).join('\n\n'), secret.name);
+  note([warning, instructions(secret, current)].filter(Boolean).join('\n\n'), secret.name);
   if (
     secret.url &&
     (await promptConfirm(`${secret.name}.open`, 'Open that page in your browser?', true))
   ) {
     rt().openUrl(secret.url);
   }
-  const entered = await rt().prompts.password({
+  const validate = (raw: string | undefined) => {
+    const trimmed = (raw ?? '').trim();
+    return trimmed ? secret.validate?.(trimmed) : undefined;
+  };
+  if (sensitive) {
+    const entered = await rt().prompts.password({
+      id: secret.name,
+      message: `Paste ${secret.name} (hidden as you type; leave empty to skip for now)`,
+      validate,
+    });
+    return entered.trim() || null;
+  }
+  const keep = mode === 'missing' ? current : undefined;
+  const entered = await rt().prompts.text({
     id: secret.name,
-    message: `Paste ${secret.name} (leave empty to skip for now)`,
-    validate: (raw) => {
-      const trimmed = (raw ?? '').trim();
-      return trimmed ? secret.validate?.(trimmed) : undefined;
-    },
+    message: keep
+      ? `Paste ${secret.name} (press Enter to keep ${keep})`
+      : `Paste ${secret.name} (leave empty to skip for now)`,
+    placeholder: keep,
+    defaultValue: keep,
+    validate,
   });
-  const value = entered.trim();
-  return value || null;
+  return entered.trim() || null;
 }
 
-/** Writes `value` to each target; returns how many writes failed. */
-function writeEverywhere(
-  projectRoot: string,
-  secret: PlatformSecret,
-  targets: readonly SecretTarget[],
-  value: string,
-): number {
-  let failed = 0;
-  for (const target of targets) {
-    if (writeSecret(projectRoot, target, secret.name, value)) {
-      log.success(`${secret.name} → ${TARGET_LABEL[target]}`);
-    } else {
-      failed += 1;
-    }
-  }
-  return failed;
+/** Remembers a value that is not a credential, so a later run can show it. */
+function remember(secret: PlatformSecret, value: string, state: ReadinessState | undefined): void {
+  if (state && !isSensitive(secret)) recordValue(state, secret.name, value);
 }
 
 /**
@@ -276,7 +228,7 @@ async function rotateSecret(
   projectRoot: string,
   secret: PlatformSecret,
   inventory: Inventory,
-  followUpItems: FollowUp[],
+  { followUpItems, state }: { followUpItems: FollowUp[]; state?: ReadinessState },
 ): Promise<boolean> {
   const unreadable = secret.targets.filter((target) => !inventory[target]);
   if (unreadable.length > 0) {
@@ -290,12 +242,14 @@ async function rotateSecret(
     return false;
   }
   const generated = secret.generate === true;
-  const value = await obtainValue(secret, generated, 'rotate');
+  const value = await obtainValue(secret, generated, { mode: 'rotate', state });
   if (!value) {
     log.info(pc.dim(`${secret.name} left unchanged.`));
     return false;
   }
-  if (writeEverywhere(projectRoot, secret, secret.targets, value) > 0) {
+  const failed = writeEverywhere(projectRoot, secret, secret.targets, value);
+  if (failed < secret.targets.length) remember(secret, value, state);
+  if (failed > 0) {
     followUpItems.push({
       kind: 'remote',
       message: `${secret.name} was not replaced everywhere. Re-run: pnpm bootstrap --phase secrets --rotate ${secret.name}`,
@@ -361,16 +315,51 @@ async function chooseSecrets(
   return pending;
 }
 
+/**
+ * Ask for (or generate) one missing secret and store it on every target that
+ * lacks it. Returns false when it is still missing somewhere.
+ */
+async function setMissingSecret(
+  projectRoot: string,
+  secret: PlatformSecret,
+  inventory: Inventory,
+  { followUpItems, state }: { followUpItems: FollowUp[]; state?: ReadinessState },
+): Promise<boolean> {
+  if (secret.prerequisite && !(await confirmPrerequisite(secret.prerequisite, state))) {
+    followUpItems.push({
+      kind: 'remote',
+      message: `${secret.name} waits for "${secret.prerequisite.title}". Do that, then re-run: pnpm bootstrap --phase secrets`,
+    });
+    return false;
+  }
+  const targets = settableTargets(secret, inventory);
+  const generated = canGenerateSecret(secret, inventory);
+  const value = await obtainValue(secret, generated, { state });
+  if (!value) {
+    followUpItems.push({
+      kind: 'remote',
+      message: `${secret.name} is still missing (${secret.neededFor}). Re-run: pnpm bootstrap --phase secrets`,
+    });
+    return false;
+  }
+  const failed = writeEverywhere(projectRoot, secret, targets, value);
+  if (failed < targets.length) remember(secret, value, state);
+  await finishAfterSet(secret, value, generated, followUpItems);
+  if (failed > 0) {
+    followUpItems.push({
+      kind: 'remote',
+      message: `${secret.name} could not be stored everywhere. Re-run: pnpm bootstrap --phase secrets`,
+    });
+    return false;
+  }
+  return true;
+}
+
 export interface SecretsOptions {
   /** Secret names to replace even though they are already set. */
   rotate?: readonly string[];
   /** Bootstrap state, where confirmed setup steps are remembered. */
   state?: ReadinessState;
-}
-
-// Targets that lack the secret and can be written to now.
-function settableTargets(secret: PlatformSecret, inventory: Inventory): SecretTarget[] {
-  return missingTargets(secret, inventory).filter((target) => inventory[target]);
 }
 
 export async function runSecretsPhase(
@@ -379,7 +368,7 @@ export async function runSecretsPhase(
   options: SecretsOptions = {},
 ): Promise<PhaseResult> {
   const inventory = takeInventory(projectRoot);
-  printReport(inventory);
+  printReport(inventory, options.state);
 
   // The only manual step today is the read:packages scope; skip it once granted.
   const scopes = runCommand('gh auth status', { cwd: projectRoot });
@@ -397,7 +386,11 @@ export async function runSecretsPhase(
   let skipped = 0;
   const rotate = new Set(options.rotate ?? []);
   for (const secret of ASKED.filter((s) => rotate.has(s.name))) {
-    if (!(await rotateSecret(projectRoot, secret, inventory, followUpItems))) skipped += 1;
+    const rotated = await rotateSecret(projectRoot, secret, inventory, {
+      followUpItems,
+      state: options.state,
+    });
+    if (!rotated) skipped += 1;
   }
 
   // A secret missing only where the inventory could not be read can't be set
@@ -415,33 +408,11 @@ export async function runSecretsPhase(
   const pending =
     actionable.length > 0 ? await chooseSecrets(actionable, inventory, followUpItems) : [];
   for (const secret of pending) {
-    if (secret.prerequisite && !(await confirmPrerequisite(secret.prerequisite, options.state))) {
-      skipped += 1;
-      followUpItems.push({
-        kind: 'remote',
-        message: `${secret.name} waits for "${secret.prerequisite.title}". Do that, then re-run: pnpm bootstrap --phase secrets`,
-      });
-      continue;
-    }
-    const targets = settableTargets(secret, inventory);
-    const generated = canGenerateSecret(secret, inventory);
-    const value = await obtainValue(secret, generated);
-    if (!value) {
-      skipped += 1;
-      followUpItems.push({
-        kind: 'remote',
-        message: `${secret.name} is still missing (${secret.neededFor}). Re-run: pnpm bootstrap --phase secrets`,
-      });
-      continue;
-    }
-    if (writeEverywhere(projectRoot, secret, targets, value) > 0) {
-      skipped += 1;
-      followUpItems.push({
-        kind: 'remote',
-        message: `${secret.name} could not be stored everywhere. Re-run: pnpm bootstrap --phase secrets`,
-      });
-    }
-    await finishAfterSet(secret, value, generated, followUpItems);
+    const stored = await setMissingSecret(projectRoot, secret, inventory, {
+      followUpItems,
+      state: options.state,
+    });
+    if (!stored) skipped += 1;
   }
 
   const incomplete = skipped + blocked;
