@@ -8,6 +8,9 @@
  *   pnpm bootstrap --resume           Skip phases that already completed
  *   pnpm bootstrap --local-only       Skip phases that need GitHub/Cloudflare
  *   pnpm bootstrap --phase env        Run a single phase by id
+ *   pnpm bootstrap --phase deploy --redeploy
+ *                                     Push ./dist to production even though
+ *                                     a production deployment exists
  *
  * Phases (in order):
  *   install   — verify Node, pnpm, gh, wrangler; install missing
@@ -15,7 +18,7 @@
  *   workspace — pnpm install + pnpm build smoke
  *   env       — write .env.local; prompt for Beehiiv/donate/social URLs
  *   repo      — gh repo create + push (skipped if origin already set)
- *   deploy    — wrangler pages project create + first deploy
+ *   deploy    — create the Pages project and first deploy, only if missing
  *   domain    — verify lasvegasfortransit.org points at the Pages project
  *   secrets   — report and set every server-side secret the site and platform need
  *

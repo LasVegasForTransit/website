@@ -67,7 +67,7 @@ const PHASES: readonly PhaseSpec[] = [
   {
     id: 'deploy',
     title: 'Cloudflare Pages',
-    what: "Provisioning the Pages project and pushing your first build. After this, you'll wire auto-deploys on push.",
+    what: 'Checking that the Pages project exists and has a production deployment. It creates the project and pushes the first build only when they are missing.',
     local: false,
   },
   {
@@ -94,6 +94,8 @@ export interface CliArgs {
   resume: boolean;
   localOnly: boolean;
   phase: PhaseId | null;
+  /** Push ./dist to Pages production even when a production deployment exists. */
+  redeploy: boolean;
 }
 
 /** A command-line mistake; the entry point prints the message and exits 2. */
@@ -120,6 +122,7 @@ export function parseArgs(argv: readonly string[]): CliArgs {
     resume: argv.includes('--resume'),
     localOnly: argv.includes('--local-only'),
     phase,
+    redeploy: argv.includes('--redeploy'),
   };
 }
 
@@ -195,7 +198,7 @@ async function runPhaseById(
     case 'repo':
       return runRepoPhase(projectRoot, args.doctorMode);
     case 'deploy':
-      return runDeployPhase(projectRoot, args.doctorMode);
+      return runDeployPhase(projectRoot, args.doctorMode, { redeploy: args.redeploy });
     case 'domain':
       return runDomainPhase(projectRoot, args.doctorMode);
     case 'secrets':
