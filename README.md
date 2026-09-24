@@ -115,22 +115,18 @@ If anything breaks in your environment, run `pnpm preflight` first — it usuall
 
 ## CI/CD
 
-Three workflows in [`.github/workflows/`](./.github/workflows/), all built on three reusable composites in [`.github/actions/`](./.github/actions/) (`setup-node-pnpm`, `build-site`, `deploy-cloudflare-pages`):
+Several workflows in [`.github/workflows/`](./.github/workflows/) build on three reusable composites in [`.github/actions/`](./.github/actions/) (`setup-node-pnpm`, `build-site`, `deploy-cloudflare-pages`). The ones that talk to Cloudflare:
 
-| Workflow                | Trigger                               | What it does                                                      |
-| ----------------------- | ------------------------------------- | ----------------------------------------------------------------- |
-| `ci.yml`                | Pull requests + non-main pushes       | Typecheck → lint:check → check:docs → build (no deploy)           |
-| `deploy-preview.yml`    | Same-repo PRs on `main`               | Build + `wrangler pages deploy --branch=<head ref>` + comment URL |
-| `deploy-production.yml` | Pushes to `main`, `workflow_dispatch` | Build + `wrangler pages deploy --branch=main`                     |
+| Workflow                      | Trigger                               | What it does                                                                   |
+| ----------------------------- | ------------------------------------- | ------------------------------------------------------------------------------ |
+| `deploy-preview.yml`          | Same-repo PRs on `main`               | Build + `wrangler pages deploy --branch=<head ref>` + comment URL              |
+| `deploy-production.yml`       | Pushes to `main`, `workflow_dispatch` | Build + `wrangler pages deploy --branch=main`                                  |
+| `deploy-worker-preview.yml`   | Same-repo PRs, once enabled           | Uploads a version of the separate `lvbt-website-preview` Worker for comparison |
+| `deploy-worker-candidate.yml` | After a successful production build   | Uploads a `main` Worker version for comparison, then cutover once enabled      |
 
-**Required repo secrets** (Settings → Secrets and variables → Actions):
+`ci.yml` (typecheck → lint:check → check:docs → build, no deploy), `audit.yml`, `audit-scheduled.yml`, `cron-rebuild.yml` and `seed-baselines.yml` need no Cloudflare credentials. The full pipeline — every setting and the exact dashboard clicks for each token — is in [`docs/reference/deployment-pipeline.md`](./docs/reference/deployment-pipeline.md) and [`docs/guides/test-the-workers-candidate.md`](./docs/guides/test-the-workers-candidate.md).
 
-| Name                    | Notes                                                                                                                                                                                                          |
-| ----------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `CLOUDFLARE_API_TOKEN`  | Account-scoped token with `Account.Cloudflare Pages:Edit`. Create at `https://dash.cloudflare.com/<account-id>/api-tokens` → "Edit Cloudflare Pages" template. Different token from the bootstrap's DNS token. |
-| `CLOUDFLARE_ACCOUNT_ID` | Same value the bootstrap persists to `.env.local`.                                                                                                                                                             |
-
-Scope `CLOUDFLARE_API_TOKEN` to the `production` Environment (Settings → Environments) so non-production jobs can't read it.
+**In short:** `deploy-production.yml` and `deploy-preview.yml` both need a repository secret `CLOUDFLARE_API_TOKEN` (an **Account · Cloudflare Pages · Edit** custom token — Cloudflare has no ready-made template for Pages alone) and a repository variable `CLOUDFLARE_ACCOUNT_ID`. Both stay at the repository level, not scoped to an Environment: `deploy-preview.yml`'s fork-safety job, which declares no environment, reads them too. `deploy-worker-preview.yml` and `deploy-worker-candidate.yml` each need their own environment-scoped `CLOUDFLARE_WORKERS_API_TOKEN` (a narrower **Account · Workers Scripts · Edit** token) under the `worker-preview` and `worker-candidate` GitHub environments.
 
 ## License
 

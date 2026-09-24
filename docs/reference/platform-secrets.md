@@ -87,6 +87,8 @@ The sections below say how to create each value when the service has never been 
 
 Everything LVBT owns in another service belongs to an LVBT organization, team or group, never to a personal account, so the next maintainer can reach it. The name is "Las Vegans for Better Transit" everywhere: the Cloudflare account (the LVBT account), the Resend and Discord teams, and the Cloudflare One team name. Everything on Google Cloud lives in one project, **LVBT Core** (ID `lvbt-core`), under the lasvegasfortransit.org organization; create a project with that name only if it does not exist. Where a service offers an icon, use the square LVBT logo from the "Marketing & Communications" shared drive in Google Drive.
 
+Check the Cloudflare account's own name the first time you open its dashboard: press ⌘K (or Ctrl+K), search "Account Name", and open it. If it still shows an older name (such as "Las Vegas for Better…" — misspelled), correct it to "Las Vegans for Better Transit" and save. This is a display label only; it changes no ID, token or URL, so fixing it never breaks anything already configured.
+
 ### Resend: sending email
 
 `LVBT_RESEND_API_KEY` lets the site send email, such as sign-in codes and reminders, from `notify.lasvegasfortransit.org`. It starts with `re_`.
