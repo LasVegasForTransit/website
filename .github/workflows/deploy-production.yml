@@ -63,6 +63,7 @@ jobs:
   deploy:
     name: Deploy to Cloudflare Pages
     needs: build
+    if: vars.LVBT_WORKERS_PRODUCTION_ENABLED != 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     # Scopes secrets to the production environment + surfaces a deployment

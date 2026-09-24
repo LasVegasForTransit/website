@@ -46,23 +46,34 @@ Both databases are on the free plan in Western North America. `pnpm dev` and `pn
 
 ## Production
 
-`Deploy production` publishes `dist/` to the `lvbt-website` Pages project from `main`. The custom hostnames `lasvegasfortransit.org` and `www.lasvegasfortransit.org` remain attached to Pages through the acceptance period.
+`Deploy production` builds `main`. While `LVBT_WORKERS_PRODUCTION_ENABLED` is unset, it also publishes `dist/` to the `lvbt-website` Pages project. Pages remains the fallback origin during Worker acceptance.
 
-After a successful Pages deployment, `Deploy Worker candidate` uploads the same `main` commit as a
-versioned Worker when `CLOUDFLARE_WORKERS_CANDIDATE_ENABLED` is `true`. It compares the candidate
-with the production Pages origin, runs the browser acceptance suite, and records the commit, Worker
-version, and preview URL in the workflow summary. The workflow uses `wrangler versions upload`; it
-does not create a deployment or edit a route.
+After a successful production build, `Deploy Worker candidate` uploads the same `main` commit as a
+versioned Worker when `CLOUDFLARE_WORKERS_CANDIDATE_ENABLED` is `true`. Before cutover it compares
+the candidate with Pages. It then runs the browser acceptance suite and records the commit, Worker
+version, and preview URL in the workflow summary. With `LVBT_WORKERS_PRODUCTION_ENABLED` unset, the
+workflow only uploads a version and does not edit a route or create a deployment.
+
+With `LVBT_WORKERS_PRODUCTION_ENABLED` set to `true`, the workflow skips the comparison with the
+older Pages fallback, confirms that `main` still points at the verified commit, and deploys that
+exact Worker version. It then compares the production hostname with the version preview. The
+preview excludes analytics, so this final comparison checks responses but not analytics insertion.
 
 The `worker-candidate` environment contains the same account variable and narrowly scoped
 `CLOUDFLARE_WORKERS_API_TOKEN` secret as `worker-preview`. Keeping the environments separate permits
 independent approvals and credential rotation. A manual run is accepted only from `main`.
 
-Workers cutover requires a candidate built from the current `main` commit and a recorded previous Pages deployment. DNS, TLS, redirects, headers, analytics, static pages, 404 handling, and every API route are checked against the version preview before the hostname route changes. The Pages project stays available until the Worker passes the same checks on the production hostname.
+Workers cutover requires a candidate built from the current `main` commit and a recorded Pages
+deployment. DNS, TLS, redirects, headers, analytics, static pages, 404 handling, and every API
+route are checked against the version preview before the hostname route changes. The Pages project
+stays available until the Worker passes the same checks on the production hostname.
 
 ## Rollback
 
-Before cutover, rollback selects the preceding successful Pages deployment. After cutover, `wrangler rollback <VERSION_ID> --message <reason>` creates a deployment that sends all Worker traffic to the recorded version. Route and DNS configuration stay unchanged.
+Before cutover, rollback selects the preceding successful Pages deployment. During the route
+overlay, removing the two website Worker routes immediately returns traffic to the Pages fallback.
+For a Worker-only release regression, `wrangler rollback <VERSION_ID> --message <reason>` sends all
+Worker traffic to the recorded version without changing routes or DNS.
 
 The rollback version must retain every binding used by that release. Deleted or incompatible storage bindings prevent Cloudflare from applying an older version.
 
