@@ -1,10 +1,10 @@
 # Run a usability test
 
-This guide is LVBT's kit for testing a new screen with real people before it is built: how to find testers, what to say, how to run a session and how to record what you learn. Every "Prototype, test and build" task uses it. Test each flow with at least three people from its real audience, including at least one person who uses assistive technology.
+This guide is LVBT's kit for testing a new screen with real people before it is built: how to find testers, what to say, how to run a session and how to record what you learn. Every prototype goes through it before it is built. Test each flow with at least three people from its real audience, including at least one person who uses assistive technology.
 
 A **usability test** is a short session where someone tries a task with a prototype, thinking aloud, while you watch and take notes without helping. **Assistive technology** means the tools some disabled people use to operate a phone or computer, such as screen readers (VoiceOver on iPhone, TalkBack on Android), screen magnifiers, switch access or voice control.
 
-> **Before you start.** You need the prototype's preview link (see the prototype's task), edit access to the tester roster in LVBT's shared drive (staff only), and 30 minutes per session.
+> **Before you start.** You need the prototype's preview link (see [add a prototype](./add-a-prototype.md)), edit access to the tester roster in LVBT's shared drive (staff only), and 30 minutes per session.
 
 ## 1. Recruit testers
 
@@ -42,7 +42,8 @@ Testers aren't paid; LVBT has no budget for it. Thank each tester personally, an
 
 ## 2. Run the session
 
-Read this script aloud. Keep the prototype's tasks, which its task lists, ready.
+Read this script aloud. Keep this prototype's tester tasks ready — the things you'll ask a tester to
+do, such as "Join LVBT."
 
 **Welcome.** "Thanks for helping. We're testing a new part of LVBT's website, and we want to see where it's confusing. You can't do anything wrong: if something is hard, that's what we need to fix. Please think out loud as you go. It's a test version, so nothing you type is saved."
 
@@ -50,7 +51,7 @@ Read this script aloud. Keep the prototype's tasks, which its task lists, ready.
 
 **Warm-up.** "How do you usually hear about things LVBT is doing?"
 
-**Tasks.** Read each task from the prototype's task, one at a time, for example "Join LVBT." Then watch. Don't help unless they have been stuck for two minutes; if you do help, note it.
+**Tasks.** Read each task you prepared, one at a time, for example "Join LVBT." Then watch. Don't help unless they have been stuck for two minutes; if you do help, note it.
 
 **Closing.** "What was confusing?"
 
@@ -58,7 +59,7 @@ Read this script aloud. Keep the prototype's tasks, which its task lists, ready.
 
 ## 3. Record the findings
 
-Post the findings as a comment on the prototype's task, in this format. Use session numbers, never names or emails.
+Record the findings in this format and share them with whoever is building the prototype. Use session numbers, never names or emails.
 
 ```
 ## Usability findings: <flow name>, <date>

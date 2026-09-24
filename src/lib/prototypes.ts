@@ -9,9 +9,6 @@ export type PrototypeStatus = (typeof PROTOTYPE_STATUSES)[number];
 export interface Prototype {
   name: string;
   status: PrototypeStatus;
-  /** the plan the prototype belongs to. */
-  task: string;
-  taskTitle: string;
   /** When it last changed, as YYYY-MM-DD. */
   updated: string;
   path: string;
