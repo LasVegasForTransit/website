@@ -1,6 +1,6 @@
 ---
-// The prototype index: every prototype with its status, last change and
-// task, read from the metadata files in src/prototypes/.
+// The prototype index: every prototype with its status and last change,
+// read from the metadata files in src/prototypes/.
 import PrototypeLayout from '../../components/app/PrototypeLayout.astro';
 import DataTable from '../../components/app/DataTable.astro';
 import { listPrototypes } from '../../lib/prototypes';
@@ -9,7 +9,6 @@ const rows = listPrototypes().map((prototype) => ({
   name: prototype.name,
   status: prototype.status,
   updated: prototype.updated,
-  task: `${prototype.taskTitle} (${prototype.task})`,
   path: prototype.path,
 }));
 ---
@@ -43,7 +42,6 @@ const rows = listPrototypes().map((prototype) => ({
             { key: 'name', label: 'Prototype' },
             { key: 'status', label: 'Status' },
             { key: 'updated', label: 'Last changed' },
-            { key: 'task', label: 'Task' },
           ]}
           rows={rows}
         />

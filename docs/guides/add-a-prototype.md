@@ -4,7 +4,7 @@ This guide shows how to put a clickable prototype of a new flow on a real addres
 
 A **prototype** is a coded version of one flow, built from the app patterns (see the pattern gallery at `/patterns/` on any preview), using made-up data. It saves nothing and calls no outside service. Prototypes live under `/prototypes/`, which exists only on pull request previews and in local development: the production build deletes the folder, and the production deploy fails if it is ever there. Every prototype page shows a banner saying it is a test version and tells search engines not to index it.
 
-> **Before you start.** You need the website running locally (see [local development](../reference/local-dev.md)) and the plan the prototype belongs to.
+> **Before you start.** You need the website running locally (see [local development](../reference/local-dev.md)).
 
 ## 1. Describe the prototype
 
@@ -14,14 +14,13 @@ Add a file to `src/prototypes/` named after the flow, for example `src/prototype
 {
   "name": "Sign in",
   "status": "draft",
-  "task": "",
-  "taskTitle": "Prototype, test and build the member sign-in pages",
   "updated": "2026-10-05",
   "path": "/prototypes/sign-in/"
 }
 ```
 
-`task` is the plan's ID. `status` is one of `draft`, `testing`, `tested` or `built`. The prototype index at `/prototypes/` reads these files, so you never edit the index by hand.
+`status` is one of `draft`, `testing`, `tested` or `built`. The prototype index at `/prototypes/`
+reads these files, so you never edit the index by hand.
 
 ## 2. Build the pages
 
@@ -61,5 +60,5 @@ Change `status` and `updated` in its metadata file as it moves along:
 
 - **draft** while you build it;
 - **testing** when you share the link with testers;
-- **tested** once the findings are posted on its task and the blocking problems are fixed;
+- **tested** once the findings are recorded (see [run a usability test](./run-a-usability-test.md)) and the blocking problems are fixed;
 - **built** when the real feature ships, starting from these pages.
