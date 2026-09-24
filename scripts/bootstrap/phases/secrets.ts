@@ -136,18 +136,21 @@ function instructions(secret: PlatformSecret, current?: string): string {
 }
 
 /**
- * A setup step bootstrap cannot check for itself. Shown until the person
- * confirms it is done; the "yes" is remembered in the bootstrap state file,
- * so a later run never asks again.
+ * A setup step bootstrap cannot check for itself, asked about after the
+ * secret's own steps and before its value. Asked until the person confirms
+ * it is done; the "yes" is remembered in the bootstrap state file, so a later
+ * run never asks again.
  */
 async function confirmPrerequisite(
   step: GuidedStep,
   state: ReadinessState | undefined,
 ): Promise<boolean> {
   if (state && isConfirmed(state, step.id)) return true;
-  const lines = [...numbered(step.steps)];
-  if (step.url) lines.unshift(`${pc.bold('Open:')} ${pc.cyan(step.url)}`, '');
-  note(lines.join('\n'), `First: ${step.title}`);
+  if (step.steps?.length) {
+    const lines = [...numbered(step.steps)];
+    if (step.url) lines.unshift(`${pc.bold('Open:')} ${pc.cyan(step.url)}`, '');
+    note(lines.join('\n'), `First: ${step.title}`);
+  }
   if (
     step.url &&
     (await promptConfirm(`${step.id}.open`, 'Open that page in your browser?', true))
@@ -167,20 +170,13 @@ const REUSE_WARNING =
 const ROTATE_WARNING =
   'You asked to replace this value. Paste the NEW value. It replaces the current one everywhere it is stored, so the old one stops working.';
 
-// A generated value, a pasted value, or null when the person skips it.
-// Credentials are typed into hidden input; other values are shown as typed,
-// and a value bootstrap stored before is offered as the default.
-async function obtainValue(
+// The note bootstrap shows before asking for a value: any warning, what the
+// value is for, and the steps to get it. Offers to open the first page.
+async function showSteps(
   secret: PlatformSecret,
-  generate: boolean,
-  { mode = 'missing', state }: { mode?: ValueMode; state?: ReadinessState } = {},
-): Promise<string | null> {
-  if (generate) {
-    log.info(`${pc.bold(secret.name)}: generated a new random value.`);
-    return `${randomUUID()}${randomUUID()}`.replaceAll('-', '');
-  }
-  const sensitive = isSensitive(secret);
-  const current = !sensitive && state ? recordedValue(state, secret.name) : undefined;
+  mode: ValueMode,
+  current: string | undefined,
+): Promise<void> {
   const warning = mode === 'rotate' ? ROTATE_WARNING : secret.generate ? REUSE_WARNING : '';
   note([warning, instructions(secret, current)].filter(Boolean).join('\n\n'), secret.name);
   if (
@@ -189,6 +185,33 @@ async function obtainValue(
   ) {
     rt().openUrl(secret.url);
   }
+}
+
+// A generated value, a pasted value, or null when the person skips it.
+// Credentials are typed into hidden input; other values are shown as typed,
+// and a value bootstrap stored before is offered as the default.
+async function obtainValue(
+  secret: PlatformSecret,
+  generate: boolean,
+  {
+    mode = 'missing',
+    state,
+    ready,
+  }: {
+    mode?: ValueMode;
+    state?: ReadinessState;
+    /** Asked after the steps are shown; false means stop without a value. */
+    ready?: () => Promise<boolean>;
+  } = {},
+): Promise<string | null> {
+  if (generate) {
+    log.info(`${pc.bold(secret.name)}: generated a new random value.`);
+    return `${randomUUID()}${randomUUID()}`.replaceAll('-', '');
+  }
+  const sensitive = isSensitive(secret);
+  const current = !sensitive && state ? recordedValue(state, secret.name) : undefined;
+  await showSteps(secret, mode, current);
+  if (ready && !(await ready())) return null;
   const validate = (raw: string | undefined) => {
     const trimmed = (raw ?? '').trim();
     return trimmed ? secret.validate?.(trimmed) : undefined;
@@ -325,16 +348,25 @@ async function setMissingSecret(
   inventory: Inventory,
   { followUpItems, state }: { followUpItems: FollowUp[]; state?: ReadinessState },
 ): Promise<boolean> {
-  if (secret.prerequisite && !(await confirmPrerequisite(secret.prerequisite, state))) {
+  // The prerequisite question comes after the steps, which explain it.
+  const prerequisite = secret.prerequisite;
+  const gate = { waiting: false };
+  const ready = prerequisite
+    ? async () => {
+        gate.waiting = !(await confirmPrerequisite(prerequisite, state));
+        return !gate.waiting;
+      }
+    : undefined;
+  const targets = settableTargets(secret, inventory);
+  const generated = canGenerateSecret(secret, inventory);
+  const value = await obtainValue(secret, generated, { state, ready });
+  if (gate.waiting && prerequisite) {
     followUpItems.push({
       kind: 'remote',
-      message: `${secret.name} waits for "${secret.prerequisite.title}". Do that, then re-run: pnpm bootstrap --phase secrets`,
+      message: `${secret.name} waits for "${prerequisite.title}". Do that, then re-run: pnpm bootstrap --phase secrets`,
     });
     return false;
   }
-  const targets = settableTargets(secret, inventory);
-  const generated = canGenerateSecret(secret, inventory);
-  const value = await obtainValue(secret, generated, { state });
   if (!value) {
     followUpItems.push({
       kind: 'remote',

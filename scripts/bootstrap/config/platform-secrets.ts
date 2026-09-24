@@ -29,18 +29,19 @@ export type SecretTarget =
 export type SecretUse = 'live' | 'future';
 
 /**
- * A setup step outside any secret that must be done first, and that
- * bootstrap cannot check for itself. Bootstrap shows the steps, asks the
- * question, and remembers a "yes" in .lvbt/dev-readiness.json so it never
- * asks again.
+ * A setup step that must be done before a secret can exist, and that
+ * bootstrap cannot check for itself. After showing the secret's own steps,
+ * bootstrap asks the question and remembers a "yes" in
+ * .lvbt/dev-readiness.json, so it never asks again. `steps` is only for a
+ * step the secret's own steps do not already cover.
  */
 export interface GuidedStep {
   /** Stable key the confirmation is remembered under. */
   id: string;
   title: string;
   url?: string;
-  steps: readonly string[];
-  /** Yes/no question asked after the steps. */
+  steps?: readonly string[];
+  /** Yes/no question asked before the value is. */
   question: string;
 }
 
@@ -51,14 +52,15 @@ export interface PlatformSecret {
   use: SecretUse;
   /**
    * When it is fine to leave the value empty for now, and what stays broken
-   * until it is set. `future` secrets without one get the generic note.
+   * until it is set. `future` secrets without one get the generic note; an
+   * empty string means the steps already say it.
    */
   skipNote?: string;
   /** The page to open first. Bootstrap offers to open it in the browser. */
   url?: string;
   /** Numbered, click-by-click steps to find or create the value. */
   steps?: readonly string[];
-  /** Must be done before the value can exist; asked about once. */
+  /** Must be done before a typed value can exist; asked about once. */
   prerequisite?: GuidedStep;
   /**
    * False for values that are not credentials: IDs, domains, public keys and
@@ -119,21 +121,11 @@ const regenerateSteps = (name: string, consequence: string): readonly string[] =
   `Leave this prompt empty. If a target could not be checked, fix the sign-in and run bootstrap again. Otherwise run \`pnpm bootstrap --phase secrets --rotate ${name}\` to make a new value and store it everywhere. ${consequence}`,
 ];
 
+// Part 1 of the LVBT_ACCESS_AUD steps creates this group.
 const STAFF_CONSOLE_GROUP: GuidedStep = {
   id: 'staff-console-google-group',
-  title: 'Google Group for the staff console',
-  url: 'https://admin.google.com/ac/groups',
-  steps: [
-    'This group decides who can open the staff console. You need a Google Workspace admin who can manage groups.',
-    'Open https://admin.google.com and go to Menu → Directory → Groups.',
-    'If "Staff console" (staff-console@lasvegasfortransit.org) is listed, it already exists: skip to the step about members.',
-    'Otherwise click "Create group". Group name: Staff console. Group email: staff-console, with the domain lasvegasfortransit.org. Description: People who can open the LVBT staff console. Group owners: yourself. Click "Next".',
-    'Tick "Security", because this group controls access. Click "Next".',
-    'Access type: "Restricted". Who can join the group: "Only invited users". Leave external members off. Click "Create Group".',
-    'Open the group, then "Members" → "Add members". Type each staff member\'s @lasvegasfortransit.org address and click "Add To Group". Only lasvegasfortransit.org Workspace accounts can sign in through Access, so a personal Gmail address does not work even inside the group.',
-    'Later, to add someone, come back to Directory → Groups → Staff console → Members → "Add members". To remove someone, point to them in the member list and click "Remove", or tick them and click "Remove members".',
-  ],
-  question: 'Does the "Staff console" group exist, with its members added?',
+  title: 'Google Group for the staff console (part 1)',
+  question: 'Is part 1 done: does the "Staff console" Google Group exist, with you in it?',
 };
 
 export const PLATFORM_SECRETS: readonly PlatformSecret[] = [
@@ -356,15 +348,22 @@ export const PLATFORM_SECRETS: readonly PlatformSecret[] = [
       "Tells the staff console which Cloudflare Access application guards it, so it accepts only that application's sign-ins.",
     use: 'future',
     sensitive: false,
-    skipNote: STAFF_CONSOLE_SKIP,
+    // The first step says when it is fine to skip.
+    skipNote: '',
     url: 'https://one.dash.cloudflare.com/',
     prerequisite: STAFF_CONSOLE_GROUP,
     steps: [
-      'The steps below take about 20 minutes and need a Google Workspace admin.',
-      'Second, Google sign-in for Cloudflare. In Cloudflare One, open Integrations → Identity providers (or press ⌘K and search "Identity providers"). If "Google Workspace" is listed, skip to the next step. Otherwise follow https://developers.cloudflare.com/cloudflare-one/integrations/identity-providers/google-workspace/ with these values: in the "LVBT Core" Google Cloud project (ID lvbt-core), the Google OAuth client is a "Web application" named "Cloudflare Access", its Authorized JavaScript origin is https://lvbt.cloudflareaccess.com and its Authorized redirect URI is https://lvbt.cloudflareaccess.com/cdn-cgi/access/callback; the Workspace domain is lasvegasfortransit.org. Open the Cloudflare form "Add new identity provider" → "Google Workspace" before you create the client, so you can paste the Client ID into "App ID" and then the Client secret into "Client secret" as you copy each. Click "Test" when done.',
-      'Now the application. In Cloudflare One, open Access controls → Applications. If "LVBT staff console" is listed, click it, open "Configure", and skip to the last step.',
-      'Otherwise click "Create new application". In the dialog, choose "Self-hosted and private", then the "Public DNS" tab (not "Private destinations"), then "Continue with Self-hosted and private".',
-      'Under "Destinations", use a public hostname: subdomain "staff", domain "lasvegasfortransit.org", path empty. If you see a "Private IPs" row instead, click "+ Add public hostname" and remove the empty private row. Leave "Allow access through browser-based RDP, SSH, or VNC sessions" off.',
+      'The staff console is not live yet. You can leave this empty now; bootstrap asks again next time. The value only exists once the Access application below is created. That takes about 20 minutes and needs a Google Workspace super admin. Do the parts in order; each needs the one before it.',
+      'Part 1, the Google Group that decides who gets in. At https://admin.google.com, go to Menu → Directory → Groups. If "Staff console" (staff-console@lasvegasfortransit.org) is listed, skip to part 2. Otherwise click "Create group": Group name "Staff console", Group email "staff-console", Description "People who can open the LVBT staff console", Group owner yourself. Click "Next", tick "Security", click "Next", choose "Restricted", set "Who can join the group" to "Only invited users", and create it. Then "Add members": yourself, so you can test, and each person\'s @lasvegasfortransit.org address. Personal Gmail addresses cannot sign in, even in the group.',
+      'Part 2, let Google trust LVBT\'s own sign-in apps. Still in https://admin.google.com, go to Security → Access and data control → API controls. Under "Settings", tick "Trust internal apps" and click "Save". Without it, Google can refuse the Cloudflare sign-in.',
+      'Part 3, a Google sign-in client for Cloudflare. Open https://console.cloud.google.com/apis/library/admin.googleapis.com?project=lvbt-core and click "Enable" if it does not already say "API Enabled". Cloudflare uses this Admin SDK API to read group membership.',
+      'Open https://console.cloud.google.com/auth/clients?project=lvbt-core and click "Create client". Application type "Web application", Name "Cloudflare Access". Under "Authorized JavaScript origins", click "Add URI" and enter https://lvbt.cloudflareaccess.com. Under "Authorized redirect URIs", click "Add URI" and enter https://lvbt.cloudflareaccess.com/cdn-cgi/access/callback. Click "Create". Leave the dialog showing the Client ID and Client secret open; do not copy anything yet.',
+      'In another tab, open Cloudflare One → Integrations → Identity providers (press ⌘K or Ctrl+K and search "Identity providers" if the sidebar hides it). If "Google Workspace" is already listed, skip to the "Test" step below. Otherwise click "Add new identity provider", then "Google Workspace". Name: "Google Workspace".',
+      'Copy the Client ID from the Google dialog and paste it into "App ID". Then copy the Client secret and paste it into "Client secret". Google Workspace domain: lasvegasfortransit.org. Leave the optional settings alone and click "Save". If Google asks you to allow access, sign in with your LVBT admin account and allow it.',
+      'Back on Identity providers, click "Test" next to Google Workspace. It should show your LVBT address and list staff-console@lasvegasfortransit.org among your groups. If the groups are missing, re-check parts 2 and 3 and that you added yourself in part 1.',
+      'Part 4, the application. In Cloudflare One, open Access controls → Applications. If "LVBT staff console" is listed, click it, open "Configure", and skip to the last step.',
+      'Otherwise click "Create new application" at the top right; an account with no applications yet shows only a prerequisites list, which you have now done. In the dialog, choose "Self-hosted and private", then the "Public DNS" tab (not "Private destinations"), then "Continue with Self-hosted and private".',
+      'Under "Destinations", use a public hostname: subdomain "staff", domain "lasvegasfortransit.org", path empty. If lasvegasfortransit.org is not in the domain list, you are in the wrong Cloudflare account; switch to the LVBT account and start part 4 again. If you see a "Private IPs" row instead, click "+ Add public hostname" and remove the empty private row. Leave "Allow access through browser-based RDP, SSH, or VNC sessions" off.',
       'Under "Access policies", click "Create new policy". Name "Staff console members", Action "Allow", and an Include rule: "Google Workspace groups" = staff-console@lasvegasfortransit.org. Save it. If "Google Workspace groups" is not offered, the Google sign-in step above is not finished.',
       'Under "Authentication" (Identity tab), turn off "Accept all available identity providers", choose "Google Workspace" in "Choose available identity providers", and turn on "Apply instant authentication". Leave "Authenticate with Cloudflare One Client" off.',
       'Under "Details", set Name to "LVBT staff console" and Session Duration to "24 hours". Click "Create".',
