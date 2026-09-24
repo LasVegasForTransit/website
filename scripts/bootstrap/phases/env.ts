@@ -16,19 +16,25 @@ interface EnvKeyConfig {
   placeholderTokens?: string[];
   validate?: (raw: string) => string | undefined;
   required: boolean;
-  // When set, bootstrap mints the value itself instead of prompting (used for
-  // the membership intake shared secret, which has no dashboard to copy from).
+  // A credential: asked for with hidden input and never shown in the table.
+  secret?: boolean;
+  // When set, bootstrap mints a local-only value instead of prompting (used
+  // for the membership intake shared secret, which local testing needs but
+  // which must never be copied into production).
   generate?: () => string;
-  // Extra line printed after the value is set — e.g. where to mirror a
-  // generated secret that bootstrap can't reach (Apps Script script property).
-  postFill?: string;
 }
+
+// Where the production copies of the server-side values live. .env.local is
+// only for this machine: `pnpm dev`, `pnpm setup:notion`, and scripts.
+const PRODUCTION_NOTE =
+  'This fills .env.local on this machine only. The live site gets its copy from `pnpm bootstrap --phase secrets`.';
 
 const PROMPTED_KEYS: Record<string, EnvKeyConfig> = {
   LVBT_BEEHIIV_API_KEY: {
     prompt: 'Beehiiv API key',
-    hint: 'In Beehiiv: Settings → API → create a key scoped to Subscribers (write). Server-side only — never baked into HTML.',
+    hint: `In Beehiiv: Settings → API → create a key scoped to Subscribers (write). ${PRODUCTION_NOTE}`,
     example: 'sk_live_...',
+    secret: true,
     // No placeholderTokens — .env.example ships this key empty, so the
     // empty-value branch in `valueIsPlaceholder` handles "still pending".
     // `validate` rejects anyone who pastes the literal `sk_live_...` example.
@@ -38,7 +44,7 @@ const PROMPTED_KEYS: Record<string, EnvKeyConfig> = {
   },
   LVBT_BEEHIIV_PUBLICATION_ID: {
     prompt: 'Beehiiv publication ID',
-    hint: 'In Beehiiv: Settings → Publication → copy the ID (starts with pub_).',
+    hint: `In Beehiiv: Settings → Publication → copy the ID (starts with pub_). ${PRODUCTION_NOTE}`,
     example: 'pub_xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx',
     placeholderTokens: ['pub_PLACEHOLDER'],
     required: false,
@@ -47,18 +53,18 @@ const PROMPTED_KEYS: Record<string, EnvKeyConfig> = {
   },
   LVBT_MEMBERSHIP_INTAKE_SECRET: {
     prompt: 'Membership intake shared secret',
-    hint: 'Random bearer token shared by Google Apps Script and the Cloudflare Pages Function. Server-side only.',
+    hint: 'A random value for testing the intake endpoint on this machine only.',
     required: false,
-    // Minted here rather than prompted: there is no dashboard to copy it from,
-    // and both sides just need the same opaque value.
+    secret: true,
+    // A local-only random value. The live Google Form uses the production
+    // value, which the secrets phase owns; this one must never replace it.
     generate: () => `${randomUUID()}${randomUUID()}`.replaceAll('-', ''),
-    postFill:
-      'Paste this same value into Apps Script → Project Settings → Script properties as LVBT_MEMBERSHIP_INTAKE_SECRET.',
   },
   LVBT_NOTION_API_KEY: {
     prompt: 'Notion access token',
-    hint: 'notion.so/my-integrations → create an internal connection (Access token) with Insert + Update content capability, then copy its token from the Configuration tab.',
+    hint: `notion.so/my-integrations → create an internal connection (Access token) with Insert + Update content capability, then copy its token from the Configuration tab. ${PRODUCTION_NOTE}`,
     example: 'ntn_...',
+    secret: true,
     required: false,
     validate: (v) =>
       v && v.length < 20 ? 'That looks too short to be a valid Notion access token.' : undefined,
@@ -70,8 +76,8 @@ const PROMPTED_KEYS: Record<string, EnvKeyConfig> = {
     required: false,
   },
   // LVBT_NOTION_DATA_SOURCE_ID is intentionally NOT prompted here — it is
-  // created and written to .env.local by `pnpm setup:notion`, and pushed to
-  // Cloudflare by the deploy phase. Nothing to type by hand.
+  // created and written to .env.local by `pnpm setup:notion`. The secrets
+  // phase stores the production copy. Nothing to type by hand.
   PUBLIC_LVBT_MEMBERSHIP_FORM_URL: {
     prompt: 'Membership form URL',
     hint: 'Public Google Form for new members — the forms.gle short link (Send → link → Shorten URL). Drives the /join CTA and the QR slide.',
@@ -167,7 +173,9 @@ export async function runEnvPhase(
       rows.push({ label: config.prompt, status: 'pending', detail: 'placeholder' });
       placeholderKeys.push(key);
     } else {
-      rows.push({ label: config.prompt, status: 'ready', detail: trimDisplay(current) });
+      // Never echo a credential, not even part of it.
+      const detail = config.secret ? 'set' : trimDisplay(current);
+      rows.push({ label: config.prompt, status: 'ready', detail });
     }
   }
   printToolTable('Site config (.env.local)', rows);
@@ -208,33 +216,38 @@ export async function runEnvPhase(
   for (const key of placeholderKeys) {
     const config = PROMPTED_KEYS[key]!;
 
-    // Generated keys (the intake shared secret) are minted, not prompted, then
-    // echoed so the same value can be pasted into the system bootstrap can't
-    // reach (Apps Script).
+    // Generated keys (the local intake secret) are minted, not prompted, and
+    // never shown: nothing outside this machine should ever use them.
     if (config.generate) {
-      const generated = config.generate();
-      updates.set(key, generated);
-      log.success(`${config.prompt}: generated.`);
-      log.info(pc.dim(`  ${generated}`));
-      if (config.postFill) log.info(pc.dim(`  ${config.postFill}`));
+      updates.set(key, config.generate());
+      log.success(`${config.prompt}: generated a value for testing on this machine.`);
+      log.info(
+        pc.dim(
+          '  It is not the production value. Never paste it into Apps Script or Cloudflare; `pnpm bootstrap --phase secrets` manages the live one.',
+        ),
+      );
       continue;
     }
 
     // Hint is surrounding context (where to find the value, what blank means).
     log.info(pc.dim(config.hint));
-    const value = await rt().prompts.text({
-      id: key,
-      // Placeholder is the greyed example inside the input — never submitted.
-      message: `${config.prompt} ${pc.dim('(blank to skip)')}`,
-      placeholder: config.example,
-      validate: (raw: string | undefined) => {
-        const trimmed = (raw ?? '').trim();
-        if (!trimmed) {
-          return config.required ? `${config.prompt} is required.` : undefined;
-        }
-        return config.validate ? config.validate(trimmed) : undefined;
-      },
-    });
+    const validate = (raw: string | undefined) => {
+      const trimmed = (raw ?? '').trim();
+      if (!trimmed) {
+        return config.required ? `${config.prompt} is required.` : undefined;
+      }
+      return config.validate ? config.validate(trimmed) : undefined;
+    };
+    const message = `${config.prompt} ${pc.dim('(blank to skip)')}`;
+    const value = config.secret
+      ? await rt().prompts.password({ id: key, message, validate })
+      : await rt().prompts.text({
+          id: key,
+          message,
+          // Placeholder is the greyed example inside the input — never submitted.
+          placeholder: config.example,
+          validate,
+        });
 
     if (value.trim()) {
       updates.set(key, value.trim());
@@ -243,8 +256,8 @@ export async function runEnvPhase(
 
   if (updates.size > 0) {
     mergeEnvFile(envLocalPath, updates);
-    // Also hydrate the live process env so a deploy phase later in this same
-    // run pushes the just-entered values instead of the stale startup snapshot.
+    // Also hydrate the live process env so later phases in this same run see
+    // the just-entered values instead of the startup snapshot.
     for (const [key, value] of updates) {
       process.env[key] = value;
     }
@@ -272,7 +285,7 @@ export async function runEnvPhase(
     });
   }
 
-  // Step 5: only ask about Cloudflare Pages env sync if something actually changed
+  // Step 5: only remind about the live copies if something actually changed
   const cap = state.capabilities['deploy-wrangler'];
   if (updates.size === 0 || cap?.status !== 'ready' || cap.authStatus !== 'ready') {
     return { success: true, followUpItems };
@@ -289,18 +302,18 @@ export async function runEnvPhase(
   const lines: string[] = [];
   if (hasSecretVars) {
     lines.push(
-      'For server-side LVBT_* vars (non-PUBLIC): `pnpm bootstrap --phase deploy` pushes them as Production secrets. For the Preview environment, add them as Secrets in Cloudflare Pages → Settings → Environment Variables.',
+      'Server-side LVBT_* values in .env.local are for this machine only. `pnpm bootstrap --phase secrets` checks the live site and stores any value it is missing; it never copies .env.local.',
     );
   }
   if (hasPublicVars) {
     lines.push(
-      'For PUBLIC_LVBT_* vars: run `wrangler pages secret put <KEY> --project-name=lvbt-website`, then redeploy so the new values bake into the static HTML.',
+      'PUBLIC_LVBT_* values are read at build time from GitHub: open the repository → Settings → Secrets and variables → Actions → Variables tab, and add or edit the variable with the same name. The next deploy of main uses it.',
     );
   }
   if (lines.length > 0) {
     const sync = await promptConfirm(
       'env.sync-reminder',
-      'Add a follow-up reminder to sync these vars to Cloudflare Pages?',
+      'Add a reminder about where the live site gets these values?',
       true,
     );
     if (sync) {
