@@ -392,6 +392,7 @@ export const PLATFORM_SECRETS: readonly PlatformSecret[] = [
     steps: [
       'Skip this if you skipped the Application ID.',
       'In the LVBT app, open "OAuth2" on the left.',
+      'Leave "Public Client" off. It is for apps without a server, such as phone apps, that cannot keep the client secret private; the website keeps it on the server.',
       'Under "Client Secret", click "Reset Secret", confirm, copy it and paste it here. This one is secret: treat it like a password. Discord shows it only once.',
       'Resetting it again later makes the old one stop working, and "Connect Discord" fails until you store the new one with `pnpm bootstrap --phase secrets --rotate LVBT_DISCORD_CLIENT_SECRET`.',
     ],
