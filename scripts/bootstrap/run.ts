@@ -11,6 +11,7 @@ import { loadEnvLocal } from './lib/load-env.js';
 import { clearCloudflareApiToken } from './lib/cloudflare.js';
 import type { FollowUp, FollowUpKind, PhaseId, PhaseResult } from './lib/types.js';
 import { COMMAND_CAPABILITY_MAP } from './config/prerequisites.js';
+import { PLATFORM_SECRETS } from './config/platform-secrets.js';
 import { loadReadiness, markPhase, saveReadiness } from './state.js';
 import type { ReadinessState } from './state.js';
 import { promptConfirm } from './lib/ui.js';
@@ -96,6 +97,8 @@ export interface CliArgs {
   phase: PhaseId | null;
   /** Push ./dist to Pages production even when a production deployment exists. */
   redeploy: boolean;
+  /** Secret names to replace with a new value, even though they are already set. */
+  rotate: readonly string[];
 }
 
 /** A command-line mistake; the entry point prints the message and exits 2. */
@@ -117,12 +120,31 @@ export function parseArgs(argv: readonly string[]): CliArgs {
     throw new UsageError(`Unknown phase "${phase}". Valid: ${PHASE_ORDER.join(', ')}`);
   }
 
+  const rotateRaw = flagValue(argv, '--rotate');
+  const rotate = (rotateRaw ?? '')
+    .split(',')
+    .map((name) => name.trim())
+    .filter(Boolean);
+  if (rotateRaw !== null && rotate.length === 0) {
+    throw new UsageError(
+      '--rotate needs one or more secret names, e.g. --rotate LVBT_SIGN_IN_SECRET',
+    );
+  }
+  const known = new Set(PLATFORM_SECRETS.map((s) => s.name));
+  const unknown = rotate.filter((name) => !known.has(name));
+  if (unknown.length > 0) {
+    throw new UsageError(
+      `Unknown secret name(s) for --rotate: ${unknown.join(', ')}. The names are listed in docs/reference/platform-secrets.md.`,
+    );
+  }
+
   return {
     doctorMode: argv.includes('--doctor'),
     resume: argv.includes('--resume'),
     localOnly: argv.includes('--local-only'),
     phase,
     redeploy: argv.includes('--redeploy'),
+    rotate,
   };
 }
 
@@ -202,7 +224,7 @@ async function runPhaseById(
     case 'domain':
       return runDomainPhase(projectRoot, args.doctorMode);
     case 'secrets':
-      return runSecretsPhase(projectRoot, args.doctorMode);
+      return runSecretsPhase(projectRoot, args.doctorMode, { rotate: args.rotate });
   }
 }
 

@@ -164,16 +164,26 @@ function instructions(secret: PlatformSecret): string {
   return lines.join('\n');
 }
 
+type ValueMode = 'missing' | 'rotate';
+
+const REUSE_WARNING =
+  'This secret is already set elsewhere or a target could not be checked. Paste the same existing value; generating a new one here would break the integration. Leave the prompt empty if you cannot retrieve it.';
+
+const ROTATE_WARNING =
+  'You asked to replace this value. Paste the NEW value. It replaces the current one everywhere it is stored, so the old one stops working.';
+
 // A generated value, a pasted value, or null when the person skips it.
-async function obtainValue(secret: PlatformSecret, generate: boolean): Promise<string | null> {
+async function obtainValue(
+  secret: PlatformSecret,
+  generate: boolean,
+  mode: ValueMode = 'missing',
+): Promise<string | null> {
   if (generate) {
     log.info(`${pc.bold(secret.name)}: generated a new random value.`);
     return `${randomUUID()}${randomUUID()}`.replaceAll('-', '');
   }
-  const existingValueWarning = secret.generate
-    ? 'This secret is already set elsewhere or a target could not be checked. Paste the same existing value; generating a new one here would break the integration. Leave the prompt empty if you cannot retrieve it.'
-    : '';
-  note([existingValueWarning, instructions(secret)].filter(Boolean).join('\n\n'), secret.name);
+  const warning = mode === 'rotate' ? ROTATE_WARNING : secret.generate ? REUSE_WARNING : '';
+  note([warning, instructions(secret)].filter(Boolean).join('\n\n'), secret.name);
   if (
     secret.url &&
     (await promptConfirm(`${secret.name}.open`, 'Open that page in your browser?', true))
@@ -190,6 +200,63 @@ async function obtainValue(secret: PlatformSecret, generate: boolean): Promise<s
   });
   const value = entered.trim();
   return value || null;
+}
+
+/** Writes `value` to each target; returns how many writes failed. */
+function writeEverywhere(
+  projectRoot: string,
+  secret: PlatformSecret,
+  targets: readonly SecretTarget[],
+  value: string,
+): number {
+  let failed = 0;
+  for (const target of targets) {
+    if (writeSecret(projectRoot, target, secret.name, value)) {
+      log.success(`${secret.name} → ${TARGET_LABEL[target]}`);
+    } else {
+      failed += 1;
+    }
+  }
+  return failed;
+}
+
+/**
+ * Replace a secret that is already set, on every target, because the person
+ * asked for it with --rotate. Every target must be readable first, so a
+ * shared value is never replaced in some places and left in others.
+ */
+async function rotateSecret(
+  projectRoot: string,
+  secret: PlatformSecret,
+  inventory: Inventory,
+  followUpItems: FollowUp[],
+): Promise<boolean> {
+  const unreadable = secret.targets.filter((target) => !inventory[target]);
+  if (unreadable.length > 0) {
+    log.error(
+      `Not rotating ${secret.name}: could not read ${unreadable.map((t) => TARGET_LABEL[t]).join(', ')}.`,
+    );
+    followUpItems.push({
+      kind: 'auth',
+      message: `Check wrangler and gh sign-in, then re-run: pnpm bootstrap --phase secrets --rotate ${secret.name}`,
+    });
+    return false;
+  }
+  const generated = secret.generate === true;
+  const value = await obtainValue(secret, generated, 'rotate');
+  if (!value) {
+    log.info(pc.dim(`${secret.name} left unchanged.`));
+    return false;
+  }
+  if (writeEverywhere(projectRoot, secret, secret.targets, value) > 0) {
+    followUpItems.push({
+      kind: 'remote',
+      message: `${secret.name} was not replaced everywhere. Re-run: pnpm bootstrap --phase secrets --rotate ${secret.name}`,
+    });
+    return false;
+  }
+  await finishAfterSet(secret, value, generated, followUpItems);
+  return true;
 }
 
 async function finishAfterSet(
@@ -242,9 +309,20 @@ async function chooseSecrets(
   return pending;
 }
 
+export interface SecretsOptions {
+  /** Secret names to replace even though they are already set. */
+  rotate?: readonly string[];
+}
+
+// Targets that lack the secret and can be written to now.
+function settableTargets(secret: PlatformSecret, inventory: Inventory): SecretTarget[] {
+  return missingTargets(secret, inventory).filter((target) => inventory[target]);
+}
+
 export async function runSecretsPhase(
   projectRoot: string,
   doctorMode: boolean,
+  options: SecretsOptions = {},
 ): Promise<PhaseResult> {
   const inventory = takeInventory(projectRoot);
   printReport(inventory);
@@ -257,17 +335,33 @@ export async function runSecretsPhase(
   ).map((message) => ({ kind: 'remote', message }));
   const missing = PLATFORM_SECRETS.filter((secret) => missingTargets(secret, inventory).length > 0);
 
-  if (doctorMode || missing.length === 0) {
+  if (doctorMode) {
     return { success: missing.length === 0, followUpItems };
   }
 
-  const pending = await chooseSecrets(missing, inventory, followUpItems);
-
+  // Replacing a value that is already set happens only on request.
   let skipped = 0;
-  for (const secret of pending) {
-    const targets = missingTargets(secret, inventory).filter((target) => inventory[target]);
-    if (targets.length === 0) continue;
+  const rotate = new Set(options.rotate ?? []);
+  for (const secret of PLATFORM_SECRETS.filter((s) => rotate.has(s.name))) {
+    if (!(await rotateSecret(projectRoot, secret, inventory, followUpItems))) skipped += 1;
+  }
 
+  // A secret missing only where the inventory could not be read can't be set
+  // now; asking for it would store nothing. The report above names the cause.
+  const remaining = missing.filter((secret) => !rotate.has(secret.name));
+  const actionable = remaining.filter((secret) => settableTargets(secret, inventory).length > 0);
+  const blocked = remaining.length - actionable.length;
+  if (blocked > 0) {
+    followUpItems.push({
+      kind: 'auth',
+      message: `${blocked} secret(s) could not be checked. Sign in again (pnpm exec wrangler login, gh auth login), then re-run: pnpm bootstrap --phase secrets`,
+    });
+  }
+
+  const pending =
+    actionable.length > 0 ? await chooseSecrets(actionable, inventory, followUpItems) : [];
+  for (const secret of pending) {
+    const targets = settableTargets(secret, inventory);
     const generated = canGenerateSecret(secret, inventory);
     const value = await obtainValue(secret, generated);
     if (!value) {
@@ -278,17 +372,20 @@ export async function runSecretsPhase(
       });
       continue;
     }
-    for (const target of targets) {
-      if (writeSecret(projectRoot, target, secret.name, value)) {
-        log.success(`${secret.name} → ${TARGET_LABEL[target]}`);
-      }
+    if (writeEverywhere(projectRoot, secret, targets, value) > 0) {
+      skipped += 1;
+      followUpItems.push({
+        kind: 'remote',
+        message: `${secret.name} could not be stored everywhere. Re-run: pnpm bootstrap --phase secrets`,
+      });
     }
     await finishAfterSet(secret, value, generated, followUpItems);
   }
 
+  const incomplete = skipped + blocked;
   return {
-    success: skipped === 0,
+    success: incomplete === 0,
     followUpItems,
-    details: skipped > 0 ? `${skipped} secret(s) still missing` : undefined,
+    details: incomplete > 0 ? `${incomplete} secret(s) still missing` : undefined,
   };
 }
