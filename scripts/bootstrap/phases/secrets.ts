@@ -300,17 +300,22 @@ async function finishAfterSet(
   generated: boolean,
   followUpItems: FollowUp[],
 ): Promise<void> {
-  if (!secret.afterSet) return;
-  if (!generated) {
-    followUpItems.push({ kind: 'remote', message: secret.afterSet });
-    return;
-  }
+  // A pasted value was copied from that other place, so it is already there.
+  if (!secret.afterSet || !generated) return;
   const show = await promptConfirm(
     `${secret.name}.show-generated`,
     `${secret.afterSet} Show the generated value once so you can copy it?`,
     true,
   );
-  if (show) note(value, `${secret.name} (copy it now; it is not stored locally)`);
+  if (show) {
+    note(value, `${secret.name}: paste it there now, before you copy anything else`);
+    log.info(pc.dim('It is not stored on this machine, and bootstrap will not show it again.'));
+  } else {
+    followUpItems.push({
+      kind: 'remote',
+      message: `${secret.afterSet} To get a value you can see, run: pnpm bootstrap --phase secrets --rotate ${secret.name}`,
+    });
+  }
 }
 
 // Asks how far to go, then returns the secrets to ask for, most urgent first.
