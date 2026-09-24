@@ -11,6 +11,8 @@
  *   pnpm bootstrap --phase deploy --redeploy
  *                                     Push ./dist to production even though
  *                                     a production deployment exists
+ *   pnpm bootstrap --phase secrets --rotate NAME[,NAME]
+ *                                     Replace secrets that are already set
  *
  * Phases (in order):
  *   install   — verify Node, pnpm, gh, wrangler; install missing

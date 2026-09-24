@@ -56,6 +56,7 @@ function runWithInput(command: string, input: string, opts: CommandOptions = {})
     input,
     encoding: 'utf8',
     stdio: ['pipe', 'pipe', 'pipe'],
+    env: subprocessEnv(),
   });
   return { ok: result.status === 0, stdout: result.stdout.trim(), stderr: result.stderr.trim() };
 }
