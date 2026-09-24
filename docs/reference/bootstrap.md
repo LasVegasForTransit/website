@@ -97,7 +97,7 @@ Wrangler's sign-in cannot write DNS records. Only when a CNAME record is missing
 
 ## State file
 
-The bootstrap keeps a record of its last run in `.lvbt/dev-readiness.json` (a local, git-ignored file in the `.lvbt/` folder). It holds per-phase status (`complete | partial | failed | skipped`), per-tool readiness, and setup steps you confirmed that bootstrap cannot check for itself, such as creating the staff console's Google Group, so it asks about each of those only once. `--resume` reads this file and skips phases marked `complete`. The file is rewritten at the end of every run with fresh timestamps; that is expected, because it is a run record, not configuration.
+The bootstrap keeps a record of its last run in `.lvbt/dev-readiness.json` (a local, git-ignored file in the `.lvbt/` folder). It holds per-phase status (`complete | partial | failed | skipped`), per-tool readiness, setup steps you confirmed that bootstrap cannot check for itself, such as creating the staff console's Google Group, so it asks about each of those only once, and the last value it stored for each platform secret that is not a credential (an ID, a domain or a public key), so the `secrets` phase can show it back. It never holds a credential. `--resume` reads this file and skips phases marked `complete`. The file is rewritten at the end of every run with fresh timestamps; that is expected, because it is a run record, not configuration.
 
 `.env.local` doubles as the cross-phase persistence layer for values that need to survive between phases (e.g. `CLOUDFLARE_PAGES_PROJECT`, `CLOUDFLARE_ACCOUNT_ID`). `run.ts` hydrates `process.env` from it at startup, and the bootstrap writes to it only when a value actually changes.
 
