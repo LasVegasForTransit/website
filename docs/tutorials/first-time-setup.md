@@ -19,7 +19,7 @@ pnpm install
 pnpm bootstrap
 ```
 
-`pnpm bootstrap` is interactive. It prints an overview of all seven phases, then runs them in order. You can `Ctrl+C` at any time — progress saves between phases under `.lvbt/dev-readiness.json`. Pick up where you left off with `pnpm bootstrap --resume`.
+`pnpm bootstrap` is interactive. It prints an overview of all eight phases, then runs them in order. You can `Ctrl+C` at any time. Run the same command again later and it picks up where you left off, because every phase checks what is already done before it changes anything.
 
 ## What each phase does, in plain language
 
@@ -29,13 +29,15 @@ pnpm bootstrap
 
 3. **workspace** — Runs `pnpm install --frozen-lockfile` (installs the exact dependency versions pinned in the [lockfile](../reference/glossary.md#lockfile), no surprises) and a `pnpm build` smoke test. Catches setup issues before you touch anything remote.
 
-4. **env** — Creates `.env.local` from `.env.example`. Shows which `PUBLIC_LVBT_*` values are still placeholders. Asks once whether you want to fill them in now; if not, placeholders stay and the site still builds.
+4. **env** — Creates `.env.local` from `.env.example`. Shows which values are still placeholders. Asks once whether you want to fill them in now; if not, placeholders stay and the site still builds. Everything here is for your machine only; the live site gets its values elsewhere (step 8 and GitHub Actions variables).
 
 5. **repo** — If `origin` isn't set yet, creates a GitHub repo via `gh repo create` and wires `origin` to its **SSH URL** (the `git@github.com:…` address Git pushes to, which relies on your SSH key being set up). Auto-creates an initial commit if the working tree has none. Defaults the name to `<parent-dir>/<dir>` (so `~/Projects/LasVegansForTransit/website` becomes `LasVegansForTransit/website`).
 
-6. **deploy** — Provisions the Cloudflare Pages project (default name `lvbt-website`, default branch `main`) and deploys `./dist`. Persists the project name and branch back into `.env.local` so the next phase can use them.
+6. **deploy** — Checks whether the Cloudflare Pages project (default name `lvbt-website`, default branch `main`) exists and already has a production deployment. If both are there, it does nothing. Otherwise it creates the project and deploys `./dist` once. After that, every push to `main` deploys through GitHub Actions.
 
-7. **domain** — Attaches your [apex domain](../reference/glossary.md#apex-domain) (the bare `lasvegasfortransit.org`, no `www.`) and `www.<apex>` to the Pages project via the Cloudflare API. If your DNS [zone](../reference/glossary.md#zone) is in the same Cloudflare account, it auto-creates the [CNAME](../reference/glossary.md#cname) records. If not, it tells you which CNAME to add at your registrar.
+7. **domain** — Attaches your [apex domain](../reference/glossary.md#apex-domain) (the bare `lasvegasfortransit.org`, no `www.`) and any extra hostnames to the Pages project via the Cloudflare API, skipping any that are already attached. If your DNS [zone](../reference/glossary.md#zone) is in the same Cloudflare account, it creates the missing [CNAME](../reference/glossary.md#cname) records. If not, it tells you which CNAME to add at your registrar.
+
+8. **secrets** — Checks every server-side secret the live site needs and asks for each missing one once, with click-by-click steps. See [platform secrets](../reference/platform-secrets.md).
 
 ## What you'll see at the end
 
@@ -45,4 +47,4 @@ If a phase reports `partial` (it did some of its work but couldn't finish — e.
 
 ## Re-running
 
-The whole flow is [idempotent](../reference/glossary.md#idempotent) — safe to run again; it won't redo or duplicate work it already finished. `pnpm bootstrap --resume` skips completed phases. `pnpm bootstrap --phase env` re-runs a single phase. `pnpm preflight` does a read-only check without changing anything.
+The whole flow is [idempotent](../reference/glossary.md#idempotent) — safe to run again; it won't redo or duplicate work it already finished, and it never asks again for a secret that is already stored. On a finished setup, a second run changes nothing and reports every phase as ready. `pnpm bootstrap --resume` skips completed phases. `pnpm bootstrap --phase env` re-runs a single phase. `pnpm preflight` does a read-only check without changing anything. To push the site again or replace a secret on purpose, see the `--redeploy` and `--rotate` options in the [bootstrap reference](../reference/bootstrap.md#running-it-again-is-safe).

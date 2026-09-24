@@ -18,7 +18,7 @@ to** — not a spreadsheet, and not Notion.
 > API key, a Notion workspace where you can create a connection (for staff
 > follow-up, until the staff console replaces it — see
 > [below](#staff-follow-up-in-notion)), and access to the Cloudflare Pages
-> project to set secrets. The fastest setup path (`pnpm bootstrap --phase env`)
+> project to set secrets. The fastest setup path (`pnpm bootstrap --phase secrets`)
 > is described under [Required Cloudflare Pages secrets](#required-cloudflare-pages-secrets).
 
 ## How someone joins
@@ -104,14 +104,20 @@ any code to connect a new form tool.
 
 ## Required Cloudflare Pages secrets
 
-The fastest path is `pnpm bootstrap --phase env`: it prompts for the Beehiiv
-keys and your Notion access token, mints `LVBT_MEMBERSHIP_INTAKE_SECRET` (and
-echoes it so you can paste the same value into Apps Script), and writes
-everything to `.env.local`. The remaining secret,
-`LVBT_NOTION_DATA_SOURCE_ID`, is created for you by `pnpm setup:notion` (see
-[Notion setup](#notion-setup)). Then `pnpm bootstrap --phase deploy` pushes
-all five to Cloudflare Pages as **Production** secrets; the **Preview**
-environment still needs them set by hand in the dashboard.
+The fastest path is `pnpm bootstrap --phase secrets` (see [platform
+secrets](./platform-secrets.md)). It checks which of these the live site
+already has, asks for each missing one once, and stores it on the Pages
+project, the Worker and the `worker-candidate` GitHub environment. It never
+replaces a value that is already stored. For `LVBT_MEMBERSHIP_INTAKE_SECRET`
+it asks for the value the Apps Script already uses, so the form keeps
+working.
+
+`pnpm bootstrap --phase env` is only for your own machine: it writes the
+Beehiiv keys, your Notion access token and a random intake secret into
+`.env.local` for local testing, and never sends them to production. Never
+paste that local intake secret into Apps Script.
+`LVBT_NOTION_DATA_SOURCE_ID` is created for you by `pnpm setup:notion` (see
+[Notion setup](#notion-setup)).
 
 The five runtime secrets:
 
@@ -123,10 +129,14 @@ The five runtime secrets:
 | `LVBT_NOTION_API_KEY`           | Notion connection access token (starts with `ntn_`) — needed only for staff follow-up; see [Staff follow-up in Notion](#staff-follow-up-in-notion)                                                                                                                                     |
 | `LVBT_NOTION_DATA_SOURCE_ID`    | Notion data source ID (a data source is the actual table of rows inside a Notion database; the API writes to its ID, not the database ID — see [glossary](./glossary.md#data-source)) — created by `pnpm setup:notion`; same caveat as above                                           |
 
-To set the intake secret without bootstrap, generate one with `openssl rand
--hex 32` (`openssl` is a command-line crypto tool; this prints a random
-64-character hex string to use as the secret) and use the same value in both
-Cloudflare Pages and the Apps Script script property.
+Only when the form is set up for the first time does the intake secret need
+a new value. Generate one with `openssl rand -hex 32` (`openssl` is a
+command-line crypto tool; this prints a random 64-character hex string), put
+it in the Apps Script script property, and paste the same value when
+`pnpm bootstrap --phase secrets` asks for it. To change an existing value,
+update the script property first, then run
+`pnpm bootstrap --phase secrets --rotate LVBT_MEMBERSHIP_INTAKE_SECRET` with
+the new value.
 
 ## Google Forms setup
 
@@ -157,7 +167,7 @@ email.
 Two parts: a one-time manual setup the Notion API can't do for you (creating
 the connection and sharing a page), then a script that builds the database
 with the right schema. `pnpm bootstrap --phase env` prompts for both values
-below.
+below and saves them in `.env.local` on your machine.
 
 ### 1. Connection and parent page (manual)
 
@@ -186,8 +196,8 @@ This creates a **Membership intake** database under your parent page with the
 columns below, reads back its [data source
 ID](./glossary.md#data-source) (the ID the endpoint writes to), and writes
 `LVBT_NOTION_DATA_SOURCE_ID` into `.env.local`. Re-running reuses the
-existing database instead of duplicating it. Push the value to production
-with `pnpm bootstrap --phase deploy`.
+existing database instead of duplicating it. Store the value in production
+with `pnpm bootstrap --phase secrets`, which asks for it if it is missing.
 
 The schema lives in one place — `functions/api/_intake-schema.ts` — which
 both the endpoint and the provisioner import, so the columns can't drift from

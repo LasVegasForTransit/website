@@ -35,9 +35,10 @@ unfamiliar term.
 ### Full setup (deploying your own copy)
 
 `pnpm bootstrap` is a single command that takes an empty checkout all the way to a
-deployed site. It runs seven phases in order — `install` → `auth` → `workspace` →
-`env` → `repo` → `deploy` → `domain` — saving progress so an interrupted run
-resumes cleanly:
+deployed site. It runs eight phases in order — `install` → `auth` → `workspace` →
+`env` → `repo` → `deploy` → `domain` → `secrets`. Every phase checks what already
+exists first, so running it again is safe and an interrupted run picks up where
+it stopped:
 
 ```sh
 pnpm install

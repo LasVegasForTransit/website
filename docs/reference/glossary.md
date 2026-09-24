@@ -127,6 +127,9 @@ bug — please add it (see [writing-docs.md](../standards/writing-docs.md)).
 - **API key / token** <a id="api-key"></a> — a secret password-like string that lets
   code call a service (Notion, Beehiiv, etc.) on our behalf. Kept in env vars,
   never committed.
+- **rotate (a secret)** <a id="rotate"></a> — replace a secret with a new value
+  everywhere it is stored, so the old one stops working. You rotate after a
+  leak, or after resetting the value in the service that issued it.
 - **database vs data source** <a id="data-source"></a> — in Notion's current API, a
   _database_ can hold one or more _data sources_ (the actual tables of rows). Newer
   API calls target the data source ID, which you look up from the database ID.
