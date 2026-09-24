@@ -96,6 +96,15 @@ export async function ensureCloudflareAccount(projectRoot: string): Promise<Acco
 
   process.env.CLOUDFLARE_ACCOUNT_ID = chosen;
   persistChoice(projectRoot, chosen);
+
+  const account = accounts.find((a) => a.id === chosen);
+  if (account && account.name.trim() !== 'Las Vegans for Better Transit') {
+    log.warn(
+      `Cloudflare shows this account's name as "${account.name}", not "Las Vegans for Better Transit". ` +
+        'Fix it once: in the Cloudflare dashboard, press ⌘K (or Ctrl+K), search "Account Name", open it, correct the name, and save. It is only a display label, so fixing it breaks nothing already configured.',
+    );
+  }
+
   return { ok: true, accountId: chosen };
 }
 

@@ -25,11 +25,13 @@ The `Deploy Worker preview` workflow runs when the repository variable `CLOUDFLA
 
 The preview environment contains:
 
-| Setting                              | Kind                | Purpose                                                                              |
-| ------------------------------------ | ------------------- | ------------------------------------------------------------------------------------ |
-| `CLOUDFLARE_ACCOUNT_ID`              | variable            | Selects the LVBT Cloudflare account                                                  |
-| `CLOUDFLARE_WORKERS_API_TOKEN`       | secret              | Uploads versions for `lvbt-website` and `lvbt-website-preview` without editing zones |
-| `CLOUDFLARE_WORKERS_PREVIEW_ENABLED` | repository variable | Enables the candidate workflow after credentials are verified                        |
+| Setting                              | Kind                | Purpose                                                                                                                                                                                                      |
+| ------------------------------------ | ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `CLOUDFLARE_ACCOUNT_ID`              | repository variable | Selects the LVBT Cloudflare account. It is a repository variable, not scoped to this environment, because jobs with no environment of their own (the fork-safety check in `deploy-preview.yml`) also read it |
+| `CLOUDFLARE_WORKERS_API_TOKEN`       | environment secret  | Uploads versions for `lvbt-website` and `lvbt-website-preview` without editing zones                                                                                                                         |
+| `CLOUDFLARE_WORKERS_PREVIEW_ENABLED` | repository variable | Enables the candidate workflow after credentials are verified                                                                                                                                                |
+
+See [test the Workers candidate](../guides/test-the-workers-candidate.md) for the exact clicks to create the environment and its token.
 
 Application secrets bind directly to the Worker before endpoint acceptance. Build-time `PUBLIC_LVBT_*` variables remain GitHub Actions variables and are included in the generated HTML.
 
@@ -48,6 +50,15 @@ Both databases are on the free plan in Western North America. `pnpm dev` and `pn
 
 `Deploy production` builds `main`. While `LVBT_WORKERS_PRODUCTION_ENABLED` is unset, it also publishes `dist/` to the `lvbt-website` Pages project. Pages remains the fallback origin during Worker acceptance.
 
+Its `deploy` job declares `environment: production`, but that only makes the deployment show up under the repository's **Environments** tab with its own history — add required reviewers under **Settings → Environments → production** if you want a manual approval gate there. The two values it needs are plain repository-level settings, not scoped to that one environment, because `deploy-preview.yml`'s fork-safety job (which has no environment of its own) also reads them:
+
+| Setting                 | Kind                | Purpose                                                                                                                                                                                           |
+| ----------------------- | ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `CLOUDFLARE_ACCOUNT_ID` | repository variable | Selects the LVBT Cloudflare account; not secret, so its value is shown in plain text wherever GitHub lists variables                                                                              |
+| `CLOUDFLARE_API_TOKEN`  | repository secret   | Deploys to Cloudflare Pages (`wrangler pages deploy`); shared with `deploy-preview.yml`'s `preview` environment job, so it must stay a repository secret rather than move into either environment |
+
+Create the token: open `https://dash.cloudflare.com/<account-id>/api-tokens`, click **Create Token**, then **Create Custom Token** → **Get started** (Cloudflare has no ready-made template for Pages alone). Under **Permissions**, add one row: **Account · Cloudflare Pages · Edit**. Under **Account Resources**, choose **Include** and the LVBT account, not "All accounts". Leave **Zone Resources** at its default — this token needs no zone permission. Leave the TTL empty so deploys keep working. Click **Continue to summary**, then **Create Token**, and copy it: Cloudflare shows it only once. Store it with `gh secret set CLOUDFLARE_API_TOKEN` (paste the value at the prompt; never pass it as a command-line argument). Store the account ID, which is not secret, with `gh variable set CLOUDFLARE_ACCOUNT_ID`.
+
 After a successful production build, `Deploy Worker candidate` uploads the same `main` commit as a
 versioned Worker when `CLOUDFLARE_WORKERS_CANDIDATE_ENABLED` is `true`. Before cutover it compares
 the candidate with Pages. It then runs the browser acceptance suite and records the commit, Worker
@@ -59,9 +70,11 @@ older Pages fallback, confirms that `main` still points at the verified commit, 
 exact Worker version. It then compares the production hostname with the version preview. The
 preview excludes analytics, so this final comparison checks responses but not analytics insertion.
 
-The `worker-candidate` environment contains the same account variable and narrowly scoped
-`CLOUDFLARE_WORKERS_API_TOKEN` secret as `worker-preview`. Keeping the environments separate permits
-independent approvals and credential rotation. A manual run is accepted only from `main`.
+The `worker-candidate` environment needs its own `CLOUDFLARE_WORKERS_API_TOKEN` environment secret
+(create it the same way as `worker-preview`'s, in [test the Workers
+candidate](../guides/test-the-workers-candidate.md)) and reads the same `CLOUDFLARE_ACCOUNT_ID`
+repository variable as `worker-preview`. Giving each environment its own token means rotating one
+never touches the other. A manual run is accepted only from `main`.
 
 Workers cutover requires a candidate built from the current `main` commit and a recorded Pages
 deployment. DNS, TLS, redirects, headers, analytics, static pages, 404 handling, and every API
