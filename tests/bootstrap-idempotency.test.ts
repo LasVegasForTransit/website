@@ -90,7 +90,7 @@ function firstRunAnswers(): Record<string, Answer> {
   const answers: Record<string, Answer> = {
     'env.fill': true,
     'secrets.scope': 'later',
-    'staff-console-google-group': true,
+    'staff-google-group': true,
     'LVBT_TRANSIT_NEWS_INTAKE_SECRET.show-generated': false,
     CLOUDFLARE_API_TOKEN: fakeValueFor('CLOUDFLARE_API_TOKEN'),
   };
@@ -280,7 +280,7 @@ void test('a run after a skipped secret asks only for that secret', async () => 
     'worker secret LVBT_ACCESS_AUD',
   ]);
   assert.equal(
-    setup.world.prompts.some((p) => p.id === 'staff-console-google-group'),
+    setup.world.prompts.some((p) => p.id === 'staff-google-group'),
     false,
     'a confirmed setup step is not asked about again',
   );
