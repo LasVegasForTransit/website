@@ -76,11 +76,12 @@ jobs:
           exit 1
 
       - name: Compare with Pages
+        if: vars.LVBT_WORKERS_PRODUCTION_ENABLED != 'true'
         env:
           PREVIEW_URL: ${{ steps.upload.outputs.url }}
         run: >-
           pnpm worker:test:live
-          --pages https://lasvegasfortransit.org
+          --pages https://lvbt-website-5zh.pages.dev
           --worker "$PREVIEW_URL"
           --skip-api
 
