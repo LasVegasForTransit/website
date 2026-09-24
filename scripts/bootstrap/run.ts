@@ -2,6 +2,11 @@
  * The bootstrap flow: which phases run, in what order, and what gets
  * reported. `cold-start.ts` is the command-line entry that calls
  * `runBootstrap`; tests call it directly against a fake runtime.
+ *
+ * Every phase checks before it acts, so running the flow again on a finished
+ * setup changes nothing, and running it after a partial run does only the
+ * work that is left. Replacing something that already exists is always an
+ * explicit option (--redeploy, --rotate), never a default.
  */
 
 import { intro, log, note, outro } from '@clack/prompts';
@@ -74,7 +79,7 @@ const PHASES: readonly PhaseSpec[] = [
   {
     id: 'domain',
     title: 'Custom domain',
-    what: 'Checking whether your domain points at the Pages project, and handing you the link to attach it if not.',
+    what: 'Checking whether your domain points at the Pages project, and attaching and wiring only the hosts that are missing.',
     local: false,
   },
   {
@@ -238,7 +243,7 @@ function printOverview(args: CliArgs, runningPhases: PhaseId[]): void {
     lines.push("Just looking — I won't change anything.");
   } else {
     lines.push(
-      'Walking the LVBT site from this checkout to a live deploy. Safe to re-run; --resume skips finished phases.',
+      'Walking the LVBT site from this checkout to a live deploy. Safe to re-run: every step checks first and only does what is missing.',
     );
   }
   lines.push('');
@@ -247,7 +252,7 @@ function printOverview(args: CliArgs, runningPhases: PhaseId[]): void {
     lines.push(`  ${pc.dim(`${i + 1}.`)} ${pc.bold(id)} — ${info.title}`);
   }
   lines.push('');
-  lines.push(pc.dim('Ctrl+C any time. Progress is saved between phases.'));
+  lines.push(pc.dim('Ctrl+C any time. Run it again later and it picks up where it stopped.'));
   note(lines.join('\n'), args.doctorMode ? 'Preflight' : 'Bootstrap');
 }
 

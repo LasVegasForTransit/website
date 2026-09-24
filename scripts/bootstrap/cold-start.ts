@@ -21,7 +21,7 @@
  *   env       — write .env.local; prompt for Beehiiv/donate/social URLs
  *   repo      — gh repo create + push (skipped if origin already set)
  *   deploy    — create the Pages project and first deploy, only if missing
- *   domain    — verify lasvegasfortransit.org points at the Pages project
+ *   domain    — attach lasvegasfortransit.org to the Pages project, only if missing
  *   secrets   — report and set every server-side secret the site and platform need
  *
  * The flow itself lives in `run.ts`.
