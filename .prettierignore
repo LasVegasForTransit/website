@@ -10,3 +10,4 @@ test-results/
 tests/snapshots/
 pnpm-lock.yaml
 .env*
+.claude/worktrees/
