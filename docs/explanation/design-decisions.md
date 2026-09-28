@@ -5,12 +5,12 @@ they're load-bearing, not oversights. Most of these are about the **bootstrap CL
 one-command setup script (`pnpm bootstrap`) that wires up a fresh checkout: creating the GitHub
 repo, the Cloudflare deploy, and the domain in a fixed sequence of "phases."
 
-## Cross-phase coupling via `.env.local`
+## Cross-phase coupling via `apps/site/.env.local`
 
 The bootstrap CLI's `domain` phase reads `process.env.CLOUDFLARE_PAGES_PROJECT` to recover values
 that the `deploy` phase set. This looks like sloppy global state.
 
-**Why it's deliberate:** `.env.local` is the explicit persistence layer between phases.
+**Why it's deliberate:** `apps/site/.env.local` is the explicit persistence layer between phases.
 `cold-start.ts` hydrates `process.env` from it at startup (that is, it loads the saved settings into
 the program's live environment variables — see [glossary](../reference/glossary.md#env-var)), so
 individual phases stay decoupled — they don't need to know which earlier phase wrote a value, or to
@@ -20,7 +20,7 @@ The alternative (passing a typed state object through the orchestrator into ever
 considered. For a 7-phase one-shot CLI it's over-engineered. If the bootstrap grows another five
 phases or starts running concurrently, revisit.
 
-Inline reminder: top of `runDomainPhase` in `scripts/bootstrap/phases/domain.ts`.
+Inline reminder: top of `runDomainPhase` in `apps/site/scripts/bootstrap/phases/domain.ts`.
 
 ## Synchronous `spawnSync` in `runDigCheck`
 
@@ -33,7 +33,7 @@ few hundred milliseconds — the user's eye can't tell the difference between as
 scale, and the simpler control flow is worth keeping. If we ever need to run the bootstrap as a
 long-lived service or under heavy concurrent load, revisit.
 
-Inline reminder: top of `runDigCheck` in `scripts/bootstrap/phases/domain.ts`.
+Inline reminder: top of `runDigCheck` in `apps/site/scripts/bootstrap/phases/domain.ts`.
 
 ## Don't scrape English error messages
 

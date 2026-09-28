@@ -59,18 +59,26 @@ For what each phase does, the other flags, and how to add a phase, see the
 
 ## Day-to-day commands
 
-| Command             | Action                                                                             |
-| ------------------- | ---------------------------------------------------------------------------------- |
-| `pnpm dev`          | Local dev server at <https://lvbt.localhost>                                       |
-| `pnpm build`        | Build production site to `./dist/`                                                 |
-| `pnpm preview`      | Serve `./dist/` locally                                                            |
-| `pnpm typecheck`    | Type-check the Astro app + bootstrap CLI                                           |
-| `pnpm lint`         | Format the codebase with Prettier                                                  |
-| `pnpm lint:check`   | Verify formatting (CI mode — exits non-zero on diff)                               |
-| `pnpm test`         | Visual-regression sweep of every page (see [`tests/README.md`](./tests/README.md)) |
-| `pnpm test:update`  | Refresh visual-regression baselines after intentional UI changes                   |
-| `pnpm test:install` | One-time: download the Chromium build Playwright uses                              |
-| `pnpm preflight`    | Re-check readiness without making changes                                          |
+Run these from the repository root. They are the same commands every LVBT repository uses.
+
+| Command            | Action                                                                             |
+| ------------------ | ---------------------------------------------------------------------------------- |
+| `pnpm dev`         | Local dev server at <https://lvbt.localhost>                                       |
+| `pnpm build`       | Build the site to `apps/site/dist/` and its Worker to `apps/site/.wrangler/worker` |
+| `pnpm preview`     | Build, then serve the site and Worker locally                                      |
+| `pnpm check`       | Everything CI checks: formatting, docs, lint, types, tests, the build              |
+| `pnpm check:fix`   | Apply formatting and lint fixes                                                    |
+| `pnpm check-types` | Type-check the site and its scripts                                                |
+| `pnpm lint`        | Lint the code, stylesheets, and brand tokens                                       |
+| `pnpm format`      | Format the codebase with Prettier                                                  |
+| `pnpm test`        | Run the unit tests                                                                 |
+| `pnpm test:e2e`    | Run the Playwright suites, including the visual-regression sweep                   |
+| `pnpm preflight`   | Re-check readiness without making changes                                          |
+
+Commands only the site has live in [`apps/site/package.json`](./apps/site/package.json). Run them
+with `pnpm -C apps/site <command>`, for example `pnpm -C apps/site test:update` to refresh the
+visual-regression baselines (see [`apps/site/tests/README.md`](./apps/site/tests/README.md)) or
+`pnpm -C apps/site test:install` to download the Chromium build Playwright uses.
 
 ## Editing content
 
@@ -91,31 +99,42 @@ do (the [Diátaxis](https://diataxis.fr/) system). New here? Begin at
 
 Events live in the LVBT Google Calendar, not in this repo. Create the event there; the site rebuilds
 against the calendar hourly. For events that need long-form copy on their detail page, scaffold an
-optional MDX body fragment with `pnpm event:new`. Full reference:
+optional MDX body fragment with `pnpm -C apps/site event:new`. Full reference:
 [docs/explanation/events-pipeline.md](./docs/explanation/events-pipeline.md).
 
 ## Project structure
 
+The repository is a [Turborepo](https://turborepo.com) workspace that follows the organization's
+repository standard. The site lives in `apps/site`; the root holds the repository's own tooling.
+
 ```text
-src/
-  content/                  # All editable content (MDX + JSON)
-    docs/                   # Long-form essays
-    pages/                  # Page body copy
-    event-bodies/           # Optional long-form body per event (events themselves live in Google Calendar)
-    projects/               # Project briefs
-    initiatives/            # Project tags (JSON)
-  layouts/                  # BaseLayout, DocLayout
-  components/               # Reusable UI
-  pages/                    # Astro file-based routing
-  lib/site.ts               # Single source of truth for org metadata (reads from PUBLIC_LVBT_*)
-  styles/global.css         # Tailwind + design tokens
-public/                     # Static assets, favicon, robots.txt
-scripts/bootstrap/          # The bootstrap CLI (TypeScript via tsx)
-tests/                      # Playwright visual-regression harness (see tests/README.md)
-src/content.config.ts       # Zod schemas for content collections
-astro.config.mjs            # Astro + integrations
-playwright.config.ts        # Playwright config (webserver, viewports, snapshot path)
-.env.example                # Documents PUBLIC_LVBT_* env vars
+apps/site/                  # The website (package @lasvegasfortransit/site)
+  src/
+    content/                # All editable content (MDX + JSON)
+      docs/                 # Long-form essays
+      pages/                # Page body copy
+      event-bodies/         # Optional long-form body per event (events live in Google Calendar)
+      projects/             # Project briefs
+      initiatives/          # Project tags (JSON)
+    layouts/                # BaseLayout, DocLayout
+    components/             # Reusable UI
+    pages/                  # Astro file-based routing
+    lib/site.ts             # Single source of truth for org metadata (reads from PUBLIC_LVBT_*)
+    styles/global.css       # Tailwind + design tokens
+    content.config.ts       # Zod schemas for content collections
+  public/                   # Static assets, favicon, robots.txt
+  functions/                # The Worker routes (join, sign-in, account, intake APIs)
+  platform/                 # The Organizing Platform code and database migrations
+  scripts/bootstrap/        # The bootstrap CLI (TypeScript via tsx)
+  scripts/audit/            # Build, bundle, and Worker audits
+  tests/                    # Unit tests; tests/e2e holds the Playwright suites (see tests/README.md)
+  astro.config.mjs          # Astro + integrations
+  wrangler.jsonc            # The Cloudflare Worker that serves the site
+  playwright.config.ts      # Playwright config (webserver, viewports, snapshot path)
+  .env.example              # Documents PUBLIC_LVBT_* env vars
+docs/                       # Repository documentation
+.lvbt/                      # Commit scopes and the vendored repository standard
+turbo.json                  # The tasks every package runs, in order
 ```
 
 ## Deployment
@@ -141,9 +160,11 @@ in [`.github/actions/`](./.github/actions/) (`setup-node-pnpm`, `build-site`,
 | `deploy-worker-preview.yml`   | Same-repo PRs, once enabled           | Uploads a version of the separate `lvbt-website-preview` Worker for comparison |
 | `deploy-worker-candidate.yml` | After a successful production build   | Uploads a `main` Worker version for comparison, then cutover once enabled      |
 
-`ci.yml` (typecheck → lint:check → check:docs → build, no deploy), `audit.yml`,
-`audit-scheduled.yml`, `cron-rebuild.yml` and `seed-baselines.yml` need no Cloudflare credentials.
-The full pipeline — every setting and the exact dashboard clicks for each token — is in
+`ci.yml` (the required `Validate` check: `pnpm check`, a dependency audit, and a secret scan, no
+deploy), `audit.yml`, `audit-scheduled.yml`, `cron-rebuild.yml`, `seed-baselines.yml` and
+`standard-update.yml` (daily: opens a pull request when a newer repository standard is released)
+need no Cloudflare credentials. The full pipeline — every setting and the exact dashboard clicks for
+each token — is in
 [`docs/reference/deployment-pipeline.md`](./docs/reference/deployment-pipeline.md) and
 [`docs/guides/test-the-workers-candidate.md`](./docs/guides/test-the-workers-candidate.md).
 

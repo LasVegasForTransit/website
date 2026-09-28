@@ -86,7 +86,7 @@ Native HTML form posting to Ghost's `/members/api/send-magic-link` endpoint (a m
 one-time sign-in/confirm link emailed to the user, so there's no password to set; no third-party JS
 embed — fits the minimalist aesthetic, no extra runtime).
 
-- **Component:** `src/components/SubscribeForm.astro` (when built — see v0 plan)
+- **Component:** `apps/site/src/components/SubscribeForm.astro` (when built — see v0 plan)
 - **Footer slot:** every page on the site
 - **Dedicated page:** `/subscribe`
 - **Magic-link / double-opt-in:** handled by Ghost; site form just submits the email

@@ -19,7 +19,7 @@ starts it on an unused local port. A passing result includes `Worker parity chec
 For interactive inspection, build and start the Worker directly:
 
 ```sh
-pnpm worker:dev
+pnpm -C apps/site worker:dev
 ```
 
 Open the printed local URL. Visit the home page, an ordinary content page, and an unknown path.
@@ -50,20 +50,20 @@ fork-safety check in `deploy-preview.yml`), so add it once as a plain repository
 workflow that needs a Cloudflare account ID reads this same one.
 
 Set the repository variable `CLOUDFLARE_WORKERS_PREVIEW_ENABLED` to `true` after
-`pnpm worker:upload --env preview` succeeds for `lvbt-website-preview`, the separate Worker that
-pull request previews use. Re-run the pull request workflow and open the `Worker candidate` link in
-its comment.
+`pnpm -C apps/site worker:upload --env preview` succeeds for `lvbt-website-preview`, the separate
+Worker that pull request previews use. Re-run the pull request workflow and open the
+`Worker candidate` link in its comment.
 
 The preview workflow runs the complete Playwright suite against the Worker URL. The same checks run
 locally against an uploaded candidate:
 
 ```sh
-pnpm worker:test:live \
+pnpm -C apps/site worker:test:live \
   --pages https://lasvegasfortransit.org \
   --worker https://<version>-lvbt-website-preview.<account>.workers.dev \
   --skip-api
 PLAYWRIGHT_BASE_URL=https://<version>-lvbt-website-preview.<account>.workers.dev \
-  pnpm worker:test:browser
+  pnpm -C apps/site worker:test:browser
 ```
 
 Inspect the navigation at phone and desktop widths. Check the browser console, refresh a nested

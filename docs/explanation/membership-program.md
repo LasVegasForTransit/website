@@ -239,8 +239,8 @@ and what's still planned.
 
 - **The roster lives in the person record**, one row per person LVBT knows about, in the platform's
   Cloudflare D1 database — not in Notion. It's read and written only through the
-  [person service](../../platform/storage/person-service.md), and every sign-up, from any form,
-  lands there (see [membership-intake.md](../reference/membership-intake.md)). Adding `Stage`,
+  [person service](../../apps/site/platform/storage/person-service.md), and every sign-up, from any
+  form, lands there (see [membership-intake.md](../reference/membership-intake.md)). Adding `Stage`,
   `Role`, an events-attended signal, and a `Lapsing` flag to that record still covers most of this
   spec's state model — the record just isn't Notion anymore. (Notion still holds a working queue for
   staff follow-up on new sign-ups, until the staff console's own follow-up queue ships; that's a

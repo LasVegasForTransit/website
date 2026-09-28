@@ -82,7 +82,7 @@ the change was necessary, what alternatives existed, what trade‑offs were made
 
 ## Scopes
 
-Only five scopes are valid: `site`, `content`, `functions`, `docs`, `dx`. See
+Only five scopes are valid: `site`, `content`, `apps/site/functions`, `docs`, `dx`. See
 [commit-scopes.md](./commit-scopes.md) for the full list and rationale. Empty scope is the default
 for everything else (`feat: add newsletter form`).
 
@@ -123,7 +123,7 @@ the change_ instead of _what changed about the system_. Common offenders, all fo
 | "Single `git log --format='%h%x09%s'` parsed via `read` instead of per-commit `git log -1 + git rev-parse --short`"                                      | "Pre-push commit validation no longer spawns two git processes per commit; large pushes are faster" |
 | "Collapses `PHASE_ORDER`, `PHASE_INFO`, and `isLocalPhase`'s string-eq cascade into a single `PHASES` array with derived lookups"                        | "Adding a bootstrap phase now touches one definition instead of three; type-checked end to end"     |
 | "Replaces inline `console.error` block with helper"                                                                                                      | (delete)                                                                                            |
-| "Switched `spawnSync` to `spawn` + `Promise.all`"                                                                                                        | "`pnpm audit:baseline` now runs the four read-only audit tools in parallel, ~3 s faster"            |
+| "Switched `spawnSync` to `spawn` + `Promise.all`"                                                                                                        | "`pnpm check:baseline` now runs the four read-only audit tools in parallel, ~3 s faster"            |
 
 The right-hand column is what a maintainer cares about: **what changed about the system, what they
 can rely on now, what they no longer need to worry about.** The left column is the author's

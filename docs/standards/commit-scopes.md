@@ -15,13 +15,13 @@ shouldn't exist. A long scope list just becomes noise nobody can keep straight.
 
 ## Allowed scopes
 
-| Scope       | What it covers                                            | Typical commits                                       |
-| ----------- | --------------------------------------------------------- | ----------------------------------------------------- |
-| `site`      | The Astro site: pages, layouts, components, styles        | `fix(site): keep the header readable at 320 pixels`   |
-| `content`   | MDX and copy under `apps/site/src/content/`               | `fix(content): rewrite about copy and § 02 layout`    |
-| `functions` | The Worker routes and the platform code behind them       | `fix(functions): reject an expired sign-in link`      |
-| `docs`      | Repo documentation under `docs/` (NOT site copy)          | `docs(docs): add commit-messages standard`            |
-| `dx`        | Hooks, lint and format settings, dev scripts, local tools | `chore(dx): wire pre-commit and pre-push enforcement` |
+| Scope                 | What it covers                                            | Typical commits                                       |
+| --------------------- | --------------------------------------------------------- | ----------------------------------------------------- |
+| `site`                | The Astro site: pages, layouts, components, styles        | `fix(site): keep the header readable at 320 pixels`   |
+| `content`             | MDX and copy under `apps/site/src/content/`               | `fix(content): rewrite about copy and § 02 layout`    |
+| `apps/site/functions` | The Worker routes and the platform code behind them       | `fix(functions): reject an expired sign-in link`      |
+| `docs`                | Repo documentation under `docs/` (NOT site copy)          | `docs(docs): add commit-messages standard`            |
+| `dx`                  | Hooks, lint and format settings, dev scripts, local tools | `chore(dx): wire pre-commit and pre-push enforcement` |
 
 Source of truth: [`../../.lvbt/commit-scopes.txt`](../../.lvbt/commit-scopes.txt). The commit‑msg
 hook reads that file at validation time.

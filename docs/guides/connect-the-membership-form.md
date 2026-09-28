@@ -10,8 +10,8 @@ submission fails, is in [membership-intake.md](../reference/membership-intake.md
 > `LVBT_MEMBERSHIP_INTAKE_SECRET` that the live site uses. If the form is being connected for the
 > first time, make a new value (see
 > [membership intake](../reference/membership-intake.md#required-cloudflare-secrets)) and store it
-> with `pnpm bootstrap --phase secrets`. Never use the value in your own `.env.local`; it is a local
-> test value only.
+> with `pnpm bootstrap --phase secrets`. Never use the value in your own `apps/site/.env.local`; it
+> is a local test value only.
 
 ---
 
@@ -20,9 +20,9 @@ submission fails, is in [membership-intake.md](../reference/membership-intake.md
    no email to subscribe.
 2. Open Extensions → Apps Script.
 3. Paste
-   [`scripts/google-apps/membership-intake.gs`](../../scripts/google-apps/membership-intake.gs) into
-   the Apps Script editor and **save** (Cmd/Ctrl+S). The trigger setup below only lists functions
-   from _saved_ code.
+   [`apps/site/scripts/google-apps/membership-intake.gs`](../../apps/site/scripts/google-apps/membership-intake.gs)
+   into the Apps Script editor and **save** (Cmd/Ctrl+S). The trigger setup below only lists
+   functions from _saved_ code.
 4. Edit `FIELD_TITLES` so the values exactly match the form's question titles. The defaults match
    the current "Membership Sign-Up" form: name is `What is your preferred name?` and discord is
    `What's your Discord username?`. (Email is not listed here — it comes from the collected-email

@@ -43,10 +43,10 @@ because every phase checks what is already done before it changes anything.
    pinned in the [lockfile](../reference/glossary.md#lockfile), no surprises) and a `pnpm build`
    smoke test. Catches setup issues before you touch anything remote.
 
-4. **env** — Creates `.env.local` from `.env.example`. Shows which values are still placeholders.
-   Asks once whether you want to fill them in now; if not, placeholders stay and the site still
-   builds. Everything here is for your machine only; the live site gets its values elsewhere (step 8
-   and GitHub Actions variables).
+4. **env** — Creates `apps/site/.env.local` from `apps/site/.env.example`. Shows which values are
+   still placeholders. Asks once whether you want to fill them in now; if not, placeholders stay and
+   the site still builds. Everything here is for your machine only; the live site gets its values
+   elsewhere (step 8 and GitHub Actions variables).
 
 5. **repo** — If `origin` isn't set yet, creates a GitHub repo via `gh repo create` and wires
    `origin` to its **SSH URL** (the `git@github.com:…` address Git pushes to, which relies on your

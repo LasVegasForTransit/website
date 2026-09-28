@@ -9,9 +9,9 @@ is a normal HTML attribute that carries metadata for CSS and tests. In this site
 those properties to decide what becomes a paper callout, what disappears, what keeps a useful
 destination, and what becomes the final directory page.
 
-The print rules live in [`src/styles/global.css`](../../src/styles/global.css) inside
-`@media print`. The coverage for the main contract lives in
-[`tests/print-layout.spec.ts`](../../tests/print-layout.spec.ts).
+The print rules live in [`apps/site/src/styles/global.css`](../../apps/site/src/styles/global.css)
+inside `@media print`. The coverage for the main contract lives in
+[`apps/site/tests/e2e/print-layout.spec.ts`](../../apps/site/tests/e2e/print-layout.spec.ts).
 
 ## The rule
 

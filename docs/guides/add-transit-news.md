@@ -13,13 +13,13 @@ prerequisites below.
 The fastest way to add specific articles you already have.
 
 ```bash
-pnpm add:transit-news https://nevadacurrent.com/2026/06/01/some-article/
+pnpm -C apps/site add:transit-news https://nevadacurrent.com/2026/06/01/some-article/
 ```
 
 Multiple URLs at once:
 
 ```bash
-pnpm add:transit-news \
+pnpm -C apps/site add:transit-news \
   https://nevadacurrent.com/2026/06/01/example/ \
   https://reviewjournal.com/2026/06/02/another/
 ```
@@ -41,7 +41,7 @@ Adding 2 article(s) to Transit News database…
 Done.
 ```
 
-**Prerequisites (in `.env.local`):**
+**Prerequisites (in `apps/site/.env.local`):**
 
 1. `LVBT_NOTION_API_KEY` — an internal integration token (an API key: a secret, password-like string
    that lets our code call Notion on our behalf — see [glossary](../reference/glossary.md#api-key))
@@ -142,19 +142,20 @@ in with headline, date, topics, and the body text.
 
 ## Troubleshooting
 
-**"LVBT_NOTION_API_KEY is not set"** — add the key to `.env.local`. Get it from Notion → Settings →
-My connections → your integration.
+**"LVBT_NOTION_API_KEY is not set"** — add the key to `apps/site/.env.local`. Get it from Notion →
+Settings → My connections → your integration.
 
 **"✖ fetch failed"** — the article's site blocked the bot user-agent or returned a non-200. Try
 opening the URL in a browser; if it loads, the site may require JS. Fall back to Path 2 (Claude
 Code) which uses a browser to fetch.
 
 **Headline / date extracted wrong** — the site uses non-standard markup. Open an issue or edit
-`scripts/notion/lib/article-extract.ts` to add a site-specific extractor. The extraction priority
-order is in [`docs/reference/transit-news-pipeline.md`](../reference/transit-news-pipeline.md).
+`apps/site/scripts/notion/lib/article-extract.ts` to add a site-specific extractor. The extraction
+priority order is in
+[`docs/reference/transit-news-pipeline.md`](../reference/transit-news-pipeline.md).
 
 **Publication / topic not inferred** — add the domain or keyword to
-`scripts/notion/lib/transit-topics.ts`. The maps are self-documenting.
+`apps/site/scripts/notion/lib/transit-topics.ts`. The maps are self-documenting.
 
 ---
 

@@ -26,20 +26,22 @@ newsletter box            ─┴─> POST /join/member/
                                -> /join/member/welcome/  "You're in."
 ```
 
-- **Pages:** `src/pages/join/member/index.astro`, `region.astro` and `welcome.astro`, and
-  `src/pages/join/remove/index.astro`. They are built once, like every other page.
-- **Handlers:** `functions/join/`. Each handler fetches its built page and fills in the parts that
-  change per visitor: a one-time form token, the visitor's input and errors after a failed submit,
-  their name on the welcome page. It uses Cloudflare's HTMLRewriter, so the visitor gets finished
-  HTML in one request and everything works with JavaScript turned off.
-- **Joining logic:** `platform/join.ts`, with the person record in `platform/storage/`. See the
-  [schema](../../platform/storage/migrations/schema.md) and the
-  [person service](../../platform/storage/person-service.md).
-- **Text:** every word comes from the [message catalog](../../platform/messages/README.md).
-- **Newsletter box:** `src/components/NewsletterEmbed.astro` posts to the same handler with the
-  consent wording `newsletter-box-v1`. Its small script, `public/scripts/newsletter-subscribe.js`,
-  shows the result in place; without the script the box posts normally and lands on the welcome
-  page.
+- **Pages:** `apps/site/src/pages/join/member/index.astro`, `region.astro` and `welcome.astro`, and
+  `apps/site/src/pages/join/remove/index.astro`. They are built once, like every other page.
+- **Handlers:** `apps/site/functions/join/`. Each handler fetches its built page and fills in the
+  parts that change per visitor: a one-time form token, the visitor's input and errors after a
+  failed submit, their name on the welcome page. It uses Cloudflare's HTMLRewriter, so the visitor
+  gets finished HTML in one request and everything works with JavaScript turned off.
+- **Joining logic:** `apps/site/platform/join.ts`, with the person record in
+  `apps/site/platform/storage/`. See the
+  [schema](../../apps/site/platform/storage/migrations/schema.md) and the
+  [person service](../../apps/site/platform/storage/person-service.md).
+- **Text:** every word comes from the
+  [message catalog](../../apps/site/platform/messages/README.md).
+- **Newsletter box:** `apps/site/src/components/NewsletterEmbed.astro` posts to the same handler
+  with the consent wording `newsletter-box-v1`. Its small script,
+  `apps/site/public/scripts/newsletter-subscribe.js`, shows the result in place; without the script
+  the box posts normally and lands on the welcome page.
 
 ## What is stored, and what isn't
 
@@ -81,20 +83,20 @@ only thing they ever did with LVBT.
 4. Check the database:
 
    ```sh
-   pnpm exec wrangler d1 execute lvbt-platform --remote --command "SELECT id, membership_status, region_id FROM people ORDER BY created_at DESC LIMIT 5"
+   pnpm -C apps/site exec wrangler d1 execute lvbt-platform --remote --command "SELECT id, membership_status, region_id FROM people ORDER BY created_at DESC LIMIT 5"
    ```
 
 5. Open the removal link from the email and press the button, so the test member is removed again.
 
 ## Troubleshooting
 
-| Symptom                                      | Cause                                                                | Fix                                                                                                                   |
-| -------------------------------------------- | -------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------- |
-| "We couldn't finish joining you just now"    | Beehiiv refused the subscription, or its secrets are missing         | Check the `lvbt-website` Worker logs for "Beehiiv subscribe failed" and run `pnpm bootstrap --doctor --phase secrets` |
-| Every join shows that message                | The `PLATFORM_DB` binding or `LVBT_LINK_SIGNING_SECRET` is missing   | The logs say which; the binding is set in `wrangler.jsonc`, the secret through `pnpm bootstrap --phase secrets`       |
-| No confirmation email                        | `LVBT_RESEND_API_KEY` isn't set, or the Resend domain isn't verified | Set the key; until then Beehiiv's welcome email is sent instead                                                       |
-| The region step says it has expired          | More than an hour passed, or cookies are blocked                     | The person is already a member; they can set their region later from their account                                    |
-| A join returns a server error after a deploy | A migration wasn't applied                                           | Run the migrations in the [schema](../../platform/storage/migrations/schema.md)                                       |
+| Symptom                                      | Cause                                                                | Fix                                                                                                                       |
+| -------------------------------------------- | -------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| "We couldn't finish joining you just now"    | Beehiiv refused the subscription, or its secrets are missing         | Check the `lvbt-website` Worker logs for "Beehiiv subscribe failed" and run `pnpm bootstrap --doctor --phase secrets`     |
+| Every join shows that message                | The `PLATFORM_DB` binding or `LVBT_LINK_SIGNING_SECRET` is missing   | The logs say which; the binding is set in `apps/site/wrangler.jsonc`, the secret through `pnpm bootstrap --phase secrets` |
+| No confirmation email                        | `LVBT_RESEND_API_KEY` isn't set, or the Resend domain isn't verified | Set the key; until then Beehiiv's welcome email is sent instead                                                           |
+| The region step says it has expired          | More than an hour passed, or cookies are blocked                     | The person is already a member; they can set their region later from their account                                        |
+| A join returns a server error after a deploy | A migration wasn't applied                                           | Run the migrations in the [schema](../../apps/site/platform/storage/migrations/schema.md)                                 |
 
 ## Related
 

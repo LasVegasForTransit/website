@@ -4,7 +4,8 @@ The look-up table for the site's color and type tokens. For the _why_ — brand 
 rules, the colors we've reserved but not shipped — see
 [Design system](../explanation/design-system.md).
 
-The color system has **two tiers**, both in [`src/styles/global.css`](../../src/styles/global.css):
+The color system has **two tiers**, both in
+[`apps/site/src/styles/global.css`](../../apps/site/src/styles/global.css):
 
 1. **Brand primitives** — raw hex (`--ink`, `--paper`, `--ember`, the warm-charcoal ramp, …) in a
    plain `:root`. They generate **no** utilities; they are the palette that the roles below
@@ -73,7 +74,8 @@ Character is "Valley after dark": a warm near-black canvas, MD3 tonal elevation 
 warm-charcoal containers, not drop shadows), and Ember reading like a light in the dark — including
 a `.press.bg-primary` glow applied only in dark. Neutral/content role pairs are held ≥4.5:1, rules
 ≥3:1, and the primary/on-primary brand pair ≥3:1 by
-[`tests/color-contracts.spec.ts`](../../tests/color-contracts.spec.ts), which runs in both schemes.
+[`apps/site/tests/e2e/color-contracts.spec.ts`](../../apps/site/tests/e2e/color-contracts.spec.ts),
+which runs in both schemes.
 
 ## Context-aware overrides
 
@@ -89,9 +91,9 @@ a `.press.bg-primary` glow applied only in dark. Neutral/content role pairs are 
 ## Canvas system
 
 Pages opt into an **immersive dark hero** via the `canvas` prop on
-[`BaseLayout.astro`](../../src/layouts/BaseLayout.astro) (sets `data-canvas` on `<body>`). This is
-orthogonal to the theme — it forces an always-dark rooted hero (transparent header) in _both_
-schemes, using fixed primitives.
+[`BaseLayout.astro`](../../apps/site/src/layouts/BaseLayout.astro) (sets `data-canvas` on `<body>`).
+This is orthogonal to the theme — it forces an always-dark rooted hero (transparent header) in
+_both_ schemes, using fixed primitives.
 
 | `canvas`          | Background        | Used by                 |
 | ----------------- | ----------------- | ----------------------- |
@@ -101,10 +103,10 @@ schemes, using fixed primitives.
 ## Vision band system
 
 `/vision` alternates section backgrounds with `.band-cream`, `.band-ink`, `.band-primary` (in
-[`src/styles/vision.css`](../../src/styles/vision.css)). Each band sets a local `--vp-*` palette so
-section components stay band-agnostic. The bands now map to the site roles: `band-cream` → `surface`
-(base), `band-ink` → `slab`, `band-primary` → `primary`. So the vision page inherits the dark theme
-for free.
+[`apps/site/src/styles/vision.css`](../../apps/site/src/styles/vision.css)). Each band sets a local
+`--vp-*` palette so section components stay band-agnostic. The bands now map to the site roles:
+`band-cream` → `surface` (base), `band-ink` → `slab`, `band-primary` → `primary`. So the vision page
+inherits the dark theme for free.
 
 ## Print layout hooks
 

@@ -1,10 +1,12 @@
-# AGENTS.md
+# Working in this repository
 
-Guidance for AI agents (Claude Code, Codex, Gemini, etc.) working in this repo.
+Run `pnpm check` after every change. It is the same command CI runs, and a failing check names the
+command that fixes it (`pnpm check:fix` repairs everything a machine can).
 
-This is the single Astro site for Las Vegans for Better Transit. Cloudflare Pages serves production
-while the equivalent Workers deployment completes live acceptance. Changes land through pull
-requests with linear history and the current `Validate` check.
+This repository is the Astro site for Las Vegans for Better Transit, in `apps/site`, inside a
+Turborepo workspace that follows the organization's repository standard. Cloudflare Pages serves
+production while the equivalent Workers deployment completes live acceptance. Changes land through
+pull requests with linear history and the current `Validate` check.
 
 New to the project (human or agent)?
 [`docs/tutorials/start-here.md`](./docs/tutorials/start-here.md) orients you, and the
@@ -12,7 +14,30 @@ New to the project (human or agent)?
 Contributors here are often students and junior devs — keep docs and explanations accessible (see
 [`docs/standards/writing-docs.md`](./docs/standards/writing-docs.md)).
 
----
+## Standard commands
+
+Every LVBT repository answers to the same commands, run from the repository root:
+
+| Command               | What it does                                                                |
+| --------------------- | --------------------------------------------------------------------------- |
+| `pnpm bootstrap`      | Set up this machine, and production for maintainers, one phase at a time    |
+| `pnpm preflight`      | Report what `pnpm bootstrap` would still do, without changing anything      |
+| `pnpm check`          | Format, docs, shape rules, lint, types, tests, the build, and Worker checks |
+| `pnpm check:fix`      | Apply formatting and lint fixes                                             |
+| `pnpm dev`            | Run the site at `https://lvbt.localhost`                                    |
+| `pnpm build`          | Build the site and its Worker                                               |
+| `pnpm test`           | Run the unit tests                                                          |
+| `pnpm test:e2e`       | Run the Playwright suites against a local build                             |
+| `pnpm run deploy`     | Build, then `wrangler deploy` the Worker (maintainers only; see below)      |
+| `turbo gen workspace` | Scaffold a new package or app                                               |
+
+`pnpm bootstrap` and `pnpm preflight` run the site's own setup script in
+`apps/site/scripts/bootstrap/`, because it also sets up the site's environment file, Worker,
+domains, and secrets; see [`docs/reference/bootstrap.md`](./docs/reference/bootstrap.md). Production
+normally deploys from `main` through GitHub Actions, which verifies each Worker version before it
+goes live, so `pnpm run deploy` is for recovery only. Commands only the site has, such as
+`event:new` or `worker:dev`, live in `apps/site/package.json`: run them with
+`pnpm -C apps/site <command>`.
 
 ## Read these first
 
@@ -27,6 +52,19 @@ Contributors here are often students and junior devs — keep docs and explanati
 
 The hooks under [`.githooks/`](./.githooks/) enforce most of this automatically. The repo's
 `prepare` script wires `core.hooksPath` to `.githooks` on `pnpm install`.
+
+## Commit messages
+
+Subjects are conventional: `type(scope): description`, at most 72 characters. Scopes are optional
+and come only from [`.lvbt/commit-scopes.txt`](.lvbt/commit-scopes.txt). Omit the scope when a
+change crosses boundaries; never invent one for a feature, file, task, or role.
+
+## The repository standard
+
+Lint, format, TypeScript, and test settings extend the `@lasvegasfortransit/*` packages from
+`LasVegasForTransit/repository-tooling`. Change a shared rule there, not here. The standard's
+release is vendored in `.lvbt/web-platform/` and updated by the `Standard update` workflow or
+`pnpm standards:update`; never edit that directory by hand.
 
 ---
 
@@ -146,23 +184,22 @@ markers or GitHub-side prose checks.
 
 ## Stack quick map
 
-- Astro 7 + Tailwind v4 (MDX content collections under `src/content/`)
+- Astro 7 + Tailwind v4 (MDX content collections under `apps/site/src/content/`)
 - Cloudflare Pages in production, with an equivalent Cloudflare Worker built and checked on every
   change
-- pnpm 11.25.0 and Node 24.20.x
+- pnpm 11.25.0 and Node 24.20 or newer in the 24.x line, run through Turborepo
 - Playwright for tests and ad-hoc screenshots
-- `scripts/bootstrap/` is the interactive setup CLI (`pnpm bootstrap`, `pnpm preflight`)
-- `scripts/audit/` is the CI/release audit baseline
-- `scripts/validation/git/` is the commit-message validator
-- `src/lib/site.ts` is the runtime config object (org name, URLs, social handles)
+- `apps/site/scripts/bootstrap/` is the interactive setup CLI (`pnpm bootstrap`, `pnpm preflight`)
+- `apps/site/scripts/audit/` is the CI/release audit baseline
+- `apps/site/src/lib/site.ts` is the runtime config object (org name, URLs, social handles)
 - Events are sourced from a public Google Calendar at build time — see
   [`docs/explanation/events-pipeline.md`](./docs/explanation/events-pipeline.md). To add an event,
-  create it in GCal; for long-form body copy, scaffold a fragment under `src/content/event-bodies/`
-  via `pnpm event:new`.
+  create it in GCal; for long-form body copy, scaffold a fragment under
+  `apps/site/src/content/event-bodies/` via `pnpm -C apps/site event:new`.
 - Newsletter issues are pulled from the Beehiiv RSS feed at build time and listed on `/newsletter`,
   linking out to Beehiiv (issues are not hosted here) — see
-  [`src/lib/newsletter-loader.ts`](./src/lib/newsletter-loader.ts). Feed and home URLs come from
-  `PUBLIC_LVBT_NEWSLETTER_FEED_URL` / `PUBLIC_LVBT_NEWSLETTER_URL`.
+  [`apps/site/src/lib/newsletter-loader.ts`](./apps/site/src/lib/newsletter-loader.ts). Feed and
+  home URLs come from `PUBLIC_LVBT_NEWSLETTER_FEED_URL` / `PUBLIC_LVBT_NEWSLETTER_URL`.
 - Week Without Driving is served at `lvwwd.org`, its own site in the `week-without-driving` repo on
   the `lvwwd` Worker; this repo only redirects `/wwd`, `/wwd/` and `/week-without-driving` there —
   see

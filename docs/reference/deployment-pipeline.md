@@ -9,21 +9,24 @@ as a rollback artifact; it owns neither public hostname.
 
 ## Build contract
 
-`pnpm build` creates the static site in `dist/`, builds the Pagefind index, and compiles
-`functions/` into `.wrangler/worker/index.js`. Wrangler serves the static tree through the `ASSETS`
-binding and invokes the Worker first only for `/api/*`.
+`pnpm build` creates the static site in `apps/site/dist/`, builds the Pagefind index, and compiles
+`apps/site/functions/` into `apps/site/.wrangler/worker/index.js`. Wrangler serves the static tree
+through the `ASSETS` binding and invokes the Worker first only for `/api/*`.
 
-`pnpm check` covers the vendored LVBT standard, formatting, lint, type checks, unit tests,
-documentation links, the production build, generated Worker binding types, a Wrangler dry run, and
-local Worker parity. The parity check starts the built Worker on an unused local port and verifies:
+`pnpm check` covers the vendored LVBT standard, formatting, Markdown lint, the organization's
+repository-shape rules, lint, type checks, unit tests, documentation links, the production build,
+generated Worker binding types, a Wrangler dry run, and local Worker parity. Turborepo runs the
+site's part of it in the order `apps/site/turbo.json` declares; the build sees the `PUBLIC_LVBT_*`
+and analytics variables that file lists, and no others. The parity check starts the built Worker on
+an unused local port and verifies:
 
 - the home page and branded 404 response;
 - security headers and the calendar MIME override;
 - the permanent `/get-involved` redirect;
 - execution of the compiled subscription API.
 
-The checked Worker configuration lives in `wrangler.jsonc`. Production custom domains are attached
-to the existing Worker in Cloudflare. Version uploads do not change those domains, and the
+The checked Worker configuration lives in `apps/site/wrangler.jsonc`. Production custom domains are
+attached to the existing Worker in Cloudflare. Version uploads do not change those domains, and the
 deployment token cannot edit DNS or routes.
 
 ## Pull requests
@@ -34,10 +37,10 @@ and Worker previews.
 The `Deploy Worker preview` workflow runs when the repository variable
 `CLOUDFLARE_WORKERS_PREVIEW_ENABLED` is `true`. Its token comes only from the `worker-preview`
 GitHub environment. The workflow uploads a version of the separate `lvbt-website-preview` Worker
-without deploying it. That Worker is the `preview` environment in `wrangler.jsonc` and uses the
-preview platform database, so test data never reaches the production database. The workflow verifies
-the versioned preview URL, runs the Playwright accessibility and visual suites against the edge
-deployment, and updates one pull request comment. Forks never receive the token. The Pages
+without deploying it. That Worker is the `preview` environment in `apps/site/wrangler.jsonc` and
+uses the preview platform database, so test data never reaches the production database. The workflow
+verifies the versioned preview URL, runs the Playwright accessibility and visual suites against the
+edge deployment, and updates one pull request comment. Forks never receive the token. The Pages
 comparison runs only when Workers production is disabled.
 
 The preview environment contains:
@@ -58,16 +61,17 @@ Application secrets bind directly to the Worker before endpoint acceptance. Buil
 
 The Organizing Platform keeps its data in Cloudflare D1 (a SQL database; see the
 [glossary](./glossary.md#d1)). Code reaches it through the `PLATFORM_DB`
-[binding](./glossary.md#binding), which `wrangler.jsonc` points at a different database for each
-Worker:
+[binding](./glossary.md#binding), which `apps/site/wrangler.jsonc` points at a different database
+for each Worker:
 
 | Worker                 | Used by                                       | Database                |
 | ---------------------- | --------------------------------------------- | ----------------------- |
 | `lvbt-website`         | production, and the `main` candidate versions | `lvbt-platform`         |
 | `lvbt-website-preview` | pull request previews                         | `lvbt-platform-preview` |
 
-Both databases are on the free plan in Western North America. `pnpm dev` and `pnpm worker:dev` use a
-local copy that Wrangler keeps in `.wrangler/`, so local work never touches either one. The
+Both databases are on the free plan in Western North America. `pnpm dev` and
+`pnpm -C apps/site worker:dev` use a local copy that Wrangler keeps in `apps/site/.wrangler/`, so
+local work never touches either one. The
 [platform decision record](../explanation/decisions/organizing-platform.md) explains why there is
 one database.
 

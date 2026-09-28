@@ -32,8 +32,8 @@ Credentials, such as API keys, tokens and signing secrets, are typed into hidden
 shown. Values that are not credentials, such as IDs, domains and public keys, are typed in plain
 view so you can see what you pasted, and the report shows them back so you can check them.
 Cloudflare and GitHub never show a stored value again, so the report shows the value bootstrap last
-stored from your machine, which it keeps in `.lvbt/dev-readiness.json`; if it has none, it says so.
-Credentials are never kept there. The "Credential" column below says which is which.
+stored from your machine, which it keeps in `apps/site/.lvbt/dev-readiness.json`; if it has none, it
+says so. Credentials are never kept there. The "Credential" column below says which is which.
 
 Running the command again is always safe. It never asks for a secret that is already stored, never
 replaces one, and never generates a new value for a key that exists. When every secret is in place
@@ -45,7 +45,7 @@ To only see the report, without changing anything:
 pnpm bootstrap --doctor --phase secrets
 ```
 
-**Before you start:** sign in to Wrangler (`pnpm exec wrangler login`) and to GitHub
+**Before you start:** sign in to Wrangler (`pnpm -C apps/site exec wrangler login`) and to GitHub
 (`gh auth login`). You need Cloudflare access to the LVBT account and admin access to the website
 repository.
 
@@ -75,13 +75,13 @@ stored. A misspelled name is refused before anything runs.
 Pull request previews run on the separate `lvbt-website-preview` Worker without these secrets, so
 preview API routes answer `503` by design.
 
-The copies in your own `.env.local` are only for your machine. The bootstrap never copies them to
-production; this phase is the only place production values come from.
+The copies in your own `apps/site/.env.local` are only for your machine. The bootstrap never copies
+them to production; this phase is the only place production values come from.
 
 ## The secrets
 
-The single source of truth is `scripts/bootstrap/config/platform-secrets.ts`. The table below
-mirrors it.
+The single source of truth is `apps/site/scripts/bootstrap/config/platform-secrets.ts`. The table
+below mirrors it.
 
 | Secret                            | Used for                                       | Credential | Needed    | Start here                                                         |
 | --------------------------------- | ---------------------------------------------- | ---------- | --------- | ------------------------------------------------------------------ |
@@ -176,8 +176,8 @@ These already exist for LVBT, so you copy values rather than create anything.
   page. Create a key named `LVBT website`; the publication ID starts with `pub_`.
 - `LVBT_MEMBERSHIP_INTAKE_SECRET` must be the value the Google Form's Apps Script already uses (see
   [glossary](./glossary.md#apps-script)). Copy it from the script's Project Settings → Script
-  Properties. Never make up a new one or copy the random value in your own `.env.local`; the form
-  would stop working.
+  Properties. Never make up a new one or copy the random value in your own `apps/site/.env.local`;
+  the form would stop working.
 - `LVBT_NOTION_API_KEY` is the token of the Notion integration connected to the Membership intake
   database, and `LVBT_NOTION_DATA_SOURCE_ID` is that database's data source ID (see
   [glossary](./glossary.md#data-source)).

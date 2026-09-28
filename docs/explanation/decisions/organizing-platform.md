@@ -197,8 +197,8 @@ What this rules out:
 
 Secrets, such as API keys, are set in Cloudflare with Wrangler (see the
 [glossary](../../reference/glossary.md#wrangler)) or in the Cloudflare dashboard. They are never
-committed. Every secret's name and purpose is listed in `.env.example`, the committed template of
-settings, with no real values.
+committed. Every secret's name and purpose is listed in `apps/site/.env.example`, the committed
+template of settings, with no real values.
 
 Google Workspace access will use no key file (decided 2026-09-23). Volunteer management needs to act
 as a Workspace admin to create accounts and manage Google Groups. The usual way is a service account

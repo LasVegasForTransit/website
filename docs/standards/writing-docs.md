@@ -52,7 +52,8 @@ Every doc should:
 ## When you add or edit a doc
 
 - Add it to the [docs index](../README.md) so people can find it.
-- Run `pnpm check:docs` to confirm every link resolves (including glossary anchors).
+- Run `pnpm check` to confirm every link resolves (including glossary anchors): markdownlint checks
+  the repository documentation and `check:docs` checks the site's Markdown and MDX.
 - New jargon → add it to the [glossary](../reference/glossary.md).
 
 ## Out of scope

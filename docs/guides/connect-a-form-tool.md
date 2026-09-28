@@ -94,7 +94,7 @@ The LVBT Google Form uses an Apps Script that runs on every submission and posts
 address, `/api/membership-intake`, in its own format. That address still works: it subscribes the
 person, adds a row to the Notion intake database for staff follow-up, and records them in the person
 record as a `google_form` submission with the consent wording `gform-2026-06`. The script is in
-`scripts/google-apps/membership-intake.gs`, and
+`apps/site/scripts/google-apps/membership-intake.gs`, and
 [connect the membership form](./connect-the-membership-form.md) explains how to install it.
 
 A new form tool should use `/api/intake/v1` directly, as above.

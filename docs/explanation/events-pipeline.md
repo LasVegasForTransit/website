@@ -8,8 +8,9 @@ Events on the site come from a public Google Calendar. The site rebuilds against
 schedule; the calendar is the source of truth for both event metadata (title, time, location, join
 URL) and event body copy (the rich-text description). MDX fragments (Markdown files that can embed
 interactive components — see [glossary](../reference/glossary.md#mdx)) under
-[`src/content/event-bodies/`](../../src/content/event-bodies/) are an optional override for events
-that need MDX features (components, typed links) — most events ship as just GCal.
+[`apps/site/src/content/event-bodies/`](../../apps/site/src/content/event-bodies/) are an optional
+override for events that need MDX features (components, typed links) — most events ship as just
+GCal.
 
 ## The flow
 
@@ -47,9 +48,9 @@ events/index.astro · events/[...slug].astro · events/[...slug].ics.ts · go.as
    | Location    | `joinUrl` if URL, else `venue`                                                                                       | Put a meeting URL here for a virtual event, or a physical address for an in-person event.             |
    | Description | `summary` (first paragraph) + `body` (everything after, as HTML) + optional `joinUrl`, `rsvpUrl`, and admission link | See conventions below.                                                                                |
 
-3. (Optional) Add long-form body copy under `src/content/event-bodies/<slug>.mdx`. The slug is
-   `<YYYY-MM-DD>-<slugified-title>` using the Pacific-time date. `pnpm event:new` walks through
-   this.
+3. (Optional) Add long-form body copy under `apps/site/src/content/event-bodies/<slug>.mdx`. The
+   slug is `<YYYY-MM-DD>-<slugified-title>` using the Pacific-time date.
+   `pnpm -C apps/site event:new` walks through this.
 
 ### Description conventions
 
@@ -99,8 +100,8 @@ links publish as event offers.
 
 Virtual and hybrid events use Schema.org `VirtualLocation`, which is valid structured data. Google's
 Event rich-result feature is narrower: virtual-only events and events with no physical location are
-reported by `pnpm check:structured-data` as non-fatal Google eligibility notes. Physical events need
-a real postal address for Google eligibility.
+reported by `pnpm -C apps/site check:structured-data` as non-fatal Google eligibility notes.
+Physical events need a real postal address for Google eligibility.
 
 ## Slug
 
