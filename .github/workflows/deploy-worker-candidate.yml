@@ -15,6 +15,12 @@ concurrency:
   group: deploy-worker-candidate
   cancel-in-progress: false
 
+# The site lives in apps/site; every run step works from there unless it
+# says otherwise.
+defaults:
+  run:
+    working-directory: apps/site
+
 jobs:
   candidate:
     name: Upload and verify candidate
@@ -62,7 +68,9 @@ jobs:
       - name: Install Chromium
         run: pnpm exec playwright install --with-deps chromium
 
+      # pnpm check is the repository's own check, so it runs from the root.
       - name: Build and validate
+        working-directory: .
         run: pnpm check
 
       - name: Upload Worker version

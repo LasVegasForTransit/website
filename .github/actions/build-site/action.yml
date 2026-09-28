@@ -1,7 +1,8 @@
 name: Build site
 description: >
-  Run the canonical validation chain (typecheck, lint:check, check:docs) and build the site and
-  Worker. Uploads separate static and Worker artifacts for downstream audit and deployment jobs.
+  Run the canonical validation chain (types, formatting, stylesheet lint, brand tokens, doc links)
+  and build the site and Worker in apps/site. Uploads separate static and Worker artifacts for
+  downstream audit and deployment jobs.
 
   Assumes `setup-node-pnpm` has already run in the same job.
 
@@ -11,47 +12,51 @@ runs:
     - name: Restore Astro cache
       uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
       with:
-        path: .astro
+        path: apps/site/.astro
         key:
-          astro-${{ runner.os }}-${{ hashFiles('astro.config.mjs', 'pnpm-lock.yaml',
-          'src/content/**') }}
+          astro-${{ runner.os }}-${{ hashFiles('apps/site/astro.config.mjs', 'pnpm-lock.yaml',
+          'apps/site/src/content/**') }}
         restore-keys: |
           astro-${{ runner.os }}-
 
-    - name: Typecheck
+    - name: Type check
       shell: bash
-      run: pnpm typecheck
+      run: pnpm check-types
 
-    - name: Lint check
+    - name: Format check
       shell: bash
-      run: pnpm lint:check
+      run: pnpm format:check
 
     - name: Stylesheet lint
       shell: bash
-      run: pnpm exec stylelint 'src/styles/*.css' 'src/**/*.module.css'
+      working-directory: apps/site
+      run: pnpm lint:styles
 
     - name: Brand token drift check
       shell: bash
-      run: pnpm exec tsx scripts/audit/brand-tokens.ts
+      working-directory: apps/site
+      run: pnpm lint:brand
 
     - name: Validate doc links
       shell: bash
+      working-directory: apps/site
       run: pnpm check:docs
 
     # Reads the PUBLIC_LVBT_* deployment config (social/donate/Discord URLs)
     # from the job environment — `vars`/`env` contexts can't be referenced
     # inside a composite action, so the calling workflow's `build` job exports
     # these via its own `env:` block (which propagates into composite steps).
-    # See src/lib/site.ts; an unset var hides its link and warns, never fails.
+    # See apps/site/src/lib/site.ts; an unset var hides its link and warns, never fails.
     - name: Build
       shell: bash
+      working-directory: apps/site
       run: pnpm build
 
     - name: Upload dist artifact
       uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
       with:
         name: dist-${{ github.sha }}
-        path: dist/
+        path: apps/site/dist/
         if-no-files-found: error
         retention-days: 7
 
@@ -59,6 +64,6 @@ runs:
       uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
       with:
         name: worker-${{ github.sha }}
-        path: .wrangler/worker/
+        path: apps/site/.wrangler/worker/
         if-no-files-found: error
         retention-days: 7

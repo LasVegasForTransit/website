@@ -15,12 +15,18 @@ concurrency:
   group: deploy-prod
   cancel-in-progress: false
 
+# The site lives in apps/site; every run step works from there unless it
+# says otherwise. Artifact and cache paths stay relative to the checkout.
+defaults:
+  run:
+    working-directory: apps/site
+
 jobs:
   build:
     name: Build
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    # Deployment config baked into the static HTML — see src/lib/site.ts.
+    # Deployment config baked into the static HTML — see apps/site/src/lib/site.ts.
     # Job env propagates into the build-site composite step.
     env:
       PUBLIC_LVBT_INSTAGRAM: ${{ vars.PUBLIC_LVBT_INSTAGRAM }}

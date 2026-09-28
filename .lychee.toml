@@ -1,5 +1,5 @@
-# Lychee link checker config — used by .github/workflows/audit.yml.
-# Runs against built HTML in dist/ + markdown in docs/.
+# Lychee link checker config — used by .github/workflows/audit-scheduled.yml.
+# Runs against built HTML in apps/site/dist/ + markdown in docs/.
 
 cache = true
 max_cache_age = "1d"

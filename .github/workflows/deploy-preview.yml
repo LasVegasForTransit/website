@@ -46,7 +46,7 @@ jobs:
     if: needs.guard.outputs.run == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    # Deployment config baked into the static HTML — see src/lib/site.ts.
+    # Deployment config baked into the static HTML — see apps/site/src/lib/site.ts.
     # Job env propagates into the build-site composite step.
     env:
       PUBLIC_LVBT_INSTAGRAM: ${{ vars.PUBLIC_LVBT_INSTAGRAM }}
@@ -143,7 +143,7 @@ jobs:
           done
           if [ "${#missing[@]}" -gt 0 ]; then
             echo "::error::Missing required response headers: ${missing[*]}"
-            echo "::error::Check public/_headers — Cloudflare Pages may not be applying it."
+            echo "::error::Check apps/site/public/_headers — Cloudflare Pages may not be applying it."
             exit 1
           fi
 
