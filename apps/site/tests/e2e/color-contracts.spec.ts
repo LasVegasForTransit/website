@@ -7,20 +7,20 @@ import { builtSitemapPaths } from '../support/sitemap-paths';
 const paths = [...builtSitemapPaths(import.meta.url), '/totally-missing-seo-audit-test/'];
 
 const SCHEMES = ['light', 'dark'] as const;
-const repoRoot = fileURLToPath(new URL('..', import.meta.url));
+const repoRoot = fileURLToPath(new URL('../../../..', import.meta.url));
 const legacyColorPatterns = [
   /--color-(?:ink|paper|rule)\b/,
   /\b(?:bg|text|border)-(?:ink|paper|rule)(?:\/[^\s"'`]+)?\b/,
 ];
 
-type PrimaryRole = {
+interface PrimaryRole {
   backgroundCss: string;
   backgroundClasses: string[];
   foregroundClass: string;
   foregroundCss: string;
   minContrast: number;
   name: string;
-};
+}
 
 function contrastRatio(foreground: string, background: string): number {
   const fg = parseRgb(foreground);
@@ -37,7 +37,7 @@ function parseRgb(color: string): [number, number, number] {
       ?.slice(0, 3)
       .map((channel) => Number(channel) * 255);
     if (channels && channels.length === 3) {
-      return [channels[0]!, channels[1]!, channels[2]!];
+      return [channels[0], channels[1], channels[2]];
     }
   }
 
@@ -48,7 +48,7 @@ function parseRgb(color: string): [number, number, number] {
   if (!channels || channels.length !== 3) {
     throw new Error(`Expected an rgb() color, received ${color}`);
   }
-  return [channels[0]!, channels[1]!, channels[2]!];
+  return [channels[0], channels[1], channels[2]];
 }
 
 function relativeLuminance([r, g, b]: [number, number, number]): number {
@@ -56,7 +56,7 @@ function relativeLuminance([r, g, b]: [number, number, number]): number {
     const scaled = channel / 255;
     return scaled <= 0.03928 ? scaled / 12.92 : ((scaled + 0.055) / 1.055) ** 2.4;
   });
-  return 0.2126 * lr! + 0.7152 * lg! + 0.0722 * lb!;
+  return 0.2126 * lr + 0.7152 * lg + 0.0722 * lb;
 }
 
 function walkFiles(dir: string): string[] {
@@ -69,7 +69,7 @@ function walkFiles(dir: string): string[] {
 }
 
 function authoredColorContractFiles(): string[] {
-  const sourceFiles = walkFiles(join(repoRoot, 'src')).filter((path) =>
+  const sourceFiles = walkFiles(join(repoRoot, 'apps/site/src')).filter((path) =>
     /\.(astro|css|ts|tsx|mdx|json)$/.test(path),
   );
   return [
