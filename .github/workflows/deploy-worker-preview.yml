@@ -14,6 +14,12 @@ concurrency:
   group: deploy-worker-preview-${{ github.event.pull_request.number }}
   cancel-in-progress: true
 
+# The site lives in apps/site; every run step works from there unless it
+# says otherwise.
+defaults:
+  run:
+    working-directory: apps/site
+
 jobs:
   preview:
     name: Worker preview
@@ -51,7 +57,9 @@ jobs:
       - name: Install Chromium
         run: pnpm exec playwright install --with-deps chromium
 
+      # pnpm check is the repository's own check, so it runs from the root.
       - name: Build and validate
+        working-directory: .
         run: pnpm check
 
       - name: Upload Worker version

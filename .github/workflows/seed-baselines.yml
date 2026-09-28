@@ -22,6 +22,12 @@ concurrency:
   group: seed-baselines-${{ github.ref }}
   cancel-in-progress: true
 
+# The site lives in apps/site; every run step works from there unless it
+# says otherwise. Artifact and cache paths stay relative to the checkout.
+defaults:
+  run:
+    working-directory: apps/site
+
 jobs:
   seed:
     name: Seed baselines
@@ -48,7 +54,8 @@ jobs:
       # Existing baselines are Git LFS objects. Without them every image is
       # written from scratch instead of only the ones that changed.
       - name: Fetch the Linux baselines from LFS
-        run: git lfs pull --include "tests/snapshots/linux/**"
+        working-directory: .
+        run: git lfs pull --include "apps/site/tests/snapshots/linux/**"
 
       - name: Setup Node + pnpm
         uses: ./.github/actions/setup-node-pnpm
@@ -80,4 +87,4 @@ jobs:
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: baselines-${{ github.sha }}
-          path: tests/snapshots/linux/
+          path: apps/site/tests/snapshots/linux/

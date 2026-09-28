@@ -17,12 +17,18 @@ permissions:
   issues: write
   packages: read
 
+# The site lives in apps/site; every run step works from there unless it
+# says otherwise. Artifact and cache paths stay relative to the checkout.
+defaults:
+  run:
+    working-directory: apps/site
+
 jobs:
   external-links:
     name: External link check (lychee)
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    # Deployment config baked into the static HTML — see src/lib/site.ts.
+    # Deployment config baked into the static HTML — see apps/site/src/lib/site.ts.
     # Job env propagates into the build-site composite step.
     env:
       PUBLIC_LVBT_INSTAGRAM: ${{ vars.PUBLIC_LVBT_INSTAGRAM }}
@@ -57,7 +63,7 @@ jobs:
         # major-version tag here as the rest of the repo pins by SHA.
         uses: lycheeverse/lychee-action@v2
         with:
-          args: --config .lychee.toml --cache 'dist/**/*.html' 'docs/**/*.md' 'README.md'
+          args: --config .lychee.toml --cache 'apps/site/dist/**/*.html' 'docs/**/*.md' 'README.md'
           fail: true
 
   lighthouse-prod:
@@ -74,7 +80,7 @@ jobs:
         uses: ./.github/actions/setup-node-pnpm
 
       - name: Run Lighthouse against production
-        # LIGHTHOUSE_PRESET=prod (see lighthouserc.cjs) flips to mobile
+        # LIGHTHOUSE_PRESET=prod (see apps/site/lighthouserc.cjs) flips to mobile
         # collection, drops staticDistDir, runs against the live origin
         # twice, and asserts mobile CWV budgets. lhci exits non-zero on
         # a breach — the notify-on-failure job below opens an issue.
@@ -87,8 +93,8 @@ jobs:
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: lighthouse-prod-${{ github.run_number }}
-          # outputDir for LIGHTHOUSE_PRESET=prod in lighthouserc.cjs.
-          path: .lighthouseci-prod/
+          # outputDir for LIGHTHOUSE_PRESET=prod in apps/site/lighthouserc.cjs.
+          path: apps/site/.lighthouseci-prod/
           if-no-files-found: ignore
           retention-days: 30
 
