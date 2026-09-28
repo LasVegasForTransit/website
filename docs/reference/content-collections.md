@@ -1,12 +1,20 @@
 # Content collections reference
 
-What lives in each content folder and the exact shape each file must follow. Reach for this when you're adding or editing a page, project, event, or initiative and need to know which fields are required.
+What lives in each content folder and the exact shape each file must follow. Reach for this when
+you're adding or editing a page, project, event, or initiative and need to know which fields are
+required.
 
-A _content collection_ is Astro's name for a folder of content files that all share the same shape (see [glossary](./glossary.md#content-collection)). All site content lives under `src/content/`. Schemas (the rules for what fields a file must have) are enforced by Zod (a tool that checks data matches an expected shape — see [glossary](./glossary.md#zod)) in `src/content.config.ts` — content that doesn't match the shape will fail the build. That's deliberate: a typo in a content file stops the build with a clear message instead of shipping a broken page.
+A _content collection_ is Astro's name for a folder of content files that all share the same shape
+(see [glossary](./glossary.md#content-collection)). All site content lives under `src/content/`.
+Schemas (the rules for what fields a file must have) are enforced by Zod (a tool that checks data
+matches an expected shape — see [glossary](./glossary.md#zod)) in `src/content.config.ts` — content
+that doesn't match the shape will fail the build. That's deliberate: a typo in a content file stops
+the build with a clear message instead of shipping a broken page.
 
 ## Folder layout
 
-Most collections are authored in MDX (Markdown with the ability to drop in interactive components — see [glossary](./glossary.md#mdx)).
+Most collections are authored in MDX (Markdown with the ability to drop in interactive components —
+see [glossary](./glossary.md#mdx)).
 
 | Folder                      | Type            | Drives                                                                                                                                                                                                                                            |
 | --------------------------- | --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -23,7 +31,9 @@ Most collections are authored in MDX (Markdown with the ability to drop in inter
 
 ### Event
 
-Events come from the public LVBT Google Calendar (GCal); there is no MDX frontmatter (the settings block at the top of an MDX file — see [glossary](./glossary.md#frontmatter)) to author. The custom loader in `src/lib/events-loader.ts` maps calendar fields to this validated shape:
+Events come from the public LVBT Google Calendar (GCal); there is no MDX frontmatter (the settings
+block at the top of an MDX file — see [glossary](./glossary.md#frontmatter)) to author. The custom
+loader in `src/lib/events-loader.ts` maps calendar fields to this validated shape:
 
 ```ts
 {
@@ -61,7 +71,8 @@ Events come from the public LVBT Google Calendar (GCal); there is no MDX frontma
 }
 ```
 
-Authoring lives in Google Calendar — see [`docs/guides/add-an-event.md`](../guides/add-an-event.md) and [`docs/explanation/events-pipeline.md`](../explanation/events-pipeline.md).
+Authoring lives in Google Calendar — see [`docs/guides/add-an-event.md`](../guides/add-an-event.md)
+and [`docs/explanation/events-pipeline.md`](../explanation/events-pipeline.md).
 
 ### Event body (optional)
 
@@ -69,11 +80,16 @@ Authoring lives in Google Calendar — see [`docs/guides/add-an-event.md`](../gu
 slug: string # must match the event's derived slug (<YYYY-MM-DD>-<slugified-title>, PT date)
 ```
 
-MDX body renders below the event header on `/events/[slug]`. Use sparingly — most events ship as header-only.
+MDX body renders below the event header on `/events/[slug]`. Use sparingly — most events ship as
+header-only.
 
 ### Newsletter issue
 
-Newsletter issues come from the Beehiiv RSS feed (an XML feed of recent issues — see [glossary](./glossary.md#rss)); there is no MDX to author. Set `PUBLIC_LVBT_NEWSLETTER_FEED_URL` (and `PUBLIC_LVBT_NEWSLETTER_URL` for the "Read on Beehiiv" links) — see [`.env.example`](../../.env.example). The loader in `src/lib/newsletter-loader.ts` maps each feed `<item>` to this validated shape:
+Newsletter issues come from the Beehiiv RSS feed (an XML feed of recent issues — see
+[glossary](./glossary.md#rss)); there is no MDX to author. Set `PUBLIC_LVBT_NEWSLETTER_FEED_URL`
+(and `PUBLIC_LVBT_NEWSLETTER_URL` for the "Read on Beehiiv" links) — see
+[`.env.example`](../../.env.example). The loader in `src/lib/newsletter-loader.ts` maps each feed
+`<item>` to this validated shape:
 
 ```ts
 {
@@ -85,7 +101,8 @@ Newsletter issues come from the Beehiiv RSS feed (an XML feed of recent issues �
 }
 ```
 
-When the feed URL is unset (e.g. local dev with no `.env.local`) or the feed has no published items yet, the collection is empty and `/newsletter` shows a subscribe-only state instead of a list.
+When the feed URL is unset (e.g. local dev with no `.env.local`) or the feed has no published items
+yet, the collection is empty and `/newsletter` shows a subscribe-only state instead of a list.
 
 ### Project
 
@@ -101,7 +118,12 @@ startDate: ISO 8601 date
 order: number                     # optional, lower = earlier
 ```
 
-Project bodies use a standard public-brief structure: `## Overview`, `## Motivation`, `## Approach`, and `## Activities`, with `## Updates` added only when there is dated progress to record. The `Motivation` section explains the public problem, who is affected, why LVBT is acting, and why the work matters now. `Activities` names the concrete things the page will eventually point to: reports, events, comments, coalitions, chapters, briefs, evidence logs, media packages, published stories, public relationships, or other recorded results.
+Project bodies use a standard public-brief structure: `## Overview`, `## Motivation`, `## Approach`,
+and `## Activities`, with `## Updates` added only when there is dated progress to record. The
+`Motivation` section explains the public problem, who is affected, why LVBT is acting, and why the
+work matters now. `Activities` names the concrete things the page will eventually point to: reports,
+events, comments, coalitions, chapters, briefs, evidence logs, media packages, published stories,
+public relationships, or other recorded results.
 
 ### Letter
 
@@ -114,7 +136,12 @@ authorTitle: string # e.g. "President" — the author's role on THIS letter
 order: number # optional, lower = earlier
 ```
 
-The page is titled "Letters from Leadership," not "Letters from the President," on purpose. The main use case today is letters from the president, but leadership is more than whoever's in charge — this collection is open to other officers, board members, and team leads, and eventually to open letters that aren't tied to one individual author. That's why `author`/`authorTitle` are per-letter fields rather than a name hardcoded into the page template: each letter can be signed by whoever actually wrote it.
+The page is titled "Letters from Leadership," not "Letters from the President," on purpose. The main
+use case today is letters from the president, but leadership is more than whoever's in charge — this
+collection is open to other officers, board members, and team leads, and eventually to open letters
+that aren't tied to one individual author. That's why `author`/`authorTitle` are per-letter fields
+rather than a name hardcoded into the page template: each letter can be signed by whoever actually
+wrote it.
 
 ### Initiative (JSON)
 
@@ -132,8 +159,17 @@ Front-matter is `{ title, summary }` plus an MDX body. Slug is the filename.
 
 ## Where the schema is
 
-`src/content.config.ts` lists every collection's exact fields and types (this page summarizes them, but that file is what the build actually checks). When in doubt, read it — it's the source of truth, not this page.
+`src/content.config.ts` lists every collection's exact fields and types (this page summarizes them,
+but that file is what the build actually checks). When in doubt, read it — it's the source of truth,
+not this page.
 
 ## Templates
 
-Each MDX/JSON-backed collection has a `_template.mdx` (or `_template.json`) showing the canonical shape. Copy it when adding new content. The leading underscore is a convention: for collections that use it (currently `projects`, `programs`, `letters`), the collection's `glob()` loader pattern in `src/content.config.ts` excludes `_`-prefixed files at the source, so the template never enters the content store and never needs per-page filtering to keep it out of listings, sitemaps, or `/llms-full.txt`. A new MDX/JSON collection that wants this convention needs to opt in the same way — the underscore prefix alone does nothing on its own. Events have no template — they're created in Google Calendar; `pnpm event:new` scaffolds an optional body fragment.
+Each MDX/JSON-backed collection has a `_template.mdx` (or `_template.json`) showing the canonical
+shape. Copy it when adding new content. The leading underscore is a convention: for collections that
+use it (currently `projects`, `programs`, `letters`), the collection's `glob()` loader pattern in
+`src/content.config.ts` excludes `_`-prefixed files at the source, so the template never enters the
+content store and never needs per-page filtering to keep it out of listings, sitemaps, or
+`/llms-full.txt`. A new MDX/JSON collection that wants this convention needs to opt in the same way
+— the underscore prefix alone does nothing on its own. Events have no template — they're created in
+Google Calendar; `pnpm event:new` scaffolds an optional body fragment.

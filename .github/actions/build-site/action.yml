@@ -1,8 +1,7 @@
 name: Build site
 description: >
-  Run the canonical validation chain (typecheck, lint:check, check:docs) and
-  build the site and Worker. Uploads separate static and Worker artifacts for
-  downstream audit and deployment jobs.
+  Run the canonical validation chain (typecheck, lint:check, check:docs) and build the site and
+  Worker. Uploads separate static and Worker artifacts for downstream audit and deployment jobs.
 
   Assumes `setup-node-pnpm` has already run in the same job.
 
@@ -13,7 +12,9 @@ runs:
       uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
       with:
         path: .astro
-        key: astro-${{ runner.os }}-${{ hashFiles('astro.config.mjs', 'pnpm-lock.yaml', 'src/content/**') }}
+        key:
+          astro-${{ runner.os }}-${{ hashFiles('astro.config.mjs', 'pnpm-lock.yaml',
+          'src/content/**') }}
         restore-keys: |
           astro-${{ runner.os }}-
 

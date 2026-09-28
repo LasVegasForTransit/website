@@ -19,10 +19,9 @@ jobs:
   candidate:
     name: Upload and verify candidate
     if: >-
-      vars.CLOUDFLARE_WORKERS_CANDIDATE_ENABLED == 'true' &&
-      ((github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main') ||
-      (github.event_name == 'workflow_run' &&
-      github.event.workflow_run.conclusion == 'success' &&
+      vars.CLOUDFLARE_WORKERS_CANDIDATE_ENABLED == 'true' && ((github.event_name ==
+      'workflow_dispatch' && github.ref == 'refs/heads/main') || (github.event_name ==
+      'workflow_run' && github.event.workflow_run.conclusion == 'success' &&
       github.event.workflow_run.head_branch == 'main'))
     runs-on: ubuntu-latest
     timeout-minutes: 30
@@ -69,10 +68,7 @@ jobs:
       - name: Upload Worker version
         id: upload
         run: >-
-          pnpm worker:preview
-          --alias candidate
-          --message "Candidate $CANDIDATE_SHA"
-          --secrets
+          pnpm worker:preview --alias candidate --message "Candidate $CANDIDATE_SHA" --secrets
 
       - name: Wait for candidate
         env:
@@ -92,9 +88,7 @@ jobs:
         env:
           PREVIEW_URL: ${{ steps.upload.outputs.url }}
         run: >-
-          pnpm worker:test:live
-          --pages https://lasvegasfortransit.org
-          --worker "$PREVIEW_URL"
+          pnpm worker:test:live --pages https://lasvegasfortransit.org --worker "$PREVIEW_URL"
 
       - name: Browser acceptance
         env:
@@ -133,7 +127,5 @@ jobs:
         env:
           PREVIEW_URL: ${{ steps.upload.outputs.url }}
         run: >-
-          pnpm worker:test:live
-          --pages "$PREVIEW_URL"
-          --worker https://lasvegasfortransit.org
+          pnpm worker:test:live --pages "$PREVIEW_URL" --worker https://lasvegasfortransit.org
           --skip-analytics

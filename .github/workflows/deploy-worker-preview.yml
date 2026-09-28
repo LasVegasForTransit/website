@@ -57,9 +57,7 @@ jobs:
       - name: Upload Worker version
         id: upload
         run: >-
-          pnpm worker:preview
-          --alias pr-${{ github.event.pull_request.number }}
-          --env preview
+          pnpm worker:preview --alias pr-${{ github.event.pull_request.number }} --env preview
           --message "PR #${{ github.event.pull_request.number }} at ${{ github.sha }}"
 
       - name: Verify preview
@@ -80,9 +78,7 @@ jobs:
         env:
           PREVIEW_URL: ${{ steps.upload.outputs.url }}
         run: >-
-          pnpm worker:test:live
-          --pages https://lvbt-website-5zh.pages.dev
-          --worker "$PREVIEW_URL"
+          pnpm worker:test:live --pages https://lvbt-website-5zh.pages.dev --worker "$PREVIEW_URL"
           --skip-api
 
       - name: Browser acceptance
