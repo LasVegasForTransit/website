@@ -66,3 +66,5 @@ playwright/.cache/
 # Local Worker and Pages secrets (wrangler dev)
 .dev.vars
 .dev.vars.*
+blob-report/
+**/playwright/.cache/
