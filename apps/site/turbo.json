@@ -1,0 +1,39 @@
+{
+  "$schema": "https://turborepo.dev/schema.json",
+  "extends": ["//"],
+  "tasks": {
+    "build": {
+      "dependsOn": ["^build", "sync"],
+      "inputs": ["$TURBO_DEFAULT$", ".env*"],
+      "env": ["PUBLIC_LVBT_*", "LVBT_REQUIRE_ANALYTICS", "LVBT_PSEUDO_LOCALE"],
+      "outputs": ["dist/**", ".wrangler/worker/**"]
+    },
+    "dev": {
+      "cache": false,
+      "persistent": true,
+      "interactive": true
+    },
+    "lint": {
+      "dependsOn": ["^lint", "sync", "lint:styles", "lint:brand"]
+    },
+    "lint:styles": {},
+    "lint:brand": {},
+    "check-types": {
+      "dependsOn": ["^check-types", "check-types:scripts", "sync"]
+    },
+    "check-types:scripts": {},
+    "validate": {
+      "dependsOn": ["^build", "build", "check:docs", "worker:types", "worker:check"]
+    },
+    "check:docs": {
+      "inputs": ["$TURBO_DEFAULT$", "../../docs/**"]
+    },
+    "worker:types": {
+      "dependsOn": ["build"]
+    },
+    "worker:check": {
+      "dependsOn": ["build"],
+      "outputs": [".wrangler/deploy-dry-run/**"]
+    }
+  }
+}

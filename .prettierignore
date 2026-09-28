@@ -9,6 +9,6 @@ dist/
 **/worker-configuration.d.ts
 playwright-report/
 test-results/
-tests/snapshots/
+apps/site/tests/snapshots/
 pnpm-lock.yaml
 .env*
