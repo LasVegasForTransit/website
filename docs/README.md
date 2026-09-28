@@ -3,9 +3,8 @@
 **New here? Start with [Start here](./tutorials/start-here.md)**, and keep the
 [glossary](./reference/glossary.md) open for any unfamiliar tool or acronym.
 
-Docs are sorted by what you need — whether you're learning or doing, and whether
-you want practical steps or the reasoning behind them (a documentation system
-called [Diátaxis](https://diataxis.fr/)):
+Docs are sorted by what you need — whether you're learning or doing, and whether you want practical
+steps or the reasoning behind them (a documentation system called [Diátaxis](https://diataxis.fr/)):
 
 |                 | Learning                      | Doing                     |
 | --------------- | ----------------------------- | ------------------------- |
@@ -16,21 +15,29 @@ called [Diátaxis](https://diataxis.fr/)):
 
 Learning-oriented, hold-your-hand walk-throughs.
 
-- [Start here](./tutorials/start-here.md) — the new-contributor on-ramp: install, run locally, make a first change
-- [First-time setup](./tutorials/first-time-setup.md) — the longer path: clone to deployed site with your own domain
+- [Start here](./tutorials/start-here.md) — the new-contributor on-ramp: install, run locally, make
+  a first change
+- [First-time setup](./tutorials/first-time-setup.md) — the longer path: clone to deployed site with
+  your own domain
 
 ## Guides
 
-Task-oriented recipes for things you'll do repeatedly. (Diátaxis calls these "how-to guides"; we just say guides.)
+Task-oriented recipes for things you'll do repeatedly. (Diátaxis calls these "how-to guides"; we
+just say guides.)
 
-- [Connect a form tool](./guides/connect-a-form-tool.md) — send sign-ups from any outside form to LVBT's member list
-- [Add a prototype](./guides/add-a-prototype.md) — publish a clickable test version of a new flow on a preview
-- [Run a usability test](./guides/run-a-usability-test.md) — recruit testers, run a session, and record findings for a prototype
+- [Connect a form tool](./guides/connect-a-form-tool.md) — send sign-ups from any outside form to
+  LVBT's member list
+- [Add a prototype](./guides/add-a-prototype.md) — publish a clickable test version of a new flow on
+  a preview
+- [Run a usability test](./guides/run-a-usability-test.md) — recruit testers, run a session, and
+  record findings for a prototype
 - [Add an event](./guides/add-an-event.md)
 - [Add a project](./guides/add-a-project.md)
 - [Add an initiative](./guides/add-an-initiative.md)
-- [Add transit news](./guides/add-transit-news.md) — three ways to push articles into the Notion database
-- [Connect the membership form](./guides/connect-the-membership-form.md) — wire the Google Form's Apps Script to the intake endpoint
+- [Add transit news](./guides/add-transit-news.md) — three ways to push articles into the Notion
+  database
+- [Connect the membership form](./guides/connect-the-membership-form.md) — wire the Google Form's
+  Apps Script to the intake endpoint
 - [Edit a long-form doc](./guides/edit-a-long-form-doc.md)
 - [Work with an AI assistant](./guides/work-with-ai-assistants.md)
 - [Test the Workers candidate](./guides/test-the-workers-candidate.md)
@@ -40,19 +47,27 @@ Task-oriented recipes for things you'll do repeatedly. (Diátaxis calls these "h
 
 Information you look up, not read.
 
-- [Platform secrets](./reference/platform-secrets.md) — every server-side secret, what it is for, and how `pnpm bootstrap --phase secrets` sets it
-- [Glossary](./reference/glossary.md) — plain-English definitions of every tool and acronym in these docs
+- [Platform secrets](./reference/platform-secrets.md) — every server-side secret, what it is for,
+  and how `pnpm bootstrap --phase secrets` sets it
+- [Glossary](./reference/glossary.md) — plain-English definitions of every tool and acronym in these
+  docs
 - [Local development](./reference/local-dev.md) — dev server ports, troubleshooting
 - [Content collections](./reference/content-collections.md) — schemas, folder layout, Zod
 - [Bootstrap CLI](./reference/bootstrap.md) — phases, flags, state file
-- [Deployment pipeline](./reference/deployment-pipeline.md) — how code gets from `git push` to lasvegasfortransit.org
+- [Deployment pipeline](./reference/deployment-pipeline.md) — how code gets from `git push` to
+  lasvegasfortransit.org
 - [Key facts](./reference/key-facts.md) — verified numbers used across copy
 - [Design tokens](./reference/design-tokens.md) — color + type tokens, canvas/band system
-- [Joining LVBT on the website](./reference/newsletter-signup.md) — the join form and newsletter box, what they store, and how to verify them
-- [Membership intake automation](./reference/membership-intake.md) — Google Forms to Beehiiv and Notion
-- [The Week Without Driving campaign host](./reference/week-without-driving-site.md) — lvwwd.org is its own repo and Worker; what this site still redirects to it
-- [Transit news pipeline](./reference/transit-news-pipeline.md) — schema, extraction logic, and the Cloudflare enrichment function
-- [Newsletter operations](./reference/newsletter-ops.md) — Ghost(Pro) workflow, deliverability, send checklist
+- [Joining LVBT on the website](./reference/newsletter-signup.md) — the join form and newsletter
+  box, what they store, and how to verify them
+- [Membership intake automation](./reference/membership-intake.md) — Google Forms to Beehiiv and
+  Notion
+- [The Week Without Driving campaign host](./reference/week-without-driving-site.md) — lvwwd.org is
+  its own repo and Worker; what this site still redirects to it
+- [Transit news pipeline](./reference/transit-news-pipeline.md) — schema, extraction logic, and the
+  Cloudflare enrichment function
+- [Newsletter operations](./reference/newsletter-ops.md) — Ghost(Pro) workflow, deliverability, send
+  checklist
 
 ## Standards
 
@@ -62,7 +77,8 @@ How we write code, commits, and docs. Skim before contributing.
 - [Commit messages](./standards/commit-messages.md) — what goes in a message, what to leave out
 - [Commit scopes](./standards/commit-scopes.md) — the four allowed scopes and why
 - [Git guidelines](./standards/git-guidelines.md) — staging discipline and the atomic commit pattern
-- [Performance monitoring](./standards/performance-monitoring.md) — budgets, Lighthouse, real-user metrics
+- [Performance monitoring](./standards/performance-monitoring.md) — budgets, Lighthouse, real-user
+  metrics
 - [Print layout](./standards/print-layout.md) — data attributes that make pages work on paper
 
 ## Explanation
@@ -70,18 +86,28 @@ How we write code, commits, and docs. Skim before contributing.
 The why behind decisions and conventions.
 
 - [Voice and tone](./explanation/voice-and-tone.md) — editorial north star
-- [Copy for app screens](./explanation/app-copy.md) — buttons, errors, hints, dates and the pre-testing checklist for app screens
-- [Comms strategy](./explanation/comms-strategy.md) — surfaces, audiences, ladder of engagement, innovation pillars
-- [Events pipeline](./explanation/events-pipeline.md) — how events flow from Google Calendar to the site
-- [Membership program](./explanation/membership-program.md) — the program design (a plan, not yet a built system)
-- [Innovation ideas registry](./explanation/innovation-ideas.md) — running list of tools, content formats, and media to consider
-- [Design decisions](./explanation/design-decisions.md) — load-bearing choices that look weird at first
-- [Design system](./explanation/design-system.md) — brand palette, color-usage rules, reserved colors, brand-kit notes
+- [Copy for app screens](./explanation/app-copy.md) — buttons, errors, hints, dates and the
+  pre-testing checklist for app screens
+- [Comms strategy](./explanation/comms-strategy.md) — surfaces, audiences, ladder of engagement,
+  innovation pillars
+- [Events pipeline](./explanation/events-pipeline.md) — how events flow from Google Calendar to the
+  site
+- [Membership program](./explanation/membership-program.md) — the program design (a plan, not yet a
+  built system)
+- [Innovation ideas registry](./explanation/innovation-ideas.md) — running list of tools, content
+  formats, and media to consider
+- [Design decisions](./explanation/design-decisions.md) — load-bearing choices that look weird at
+  first
+- [Design system](./explanation/design-system.md) — brand palette, color-usage rules, reserved
+  colors, brand-kit notes
 
 ### Decision records
 
 Why we picked what we picked, and the alternatives considered.
 
-- [Newsletter platform](./explanation/decisions/newsletter-platform.md) — Ghost(Pro) over Substack/Beehiiv/email-only ESPs
-- [Staff publishing](./explanation/decisions/staff-publishing.md) — CMS deferred until 2nd contributor; criteria when the time comes
-- [Organizing platform](./explanation/decisions/organizing-platform.md) — where platform code lives, rendering on request, one D1 database, one job runner, the bus-ready budgets
+- [Newsletter platform](./explanation/decisions/newsletter-platform.md) — Ghost(Pro) over
+  Substack/Beehiiv/email-only ESPs
+- [Staff publishing](./explanation/decisions/staff-publishing.md) — CMS deferred until 2nd
+  contributor; criteria when the time comes
+- [Organizing platform](./explanation/decisions/organizing-platform.md) — where platform code lives,
+  rendering on request, one D1 database, one job runner, the bus-ready budgets

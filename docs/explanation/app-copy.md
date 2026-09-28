@@ -1,10 +1,14 @@
 # Copy for app screens
 
-This is how to write the short text on LVBT's app screens: buttons, labels, hints, errors, empty states and confirmations. The [voice and tone guide](./voice-and-tone.md) covers how LVBT sounds in articles and on public pages; this page covers the words people read while they are doing something, often on a phone, often in a hurry, sometimes with a screen reader or in a second language.
+This is how to write the short text on LVBT's app screens: buttons, labels, hints, errors, empty
+states and confirmations. The [voice and tone guide](./voice-and-tone.md) covers how LVBT sounds in
+articles and on public pages; this page covers the words people read while they are doing something,
+often on a phone, often in a hurry, sometimes with a screen reader or in a second language.
 
 These are rules, not suggestions. If a rule doesn't fit a case, change the rule here first.
 
-Every string goes in the [message catalog](../../platform/messages/README.md), never straight into a page.
+Every string goes in the [message catalog](../../platform/messages/README.md), never straight into a
+page.
 
 ## Buttons
 
@@ -24,10 +28,11 @@ Use sentence case everywhere: capitalize only the first word and names.
 
 Say what went wrong and how to fix it. Don't blame the person, and never use the word "invalid".
 
-- Do: "Enter an email address like name@example.com"
+- Do: "Enter an email address like `name@example.com`"
 - Don't: "Invalid email" or "You entered the wrong email"
 
-Show each error twice: in the summary at the top of the form, as a link to the field, and next to the field itself. Use the same words in both places.
+Show each error twice: in the summary at the top of the form, as a link to the field, and next to
+the field itself. Use the same words in both places.
 
 ## Hints
 
@@ -47,12 +52,13 @@ Say what would be here and how it gets here.
 
 Say what happened, then what happens next.
 
-- Do: "You're in. We've sent a confirmation to ana@example.org."
+- Do: "You're in. We've sent a confirmation to `ana@example.org`."
 - Don't: "Success!"
 
 ## Dates
 
-Weekday, month and day. Add the year only when it isn't this year. Format dates with `formatDate` from the message catalog, which always uses Pacific Time.
+Weekday, month and day. Add the year only when it isn't this year. Format dates with `formatDate`
+from the message catalog, which always uses Pacific Time.
 
 - Do: "Sat, Oct 5", "Tue, Jan 6, 2027"
 - Don't: "10/5", "October 5th, 2026"
@@ -73,28 +79,33 @@ Use numerals, except "one" in running text.
 
 ## Links
 
-Link text says where the link goes. It still makes sense read on its own, because screen readers list links by their text.
+Link text says where the link goes. It still makes sense read on its own, because screen readers
+list links by their text.
 
 - Do: "Change your email address"
 - Don't: "Click here", "Learn more"
 
 ## Personal data
 
-Next to any field that asks for personal information, say in one sentence why LVBT asks and what it does with it.
+Next to any field that asks for personal information, say in one sentence why LVBT asks and what it
+does with it.
 
 - Do: "We use your address once to find your districts, then delete it."
 - Don't: ask for an address with no explanation.
 
 ## Reading level
 
-Aim for grade 6 to 8. Check with the free [Hemingway Editor](https://hemingwayapp.com/): paste the text in and read the grade it shows. Short words and short sentences are the fastest fix.
+Aim for grade 6 to 8. Check with the free [Hemingway Editor](https://hemingwayapp.com/): paste the
+text in and read the grade it shows. Short words and short sentences are the fastest fix.
 
 ## Terms
 
-Use the same word for the same thing on every screen, as the [glossary](../reference/glossary.md) defines it. Spell out an acronym the first time it appears on a screen.
+Use the same word for the same thing on every screen, as the [glossary](../reference/glossary.md)
+defines it. Spell out an acronym the first time it appears on a screen.
 
 - Do: "RTC (the Regional Transportation Commission)"
-- Don't: "RTC" on first use, or "member" on one screen and "subscriber" on the next for the same person
+- Don't: "RTC" on first use, or "member" on one screen and "subscriber" on the next for the same
+  person
 
 ## Checklist before testing a prototype
 

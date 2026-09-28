@@ -1,13 +1,12 @@
 name: Deploy to Cloudflare Pages
 description: >
-  Download the dist artifact built by `build-site`, then deploy it to a
-  Cloudflare Pages project via wrangler. Wrangler is a pinned devDependency
-  (no `pnpm dlx` fetch in CI), so deploys are deterministic.
+  Download the dist artifact built by `build-site`, then deploy it to a Cloudflare Pages project via
+  wrangler. Wrangler is a pinned devDependency (no `pnpm dlx` fetch in CI), so deploys are
+  deterministic.
 
-  Caller must already have `setup-node-pnpm` in the same job and must export
-  CLOUDFLARE_API_TOKEN + CLOUDFLARE_ACCOUNT_ID via the job `env:` block (do
-  NOT pass tokens as inputs — composite-action inputs end up in `with:`,
-  which serializes into workflow logs).
+  Caller must already have `setup-node-pnpm` in the same job and must export CLOUDFLARE_API_TOKEN +
+  CLOUDFLARE_ACCOUNT_ID via the job `env:` block (do NOT pass tokens as inputs — composite-action
+  inputs end up in `with:`, which serializes into workflow logs).
 
 inputs:
   branch:
