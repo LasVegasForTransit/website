@@ -5,9 +5,9 @@ published as its own page — instead, designers pull these rebuttals into the V
 pages (for example as an accordion or aside), and writers reuse them in social posts and pamphlets.
 
 **This is reference material, not site content.** It used to live as
-`src/content/docs/quick-pitch.mdx` and render at `/vision/quick-pitch`, but that route was always
-meant to be source material for designing an objection-rebuttal experience inside the main pages —
-not its own dumping-ground page.
+`apps/site/src/content/docs/quick-pitch.mdx` and render at `/vision/quick-pitch`, but that route was
+always meant to be source material for designing an objection-rebuttal experience inside the main
+pages — not its own dumping-ground page.
 
 Use these answers to:
 

@@ -20,7 +20,7 @@ We watch speed two complementary ways:
 
 A "budget" here is a hard upper limit on some performance number — exceed it and a check fails. They
 keep the site from slowly getting heavier over time. All numeric ceilings live in
-[`perf-budgets.json`](../../perf-budgets.json) at the repo root.
+[`apps/site/perf-budgets.json`](../../apps/site/perf-budgets.json) at the repo root.
 
 A few terms used in the table below:
 
@@ -33,19 +33,19 @@ A few terms used in the table below:
 - **usedJsHeapSize** — how much memory the page's JavaScript is holding in the browser while the
   page is open. A runaway number means a memory leak that can make the page sluggish.
 
-| Bucket                                           | Budget             | Enforced by                      |
-| ------------------------------------------------ | ------------------ | -------------------------------- |
-| Gzipped CSS (total)                              | 20 KB              | `scripts/audit/bundle-size.ts`   |
-| Gzipped JS (total)                               | 12 KB              | `scripts/audit/bundle-size.ts`   |
-| Gzipped combined                                 | 24 KB              | `scripts/audit/bundle-size.ts`   |
-| Any single gzipped file                          | 14 KB              | `scripts/audit/bundle-size.ts`   |
-| Raster image (PNG/JPG) without `.webp` companion | 20 KB              | `scripts/audit/asset-budget.ts`  |
-| Build peak RSS                                   | report-only (null) | `scripts/audit/build-profile.ts` |
-| Runtime usedJsHeapSize per page                  | 30 MB              | `tests/perf-memory.spec.ts`      |
+| Bucket                                           | Budget             | Enforced by                                |
+| ------------------------------------------------ | ------------------ | ------------------------------------------ |
+| Gzipped CSS (total)                              | 20 KB              | `apps/site/scripts/audit/bundle-size.ts`   |
+| Gzipped JS (total)                               | 12 KB              | `apps/site/scripts/audit/bundle-size.ts`   |
+| Gzipped combined                                 | 24 KB              | `apps/site/scripts/audit/bundle-size.ts`   |
+| Any single gzipped file                          | 14 KB              | `apps/site/scripts/audit/bundle-size.ts`   |
+| Raster image (PNG/JPG) without `.webp` companion | 20 KB              | `apps/site/scripts/audit/asset-budget.ts`  |
+| Build peak RSS                                   | report-only (null) | `apps/site/scripts/audit/build-profile.ts` |
+| Runtime usedJsHeapSize per page                  | 30 MB              | `apps/site/tests/e2e/perf-memory.spec.ts`  |
 
-Trend data lands in `audits/build-stats.jsonl` (one row per successful audit run) so memory and
-wall-clock (real elapsed time) drift is visible without git archaeology. JSONL = "JSON Lines": a
-plain-text file with one self-contained JSON record per line, easy to append to and scan.
+Trend data lands in `apps/site/audits/build-stats.jsonl` (one row per successful audit run) so
+memory and wall-clock (real elapsed time) drift is visible without git archaeology. JSONL = "JSON
+Lines": a plain-text file with one self-contained JSON record per line, easy to append to and scan.
 
 ## Synthetic checks (CI)
 
@@ -61,8 +61,8 @@ without blocking.
 [`.github/workflows/audit.yml`](../../.github/workflows/audit.yml) runs on every PR (pull request —
 a proposed change opened on GitHub) and push to `main`. The performance-relevant jobs:
 
-- **Lighthouse (desktop)** — `lighthouserc.cjs` default preset; CWV thresholds tuned for the build
-  artifact. The URL list is derived from the built sitemap (every static route plus one
+- **Lighthouse (desktop)** — `apps/site/lighthouserc.cjs` default preset; CWV thresholds tuned for
+  the build artifact. The URL list is derived from the built sitemap (every static route plus one
   representative detail page per collection), so new pages are covered without editing the config.
   Hard gate.
 - **Lighthouse (mobile)** — same config, `LIGHTHOUSE_PRESET=mobile`; Moto G4 on slow 4G. Soft-fail
@@ -71,15 +71,15 @@ a proposed change opened on GitHub) and push to `main`. The performance-relevant
   bottom-to-top, triggers a CDP GC (forces the browser to garbage-collect — free unused memory — via
   the Chrome DevTools Protocol, the API for controlling Chrome), then asserts
   `performance.memory.usedJSHeapSize` under the budget. Hard gate.
-- **Bundle size budget** — gzips `dist/_astro` and `dist/scripts` assets, checks each bucket. Hard
-  gate.
-- **Image asset budget** — walks `public/**/*.{png,jpg,jpeg}` and requires a sibling `.webp` for
-  anything over the raster ceiling. Hard gate.
+- **Bundle size budget** — gzips `apps/site/dist/_astro` and `apps/site/dist/scripts` assets, checks
+  each bucket. Hard gate.
+- **Image asset budget** — walks `apps/site/public/**/*.{png,jpg,jpeg}` and requires a sibling
+  `.webp` for anything over the raster ceiling. Hard gate.
 
-The orchestrator is `pnpm check:baseline` (locally) or the
+The orchestrator is `pnpm -C apps/site check:baseline` (locally) or the
 [`audit.yml`](../../.github/workflows/audit.yml) workflow (CI). The build itself runs through
-[`scripts/audit/build-profile.ts`](../../scripts/audit/build-profile.ts) so memory + wall-clock land
-in the trend file with no extra build cost.
+[`apps/site/scripts/audit/build-profile.ts`](../../apps/site/scripts/audit/build-profile.ts) so
+memory + wall-clock land in the trend file with no extra build cost.
 
 [`.github/workflows/audit-scheduled.yml`](../../.github/workflows/audit-scheduled.yml) runs weekly
 with `LIGHTHOUSE_PRESET=prod` against the live production URLs (no `staticDistDir`). Regressions
@@ -98,8 +98,8 @@ via a **beacon**: a tiny script that quietly sends measurements back to a server
 `beacon.min.js` from `static.cloudflareinsights.com` and POSTs (sends) CWV samples to
 `cloudflareinsights.com`. The shared LVBT analytics client also sends declared interaction events to
 `events.lasvegasfortransit.org`. All three origins are **allow-listed** (explicitly permitted) in
-[`public/_headers`](../../public/_headers) under our CSP (Content Security Policy — a security
-header that whitelists which outside servers the page may talk to, see
+[`apps/site/public/_headers`](../../apps/site/public/_headers) under our CSP (Content Security
+Policy — a security header that whitelists which outside servers the page may talk to, see
 [glossary](../reference/glossary.md#csp)): `script-src` lists where scripts may load from,
 `connect-src` lists where the page may send data. Without these two entries, the browser would block
 the beacon.
@@ -115,9 +115,9 @@ Activation:
 - Preview, CI, and local builds do not set that production gate, so they omit both the analytics
   client and the Cloudflare beacon.
 
-[`astro.config.mjs`](../../astro.config.mjs) loads `@lasvegasfortransit/analytics/astro` only for
-that gated production build. The package owns the beacon and the shared LVBT event collector;
-individual layouts do not carry analytics scripts.
+[`apps/site/astro.config.mjs`](../../apps/site/astro.config.mjs) loads
+`@lasvegasfortransit/analytics/astro` only for that gated production build. The package owns the
+beacon and the shared LVBT event collector; individual layouts do not carry analytics scripts.
 
 Token rotation (replacing the secret token with a fresh one and retiring the old): rotate yearly or
 sooner if a leak is suspected. Generate a new token in the dashboard, swap the Pages env var,
@@ -156,5 +156,5 @@ country" and "by browser" splits first; a single country/browser bar climbing is
 A/B-test artifact, not a code regression.
 
 If synthetic regresses but RUM stays green, the budget is too tight for the real-world variance —
-adjust [`perf-budgets.json`](../../perf-budgets.json) upward only after confirming the synthetic
-number reflects a real visitor experience and not a Lighthouse quirk.
+adjust [`apps/site/perf-budgets.json`](../../apps/site/perf-budgets.json) upward only after
+confirming the synthetic number reflects a real visitor experience and not a Lighthouse quirk.

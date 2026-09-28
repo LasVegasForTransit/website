@@ -25,10 +25,11 @@ Whichever form someone fills in, the same three things happen:
 1. They're subscribed to LVBT's newsletter in [Beehiiv](./glossary.md#beehiiv), which is what makes
    them a member today (see [membership program](../explanation/membership-program.md)).
 2. Their answers are written into their person record — the row for them in the platform database,
-   read and written only through the [person service](../../platform/storage/person-service.md). See
-   the [schema](../../platform/storage/migrations/schema.md) for every column that record can hold.
-   A person is matched to an existing record by email address, so filling in a second form links to
-   the same person instead of creating a duplicate.
+   read and written only through the
+   [person service](../../apps/site/platform/storage/person-service.md). See the
+   [schema](../../apps/site/platform/storage/migrations/schema.md) for every column that record can
+   hold. A person is matched to an existing record by email address, so filling in a second form
+   links to the same person instead of creating a duplicate.
 3. Staff learn about the new person for follow-up. Today that's a Notion page (see
    [Staff follow-up in Notion](#staff-follow-up-in-notion)); once the staff console's follow-up
    queue ships, staff will work from that queue instead.
@@ -70,8 +71,8 @@ button and the `/qr` presenter deck's "Join" slide both point to it, and the QR 
 [joining LVBT on the website](./newsletter-signup.md).
 
 One setting switches both links to an outside form instead: `PUBLIC_LVBT_MEMBERSHIP_FORM_URL` (a
-GitHub Actions variable, read at build time; see `src/lib/membership.ts`). Leave it unset to use the
-website's form. Set it to an outside form's address, such as the Google Form's short link
+GitHub Actions variable, read at build time; see `apps/site/src/lib/membership.ts`). Leave it unset
+to use the website's form. Set it to an outside form's address, such as the Google Form's short link
 `https://forms.gle/4N8gRU2wDK6G8BKH8`, and redeploy to send people there. Use a short link, because
 the QR encoder caps at 84 bytes.
 
@@ -98,9 +99,9 @@ for each missing one once, and stores it on the production Worker, the Pages fal
 keeps working.
 
 `pnpm bootstrap --phase env` is only for your own machine: it writes the Beehiiv keys, your Notion
-access token and a random intake secret into `.env.local` for local testing, and never sends them to
-production. Never paste that local intake secret into Apps Script. `LVBT_NOTION_DATA_SOURCE_ID` is
-created for you by `pnpm setup:notion` (see
+access token and a random intake secret into `apps/site/.env.local` for local testing, and never
+sends them to production. Never paste that local intake secret into Apps Script.
+`LVBT_NOTION_DATA_SOURCE_ID` is created for you by `pnpm -C apps/site setup:notion` (see
 [Staff follow-up in Notion](#staff-follow-up-in-notion)).
 
 The five runtime secrets:
@@ -111,7 +112,7 @@ The five runtime secrets:
 | `LVBT_BEEHIIV_API_KEY`          | Beehiiv API key with subscriber write access                                                                                                                                                                                                                                           |
 | `LVBT_BEEHIIV_PUBLICATION_ID`   | Beehiiv publication ID, starting with `pub_`                                                                                                                                                                                                                                           |
 | `LVBT_NOTION_API_KEY`           | Notion connection access token (starts with `ntn_`) — needed only for staff follow-up; see [Staff follow-up in Notion](#staff-follow-up-in-notion)                                                                                                                                     |
-| `LVBT_NOTION_DATA_SOURCE_ID`    | Notion data source ID (a data source is the actual table of rows inside a Notion database; the API writes to its ID, not the database ID — see [glossary](./glossary.md#data-source)) — created by `pnpm setup:notion`; same caveat as above                                           |
+| `LVBT_NOTION_DATA_SOURCE_ID`    | Notion data source ID (a data source is the actual table of rows inside a Notion database; the API writes to its ID, not the database ID — see [glossary](./glossary.md#data-source)) — created by `pnpm -C apps/site setup:notion`; same caveat as above                              |
 
 Only when the form is set up for the first time does the intake secret need a new value. Generate
 one with `openssl rand -hex 32` (`openssl` is a command-line crypto tool; this prints a random
@@ -126,8 +127,8 @@ The form-side wiring (Apps Script, script properties, the installable trigger) i
 with its own walkthrough — keep using it, because the Google Form still relies on these exact steps:
 [Connect the membership form to the intake pipeline](../guides/connect-the-membership-form.md). The
 short version: the form must have **Collect email addresses** on, the script in
-`scripts/google-apps/membership-intake.gs` must be installed as an **On form submit** trigger, and
-its `LVBT_MEMBERSHIP_INTAKE_SECRET` property must equal the production Worker secret.
+`apps/site/scripts/google-apps/membership-intake.gs` must be installed as an **On form submit**
+trigger, and its `LVBT_MEMBERSHIP_INTAKE_SECRET` property must equal the production Worker secret.
 
 If the endpoint returns a non-2xx response, the script throws. Apps Script records the failed
 execution and sends the trigger owner the standard failure email.
@@ -143,8 +144,8 @@ execution and sends the trigger owner the standard failure email.
 
 Two parts: a one-time manual setup the Notion API can't do for you (creating the connection and
 sharing a page), then a script that builds the database with the right schema.
-`pnpm bootstrap --phase env` prompts for both values below and saves them in `.env.local` on your
-machine.
+`pnpm bootstrap --phase env` prompts for both values below and saves them in `apps/site/.env.local`
+on your machine.
 
 ### 1. Connection and parent page (manual)
 
@@ -163,18 +164,18 @@ machine.
 ### 2. Provision the database
 
 ```sh
-pnpm setup:notion
+pnpm -C apps/site setup:notion
 ```
 
 This creates a **Membership intake** database under your parent page with the columns below, reads
 back its [data source ID](./glossary.md#data-source) (the ID the endpoint writes to), and writes
-`LVBT_NOTION_DATA_SOURCE_ID` into `.env.local`. Re-running reuses the existing database instead of
-duplicating it. Store the value in production with `pnpm bootstrap --phase secrets`, which asks for
-it if it is missing.
+`LVBT_NOTION_DATA_SOURCE_ID` into `apps/site/.env.local`. Re-running reuses the existing database
+instead of duplicating it. Store the value in production with `pnpm bootstrap --phase secrets`,
+which asks for it if it is missing.
 
-The schema lives in one place — `functions/api/_intake-schema.ts` — which both the endpoint and the
-provisioner import, so the columns can't drift from what the code writes. The endpoint writes these
-properties:
+The schema lives in one place — `apps/site/functions/api/_intake-schema.ts` — which both the
+endpoint and the provisioner import, so the columns can't drift from what the code writes. The
+endpoint writes these properties:
 
 | Property name  | Type  | Value                                          |
 | -------------- | ----- | ---------------------------------------------- |
@@ -258,14 +259,14 @@ log in the Cloudflare dashboard or run `wrangler pages deployment tail`.
 5. Confirm the person record has a row for the test address:
 
    ```sh
-   pnpm exec wrangler d1 execute lvbt-platform --remote --command "SELECT id, membership_status FROM people WHERE email = 'you@example.org'"
+   pnpm -C apps/site exec wrangler d1 execute lvbt-platform --remote --command "SELECT id, membership_status FROM people WHERE email = 'you@example.org'"
    ```
 
 For local handler checks:
 
 ```sh
-pnpm test:unit
-pnpm typecheck
+pnpm test
+pnpm check-types
 ```
 
 `test:unit` runs the tests through `node --import tsx` rather than the `tsx` CLI, which cannot open
@@ -300,8 +301,9 @@ did.
 3. Re-run once any `failed` lines in the execution log have been dealt with.
 
 To create Notion pages without touching Beehiiv at all,
-`pnpm tsx scripts/notion/backfill-intake.ts <payloads.json>` takes a JSON array of endpoint-shaped
-bodies and uses the Notion secrets in `.env.local`. It skips submissions that already have a page.
+`pnpm -C apps/site exec tsx scripts/notion/backfill-intake.ts <payloads.json>` takes a JSON array of
+endpoint-shaped bodies and uses the Notion secrets in `apps/site/.env.local`. It skips submissions
+that already have a page.
 
 The Google Sheet stays useful for the full response if a row ever needs to be entered by hand, but
 it is not what LVBT treats as the record of who joined — the person record is.

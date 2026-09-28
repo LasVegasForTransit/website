@@ -58,14 +58,14 @@ you're also setting up deployment and a domain, that's the longer
 
 You'll mostly work in a few places:
 
-| Folder           | What's in it                                                                                                                |
-| ---------------- | --------------------------------------------------------------------------------------------------------------------------- |
-| `src/pages/`     | The actual web pages (one file ≈ one URL).                                                                                  |
-| `src/content/`   | Editable content: events, projects, long-form docs. See [content collections](../reference/glossary.md#content-collection). |
-| `src/lib/`       | Shared site config and helpers (org name, links).                                                                           |
-| `functions/api/` | Small backends ([Pages Functions](../reference/glossary.md#pages-function)) — form handling, etc.                           |
-| `scripts/`       | Setup and maintenance command-line tools.                                                                                   |
-| `docs/`          | The documentation you're reading now.                                                                                       |
+| Folder                     | What's in it                                                                                                                |
+| -------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
+| `apps/site/src/pages/`     | The actual web pages (one file ≈ one URL).                                                                                  |
+| `apps/site/src/content/`   | Editable content: events, projects, long-form docs. See [content collections](../reference/glossary.md#content-collection). |
+| `apps/site/src/lib/`       | Shared site config and helpers (org name, links).                                                                           |
+| `apps/site/functions/api/` | Small backends ([Pages Functions](../reference/glossary.md#pages-function)) — form handling, etc.                           |
+| `apps/site/scripts/`       | Setup and maintenance command-line tools.                                                                                   |
+| `docs/`                    | The documentation you're reading now.                                                                                       |
 
 ## 4. Common tasks
 

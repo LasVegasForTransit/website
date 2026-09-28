@@ -60,7 +60,7 @@ extraction.
 
 ## Publication inference
 
-Controlled by `DOMAIN_TO_PUBLICATION` in `scripts/notion/lib/transit-topics.ts`.
+Controlled by `DOMAIN_TO_PUBLICATION` in `apps/site/scripts/notion/lib/transit-topics.ts`.
 
 The hostname is matched after stripping the `www.` prefix. Both exact matches and subdomain matches
 are supported (`foo.lasvegassun.com` → `Las Vegas Sun`).
@@ -75,7 +75,7 @@ are supported (`foo.lasvegassun.com` → `Las Vegas Sun`).
 
 ## Topic inference
 
-Controlled by `TOPIC_PATTERNS` in `scripts/notion/lib/transit-topics.ts`.
+Controlled by `TOPIC_PATTERNS` in `apps/site/scripts/notion/lib/transit-topics.ts`.
 
 The scanner concatenates `headline + first 500 chars of body`, lowercases it, and checks each
 pattern list. Multiple topics can match a single article.
@@ -90,7 +90,7 @@ pattern list. Multiple topics can match a single article.
 
 ## Location inference
 
-Controlled by `LOCATION_PATTERNS` in `scripts/notion/lib/transit-topics.ts`.
+Controlled by `LOCATION_PATTERNS` in `apps/site/scripts/notion/lib/transit-topics.ts`.
 
 Returns the first matching location (earlier entries have higher priority). If no pattern matches,
 Location is left unset.
@@ -112,13 +112,14 @@ future addition.)
 
 ## Layer 1 — pnpm script
 
-**File:** `scripts/notion/add-transit-news.ts` **Command:** `pnpm add:transit-news <url> [url ...]`
-**Config:** reads `LVBT_NOTION_API_KEY` and `LVBT_TRANSIT_NEWS_DB_ID` from `.env.local` via
-`parseEnvFile` — nothing hardcoded **Notion API:** the shared `scripts/notion/lib/notion-client.ts`
-(current data-source model). The script resolves the database's data source via
-`GET /v1/databases/{id}`, then queries `POST /v1/data_sources/{id}/query` and creates pages with a
-`data_source_id` parent **Concurrency:** sequential (one article at a time) **Body blocks:** up to
-100 paragraph blocks per Notion API call, 2000 chars per block, split at sentence boundaries
+**File:** `apps/site/scripts/notion/add-transit-news.ts` **Command:**
+`pnpm -C apps/site add:transit-news <url> [url ...]` **Config:** reads `LVBT_NOTION_API_KEY` and
+`LVBT_TRANSIT_NEWS_DB_ID` from `apps/site/.env.local` via `parseEnvFile` — nothing hardcoded
+**Notion API:** the shared `apps/site/scripts/notion/lib/notion-client.ts` (current data-source
+model). The script resolves the database's data source via `GET /v1/databases/{id}`, then queries
+`POST /v1/data_sources/{id}/query` and creates pages with a `data_source_id` parent **Concurrency:**
+sequential (one article at a time) **Body blocks:** up to 100 paragraph blocks per Notion API call,
+2000 chars per block, split at sentence boundaries
 
 ---
 
@@ -135,8 +136,8 @@ non-standard sites by using the browser
 The public, zero-CLI path. A Notion form view collects submissions; a Cloudflare API function
 enriches each one. It runs in the production Worker — no Notion Workers beta required.
 
-**Function:** `functions/api/transit-news-intake.ts` **Endpoint:** `POST /api/transit-news-intake`
-**Auth:** `Authorization: Bearer <LVBT_TRANSIT_NEWS_INTAKE_SECRET>`
+**Function:** `apps/site/functions/api/transit-news-intake.ts` **Endpoint:**
+`POST /api/transit-news-intake` **Auth:** `Authorization: Bearer <LVBT_TRANSIT_NEWS_INTAKE_SECRET>`
 ([timing-safe](./glossary.md#timing-safe) compare) **Secrets:** `LVBT_NOTION_API_KEY`,
 `LVBT_TRANSIT_NEWS_INTAKE_SECRET` (production Worker)
 
@@ -202,7 +203,7 @@ How to confirm each layer works.
 **Layer 1 (the script):**
 
 ```bash
-pnpm add:transit-news https://nevadacurrent.com/<some-article>/
+pnpm -C apps/site add:transit-news https://nevadacurrent.com/<some-article>/
 ```
 
 Expect `✓ created`, then check the new row in the Notion database. Run the same URL again — it
@@ -210,7 +211,7 @@ should print `— already in database, skipping`, which proves deduplication.
 
 **Layer 3 (the Cloudflare function), locally:**
 
-1. Set `LVBT_NOTION_API_KEY` and `LVBT_TRANSIT_NEWS_INTAKE_SECRET` in `.env.local`.
+1. Set `LVBT_NOTION_API_KEY` and `LVBT_TRANSIT_NEWS_INTAKE_SECRET` in `apps/site/.env.local`.
 2. Start the dev server with `pnpm dev` (it runs the Pages Function too — see
    [local-dev.md](./local-dev.md)).
 3. Send a test request, using a real Notion page ID from the database and your intake secret:
@@ -233,10 +234,10 @@ the new row should fill in. If it doesn't, tail the logs with `wrangler pages de
 
 ## Parked — Notion Worker scaffold
 
-`scripts/workers/transit-news-sync/` contains a Notion Worker (Sync + Tool) that would add a weekly
-Google News RSS pull and a Notion-AI-callable tool. **Notion Workers are in private beta**, so this
-is parked until access lands. When it does: `ntn workers deploy` from that directory. Nothing else
-depends on it.
+`apps/site/scripts/workers/transit-news-sync/` contains a Notion Worker (Sync + Tool) that would add
+a weekly Google News RSS pull and a Notion-AI-callable tool. **Notion Workers are in private beta**,
+so this is parked until access lands. When it does: `ntn workers deploy` from that directory.
+Nothing else depends on it.
 
 A weekly RSS sync could alternatively run as a standalone Cloudflare Worker with a Cron Trigger
 (Pages Functions don't support cron) — not built yet.
@@ -248,9 +249,9 @@ A weekly RSS sync could alternatively run as a standalone Cloudflare Worker with
 ### New extraction site
 
 If a site uses non-standard markup, add a site-specific extractor to
-`scripts/notion/lib/article-extract.ts`. Both Layer 1 and Layer 3 use it, so one edit covers the
-script and the Cloudflare function.
+`apps/site/scripts/notion/lib/article-extract.ts`. Both Layer 1 and Layer 3 use it, so one edit
+covers the script and the Cloudflare function.
 
 ### New publication / topic / location
 
-Edit the maps in `scripts/notion/lib/transit-topics.ts`. Shared by every layer.
+Edit the maps in `apps/site/scripts/notion/lib/transit-topics.ts`. Shared by every layer.

@@ -10,6 +10,11 @@ start. Reach for this when `pnpm dev` (see [glossary](./glossary.md#pnpm-dev)) f
 pnpm dev
 ```
 
+Run it from the repository root. The site itself lives in `apps/site`, so your private settings live
+there too: `apps/site/.env.local`, `apps/site/.dev.vars`, and bootstrap's record in
+`apps/site/.lvbt/dev-readiness.json`. If you set up your checkout before the site moved into
+`apps/site`, move those three files from the repository root into `apps/site` once.
+
 `pnpm dev` needs Node 24.20.0 or newer in the 24.x line, the range `engines.node` in `package.json`
 names. It starts the local servers for you:
 
@@ -21,20 +26,20 @@ There are still three moving parts because each does one job a single server can
 the project a stable local URL, Astro builds the pages and proxies `/api/*`, and Wrangler runs the
 backend functions.
 
-| Layer            | URL / port               | Purpose                                                                                                                                                                                                                        |
-| ---------------- | ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Portless         | `https://lvbt.localhost` | Gives this checkout a stable local HTTPS URL and forwards traffic to Astro                                                                                                                                                     |
-| Astro dev (Vite) | `http://localhost:4320`  | HMR (Hot Module Replacement — live-updates the page as you edit, no full reload; see [glossary](./glossary.md#hmr)), content changes, and `/api/*` proxying                                                                    |
-| Wrangler Pages   | `http://localhost:4321`  | Serves Pages Functions (small backends that run on Cloudflare — see [glossary](./glossary.md#pages-function)); reads `.env.local` secrets. Wrangler is Cloudflare's command-line tool (see [glossary](./glossary.md#wrangler)) |
+| Layer            | URL / port               | Purpose                                                                                                                                                                                                                                  |
+| ---------------- | ------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Portless         | `https://lvbt.localhost` | Gives this checkout a stable local HTTPS URL and forwards traffic to Astro                                                                                                                                                               |
+| Astro dev (Vite) | `http://localhost:4320`  | HMR (Hot Module Replacement — live-updates the page as you edit, no full reload; see [glossary](./glossary.md#hmr)), content changes, and `/api/*` proxying                                                                              |
+| Wrangler Pages   | `http://localhost:4321`  | Serves Pages Functions (small backends that run on Cloudflare — see [glossary](./glossary.md#pages-function)); reads `apps/site/.env.local` secrets. Wrangler is Cloudflare's command-line tool (see [glossary](./glossary.md#wrangler)) |
 
 The production-equivalent Worker runs separately after `pnpm build`:
 
 ```sh
-pnpm worker:dev
+pnpm -C apps/site worker:dev
 ```
 
-This command serves the compiled Functions and `dist/` through the checked `wrangler.jsonc`
-contract. It does not replace the HMR-oriented `pnpm dev` loop.
+This command serves the compiled Functions and `apps/site/dist/` through the checked
+`apps/site/wrangler.jsonc` contract. It does not replace the HMR-oriented `pnpm dev` loop.
 
 **Use `https://lvbt.localhost`** for local testing. On the first run, Portless may ask for
 permission to trust its local HTTPS certificate and bind the proxy port. After that, `pnpm dev`
@@ -63,18 +68,18 @@ The join form's handlers and the platform database run in the Worker, so try the
 production-like build:
 
 ```sh
-pnpm exec wrangler d1 migrations apply lvbt-platform --local   # once, and after new migrations
-pnpm worker:dev
+pnpm -C apps/site exec wrangler d1 migrations apply lvbt-platform --local   # once, and after new migrations
+pnpm -C apps/site worker:dev
 ```
 
-Then open `/join/member` at the printed address. Joining needs the Beehiiv secrets in `.dev.vars`
-(Wrangler's local secrets file, which git ignores); without them the form shows "We couldn't finish
-joining you just now", which is the right behavior.
+Then open `/join/member` at the printed address. Joining needs the Beehiiv secrets in
+`apps/site/.dev.vars` (Wrangler's local secrets file, which git ignores); without them the form
+shows "We couldn't finish joining you just now", which is the right behavior.
 
 ### Sign in and try the account pages locally
 
-Sign-in runs in the same Worker. Put these lines in `.dev.vars`. The values are for your computer
-only, so any text will do:
+Sign-in runs in the same Worker. Put these lines in `apps/site/.dev.vars`. The values are for your
+computer only, so any text will do:
 
 ```sh
 LVBT_SIGN_IN_SECRET=local-sign-in-secret
@@ -83,7 +88,7 @@ LVBT_DEV_LOG_CODES=1
 ```
 
 With `LVBT_DEV_LOG_CODES=1` and no Resend key, every email that carries a code is printed in the
-terminal running `pnpm worker:dev` instead of being sent, for example
+terminal running `pnpm -C apps/site worker:dev` instead of being sent, for example
 `email (development) to ana@example.org: 123456 is your LVBT sign-in code`. Never set
 `LVBT_DEV_LOG_CODES` on a deployed Worker.
 
@@ -91,7 +96,7 @@ To have someone to sign in as, join at `/join/member` (with the Beehiiv secrets)
 the local database:
 
 ```sh
-pnpm exec wrangler d1 execute lvbt-platform --local --command "INSERT INTO people (id, given_name, email, membership_status, created_at, updated_at) VALUES ('01LOCALTESTPERSON000000000', 'Ana', 'ana@example.org', 'member', datetime('now'), datetime('now'))"
+pnpm -C apps/site exec wrangler d1 execute lvbt-platform --local --command "INSERT INTO people (id, given_name, email, membership_status, created_at, updated_at) VALUES ('01LOCALTESTPERSON000000000', 'Ana', 'ana@example.org', 'member', datetime('now'), datetime('now'))"
 ```
 
 Then open `/sign-in`, enter that email and type the code from the terminal. Each address can ask for
@@ -99,7 +104,7 @@ Then open `/sign-in`, enter that email and type the code from the terminal. Each
 
 ### `/api/membership-intake` returns an error locally
 
-Wrangler reads the intake, Beehiiv, and Notion secrets from `.env.local`:
+Wrangler reads the intake, Beehiiv, and Notion secrets from `apps/site/.env.local`:
 
 ```text
 LVBT_MEMBERSHIP_INTAKE_SECRET=...

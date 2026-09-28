@@ -4,8 +4,8 @@ This guide is for editing LVBT's core public essays — the pages that lay out w
 we're arguing for. Use it when you need to change the words on one of those pages (not for events,
 projects, or news, which have their own guides).
 
-The org's canonical (official, single-source-of-truth) essays live in `src/content/docs/`. Each
-covers a different question, so pick the one that matches what you're trying to say:
+The org's canonical (official, single-source-of-truth) essays live in `apps/site/src/content/docs/`.
+Each covers a different question, so pick the one that matches what you're trying to say:
 
 - `vision.mdx` — full long-form vision, rendered at `/vision`. The big-picture future we're working
   toward. Edit this when the _aspiration_ changes.

@@ -37,16 +37,16 @@ calendar change shows up on the site on its own.
 
 Most events ship as GCal-only — the description carries both the summary and the long-form body.
 Reach for an MDX body fragment (a small `.mdx` file holding just the rich body content for one
-event) under `src/content/event-bodies/<slug>.mdx` only when you need things GCal's rich-text editor
-can't do: custom components, glossary tooltips, typed internal links, etc. The fragment takes
-priority over the calendar description.
+event) under `apps/site/src/content/event-bodies/<slug>.mdx` only when you need things GCal's
+rich-text editor can't do: custom components, glossary tooltips, typed internal links, etc. The
+fragment takes priority over the calendar description.
 
 The slug (the URL-safe id for the event, used as its filename) is `<YYYY-MM-DD>-<slugified-title>`
 using the event's Pacific-time start date — lowercased, spaces turned into hyphens. For "General
 Meeting" on 2026-05-28 → `2026-05-28-general-meeting`.
 
 ```sh
-pnpm event:new
+pnpm -C apps/site event:new
 ```
 
 walks you through it: it prints the GCal field checklist, then optionally scaffolds the body

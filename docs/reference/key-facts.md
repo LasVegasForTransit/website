@@ -34,11 +34,11 @@ every place the fact appears (below) in the same change.
 
 When you change a fact here, update every file below that mentions it:
 
-- `src/pages/index.astro` (Home hero, "the reality" stats, "the cliff" quote,
+- `apps/site/src/pages/index.astro` (Home hero, "the reality" stats, "the cliff" quote,
   BRT/Charleston/Brightline cards)
-- `src/content/docs/why-now.mdx`
-- `src/content/docs/problems.mdx`
-- `src/content/docs/vision.mdx`
+- `apps/site/src/content/docs/why-now.mdx`
+- `apps/site/src/content/docs/problems.mdx`
+- `apps/site/src/content/docs/vision.mdx`
 - `docs/reference/transit-objection-rebuttals.md`
 
 A change-log entry — a short note in your commit message saying which fact changed and to what, e.g.

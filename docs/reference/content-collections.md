@@ -5,27 +5,28 @@ you're adding or editing a page, project, event, or initiative and need to know 
 required.
 
 A _content collection_ is Astro's name for a folder of content files that all share the same shape
-(see [glossary](./glossary.md#content-collection)). All site content lives under `src/content/`.
-Schemas (the rules for what fields a file must have) are enforced by Zod (a tool that checks data
-matches an expected shape — see [glossary](./glossary.md#zod)) in `src/content.config.ts` — content
-that doesn't match the shape will fail the build. That's deliberate: a typo in a content file stops
-the build with a clear message instead of shipping a broken page.
+(see [glossary](./glossary.md#content-collection)). All site content lives under
+`apps/site/src/content/`. Schemas (the rules for what fields a file must have) are enforced by Zod
+(a tool that checks data matches an expected shape — see [glossary](./glossary.md#zod)) in
+`apps/site/src/content.config.ts` — content that doesn't match the shape will fail the build. That's
+deliberate: a typo in a content file stops the build with a clear message instead of shipping a
+broken page.
 
 ## Folder layout
 
 Most collections are authored in MDX (Markdown with the ability to drop in interactive components —
 see [glossary](./glossary.md#mdx)).
 
-| Folder                      | Type            | Drives                                                                                                                                                                                                                                            |
-| --------------------------- | --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `src/content/docs/`         | MDX             | Long-form essays (vision, mission, why-now, problems, strategy). Rendered at `/vision` and `/about/strategy`.                                                                                                                                     |
-| `src/content/pages/`        | MDX             | Body copy for individual site pages (about, contact, get-involved).                                                                                                                                                                               |
-| `src/content/projects/`     | MDX             | One per project. Drives `/projects` and `/projects/[slug]`.                                                                                                                                                                                       |
-| `src/content/letters/`      | MDX             | One per letter. Drives `/letters` and `/letters/[slug]`. See "Letter" below for what belongs here.                                                                                                                                                |
-| _(events)_                  | Google Calendar | Event metadata. Pulled at build time by the custom loader in `src/lib/events-loader.ts`. See [events pipeline](../explanation/events-pipeline.md).                                                                                                |
-| `src/content/event-bodies/` | MDX             | Optional long-form body for a specific event, keyed by slug. Rendered below the event header on `/events/[slug]`.                                                                                                                                 |
-| _(newsletter)_              | Beehiiv RSS     | Newsletter issues. Pulled at build time by the loader in `src/lib/newsletter-loader.ts` from the feed at `PUBLIC_LVBT_NEWSLETTER_FEED_URL`. Drives `/newsletter`; each card links out to the Beehiiv post (issues are never hosted on this site). |
-| `src/content/initiatives/`  | JSON            | Project tags. Drives the chips on `/projects`.                                                                                                                                                                                                    |
+| Folder                                | Type            | Drives                                                                                                                                                                                                                                                      |
+| ------------------------------------- | --------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `apps/site/src/content/docs/`         | MDX             | Long-form essays (vision, mission, why-now, problems, strategy). Rendered at `/vision` and `/about/strategy`.                                                                                                                                               |
+| `apps/site/src/content/pages/`        | MDX             | Body copy for individual site pages (about, contact, get-involved).                                                                                                                                                                                         |
+| `apps/site/src/content/projects/`     | MDX             | One per project. Drives `/projects` and `/projects/[slug]`.                                                                                                                                                                                                 |
+| `apps/site/src/content/letters/`      | MDX             | One per letter. Drives `/letters` and `/letters/[slug]`. See "Letter" below for what belongs here.                                                                                                                                                          |
+| _(events)_                            | Google Calendar | Event metadata. Pulled at build time by the custom loader in `apps/site/src/lib/events-loader.ts`. See [events pipeline](../explanation/events-pipeline.md).                                                                                                |
+| `apps/site/src/content/event-bodies/` | MDX             | Optional long-form body for a specific event, keyed by slug. Rendered below the event header on `/events/[slug]`.                                                                                                                                           |
+| _(newsletter)_                        | Beehiiv RSS     | Newsletter issues. Pulled at build time by the loader in `apps/site/src/lib/newsletter-loader.ts` from the feed at `PUBLIC_LVBT_NEWSLETTER_FEED_URL`. Drives `/newsletter`; each card links out to the Beehiiv post (issues are never hosted on this site). |
+| `apps/site/src/content/initiatives/`  | JSON            | Project tags. Drives the chips on `/projects`.                                                                                                                                                                                                              |
 
 ## Frontmatter shapes
 
@@ -33,7 +34,7 @@ see [glossary](./glossary.md#mdx)).
 
 Events come from the public LVBT Google Calendar (GCal); there is no MDX frontmatter (the settings
 block at the top of an MDX file — see [glossary](./glossary.md#frontmatter)) to author. The custom
-loader in `src/lib/events-loader.ts` maps calendar fields to this validated shape:
+loader in `apps/site/src/lib/events-loader.ts` maps calendar fields to this validated shape:
 
 ```ts
 {
@@ -88,8 +89,8 @@ header-only.
 Newsletter issues come from the Beehiiv RSS feed (an XML feed of recent issues — see
 [glossary](./glossary.md#rss)); there is no MDX to author. Set `PUBLIC_LVBT_NEWSLETTER_FEED_URL`
 (and `PUBLIC_LVBT_NEWSLETTER_URL` for the "Read on Beehiiv" links) — see
-[`.env.example`](../../.env.example). The loader in `src/lib/newsletter-loader.ts` maps each feed
-`<item>` to this validated shape:
+[`apps/site/.env.example`](../../apps/site/.env.example). The loader in
+`apps/site/src/lib/newsletter-loader.ts` maps each feed `<item>` to this validated shape:
 
 ```ts
 {
@@ -101,8 +102,9 @@ Newsletter issues come from the Beehiiv RSS feed (an XML feed of recent issues �
 }
 ```
 
-When the feed URL is unset (e.g. local dev with no `.env.local`) or the feed has no published items
-yet, the collection is empty and `/newsletter` shows a subscribe-only state instead of a list.
+When the feed URL is unset (e.g. local dev with no `apps/site/.env.local`) or the feed has no
+published items yet, the collection is empty and `/newsletter` shows a subscribe-only state instead
+of a list.
 
 ### Project
 
@@ -159,17 +161,17 @@ Front-matter is `{ title, summary }` plus an MDX body. Slug is the filename.
 
 ## Where the schema is
 
-`src/content.config.ts` lists every collection's exact fields and types (this page summarizes them,
-but that file is what the build actually checks). When in doubt, read it — it's the source of truth,
-not this page.
+`apps/site/src/content.config.ts` lists every collection's exact fields and types (this page
+summarizes them, but that file is what the build actually checks). When in doubt, read it — it's the
+source of truth, not this page.
 
 ## Templates
 
 Each MDX/JSON-backed collection has a `_template.mdx` (or `_template.json`) showing the canonical
 shape. Copy it when adding new content. The leading underscore is a convention: for collections that
 use it (currently `projects`, `programs`, `letters`), the collection's `glob()` loader pattern in
-`src/content.config.ts` excludes `_`-prefixed files at the source, so the template never enters the
-content store and never needs per-page filtering to keep it out of listings, sitemaps, or
+`apps/site/src/content.config.ts` excludes `_`-prefixed files at the source, so the template never
+enters the content store and never needs per-page filtering to keep it out of listings, sitemaps, or
 `/llms-full.txt`. A new MDX/JSON collection that wants this convention needs to opt in the same way
 — the underscore prefix alone does nothing on its own. Events have no template — they're created in
-Google Calendar; `pnpm event:new` scaffolds an optional body fragment.
+Google Calendar; `pnpm -C apps/site event:new` scaffolds an optional body fragment.

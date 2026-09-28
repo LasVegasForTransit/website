@@ -10,12 +10,13 @@ Use it when you're starting a new project and want it on the site.
 
 Steps:
 
-1. Copy `src/content/projects/_template.mdx`.
+1. Copy `apps/site/src/content/projects/_template.mdx`.
 2. Slug = filename. The slug is the URL-safe id for the project, taken from the file's name (so
    `maryland-brt.mdx` has the slug `maryland-brt`). Initiatives must reference existing JSON
-   (JavaScript Object Notation, a plain-text data format) files in `src/content/initiatives/` — list
-   the existing ones with `ls src/content/initiatives/`, and use a filename without its `.json`
-   extension as the slug. See [add-an-initiative.md](./add-an-initiative.md) if you need a new one.
+   (JavaScript Object Notation, a plain-text data format) files in
+   `apps/site/src/content/initiatives/` — list the existing ones with `ls src/content/initiatives/`,
+   and use a filename without its `.json` extension as the slug. See
+   [add-an-initiative.md](./add-an-initiative.md) if you need a new one.
 3. Required frontmatter (the settings block fenced by `---` lines at the top of the file — see
    [glossary](../reference/glossary.md#frontmatter)):
 
@@ -53,8 +54,8 @@ Steps:
       `### YYYY-MM-DD — short label` for each entry.
 
 5. **Goals render automatically** at the end of the page from the frontmatter `goals:` array via
-   `src/components/ProjectGoals.astro`. Do **not** add a `## Goals` section in the body — it would
-   duplicate the auto-render.
+   `apps/site/src/components/ProjectGoals.astro`. Do **not** add a `## Goals` section in the body —
+   it would duplicate the auto-render.
 6. **Three statuses, kept simple.** `planned` (committed but not started), `in-progress` (working on
    it), `done` (achieved). If a goal genuinely changes scope, edit the text or remove it. Misses and
    scope changes go in `## Updates`, not in new status types.

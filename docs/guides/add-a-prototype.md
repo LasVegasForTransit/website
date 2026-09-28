@@ -17,7 +17,8 @@ to index it.
 
 ## 1. Describe the prototype
 
-Add a file to `src/prototypes/` named after the flow, for example `src/prototypes/sign-in.json`:
+Add a file to `apps/site/src/prototypes/` named after the flow, for example
+`apps/site/src/prototypes/sign-in.json`:
 
 ```json
 {
@@ -33,8 +34,8 @@ reads these files, so you never edit the index by hand.
 
 ## 2. Build the pages
 
-Make a folder under `src/pages/prototypes/` with the same name, and build each screen from the
-patterns in `src/components/app/`, wrapped in `PrototypeLayout`:
+Make a folder under `apps/site/src/pages/prototypes/` with the same name, and build each screen from
+the patterns in `apps/site/src/components/app/`, wrapped in `PrototypeLayout`:
 
 ```astro
 ---
@@ -58,11 +59,11 @@ Use made-up data such as "Ana" and `ana@example.org`, never real people. Write e
 [copy standard](../explanation/app-copy.md) and run its checklist.
 
 A form can simply move to the next page with `method="get"`, as above. When testers need to see
-error messages, give the prototype a small handler in `functions/prototypes/<name>/` that checks the
-fields with the same rules the real feature will use and shows the next screen, as
-`functions/prototypes/join/index.ts` does. A handler never saves anything or calls Beehiiv, Resend,
-Discord or Google. If the real flow emails a code, show the code on the screen instead, labeled as
-what the email would contain.
+error messages, give the prototype a small handler in `apps/site/functions/prototypes/<name>/` that
+checks the fields with the same rules the real feature will use and shows the next screen, as
+`apps/site/functions/prototypes/join/index.ts` does. A handler never saves anything or calls
+Beehiiv, Resend, Discord or Google. If the real flow emails a code, show the code on the screen
+instead, labeled as what the email would contain.
 
 ## 3. Check it and share the link
 

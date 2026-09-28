@@ -15,9 +15,9 @@ contributor joins.
 
 ## Context
 
-Site content is MDX in `src/content/`. Editing requires git knowledge today. Future contributors
-will not all be technical. LVBT staff have Google Workspace identities (`@lasvegasfortransit.org`);
-not all have GitHub accounts.
+Site content is MDX in `apps/site/src/content/`. Editing requires git knowledge today. Future
+contributors will not all be technical. LVBT staff have Google Workspace identities
+(`@lasvegasfortransit.org`); not all have GitHub accounts.
 
 The newsletter side of this is solved by Ghost(Pro)'s native auth and editor (see
 [newsletter-platform.md](./newsletter-platform.md)). The site side is the open question — when a

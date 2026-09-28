@@ -11,16 +11,17 @@ If you hit a word in any doc that isn't explained and isn't here, that's a doc b
 
 ## Our stack (what the site is built with)
 
-- **Astro** <a id="astro"></a> — the framework that builds the website. It turns the files in `src/`
-  into plain HTML pages. We use it because the result is a fast, mostly-static site.
+- **Astro** <a id="astro"></a> — the framework that builds the website. It turns the files in
+  `apps/site/src/` into plain HTML pages. We use it because the result is a fast, mostly-static
+  site.
 - **static site** <a id="static-site"></a> — a website that's pre-built into HTML/CSS/JS files ahead
   of time, rather than generated fresh on every visit. Faster and cheaper to host. Most of this site
   is static.
 - **MDX** <a id="mdx"></a> — Markdown (the simple `# heading` / `**bold**` text format) with the
   ability to drop in interactive components. Our long-form pages are written in `.mdx` files.
 - **content collection** <a id="content-collection"></a> — Astro's name for a folder of content
-  files (under `src/content/`) that all share the same shape, e.g. all events or all projects. See
-  [content-collections.md](./content-collections.md).
+  files (under `apps/site/src/content/`) that all share the same shape, e.g. all events or all
+  projects. See [content-collections.md](./content-collections.md).
 - **frontmatter** <a id="frontmatter"></a> — the block of settings at the very top of a Markdown/MDX
   file, fenced by `---` lines (title, date, etc.). It's structured data about the page.
 - **Zod** <a id="zod"></a> — a tool that checks data matches an expected shape. We use it to
@@ -32,7 +33,7 @@ If you hit a word in any doc that isn't explained and isn't here, that's a doc b
   bits of metadata on an element. For example, `data-screen-action` tells the print stylesheet that
   an element is only useful on screen and should disappear on paper.
 - **print stylesheet** <a id="print-stylesheet"></a> — CSS rules that apply only when a page is
-  printed or exported to PDF. In this repo they live in `src/styles/global.css` under
+  printed or exported to PDF. In this repo they live in `apps/site/src/styles/global.css` under
   `@media print`.
 
 ## Running & shipping (the developer tools)
@@ -52,9 +53,10 @@ If you hit a word in any doc that isn't explained and isn't here, that's a doc b
 - **environment variable (env var)** <a id="env-var"></a> — a named setting kept outside the code
   (like an API key or a URL), so secrets aren't committed and config can differ between your laptop
   and production.
-- **`.env.local` vs `.env.example`** <a id="env-files"></a> — `.env.example` is a committed template
-  listing which env vars exist (no real secret values). `.env.local` is your private copy with the
-  real values; it's git-ignored and never committed.
+- **`apps/site/.env.local` vs `apps/site/.env.example`** <a id="env-files"></a> —
+  `apps/site/.env.example` is a committed template listing which env vars exist (no real secret
+  values). `apps/site/.env.local` is your private copy with the real values; it's git-ignored and
+  never committed.
 - **CI / CI-CD** <a id="ci"></a> — "Continuous Integration / Delivery": automation that runs on
   GitHub every time you push, to build the site and run checks (and, for us, deploy it). Lives in
   `.github/workflows/`.
@@ -75,9 +77,9 @@ If you hit a word in any doc that isn't explained and isn't here, that's a doc b
 
 - **Cloudflare Pages** <a id="cloudflare-pages"></a> — the former website host. Its `pages.dev`
   deployment remains available for emergency rollback.
-- **Pages Function** <a id="pages-function"></a> — a backend script in `functions/api/`. Wrangler
-  compiles these scripts into the production Worker; each handles a request that static HTML cannot,
-  such as a form submission.
+- **Pages Function** <a id="pages-function"></a> — a backend script in `apps/site/functions/api/`.
+  Wrangler compiles these scripts into the production Worker; each handles a request that static
+  HTML cannot, such as a form submission.
 - **Wrangler** <a id="wrangler"></a> — Cloudflare's command-line tool, used to run the functions
   locally and to deploy. `pnpm dev` runs it for you.
 - **Cloudflare Workers** <a id="cloudflare-workers"></a> — Cloudflare's runtime for the production
