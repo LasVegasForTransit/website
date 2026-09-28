@@ -2,4 +2,4 @@
 # The shared hook lives in @lasvegasfortransit/cli; repository-specific steps go below it.
 set -eu
 ROOT=$(git rev-parse --show-toplevel)
-sh "$ROOT/node_modules/@lasvegasfortransit/cli/hooks/pre-commit.sh" "$@"
+sh "$ROOT/node_modules/@lasvegasfortransit/cli/hooks/prepare-commit-msg.sh" "$@"

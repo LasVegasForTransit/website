@@ -2,20 +2,31 @@
 
 Guidance for AI agents (Claude Code, Codex, Gemini, etc.) working in this repo.
 
-This is the single Astro site for Las Vegans for Better Transit. Cloudflare Pages serves production while the equivalent Workers deployment completes live acceptance. Changes land through pull requests with linear history and the current `Validate` check.
+This is the single Astro site for Las Vegans for Better Transit. Cloudflare Pages serves production
+while the equivalent Workers deployment completes live acceptance. Changes land through pull
+requests with linear history and the current `Validate` check.
 
-New to the project (human or agent)? [`docs/tutorials/start-here.md`](./docs/tutorials/start-here.md) orients you, and the [`glossary`](./docs/reference/glossary.md) defines every tool and acronym used across these docs. Contributors here are often students and junior devs — keep docs and explanations accessible (see [`docs/standards/writing-docs.md`](./docs/standards/writing-docs.md)).
+New to the project (human or agent)?
+[`docs/tutorials/start-here.md`](./docs/tutorials/start-here.md) orients you, and the
+[`glossary`](./docs/reference/glossary.md) defines every tool and acronym used across these docs.
+Contributors here are often students and junior devs — keep docs and explanations accessible (see
+[`docs/standards/writing-docs.md`](./docs/standards/writing-docs.md)).
 
 ---
 
 ## Read these first
 
-- **[`docs/standards/commit-messages.md`](./docs/standards/commit-messages.md)** — what to put in a commit message, what to leave out. Read the "Don't write a refactor diary" section in particular.
-- **[`docs/standards/commit-scopes.md`](./docs/standards/commit-scopes.md)** — the four allowed scopes and why nothing else qualifies.
-- **[`docs/standards/git-guidelines.md`](./docs/standards/git-guidelines.md)** — staging discipline, the atomic commit pattern, hooks.
-- **[`allowed-scopes.txt`](./allowed-scopes.txt)** — source of truth for the scope list (what the commit‑msg hook reads).
+- **[`docs/standards/commit-messages.md`](./docs/standards/commit-messages.md)** — what to put in a
+  commit message, what to leave out. Read the "Don't write a refactor diary" section in particular.
+- **[`docs/standards/commit-scopes.md`](./docs/standards/commit-scopes.md)** — the allowed scopes
+  and why nothing else qualifies.
+- **[`docs/standards/git-guidelines.md`](./docs/standards/git-guidelines.md)** — staging discipline,
+  the atomic commit pattern, hooks.
+- **[`.lvbt/commit-scopes.txt`](./.lvbt/commit-scopes.txt)** — source of truth for the scope list
+  (what the commit‑msg hook reads).
 
-The hooks under [`.githooks/`](./.githooks/) enforce most of this automatically. The repo's `prepare` script wires `core.hooksPath` to `.githooks` on `pnpm install`.
+The hooks under [`.githooks/`](./.githooks/) enforce most of this automatically. The repo's
+`prepare` script wires `core.hooksPath` to `.githooks` on `pnpm install`.
 
 ---
 
@@ -23,9 +34,10 @@ The hooks under [`.githooks/`](./.githooks/) enforce most of this automatically.
 
 > **Write for someone reading `git log` a year from now — not as a chronicle of how you got here.**
 
-The biggest failure mode for an AI writing commits is treating the body as a narration of the refactor:
+The biggest failure mode for an AI writing commits is treating the body as a narration of the
+refactor:
 
-```
+```text
 ❌ refactor(dx): clean up validate-commit-scope.ts
 
 Refactored for noUncheckedIndexedAccess without scattering non-null
@@ -35,11 +47,12 @@ near-identical console.error+exit blocks. header.type narrows to an
 AllowedType union; the stringly-typed cast is gone.
 ```
 
-That is a diary entry. It tells the reader what _the author thought about_, not what _the system does differently_.
+That is a diary entry. It tells the reader what _the author thought about_, not what _the system
+does differently_.
 
 The right shape:
 
-```
+```text
 ✅ refactor(dx): clean up validate-commit-scope.ts
 
 Validator output and behavior unchanged; internal cleanup so future
@@ -47,16 +60,24 @@ edits start from a typed, narrowed baseline rather than scattered
 assertions. No caller-visible change.
 ```
 
-Or — for a genuine refactor with no caller-visible change — just the title and nothing else. The density rule allows that.
+Or — for a genuine refactor with no caller-visible change — just the title and nothing else. Only
+`feat` and `fix` commits need a body.
 
 ### Specific things to never write in a commit body
 
-- **Internal identifier names** (`createSubscribeMiddleware`, `die`, `firstLineOf`, `PHASE_BY_ID`) unless they're a public exported API.
-- **TypeScript / language mechanics** (narrowing, union types, type guards, `as`, non-null assertions, generics, `noUncheckedIndexedAccess`).
-- **Shell / regex idioms** (`here-doc`, `IFS=$'\\t'`, named capture groups, `Promise.all` over `spawnSync`). Describe the resulting behavior, not the technique.
-- **Refactor mechanics phrased as outcomes** ("collapses X into Y", "replaces A with B", "switched X to Y"). The diff shows replacement; the message should say _what works differently_ or — if nothing does — let the title carry the change.
-- **Comparison to prior implementation** ("the old code did X; now we do Y"). Say what the code does now.
-- **Test counts, coverage percentages, lint warning counts.** Mention what scenarios are now covered, not the numbers.
+- **Internal identifier names** (`createSubscribeMiddleware`, `die`, `firstLineOf`, `PHASE_BY_ID`)
+  unless they're a public exported API.
+- **TypeScript / language mechanics** (narrowing, union types, type guards, `as`, non-null
+  assertions, generics, `noUncheckedIndexedAccess`).
+- **Shell / regex idioms** (`here-doc`, `IFS=$'\\t'`, named capture groups, `Promise.all` over
+  `spawnSync`). Describe the resulting behavior, not the technique.
+- **Refactor mechanics phrased as outcomes** ("collapses X into Y", "replaces A with B", "switched X
+  to Y"). The diff shows replacement; the message should say _what works differently_ or — if
+  nothing does — let the title carry the change.
+- **Comparison to prior implementation** ("the old code did X; now we do Y"). Say what the code does
+  now.
+- **Test counts, coverage percentages, lint warning counts.** Mention what scenarios are now
+  covered, not the numbers.
 
 ### What does belong
 
@@ -72,36 +93,41 @@ Full spec and more examples in [`commit-messages.md`](./docs/standards/commit-me
 
 ## Commit format quick reference
 
-```
+```text
 type(scope)?: brief description (≤ 72 chars, imperative mood)
 
-Body — optional for chore/refactor/docs/test/perf when density ≤ 10;
-required for feat/fix. Wrap at 72 chars.
+Body — required for feat/fix, otherwise whenever the title alone is
+ambiguous. Wrap at 72 chars.
 
-Co-Authored-By: <name> <email>   (optional trailer)
+Co-Authored-By: <model> <email>   (required when an agent commits)
 ```
 
-**Allowed types:** `feat fix docs refactor test chore perf`. `style` and `diag` are retired (use `chore`).
+**Allowed types:** `build chore docs feat fix perf refactor revert style test`. `ci` is deprecated;
+use `chore` for workflow changes.
 
-**Allowed scopes:** `content ci docs dx`, or empty. No page slugs, no component names, no short-lived feature names, no `deps`, no vendor tags. See [`commit-scopes.md`](./docs/standards/commit-scopes.md) for rationale.
+**Allowed scopes:** `site content functions docs dx`, or empty. No page slugs, no component names,
+no short-lived feature names, no `deps`, no vendor tags. See
+[`commit-scopes.md`](./docs/standards/commit-scopes.md) for rationale.
 
 ---
 
 ## Workflow expectations
 
-- Work on a branch and use a pull request for every change to `main`. Never force-push or delete the default branch.
+- Work on a branch and use a pull request for every change to `main`. Never force-push or delete the
+  default branch.
 - **Don't `git add .` / `-A` / `*`.** Stage explicit paths.
 - **Don't bypass the hooks** with `--no-verify`. If a hook fails, fix what it reports.
-- **Don't `git reset --hard`** ever. Use `git restore --source=HEAD -- path` or `git stash --include-untracked` instead.
+- **Don't `git reset --hard`** ever. Use `git restore --source=HEAD -- path` or
+  `git stash --include-untracked` instead.
 
-Pre-approval to commit applies only when the user has explicitly said "commit" / "commit when done" / similar in the current task. Otherwise, surface the proposed message and wait.
+Pre-approval to commit applies only when the user has explicitly said "commit" / "commit when done"
+/ similar in the current task. Otherwise, surface the proposed message and wait.
 
 ## Create GitHub issues and pull requests
 
-Use the mandatory `github-contribution` skill from the pinned
-`lvbt-contributions` plugin whenever a user authorizes creating an issue or
-pull request. It carries the organization checklist, readable templates, and
-the only approved creation helper:
+Use the mandatory `github-contribution` skill from the pinned `lvbt-contributions` plugin whenever a
+user authorizes creating an issue or pull request. It carries the organization checklist, readable
+templates, and the only approved creation helper:
 
 ```bash
 node node_modules/@lasvegasfortransit/cli/plugins/lvbt-contributions/scripts/github-create.mjs issue \
@@ -110,30 +136,43 @@ node node_modules/@lasvegasfortransit/cli/plugins/lvbt-contributions/scripts/git
   --title <title> --body-file <file> --base main
 ```
 
-Preview with `--dry-run --json`, remove every bracketed prompt, and inspect the
-complete visible Markdown before creating anything. Do not call
-`gh issue create`, `gh pr create`, equivalent `gh api` routes, or connector
-creation tools directly. Humans use the native organization issue forms and
-pull request template; agents use the same visible structure. There are no
-hidden body markers or GitHub-side prose checks.
+Preview with `--dry-run --json`, remove every bracketed prompt, and inspect the complete visible
+Markdown before creating anything. Do not call `gh issue create`, `gh pr create`, equivalent
+`gh api` routes, or connector creation tools directly. Humans use the native organization issue
+forms and pull request template; agents use the same visible structure. There are no hidden body
+markers or GitHub-side prose checks.
 
 ---
 
 ## Stack quick map
 
 - Astro 7 + Tailwind v4 (MDX content collections under `src/content/`)
-- Cloudflare Pages in production, with an equivalent Cloudflare Worker built and checked on every change
+- Cloudflare Pages in production, with an equivalent Cloudflare Worker built and checked on every
+  change
 - pnpm 11.25.0 and Node 24.20.x
 - Playwright for tests and ad-hoc screenshots
 - `scripts/bootstrap/` is the interactive setup CLI (`pnpm bootstrap`, `pnpm preflight`)
 - `scripts/audit/` is the CI/release audit baseline
 - `scripts/validation/git/` is the commit-message validator
 - `src/lib/site.ts` is the runtime config object (org name, URLs, social handles)
-- Events are sourced from a public Google Calendar at build time — see [`docs/explanation/events-pipeline.md`](./docs/explanation/events-pipeline.md). To add an event, create it in GCal; for long-form body copy, scaffold a fragment under `src/content/event-bodies/` via `pnpm event:new`.
-- Newsletter issues are pulled from the Beehiiv RSS feed at build time and listed on `/newsletter`, linking out to Beehiiv (issues are not hosted here) — see [`src/lib/newsletter-loader.ts`](./src/lib/newsletter-loader.ts). Feed and home URLs come from `PUBLIC_LVBT_NEWSLETTER_FEED_URL` / `PUBLIC_LVBT_NEWSLETTER_URL`.
-- Week Without Driving is served at `lvwwd.org`, its own site in the `week-without-driving` repo on the `lvwwd` Worker; this repo only redirects `/wwd`, `/wwd/` and `/week-without-driving` there — see [`docs/reference/week-without-driving-site.md`](./docs/reference/week-without-driving-site.md).
-- Membership intake: Google Form → Cloudflare Pages Function → Beehiiv + Notion — see [`docs/reference/membership-intake.md`](./docs/reference/membership-intake.md).
-- Transit news intake: three ways to push articles into a Notion database (pnpm script, Claude Code skill, public Notion form + Cloudflare enrichment) — see [`docs/guides/add-transit-news.md`](./docs/guides/add-transit-news.md) and [`docs/reference/transit-news-pipeline.md`](./docs/reference/transit-news-pipeline.md).
+- Events are sourced from a public Google Calendar at build time — see
+  [`docs/explanation/events-pipeline.md`](./docs/explanation/events-pipeline.md). To add an event,
+  create it in GCal; for long-form body copy, scaffold a fragment under `src/content/event-bodies/`
+  via `pnpm event:new`.
+- Newsletter issues are pulled from the Beehiiv RSS feed at build time and listed on `/newsletter`,
+  linking out to Beehiiv (issues are not hosted here) — see
+  [`src/lib/newsletter-loader.ts`](./src/lib/newsletter-loader.ts). Feed and home URLs come from
+  `PUBLIC_LVBT_NEWSLETTER_FEED_URL` / `PUBLIC_LVBT_NEWSLETTER_URL`.
+- Week Without Driving is served at `lvwwd.org`, its own site in the `week-without-driving` repo on
+  the `lvwwd` Worker; this repo only redirects `/wwd`, `/wwd/` and `/week-without-driving` there —
+  see
+  [`docs/reference/week-without-driving-site.md`](./docs/reference/week-without-driving-site.md).
+- Membership intake: Google Form → Cloudflare Pages Function → Beehiiv + Notion — see
+  [`docs/reference/membership-intake.md`](./docs/reference/membership-intake.md).
+- Transit news intake: three ways to push articles into a Notion database (pnpm script, Claude Code
+  skill, public Notion form + Cloudflare enrichment) — see
+  [`docs/guides/add-transit-news.md`](./docs/guides/add-transit-news.md) and
+  [`docs/reference/transit-news-pipeline.md`](./docs/reference/transit-news-pipeline.md).
 
 ---
 
