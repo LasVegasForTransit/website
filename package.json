@@ -57,6 +57,7 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "lint": "astro sync && eslint . --max-warnings 0",
+    "sync": "astro sync",
     "lint:check": "pnpm format:check",
     "check": "pnpm standards:check && lvbt check && pnpm format:check && pnpm lint && pnpm check-types && pnpm test:unit && pnpm check:docs && pnpm build && pnpm worker:types && pnpm worker:check && pnpm worker:test",
     "check:fix": "pnpm format && astro sync && eslint . --max-warnings 0 --fix",
