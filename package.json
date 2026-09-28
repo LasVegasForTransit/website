@@ -6,13 +6,6 @@
   "engines": {
     "node": "^24.20.0"
   },
-  "devEngines": {
-    "runtime": {
-      "name": "node",
-      "version": "24.20.0",
-      "onFail": "download"
-    }
-  },
   "packageManager": "pnpm@11.25.0",
   "portless": {
     "name": "lvbt",
@@ -58,8 +51,8 @@
     "format:check": "prettier --check .",
     "lint": "astro sync && eslint . --max-warnings 0",
     "lint:check": "pnpm format:check",
-    "check": "pnpm standards:check && lvbt check && pnpm format:check && pnpm lint && pnpm check-types && pnpm test:unit && pnpm check:docs && pnpm build && pnpm worker:types && pnpm worker:check && pnpm worker:test",
-    "check:fix": "pnpm format && astro sync && eslint . --max-warnings 0 --fix",
+    "check": "pnpm standards:check && pnpm format:check && markdownlint-cli2 && lvbt check && pnpm lint && pnpm check-types && pnpm test:unit && pnpm check:docs && pnpm build && pnpm worker:types && pnpm worker:check && pnpm worker:test",
+    "check:fix": "pnpm format && markdownlint-cli2 --fix && astro sync && eslint . --max-warnings 0 --fix",
     "test": "pnpm test:unit",
     "test:e2e": "playwright test",
     "test:unit": "node --import tsx --test tests/*.test.ts",
@@ -102,6 +95,8 @@
     "eslint": "catalog:",
     "html-validate": "catalog:",
     "lint-staged": "catalog:",
+    "markdownlint-cli2": "catalog:",
+    "markdownlint-rule-relative-links": "catalog:",
     "pagefind": "catalog:",
     "picocolors": "catalog:",
     "portless": "catalog:",

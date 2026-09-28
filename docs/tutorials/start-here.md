@@ -1,16 +1,16 @@
 # Start here
 
-New to the project? This page gets you from zero to making your first change. No
-prior experience with our specific tools is assumed — if a word is unfamiliar,
-check the [glossary](../reference/glossary.md).
+New to the project? This page gets you from zero to making your first change. No prior experience
+with our specific tools is assumed — if a word is unfamiliar, check the
+[glossary](../reference/glossary.md).
 
-This is the **website** for Las Vegans for Better Transit (LVBT), a volunteer
-nonprofit. You don't need to be a senior engineer to contribute. If you can edit a
-text file and follow a few commands, you can help.
+This is the **website** for Las Vegans for Better Transit (LVBT), a volunteer nonprofit. You don't
+need to be a senior engineer to contribute. If you can edit a text file and follow a few commands,
+you can help.
 
-> Just want to add an event or fix some copy and never touch a terminal? Several
-> tasks don't require setup at all — see [Common tasks](#common-tasks) below. Some
-> live in Google Calendar or Notion, not in this code.
+> Just want to add an event or fix some copy and never touch a terminal? Several tasks don't require
+> setup at all — see [Common tasks](#4-common-tasks) below. Some live in Google Calendar or Notion,
+> not in this code.
 
 ---
 
@@ -18,22 +18,21 @@ text file and follow a few commands, you can help.
 
 Three things. Install them once:
 
-- **[Node](../reference/glossary.md#node)** version 24.20.0 or newer in the
-  24.x line — runs the project. Get it from [nodejs.org](https://nodejs.org)
-  (the "LTS" version is fine). If you use `nvm`, `nvm use` will follow the
-  checked-in `.nvmrc`.
-- **[pnpm](../reference/glossary.md#pnpm)** — our package manager. After Node is
-  installed, run `npm install -g pnpm`.
-- **git** — version control, for getting the code and saving changes. Most
-  computers have it; `git --version` tells you.
+- **[Node](../reference/glossary.md#node)** version 24.20.0 or newer in the 24.x line — runs the
+  project. Get it from [nodejs.org](https://nodejs.org) (the "LTS" version is fine).
+  `pnpm preflight` tells you if the version you have is too old.
+- **[pnpm](../reference/glossary.md#pnpm)** — our package manager. After Node is installed, run
+  `npm install -g pnpm`.
+- **git** — version control, for getting the code and saving changes. Most computers have it;
+  `git --version` tells you.
 
-A code editor like [VS Code](https://code.visualstudio.com) makes everything
-easier, but any text editor works.
+A code editor like [VS Code](https://code.visualstudio.com) makes everything easier, but any text
+editor works.
 
 ## 2. Get the code running locally
 
-"Locally" means on your own computer, where you can preview changes safely before
-anyone else sees them.
+"Locally" means on your own computer, where you can preview changes safely before anyone else sees
+them.
 
 ```bash
 # 1. Download the code (clone the repo)
@@ -47,15 +46,13 @@ pnpm install
 pnpm dev
 ```
 
-`pnpm dev` prints `https://lvbt.localhost`. Open it in your browser — that's the
-site, running on your machine. Edits you make to files show up there within a
-second or two (that live-update is called
-[HMR](../reference/glossary.md#hmr)). Press `Ctrl+C` in the terminal to stop it.
+`pnpm dev` prints `https://lvbt.localhost`. Open it in your browser — that's the site, running on
+your machine. Edits you make to files show up there within a second or two (that live-update is
+called [HMR](../reference/glossary.md#hmr)). Press `Ctrl+C` in the terminal to stop it.
 
-Stuck on this step? [local-dev.md](../reference/local-dev.md) covers ports and
-common errors. (If you're also setting up deployment and a domain, that's the
-longer [first-time setup tutorial](./first-time-setup.md) — most contributors
-don't need it.)
+Stuck on this step? [local-dev.md](../reference/local-dev.md) covers ports and common errors. (If
+you're also setting up deployment and a domain, that's the longer
+[first-time setup tutorial](./first-time-setup.md) — most contributors don't need it.)
 
 ## 3. How the repo is laid out
 
@@ -72,8 +69,7 @@ You'll mostly work in a few places:
 
 ## 4. Common tasks
 
-Find your task and follow its guide. Each guide lists what you need before you
-start:
+Find your task and follow its guide. Each guide lists what you need before you start:
 
 | I want to…                               | Guide                                                                      | Touches code?                |
 | ---------------------------------------- | -------------------------------------------------------------------------- | ---------------------------- |
@@ -87,17 +83,16 @@ start:
 
 ## 5. Saving and sharing your change
 
-When you've edited a file and previewed it locally, you save it with git
-("commit") and push it. Our commit messages follow a small set of rules so the
-history stays readable — see
+When you've edited a file and previewed it locally, you save it with git ("commit") and push it. Our
+commit messages follow a small set of rules so the history stays readable — see
 [commit-messages.md](../standards/commit-messages.md) and
-[git-guidelines.md](../standards/git-guidelines.md). They look strict at first;
-the [git hooks](../reference/glossary.md#git-hook) (scripts that run automatically
-on commit) check your message and tell you exactly what to fix.
+[git-guidelines.md](../standards/git-guidelines.md). They look strict at first; the
+[git hooks](../reference/glossary.md#git-hook) (scripts that run automatically on commit) check your
+message and tell you exactly what to fix.
 
 A pushed change to the main branch deploys to the live site automatically (see
-[deployment-pipeline.md](../reference/deployment-pipeline.md)). When in doubt, ask
-a teammate to look before you push.
+[deployment-pipeline.md](../reference/deployment-pipeline.md)). When in doubt, ask a teammate to
+look before you push.
 
 ## 6. Where to get unstuck
 
@@ -111,5 +106,5 @@ a teammate to look before you push.
 ## Related
 
 - [Documentation index](../README.md) — everything, organized.
-- [Writing docs](../standards/writing-docs.md) — if you improve these docs, keep
-  them this approachable.
+- [Writing docs](../standards/writing-docs.md) — if you improve these docs, keep them this
+  approachable.

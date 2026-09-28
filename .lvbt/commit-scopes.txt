@@ -1,8 +1,15 @@
 # One scope per durable boundary in this repository; omit a scope when a
-# change crosses them.
+# change crosses them. Never invent one for a feature, page, file, or task.
+#
+#   site       the Astro site under apps/site: pages, layouts, components, styles
+#   content    copy and MDX under apps/site/src/content
+#   functions  the Worker routes and the platform code behind them
+#   docs       repository documentation under docs/ (not site copy)
+#   dx         hooks, lint and format settings, dev scripts, local tooling
+#
+# Workflow and composite-action changes are chores with no scope: `chore: ...`.
 site
 content
 functions
 docs
-ci
 dx
