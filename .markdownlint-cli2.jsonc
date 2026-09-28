@@ -20,6 +20,8 @@
     "dist",
     "**/dist",
     ".turbo",
+    // Wrangler's build and dry-run output.
+    "**/.wrangler",
     ".lvbt/web-platform",
     "docs/superpowers",
     "CHANGELOG.md",

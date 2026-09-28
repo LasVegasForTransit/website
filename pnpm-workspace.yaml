@@ -1,5 +1,6 @@
 packages:
-  - .
+  - 'apps/*'
+  - 'packages/*'
 
 # A release must be at least one day old before it installs, so a package
 # that is compromised and yanked the same day never reaches a repository.
