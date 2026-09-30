@@ -28,7 +28,7 @@ Every LVBT repository answers to the same commands, run from the repository root
 | `pnpm build`          | Build the site and its Worker                                               |
 | `pnpm test`           | Run the unit tests                                                          |
 | `pnpm test:e2e`       | Run the Playwright suites against a local build                             |
-| `pnpm run deploy`     | Build, then `wrangler deploy` the Worker (maintainers only; see below)      |
+| `pnpm run deploy`     | Build, then deploy the Worker with `cf` (maintainers only; see below)       |
 | `turbo gen workspace` | Scaffold a new package or app                                               |
 
 `pnpm bootstrap` and `pnpm preflight` run the site's own setup script in
