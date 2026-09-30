@@ -8,7 +8,7 @@ import ErrorSummary from '../app/ErrorSummary.astro';
 import Notice from '../app/Notice.astro';
 import OfflineNotice from '../app/OfflineNotice.astro';
 import TextField from '../app/TextField.astro';
-import { choiceClass, errorClass } from '../app/styles';
+import { buttonClass, choiceClass, errorClass } from '../app/styles';
 import { t } from '../../../platform/messages';
 
 interface Props {
@@ -37,81 +37,104 @@ const { action } = Astro.props;
   <input type="hidden" name="referral" value="" data-slot="referral" />
   <input type="hidden" name="form_token" value="" data-slot="form-token" />
 
-  <TextField
-    name="email"
-    label={t('join.emailLabel')}
-    type="email"
-    autocomplete="email"
-    required
-    error={t('join.emailError')}
-  />
+  <div data-join-stage="1" class="space-y-8">
+    <TextField
+      name="email"
+      label={t('join.emailLabel')}
+      type="email"
+      autocomplete="email"
+      required
+      error={t('join.emailError')}
+    />
 
-  <div class="grid gap-6 sm:grid-cols-2 max-w-md sm:max-w-none">
-    <TextField name="given_name" label={t('join.givenNameLabel')} autocomplete="given-name" />
-    <TextField name="family_name" label={t('join.familyNameLabel')} autocomplete="family-name" />
+    <div class="grid gap-6 sm:grid-cols-2 max-w-md sm:max-w-none">
+      <TextField name="given_name" label={t('join.givenNameLabel')} autocomplete="given-name" />
+      <TextField name="family_name" label={t('join.familyNameLabel')} autocomplete="family-name" />
+    </div>
+
+    <TextField
+      name="phone"
+      label={t('join.phoneLabel')}
+      type="tel"
+      autocomplete="tel-national"
+      error={t('join.phoneError')}
+    />
+
+    <div>
+      <p id="consent-error" data-error-for="consent" hidden class={errorClass}>
+        {t('join.consentError')}
+      </p>
+      <label for="consent" class="flex items-start gap-3 font-bold">
+        <input
+          id="consent"
+          name="consent"
+          type="checkbox"
+          value="yes"
+          required
+          class={choiceClass}
+        />
+        <span>{t('join.consentLabel')}</span>
+      </label>
+    </div>
+
+    <button type="button" data-join-continue style="display:none" class={buttonClass.primary}>
+      Continue to interests
+    </button>
   </div>
 
-  <TextField
-    name="phone"
-    label={t('join.phoneLabel')}
-    type="tel"
-    autocomplete="tel-national"
-    error={t('join.phoneError')}
-  />
-
-  <ChoiceGroup
-    name="interests"
-    legend={t('join.interestsHeading')}
-    type="checkbox"
-    cards
-    options={[
-      { value: 'events', label: t('join.interestEvents') },
-      { value: 'meetings', label: t('join.interestMeetings') },
-      { value: 'volunteering', label: t('join.interestVolunteering') },
-      { value: 'news', label: t('join.interestNews') },
-    ]}
-  />
-
-  <TextField
-    name="discord_username"
-    label={t('join.discordUsernameLabel')}
-    hint={t('join.discordUsernameHint')}
-    autocomplete="off"
-  />
-
-  <div class="grid gap-6 sm:grid-cols-2">
+  <div data-join-stage="2" class="space-y-8">
+    <p class="text-on-surface-variant focus:outline-none" tabindex="-1" data-join-stage-heading>
+      Everything here is optional. Tell us what interests you!
+    </p>
     <ChoiceGroup
-      name="owns_car"
-      legend={t('join.ownsCarHeading')}
+      name="interests"
+      legend={t('join.interestsHeading')}
+      type="checkbox"
+      cards
       options={[
-        { value: 'yes', label: t('join.answerYes') },
-        { value: 'no', label: t('join.answerNo') },
+        { value: 'events', label: t('join.interestEvents') },
+        { value: 'meetings', label: t('join.interestMeetings') },
+        { value: 'volunteering', label: t('join.interestVolunteering') },
+        { value: 'news', label: t('join.interestNews') },
       ]}
     />
-    <ChoiceGroup
-      name="owns_bike"
-      legend={t('join.ownsBikeHeading')}
-      options={[
-        { value: 'yes', label: t('join.answerYes') },
-        { value: 'no', label: t('join.answerNo') },
-      ]}
+
+    <TextField
+      name="discord_username"
+      label={t('join.discordUsernameLabel')}
+      hint={t('join.discordUsernameHint')}
+      autocomplete="off"
     />
+
+    <div class="grid gap-6 sm:grid-cols-2">
+      <ChoiceGroup
+        name="owns_car"
+        legend={t('join.ownsCarHeading')}
+        options={[
+          { value: 'yes', label: t('join.answerYes') },
+          { value: 'no', label: t('join.answerNo') },
+        ]}
+      />
+      <ChoiceGroup
+        name="owns_bike"
+        legend={t('join.ownsBikeHeading')}
+        options={[
+          { value: 'yes', label: t('join.answerYes') },
+          { value: 'no', label: t('join.answerNo') },
+        ]}
+      />
+    </div>
+
+    <div class="flex flex-wrap items-center gap-4">
+      <button type="button" data-join-back style="display:none" class={buttonClass.secondary}>
+        Back
+      </button>
+      <Button busyLabel={t('join.sending')}>{t('join.submit')}</Button>
+    </div>
   </div>
 
   <div aria-hidden="true" class="absolute -left-[10000px] size-px overflow-hidden">
     <label for="website">{t('join.honeypotLabel')}</label>
     <input id="website" name="website" type="text" tabindex="-1" autocomplete="off" data-no-draft />
   </div>
-
-  <div>
-    <p id="consent-error" data-error-for="consent" hidden class={errorClass}>
-      {t('join.consentError')}
-    </p>
-    <label for="consent" class="flex items-start gap-3 font-bold">
-      <input id="consent" name="consent" type="checkbox" value="yes" class={choiceClass} />
-      <span>{t('join.consentLabel')}</span>
-    </label>
-  </div>
-
-  <Button busyLabel={t('join.sending')}>{t('join.submit')}</Button>
 </form>

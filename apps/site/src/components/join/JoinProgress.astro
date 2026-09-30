@@ -1,13 +1,18 @@
 ---
 interface Props {
-  step: 1 | 2 | 3;
+  step: 1 | 2;
 }
 
 const { step } = Astro.props;
-const steps = ['About you', 'Your area', 'Welcome'];
+const steps = ['About you', 'Your interests'];
 ---
 
-<ol class="mb-10 grid grid-cols-3 gap-2" aria-label="Join LVBT progress">
+<ol
+  class="mb-10 grid grid-cols-2 gap-2"
+  aria-label="Join LVBT progress"
+  data-join-progress
+  style="display:none"
+>
   {
     steps.map((label, index) => {
       const position = index + 1;
@@ -23,7 +28,7 @@ const steps = ['About you', 'Your area', 'Welcome'];
             !current && !complete && 'text-on-surface-variant',
           ]}
         >
-          <span class="block text-xs font-bold">Step {position} of 3</span>
+          <span class="block text-xs font-bold">Step {position} of 2</span>
           <span class="mt-1 block">{label}</span>
         </li>
       );

@@ -5,7 +5,6 @@
 import BaseLayout from '../../../layouts/BaseLayout.astro';
 import Button from '../../../components/app/Button.astro';
 import ChoiceGroup from '../../../components/app/ChoiceGroup.astro';
-import JoinProgress from '../../../components/join/JoinProgress.astro';
 import { REGIONS } from '../../../../platform/core/regions';
 import { t } from '../../../../platform/messages';
 ---
@@ -13,7 +12,7 @@ import { t } from '../../../../platform/messages';
 <BaseLayout title={t('region.title')} noindex>
   <section class="container-page pt-12 pb-16 md:pt-16 md:pb-24">
     <div class="max-w-2xl">
-      <JoinProgress step={2} />
+      <p class="mb-5 text-sm font-bold text-primary-ink">You’ve joined LVBT!</p>
       <form method="post" action="/join/member/region/" class="space-y-8">
         <ChoiceGroup
           name="region"
