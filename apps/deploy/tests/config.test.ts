@@ -41,7 +41,7 @@ for (const mode of [undefined, 'preview']) {
     const expectedDb =
       mode === 'preview' ? wrangler.env.preview.d1_databases[0] : wrangler.d1_databases[0];
     assert.ok(expectedDb);
-    assert.equal(cf.accountId, '2557b5c2e166292ded0f8425b73075e9');
+    assert.equal('accountId' in cf, false);
     assert.equal(cf.worker.name, mode === 'preview' ? `${wrangler.name}-preview` : wrangler.name);
     assert.equal(cf.worker.compatibilityDate, wrangler.compatibility_date);
     assert.deepEqual(cf.worker.compatibilityFlags, wrangler.compatibility_flags);

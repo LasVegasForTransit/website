@@ -1,6 +1,5 @@
 import { bindings, defineConfig } from 'cf/config';
 
-const accountId = '2557b5c2e166292ded0f8425b73075e9';
 const commonWorker = {
   compatibilityDate: '2026-09-04',
   compatibilityFlags: ['nodejs_compat'],
@@ -32,7 +31,6 @@ export default defineConfig((ctx) => {
   switch (ctx.mode) {
     case 'preview': {
       return {
-        accountId,
         worker: {
           ...commonWorker,
           name: 'lvbt-website-preview',
@@ -48,7 +46,6 @@ export default defineConfig((ctx) => {
     }
     default: {
       return {
-        accountId,
         worker: {
           ...commonWorker,
           name: 'lvbt-website',
