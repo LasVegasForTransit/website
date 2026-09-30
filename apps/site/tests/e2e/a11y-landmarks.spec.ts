@@ -2,6 +2,34 @@ import { expect, test } from '@playwright/test';
 import { preparePageForA11y } from '../support/a11y-helpers';
 
 test.describe('landmark accessibility', () => {
+  test('home introduces LVBT and Week Without Driving', async ({ page }) => {
+    await page.goto('/');
+
+    const hero = page.locator('main > section').first();
+    await expect(hero.getByRole('heading', { level: 1 })).toContainText(/public transit movement/i);
+    await expect(hero.getByRole('link')).toHaveCount(0);
+
+    const campaign = page.locator('main > section').nth(1);
+    await expect(campaign.getByRole('heading', { level: 2 })).toHaveText('Week Without Driving');
+    await expect(campaign).toContainText('October 1–8, 2026');
+    await expect(
+      campaign.getByRole('link', { name: 'Take the One Trip Challenge' }),
+    ).toHaveAttribute('href', 'https://lvwwd.org/');
+  });
+
+  test('Week Without Driving action is visible without scrolling', async ({ page }) => {
+    for (const viewport of [
+      { width: 390, height: 664 },
+      { width: 1280, height: 720 },
+    ]) {
+      await page.setViewportSize(viewport);
+      await page.goto('/');
+      await expect(page.getByRole('link', { name: 'Take the One Trip Challenge' })).toBeInViewport({
+        ratio: 1,
+      });
+    }
+  });
+
   test('site chrome exposes one clear set of persistent landmarks', async ({ page }) => {
     await page.goto('/about');
     await preparePageForA11y(page);
