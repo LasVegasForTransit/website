@@ -70,7 +70,6 @@ test.describe('event metadata', () => {
 
   test('uses date-specific metadata for recurring event pages', async ({ page }) => {
     await page.goto('/events');
-    await page.waitForLoadState('networkidle');
 
     const eventPaths = [
       ...new Set(
@@ -87,7 +86,6 @@ test.describe('event metadata', () => {
     const metaTitlesByHeading = new Map<string, string[]>();
     for (const eventPath of eventPaths) {
       await page.goto(eventPath);
-      await page.waitForLoadState('networkidle');
 
       const heading = (await page.locator('h1').first().innerText()).trim();
       const metaTitle = await page.title();

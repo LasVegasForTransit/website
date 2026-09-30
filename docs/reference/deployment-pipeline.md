@@ -1,7 +1,7 @@
 # Deployment pipeline
 
 GitHub Actions owns builds and deployment. A change is built from a clean checkout, validated, and
-sent to Cloudflare with the package and Wrangler versions recorded in the repository.
+sent to Cloudflare with the package and CLI versions recorded in the repository.
 
 The `lvbt-website` Worker serves `lasvegasfortransit.org` and `www.lasvegasfortransit.org` through
 Cloudflare custom domains. The former Pages project stays available at `lvbt-website-5zh.pages.dev`
@@ -10,7 +10,7 @@ as a rollback artifact; it owns neither public hostname.
 ## Build contract
 
 `pnpm build` creates the static site in `apps/site/dist/`, builds the Pagefind index, and compiles
-`apps/site/functions/` into `apps/site/.wrangler/worker/index.js`. Wrangler serves the static tree
+`apps/site/functions/` into `apps/site/.wrangler/worker/index.js`. The Worker serves the static tree
 through the `ASSETS` binding and invokes the Worker first only for `/api/*`.
 
 `pnpm check` covers the vendored LVBT standard, formatting, Markdown lint, the organization's
@@ -25,9 +25,19 @@ an unused local port and verifies:
 - the permanent `/get-involved` redirect;
 - execution of the compiled subscription API.
 
-The checked Worker configuration lives in `apps/site/wrangler.jsonc`. Production custom domains are
-attached to the existing Worker in Cloudflare. Version uploads do not change those domains, and the
-deployment token cannot edit DNS or routes.
+The canonical `cf` configuration lives in `apps/deploy/cloudflare.config.ts`. It bundles the built
+Worker and site assets from `apps/site`, and its preview mode uses a separate database. The
+`apps/site/wrangler.jsonc` mirror remains for local tests, secret commands, and the versioned
+candidate workflow; a parity test checks both configurations. `pnpm run deploy` uses `cf` for a
+manual recovery deployment. The candidate workflow still uses Wrangler to upload and promote the
+same reviewed Worker version; keep that gate until a `cf` candidate upload and receipt are verified
+in production. Production custom domains are attached to the existing Worker in Cloudflare. Version
+uploads do not change those domains, and the deployment token cannot edit DNS or routes.
+
+`cf` does not read the D1 migration directory from the Wrangler config. Apply new migrations before
+deployment with
+`pnpm -C apps/deploy exec cf d1 migrations apply <DATABASE_ID> --dir ../site/platform/storage/migrations`
+from the repository root. That command targets the remote database unless `--local` is passed.
 
 ## Pull requests
 
