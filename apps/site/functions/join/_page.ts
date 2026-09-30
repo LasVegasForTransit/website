@@ -7,6 +7,7 @@
 // Cloudflare Pages does not treat this file as a route.
 
 import { signToken, verifyToken } from '../../platform/core/signing';
+import { INTERESTS, type Interest } from '../../platform/core/join-form';
 import type { PlatformEnv } from '../../platform/join';
 import type { Db } from '../../platform/storage/db';
 
@@ -121,6 +122,8 @@ export interface JoinStep {
   givenName: string;
   email: string;
   address: string;
+  interests: Interest[];
+  referral: 'wwd' | null;
 }
 
 export async function joinStepCookie(secret: string, step: JoinStep): Promise<string> {
@@ -128,7 +131,13 @@ export async function joinStepCookie(secret: string, step: JoinStep): Promise<st
     purpose: 'join_step',
     subject: step.personId,
     expiresAt: Date.now() + JOIN_STEP_MINUTES * 60 * 1000,
-    data: { givenName: step.givenName, email: step.email, address: step.address },
+    data: {
+      givenName: step.givenName,
+      email: step.email,
+      address: step.address,
+      interests: step.interests.join(','),
+      referral: step.referral ?? '',
+    },
   });
   return `${JOIN_COOKIE}=${token}; Path=/join/member; Max-Age=${JOIN_STEP_MINUTES * 60}; HttpOnly; Secure; SameSite=Lax`;
 }
@@ -144,6 +153,10 @@ export async function readJoinStep(secret: string, request: Request): Promise<Jo
     givenName: payload.data?.givenName ?? '',
     email: payload.data?.email ?? '',
     address: payload.data?.address ?? 'none',
+    interests: (payload.data?.interests ?? '')
+      .split(',')
+      .filter((interest): interest is Interest => INTERESTS.includes(interest as Interest)),
+    referral: payload.data?.referral === 'wwd' ? 'wwd' : null,
   };
 }
 

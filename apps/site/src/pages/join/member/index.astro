@@ -6,12 +6,14 @@
 // survives a reload and a dropped connection.
 import BaseLayout from '../../../layouts/BaseLayout.astro';
 import JoinForm from '../../../components/join/JoinForm.astro';
+import JoinProgress from '../../../components/join/JoinProgress.astro';
 import { t } from '../../../../platform/messages';
 ---
 
 <BaseLayout title={t('join.title')} description={t('join.description')}>
   <section class="container-page pt-12 pb-16 md:pt-16 md:pb-24">
     <div class="max-w-2xl">
+      <JoinProgress step={1} />
       <h1 class="text-headline-lg">{t('join.heading')}</h1>
       <p class="lede mt-4">{t('join.intro')}</p>
       <JoinForm action="/join/member/" />

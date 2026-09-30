@@ -1,0 +1,32 @@
+---
+interface Props {
+  step: 1 | 2 | 3;
+}
+
+const { step } = Astro.props;
+const steps = ['About you', 'Your area', 'Welcome'];
+---
+
+<ol class="mb-10 grid grid-cols-3 gap-2" aria-label="Join LVBT progress">
+  {
+    steps.map((label, index) => {
+      const position = index + 1;
+      const current = position === step;
+      const complete = position < step;
+      return (
+        <li
+          aria-current={current ? 'step' : undefined}
+          class:list={[
+            'border-t-4 pt-3 text-sm leading-tight',
+            current ? 'border-primary text-on-surface font-bold' : 'border-outline/25',
+            complete && 'border-on-surface text-on-surface',
+            !current && !complete && 'text-on-surface-variant',
+          ]}
+        >
+          <span class="block text-xs font-bold uppercase tracking-wide">Step {position} of 3</span>
+          <span class="mt-1 block">{label}</span>
+        </li>
+      );
+    })
+  }
+</ol>

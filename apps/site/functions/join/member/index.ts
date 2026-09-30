@@ -40,7 +40,15 @@ function jsonOutcome(outcome: JoinOutcome): Response {
 }
 
 export const onRequestGet: PagesFunction<JoinEnv> = async ({ env, request }) =>
-  renderForm(env, request, { formToken: ulid() }, 200);
+  renderForm(
+    env,
+    request,
+    {
+      formToken: ulid(),
+      referral: new URL(request.url).searchParams.get('from') === 'wwd' ? 'wwd' : null,
+    },
+    200,
+  );
 
 export const onRequestPost: PagesFunction<JoinEnv> = async ({ env, request }) => {
   let form: FormData;
@@ -74,6 +82,8 @@ export const onRequestPost: PagesFunction<JoinEnv> = async ({ env, request }) =>
         givenName: outcome.givenName,
         email: outcome.email,
         address: outcome.address,
+        interests: input.interests,
+        referral: input.referral,
       });
       const next = outcome.needsRegion ? '/join/member/region/' : '/join/member/welcome/';
       return redirect(next, { 'Set-Cookie': cookie });

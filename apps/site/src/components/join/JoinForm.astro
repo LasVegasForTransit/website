@@ -27,7 +27,6 @@ const { action } = Astro.props;
   heading={t('join.errorSummaryHeading')}
   errors={[
     { field: 'email', message: t('join.emailError') },
-    { field: 'zip', message: t('join.zipError') },
     { field: 'phone', message: t('join.phoneError') },
     { field: 'consent', message: t('join.consentError') },
   ]}
@@ -35,6 +34,7 @@ const { action } = Astro.props;
 
 <form method="post" action={action} novalidate data-enhance class="mt-8 space-y-8">
   <input type="hidden" name="origin" value="join_form" />
+  <input type="hidden" name="referral" value="" data-slot="referral" />
   <input type="hidden" name="form_token" value="" data-slot="form-token" />
 
   <TextField
@@ -52,38 +52,18 @@ const { action } = Astro.props;
   </div>
 
   <TextField
-    name="zip"
-    label={t('join.zipLabel')}
-    hint={t('join.zipHint')}
-    autocomplete="postal-code"
-    width="short"
-    error={t('join.zipError')}
+    name="phone"
+    label={t('join.phoneLabel')}
+    type="tel"
+    autocomplete="tel-national"
+    error={t('join.phoneError')}
   />
-
-  <fieldset>
-    <legend class="text-title-lg">{t('join.reachHeading')}</legend>
-    <div class="mt-4 space-y-6">
-      <TextField
-        name="phone"
-        label={t('join.phoneLabel')}
-        type="tel"
-        autocomplete="tel-national"
-        error={t('join.phoneError')}
-      />
-      <TextField
-        name="address"
-        label={t('join.addressLabel')}
-        hint={t('join.addressHint')}
-        autocomplete="street-address"
-        noDraft
-      />
-    </div>
-  </fieldset>
 
   <ChoiceGroup
     name="interests"
     legend={t('join.interestsHeading')}
     type="checkbox"
+    cards
     options={[
       { value: 'events', label: t('join.interestEvents') },
       { value: 'meetings', label: t('join.interestMeetings') },
@@ -91,6 +71,32 @@ const { action } = Astro.props;
       { value: 'news', label: t('join.interestNews') },
     ]}
   />
+
+  <TextField
+    name="discord_username"
+    label={t('join.discordUsernameLabel')}
+    hint={t('join.discordUsernameHint')}
+    autocomplete="off"
+  />
+
+  <div class="grid gap-6 sm:grid-cols-2">
+    <ChoiceGroup
+      name="owns_car"
+      legend={t('join.ownsCarHeading')}
+      options={[
+        { value: 'yes', label: t('join.answerYes') },
+        { value: 'no', label: t('join.answerNo') },
+      ]}
+    />
+    <ChoiceGroup
+      name="owns_bike"
+      legend={t('join.ownsBikeHeading')}
+      options={[
+        { value: 'yes', label: t('join.answerYes') },
+        { value: 'no', label: t('join.answerNo') },
+      ]}
+    />
+  </div>
 
   <div aria-hidden="true" class="absolute -left-[10000px] size-px overflow-hidden">
     <label for="website">{t('join.honeypotLabel')}</label>

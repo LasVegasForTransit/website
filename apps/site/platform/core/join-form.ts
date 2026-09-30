@@ -21,6 +21,11 @@ export interface JoinInput {
   /** Held in memory for one geocoding call, then dropped. Never stored. */
   address: string;
   interests: Interest[];
+  discordUsername: string;
+  ownsCar: 'yes' | 'no' | null;
+  ownsBike: 'yes' | 'no' | null;
+  /** Identifies someone who arrived from the separate WWD campaign. */
+  referral: 'wwd' | null;
   consent: boolean;
   /** One-time token from the form, used to make a double submit harmless. */
   formToken: string;
@@ -53,6 +58,14 @@ export function readJoinForm(form: FormData): JoinInput {
     phone: text(form, 'phone'),
     address: text(form, 'address'),
     interests: [...new Set(interests)],
+    discordUsername: text(form, 'discord_username'),
+    ownsCar: ['yes', 'no'].includes(text(form, 'owns_car'))
+      ? (text(form, 'owns_car') as 'yes' | 'no')
+      : null,
+    ownsBike: ['yes', 'no'].includes(text(form, 'owns_bike'))
+      ? (text(form, 'owns_bike') as 'yes' | 'no')
+      : null,
+    referral: text(form, 'referral') === 'wwd' ? 'wwd' : null,
     consent: form.get('consent') === 'yes',
     formToken: text(form, 'form_token'),
     honeypot: text(form, 'website'),
