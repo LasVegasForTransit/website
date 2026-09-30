@@ -9,12 +9,13 @@ import { normalizePhone } from './core/join-form';
 import { isRegionId, regionForPlaces, regionName } from './core/regions';
 import { subscribe, unsubscribe } from './integrations/beehiiv';
 import { geocodeToBlock, type GeocodeResult } from './integrations/census';
-import { escapeHtml, sendEmail } from './integrations/email';
+import { sendEmail } from './integrations/email';
 import { formatTime, t } from './messages';
 import { sendCodeEmail, validEmail, type SignInEnv } from './sign-in';
 import type { Db } from './storage/db';
 import { regionForZip } from './storage/limits';
 import { normalizeEmail, PersonService, type Person } from './storage/person-service';
+import { transactionalEmailHtml } from './transactional-email';
 
 export interface AccountEnv extends SignInEnv {
   LVBT_BEEHIIV_API_KEY?: string;
@@ -186,14 +187,20 @@ export function codeEmail(to: string, code: string, template: 'confirm_email' | 
     ? t('email.confirmSubject', { code })
     : t('email.deleteSubject', { code });
   const body = confirming ? t('email.confirmBody', { code }) : t('email.deleteBody', { code });
-  const ignore = t('email.signInIgnore');
+  const ignore = confirming
+    ? "If you didn't ask to change your email, you can ignore this message."
+    : "If you didn't ask to delete your account, you can ignore this message.";
   const signOff = t('email.signOff');
   return {
     to,
     subject,
     template,
     text: `${body}\n\n${ignore}\n\n${signOff}`,
-    html: `<p style="font-size:18px">${escapeHtml(body)}</p><p>${escapeHtml(ignore)}</p><p>${escapeHtml(signOff)}</p>`,
+    html: transactionalEmailHtml({
+      heading: confirming ? 'Confirm your email' : 'Delete your account',
+      body,
+      note: ignore,
+    }),
   };
 }
 
@@ -240,7 +247,7 @@ export async function confirmEmailChange(
         subject: t('email.emailChangedSubject'),
         template: 'email_changed',
         text: `${body}\n\n${t('email.signOff')}`,
-        html: `<p>${escapeHtml(body)}</p><p>${escapeHtml(t('email.signOff'))}</p>`,
+        html: transactionalEmailHtml({ heading: 'Your LVBT email changed', body }),
       },
       fetcher,
     );
