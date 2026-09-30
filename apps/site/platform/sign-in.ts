@@ -18,7 +18,8 @@ import {
 } from './auth';
 import { ulid } from './core/ids';
 import { signToken, verifyToken } from './core/signing';
-import { escapeHtml, sendEmail, type Email, type SendResult } from './integrations/email';
+import { sendEmail, type Email, type SendResult } from './integrations/email';
+import { transactionalEmailHtml } from './transactional-email';
 import { formatTime, t } from './messages';
 import type { Db } from './storage/db';
 import { normalizeEmail } from './storage/person-service';
@@ -251,10 +252,12 @@ export function signInEmail(to: string, code: string, link: string): Email {
     subject: t('email.signInSubject', { code }),
     template: 'sign_in_code',
     text: `${body}\n\n${button}: ${link}\n\n${ignore}\n\n${signOff}`,
-    html:
-      `<p style="font-size:18px">${escapeHtml(body)}</p>` +
-      `<p><a href="${escapeHtml(link)}" style="display:inline-block;padding:12px 20px;background:#111;color:#fff;font-weight:bold;text-decoration:none">${escapeHtml(button)}</a></p>` +
-      `<p>${escapeHtml(ignore)}</p><p>${escapeHtml(signOff)}</p>`,
+    html: transactionalEmailHtml({
+      heading: 'Sign in to LVBT',
+      body,
+      action: { href: link, label: button },
+      note: ignore,
+    }),
   };
 }
 
@@ -268,10 +271,12 @@ export function notMemberEmail(to: string, joinLink: string): Email {
     subject: t('email.notMemberSubject'),
     template: 'sign_in_not_member',
     text: `${body}\n\n${button}: ${joinLink}\n\n${ignore}\n\n${signOff}`,
-    html:
-      `<p style="font-size:18px">${escapeHtml(body)}</p>` +
-      `<p><a href="${escapeHtml(joinLink)}" style="display:inline-block;padding:12px 20px;background:#111;color:#fff;font-weight:bold;text-decoration:none">${escapeHtml(button)}</a></p>` +
-      `<p>${escapeHtml(ignore)}</p><p>${escapeHtml(signOff)}</p>`,
+    html: transactionalEmailHtml({
+      heading: 'Join LVBT',
+      body,
+      action: { href: joinLink, label: button },
+      note: ignore,
+    }),
   };
 }
 
