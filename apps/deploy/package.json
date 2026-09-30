@@ -6,10 +6,12 @@
   "scripts": {
     "lint": "eslint . --max-warnings 0",
     "check-types": "tsc --project tsconfig.json",
-    "test": "node --test tests/*.test.ts"
+    "test": "node --test tests/*.test.ts",
+    "validate": "cf deploy --dry-run"
   },
   "devDependencies": {
     "@lasvegasfortransit/eslint-config": "file:../../.lvbt/web-platform/packages/eslint-config",
+    "@lasvegasfortransit/site": "workspace:*",
     "@lasvegasfortransit/typescript-config": "file:../../.lvbt/web-platform/packages/typescript-config",
     "@types/node": "catalog:",
     "cf": "catalog:",
