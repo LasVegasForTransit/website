@@ -5,7 +5,6 @@
 // draft.
 import BaseLayout from '../../../layouts/BaseLayout.astro';
 import Confirmation from '../../../components/app/Confirmation.astro';
-import JoinProgress from '../../../components/join/JoinProgress.astro';
 import { t } from '../../../../platform/messages';
 import { site } from '../../../lib/site';
 
@@ -21,7 +20,6 @@ const nextSteps = [
 <BaseLayout title={t('welcome.title')} noindex>
   <section class="container-page pt-12 pb-16 md:pt-16 md:pb-24">
     <div class="max-w-2xl">
-      <JoinProgress step={3} />
       <Confirmation
         heading={t('welcome.heading')}
         nextStepsHeading={t('welcome.nextStepsHeading')}
