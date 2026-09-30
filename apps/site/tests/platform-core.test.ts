@@ -104,7 +104,7 @@ void test('the join form reads and checks its fields', () => {
 });
 
 void test('messages fill values, choose plurals and pseudo-localize', () => {
-  assert.equal(t('welcome.headingNamed', { name: 'Ana' }), "You're in, Ana.");
+  assert.equal(t('welcome.headingNamed', { name: 'Ana' }), 'Welcome to LVBT, Ana!');
   const catalog = { tries: { one: '{count} try left', other: '{count} tries left' } };
   const english = createTranslator(catalog);
   assert.equal(english('tries', { count: 1 }), '1 try left');

@@ -19,6 +19,7 @@ interface Props {
   error?: string;
   showError?: boolean;
   legendAsHeading?: boolean;
+  cards?: boolean;
 }
 
 const {
@@ -30,6 +31,7 @@ const {
   error,
   showError = false,
   legendAsHeading = false,
+  cards = false,
 } = Astro.props;
 const hintId = hint ? `${name}-hint` : undefined;
 const errorId = error ? `${name}-error` : undefined;
@@ -64,7 +66,13 @@ const describedBy =
   <div class="mt-4 space-y-3">
     {
       options.map((option) => (
-        <label class="flex items-start gap-3">
+        <label
+          class:list={[
+            'flex items-start gap-3',
+            cards &&
+              'cursor-pointer border border-outline bg-surface-container p-4 has-[:checked]:border-primary-ink has-[:checked]:bg-primary-container',
+          ]}
+        >
           <input
             type={type}
             name={name}

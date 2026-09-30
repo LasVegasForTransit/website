@@ -15,7 +15,8 @@ import { isRegionId, regionForPlaces } from './core/regions';
 import { hashWithSecret, signToken } from './core/signing';
 import { subscribe, type SubscribeResult } from './integrations/beehiiv';
 import { geocodeToBlock, type GeocodeResult } from './integrations/census';
-import { emailConfigured, escapeHtml, sendEmail } from './integrations/email';
+import { emailConfigured, sendEmail } from './integrations/email';
+import { memberWelcomeEmail, welcomeAction } from './member-welcome';
 import { t } from './messages';
 import type { Db } from './storage/db';
 import {
@@ -39,7 +40,7 @@ export interface PlatformEnv {
 }
 
 export const JOIN_LIMIT_PER_HOUR = 10;
-export const REMOVAL_LINK_DAYS = 30;
+export const REMOVAL_LINK_DAYS = 730;
 export const SITE_ORIGIN = 'https://lasvegasfortransit.org';
 
 export type AddressOutcome = 'none' | 'placed' | 'not_placed' | 'unavailable';
@@ -99,6 +100,8 @@ interface Recipient {
   personId: string;
   email: string;
   givenName: string;
+  interests: JoinInput['interests'];
+  referral: JoinInput['referral'];
 }
 
 async function sendConfirmation(
@@ -107,20 +110,23 @@ async function sendConfirmation(
   fetcher: typeof fetch,
 ): Promise<void> {
   const link = await removalLink(env, recipient.personId);
-  const greeting = recipient.givenName
-    ? t('email.joinGreetingNamed', { name: recipient.givenName })
-    : t('email.joinGreeting');
-  const body = t('email.joinBody');
-  const remove = t('email.joinRemove');
-  const signOff = t('email.signOff');
+  const { text, html } = memberWelcomeEmail({
+    givenName: recipient.givenName,
+    action: welcomeAction(recipient.interests, recipient.referral),
+    unsubscribeUrl: link,
+  });
   await sendEmail(
     { resendApiKey: env.LVBT_RESEND_API_KEY },
     {
       to: recipient.email,
       subject: t('email.joinSubject'),
       template: 'join_confirmation',
-      text: `${greeting}\n\n${body}\n\n${remove}: ${link}\n\n${signOff}`,
-      html: `<p>${escapeHtml(greeting)}</p><p>${escapeHtml(body)}</p><p><a href="${escapeHtml(link)}">${escapeHtml(remove)}</a></p><p>${escapeHtml(signOff)}</p>`,
+      text,
+      html,
+      headers: {
+        'List-Unsubscribe': `<${link}>`,
+        'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
+      },
     },
     fetcher,
   );
@@ -248,7 +254,13 @@ async function recordMember(
     type: 'joined',
     occurredAt: nowIso(),
     source: input.origin,
-    details: { interests: input.interests },
+    details: {
+      interests: input.interests,
+      referral: input.referral,
+      discordUsername: input.discordUsername || null,
+      ownsCar: input.ownsCar,
+      ownsBike: input.ownsBike,
+    },
   });
   return person.id;
 }
@@ -309,7 +321,17 @@ export async function processJoin(
 
   if (input.formToken) await recordFormToken(env.PLATFORM_DB, input.formToken, personId);
   await Promise.all([
-    sendConfirmation(env, { personId, email: input.email, givenName }, fetcher),
+    sendConfirmation(
+      env,
+      {
+        personId,
+        email: input.email,
+        givenName,
+        interests: input.interests,
+        referral: input.referral,
+      },
+      fetcher,
+    ),
     addToNotionIntake(env, input, fetcher),
   ]);
 

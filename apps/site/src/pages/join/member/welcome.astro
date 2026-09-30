@@ -5,18 +5,23 @@
 // draft.
 import BaseLayout from '../../../layouts/BaseLayout.astro';
 import Confirmation from '../../../components/app/Confirmation.astro';
+import JoinProgress from '../../../components/join/JoinProgress.astro';
 import { t } from '../../../../platform/messages';
 import { site } from '../../../lib/site';
 
 const nextSteps = [
-  { href: '/events', label: t('welcome.nextEvents') },
   ...(site.social.discord ? [{ href: site.social.discord, label: t('welcome.nextDiscord') }] : []),
+  ...(site.social.instagram
+    ? [{ href: site.social.instagram, label: t('welcome.nextInstagram') }]
+    : []),
+  { href: '/go/', label: t('welcome.nextWays') },
 ];
 ---
 
 <BaseLayout title={t('welcome.title')} noindex>
   <section class="container-page pt-12 pb-16 md:pt-16 md:pb-24">
     <div class="max-w-2xl">
+      <JoinProgress step={3} />
       <Confirmation
         heading={t('welcome.heading')}
         nextStepsHeading={t('welcome.nextStepsHeading')}
@@ -25,6 +30,20 @@ const nextSteps = [
       >
         <p class="lede mt-4 [overflow-wrap:anywhere]" data-slot="sent-to" hidden></p>
         <p class="mt-6 border-2 border-primary-ink p-4" data-slot="address-notice" hidden></p>
+        <div class="mt-10 border-l-4 border-primary bg-primary-container p-6">
+          <p class="text-sm font-bold text-primary-ink">Your first step</p>
+          <h2 class="text-title-lg mt-2" data-slot="next-action-title">Get involved with LVBT</h2>
+          <p class="mt-2 leading-relaxed" data-slot="next-action-description">
+            Find a way to help that fits your time and interests.
+          </p>
+          <a
+            href="/go/"
+            data-slot="next-action-link"
+            class="press mt-5 inline-flex bg-on-surface px-5 py-3 font-bold text-surface no-underline hover:bg-primary hover:text-on-primary focus-visible:bg-primary focus-visible:text-on-primary"
+          >
+            Explore ways to get involved
+          </a>
+        </div>
       </Confirmation>
     </div>
   </section>

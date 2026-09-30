@@ -28,9 +28,19 @@ function fakeServices() {
   return { calls, fetcher };
 }
 
-function sentEmail(calls: Call[]): { subject: string; text: string } {
+function sentEmail(calls: Call[]): {
+  subject: string;
+  text: string;
+  html: string;
+  headers: Record<string, string>;
+} {
   const body = calls.find((call) => call.url.includes('resend'))?.body ?? '{}';
-  return JSON.parse(body) as { subject: string; text: string };
+  return JSON.parse(body) as {
+    subject: string;
+    text: string;
+    html: string;
+    headers: Record<string, string>;
+  };
 }
 
 function env(db: MemoryDb): PlatformEnv {
@@ -83,6 +93,9 @@ void test('joining with only an email and the box ticked makes a member everywhe
   const email = sentEmail(calls);
   assert.equal(email.subject, 'Welcome to LVBT');
   assert.match(email.text, /\/join\/remove\/\?token=/);
+  assert.match(email.html, /Get involved with LVBT/);
+  assert.match(email.headers['List-Unsubscribe'] ?? '', /\/join\/remove\/\?token=/);
+  assert.equal(email.headers['List-Unsubscribe-Post'], 'List-Unsubscribe=One-Click');
 });
 
 void test('without the box ticked nothing is saved', async () => {

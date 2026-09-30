@@ -22,30 +22,34 @@ export async function removeEmail(
   env: PlatformEnv,
   token: string,
   fetcher: typeof fetch = fetch,
-): Promise<'removed' | 'invalid'> {
+): Promise<'removed' | 'invalid' | 'unavailable'> {
   const check = await checkRemovalToken(env, token);
   if (check.kind === 'invalid') return 'invalid';
   const people = new PersonService(env.PLATFORM_DB);
-  await people.withdrawConsent(check.personId, {
-    scope: 'newsletter',
-    source: 'removal_link',
-    withdrawnAt: nowIso(),
-  });
-
   const { results } = await env.PLATFORM_DB.prepare(
     "SELECT external_id AS externalId FROM identities WHERE person_id = ? AND platform = 'beehiiv'",
   )
     .bind(check.personId)
     .all<{ externalId: string }>();
+  if (results.length && (!env.LVBT_BEEHIIV_API_KEY || !env.LVBT_BEEHIIV_PUBLICATION_ID)) {
+    return 'unavailable';
+  }
   if (env.LVBT_BEEHIIV_API_KEY && env.LVBT_BEEHIIV_PUBLICATION_ID) {
     for (const { externalId } of results) {
-      await unsubscribe(
+      const stopped = await unsubscribe(
         { apiKey: env.LVBT_BEEHIIV_API_KEY, publicationId: env.LVBT_BEEHIIV_PUBLICATION_ID },
         externalId,
         fetcher,
       );
+      if (!stopped) return 'unavailable';
     }
   }
+
+  await people.withdrawConsent(check.personId, {
+    scope: 'newsletter',
+    source: 'removal_link',
+    withdrawnAt: nowIso(),
+  });
 
   if (!(await people.hasOtherHistory(check.personId))) {
     await people.deletePerson(check.personId);

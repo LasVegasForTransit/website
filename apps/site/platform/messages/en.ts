@@ -14,18 +14,18 @@ export const en = {
     emailLabel: 'Email address',
     givenNameLabel: 'First name (optional)',
     familyNameLabel: 'Last name (optional)',
-    zipLabel: 'ZIP code (optional)',
-    zipHint: 'Helps us invite you to things near you.',
-    reachHeading: 'Help us reach you (optional)',
     phoneLabel: 'Phone number (optional)',
-    addressLabel: 'Home address (optional)',
-    addressHint:
-      'For your exact city ward and districts. We use it once, then delete it. We never keep your street address.',
     interestsHeading: 'What are you interested in? (optional)',
     interestEvents: 'Coming to events',
     interestMeetings: 'Speaking up at public meetings',
     interestVolunteering: 'Volunteering on a team',
     interestNews: 'Transit news',
+    discordUsernameLabel: 'Discord username (optional)',
+    discordUsernameHint: 'We can use this later to give you the right roles in our server.',
+    ownsCarHeading: 'Do you own a car? (optional)',
+    ownsBikeHeading: 'Do you own a bike? (optional)',
+    answerYes: 'Yes',
+    answerNo: 'No',
     consentLabel:
       "Add me to LVBT's mailing list. This makes me an LVBT member. I can unsubscribe at any time.",
     submit: 'Join LVBT',
@@ -36,7 +36,6 @@ export const en = {
     errorSummaryHeading: 'There is a problem',
     consentError: "To become a member, tick the box to join LVBT's mailing list.",
     emailError: 'Enter your full email address, including the @',
-    zipError: 'Enter a 5-digit ZIP code, like 89104',
     phoneError: 'Enter a phone number with its area code, like 702 555 0123',
     rateLimited:
       "We've had a lot of sign-ups from your connection in the last hour. Please try again later, or email hello@lasvegasfortransit.org and we'll add you.",
@@ -46,18 +45,19 @@ export const en = {
   region: {
     title: 'Your part of the valley',
     question: 'Which part of the valley do you live in?',
-    hint: 'This helps us invite you to things near you. We never share it outside LVBT.',
+    hint: 'A general area is enough. This helps us connect you with advocates nearby and invite you to things near you.',
     ratherNotSay: "I'd rather not say",
     submit: 'Continue',
   },
   welcome: {
-    title: "You're in",
-    headingNamed: "You're in, {name}.",
-    heading: "You're in.",
+    title: 'Welcome to LVBT',
+    headingNamed: 'Welcome to LVBT, {name}!',
+    heading: 'Welcome to LVBT!',
     sentTo: "We've sent a confirmation to {email}.",
-    nextStepsHeading: 'What next',
-    nextEvents: 'See upcoming events',
+    nextStepsHeading: 'More ways to get involved',
     nextDiscord: "Join LVBT's Discord",
+    nextInstagram: 'Follow LVBT on Instagram',
+    nextWays: 'Explore ways to help',
     addressNotPlaced:
       "We couldn't find that address, so we kept only your ZIP code. You can add it later from your account.",
     addressUnavailable:
@@ -72,11 +72,13 @@ export const en = {
     invalidEmail: 'Enter your full email address, including the @',
   },
   remove: {
-    title: 'Remove your email',
-    heading: 'Remove your email from LVBT?',
-    body: '{email} was added to LVBT. If that was not you, or you have changed your mind, remove it here.',
-    submit: 'Remove my email',
-    done: 'Your email has been removed from LVBT.',
+    title: 'Unsubscribe from LVBT',
+    heading: 'Stop LVBT emails?',
+    body: 'Unsubscribe {email} from LVBT emails and end this membership. You can join again whenever you like.',
+    submit: 'Unsubscribe',
+    done: 'You are unsubscribed from LVBT emails.',
+    unavailable:
+      'We could not unsubscribe you right now. Please try again or email hello@lasvegasfortransit.org.',
     invalid:
       'This link has expired or is not valid. Email hello@lasvegasfortransit.org and we will remove you.',
   },
@@ -240,11 +242,6 @@ export const en = {
     emailChangedBody:
       "The email on your LVBT account was changed to {email}. If you didn't do this, contact hello@lasvegasfortransit.org.",
     joinSubject: 'Welcome to LVBT',
-    joinGreetingNamed: 'Hi {name},',
-    joinGreeting: 'Hi,',
-    joinBody:
-      "You're now an LVBT member and on our mailing list. We'll send updates and invitations, usually no more than twice a week. You can change what we send or leave at any time from your account.",
-    joinRemove: 'Not you? Remove this email',
     notMemberSubject: 'Join LVBT to sign in',
     notMemberBody:
       "Someone asked to sign in to Las Vegans for Better Transit with this email address, but it isn't on our member list yet. Joining takes a minute and it's free.",

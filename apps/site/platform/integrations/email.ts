@@ -14,6 +14,8 @@ export interface Email {
   html: string;
   /** Tags the message for Resend's logs, for example "join_confirmation". */
   template: string;
+  /** Message headers such as RFC 8058 list unsubscribe fields. */
+  headers?: Record<string, string>;
 }
 
 export type SendResult = 'sent' | 'not_configured' | 'failed';
@@ -45,6 +47,7 @@ export async function sendEmail(
         subject: email.subject,
         text: email.text,
         html: email.html,
+        ...(email.headers ? { headers: email.headers } : {}),
         tags: [{ name: 'template', value: email.template }],
       }),
       signal: AbortSignal.timeout(8000),

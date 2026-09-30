@@ -12,6 +12,7 @@ export interface FormState {
   input?: JoinInput;
   errors?: JoinErrors;
   notice?: string;
+  referral?: 'wwd' | null;
 }
 
 const TEXT_FIELDS: [string, keyof JoinInput][] = [
@@ -21,7 +22,23 @@ const TEXT_FIELDS: [string, keyof JoinInput][] = [
   ['zip', 'zip'],
   ['phone', 'phone'],
   ['address', 'address'],
+  ['discord_username', 'discordUsername'],
 ];
+
+function restoreTravelAnswers(rewriter: HTMLRewriter, input: JoinInput): HTMLRewriter {
+  for (const [field, answer] of [
+    ['owns_car', input.ownsCar],
+    ['owns_bike', input.ownsBike],
+  ]) {
+    if (!answer) continue;
+    rewriter = rewriter.on(`input[name="${field}"][value="${answer}"]`, {
+      element(element) {
+        element.setAttribute('checked', '');
+      },
+    });
+  }
+  return rewriter;
+}
 
 export async function renderJoinForm(
   env: JoinEnv,
@@ -33,6 +50,11 @@ export async function renderJoinForm(
   let rewriter = new HTMLRewriter().on('[data-slot="form-token"]', {
     element(element) {
       element.setAttribute('value', state.formToken);
+    },
+  });
+  rewriter = rewriter.on('[data-slot="referral"]', {
+    element(element) {
+      element.setAttribute('value', state.input?.referral ?? state.referral ?? '');
     },
   });
 
@@ -53,6 +75,7 @@ export async function renderJoinForm(
         },
       });
     }
+    rewriter = restoreTravelAnswers(rewriter, input);
     if (input.consent) {
       rewriter = rewriter.on('input[name="consent"]', {
         element(element) {

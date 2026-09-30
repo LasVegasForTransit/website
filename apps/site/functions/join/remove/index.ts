@@ -44,11 +44,28 @@ export const onRequestGet: PagesFunction<JoinEnv> = async ({ env, request }) => 
 
 export const onRequestPost: PagesFunction<JoinEnv> = async ({ env, request }) => {
   const form = await request.formData().catch(() => new FormData());
-  const token = form.get('token');
+  const oneClick = form.get('List-Unsubscribe') === 'One-Click';
+  const token = oneClick ? new URL(request.url).searchParams.get('token') : form.get('token');
   const platform = platformEnv(env);
+  if (oneClick) {
+    if (!platform || typeof token !== 'string' || !token)
+      return new Response(null, { status: 400 });
+    const outcome = await removeEmail(platform, token);
+    return new Response(null, {
+      status: outcome === 'removed' ? 200 : outcome === 'unavailable' ? 503 : 400,
+    });
+  }
   if (!platform || typeof token !== 'string' || !token) {
     return result(env, request, t('remove.invalid'));
   }
   const outcome = await removeEmail(platform, token);
-  return result(env, request, outcome === 'removed' ? t('remove.done') : t('remove.invalid'));
+  return result(
+    env,
+    request,
+    outcome === 'removed'
+      ? t('remove.done')
+      : outcome === 'unavailable'
+        ? t('remove.unavailable')
+        : t('remove.invalid'),
+  );
 };
