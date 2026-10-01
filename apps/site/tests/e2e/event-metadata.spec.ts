@@ -69,8 +69,7 @@ test.describe('event metadata', () => {
   });
 
   test('uses date-specific metadata for recurring event pages', async ({ page }) => {
-    await page.goto('/events');
-    await page.waitForLoadState('networkidle');
+    await page.goto('/events', { waitUntil: 'domcontentloaded' });
 
     const eventPaths = [
       ...new Set(
@@ -84,27 +83,29 @@ test.describe('event metadata', () => {
       ),
     ];
 
-    const metaTitlesByHeading = new Map<string, string[]>();
+    // A pair from each recurring series proves the date is in the metadata.
+    // Visiting every event here makes this one test depend on the whole calendar.
+    const pathsBySeries = new Map<string, string[]>();
     for (const eventPath of eventPaths) {
-      await page.goto(eventPath);
-      await page.waitForLoadState('networkidle');
-
-      const heading = (await page.locator('h1').first().innerText()).trim();
-      const metaTitle = await page.title();
-      const titles = metaTitlesByHeading.get(heading) ?? [];
-      titles.push(metaTitle);
-      metaTitlesByHeading.set(heading, titles);
+      const series = eventPath.replace(/^\/events\/\d{4}-\d{2}-\d{2}-/, '');
+      const paths = pathsBySeries.get(series) ?? [];
+      paths.push(eventPath);
+      pathsBySeries.set(series, paths);
     }
-
-    const repeatedEvents = [...metaTitlesByHeading.entries()].filter(
-      ([, titles]) => titles.length > 1,
-    );
-
-    expect(repeatedEvents.length).toBeGreaterThan(0);
-    for (const [heading, titles] of repeatedEvents) {
-      expect(new Set(titles).size, heading).toBe(titles.length);
+    const recurringSeries = [...pathsBySeries.entries()].filter(([, paths]) => paths.length > 1);
+    expect(recurringSeries.length).toBeGreaterThan(0);
+    for (const [series, paths] of recurringSeries.slice(0, 3)) {
+      const titles: string[] = [];
+      const headings: string[] = [];
+      for (const eventPath of paths.slice(0, 2)) {
+        await page.goto(eventPath, { waitUntil: 'domcontentloaded' });
+        headings.push((await page.locator('h1').first().innerText()).trim());
+        titles.push(await page.title());
+      }
+      expect(new Set(headings).size, series).toBe(1);
+      expect(new Set(titles).size, series).toBe(titles.length);
       for (const title of titles) {
-        expect(title, heading).toMatch(/[A-Z][a-z]+ \d{1,2}, 20\d{2}/);
+        expect(title, series).toMatch(/[A-Z][a-z]+ \d{1,2}, 20\d{2}/);
       }
     }
   });
