@@ -27,7 +27,6 @@ async function expectExternalOpenIcon(locator: Locator) {
 
 async function firstVirtualEventPath(page: Page): Promise<string | undefined> {
   await page.goto('/events');
-  await page.waitForLoadState('networkidle');
 
   const eventPaths = [
     ...new Set(
@@ -43,7 +42,6 @@ async function firstVirtualEventPath(page: Page): Promise<string | undefined> {
 
   for (const eventPath of eventPaths) {
     await page.goto(eventPath);
-    await page.waitForLoadState('networkidle');
 
     if ((await page.locator('main a', { hasText: /^Join$/ }).count()) > 0) {
       return eventPath;
