@@ -88,6 +88,16 @@ record said that couldn't be stored on the new person, such as an email another 
 Each pair is queued once per reason. The rules are in `platform/storage/person-service.md`,
 "Matching".
 
+## onboarding_actions
+
+Featured actions for the member welcome email and welcome page. Each row's `id` is also the referral
+source name; someone arriving from that source sees an evergreen action instead of being sent back
+to the same campaign. `title`, `description`, `label`, and `href` are the visible action.
+`starts_at` and `ends_at` are UTC ISO timestamps; `priority` selects among overlapping campaigns;
+`active` allows staff to turn one off without deleting it. Add or edit rows in D1 to change the
+featured action without changing application code. The migration includes Week Without Driving as
+the first time-limited action.
+
 ## merges
 
 The record of two people combined into one, with the moved rows as JSON so the merge can be undone.

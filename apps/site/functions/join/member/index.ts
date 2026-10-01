@@ -6,7 +6,7 @@
 // script runs and as an ordinary form when it doesn't.
 
 import { ulid } from '../../../platform/core/ids';
-import { readJoinForm } from '../../../platform/core/join-form';
+import { readJoinForm, validReferral } from '../../../platform/core/join-form';
 import { processJoin, type JoinOutcome } from '../../../platform/join';
 import { t } from '../../../platform/messages';
 import { renderJoinForm, type FormState } from '../_form';
@@ -45,7 +45,7 @@ export const onRequestGet: PagesFunction<JoinEnv> = async ({ env, request }) =>
     request,
     {
       formToken: ulid(),
-      referral: new URL(request.url).searchParams.get('from') === 'wwd' ? 'wwd' : null,
+      referral: validReferral(new URL(request.url).searchParams.get('from')),
     },
     200,
   );
