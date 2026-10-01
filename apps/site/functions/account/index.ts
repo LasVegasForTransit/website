@@ -56,6 +56,7 @@ export const onRequestGet: PagesFunction<SignInPagesEnv> = async ({ env, request
             ),
           )
           .on('[data-slot="mailing-list"]', show());
+        filled = filled.on('[data-slot="member-check"]', show());
       } else {
         filled = filled.on('[data-slot="rejoin"]', show());
       }

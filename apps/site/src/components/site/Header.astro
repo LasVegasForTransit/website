@@ -1,6 +1,7 @@
 ---
 import { navMain } from '../../lib/site';
 import { t } from '../../../platform/messages';
+import ProfileIcon from './ProfileIcon.astro';
 
 const normalizePath = (value: string) => {
   const normalized = value.replace(/\/$/, '');
@@ -40,13 +41,35 @@ const path = normalizePath(Astro.url.pathname);
             const active = path === normalizePath(item.href);
             return (
               <li>
-                <a
-                  href={item.href}
-                  aria-current={active ? 'page' : undefined}
-                  class="nav-link no-underline hover:text-primary"
-                >
-                  {item.label}
-                </a>
+                {item.href === '/join' ? (
+                  <>
+                    <a
+                      href="/join"
+                      data-auth="signed-out"
+                      aria-current={active ? 'page' : undefined}
+                      class="nav-link no-underline hover:text-primary"
+                    >
+                      Join
+                    </a>
+                    <a
+                      href="/go/"
+                      data-auth="signed-in"
+                      hidden
+                      aria-current={path === '/go' ? 'page' : undefined}
+                      class="nav-link no-underline hover:text-primary"
+                    >
+                      Get involved
+                    </a>
+                  </>
+                ) : (
+                  <a
+                    href={item.href}
+                    aria-current={active ? 'page' : undefined}
+                    class="nav-link no-underline hover:text-primary"
+                  >
+                    {item.label}
+                  </a>
+                )}
               </li>
             );
           })
@@ -65,37 +88,61 @@ const path = normalizePath(Astro.url.pathname);
         <a href="/sign-in/" data-auth="signed-out" class="nav-link no-underline hover:text-primary">
           {t('header.signIn')}
         </a>
-        <a
-          href="/account/"
-          data-auth="signed-in"
-          hidden
-          class="nav-link no-underline hover:text-primary"
-        >
-          {t('header.account')}
-        </a>
-        <form method="post" action="/sign-out/" data-auth="signed-in" hidden>
-          <button type="submit" class="nav-link font-semibold hover:text-primary">
-            {t('header.signOut')}
-          </button>
-        </form>
+        <details data-auth="signed-in" hidden class="relative group">
+          <summary
+            class="flex cursor-pointer list-none items-center gap-2 font-semibold hover:text-primary"
+          >
+            <span
+              class="flex size-9 items-center justify-center rounded-full bg-primary-container text-primary-ink"
+              ><ProfileIcon /></span
+            >
+            <span>Profile</span>
+          </summary>
+          <div class="absolute right-0 top-full z-50 mt-3 w-48 bg-surface-container p-3 shadow-lg">
+            <a
+              href="/account/"
+              class="block px-3 py-2 no-underline font-semibold hover:bg-surface hover:text-primary"
+              >{t('header.account')}</a
+            >
+            <form method="post" action="/sign-out/">
+              <button
+                type="submit"
+                class="block w-full px-3 py-2 text-left font-semibold hover:bg-surface hover:text-primary"
+                >{t('header.signOut')}</button
+              >
+            </form>
+          </div>
+        </details>
       </div>
-      <a
-        href="/go"
-        data-header-cta
-        class="press inline-flex items-center gap-1.5 bg-on-surface text-surface px-4 py-2 text-sm font-bold no-underline hover:bg-primary hover:text-on-primary focus-visible:bg-primary focus-visible:text-on-primary"
-      >
-        Get involved <span class="arrow" aria-hidden="true">→</span>
-      </a>
+      <div data-auth="signed-out">
+        <a
+          href="/go"
+          data-header-cta
+          class="press inline-flex items-center gap-1.5 bg-on-surface text-surface px-4 py-2 text-sm font-bold no-underline hover:bg-primary hover:text-on-primary focus-visible:bg-primary focus-visible:text-on-primary"
+        >
+          Get involved <span class="arrow" aria-hidden="true">→</span>
+        </a>
+      </div>
     </div>
     {/* Mobile controls: Join CTA (hidden when nav open) + hamburger toggle */}
     <div class="md:hidden flex items-center gap-3">
-      <a
-        href="/join"
-        data-mobile-join
-        class="press inline-flex items-center gap-1.5 bg-on-surface text-surface px-4 py-2 text-sm font-bold no-underline hover:bg-primary hover:text-on-primary focus-visible:bg-primary focus-visible:text-on-primary"
-      >
-        Join <span class="arrow" aria-hidden="true">→</span>
-      </a>
+      <div data-auth="signed-out">
+        <a
+          href="/join"
+          data-mobile-join
+          class="press inline-flex items-center gap-1.5 bg-on-surface text-surface px-4 py-2 text-sm font-bold no-underline hover:bg-primary hover:text-on-primary focus-visible:bg-primary focus-visible:text-on-primary"
+        >
+          Join <span class="arrow" aria-hidden="true">→</span>
+        </a>
+      </div>
+      <div data-auth="signed-in" hidden>
+        <a
+          href="/account/"
+          aria-label="Your account"
+          class="flex size-10 items-center justify-center rounded-full bg-primary-container text-primary-ink"
+          ><ProfileIcon /></a
+        >
+      </div>
       <button
         type="button"
         data-nav-toggle
@@ -145,12 +192,20 @@ const path = normalizePath(Astro.url.pathname);
     <a href="/sign-in/" data-auth="signed-out" class="no-underline hover:text-primary">
       {t('header.signIn')}
     </a>
-    <a href="/account/" data-auth="signed-in" hidden class="no-underline hover:text-primary">
-      {t('header.account')}
-    </a>
-    <form method="post" action="/sign-out/" data-auth="signed-in" hidden>
-      <button type="submit" class="font-bold hover:text-primary">{t('header.signOut')}</button>
-    </form>
+    <details data-auth="signed-in" hidden class="w-full bg-surface-container p-4">
+      <summary class="flex cursor-pointer list-none items-center gap-3"
+        ><span
+          class="flex size-10 items-center justify-center rounded-full bg-primary-container text-primary-ink"
+          ><ProfileIcon /></span
+        ><span>Profile</span></summary
+      >
+      <div class="mt-4 space-y-3 pl-13 text-base">
+        <a href="/account/" class="block no-underline hover:text-primary">{t('header.account')}</a>
+        <form method="post" action="/sign-out/">
+          <button type="submit" class="font-bold hover:text-primary">{t('header.signOut')}</button>
+        </form>
+      </div>
+    </details>
   </div>
   <div class="px-6 pb-8 pt-4">
     <a
