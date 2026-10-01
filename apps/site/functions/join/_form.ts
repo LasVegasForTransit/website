@@ -26,11 +26,7 @@ const TEXT_FIELDS: [string, keyof JoinInput][] = [
 ];
 
 function restoreTravelAnswers(rewriter: HTMLRewriter, input: JoinInput): HTMLRewriter {
-  const checked = [
-    ...(input.ownsCar === 'yes' ? ['car'] : []),
-    ...input.micromobility,
-    ...(input.ownsCar === 'no' && input.micromobility.length === 0 ? ['none'] : []),
-  ];
+  const checked = [...(input.ownsCar === 'yes' ? ['car'] : []), ...input.micromobility];
   for (const answer of checked) {
     rewriter = rewriter.on(`input[name="transport_options"][value="${answer}"]`, {
       element(element) {

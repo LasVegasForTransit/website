@@ -57,6 +57,8 @@ function env(db: MemoryDb): PlatformEnv {
 
 function form(fields: Record<string, string | string[]>): JoinInput {
   const data = new FormData();
+  if (fields.origin !== 'newsletter_box' && !('given_name' in fields))
+    data.set('given_name', 'Ana');
   for (const [name, value] of Object.entries(fields)) {
     for (const item of Array.isArray(value) ? value : [value]) data.append(name, item);
   }
@@ -71,7 +73,7 @@ const inSunriseManor: GeocodeResult = {
   places: ['Sunrise Manor CDP'],
 };
 
-void test('joining with only an email and the box ticked makes a member everywhere', async () => {
+void test('joining with basic details and consent makes a member everywhere', async () => {
   const db = memoryDb();
   const { calls, fetcher } = fakeServices();
   const outcome = await processJoin(
@@ -98,6 +100,20 @@ void test('joining with only an email and the box ticked makes a member everywhe
   assert.equal(email.headers['List-Unsubscribe-Post'], 'List-Unsubscribe=One-Click');
 });
 
+void test('a blank first name prevents a member join before anything is saved', async () => {
+  const db = memoryDb();
+  const { calls, fetcher } = fakeServices();
+  const outcome = await processJoin(
+    env(db),
+    form({ email: 'ana@example.org', given_name: '   ', consent: 'yes' }),
+    '203.0.113.1',
+    { fetcher },
+  );
+  assert.deepEqual(outcome, { kind: 'invalid', errors: { given_name: 'required' } });
+  assert.equal(db.raw.prepare('SELECT count(*) AS n FROM people').get()?.n, 0);
+  assert.equal(calls.length, 0);
+});
+
 void test('join form keeps valid referral sources and selected micromobility options', () => {
   const input = form({
     referral: 'Partner_42',
@@ -114,9 +130,9 @@ void test('one getting-around question preserves car and micromobility answers',
   });
   assert.equal(selected.ownsCar, 'yes');
   assert.deepEqual(selected.micromobility, ['bike', 'e-bike', 'scooter', 'skateboard']);
-  const noVehicles = form({ transport_options: 'none' });
-  assert.equal(noVehicles.ownsCar, 'no');
-  assert.deepEqual(noVehicles.micromobility, []);
+  const unanswered = form({});
+  assert.equal(unanswered.ownsCar, null);
+  assert.deepEqual(unanswered.micromobility, []);
   const onlyBike = form({ transport_options: 'bike' });
   assert.equal(onlyBike.ownsCar, 'no');
   assert.deepEqual(onlyBike.micromobility, ['bike']);

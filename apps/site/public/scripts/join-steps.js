@@ -26,6 +26,7 @@
     const continueButton = form.querySelector('[data-join-continue]');
     const backButton = form.querySelector('[data-join-back]');
     const email = form.querySelector('[name="email"]');
+    const givenName = form.querySelector('[name="given_name"]');
     const consent = form.querySelector('[name="consent"]');
     const items = progress.querySelectorAll('li');
     const basicHeading = document.querySelector('[data-join-heading-basic]');
@@ -38,6 +39,7 @@
         continueButton,
         backButton,
         email,
+        givenName,
         consent,
         basicHeading,
         interestsHeading,
@@ -66,26 +68,17 @@
 
     function continueToInterests() {
       if (!email.reportValidity()) return;
+      if (!givenName.value.trim()) givenName.setCustomValidity('Enter your first name');
+      else givenName.setCustomValidity('');
+      if (!givenName.reportValidity()) return;
       if (!consent.reportValidity()) return;
       show(2);
     }
 
     second.hidden = true;
+    givenName.addEventListener('input', () => givenName.setCustomValidity(''));
     continueButton.addEventListener('click', continueToInterests);
     backButton.addEventListener('click', () => show(1));
-    form.querySelector('#transport_options')?.addEventListener('change', (event) => {
-      const changed = event.target;
-      if (!changed?.matches?.('input[name="transport_options"]') || !changed.checked) return;
-      const options = form.querySelectorAll('input[name="transport_options"]');
-      if (changed.value === 'none') {
-        options.forEach((option) => {
-          if (option.value !== 'none') option.checked = false;
-        });
-      } else {
-        const none = form.querySelector('input[name="transport_options"][value="none"]');
-        if (none) none.checked = false;
-      }
-    });
     form.addEventListener(
       'submit',
       (event) => {

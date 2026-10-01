@@ -40,7 +40,7 @@ export interface JoinInput {
   honeypot: string;
 }
 
-export type JoinField = 'email' | 'zip' | 'phone' | 'consent';
+export type JoinField = 'email' | 'given_name' | 'zip' | 'phone' | 'consent';
 export type JoinErrors = Partial<Record<JoinField, 'invalid' | 'required'>>;
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -118,6 +118,7 @@ export function formatPhone(e164: string): string {
 export function validateJoin(input: JoinInput): JoinErrors {
   const errors: JoinErrors = {};
   if (!EMAIL_PATTERN.test(input.email)) errors.email = input.email ? 'invalid' : 'required';
+  if (input.origin === 'join_form' && !input.givenName.trim()) errors.given_name = 'required';
   if (input.zip && !/^\d{5}$/.test(input.zip)) errors.zip = 'invalid';
   if (input.phone && normalizePhone(input.phone) === null) errors.phone = 'invalid';
   if (!input.consent) errors.consent = 'required';
