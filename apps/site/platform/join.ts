@@ -110,7 +110,11 @@ async function sendConfirmation(
   fetcher: typeof fetch,
 ): Promise<void> {
   const link = await removalLink(env, recipient.personId);
-  const featured = await featuredWelcomeAction(env.PLATFORM_DB, recipient.referral);
+  const featured = await featuredWelcomeAction(
+    env.PLATFORM_DB,
+    recipient.referral,
+    recipient.interests,
+  );
   const { text, html } = memberWelcomeEmail({
     givenName: recipient.givenName,
     action: welcomeAction(recipient.interests, featured),

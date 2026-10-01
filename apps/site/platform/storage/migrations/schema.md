@@ -90,13 +90,15 @@ Each pair is queued once per reason. The rules are in `platform/storage/person-s
 
 ## onboarding_actions
 
-Featured actions for the member welcome email and welcome page. Each row's `id` is also the referral
-source name; someone arriving from that source sees an evergreen action instead of being sent back
-to the same campaign. `title`, `description`, `label`, and `href` are the visible action.
-`starts_at` and `ends_at` are UTC ISO timestamps; `priority` selects among overlapping campaigns;
-`active` allows staff to turn one off without deleting it. Add or edit rows in D1 to change the
-featured action without changing application code. The migration includes Week Without Driving as
-the first time-limited action.
+Featured actions for the member welcome email and welcome page. `id` identifies the action.
+`referral_source` optionally names its campaign or partner; someone arriving from that source sees a
+different action instead of being sent back. `interest` optionally targets one of the join form
+interests, so an event or public meeting can reach the people who selected it. `title`,
+`description`, `label`, and `href` are the visible action. `starts_at` and `ends_at` are UTC ISO
+timestamps; `priority` selects among overlapping actions; `active` allows staff to turn one off
+without deleting it. Add or edit rows in D1 to change the featured action without changing
+application code. Migrations 0007 and 0008 seed Week Without Driving as the first time-limited
+action and assign its referral source.
 
 ## merges
 
