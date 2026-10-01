@@ -24,6 +24,7 @@ packageExtensions:
 # Temporary transitive pins for published security fixes not yet selected by
 # their direct dependents.
 overrides:
+  devalue: 5.9.4
   sharp: 0.35.4
   smol-toml: 1.8.0
   svgo: 4.1.0
