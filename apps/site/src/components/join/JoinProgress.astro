@@ -4,11 +4,11 @@ interface Props {
 }
 
 const { step } = Astro.props;
-const steps = ['About you', 'Your interests'];
+const steps = ['Basic info', 'Optional details'];
 ---
 
 <ol
-  class="mb-10 grid grid-cols-2 gap-2"
+  class="mt-6 grid grid-cols-2 gap-2"
   aria-label="Join LVBT progress"
   data-join-progress
   style="display:none"
@@ -22,14 +22,16 @@ const steps = ['About you', 'Your interests'];
         <li
           aria-current={current ? 'step' : undefined}
           class:list={[
-            'border-t-4 pt-3 text-sm leading-tight',
+            'flex items-center gap-2 border-b-2 pb-2 text-sm leading-tight',
             current ? 'border-primary text-on-surface font-bold' : 'border-outline/25',
             complete && 'border-on-surface text-on-surface',
             !current && !complete && 'text-on-surface-variant',
           ]}
         >
-          <span class="block text-xs font-bold">Step {position} of 2</span>
-          <span class="mt-1 block">{label}</span>
+          <span class="text-xs font-bold" aria-hidden="true">
+            {position}
+          </span>
+          <span>{label}</span>
         </li>
       );
     })

@@ -2,6 +2,20 @@
 // The basic details and optional questions share one form, so the join still
 // works without JavaScript. With JavaScript, they become two short screens.
 (() => {
+  function updateProgress(items, step) {
+    items.forEach((item, index) => {
+      const current = index + 1 === step;
+      if (current) item.setAttribute('aria-current', 'step');
+      else item.removeAttribute('aria-current');
+      item.classList.toggle('border-primary', current);
+      item.classList.toggle('border-outline/25', index + 1 > step);
+      item.classList.toggle('border-on-surface', index + 1 < step);
+      item.classList.toggle('text-on-surface', index + 1 <= step);
+      item.classList.toggle('text-on-surface-variant', index + 1 > step);
+      item.classList.toggle('font-bold', current);
+    });
+  }
+
   function run() {
     const form = document.querySelector('form[action="/join/member/"][data-enhance]');
     const progress = document.querySelector('[data-join-progress]');
@@ -14,7 +28,23 @@
     const email = form.querySelector('[name="email"]');
     const consent = form.querySelector('[name="consent"]');
     const items = progress.querySelectorAll('li');
-    if (!first || !second || !continueButton || !backButton || !email || !consent) return;
+    const basicHeading = document.querySelector('[data-join-heading-basic]');
+    const interestsHeading = document.querySelector('[data-join-heading-interests]');
+    const intro = document.querySelector('[data-join-intro]');
+    if (
+      [
+        first,
+        second,
+        continueButton,
+        backButton,
+        email,
+        consent,
+        basicHeading,
+        interestsHeading,
+        intro,
+      ].some((element) => !element)
+    )
+      return;
 
     form.dataset.joinSteps = '1';
     progress.style.display = '';
@@ -24,17 +54,10 @@
     function show(step) {
       first.hidden = step !== 1;
       second.hidden = step !== 2;
-      items.forEach((item, index) => {
-        const current = index + 1 === step;
-        if (current) item.setAttribute('aria-current', 'step');
-        else item.removeAttribute('aria-current');
-        item.classList.toggle('border-primary', current);
-        item.classList.toggle('border-outline/25', index + 1 > step);
-        item.classList.toggle('border-on-surface', index + 1 < step);
-        item.classList.toggle('text-on-surface', index + 1 <= step);
-        item.classList.toggle('text-on-surface-variant', index + 1 > step);
-        item.classList.toggle('font-bold', current);
-      });
+      basicHeading.hidden = step !== 1;
+      interestsHeading.hidden = step !== 2;
+      intro.hidden = step !== 1;
+      updateProgress(items, step);
       if (step === 2)
         second.querySelector('[data-join-stage-heading]')?.focus({ preventScroll: true });
       else email.focus({ preventScroll: true });
