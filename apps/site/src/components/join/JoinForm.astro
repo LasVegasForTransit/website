@@ -42,6 +42,7 @@ const { action } = Astro.props;
     <TextField
       name="email"
       label={t('join.emailLabel')}
+      hint={t('join.emailHint')}
       type="email"
       autocomplete="email"
       required
@@ -52,11 +53,17 @@ const { action } = Astro.props;
       <TextField
         name="given_name"
         label={t('join.givenNameLabel')}
+        hint={t('join.givenNameHint')}
         autocomplete="given-name"
         required
         error={t('join.givenNameError')}
       />
-      <TextField name="family_name" label={t('join.familyNameLabel')} autocomplete="family-name" />
+      <TextField
+        name="family_name"
+        label={t('join.familyNameLabel')}
+        hint={t('join.familyNameHint')}
+        autocomplete="family-name"
+      />
     </div>
 
     <TextField
@@ -97,6 +104,7 @@ const { action } = Astro.props;
     <ChoiceGroup
       name="interests"
       legend={t('join.interestsHeading')}
+      hint={t('join.interestsHint')}
       type="checkbox"
       cards
       options={[

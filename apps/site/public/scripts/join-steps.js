@@ -16,6 +16,48 @@
     });
   }
 
+  function validateBasicFields({ form, summary, email, givenName, phone, consent }) {
+    function setFieldError(field, invalid) {
+      const error = form.querySelector(`[data-error-for="${field.id}"]`);
+      const item = summary.querySelector(`[data-summary-for="${field.id}"]`);
+      if (!error || !item) return;
+      error.hidden = !invalid;
+      item.hidden = !invalid;
+      field.toggleAttribute('aria-invalid', invalid);
+      const describedBy = (field.getAttribute('aria-describedby') || '')
+        .split(/\s+/)
+        .filter((id) => id && id !== error.id);
+      if (invalid) describedBy.unshift(error.id);
+      if (describedBy.length) field.setAttribute('aria-describedby', describedBy.join(' '));
+      else field.removeAttribute('aria-describedby');
+      summary.hidden = !summary.querySelector('[data-summary-for]:not([hidden])');
+    }
+
+    for (const field of [email, givenName, phone, consent]) {
+      field.addEventListener(field === consent ? 'change' : 'input', () =>
+        setFieldError(field, false),
+      );
+    }
+
+    return () => {
+      const digits = phone.value.replace(/\D/g, '');
+      const invalid = [
+        [email, !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.value.trim())],
+        [givenName, !givenName.value.trim()],
+        [
+          phone,
+          Boolean(phone.value.trim()) &&
+            !(digits.length === 10 || (digits.length === 11 && digits.startsWith('1'))),
+        ],
+        [consent, !consent.checked],
+      ];
+      invalid.forEach(([field, failed]) => setFieldError(field, failed));
+      if (!invalid.some(([, failed]) => failed)) return true;
+      summary.focus();
+      return false;
+    };
+  }
+
   function run() {
     const form = document.querySelector('form[action="/join/member/"][data-enhance]');
     const progress = document.querySelector('[data-join-progress]');
@@ -27,7 +69,9 @@
     const backButton = form.querySelector('[data-join-back]');
     const email = form.querySelector('[name="email"]');
     const givenName = form.querySelector('[name="given_name"]');
+    const phone = form.querySelector('[name="phone"]');
     const consent = form.querySelector('[name="consent"]');
+    const errorSummary = document.querySelector('[data-error-summary]');
     const items = progress.querySelectorAll('li');
     const basicHeading = document.querySelector('[data-join-heading-basic]');
     const interestsHeading = document.querySelector('[data-join-heading-interests]');
@@ -40,7 +84,9 @@
         backButton,
         email,
         givenName,
+        phone,
         consent,
+        errorSummary,
         basicHeading,
         interestsHeading,
         intro,
@@ -52,6 +98,14 @@
     progress.style.display = '';
     continueButton.style.display = '';
     backButton.style.display = '';
+    const basicFieldsValid = validateBasicFields({
+      form,
+      summary: errorSummary,
+      email,
+      givenName,
+      phone,
+      consent,
+    });
 
     function show(step) {
       first.hidden = step !== 1;
@@ -67,16 +121,10 @@
     }
 
     function continueToInterests() {
-      if (!email.reportValidity()) return;
-      if (!givenName.value.trim()) givenName.setCustomValidity('Enter your first name');
-      else givenName.setCustomValidity('');
-      if (!givenName.reportValidity()) return;
-      if (!consent.reportValidity()) return;
-      show(2);
+      if (basicFieldsValid()) show(2);
     }
 
     second.hidden = true;
-    givenName.addEventListener('input', () => givenName.setCustomValidity(''));
     continueButton.addEventListener('click', continueToInterests);
     backButton.addEventListener('click', () => show(1));
     form.addEventListener(
