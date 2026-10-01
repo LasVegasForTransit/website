@@ -106,27 +106,19 @@ const { action } = Astro.props;
       autocomplete="off"
     />
 
-    <div class="grid gap-6 sm:grid-cols-2">
-      <ChoiceGroup
-        name="owns_car"
-        legend={t('join.ownsCarHeading')}
-        options={[
-          { value: 'yes', label: t('join.answerYes') },
-          { value: 'no', label: t('join.answerNo') },
-        ]}
-      />
-    </div>
-
     <ChoiceGroup
-      name="micromobility"
-      legend={t('join.micromobilityHeading')}
+      name="transport_options"
+      legend={t('join.transportHeading')}
+      hint={t('join.transportHint')}
       type="checkbox"
       cards
       options={[
+        { value: 'car', label: t('join.transportCar') },
         { value: 'bike', label: t('join.micromobilityBike') },
         { value: 'e-bike', label: t('join.micromobilityEbike') },
         { value: 'scooter', label: t('join.micromobilityScooter') },
         { value: 'skateboard', label: t('join.micromobilitySkateboard') },
+        { value: 'none', label: t('join.transportNone') },
       ]}
     />
 

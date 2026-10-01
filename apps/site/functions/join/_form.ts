@@ -26,9 +26,13 @@ const TEXT_FIELDS: [string, keyof JoinInput][] = [
 ];
 
 function restoreTravelAnswers(rewriter: HTMLRewriter, input: JoinInput): HTMLRewriter {
-  for (const [field, answer] of [['owns_car', input.ownsCar]]) {
-    if (!answer) continue;
-    rewriter = rewriter.on(`input[name="${field}"][value="${answer}"]`, {
+  const checked = [
+    ...(input.ownsCar === 'yes' ? ['car'] : []),
+    ...input.micromobility,
+    ...(input.ownsCar === 'no' && input.micromobility.length === 0 ? ['none'] : []),
+  ];
+  for (const answer of checked) {
+    rewriter = rewriter.on(`input[name="transport_options"][value="${answer}"]`, {
       element(element) {
         element.setAttribute('checked', '');
       },
@@ -67,13 +71,6 @@ export async function renderJoinForm(
     }
     for (const interest of input.interests) {
       rewriter = rewriter.on(`input[name="interests"][value="${interest}"]`, {
-        element(element) {
-          element.setAttribute('checked', '');
-        },
-      });
-    }
-    for (const option of input.micromobility) {
-      rewriter = rewriter.on(`input[name="micromobility"][value="${option}"]`, {
         element(element) {
           element.setAttribute('checked', '');
         },
