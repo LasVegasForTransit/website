@@ -111,7 +111,6 @@ test.describe('event metadata', () => {
 
   test('publishes stable Schema.org event details on event pages', async ({ page }) => {
     await page.goto('/events');
-    await page.waitForLoadState('networkidle');
 
     const eventPaths = [
       ...new Set(
@@ -129,7 +128,6 @@ test.describe('event metadata', () => {
 
     for (const eventPath of eventPaths) {
       await page.goto(eventPath);
-      await page.waitForLoadState('networkidle');
 
       const event = await eventJsonLd(page);
       const canonicalPath = eventPath.endsWith('/') ? eventPath : `${eventPath}/`;
