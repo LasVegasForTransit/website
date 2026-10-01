@@ -53,17 +53,11 @@ const { action } = Astro.props;
       <TextField
         name="given_name"
         label={t('join.givenNameLabel')}
-        hint={t('join.givenNameHint')}
         autocomplete="given-name"
         required
         error={t('join.givenNameError')}
       />
-      <TextField
-        name="family_name"
-        label={t('join.familyNameLabel')}
-        hint={t('join.familyNameHint')}
-        autocomplete="family-name"
-      />
+      <TextField name="family_name" label={t('join.familyNameLabel')} autocomplete="family-name" />
     </div>
 
     <TextField
