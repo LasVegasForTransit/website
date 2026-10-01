@@ -8,6 +8,7 @@ import KeyValueSummary from '../../components/app/KeyValueSummary.astro';
 import Notice from '../../components/app/Notice.astro';
 import { hintClass, linkClass } from '../../components/app/styles';
 import { t } from '../../../platform/messages';
+import { Icon } from 'astro-icon/components';
 
 const change = (href: string) => ({ href, label: t('account.change') });
 ---
@@ -23,12 +24,37 @@ const change = (href: string) => ({ href, label: t('account.change') });
         <Notice kind="success" hidden dataSlot="notice" />
       </div>
 
+      <nav aria-label="Account sections" class="mt-8 flex flex-wrap gap-2">
+        <a
+          href="#membership"
+          class="press bg-surface-container px-4 py-2 font-bold no-underline hover:bg-primary-container"
+          >Membership</a
+        >
+        <a
+          href="#details"
+          class="press bg-surface-container px-4 py-2 font-bold no-underline hover:bg-primary-container"
+          >Your details</a
+        >
+        <a
+          href="#mailing-list"
+          class="press bg-surface-container px-4 py-2 font-bold no-underline hover:bg-primary-container"
+          >Email updates</a
+        >
+        <a
+          href="#data"
+          class="press bg-surface-container px-4 py-2 font-bold no-underline hover:bg-primary-container"
+          >Your data</a
+        >
+      </nav>
+
       <div class="mt-10 grid gap-8 lg:grid-cols-[minmax(0,1fr)_19rem] lg:items-start">
-        <section class="border-l-4 border-primary bg-primary-container p-7 md:p-9">
+        <section
+          id="membership"
+          class="scroll-mt-24 border-l-4 border-primary bg-primary-container p-7 md:p-9"
+        >
           <div class="flex items-start justify-between gap-6">
             <div>
-              <p class="text-sm font-bold text-primary-ink">Your place in LVBT</p>
-              <h2 class="text-title-lg mt-2">{t('account.membershipHeading')}</h2>
+              <h2 class="text-title-lg">{t('account.membershipHeading')}</h2>
             </div>
             <span data-slot="member-check" hidden aria-hidden="true">
               <span
@@ -46,19 +72,18 @@ const change = (href: string) => ({ href, label: t('account.change') });
             </span>
           </div>
           <p class="mt-4 text-lg" data-slot="member-since" hidden></p>
-          <div data-slot="rejoin" hidden>
-            <p class="mt-4">{t('account.notOnList')}</p>
-            <form method="post" action="/account/mailing-list/" class="mt-4 space-y-4">
-              <input type="hidden" name="action" value="rejoin" />
-              <p class={hintClass}>{t('account.rejoinConsent')}</p>
-              <Button busyLabel={t('account.saving')}>{t('account.rejoin')}</Button>
-            </form>
-          </div>
+          <p data-slot="membership-inactive" hidden class="mt-4 text-lg">
+            {t('account.notOnList')}
+          </p>
         </section>
 
         <aside class="bg-on-surface p-7 text-surface md:p-8 lg:col-start-2 lg:row-span-4">
-          <p class="text-sm font-bold text-primary-soft">Do something together</p>
-          <h2 class="text-title-lg mt-3">Put your membership to work</h2>
+          <Icon
+            name="mdi:account-group-outline"
+            class="size-8 text-primary-soft"
+            aria-hidden="true"
+          />
+          <h2 class="text-title-lg mt-3">Get involved with LVBT</h2>
           <p class="mt-3 leading-relaxed text-surface/80">
             Find an event, join a team, or help with a campaign near you.
           </p>
@@ -69,52 +94,78 @@ const change = (href: string) => ({ href, label: t('account.change') });
           >
         </aside>
 
-        <section class="lg:col-start-1">
-          <h2 class="text-title-lg">{t('account.detailsHeading')}</h2>
+        <section id="details" class="scroll-mt-24 lg:col-start-1">
+          <h2 class="flex items-center gap-3 text-title-lg">
+            <Icon
+              name="mdi:card-account-details-outline"
+              class="size-6 text-primary"
+              aria-hidden="true"
+            />{t('account.detailsHeading')}
+          </h2>
           <div class="mt-5">
             <KeyValueSummary
               rows={[
                 {
                   key: t('account.name'),
+                  icon: 'mdi:account-outline',
                   value: t('account.notGiven'),
                   dataSlot: 'name',
                   change: change('/account/name/'),
                 },
                 {
                   key: t('account.email'),
+                  icon: 'mdi:email-outline',
                   value: t('account.notGiven'),
                   dataSlot: 'email',
                   change: change('/account/email/'),
                 },
                 {
                   key: t('account.phone'),
+                  icon: 'mdi:phone-outline',
                   value: t('account.notGiven'),
                   dataSlot: 'phone',
                   change: change('/account/phone/'),
                 },
                 {
                   key: t('account.area'),
+                  icon: 'mdi:map-marker-outline',
                   value: t('account.notGiven'),
                   dataSlot: 'area',
                   change: change('/account/area/'),
                 },
-                { key: t('account.language'), value: t('account.languageValue') },
               ]}
             />
           </div>
-          <p class={`${hintClass} mt-4`}>{t('account.languageNote')}</p>
         </section>
 
-        <section data-slot="mailing-list" hidden class="bg-surface-container p-7 lg:col-start-1">
-          <h2 class="text-title-lg">{t('account.listHeading')}</h2>
-          <p class="mt-3">{t('account.onList')}</p>
-          <a href="/account/mailing-list/" class={`${linkClass} mt-5 inline-block`}
-            >{t('account.leave')}</a
-          >
+        <section id="mailing-list" class="scroll-mt-24 bg-surface-container p-7 lg:col-start-1">
+          <h2 class="flex items-center gap-3 text-title-lg">
+            <Icon name="mdi:email-newsletter" class="size-6 text-primary" aria-hidden="true" />{
+              t('account.listHeading')
+            }
+          </h2>
+          <div data-slot="mailing-list" hidden>
+            <p class="mt-3">{t('account.onList')}</p>
+            <a href="/account/mailing-list/" class={`${linkClass} mt-5 inline-block`}
+              >{t('account.leave')}</a
+            >
+          </div>
+          <div data-slot="rejoin" hidden>
+            <p class="mt-3">{t('account.notOnList')}</p>
+            <form method="post" action="/account/mailing-list/" class="mt-4 space-y-4">
+              <input type="hidden" name="action" value="rejoin" />
+              <p class={hintClass}>{t('account.rejoinConsent')}</p>
+              <Button busyLabel={t('account.saving')}>{t('account.rejoin')}</Button>
+            </form>
+          </div>
         </section>
 
-        <section class="bg-surface-container p-7 lg:col-start-1">
-          <h2 class="text-title-lg">{t('account.dataHeading')}</h2>
+        <section id="data" class="scroll-mt-24 bg-surface-container p-7 lg:col-start-1">
+          <h2 class="flex items-center gap-3 text-title-lg">
+            <Icon name="mdi:database-outline" class="size-6 text-primary" aria-hidden="true" />{
+              t('account.dataHeading')
+            }
+          </h2>
           <ul class="mt-4 flex flex-wrap gap-x-8 gap-y-3">
             <li><a href="/account/data/" class={linkClass}>{t('account.download')}</a></li>
             <li><a href="/account/delete/" class={linkClass}>{t('account.delete')}</a></li>

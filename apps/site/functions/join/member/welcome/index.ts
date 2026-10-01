@@ -4,7 +4,7 @@
 // submitted, read from the signed join-step cookie.
 
 import { t } from '../../../../platform/messages';
-import { welcomeAction } from '../../../../platform/member-welcome';
+import { featuredWelcomeAction, welcomeAction } from '../../../../platform/member-welcome';
 import {
   builtPage,
   finish,
@@ -34,7 +34,10 @@ export const onRequestGet: PagesFunction<JoinEnv> = async ({ env, request }) => 
       showEmailText(t('welcome.sentTo', { email: step.email })),
     );
   }
-  const action = welcomeAction(step.interests, step.referral);
+  const featured = platform
+    ? await featuredWelcomeAction(platform.PLATFORM_DB, step.referral)
+    : null;
+  const action = welcomeAction(step.interests, featured);
   rewriter = rewriter
     .on('[data-slot="next-action-title"]', showText(action.title))
     .on('[data-slot="next-action-description"]', showText(action.description))

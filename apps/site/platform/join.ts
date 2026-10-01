@@ -16,7 +16,7 @@ import { hashWithSecret, signToken } from './core/signing';
 import { subscribe, type SubscribeResult } from './integrations/beehiiv';
 import { geocodeToBlock, type GeocodeResult } from './integrations/census';
 import { emailConfigured, sendEmail } from './integrations/email';
-import { memberWelcomeEmail, welcomeAction } from './member-welcome';
+import { featuredWelcomeAction, memberWelcomeEmail, welcomeAction } from './member-welcome';
 import { t } from './messages';
 import type { Db } from './storage/db';
 import {
@@ -110,9 +110,10 @@ async function sendConfirmation(
   fetcher: typeof fetch,
 ): Promise<void> {
   const link = await removalLink(env, recipient.personId);
+  const featured = await featuredWelcomeAction(env.PLATFORM_DB, recipient.referral);
   const { text, html } = memberWelcomeEmail({
     givenName: recipient.givenName,
-    action: welcomeAction(recipient.interests, recipient.referral),
+    action: welcomeAction(recipient.interests, featured),
     unsubscribeUrl: link,
   });
   await sendEmail(
@@ -259,7 +260,7 @@ async function recordMember(
       referral: input.referral,
       discordUsername: input.discordUsername || null,
       ownsCar: input.ownsCar,
-      ownsBike: input.ownsBike,
+      micromobility: input.micromobility,
     },
   });
   return person.id;

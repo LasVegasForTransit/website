@@ -3,6 +3,13 @@
 
 export const INTERESTS = ['events', 'meetings', 'volunteering', 'news'] as const;
 export type Interest = (typeof INTERESTS)[number];
+export const MICROMOBILITY = ['bike', 'e-bike', 'scooter', 'skateboard'] as const;
+export type Micromobility = (typeof MICROMOBILITY)[number];
+
+export function validReferral(value: string | null): string | null {
+  const referral = value?.trim().toLowerCase() ?? '';
+  return /^[a-z0-9][a-z0-9_-]{0,79}$/.test(referral) ? referral : null;
+}
 
 export type JoinOrigin = 'join_form' | 'newsletter_box';
 
@@ -23,9 +30,9 @@ export interface JoinInput {
   interests: Interest[];
   discordUsername: string;
   ownsCar: 'yes' | 'no' | null;
-  ownsBike: 'yes' | 'no' | null;
-  /** Identifies someone who arrived from the separate WWD campaign. */
-  referral: 'wwd' | null;
+  micromobility: Micromobility[];
+  /** Source supplied by the referring campaign or partner. */
+  referral: string | null;
   consent: boolean;
   /** One-time token from the form, used to make a double submit harmless. */
   formToken: string;
@@ -62,10 +69,16 @@ export function readJoinForm(form: FormData): JoinInput {
     ownsCar: ['yes', 'no'].includes(text(form, 'owns_car'))
       ? (text(form, 'owns_car') as 'yes' | 'no')
       : null,
-    ownsBike: ['yes', 'no'].includes(text(form, 'owns_bike'))
-      ? (text(form, 'owns_bike') as 'yes' | 'no')
-      : null,
-    referral: text(form, 'referral') === 'wwd' ? 'wwd' : null,
+    micromobility: [
+      ...new Set(
+        form
+          .getAll('micromobility')
+          .filter((value): value is Micromobility =>
+            MICROMOBILITY.includes(value as Micromobility),
+          ),
+      ),
+    ],
+    referral: validReferral(text(form, 'referral')),
     consent: form.get('consent') === 'yes',
     formToken: text(form, 'form_token'),
     honeypot: text(form, 'website'),

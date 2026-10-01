@@ -115,15 +115,20 @@ const { action } = Astro.props;
           { value: 'no', label: t('join.answerNo') },
         ]}
       />
-      <ChoiceGroup
-        name="owns_bike"
-        legend={t('join.ownsBikeHeading')}
-        options={[
-          { value: 'yes', label: t('join.answerYes') },
-          { value: 'no', label: t('join.answerNo') },
-        ]}
-      />
     </div>
+
+    <ChoiceGroup
+      name="micromobility"
+      legend={t('join.micromobilityHeading')}
+      type="checkbox"
+      cards
+      options={[
+        { value: 'bike', label: t('join.micromobilityBike') },
+        { value: 'e-bike', label: t('join.micromobilityEbike') },
+        { value: 'scooter', label: t('join.micromobilityScooter') },
+        { value: 'skateboard', label: t('join.micromobilitySkateboard') },
+      ]}
+    />
 
     <div class="flex flex-wrap items-center gap-4">
       <button type="button" data-join-back style="display:none" class={buttonClass.secondary}>

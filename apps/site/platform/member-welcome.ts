@@ -1,10 +1,8 @@
 import type { Interest } from './core/join-form';
 import { escapeHtml } from './integrations/email';
+import type { Db } from './storage/db';
 
 const SITE = 'https://lasvegasfortransit.org';
-const WWD = 'https://lvwwd.org/take-part/?utm_source=lvbt&utm_medium=welcome_email';
-const WWD_OPENS = Date.parse('2026-09-30T00:00:00-07:00');
-const WWD_CLOSES = Date.parse('2026-10-09T00:00:00-07:00');
 
 export interface WelcomeAction {
   title: string;
@@ -13,20 +11,32 @@ export interface WelcomeAction {
   href: string;
 }
 
+export async function featuredWelcomeAction(
+  db: Db,
+  referral: string | null,
+  now = new Date(),
+): Promise<WelcomeAction | null> {
+  const timestamp = now.toISOString();
+  try {
+    return await db
+      .prepare(
+        `SELECT title, description, label, href FROM onboarding_actions
+         WHERE active = 1 AND starts_at <= ? AND ends_at > ? AND id != ?
+         ORDER BY priority DESC, starts_at DESC LIMIT 1`,
+      )
+      .bind(timestamp, timestamp, referral ?? '')
+      .first<WelcomeAction>();
+  } catch {
+    console.error('Could not read onboarding actions');
+    return null;
+  }
+}
+
 export function welcomeAction(
   interests: Interest[],
-  referral: 'wwd' | null,
-  now = new Date(),
+  featured: WelcomeAction | null,
 ): WelcomeAction {
-  if (referral !== 'wwd' && now.getTime() >= WWD_OPENS && now.getTime() < WWD_CLOSES) {
-    return {
-      title: 'Take part in Week Without Driving',
-      description:
-        'October 1–8: try a trip without driving and tell us what you notice. Anyone can take part, even without signing up for the giveaway.',
-      label: 'See how to take part',
-      href: WWD,
-    };
-  }
+  if (featured) return featured;
   if (interests.includes('meetings')) {
     return {
       title: 'Speak up for better transit',

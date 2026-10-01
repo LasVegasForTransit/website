@@ -4,11 +4,13 @@
 // "Change" is followed by the row's name for screen readers, so it is read as
 // "Change Phone". `dataSlot` marks a value a server fills in on request.
 import { linkClass } from './styles';
+import { Icon } from 'astro-icon/components';
 
 interface Row {
   key: string;
   value: string;
   dataSlot?: string;
+  icon?: string;
   change?: { href: string; label: string };
 }
 
@@ -23,7 +25,10 @@ const { rows } = Astro.props;
   {
     rows.map((row) => (
       <div class="flex min-h-36 flex-col bg-surface-container p-5">
-        <dt class="text-sm font-bold text-on-surface-variant">{row.key}</dt>
+        <dt class="flex items-center gap-2 text-sm font-bold text-on-surface-variant">
+          {row.icon && <Icon name={row.icon} class="size-5 text-primary" aria-hidden="true" />}
+          {row.key}
+        </dt>
         <dd data-slot={row.dataSlot} class="mt-2 [overflow-wrap:anywhere] font-semibold">
           {row.value}
         </dd>

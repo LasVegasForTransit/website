@@ -7,7 +7,7 @@
 // Cloudflare Pages does not treat this file as a route.
 
 import { signToken, verifyToken } from '../../platform/core/signing';
-import { INTERESTS, type Interest } from '../../platform/core/join-form';
+import { INTERESTS, validReferral, type Interest } from '../../platform/core/join-form';
 import type { PlatformEnv } from '../../platform/join';
 import type { Db } from '../../platform/storage/db';
 
@@ -123,7 +123,7 @@ export interface JoinStep {
   email: string;
   address: string;
   interests: Interest[];
-  referral: 'wwd' | null;
+  referral: string | null;
 }
 
 export async function joinStepCookie(secret: string, step: JoinStep): Promise<string> {
@@ -156,7 +156,7 @@ export async function readJoinStep(secret: string, request: Request): Promise<Jo
     interests: (payload.data?.interests ?? '')
       .split(',')
       .filter((interest): interest is Interest => INTERESTS.includes(interest as Interest)),
-    referral: payload.data?.referral === 'wwd' ? 'wwd' : null,
+    referral: validReferral(payload.data?.referral ?? null),
   };
 }
 

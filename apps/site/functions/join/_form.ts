@@ -12,7 +12,7 @@ export interface FormState {
   input?: JoinInput;
   errors?: JoinErrors;
   notice?: string;
-  referral?: 'wwd' | null;
+  referral?: string | null;
 }
 
 const TEXT_FIELDS: [string, keyof JoinInput][] = [
@@ -26,10 +26,7 @@ const TEXT_FIELDS: [string, keyof JoinInput][] = [
 ];
 
 function restoreTravelAnswers(rewriter: HTMLRewriter, input: JoinInput): HTMLRewriter {
-  for (const [field, answer] of [
-    ['owns_car', input.ownsCar],
-    ['owns_bike', input.ownsBike],
-  ]) {
+  for (const [field, answer] of [['owns_car', input.ownsCar]]) {
     if (!answer) continue;
     rewriter = rewriter.on(`input[name="${field}"][value="${answer}"]`, {
       element(element) {
@@ -70,6 +67,13 @@ export async function renderJoinForm(
     }
     for (const interest of input.interests) {
       rewriter = rewriter.on(`input[name="interests"][value="${interest}"]`, {
+        element(element) {
+          element.setAttribute('checked', '');
+        },
+      });
+    }
+    for (const option of input.micromobility) {
+      rewriter = rewriter.on(`input[name="micromobility"][value="${option}"]`, {
         element(element) {
           element.setAttribute('checked', '');
         },

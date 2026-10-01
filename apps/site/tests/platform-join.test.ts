@@ -98,6 +98,16 @@ void test('joining with only an email and the box ticked makes a member everywhe
   assert.equal(email.headers['List-Unsubscribe-Post'], 'List-Unsubscribe=One-Click');
 });
 
+void test('join form keeps valid referral sources and selected micromobility options', () => {
+  const input = form({
+    referral: 'Partner_42',
+    micromobility: ['bike', 'e-bike', 'scooter', 'skateboard', 'unknown', 'bike'],
+  });
+  assert.equal(input.referral, 'partner_42');
+  assert.deepEqual(input.micromobility, ['bike', 'e-bike', 'scooter', 'skateboard']);
+  assert.equal(form({ referral: 'https://example.org/' }).referral, null);
+});
+
 void test('without the box ticked nothing is saved', async () => {
   const db = memoryDb();
   const { calls, fetcher } = fakeServices();
