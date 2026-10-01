@@ -11,11 +11,14 @@ import { t } from '../../../../platform/messages';
 ---
 
 <BaseLayout title={t('join.title')} description={t('join.description')}>
-  <section class="container-page pt-12 pb-16 md:pt-16 md:pb-24">
+  <section class="container-page pt-8 pb-16 md:pt-16 md:pb-24">
     <div class="max-w-2xl">
+      <h1 class="text-headline-lg">
+        <span data-join-heading-basic>{t('join.heading')}</span>
+        <span data-join-heading-interests hidden>Optional details</span>
+      </h1>
+      <p class="lede mt-4" data-join-intro>{t('join.intro')}</p>
       <JoinProgress step={1} />
-      <h1 class="text-headline-lg">{t('join.heading')}</h1>
-      <p class="lede mt-4">{t('join.intro')}</p>
       <JoinForm action="/join/member/" />
     </div>
   </section>
