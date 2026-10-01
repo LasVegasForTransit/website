@@ -1,4 +1,5 @@
 import { SETUP } from './plan.mjs';
+import { configVarEntry, configVarLocation } from './guides.mjs';
 import { paint } from './terminal.mjs';
 import { account, manualStep, storeFed, succeeded, targetName, wrangler } from './apply-steps.mjs';
 
@@ -25,7 +26,7 @@ export async function createWidget(context, action) {
   context.created.widgets.set(widget.name, created);
   context.io.write(`${paint('green', 'Created')} the Turnstile widget ${widget.name}.\n`);
   context.io.write(
-    `Put "${widget.siteKeyVar}": "${created.sitekey}" in vars in ${context.configPath}, commit it, and deploy. The site key is public.\n`,
+    `Add ${configVarEntry(widget.siteKeyVar, created.sitekey, context.configPath)} to ${configVarLocation(context.configPath)} in ${context.configPath}, commit it, and deploy. The site key is public.\n`,
   );
   await storeFed(context, widget.secret, created.secret);
 }
@@ -172,9 +173,8 @@ export async function deleteSecret(context, action) {
 }
 
 /**
- * Whether the config names the database this run created. Wrangler applies
- * migrations to the config's database_id, so until a pull request puts the
- * new id there, applying them would reach the wrong database or none.
+ * Whether the config names the database this run created. The account
+ * inventory supplies its ID; any explicit ID in the config must agree.
  */
 export async function namedInConfig(context, action) {
   const state = context.observe ? await context.observe() : context.state;
@@ -182,9 +182,10 @@ export async function namedInConfig(context, action) {
   const bound = state.config.ok
     ? state.config.value.d1.find((entry) => entry.binding === action.binding)
     : undefined;
-  if (real && bound?.id === real.id) return true;
+  if (real && bound?.name === action.name && (bound.id === undefined || bound.id === real.id))
+    return true;
   context.io.write(
-    `The migrations for ${action.name} wait until ${context.configPath} has database_id ${real?.id ?? 'of the new database'}. Run ${SETUP} again after that pull request merges.\n`,
+    `The migrations for ${action.name} wait until ${context.configPath} binds ${action.binding} to ${action.name}${bound?.id && real ? ` with ID ${real.id}` : ''}. Run ${SETUP} again after that pull request merges.\n`,
   );
   return false;
 }
