@@ -56,6 +56,17 @@ export function readJoinForm(form: FormData): JoinInput {
   const interests = form
     .getAll('interests')
     .filter((value): value is Interest => INTERESTS.includes(value as Interest));
+  const selectedTransport = form
+    .getAll('transport_options')
+    .filter(
+      (value): value is string =>
+        typeof value === 'string' && ['car', 'none', ...MICROMOBILITY].includes(value),
+    );
+  const specificTransport = selectedTransport.filter((value) => value !== 'none');
+  const legacyCar = text(form, 'owns_car');
+  const legacyMicromobility = form
+    .getAll('micromobility')
+    .filter((value): value is Micromobility => MICROMOBILITY.includes(value as Micromobility));
   return {
     origin,
     email: text(form, 'email').toLowerCase(),
@@ -66,16 +77,18 @@ export function readJoinForm(form: FormData): JoinInput {
     address: text(form, 'address'),
     interests: [...new Set(interests)],
     discordUsername: text(form, 'discord_username'),
-    ownsCar: ['yes', 'no'].includes(text(form, 'owns_car'))
-      ? (text(form, 'owns_car') as 'yes' | 'no')
-      : null,
+    ownsCar: selectedTransport.length
+      ? specificTransport.includes('car')
+        ? 'yes'
+        : 'no'
+      : ['yes', 'no'].includes(legacyCar)
+        ? (legacyCar as 'yes' | 'no')
+        : null,
     micromobility: [
       ...new Set(
-        form
-          .getAll('micromobility')
-          .filter((value): value is Micromobility =>
-            MICROMOBILITY.includes(value as Micromobility),
-          ),
+        (selectedTransport.length ? specificTransport : legacyMicromobility).filter(
+          (value): value is Micromobility => MICROMOBILITY.includes(value as Micromobility),
+        ),
       ),
     ],
     referral: validReferral(text(form, 'referral')),

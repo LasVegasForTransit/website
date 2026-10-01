@@ -50,6 +50,19 @@
     second.hidden = true;
     continueButton.addEventListener('click', continueToInterests);
     backButton.addEventListener('click', () => show(1));
+    form.querySelector('#transport_options')?.addEventListener('change', (event) => {
+      const changed = event.target;
+      if (!changed?.matches?.('input[name="transport_options"]') || !changed.checked) return;
+      const options = form.querySelectorAll('input[name="transport_options"]');
+      if (changed.value === 'none') {
+        options.forEach((option) => {
+          if (option.value !== 'none') option.checked = false;
+        });
+      } else {
+        const none = form.querySelector('input[name="transport_options"][value="none"]');
+        if (none) none.checked = false;
+      }
+    });
     form.addEventListener(
       'submit',
       (event) => {

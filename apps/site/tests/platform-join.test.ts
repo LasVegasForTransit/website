@@ -108,6 +108,20 @@ void test('join form keeps valid referral sources and selected micromobility opt
   assert.equal(form({ referral: 'https://example.org/' }).referral, null);
 });
 
+void test('one getting-around question preserves car and micromobility answers', () => {
+  const selected = form({
+    transport_options: ['car', 'bike', 'e-bike', 'scooter', 'skateboard', 'none'],
+  });
+  assert.equal(selected.ownsCar, 'yes');
+  assert.deepEqual(selected.micromobility, ['bike', 'e-bike', 'scooter', 'skateboard']);
+  const noVehicles = form({ transport_options: 'none' });
+  assert.equal(noVehicles.ownsCar, 'no');
+  assert.deepEqual(noVehicles.micromobility, []);
+  const onlyBike = form({ transport_options: 'bike' });
+  assert.equal(onlyBike.ownsCar, 'no');
+  assert.deepEqual(onlyBike.micromobility, ['bike']);
+});
+
 void test('without the box ticked nothing is saved', async () => {
   const db = memoryDb();
   const { calls, fetcher } = fakeServices();
