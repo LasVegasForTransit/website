@@ -19,16 +19,16 @@ interface Props {
 const { rows } = Astro.props;
 ---
 
-<dl class="border-t border-outline">
+<dl class="grid gap-3 sm:grid-cols-2">
   {
     rows.map((row) => (
-      <div class="grid gap-2 border-b border-outline py-4 sm:grid-cols-[12rem_1fr_auto] sm:gap-6">
-        <dt class="font-bold">{row.key}</dt>
-        <dd data-slot={row.dataSlot} class="[overflow-wrap:anywhere]">
+      <div class="flex min-h-36 flex-col bg-surface-container p-5">
+        <dt class="text-sm font-bold text-on-surface-variant">{row.key}</dt>
+        <dd data-slot={row.dataSlot} class="mt-2 [overflow-wrap:anywhere] font-semibold">
           {row.value}
         </dd>
         {row.change && (
-          <dd>
+          <dd class="mt-auto pt-4">
             <a href={row.change.href} class={linkClass}>
               {row.change.label}
               <span class="sr-only"> {row.key}</span>
