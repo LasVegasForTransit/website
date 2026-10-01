@@ -11,12 +11,44 @@ void test('configured campaigns are timely and skip their own referrals', async 
   const db = memoryDb();
   const during = new Date('2026-10-02T18:00:00Z');
   assert.match(
-    (await featuredWelcomeAction(db, null, during))?.href ?? '',
+    (await featuredWelcomeAction(db, null, [], during))?.href ?? '',
     /^https:\/\/lvwwd\.org\/take-part\//,
   );
-  assert.equal(await featuredWelcomeAction(db, 'wwd', during), null);
-  assert.ok(await featuredWelcomeAction(db, 'partner_name', during));
-  assert.equal(await featuredWelcomeAction(db, null, new Date('2026-10-09T07:00:00Z')), null);
+  assert.equal(await featuredWelcomeAction(db, 'wwd', [], during), null);
+  assert.ok(await featuredWelcomeAction(db, 'partner_name', [], during));
+  assert.equal(await featuredWelcomeAction(db, null, [], new Date('2026-10-09T07:00:00Z')), null);
+});
+
+void test('new event and meeting actions can target an interest without new app code', async () => {
+  const db = memoryDb();
+  db.raw
+    .prepare(
+      `INSERT INTO onboarding_actions
+      (id, referral_source, interest, title, description, label, href, starts_at, ends_at, priority)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    )
+    .run(
+      'council-october',
+      'council',
+      'meetings',
+      'Speak at the council meeting',
+      'Share what you need from transit.',
+      'Meeting details',
+      'https://lasvegasfortransit.org/events/',
+      '2026-10-01T00:00:00.000Z',
+      '2026-10-30T00:00:00.000Z',
+      200,
+    );
+  const during = new Date('2026-10-02T18:00:00Z');
+  assert.equal(
+    (await featuredWelcomeAction(db, null, ['meetings'], during))?.title,
+    'Speak at the council meeting',
+  );
+  assert.match((await featuredWelcomeAction(db, null, ['events'], during))?.href ?? '', /lvwwd/);
+  assert.match(
+    (await featuredWelcomeAction(db, 'council', ['meetings'], during))?.href ?? '',
+    /lvwwd/,
+  );
 });
 
 void test('evergreen first steps follow interests and always have a useful destination', () => {

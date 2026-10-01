@@ -35,7 +35,7 @@ export const onRequestGet: PagesFunction<JoinEnv> = async ({ env, request }) => 
     );
   }
   const featured = platform
-    ? await featuredWelcomeAction(platform.PLATFORM_DB, step.referral)
+    ? await featuredWelcomeAction(platform.PLATFORM_DB, step.referral, step.interests)
     : null;
   const action = welcomeAction(step.interests, featured);
   rewriter = rewriter

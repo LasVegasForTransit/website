@@ -14,17 +14,24 @@ export interface WelcomeAction {
 export async function featuredWelcomeAction(
   db: Db,
   referral: string | null,
+  interests: Interest[],
   now = new Date(),
 ): Promise<WelcomeAction | null> {
   const timestamp = now.toISOString();
+  const interestFilter =
+    interests.length > 0
+      ? `AND (interest IS NULL OR interest IN (${interests.map(() => '?').join(', ')}))`
+      : 'AND interest IS NULL';
   try {
     return await db
       .prepare(
         `SELECT title, description, label, href FROM onboarding_actions
-         WHERE active = 1 AND starts_at <= ? AND ends_at > ? AND id != ?
-         ORDER BY priority DESC, starts_at DESC LIMIT 1`,
+         WHERE active = 1 AND starts_at <= ? AND ends_at > ?
+           AND (referral_source IS NULL OR referral_source != ?)
+           ${interestFilter}
+         ORDER BY priority DESC, (interest IS NOT NULL) DESC, starts_at DESC LIMIT 1`,
       )
-      .bind(timestamp, timestamp, referral ?? '')
+      .bind(timestamp, timestamp, referral ?? '', ...interests)
       .first<WelcomeAction>();
   } catch {
     console.error('Could not read onboarding actions');
