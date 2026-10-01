@@ -90,17 +90,29 @@ void test('membership status follows the newsletter consent', () => {
 void test('the join form reads and checks its fields', () => {
   const data = new FormData();
   data.append('email', ' Ana@Example.org ');
+  data.append('given_name', ' Ana ');
   data.append('interests', 'events');
   data.append('interests', 'not-a-real-interest');
   data.append('consent', 'yes');
   data.append('phone', '(702) 555-0123');
   const input = readJoinForm(data);
   assert.equal(input.email, 'ana@example.org');
+  assert.equal(input.givenName, 'Ana');
   assert.deepEqual(input.interests, ['events']);
   assert.equal(input.origin, 'join_form');
   assert.deepEqual(validateJoin(input), {});
   assert.equal(normalizePhone('(702) 555-0123'), '+17025550123');
   assert.equal(normalizePhone('555-0123'), null);
+});
+
+void test('the member join form requires a first name, while the newsletter box does not', () => {
+  const data = new FormData();
+  data.set('email', 'ana@example.org');
+  data.set('consent', 'yes');
+  data.set('given_name', '   ');
+  assert.deepEqual(validateJoin(readJoinForm(data)), { given_name: 'required' });
+  data.set('origin', 'newsletter_box');
+  assert.deepEqual(validateJoin(readJoinForm(data)), {});
 });
 
 void test('messages fill values, choose plurals and pseudo-localize', () => {

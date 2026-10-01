@@ -6,7 +6,7 @@ export const labelClass = 'block font-bold';
 export const hintClass = 'mt-1 text-sm max-w-prose';
 export const errorClass = 'mt-2 font-bold text-primary-ink';
 export const inputClass =
-  'mt-2 block w-full px-4 py-3 border-2 border-on-surface bg-surface text-on-surface disabled:opacity-60 aria-[invalid=true]:border-primary-ink';
+  'mt-2 block w-full px-4 py-3 border-2 border-on-surface bg-surface-container text-on-surface disabled:opacity-60 aria-[invalid=true]:border-primary-ink';
 export const choiceClass = 'mt-1 size-5 shrink-0 accent-primary';
 
 const buttonBase =

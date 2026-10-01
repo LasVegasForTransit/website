@@ -27,6 +27,7 @@ const { action } = Astro.props;
   heading={t('join.errorSummaryHeading')}
   errors={[
     { field: 'email', message: t('join.emailError') },
+    { field: 'given_name', message: t('join.givenNameError') },
     { field: 'phone', message: t('join.phoneError') },
     { field: 'consent', message: t('join.consentError') },
   ]}
@@ -48,13 +49,20 @@ const { action } = Astro.props;
     />
 
     <div class="grid gap-6 sm:grid-cols-2 max-w-md sm:max-w-none">
-      <TextField name="given_name" label={t('join.givenNameLabel')} autocomplete="given-name" />
+      <TextField
+        name="given_name"
+        label={t('join.givenNameLabel')}
+        autocomplete="given-name"
+        required
+        error={t('join.givenNameError')}
+      />
       <TextField name="family_name" label={t('join.familyNameLabel')} autocomplete="family-name" />
     </div>
 
     <TextField
       name="phone"
       label={t('join.phoneLabel')}
+      hint={t('join.phoneHint')}
       type="tel"
       autocomplete="tel-national"
       error={t('join.phoneError')}
@@ -118,7 +126,6 @@ const { action } = Astro.props;
         { value: 'e-bike', label: t('join.micromobilityEbike') },
         { value: 'scooter', label: t('join.micromobilityScooter') },
         { value: 'skateboard', label: t('join.micromobilitySkateboard') },
-        { value: 'none', label: t('join.transportNone') },
       ]}
     />
 
