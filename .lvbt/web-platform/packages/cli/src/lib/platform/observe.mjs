@@ -1,6 +1,6 @@
 import path from 'node:path';
 import { emailRecords } from './guides.mjs';
-import { migrationFiles, readWranglerConfig } from './manifest.mjs';
+import { migrationFiles, readCloudflareConfig, readWranglerConfig } from './manifest.mjs';
 
 /**
  * Read everything the manifest names, without changing anything. Each part
@@ -60,7 +60,12 @@ async function observeD1(api, account, manifest, config) {
     const databases = await api.client.list(`${account}/d1/database`);
     const found = {};
     for (const database of manifest.d1) {
-      const match = databases.find((candidate) => candidate.name === database.name);
+      const matches = databases.filter((candidate) => candidate.name === database.name);
+      if (matches.length > 1)
+        throw new Error(
+          `multiple D1 databases named ${database.name} exist in this Cloudflare account`,
+        );
+      const [match] = matches;
       if (!match) continue;
       const entry = { id: match.uuid };
       if (database.migrations) {
@@ -182,6 +187,17 @@ async function observeDns(resolve, manifest) {
   return answers;
 }
 
+async function observeConfig(manifest, directory) {
+  const cfConfig = manifest.cloudflare.cloudflareConfig;
+  const configFile = path.join(
+    directory,
+    cfConfig ?? manifest.cloudflare.wranglerConfig ?? 'wrangler.jsonc',
+  );
+  return attempt(() =>
+    cfConfig ? readCloudflareConfig(configFile) : readWranglerConfig(configFile),
+  );
+}
+
 /**
  * @param {object} input
  * @param {object} input.manifest a validated manifest
@@ -193,8 +209,7 @@ async function observeDns(resolve, manifest) {
  */
 export async function observePlatform({ manifest, directory, apis, run, resolve, confirmed }) {
   const account = `accounts/${manifest.cloudflare.accountId}`;
-  const configFile = path.join(directory, manifest.cloudflare.wranglerConfig ?? 'wrangler.jsonc');
-  const config = await attempt(() => readWranglerConfig(configFile));
+  const config = await observeConfig(manifest, directory);
   const migrations = {};
   for (const database of manifest.d1 ?? []) {
     if (database.migrations)
