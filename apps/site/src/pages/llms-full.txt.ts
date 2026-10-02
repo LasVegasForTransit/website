@@ -9,6 +9,7 @@ import type { APIRoute } from 'astro';
 import { getCollection } from 'astro:content';
 import { site } from '../lib/site';
 import { byOrderThenTitle } from '../lib/projects';
+import { programContentLines } from '../lib/llms-programs';
 
 export const prerender = true;
 
@@ -35,11 +36,12 @@ const u = (path: string): string => new URL(path, site.url).toString();
 const fmtDate = (d: Date | undefined): string => (d ? d.toISOString().split('T')[0] : '');
 
 export const GET: APIRoute = async () => {
-  const [docs, pages, projects, programs, initiatives] = await Promise.all([
+  const [docs, pages, projects, programs, workAreas, initiatives] = await Promise.all([
     getCollection('docs'),
     getCollection('pages'),
     getCollection('projects'),
     getCollection('programs'),
+    getCollection('workAreas'),
     getCollection('initiatives'),
   ]);
 
@@ -79,23 +81,8 @@ export const GET: APIRoute = async () => {
     out.push('');
   }
 
-  // Programs — public-facing nonprofit portfolios alongside reportable project lines.
-  out.push('# Programs');
-  out.push(`Source: ${u('/programs')}`);
-  out.push('');
-  const sortedPrograms = [...programs].sort((a, b) => a.data.order - b.data.order);
-  for (const program of sortedPrograms) {
-    out.push(`## ${program.data.title}`);
-    out.push('');
-    out.push(program.data.summary);
-    if (program.body) {
-      out.push('');
-      out.push(program.body.trim());
-    }
-    out.push('');
-  }
-  out.push('---');
-  out.push('');
+  // Named programs have stable pages; work areas explain their broader context.
+  out.push(...programContentLines(programs, workAreas, u));
 
   // Long-form organizational docs — strategy, vision, mission, etc.
   out.push('# Organizational documents');

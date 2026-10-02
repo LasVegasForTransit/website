@@ -11,16 +11,22 @@ import { projectDisplayStatus } from '../../lib/projects';
 export async function getStaticPaths() {
   const projects = await getCollection('projects', (entry) => !entry.id.startsWith('_'));
   const initiatives = await getCollection('initiatives');
+  const programs = await getCollection('programs');
   const initiativesById = new Map(initiatives.map((i) => [i.id, i]));
+  const programsById = new Map(programs.map((program) => [program.id, program]));
   return projects.map((project) => ({
     params: { slug: project.id },
-    props: { project, initiativesById },
+    props: { project, initiativesById, programsById },
   }));
 }
 
-const { project, initiativesById } = Astro.props;
+const { project, initiativesById, programsById } = Astro.props;
 const { Content } = await render(project);
 const displayStatus = projectDisplayStatus(project);
+const parentProgram = project.data.program ? programsById.get(project.data.program) : undefined;
+if (project.data.program && !parentProgram) {
+  throw new Error(`Project "${project.id}" references missing program "${project.data.program}".`);
+}
 
 const dateFmt = new Intl.DateTimeFormat('en-US', {
   month: 'long',
@@ -49,6 +55,16 @@ const leadsLabel = project.data.contacts.length > 1 ? `${LEAD_ROLE}s` : LEAD_ROL
     />
     <h1 class="text-display-md mt-7">{project.data.title}</h1>
     <p class="lede mt-5 max-w-3xl">{project.data.tldr}</p>
+    {
+      parentProgram && (
+        <p class="mt-4 text-body-sm text-on-surface-variant">
+          Part of{' '}
+          <a href={paths.program(parentProgram.id)} class="nav-link">
+            {parentProgram.data.title}
+          </a>
+        </p>
+      )
+    }
     <div class="mt-6 flex flex-wrap items-center gap-2">
       {
         project.data.initiatives.map((slug: string) => (
