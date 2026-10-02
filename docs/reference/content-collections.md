@@ -22,6 +22,8 @@ see [glossary](./glossary.md#mdx)).
 | `apps/site/src/content/docs/`         | MDX             | Long-form essays (vision, mission, why-now, problems, strategy). Rendered at `/vision` and `/about/strategy`.                                                                                                                                               |
 | `apps/site/src/content/pages/`        | MDX             | Body copy for individual site pages (about, contact, get-involved).                                                                                                                                                                                         |
 | `apps/site/src/content/projects/`     | MDX             | One per project. Drives `/projects` and `/projects/[slug]`.                                                                                                                                                                                                 |
+| `apps/site/src/content/programs/`     | MDX             | One per named, ongoing program. Drives `/programs` and `/programs/[slug]`.                                                                                                                                                                                  |
+| `apps/site/src/content/work-areas/`   | MDX             | Broad areas that explain how programs and projects connect. Shown below named programs on `/programs`.                                                                                                                                                      |
 | `apps/site/src/content/letters/`      | MDX             | One per letter. Drives `/letters` and `/letters/[slug]`. See "Letter" below for what belongs here.                                                                                                                                                          |
 | _(events)_                            | Google Calendar | Event metadata. Pulled at build time by the custom loader in `apps/site/src/lib/events-loader.ts`. See [events pipeline](../explanation/events-pipeline.md).                                                                                                |
 | `apps/site/src/content/event-bodies/` | MDX             | Optional long-form body for a specific event, keyed by slug. Rendered below the event header on `/events/[slug]`.                                                                                                                                           |
@@ -111,6 +113,7 @@ of a list.
 ```yaml
 title: string
 status: 'active' | 'planned' | 'complete' | 'paused'
+program: string                  # optional slug from src/content/programs/
 initiatives: string[]             # slugs from src/content/initiatives/
 tldr: string
 contacts:
@@ -126,6 +129,44 @@ and `## Activities`, with `## Updates` added only when there is dated progress t
 work matters now. `Activities` names the concrete things the page will eventually point to: reports,
 events, comments, coalitions, chapters, briefs, evidence logs, media packages, published stories,
 public relationships, or other recorded results.
+
+### Program
+
+```yaml
+title: string
+summary: string
+designation: 'community-gatherings' | 'annual-challenges'
+icon: string
+order: number
+cadence: string
+status: 'active' | 'planned'
+participationUrl: URL # optional external site for current participation details
+venue: # optional standing or proposed meeting place for an ongoing program
+  name: string
+  address: string
+  mapUrl: URL
+  status: 'proposed' | 'confirmed'
+```
+
+One program file holds the invitation and identity that persist across meetups or yearly editions.
+The filename is its stable `/programs/[slug]` URL. Designations group programs on the directory;
+they are editorial headings, not parent routes. A program may name a recurring meeting place with
+its confirmation status. Put dates, final venues, and registration for a particular occurrence in
+the events calendar or the linked participant site.
+
+### Work area
+
+```yaml
+title: string
+summary: string
+icon: string
+order: number
+projects: string[] # optional project slugs
+cohorts: [] # optional named cohorts
+```
+
+Work areas describe enduring parts of LVBT's work. They are not named programs and have no detail
+route. Keep specific gatherings and challenges in `programs/`.
 
 ### Letter
 

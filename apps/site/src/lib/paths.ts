@@ -6,6 +6,8 @@ import { site } from './site';
  * groups projects by initiative under matching section ids.
  */
 export const paths = {
+  programs: '/programs',
+  program: (id: string) => `/programs/${id}`,
   projects: '/projects',
   project: (id: string) => `/projects/${id}`,
   initiative: (id: string) => `/projects#${id}`,
