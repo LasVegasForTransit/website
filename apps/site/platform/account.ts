@@ -278,15 +278,18 @@ export async function unsubscribeEverywhere(
   env: AccountEnv,
   personId: string,
   fetcher: typeof fetch = fetch,
-): Promise<void> {
+): Promise<boolean> {
+  const ids = await beehiivIds(env.PLATFORM_DB, personId);
+  if (!ids.length) return true;
   const config = beehiiv(env);
   if (!config) {
     console.error('account: Beehiiv secrets are missing, so the unsubscribe is not sent');
-    return;
+    return false;
   }
-  for (const id of await beehiivIds(env.PLATFORM_DB, personId)) {
-    await unsubscribe(config, id, fetcher);
+  for (const id of ids) {
+    if (!(await unsubscribe(config, id, fetcher))) return false;
   }
+  return true;
 }
 
 async function subscribeAddress(
@@ -332,13 +335,14 @@ export async function leaveMailingList(
   env: AccountEnv,
   personId: string,
   fetcher: typeof fetch = fetch,
-): Promise<void> {
+): Promise<'left' | 'unavailable'> {
+  if (!(await unsubscribeEverywhere(env, personId, fetcher))) return 'unavailable';
   await new PersonService(env.PLATFORM_DB).withdrawConsent(personId, {
     scope: 'newsletter',
     source: 'account',
     withdrawnAt: nowIso(),
   });
-  await unsubscribeEverywhere(env, personId, fetcher);
+  return 'left';
 }
 
 export async function rejoinMailingList(
