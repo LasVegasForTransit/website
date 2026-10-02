@@ -18,8 +18,8 @@ export const onRequestPost: PagesFunction<SignInPagesEnv> = async ({ env, reques
   if (signed instanceof Response) return signed;
   const action = field(await formOf(request), 'action');
   if (action === 'leave') {
-    await leaveMailingList(signed.env, signed.person.id);
-    return backToAccount('left');
+    const outcome = await leaveMailingList(signed.env, signed.person.id);
+    return backToAccount(outcome);
   }
   if (action === 'rejoin') {
     const outcome = await rejoinMailingList(signed.env, signed.person);
