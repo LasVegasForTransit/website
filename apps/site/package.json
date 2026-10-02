@@ -48,7 +48,9 @@
     "worker:preview": "tsx scripts/deploy/worker-preview.ts",
     "worker:upload": "pnpm build && wrangler versions upload",
     "worker:deploy": "pnpm build && wrangler deploy",
-    "worker:dev": "pnpm build && pnpm preview"
+    "worker:dev": "pnpm build && pnpm preview",
+    "worker:release": "tsx scripts/deploy/worker-release.ts",
+    "worker:smoke": "tsx scripts/deploy/release-smoke.ts"
   },
   "dependencies": {
     "@astrojs/mdx": "catalog:",

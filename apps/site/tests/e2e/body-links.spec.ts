@@ -1,4 +1,4 @@
-import { expect, test, type Locator, type Page } from '@playwright/test';
+import { expect, test, type Locator, type Page } from '../../scripts/deploy/access-browser';
 
 const LINKEDIN_URL = 'https://www.linkedin.com/company/lasvegasfortransit/';
 const SITE_URL = 'https://lasvegasfortransit.org';
@@ -128,7 +128,7 @@ test.describe('body content links', () => {
 
   test('indexes brand and colophon while keeping QR out of the sitemap', async ({
     page,
-    request,
+    accessRequest,
   }) => {
     for (const path of ['/brand', '/colophon']) {
       await page.goto(path);
@@ -143,7 +143,7 @@ test.describe('body content links', () => {
       'noindex,nofollow',
     );
 
-    const sitemap = await request.get('/sitemap-0.xml');
+    const sitemap = await accessRequest.get('/sitemap-0.xml');
     expect(sitemap.ok()).toBe(true);
     const body = await sitemap.text();
     expect(body).toContain('<loc>https://lasvegasfortransit.org/brand/</loc>');
@@ -157,8 +157,12 @@ test.describe('body content links', () => {
     await page.waitForLoadState('networkidle');
 
     const results = await page.evaluate(async () => {
-      type PagefindResult = { data: () => Promise<{ url: string }> };
-      type Pagefind = { search: (query: string) => Promise<{ results: PagefindResult[] }> };
+      interface PagefindResult {
+        data: () => Promise<{ url: string }>;
+      }
+      interface Pagefind {
+        search: (query: string) => Promise<{ results: PagefindResult[] }>;
+      }
 
       const pagefind = (await Function('return import("/pagefind/pagefind.js")')()) as Pagefind;
       const urlsFor = async (query: string) => {
@@ -260,11 +264,12 @@ test.describe('body content links', () => {
         document
           .querySelectorAll('.reveal, .reveal-stat, .reveal-quote')
           .forEach((el) => el.classList.add('is-visible'));
-        const footer = document.querySelector('footer') as HTMLElement | null;
+        const footer = document.querySelector('footer');
         window.scrollTo({ top: footer?.offsetTop ?? 0, left: 0, behavior: 'instant' });
       });
       await page.waitForFunction(
-        () => Math.abs(document.querySelector('footer')!.getBoundingClientRect().top) < 1,
+        () =>
+          Math.abs(document.querySelector('footer')?.getBoundingClientRect().top ?? Infinity) < 1,
       );
 
       return page.evaluate(() => {
@@ -337,11 +342,10 @@ test.describe('body content links', () => {
     const meta = page.locator('footer .footer-meta');
 
     const [metaBox, navBox] = await Promise.all([meta.boundingBox(), utilityNav.boundingBox()]);
-    expect(metaBox).not.toBeNull();
-    expect(navBox).not.toBeNull();
-    expect(metaBox!.height).toBeLessThanOrEqual(48);
-    expect(navBox!.x).toBeGreaterThanOrEqual(metaBox!.x);
-    expect(navBox!.x + navBox!.width).toBeLessThanOrEqual(metaBox!.x + metaBox!.width);
+    if (!metaBox || !navBox) throw new Error('Footer meta and utility navigation must render.');
+    expect(metaBox.height).toBeLessThanOrEqual(48);
+    expect(navBox.x).toBeGreaterThanOrEqual(metaBox.x);
+    expect(navBox.x + navBox.width).toBeLessThanOrEqual(metaBox.x + metaBox.width);
   });
 
   test('keeps the colophon on the standard type scale without overline labels', async ({
@@ -1170,7 +1174,7 @@ test.describe('body content links', () => {
   // /events/<id>.ics. Guards two things at once: (a) the route still
   // emits at build time; (b) the file is RFC 5545 enough that the OS
   // calendar handler will recognise it.
-  test('virtual event publishes a valid .ics feed', async ({ page, request }) => {
+  test('virtual event publishes a valid .ics feed', async ({ page, accessRequest }) => {
     // firstVirtualEventPath leaves the page on the chosen event's detail view,
     // so the title and join URL come from the rendered page rather than
     // hardcoded calendar strings that drift when the event is renamed.
@@ -1185,7 +1189,7 @@ test.describe('body content links', () => {
       .first()
       .getAttribute('href');
 
-    const response = await request.get(`${eventPath}.ics`);
+    const response = await accessRequest.get(`${eventPath}.ics`);
     expect(response.status()).toBe(200);
     const body = await response.text();
     expect(body).toContain('BEGIN:VCALENDAR');

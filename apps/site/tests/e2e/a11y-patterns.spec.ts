@@ -7,7 +7,7 @@
 // builds skip these checks.
 import AxeBuilder from '@axe-core/playwright';
 import { existsSync } from 'node:fs';
-import { expect, test, type Page } from '@playwright/test';
+import { expect, test, type Page } from '../../scripts/deploy/access-browser';
 import { preparePageForA11y } from '../support/a11y-helpers';
 
 const galleryBuilt = existsSync(new URL('../../dist/patterns/index.html', import.meta.url));

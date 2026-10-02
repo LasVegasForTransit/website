@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test';
+import { expect, test } from '../../scripts/deploy/access-browser';
 import { preparePageForA11y } from '../support/a11y-helpers';
 
 test.describe('keyboard accessibility', () => {

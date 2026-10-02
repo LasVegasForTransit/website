@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test';
+import { expect, test } from '../../scripts/deploy/access-browser';
 
 test.describe('not found search recovery', () => {
   test('serves a transit-flavored not found page for missing routes', async ({ page }) => {

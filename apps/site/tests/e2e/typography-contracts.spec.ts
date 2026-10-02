@@ -1,4 +1,4 @@
-import { expect, test, type Page } from '@playwright/test';
+import { expect, test, type Page } from '../../scripts/deploy/access-browser';
 import { builtHtmlPagePaths } from '../support/sitemap-paths';
 
 const paths = builtHtmlPagePaths(import.meta.url);

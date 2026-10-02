@@ -1,4 +1,4 @@
-import { expect, test, type Page } from '@playwright/test';
+import { expect, test, type Page } from '../../scripts/deploy/access-browser';
 
 async function openForPrint(page: Page, path: string) {
   await page.emulateMedia({ media: 'print' });

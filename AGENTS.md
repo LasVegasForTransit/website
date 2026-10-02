@@ -4,8 +4,8 @@ Run `pnpm check` after every change. It is the same command CI runs, and a faili
 command that fixes it (`pnpm check:fix` repairs everything a machine can).
 
 This repository is the Astro site for Las Vegans for Better Transit, in `apps/site`, inside a
-Turborepo workspace that follows the organization's repository standard. Cloudflare Pages serves
-production while the equivalent Workers deployment completes live acceptance. Changes land through
+Turborepo workspace that follows the organization's repository standard. Cloudflare Workers serves
+production through explicit promotion of a saved, reviewed staging release. Changes land through
 pull requests with linear history and the current `Validate` check.
 
 New to the project (human or agent)?
@@ -34,10 +34,10 @@ Every LVBT repository answers to the same commands, run from the repository root
 `pnpm bootstrap` and `pnpm preflight` run the site's own setup script in
 `apps/site/scripts/bootstrap/`, because it also sets up the site's environment file, Worker,
 domains, and secrets; see [`docs/reference/bootstrap.md`](./docs/reference/bootstrap.md). Production
-normally deploys from `main` through GitHub Actions, which verifies each Worker version before it
-goes live, so `pnpm run deploy` is for recovery only. Commands only the site has, such as
-`event:new` or `worker:dev`, live in `apps/site/package.json`: run them with
-`pnpm -C apps/site <command>`.
+normally deploys through the explicit Promote website release workflow in GitHub Actions, which
+verifies a saved staging release before it goes live, so `pnpm run deploy` is for recovery only.
+Commands only the site has, such as `event:new` or `worker:dev`, live in `apps/site/package.json`:
+run them with `pnpm -C apps/site <command>`.
 
 ## Read these first
 
@@ -185,8 +185,8 @@ markers or GitHub-side prose checks.
 ## Stack quick map
 
 - Astro 7 + Tailwind v4 (MDX content collections under `apps/site/src/content/`)
-- Cloudflare Pages in production, with an equivalent Cloudflare Worker built and checked on every
-  change
+- Cloudflare Workers in production, with protected staging updated from main and explicit release
+  promotion
 - pnpm 11.25.0 and Node 24.20 or newer in the 24.x line, run through Turborepo
 - Playwright for tests and ad-hoc screenshots
 - `apps/site/scripts/bootstrap/` is the interactive setup CLI (`pnpm bootstrap`, `pnpm preflight`)

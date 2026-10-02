@@ -187,12 +187,11 @@ export async function runDeployPhase(
     );
     log.info(
       pc.dim(
-        'Nothing to do. New code reaches production through the Deploy production workflow on every push to main. To push this checkout on purpose, run `pnpm bootstrap --phase deploy --redeploy`.',
+        'Nothing to do. Main pushes update protected staging. Publish a reviewed release with the Promote website release workflow. Direct bootstrap redeployment is for setup or recovery.',
       ),
     );
     return { success: true, followUpItems };
   }
-
   if (state.kind === 'unknown') {
     log.warn(`Couldn't check whether ${projectName} already has a production deployment.`);
     if (state.detail) logSubline(pc.dim(state.detail));
@@ -250,7 +249,7 @@ export async function runDeployPhase(
       : 'https://dash.cloudflare.com/';
     followUpItems.push({
       kind: 'remote',
-      message: `From now on, every push to main deploys through the "Deploy production" GitHub Actions workflow. It needs the CLOUDFLARE_API_TOKEN secret and CLOUDFLARE_ACCOUNT_ID variable listed in docs/reference/deployment-pipeline.md. Do not also connect the project to Git at ${dashboardUrl}, or each push would deploy twice.`,
+      message: `The website workflow publishes Workers through protected staging and explicit promotion. See docs/reference/deployment-pipeline.md for credentials. This Pages project is a recovery option; do not connect it to automatic Git deployments at ${dashboardUrl}.`,
     });
   }
 

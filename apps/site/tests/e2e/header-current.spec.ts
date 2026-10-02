@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test';
+import { expect, test } from '../../scripts/deploy/access-browser';
 
 test.describe('header current navigation', () => {
   test('marks nav links current only on exact route matches', async ({ page }) => {

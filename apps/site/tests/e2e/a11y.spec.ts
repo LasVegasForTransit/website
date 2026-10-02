@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test';
+import { expect, test } from '../../scripts/deploy/access-browser';
 import { builtHtmlPagePaths } from '../support/sitemap-paths';
 import {
   axeBlockingViolations,

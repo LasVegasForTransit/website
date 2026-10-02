@@ -1,119 +1,117 @@
 # Deployment pipeline
 
-GitHub Actions owns builds and deployment. A change is built from a clean checkout, validated, and
-sent to Cloudflare with the package and Wrangler versions recorded in the repository.
+GitHub Actions builds one release from `main`, deploys it to protected staging, and stores its files
+for explicit production promotion. Merging a pull request updates staging; it does not publish the
+public website.
 
-The `lvbt-website` Worker serves `lasvegasfortransit.org` and `www.lasvegasfortransit.org` through
-Cloudflare custom domains. The former Pages project stays available at `lvbt-website-5zh.pages.dev`
-as a rollback artifact; it owns neither public hostname.
+## Hosts and environments
 
-## Build contract
+| Host                                                      | Worker                             | Data                    | Update trigger             |
+| --------------------------------------------------------- | ---------------------------------- | ----------------------- | -------------------------- |
+| `lasvegasfortransit.org` and `www.lasvegasfortransit.org` | `lvbt-website`                     | `lvbt-platform`         | Explicit promotion         |
+| `preview.lasvegasfortransit.org`                          | `lvbt-website-preview`             | `lvbt-platform-preview` | Successful main build      |
+| Versioned PR Worker URLs                                  | Versions of `lvbt-website-preview` | `lvbt-platform-preview` | Same-repository PR updates |
 
-`pnpm build` creates the static site in `apps/site/dist/`, builds the Pagefind index, and compiles
-`apps/site/functions/` into `apps/site/.wrangler/worker/index.js`. Wrangler serves the static tree
-through the `ASSETS` binding and invokes the Worker first only for `/api/*`.
+Staging and PR previews share a preview database. They do not have a separate database per PR.
+Production secrets remain bound to the production Worker. Preview integrations need separate test
+credentials; missing credentials make affected endpoints unavailable. Promotion moves code and
+assets, never databases or test records.
 
-`pnpm check` covers the vendored LVBT standard, formatting, Markdown lint, the organization's
-repository-shape rules, lint, type checks, unit tests, documentation links, the production build,
-generated Worker binding types, a Wrangler dry run, and local Worker parity. Turborepo runs the
-site's part of it in the order `apps/site/turbo.json` declares; the build sees the `PUBLIC_LVBT_*`
-and analytics variables that file lists, and no others. The parity check starts the built Worker on
-an unused local port and verifies:
+The former Pages project remains at `lvbt-website-5zh.pages.dev` as an older public recovery option.
+New Pages PR deployments are disabled so they cannot expose an unprotected copy of private work.
 
-- the home page and branded 404 response;
-- security headers and the calendar MIME override;
-- the permanent `/get-involved` redirect;
-- execution of the compiled subscription API.
+## Build and artifact contract
 
-The checked Worker configuration lives in `apps/site/wrangler.jsonc`. Production custom domains are
-attached to the existing Worker in Cloudflare. Version uploads do not change those domains, and the
-deployment token cannot edit DNS or routes.
+`pnpm check` covers the repository standard, formatting, lint, types, tests, documentation links,
+production build, generated Worker types, Wrangler dry run, and local Worker parity. `pnpm build`
+writes static assets and Pagefind to `apps/site/dist/` and compiled Pages Functions to
+`apps/site/.wrangler/worker/`.
 
-## Pull requests
+`Deploy staging` retains a `website-release-<run-id>` Actions artifact for 90 days. It contains only
+the compiled Worker, static assets, Wrangler configuration, and `release.json`. The manifest records
+the commit, release ID, sorted file inventory, and SHA-256 hashes. The `/lvbt-release.json` response
+identifies the deployed release. Prototype routes and the audit-only language cannot enter a
+promotable artifact.
 
-Every pull request receives ordinary validation. Same-repository pull requests also receive Pages
-and Worker previews.
+Promotion downloads this artifact from its originating run, verifies its identity and all files, and
+uploads a temporary copy with bundling disabled. It performs no site or Worker rebuild. Production
+and staging have different Worker version IDs because their bindings differ; their compiled code and
+asset files come from the same artifact.
 
-The `Deploy Worker preview` workflow runs when the repository variable
-`CLOUDFLARE_WORKERS_PREVIEW_ENABLED` is `true`. Its token comes only from the `worker-preview`
-GitHub environment. The workflow uploads a version of the separate `lvbt-website-preview` Worker
-without deploying it. That Worker is the `preview` environment in `apps/site/wrangler.jsonc` and
-uses the preview platform database, so test data never reaches the production database. The workflow
-verifies the versioned preview URL, runs the Playwright accessibility and visual suites against the
-edge deployment, and updates one pull request comment. Forks never receive the token. The Pages
-comparison runs only when Workers production is disabled.
+## Cloudflare Access
 
-The preview environment contains:
+The preview Worker must have a Worker-specific Access policy covering **All traffic**. This covers
+the custom staging domain and versioned PR URLs without protecting unrelated public Workers. Staff
+authenticate with the existing LVBT staff identity policy. Automation uses a dedicated Access
+service token in a **Service Auth** policy attached only to this Worker.
 
-| Setting                              | Kind                | Purpose                                                                                                                                                                                                      |
-| ------------------------------------ | ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `CLOUDFLARE_ACCOUNT_ID`              | repository variable | Selects the LVBT Cloudflare account. It is a repository variable, not scoped to this environment, because jobs with no environment of their own (the fork-safety check in `deploy-preview.yml`) also read it |
-| `CLOUDFLARE_WORKERS_API_TOKEN`       | environment secret  | Uploads versions for `lvbt-website` and `lvbt-website-preview` without editing zones                                                                                                                         |
-| `CLOUDFLARE_WORKERS_PREVIEW_ENABLED` | repository variable | Enables the candidate workflow after credentials are verified                                                                                                                                                |
+The `worker-preview` GitHub environment supplies:
 
-See [test the Workers candidate](../guides/test-the-workers-candidate.md) for the exact clicks to
-create the environment and its token.
+| Secret                         | Purpose                                       |
+| ------------------------------ | --------------------------------------------- |
+| `CLOUDFLARE_WORKERS_API_TOKEN` | Upload and activate preview versions          |
+| `CF_ACCESS_CLIENT_ID`          | Identify the preview verification service     |
+| `CF_ACCESS_CLIENT_SECRET`      | Authenticate the preview verification service |
 
-Application secrets bind directly to the Worker before endpoint acceptance. Build-time
-`PUBLIC_LVBT_*` variables remain GitHub Actions variables and are included in the generated HTML.
+`CLOUDFLARE_ACCOUNT_ID` remains a repository variable. Access credentials are supplied only to the
+specific preview origin. HTTP verification disables automatic redirects; browser verification
+fetches authenticated responses without following redirects, then lets the browser navigate the
+returned response. Third-party origins receive no Access headers.
 
-## Platform database
+Preview responses carry `X-Robots-Tag: noindex, nofollow, noarchive` and
+`Cache-Control: private, no-store`. Preview runs the Worker before every asset request to apply
+those headers. Production uses selective Worker routing for application endpoints and ordinary asset
+delivery for static pages. The shared analytics package enables tracking only on the public apex and
+`www` hostname, so the production-shaped artifact sends no analytics on staging or PR URLs.
 
-The Organizing Platform keeps its data in Cloudflare D1 (a SQL database; see the
-[glossary](./glossary.md#d1)). Code reaches it through the `PLATFORM_DB`
-[binding](./glossary.md#binding), which `apps/site/wrangler.jsonc` points at a different database
-for each Worker:
+A failed staging job can be retried with **Re-run failed jobs**. Each run ID identifies one
+immutable artifact; **Re-run all jobs** cannot replace an artifact that already exists. Dispatch a
+new staging run when a rebuild is needed.
 
-| Worker                 | Used by                                       | Database                |
-| ---------------------- | --------------------------------------------- | ----------------------- |
-| `lvbt-website`         | production, and the `main` candidate versions | `lvbt-platform`         |
-| `lvbt-website-preview` | pull request previews                         | `lvbt-platform-preview` |
+## Main and PR deployment
 
-Both databases are on the free plan in Western North America. `pnpm dev` and
-`pnpm -C apps/site worker:dev` use a local copy that Wrangler keeps in `apps/site/.wrangler/`, so
-local work never touches either one. The
-[platform decision record](../explanation/decisions/organizing-platform.md) explains why there is
-one database.
+Main pushes and scheduled calendar rebuilds run `Deploy staging`. The workflow validates and saves
+the artifact, uploads a preview version, checks anonymous denial and authenticated browser
+rendering, runs browser contract checks, activates that exact preview version, and checks the
+permanent staging hostname. Its summary records the release, commit, version, and originating run.
 
-## Production
+Same-repository PRs use `Deploy Worker preview` when `CLOUDFLARE_WORKERS_PREVIEW_ENABLED=true`. It
+uploads a preview version, verifies Access and browser contracts, and comments its URL on the PR. PR
+uploads never activate a version or move the permanent staging domain. Forks receive no Cloudflare
+or Access secrets. PRs may include preview-only prototype pages; those builds cannot be promoted.
 
-`Deploy production` builds `main`. With `LVBT_WORKERS_PRODUCTION_ENABLED=true`, its Pages job is
-skipped. The Pages project remains online at its `pages.dev` address but receives no new production
-builds.
+## Production promotion
 
-After a successful build, `Deploy Worker candidate` uploads the same `main` commit as a versioned
-Worker. It runs the browser acceptance suite, records the commit, version, and preview URL, and
-confirms that `main` still points at the verified commit before deploying that version. The final
-check compares the production hostname with the version preview. A manual run is accepted only from
-`main`.
+`Promote website release` accepts the originating **Actions run ID**, and runs only from `main`. It
+requires a completed, successful `Deploy staging` run from this repository on `main`, triggered by a
+push or manual dispatch. PR runs, old automatic production runs, failed runs, and foreign
+repositories are rejected.
 
-The `worker-candidate` GitHub environment contains `CLOUDFLARE_WORKERS_API_TOKEN`, scoped to the
-LVBT account with Workers Scripts Edit permission. It reads the account ID from the repository-level
-`CLOUDFLARE_ACCOUNT_ID` variable. The separate `worker-preview` environment has its own token.
-Neither token can change zone DNS or Worker routes. The repository-level `CLOUDFLARE_API_TOKEN`
-remains for Pages pull request previews; it is not used for production Worker deployment.
+The workflow downloads the selected run's artifact, verifies it against the recorded commit, uploads
+a production candidate, checks its release marker and browser contracts, and activates its exact
+version ID. It then checks the public release marker and rendered page. Staging and `main` may
+advance during this process without changing the selected artifact.
 
-Cloudflare owns the DNS records and certificates for the two Worker custom domains. The former `/*`
-overlay routes and Pages custom-domain associations are absent. The Pages deployment remains
-reachable through its `pages.dev` address for emergency recovery.
+The existing `worker-candidate` GitHub environment supplies the production Workers token. Its
+historical name is retained to reuse the established credential scope. Environment reviewers may
+provide an additional publication gate. Dispatching this workflow is the explicit publication
+request; nothing automatically dispatches it.
 
 ## Rollback
 
-For a Worker release regression, `wrangler rollback <VERSION_ID> --message <reason>` sends all
-Worker traffic to the recorded version without changing custom domains or DNS. Verify both public
-hostnames afterward.
+A previous successful staging run can be promoted again while its artifact is retained. For urgent
+Worker recovery, use `wrangler rollback <version-id>` with the recorded production version and
+verify both public hostnames. Deleted or incompatible data bindings can prevent rollback; schema
+migrations require separate compatible rollout planning.
 
-If the Worker itself cannot serve traffic, remove each Worker custom domain, restore the Pages
-custom-domain association and its proxied Pages CNAME, then verify TLS and the site contract on both
-hostnames. The Pages deployment remains accessible at `lvbt-website-5zh.pages.dev` throughout this
-procedure. Restoring Pages changes routing and requires a separate incident decision; it is not the
-response to an ordinary bad release.
+If the Worker itself cannot serve traffic, restoring the older Pages project requires a separate
+routing decision and DNS/custom-domain changes. Normal release rollback changes no domains. Expired
+Actions artifacts cannot be silently rebuilt and presented as reviewed releases. Build a new release
+and review it, or use an already recorded compatible Worker version.
 
-The rollback version must retain every binding used by that release. Deleted or incompatible storage
-bindings prevent Cloudflare from applying an older version.
+## Caching and external content
 
-## Caching
-
-HTML revalidates on every request. Astro gives changed static assets new hashed filenames, while
-`_headers` assigns long-lived immutable caching to `/_astro/*` and `/fonts/*`. Normal releases do
-not require a cache purge.
+Production HTML revalidates; hashed assets retain their existing immutable cache headers. Staging is
+private and does not cache responses. Calendar, newsletter, and other build-time content is captured
+in the saved release. Scheduled refreshes update staging only; public content becomes current when
+an updated release is promoted.

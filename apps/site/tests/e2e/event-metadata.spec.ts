@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test';
+import { expect, test } from '../../scripts/deploy/access-browser';
 import { eventSchema } from '../../src/lib/structured-data';
 
 type JsonLd = Record<string, unknown>;

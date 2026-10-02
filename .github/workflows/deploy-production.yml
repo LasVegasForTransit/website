@@ -1,4 +1,4 @@
-name: Deploy production
+name: Deploy staging
 
 on:
   push:
@@ -7,16 +7,14 @@ on:
 
 permissions:
   contents: read
+  actions: read
   deployments: write
   packages: read
 
-# Never cancel a prod deploy in flight — let it finish, then queue the next.
 concurrency:
-  group: deploy-prod
+  group: website-staging
   cancel-in-progress: false
 
-# The site lives in apps/site; every run step works from there unless it
-# says otherwise. Artifact and cache paths stay relative to the checkout.
 defaults:
   run:
     working-directory: apps/site
@@ -44,6 +42,7 @@ jobs:
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           persist-credentials: false
+          lfs: true
 
       - name: Setup Node + pnpm
         uses: ./.github/actions/setup-node-pnpm
@@ -51,47 +50,92 @@ jobs:
       - name: Build site
         uses: ./.github/actions/build-site
 
-      # The pattern gallery, prototypes and the en-XA test language exist only
-      # on previews and the audit. A production build with any of them must
-      # never deploy.
-      - name: Check preview-only pages are absent
-        run: |
-          if [ -e dist/patterns ] || [ -e dist/prototypes ]; then
-            echo "::error::dist/patterns or dist/prototypes is in the production build."
-            exit 1
-          fi
-          # The en-XA long-text language is for the audit only.
-          if grep -rlq 'lang="en-XA"' dist --include='*.html'; then
-            echo "::error::The production build is in the en-XA test language. Unset LVBT_PSEUDO_LOCALE."
-            exit 1
-          fi
+      - name: Validate release
+        working-directory: .
+        run: pnpm check
 
-  deploy:
-    name: Deploy to Cloudflare Pages
+      - name: Package immutable release
+        env:
+          RELEASE_ID: ${{ github.run_id }}
+        run: >-
+          pnpm worker:release package --directory "$RUNNER_TEMP/website-release" --commit
+          "$GITHUB_SHA" --release-id "$RELEASE_ID"
+
+      - name: Save reviewed release
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: website-release-${{ github.run_id }}
+          path: ${{ runner.temp }}/website-release/
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 90
+
+  staging:
+    name: Verify and update staging
     needs: build
-    if: vars.LVBT_WORKERS_PRODUCTION_ENABLED != 'true'
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
-    timeout-minutes: 10
-    # Scopes secrets to the production environment + surfaces a deployment
-    # record in the GitHub UI. Add required reviewers via repo settings if
-    # you want a manual approval gate later.
+    timeout-minutes: 20
     environment:
-      name: production
-      url: ${{ steps.deploy.outputs.url }}
+      name: worker-preview
+      url: https://preview.lasvegasfortransit.org
     env:
-      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
       CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_WORKERS_API_TOKEN }}
+      CF_ACCESS_CLIENT_ID: ${{ secrets.CF_ACCESS_CLIENT_ID }}
+      CF_ACCESS_CLIENT_SECRET: ${{ secrets.CF_ACCESS_CLIENT_SECRET }}
+      RELEASE_ID: ${{ github.run_id }}
     steps:
       - name: Checkout
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           persist-credentials: false
-
+          lfs: true
       - name: Setup Node + pnpm
         uses: ./.github/actions/setup-node-pnpm
-
-      - name: Deploy
-        id: deploy
-        uses: ./.github/actions/deploy-cloudflare-pages
+      - name: Download release
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
-          branch: main
+          name: website-release-${{ github.run_id }}
+          path: ${{ runner.temp }}/website-release
+      - name: Install Chromium
+        run: pnpm exec playwright install --with-deps chromium
+      - name: Verify saved release
+        run: >-
+          pnpm worker:release verify --directory "$RUNNER_TEMP/website-release" --commit
+          "$GITHUB_SHA" --release-id "$RELEASE_ID"
+      - name: Upload staging version
+        id: upload
+        run: pnpm worker:release upload --directory "$RUNNER_TEMP/website-release" --target preview
+      - name: Verify protected candidate
+        env:
+          PREVIEW_URL: ${{ steps.upload.outputs.url }}
+        run: >-
+          pnpm worker:smoke --url "$PREVIEW_URL" --protected --commit "$GITHUB_SHA" --release-id
+          "$RELEASE_ID"
+      - name: Browser acceptance
+        env:
+          PLAYWRIGHT_BASE_URL: ${{ steps.upload.outputs.url }}
+        run: |
+          cp -R "$RUNNER_TEMP/website-release/dist" ./dist
+          pnpm worker:test:browser --project=ui-contracts
+      - name: Activate staging
+        env:
+          VERSION_ID: ${{ steps.upload.outputs.version }}
+        run: pnpm worker:release activate --target preview --version "$VERSION_ID"
+      - name: Verify permanent preview domain
+        run: >-
+          pnpm worker:smoke --url https://preview.lasvegasfortransit.org --protected --commit
+          "$GITHUB_SHA" --release-id "$RELEASE_ID"
+      - name: Record release
+        env:
+          VERSION_ID: ${{ steps.upload.outputs.version }}
+        run: |
+          {
+            echo '### Staging release verified'
+            echo "Release: $RELEASE_ID"
+            echo "Commit: $GITHUB_SHA"
+            echo "Staging Worker version: $VERSION_ID"
+            echo 'Review: https://preview.lasvegasfortransit.org'
+            echo "Promote by selecting Actions run $GITHUB_RUN_ID in Promote website release."
+          } >> "$GITHUB_STEP_SUMMARY"

@@ -1,7 +1,7 @@
-import { expect, test } from '@playwright/test';
+import { expect, test } from '../../scripts/deploy/access-browser';
 
 test.describe('footer colophon', () => {
-  test('indexes colophon while keeping QR out of the sitemap', async ({ page, request }) => {
+  test('indexes colophon while keeping QR out of the sitemap', async ({ page, accessRequest }) => {
     await page.goto('/colophon');
     await page.waitForLoadState('networkidle');
     await expect(page.locator('meta[name="robots"]')).toHaveCount(0);
@@ -12,10 +12,9 @@ test.describe('footer colophon', () => {
       'content',
       'noindex,nofollow',
     );
-
-    const sitemap = await request.get('/sitemap-0.xml');
-    expect(sitemap.ok()).toBe(true);
+    const sitemap = await accessRequest.get('/sitemap-0.xml');
     const body = await sitemap.text();
+    expect(sitemap.ok()).toBe(true);
     expect(body).toContain('<loc>https://lasvegasfortransit.org/colophon/</loc>');
     expect(body).not.toContain('<loc>https://lasvegasfortransit.org/qr/</loc>');
     expect(body).not.toContain('<loc>https://lasvegasfortransit.org/vision/</loc>');
