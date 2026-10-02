@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test';
+import { expect, test } from '../../scripts/deploy/access-browser';
 
 test.describe('newsletter accessibility', () => {
   test('exposes the hosted newsletter through a named link', async ({ page }) => {

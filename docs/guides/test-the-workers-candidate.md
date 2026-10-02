@@ -1,121 +1,79 @@
-# Test the Workers candidate
+# Review and promote a website release
 
-A candidate is a version of the production Worker that receives a versioned preview URL before
-deployment. It uses the production bindings, so browser tests use non-destructive data. The public
-hostnames stay on the previously deployed version until candidate checks pass.
+Use the permanent preview site to review changes, then publish a selected saved release. A merge
+into `main` updates staging and leaves the public website on its last promoted release.
 
 ## Check locally
 
-Install the pinned toolchain and run the complete repository check:
+Use the pinned Node and pnpm versions, then run:
 
 ```sh
 pnpm bootstrap
 pnpm check
 ```
 
-The check compiles the existing Pages Functions into one Worker, validates the upload bundle, and
-starts it on an unused local port. A passing result includes `Worker parity checks passed.`
+For interactive local inspection, run `pnpm -C apps/site worker:dev`. Local requests use local
+storage. Missing integration secrets intentionally return `503 service_unavailable`.
 
-For interactive inspection, build and start the Worker directly:
+## Configure protected staging
 
-```sh
-pnpm -C apps/site worker:dev
-```
+1. Open the `lvbt-website-preview` Worker in Cloudflare, then **Access**.
+2. Configure Worker-specific protection with scope **All traffic** and the existing LVBT staff
+   Access policy. Do not enable an account-wide policy.
+3. Create a dedicated preview verification service token. Add a **Service Auth** policy including
+   that exact token, and attach it to this Worker alongside the staff policy.
+4. Save its client ID and secret in the website repository's `worker-preview` GitHub environment as
+   `CF_ACCESS_CLIENT_ID` and `CF_ACCESS_CLIENT_SECRET`. Use secret input prompts; never place
+   credentials in command arguments, documentation, or release artifacts.
+5. Confirm the existing `CLOUDFLARE_WORKERS_API_TOKEN` environment secret and repository-level
+   `CLOUDFLARE_ACCOUNT_ID` variable are present.
+6. After Access is configured, attach `preview.lasvegasfortransit.org` as a custom domain of
+   `lvbt-website-preview`. The matching configuration is in `apps/site/wrangler.jsonc`.
 
-Open the printed local URL. Visit the home page, an ordinary content page, and an unknown path.
-Submit only test payloads to local API routes; missing secrets intentionally return
-`503 service_unavailable`.
+Anonymous requests must reach Access rather than the website. Staff should see the site after
+signing in. Automation uses the service token; it does not require an interactive browser login.
+Preview integrations use separate test credentials and the preview database.
 
-## Enable pull request previews
+## Review a pull request
 
-Create the `worker-preview` GitHub environment: repository → **Settings → Environments → New
-environment**, type `worker-preview`, then **Configure environment**. If it is already listed, open
-it instead — nothing below needs redoing.
+Open the Worker URL in the pull request comment and sign in through Access. The URL represents that
+PR's uploaded version; it does not move the permanent preview site. Fork PRs receive no deployment
+secrets.
 
-Create its token: open `https://dash.cloudflare.com/<account-id>/api-tokens`, click **Create
-Token**, then **Create Custom Token** → **Get started** (there is no ready-made template this
-narrow). Name it `lvbt-website-preview (GitHub Actions)`. Under **Permissions**, add one row:
-**Account · Workers Scripts · Edit** — this uploads Worker versions but cannot touch a zone's routes
-or DNS. Under **Account Resources**, choose **Include** and the LVBT account. Leave **Zone
-Resources** at its default. Leave the TTL empty. Click **Continue to summary**, then **Create
-Token**, and copy it: Cloudflare shows it only once.
+Inspect phone and desktop layouts, navigation, nested routes, event calendars, and the branded 404
+page. Use test data for preview APIs. Browser contract checks run automatically through Access.
+Visual and accessibility audits also remain available through the ordinary audit workflow.
 
-Under the `worker-preview` environment's **Environment secrets**, click **Add environment secret**,
-name it `CLOUDFLARE_WORKERS_API_TOKEN`, and paste the token — or run
-`gh secret set CLOUDFLARE_WORKERS_API_TOKEN --env worker-preview` and paste it at the prompt.
-`CLOUDFLARE_ACCOUNT_ID` is not secret and is read by jobs that declare no environment at all (the
-fork-safety check in `deploy-preview.yml`), so add it once as a plain repository variable instead:
-**Settings → Secrets and variables → Actions → Variables → New repository variable**, or
-`gh variable set CLOUDFLARE_ACCOUNT_ID`. Skip creating it again if it already exists — every
-workflow that needs a Cloudflare account ID reads this same one.
+## Review staging
 
-Set the repository variable `CLOUDFLARE_WORKERS_PREVIEW_ENABLED` to `true` after
-`pnpm -C apps/site worker:upload --env preview` succeeds for `lvbt-website-preview`, the separate
-Worker that pull request previews use. Re-run the pull request workflow and open the
-`Worker candidate` link in its comment.
+After `Deploy staging` succeeds, open [the preview site](https://preview.lasvegasfortransit.org).
+Record the commit and release ID from its Actions summary. `/lvbt-release.json` shows which release
+the domain currently serves; record its originating Actions run ID for promotion.
 
-The preview workflow runs the complete Playwright suite against the Worker URL. The same checks run
-locally against an uploaded candidate:
+A new main build can replace this domain while review is ongoing. Review the version URL recorded in
+that run's upload step when you need to return to the selected build.
 
-```sh
-pnpm -C apps/site worker:test:live \
-  --pages https://lasvegasfortransit.org \
-  --worker https://<version>-lvbt-website-preview.<account>.workers.dev \
-  --skip-api
-PLAYWRIGHT_BASE_URL=https://<version>-lvbt-website-preview.<account>.workers.dev \
-  pnpm -C apps/site worker:test:browser
-```
+## Publish the reviewed release
 
-Inspect the navigation at phone and desktop widths. Check the browser console, refresh a nested
-route, follow the sitemap redirect, open an event calendar file, and exercise each API with test
-credentials. Confirm Cloudflare Web Analytics does not record the preview hostname.
+1. Open **Actions → Promote website release → Run workflow** in the website repository.
+2. Select the `main` branch.
+3. Enter the successful **Deploy staging Actions run ID** you reviewed.
+4. Run the workflow and satisfy any GitHub environment approval required by the repository.
 
-## Verify a main candidate
+The workflow rejects invalid source runs, downloads the saved artifact, verifies every file, uploads
+a candidate with production bindings, and runs browser checks. It activates the candidate's exact
+version ID only after those checks pass. It does not rebuild or promote preview data.
 
-Create a separate `worker-candidate` GitHub environment the same way: **Settings → Environments →
-New environment**, type `worker-candidate`, **Configure environment**. It needs its own
-`CLOUDFLARE_WORKERS_API_TOKEN` environment secret — create a second custom token exactly as above
-(**Account · Workers Scripts · Edit**, scoped to the LVBT account; name it
-`lvbt-website candidate (GitHub Actions)` so it reads differently from the preview one in the token
-list) and add it under this environment's **Environment secrets**. It reads the same
-`CLOUDFLARE_ACCOUNT_ID` repository variable created above — do not make a second copy. Set the
-repository variable `CLOUDFLARE_WORKERS_CANDIDATE_ENABLED` to `true` only after the preview workflow
-passes.
+After success, verify [the public site](https://lasvegasfortransit.org), a nested page, an event
+calendar, and the `www` redirect. Check `/lvbt-release.json` against the selected release and the
+recorded production version in the workflow summary.
 
-Each successful `Deploy production` build starts `Deploy Worker candidate` for the same commit. The
-workflow uploads a version with the stable `candidate` preview alias and runs the browser suite.
-With `LVBT_WORKERS_PRODUCTION_ENABLED=true`, it deploys that version only after confirming that
-`main` still points at the tested commit. Use **Run workflow** on `main` to repeat the release
-without another build trigger.
+## Refresh calendar content or roll back
 
-Record the commit, version, and preview URL from the workflow summary with the release.
+For a calendar correction, run **Deploy staging**, review the refreshed events, then promote its
+run. Scheduled calendar refreshes also stop at staging.
 
-## Check production
-
-After `Deploy Worker candidate` succeeds, compare `https://lasvegasfortransit.org` with the version
-URL recorded in its workflow summary. Check `https://www.lasvegasfortransit.org` redirects to the
-apex over valid TLS. Follow a content link, refresh a nested page, inspect an unknown path, and
-check an event calendar file. Confirm that production includes the Cloudflare Web Analytics beacon
-while version previews do not.
-
-The `lvbt-website` Worker owns both public hostnames as custom domains. The Pages project has no
-custom-domain attachment. Its `lvbt-website-5zh.pages.dev` address remains available for emergency
-rollback; an ordinary release regression rolls back the Worker version without changing DNS. The
-[deployment pipeline](../reference/deployment-pipeline.md#rollback) records the recovery path.
-
-## Record acceptance
-
-Record the commit, Worker version, preview URL, and check time in the release record. Compare these
-behaviors before and after deployment:
-
-| Surface               | Required result                                                       |
-| --------------------- | --------------------------------------------------------------------- |
-| `/` and content pages | Status, HTML, canonical metadata, and navigation match the candidate  |
-| unknown path          | Branded `404.html` with status 404                                    |
-| `_headers`            | Security and cache headers match the candidate                        |
-| `_redirects`          | Every permanent redirect returns 301 to the same location             |
-| `/events/*.ics`       | `text/calendar; charset=utf-8`                                        |
-| `/api/*`              | Status, CORS, validation, and downstream behavior match the candidate |
-| analytics             | Production hostname included; preview hostname excluded               |
-
-Keep the previous Worker version and the Pages fallback available until the production check passes.
+To republish an older release, select its successful staging run while its artifact is retained. For
+urgent recovery using a recorded Worker version, follow the
+[rollback reference](../reference/deployment-pipeline.md#rollback). Never rebuild an expired
+artifact and treat the new output as the previously reviewed release.

@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, resolve } from 'node:path';
-import { expect, test } from '@playwright/test';
+import { expect, test } from '../../scripts/deploy/access-browser';
 import { builtSitemapPaths } from '../support/sitemap-paths';
 
 // Same sitemap-driven URL list as a11y.spec.ts / screenshots.spec.ts so

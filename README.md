@@ -21,8 +21,7 @@ New to any of these? Each links to its [glossary](./docs/reference/glossary.md) 
 - [Tailwind](./docs/reference/glossary.md#tailwind) CSS v4 (via `@tailwindcss/vite`)
 - [Public Sans](https://public-sans.digital.gov/) (USWDS font, self-hosted; Latin woff2 vendored
   from `@fontsource-variable/public-sans`)
-- Hosted on [Cloudflare Pages](./docs/reference/glossary.md#cloudflare-pages) — fully portable to
-  any static host (Netlify, GitHub Pages, S3+CloudFront).
+- Hosted on Cloudflare Workers with static assets and server routes.
 
 ---
 
@@ -139,9 +138,10 @@ turbo.json                  # The tasks every package runs, in order
 
 ## Deployment
 
-Pushes to `main` deploy to production at `lasvegasfortransit.org` via GitHub Actions; PRs get a
-Cloudflare Pages preview URL commented on the PR. Full pipeline (build settings, env vars, rollback,
-manual deploys) is documented in
+Pushes to `main` update `preview.lasvegasfortransit.org` behind Cloudflare Access. Explicit
+promotion publishes the selected saved release at `lasvegasfortransit.org`. Same-repository PRs
+receive independent, protected Worker preview URLs. Full pipeline (build settings, env vars,
+rollback, manual deploys) is documented in
 [`docs/reference/deployment-pipeline.md`](./docs/reference/deployment-pipeline.md).
 
 If anything breaks in your environment, run `pnpm preflight` first — it usually points at the
@@ -153,12 +153,11 @@ Several workflows in [`.github/workflows/`](./.github/workflows/) build on three
 in [`.github/actions/`](./.github/actions/) (`setup-node-pnpm`, `build-site`,
 `deploy-cloudflare-pages`). The ones that talk to Cloudflare:
 
-| Workflow                      | Trigger                               | What it does                                                                   |
-| ----------------------------- | ------------------------------------- | ------------------------------------------------------------------------------ |
-| `deploy-preview.yml`          | Same-repo PRs on `main`               | Build + `wrangler pages deploy --branch=<head ref>` + comment URL              |
-| `deploy-production.yml`       | Pushes to `main`, `workflow_dispatch` | Build + `wrangler pages deploy --branch=main`                                  |
-| `deploy-worker-preview.yml`   | Same-repo PRs, once enabled           | Uploads a version of the separate `lvbt-website-preview` Worker for comparison |
-| `deploy-worker-candidate.yml` | After a successful production build   | Uploads a `main` Worker version for comparison, then cutover once enabled      |
+| Workflow                                                | Trigger                                        | What it does                                        |
+| ------------------------------------------------------- | ---------------------------------------------- | --------------------------------------------------- |
+| `deploy-production.yml` (Deploy staging)                | Main pushes and manual dispatch                | Save a release and verify protected staging         |
+| `deploy-worker-preview.yml`                             | Same-repository PR updates                     | Verify and comment an independent protected preview |
+| `deploy-worker-candidate.yml` (Promote website release) | Explicit selection of a successful staging run | Publish the saved release after candidate checks    |
 
 `ci.yml` (the required `Validate` check: `pnpm check`, a dependency audit, and a secret scan, no
 deploy), `audit.yml`, `audit-scheduled.yml`, `cron-rebuild.yml`, `seed-baselines.yml` and
@@ -168,14 +167,10 @@ each token — is in
 [`docs/reference/deployment-pipeline.md`](./docs/reference/deployment-pipeline.md) and
 [`docs/guides/test-the-workers-candidate.md`](./docs/guides/test-the-workers-candidate.md).
 
-**In short:** `deploy-production.yml` and `deploy-preview.yml` both need a repository secret
-`CLOUDFLARE_API_TOKEN` (an **Account · Cloudflare Pages · Edit** custom token — Cloudflare has no
-ready-made template for Pages alone) and a repository variable `CLOUDFLARE_ACCOUNT_ID`. Both stay at
-the repository level, not scoped to an Environment: `deploy-preview.yml`'s fork-safety job, which
-declares no environment, reads them too. `deploy-worker-preview.yml` and
-`deploy-worker-candidate.yml` each need their own environment-scoped `CLOUDFLARE_WORKERS_API_TOKEN`
-(a narrower **Account · Workers Scripts · Edit** token) under the `worker-preview` and
-`worker-candidate` GitHub environments.
+Workers credentials are scoped to the `worker-preview` and `worker-candidate` GitHub environments.
+The preview environment also needs a Cloudflare Access service token. Credentials remain outside
+release artifacts; the account ID is a repository variable. See the linked pipeline reference for
+exact secret names and review/promotion steps.
 
 ## License
 

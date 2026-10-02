@@ -6,6 +6,7 @@
   "main": ".wrangler/worker/index.js",
   "workers_dev": false,
   "preview_urls": true,
+  "vars": { "LVBT_DEPLOYMENT_ENV": "production" },
   "assets": {
     "directory": "./dist",
     "binding": "ASSETS",
@@ -42,6 +43,14 @@
   ],
   "env": {
     "preview": {
+      "vars": { "LVBT_DEPLOYMENT_ENV": "preview" },
+      "routes": [{ "pattern": "preview.lasvegasfortransit.org", "custom_domain": true }],
+      "assets": {
+        "directory": "./dist",
+        "binding": "ASSETS",
+        "not_found_handling": "404-page",
+        "run_worker_first": true,
+      },
       "d1_databases": [
         {
           "binding": "PLATFORM_DB",

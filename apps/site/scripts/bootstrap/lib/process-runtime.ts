@@ -32,11 +32,8 @@ function resolveShell(): string {
 const SUBPROCESS_ENV_DENYLIST: ReadonlySet<string> = new Set(['CLOUDFLARE_API_TOKEN']);
 
 function subprocessEnv(): NodeJS.ProcessEnv {
-  const env: NodeJS.ProcessEnv = {};
-  for (const [key, value] of Object.entries(process.env)) {
-    if (SUBPROCESS_ENV_DENYLIST.has(key)) continue;
-    env[key] = value;
-  }
+  const env = { ...process.env };
+  for (const key of SUBPROCESS_ENV_DENYLIST) Reflect.deleteProperty(env, key);
   return env;
 }
 

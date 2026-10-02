@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test';
+import { expect, test } from '../../scripts/deploy/access-browser';
 
 // The long-text check: with the site built in the en-XA pseudo-language
 // (LVBT_PSEUDO_LOCALE=1), every member-facing message is about 40 percent

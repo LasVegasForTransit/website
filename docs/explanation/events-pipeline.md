@@ -1,8 +1,8 @@
 # Events pipeline
 
 This page explains how events get onto the site — for anyone adding an event or touching the events
-code. The short version: you create events in Google Calendar, and the site pulls them in
-automatically when it rebuilds.
+code. The short version: you create events in Google Calendar, and the site pulls them in when a
+rebuilt release is promoted.
 
 Events on the site come from a public Google Calendar. The site rebuilds against the calendar on a
 schedule; the calendar is the source of truth for both event metadata (title, time, location, join
@@ -122,12 +122,13 @@ the calendar's UID isn't user-friendly enough to use as the slug.
 A GitHub Actions (GitHub's built-in automation that runs scripts on a schedule or on each push)
 scheduled workflow — a "cron" job, meaning it runs on a fixed timetable — at
 [`.github/workflows/cron-rebuild.yml`](../../.github/workflows/cron-rebuild.yml) fires twice a day
-(roughly morning and evening PT) and dispatches the `Deploy production` workflow. The build
-re-fetches the calendar before the Worker version is deployed.
+(roughly morning and evening PT) and dispatches the `Deploy staging` workflow. The build re-fetches
+the calendar and updates the protected preview site. Production changes only after an editor
+promotes that successful run with `Promote website release`.
 
 Why twice a day: event metadata changes a few times a week at most; morning and evening rebuilds
-keep the site current without unnecessary deployments. Tighten the cron in the workflow file if
-events start moving faster than that.
+keep staging current for review. Tighten the cron in the workflow file if events start moving faster
+than that.
 
 Why GitHub Actions and not a Cloudflare Worker: the trigger needs zero long-lived credentials this
 way. The workflow uses the auto-issued `GITHUB_TOKEN`, scope-limited to `actions: write` on this
@@ -135,11 +136,13 @@ repo. No PATs, no Worker secrets, no API token rotation. Logs surface in the Act
 every other deploy.
 
 For a same-day correction, push a commit or click **Run workflow** on the `cron-rebuild` (or
-`Deploy production`) workflow page — both trigger an immediate redeploy.
+`Deploy staging`) workflow page. Review the updated event information on staging, then promote that
+run to publish the correction.
 
-Worst-case staleness: ~12 hours (gap between the morning and evening rebuilds) + however long
+Staging refresh delay: ~12 hours (gap between the morning and evening rebuilds) + however long
 Google's ICS edge cache holds (typically near-instant, can be a few hours for public calendars). For
-anything time-sensitive, hit **Run workflow** in the Actions UI rather than wait.
+anything time-sensitive, build and promote an updated release in the Actions UI. Production has no
+automatic freshness guarantee while a release awaits review.
 
 ## Failure modes the build will surface
 

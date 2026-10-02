@@ -1,7 +1,7 @@
 name: cron-rebuild
 
-# Periodic redeploy so the events page picks up Google Calendar changes
-# without anyone having to push. Triggers `Deploy production` via
+# Periodic staging refresh so the events page picks up Google Calendar changes
+# without anyone having to push. Triggers `Deploy staging` via
 # workflow_dispatch — that workflow re-fetches the public LVBT calendar
 # during its build.
 #
@@ -16,7 +16,7 @@ on:
   schedule:
     - cron: '0 2,14 * * *'
   # Manual button in the Actions UI for ad-hoc rebuilds (e.g. after a
-  # same-day calendar correction that can't wait two hours).
+  # same-day calendar correction that cannot wait for the next scheduled build).
   workflow_dispatch:
 
 permissions:
@@ -28,7 +28,7 @@ jobs:
   dispatch:
     runs-on: ubuntu-latest
     steps:
-      - name: Dispatch Deploy production
+      - name: Dispatch Deploy staging
         env:
           GH_TOKEN: ${{ github.token }}
         run: gh workflow run deploy-production.yml --ref main --repo ${{ github.repository }}

@@ -487,20 +487,14 @@
     }
   },
   "tests/e2e/body-links.spec.ts": {
-    "@typescript-eslint/consistent-type-definitions": {
-      "count": 2
-    },
     "@typescript-eslint/no-implied-eval": {
       "count": 1
     },
     "@typescript-eslint/no-non-null-assertion": {
-      "count": 9
+      "count": 1
     },
     "@typescript-eslint/no-unnecessary-condition": {
       "count": 7
-    },
-    "@typescript-eslint/no-unnecessary-type-assertion": {
-      "count": 1
     },
     "@typescript-eslint/no-unsafe-call": {
       "count": 1

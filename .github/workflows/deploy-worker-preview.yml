@@ -44,6 +44,9 @@ jobs:
       PUBLIC_LVBT_NEWSLETTER_FEED_URL: ${{ vars.PUBLIC_LVBT_NEWSLETTER_FEED_URL }}
       PUBLIC_LVBT_CWA_TOKEN: ${{ vars.PUBLIC_LVBT_CWA_TOKEN }}
       LVBT_REQUIRE_ANALYTICS: '1'
+      PUBLIC_LVBT_PREVIEW_PAGES: '1'
+      CF_ACCESS_CLIENT_ID: ${{ secrets.CF_ACCESS_CLIENT_ID }}
+      CF_ACCESS_CLIENT_SECRET: ${{ secrets.CF_ACCESS_CLIENT_SECRET }}
     steps:
       - name: Checkout
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
@@ -71,28 +74,12 @@ jobs:
       - name: Verify preview
         env:
           PREVIEW_URL: ${{ steps.upload.outputs.url }}
-        run: |
-          set -euo pipefail
-          for _ in 1 2 3 4 5 6; do
-            if curl --fail --silent --show-error --max-time 15 "$PREVIEW_URL" > /dev/null; then
-              exit 0
-            fi
-            sleep 5
-          done
-          exit 1
-
-      - name: Compare with Pages
-        if: vars.LVBT_WORKERS_PRODUCTION_ENABLED != 'true'
-        env:
-          PREVIEW_URL: ${{ steps.upload.outputs.url }}
-        run: >-
-          pnpm worker:test:live --pages https://lvbt-website-5zh.pages.dev --worker "$PREVIEW_URL"
-          --skip-api
+        run: pnpm worker:smoke --url "$PREVIEW_URL" --protected
 
       - name: Browser acceptance
         env:
           PLAYWRIGHT_BASE_URL: ${{ steps.upload.outputs.url }}
-        run: pnpm worker:test:browser
+        run: pnpm worker:test:browser --project=ui-contracts
 
       - name: Upsert pull request comment
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0

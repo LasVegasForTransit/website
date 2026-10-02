@@ -1,7 +1,7 @@
 import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { join, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { expect, test, type Locator, type Page } from '@playwright/test';
+import { expect, test, type Locator, type Page } from '../../scripts/deploy/access-browser';
 import { builtSitemapPaths } from '../support/sitemap-paths';
 
 const paths = [...builtSitemapPaths(import.meta.url), '/totally-missing-seo-audit-test/'];
