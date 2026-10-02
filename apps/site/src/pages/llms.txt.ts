@@ -12,6 +12,7 @@
 import type { APIRoute } from 'astro';
 import { getCollection } from 'astro:content';
 import { site } from '../lib/site';
+import { paths } from '../lib/paths';
 
 export const prerender = true;
 
@@ -68,7 +69,12 @@ export const GET: APIRoute = async () => {
   const programs = await getCollection('programs', (entry) => !entry.id.startsWith('_'));
   const programList = programs
     .sort((a, b) => a.data.order - b.data.order)
-    .map((program) => wrapListItem(program.data.title, program.data.summary))
+    .map((program) =>
+      // The page URL rides at the end of the description so it can wrap onto
+      // its own line; a full program URL inside the label would break the
+      // 80-character limit.
+      wrapListItem(program.data.title, `${program.data.summary} <${u(paths.program(program.id))}>`),
+    )
     .join('\n');
 
   const body = `# ${site.name}
@@ -89,7 +95,7 @@ light rail, no dedicated transit funding source, and historically no
 organized public voice. This site is where we publish what we
 believe, what we're working on, and how to plug in.
 
-The work runs through public programs:
+Named programs anyone can join:
 
 ${programList}
 
@@ -103,8 +109,8 @@ ${programList}
   theory of change — how we plan to win in Nevada
 
 ## Work
-- [Programs](${u('/programs')}): the public
-  overview of LVBT's main areas of work
+- [Programs](${u('/programs')}): named
+  gatherings and challenges to join
 - [Projects](${u('/projects')}): the public
   roadmap of named, reportable project lines
 - [Events](${u('/events')}): upcoming events,
