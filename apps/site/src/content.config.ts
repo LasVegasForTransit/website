@@ -5,6 +5,7 @@ import { z } from 'zod';
 import { calendarEventsLoader } from './lib/events-loader';
 import { beehiivNewsletterLoader } from './lib/newsletter-loader';
 import { EVENT_ADMISSION_LABELS, eventLocationSchema } from './lib/event-format';
+import { programs, workAreas } from './lib/program-collections';
 
 // Shared shape for schema.org's `performer`/`contributor`/`sponsor`/`funder`
 // — all four are just "a Person or Organization, optionally with a URL."
@@ -156,6 +157,7 @@ const projects = defineCollection({
     title: z.string(),
     status: z.enum(['active', 'planned', 'complete', 'paused']),
     initiatives: z.array(z.string()),
+    program: z.string().optional(),
     tldr: z.string(),
     contacts: z.array(z.object({ name: z.string(), role: z.string() })).default([]),
     startDate: z.coerce.date(),
@@ -171,26 +173,6 @@ const projects = defineCollection({
           text: z.string(),
           status: z.enum(['planned', 'in-progress', 'done']).default('planned'),
           target: z.coerce.date().optional(),
-        }),
-      )
-      .default([]),
-  }),
-});
-
-const programs = defineCollection({
-  loader: glob({ pattern: excludeTemplates, base: './src/content/programs' }),
-  schema: z.object({
-    title: z.string(),
-    summary: z.string(),
-    icon: z.string(),
-    order: z.number(),
-    projects: z.array(z.string()).default([]),
-    cohorts: z
-      .array(
-        z.object({
-          name: z.string(),
-          status: z.string(),
-          description: z.string(),
         }),
       )
       .default([]),
@@ -271,6 +253,7 @@ export const collections = {
   newsletter,
   projects,
   programs,
+  workAreas,
   initiatives,
   pages,
   glossary,
