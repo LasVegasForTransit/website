@@ -185,7 +185,7 @@ void test('leaving makes a former member, and rejoining records a new consent', 
   const db = memoryDb();
   const person = await member(db);
   const { fetcher, calls } = fakeServices();
-  await leaveMailingList(env(db), person.id, fetcher);
+  assert.equal(await leaveMailingList(env(db), person.id, fetcher), 'left');
   assert.equal(
     (await new PersonService(db).getPerson(person.id))?.membership_status,
     'former_member',
@@ -201,6 +201,24 @@ void test('leaving makes a former member, and rejoining records a new consent', 
     sources.map((row) => row.source),
     ['account'],
   );
+});
+
+void test('leaving remains retryable when the mailing provider fails', async () => {
+  for (const failure of ['rejected', 'network', 'missing_config']) {
+    const db = memoryDb();
+    const person = await member(db);
+    const config = env(db);
+    if (failure === 'missing_config') delete config.LVBT_BEEHIIV_API_KEY;
+    const fetcher = (() =>
+      failure === 'network'
+        ? Promise.reject(new Error('offline'))
+        : Promise.resolve(new Response(null, { status: 503 }))) as typeof fetch;
+    assert.equal(await leaveMailingList(config, person.id, fetcher), 'unavailable');
+    assert.equal((await accountView(db, person.id))?.onMailingList, true);
+    assert.equal((await new PersonService(db).getPerson(person.id))?.membership_status, 'member');
+    assert.equal(await leaveMailingList(env(db), person.id, fakeServices().fetcher), 'left');
+    assert.equal((await accountView(db, person.id))?.onMailingList, false);
+  }
 });
 
 void test('the download holds everything about this member and nothing about anyone else', async () => {
