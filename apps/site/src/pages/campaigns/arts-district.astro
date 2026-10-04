@@ -8,12 +8,19 @@ import {
   artsDistrictEventPath,
 } from '../../lib/campaigns/arts-district';
 
-const [firstEvent, ...laterEvents] = artsDistrictEvents;
+import { campaignDateParts, groupCampaignEvents } from '../../lib/campaigns/event-schedule';
+
+const schedule = groupCampaignEvents(artsDistrictEvents);
+const sections = [
+  { kind: 'upcoming', events: schedule.upcoming },
+  { kind: 'proposed', events: schedule.proposed },
+  { kind: 'past', events: schedule.past },
+];
 ---
 
 <BaseLayout
   title="Arts District Neighborhood Campaign"
-  description="Help shape a neighborhood plan for world-class transit and supportive land use in the Arts District. Join us October 17 at 2 p.m. at Barter Beer + Mall."
+  description="Help shape a neighborhood plan for world-class transit and supportive land use in the Arts District. Join public gatherings and help choose the neighborhood’s priorities."
 >
   <div id="lvbt-arts-authentic">
     <section class="hero" aria-labelledby="lvbt-auth-title">
@@ -101,7 +108,12 @@ const [firstEvent, ...laterEvents] = artsDistrictEvents;
         </div>
       </div>
     </section>
-    <section class="events wrap" id="lvbt-auth-events" aria-labelledby="lvbt-auth-events-title">
+    <section
+      class="events wrap"
+      id="lvbt-auth-events"
+      data-campaign-events
+      aria-labelledby="lvbt-auth-events-title"
+    >
       <div class="section-head">
         <div>
           <h2 id="lvbt-auth-events-title">Upcoming events</h2>
@@ -111,68 +123,107 @@ const [firstEvent, ...laterEvents] = artsDistrictEvents;
           </p>
         </div>
       </div>
-      <div class="event-grid">
-        <article class="event">
-          <div class="date">
-            <strong>17</strong>
-            <span>Oct</span>
-            <span>2026</span>
-          </div>
-          <div class="event-copy">
-            <span class="eyebrow" style="margin-bottom:12px">First gathering</span>
-            <h3>
-              <a class="event-title-link" href={artsDistrictEventPath(firstEvent)}
-                >{firstEvent.title}</a
-              >
-            </h3>
-            <p>{firstEvent.summary}</p>
-            <div class="event-facts">
-              <span
-                ><strong><time datetime={firstEvent.start}>{firstEvent.dateLabel}</time></strong
-                ></span
-              >
-              <span>{firstEvent.venue}</span>
-            </div>
-            <a
-              class="underlink"
-              data-external-icon="false"
-              href={firstEvent.venueUrl}
-              target="_blank"
-              rel="noopener noreferrer">Get directions</a
-            >
-            {
-              firstEvent.lvbtEventUrl && (
-                <a class="underlink event-rsvp" href={firstEvent.lvbtEventUrl}>
-                  Event details and RSVP
-                </a>
-              )
-            }
-          </div>
-        </article>
-      </div>
-      <h3 class="series-heading">Proposed topics for future gatherings</h3>
-      <div class="series" aria-label="Proposed topics for the next three gatherings">
-        {
-          laterEvents.map((event) => (
-            <article>
-              <span class="month">{event.month}</span>
-              <span class="series-year">{event.year}</span>
-              <h3>
-                <a class="event-title-link" href={artsDistrictEventPath(event)}>
-                  {event.title}
-                </a>
+      <p data-campaign-empty hidden={schedule.upcoming.length > 0}>
+        The next gathering’s date and location will be announced here.
+      </p>
+      {
+        sections.map(({ kind, events }) => (
+          <div data-campaign-group={kind} hidden={kind !== 'upcoming' && events.length === 0}>
+            {kind !== 'upcoming' && (
+              <h3 class="series-heading">
+                {kind === 'proposed' ? 'More gatherings' : 'Past gatherings'}
               </h3>
-              <p>{event.summary}</p>
-              <span class="date-note">Date and location to be announced</span>
-              {event.lvbtEventUrl && (
-                <a class="underlink event-rsvp" href={event.lvbtEventUrl}>
-                  Event details and RSVP
-                </a>
+            )}
+            <div class={kind === 'proposed' ? 'series' : 'event-grid'} data-campaign-list={kind}>
+              {events.map((event, index) =>
+                kind === 'proposed' ? (
+                  <article>
+                    <span class="month">{event.month}</span>
+                    <span class="series-year">{event.year}</span>
+                    <h3>
+                      <a class="event-title-link" href={artsDistrictEventPath(event)}>
+                        {event.title}
+                      </a>
+                    </h3>
+                    <p>{event.summary}</p>
+                    <span class="date-note">Date and location to be announced</span>
+                    {event.lvbtEventUrl && (
+                      <a class="underlink event-rsvp" href={event.lvbtEventUrl}>
+                        Event details and RSVP
+                      </a>
+                    )}
+                  </article>
+                ) : (
+                  <article
+                    class:list={[
+                      'event',
+                      {
+                        'event--featured': kind === 'upcoming' && index === 0,
+                        'event--past': kind === 'past',
+                      },
+                    ]}
+                    data-campaign-event={event.slug}
+                    data-start={event.start}
+                    data-end={event.end}
+                  >
+                    <div class="date" aria-hidden="true">
+                      <strong>{campaignDateParts(event.start ?? '').day}</strong>
+                      <span>{campaignDateParts(event.start ?? '').month}</span>
+                      <span>{campaignDateParts(event.start ?? '').year}</span>
+                    </div>
+                    <div class="event-copy">
+                      <span class="eyebrow" data-campaign-event-label style="margin-bottom:12px">
+                        {kind === 'past'
+                          ? 'Past gathering'
+                          : index === 0
+                            ? 'Next gathering'
+                            : 'Upcoming gathering'}
+                      </span>
+                      <h3>
+                        <a class="event-title-link" href={artsDistrictEventPath(event)}>
+                          {event.title}
+                        </a>
+                      </h3>
+                      <p>{event.summary}</p>
+                      <div class="event-facts">
+                        <span>
+                          <strong>
+                            <time datetime={event.start}>{event.dateLabel}</time>
+                          </strong>
+                        </span>
+                        <span>{event.venue ?? 'Location to be announced'}</span>
+                      </div>
+                      {event.venueUrl && (
+                        <a
+                          class="underlink"
+                          data-active-action
+                          hidden={kind === 'past'}
+                          data-external-icon="false"
+                          href={event.venueUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                        >
+                          Get directions
+                        </a>
+                      )}
+                      {event.lvbtEventUrl && (
+                        <a
+                          class="underlink event-rsvp"
+                          data-active-action
+                          hidden={kind === 'past'}
+                          href={event.lvbtEventUrl}
+                        >
+                          Event details and RSVP
+                        </a>
+                      )}
+                    </div>
+                  </article>
+                ),
               )}
-            </article>
-          ))
-        }
-      </div>
+            </div>
+          </div>
+        ))
+      }
     </section>
     <section
       class="campaign-record wrap"
@@ -181,9 +232,8 @@ const [firstEvent, ...laterEvents] = artsDistrictEvents;
     >
       <h2 id="lvbt-auth-record-title">Community priorities and proposals</h2>
       <p class="record-intro">
-        You’ll find summaries from our gatherings, the priorities people raise, and the draft
-        neighborhood plan here. Read through the proposals and let us know what we’ve missed or what
-        should change before we share them with transportation and development decision-makers.
+        Read gathering summaries and proposals here as we publish them. Tell us what’s missing or
+        what you’d change.
       </p>
       {
         artsDistrictDocuments.length > 0 && (
@@ -229,6 +279,27 @@ const [firstEvent, ...laterEvents] = artsDistrictEvents;
   </div>
 </BaseLayout>
 <style>
+  #lvbt-arts-authentic [hidden] {
+    display: none !important;
+  }
+  #lvbt-arts-authentic [data-campaign-list='past'] {
+    margin-top: 24px;
+  }
+  #lvbt-arts-authentic .event:not(.event--featured) .date {
+    background: var(--color-surface-container);
+    color: var(--color-on-surface-variant);
+    border-inline-end: 1px solid var(--color-outline-variant);
+  }
+  #lvbt-arts-authentic .event.event--past {
+    min-height: 0;
+  }
+  #lvbt-arts-authentic .event--past .event-copy > p {
+    display: none;
+  }
+  #lvbt-arts-authentic .event--past .event-facts {
+    padding-bottom: 0;
+  }
+
   #lvbt-arts-authentic {
     color: var(--color-on-surface);
     background: var(--color-surface);
@@ -412,10 +483,6 @@ const [firstEvent, ...laterEvents] = artsDistrictEvents;
     align-items: center;
     justify-content: flex-start;
     padding-top: 26px;
-  }
-  #lvbt-arts-authentic .event:nth-child(2) .date {
-    background: var(--color-slab);
-    color: var(--color-on-slab);
   }
   #lvbt-arts-authentic .date strong {
   }
@@ -951,3 +1018,7 @@ const [firstEvent, ...laterEvents] = artsDistrictEvents;
     font-weight: var(--text-body-sm--font-weight);
   }
 </style>
+
+<script>
+  import '../../scripts/campaign-events';
+</script>

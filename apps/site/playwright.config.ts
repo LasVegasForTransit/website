@@ -1,5 +1,4 @@
-// Visual-regression screenshot harness. See tests/README.md for usage,
-// baseline policy, and the cross-platform pixel-hinting caveat.
+// Screenshot and behavior harness; baseline policy: tests/README.md.
 import { defineConfig, devices } from '@playwright/test';
 
 // AUDIT_PORT lets the baseline orchestrator pick a non-default port so it
@@ -38,7 +37,7 @@ export default defineConfig({
     {
       name: 'ui-contracts',
       testMatch:
-        /(body-links|color-contracts|event-metadata|footer-colophon|header-current|not-found-search|print-layout|typography-contracts)\.spec\.ts$/,
+        /(campaign-events|body-links|color-contracts|event-metadata|footer-colophon|header-current|not-found-search|print-layout|typography-contracts)\.spec\.ts$/,
       use: { ...devices['Desktop Chrome'] },
     },
     {

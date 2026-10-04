@@ -1,5 +1,6 @@
 ---
 import BaseLayout from '../../../../layouts/BaseLayout.astro';
+import { groupCampaignEvents } from '../../../../lib/campaigns/event-schedule';
 import { buttonClass } from '../../../../components/app/styles';
 import {
   artsDistrictEvents,
@@ -14,75 +15,119 @@ interface Props {
   event: ArtsDistrictEvent;
 }
 const { event } = Astro.props;
+const past = groupCampaignEvents([event]).past.length > 0;
 ---
 
 <BaseLayout
   title={`${event.title} · Arts District Neighborhood Campaign`}
   description={event.summary}
 >
-  <header class="container-page pt-8 pb-10 md:pt-14 md:pb-12">
-    <a class="body-link text-body-md" href="/campaigns/arts-district/"
-      >Arts District Neighborhood Campaign</a
-    >
-    {event.proposed && <p class="mt-6 text-title-sm text-on-surface-variant">Proposed gathering</p>}
-    <h1 class="mt-6 max-w-4xl text-headline-lg md:text-display-md text-balance">{event.title}</h1>
-    <p class="lede mt-6 max-w-3xl">{event.summary}</p>
-    <dl class="mt-8 grid max-w-3xl gap-6 sm:grid-cols-2">
-      <div>
-        <dt class="text-title-sm text-on-surface-variant">
-          {event.proposed ? 'Proposed month' : 'When'}
-        </dt>
-        <dd class="mt-2 text-body-lg font-semibold">
-          {
-            event.start ? (
-              <time datetime={event.start}>{event.dateLabel}</time>
-            ) : (
-              <>
-                {event.month} {event.year}
-                <span class="mt-1 block text-body-md font-normal">Date to be announced</span>
-              </>
-            )
-          }
-        </dd>
-      </div>
-      <div>
-        <dt class="text-title-sm text-on-surface-variant">Where</dt>
-        <dd class="mt-2 text-body-lg font-semibold">{event.venue ?? 'Location to be announced'}</dd>
-      </div>
-    </dl>
-    {
-      (event.lvbtEventUrl || event.venueUrl) && (
-        <div class="mt-8 flex flex-wrap items-center gap-6">
-          {event.lvbtEventUrl && (
-            <a class={buttonClass.primary} href={event.lvbtEventUrl}>
-              Event details and RSVP
-            </a>
-          )}
-          {event.venueUrl && (
-            <a class="body-link" data-external-icon="false" href={event.venueUrl}>
-              Get directions
-            </a>
-          )}
+  <div
+    data-campaign-event-detail
+    data-start={event.start}
+    data-end={event.end}
+    data-proposed={event.proposed ? 'true' : undefined}
+  >
+    <header class="container-page pt-8 pb-10 md:pt-14 md:pb-12">
+      <a class="body-link text-body-md" href="/campaigns/arts-district/"
+        >Arts District Neighborhood Campaign</a
+      >
+      <p class="mt-6 text-title-sm text-on-surface-variant" data-past-event-label hidden={!past}>
+        Past gathering
+      </p>
+      {
+        event.proposed && (
+          <p class="mt-6 text-title-sm text-on-surface-variant">Proposed gathering</p>
+        )
+      }
+      <h1 class="mt-6 max-w-4xl text-headline-lg md:text-display-md text-balance">{event.title}</h1>
+      <p class="lede mt-6 max-w-3xl">{event.summary}</p>
+      <dl class="mt-8 grid max-w-3xl gap-6 sm:grid-cols-2">
+        <div>
+          <dt class="text-title-sm text-on-surface-variant">
+            {event.proposed ? 'Proposed month' : 'When'}
+          </dt>
+          <dd class="mt-2 text-body-lg font-semibold">
+            {
+              event.start ? (
+                <time datetime={event.start}>{event.dateLabel}</time>
+              ) : (
+                <>
+                  {event.month} {event.year}
+                  <span class="mt-1 block text-body-md font-normal">Date to be announced</span>
+                </>
+              )
+            }
+          </dd>
         </div>
-      )
-    }
-  </header>
-  <section class="container-page pb-16 md:pb-20" aria-labelledby="discussion-title">
-    <h2 id="discussion-title" class="text-headline-lg">
-      {event.proposed ? 'What we’d like to discuss' : 'What we’ll discuss'}
-    </h2>
-    <div class="mt-6 max-w-3xl space-y-5 text-body-lg leading-relaxed text-pretty">
-      {event.details.map((paragraph) => <p>{paragraph}</p>)}
-    </div>
-  </section>
-  <section class="container-page pb-20 md:pb-28" aria-labelledby="help-title">
-    <h2 id="help-title" class="text-headline-lg">Help organize this gathering</h2>
-    <p class="mt-4 max-w-2xl text-body-md leading-relaxed text-pretty">
-      Help invite neighbors, connect us with a community organization, or contribute food,
-      publicity, and other resources for the gathering.
-    </p>
-    <a class="body-link mt-6 inline-block" href="/campaigns/arts-district/#lvbt-auth-join"
-      >Help organize the campaign</a
-    >
-  </section>
+        <div>
+          <dt class="text-title-sm text-on-surface-variant">Where</dt>
+          <dd class="mt-2 text-body-lg font-semibold">
+            {event.venue ?? 'Location to be announced'}
+          </dd>
+        </div>
+      </dl>
+      {
+        (event.lvbtEventUrl || event.venueUrl) && (
+          <div class="mt-8 flex flex-wrap items-center gap-6">
+            {event.lvbtEventUrl && (
+              <a
+                class={buttonClass.primary}
+                data-active-action
+                hidden={past}
+                href={event.lvbtEventUrl}
+              >
+                Event details and RSVP
+              </a>
+            )}
+            {event.venueUrl && (
+              <a
+                class="body-link"
+                data-active-action
+                hidden={past}
+                data-external-icon="false"
+                href={event.venueUrl}
+              >
+                Get directions
+              </a>
+            )}
+          </div>
+        )
+      }
+    </header>
+    <section class="container-page pb-16 md:pb-20" aria-labelledby="discussion-title">
+      <h2 id="discussion-title" data-discussion-heading class="text-headline-lg">
+        {
+          event.proposed
+            ? 'What we’d like to discuss'
+            : past
+              ? 'Planned discussion'
+              : 'What we’ll discuss'
+        }
+      </h2>
+      <div class="mt-6 max-w-3xl space-y-5 text-body-lg leading-relaxed text-pretty">
+        {event.details.map((paragraph) => <p>{paragraph}</p>)}
+      </div>
+    </section>
+    <section class="container-page pb-20 md:pb-28" aria-labelledby="help-title">
+      <h2 id="help-title" class="text-headline-lg">Help organize the campaign</h2>
+      <p class="mt-4 max-w-2xl text-body-md leading-relaxed text-pretty">
+        Help invite neighbors, connect us with a community organization, or contribute food,
+        publicity, and other resources for campaign gatherings.
+      </p>
+      <a class="body-link mt-6 inline-block" href="/campaigns/arts-district/#lvbt-auth-join"
+        >Help organize the campaign</a
+      >
+    </section>
+  </div>
 </BaseLayout>
+
+<script>
+  import '../../../../scripts/campaign-events';
+</script>
+
+<style>
+  [hidden] {
+    display: none !important;
+  }
+</style>
