@@ -61,6 +61,11 @@ for (const path of paths) {
 
   test.describe(`page ${path}`, () => {
     test.beforeEach(async ({ page }) => {
+      // Campaign chronology has its own live-clock tests. Keep the visual
+      // reference date fixed so a gathering ending cannot fail unrelated PRs.
+      if (path.startsWith('/campaigns/arts-district/')) {
+        await page.clock.setFixedTime(new Date('2026-10-04T12:00:00Z'));
+      }
       await page.goto(path);
       await page.waitForLoadState('networkidle');
       // Wait for web fonts to settle — otherwise the snapshot can race

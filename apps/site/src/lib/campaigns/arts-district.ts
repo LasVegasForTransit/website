@@ -7,6 +7,7 @@ export interface ArtsDistrictEvent {
   details: string[];
   proposed?: boolean;
   start?: string;
+  end?: string;
   dateLabel?: string;
   venue?: string;
   venueUrl?: string;
