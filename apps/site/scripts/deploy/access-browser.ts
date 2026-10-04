@@ -36,6 +36,11 @@ export const test = base.extend<{ accessRequest: Pick<APIRequestContext, 'get'> 
         await route.fulfill({ response });
       });
     }
-    await use(context);
+    try {
+      await use(context);
+    } finally {
+      // Finish Access fetch/fulfill handlers before Playwright disposes their responses.
+      await context.unrouteAll({ behavior: 'wait' });
+    }
   },
 });
