@@ -57,10 +57,14 @@ try {
   const response = await page.goto(origin, { waitUntil: 'networkidle' });
   assert.equal(response?.status(), 200, 'The website did not render.');
   assert.equal(new URL(page.url()).origin, origin, 'Browser was redirected away from the website.');
-  assert.match(await page.title(), /Las Vegas|LVBT/i);
+  assert.match(await page.title(), /Las Vegans for Better Transit|Las Vegas|LVBT/i);
   assert.ok(await page.locator('main').isVisible(), 'The website main content is not visible.');
   if (values.protected) {
-    assert.equal(response.headers()['x-robots-tag'], 'noindex, nofollow, noarchive');
+    // Cloudflare overwrites this header on versioned workers.dev preview URLs.
+    const robots = parsed.hostname.endsWith('.workers.dev')
+      ? 'noindex'
+      : 'noindex, nofollow, noarchive';
+    assert.equal(response.headers()['x-robots-tag'], robots);
     assert.deepEqual(analyticsRequests, [], 'Preview sent production analytics.');
   }
   process.stdout.write(
