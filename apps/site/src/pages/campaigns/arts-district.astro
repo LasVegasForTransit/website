@@ -1,4 +1,5 @@
 ---
+// cspell:ignore underlink Diandra
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import {
   artsDistrictDocuments,
@@ -27,12 +28,15 @@ const [firstEvent, ...laterEvents] = artsDistrictEvents;
         </div>
       </div>
       <figure class="hero-photo">
-        <img
-          src="/images/campaigns/arts-district-sign-2015.jpg"
-          width="960"
-          height="720"
-          alt="The 18b Arts District sign on Casino Center Boulevard"
-        />
+        <picture>
+          <source srcset="/images/campaigns/arts-district-sign-2015.webp" type="image/webp" />
+          <img
+            src="/images/campaigns/arts-district-sign-2015.jpg"
+            width="960"
+            height="720"
+            alt="The 18b Arts District sign on Casino Center Boulevard"
+          />
+        </picture>
         <figcaption class="photo-label">
           <span>Casino Center Boulevard · 18b</span>
           <span class="photo-credit">
@@ -313,6 +317,9 @@ const [firstEvent, ...laterEvents] = artsDistrictEvents;
     min-height: 580px;
     overflow: hidden;
     background: #68a2ca;
+  }
+  #lvbt-arts-authentic .hero-photo picture {
+    display: contents;
   }
   #lvbt-arts-authentic .hero-photo img {
     width: 100%;
