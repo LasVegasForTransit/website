@@ -1,6 +1,7 @@
 ---
 // cspell:ignore underlink Diandra
 import BaseLayout from '../../layouts/BaseLayout.astro';
+import { Icon } from 'astro-icon/components';
 import {
   artsDistrictDocuments,
   artsDistrictEvents,
@@ -56,34 +57,45 @@ const [firstEvent, ...laterEvents] = artsDistrictEvents;
     <section class="campaign" id="lvbt-auth-campaign" aria-labelledby="lvbt-auth-purpose-title">
       <div class="wrap">
         <h2 class="motivation-head" id="lvbt-auth-purpose-title">About the campaign</h2>
-        <p class="campaign-intro">
-          Las Vegans for Better Transit is bringing residents, workers, artists, businesses, and
-          community organizations together to make a neighborhood plan for the Arts District. We’ll
-          start with the problems you experience, work through possible improvements, and decide
-          together what the neighborhood needs.
-        </p>
-        <p class="campaign-intro">
-          Our mission is to advocate for world-class public transit and supportive land use so we
-          can build better neighborhoods and stronger communities. Here, that means looking at bus
-          service, streets, homes, shops, and public spaces together. The people who use them every
-          day should help decide how they change.
-        </p>
-        <div class="motivation-grid">
-          <div>
-            <h3>More ways to get here</h3><p>
-              Whether you’re heading to work, a gallery, or First Friday, getting here shouldn’t
-              require a car. Parking costs and limited transit options can make everyday trips
-              difficult. Better connections can make it easier to reach the neighborhood and get
-              around.
+        <div class="campaign-summary">
+          <p class="campaign-intro">
+            Las Vegans for Better Transit is bringing residents, workers, artists, businesses, and
+            community organizations together to make a neighborhood plan for the Arts District.
+            We’ll start with the problems you experience, work through possible improvements, and
+            decide together what the neighborhood needs.
+          </p>
+          <div class="campaign-mission">
+            <Icon name="mdi:city-variant-outline" class="campaign-icon" aria-hidden="true" />
+            <p>
+              Our mission is to advocate for world-class public transit and supportive land use so
+              we can build better neighborhoods and stronger communities. Here, that means looking
+              at bus service, streets, homes, shops, and public spaces together. The people who use
+              them every day should help decide how they change.
             </p>
           </div>
-          <div>
-            <h3>A say in what changes</h3><p>
-              Tell us where a trip breaks down, what feels unsafe, or what’s missing nearby. We’ll
-              use those experiences to develop recommendations for transit, streets, and land use,
-              then share the neighborhood plan with the people who make transportation and
-              development decisions.
-            </p>
+        </div>
+        <div class="motivation-grid">
+          <div class="motivation-card">
+            <Icon name="mdi:bus-stop" class="campaign-icon" aria-hidden="true" />
+            <div>
+              <h3>More ways to get here</h3><p>
+                Whether you’re heading to work, a gallery, or First Friday, getting here shouldn’t
+                require a car. Parking costs and limited transit options can make everyday trips
+                difficult. Better connections can make it easier to reach the neighborhood and get
+                around.
+              </p>
+            </div>
+          </div>
+          <div class="motivation-card">
+            <Icon name="mdi:account-group-outline" class="campaign-icon" aria-hidden="true" />
+            <div>
+              <h3>A say in what changes</h3><p>
+                Tell us where a trip breaks down, what feels unsafe, or what’s missing nearby. We’ll
+                use those experiences to develop recommendations for transit, streets, and land use,
+                then share the neighborhood plan with the people who make transportation and
+                development decisions.
+              </p>
+            </div>
           </div>
         </div>
       </div>
@@ -450,7 +462,7 @@ const [firstEvent, ...laterEvents] = artsDistrictEvents;
   #lvbt-arts-authentic .campaign {
     background: var(--color-surface-container);
     color: var(--color-on-surface);
-    padding: 70px 0 76px;
+    padding: 48px 0;
   }
   #lvbt-arts-authentic .campaign .heading-row {
     display: grid;
@@ -672,15 +684,42 @@ const [firstEvent, ...laterEvents] = artsDistrictEvents;
     margin-bottom: 24px;
   }
   #lvbt-arts-authentic .campaign-intro {
-    max-width: 800px;
-    margin-bottom: 40px;
-    font-size: var(--text-body-lg);
-    line-height: var(--text-body-lg--line-height);
+    max-width: 560px;
+  }
+  #lvbt-arts-authentic .campaign-summary {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 32px;
+    align-items: start;
+    margin-bottom: 28px;
+  }
+  #lvbt-arts-authentic .campaign-mission {
+    display: grid;
+    grid-template-columns: 32px 1fr;
+    gap: 16px;
+    background: var(--color-primary-container);
+    color: var(--color-on-primary-container);
+    padding: 24px;
+  }
+  #lvbt-arts-authentic .campaign-icon {
+    width: 28px;
+    height: 28px;
+    color: var(--color-primary-ink);
+  }
+  #lvbt-arts-authentic .campaign-mission .campaign-icon {
+    color: inherit;
   }
   #lvbt-arts-authentic .motivation-grid {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 50px;
+    gap: 28px;
+  }
+  #lvbt-arts-authentic .motivation-card {
+    display: grid;
+    grid-template-columns: 32px 1fr;
+    gap: 16px;
+    padding: 24px;
+    background: var(--color-surface);
   }
   #lvbt-arts-authentic .motivation-grid h3 {
     color: var(--color-primary-ink);
@@ -750,9 +789,36 @@ const [firstEvent, ...laterEvents] = artsDistrictEvents;
     min-height: 24px;
   }
   @media (max-width: 700px) {
+    #lvbt-arts-authentic .campaign {
+      padding: 32px 0;
+    }
+    #lvbt-arts-authentic .campaign-summary {
+      grid-template-columns: 1fr;
+      gap: 16px;
+      margin-bottom: 20px;
+    }
     #lvbt-arts-authentic .motivation-grid {
       grid-template-columns: 1fr;
-      gap: 28px;
+      gap: 16px;
+    }
+    #lvbt-arts-authentic .campaign-mission,
+    #lvbt-arts-authentic .motivation-card {
+      display: block;
+      padding: 16px;
+    }
+    #lvbt-arts-authentic .campaign-icon {
+      width: 24px;
+      height: 24px;
+      float: left;
+      margin-inline-end: 12px;
+    }
+    #lvbt-arts-authentic .motivation-card h3 {
+      min-height: 24px;
+      margin-bottom: 0;
+    }
+    #lvbt-arts-authentic .motivation-card p {
+      clear: both;
+      padding-top: 12px;
     }
     #lvbt-arts-authentic .series {
       grid-template-columns: 1fr;
