@@ -1,28 +1,8 @@
 import AxeBuilder from '@axe-core/playwright';
 import type { Page } from '@playwright/test';
 
-const BRAND_EMBER = '#e5471a';
-const BRAND_ON_EMBER_COLORS = new Set(['#f7f4ec']);
-
 type AxeResult = Awaited<ReturnType<InstanceType<typeof AxeBuilder>['analyze']>>;
-type AxeNode = AxeResult['violations'][number]['nodes'][number];
 type AxeViolation = AxeResult['violations'][number];
-
-function normalizeColor(value: unknown): string | undefined {
-  return typeof value === 'string' ? value.toLowerCase() : undefined;
-}
-
-function isAcceptedOnEmberNode(node: AxeNode): boolean {
-  return node.any.some((check) => {
-    const data = check.data as { fgColor?: unknown; bgColor?: unknown } | undefined;
-    const foreground = normalizeColor(data?.fgColor);
-    return (
-      foreground !== undefined &&
-      BRAND_ON_EMBER_COLORS.has(foreground) &&
-      normalizeColor(data?.bgColor) === BRAND_EMBER
-    );
-  });
-}
 
 export async function preparePageForA11y(page: Page): Promise<void> {
   await page.waitForLoadState('networkidle');
@@ -35,18 +15,6 @@ export async function preparePageForA11y(page: Page): Promise<void> {
       .querySelectorAll('.reveal, .reveal-stat, .reveal-quote')
       .forEach((el) => el.classList.add('is-visible'));
   });
-}
-
-export function actionableViolations(violations: AxeViolation[]): AxeViolation[] {
-  return violations
-    .map((violation) => ({
-      ...violation,
-      nodes:
-        violation.id === 'color-contrast'
-          ? violation.nodes.filter((node) => !isAcceptedOnEmberNode(node))
-          : violation.nodes,
-    }))
-    .filter((violation) => violation.nodes.length > 0);
 }
 
 export function summarizeViolations(violations: AxeViolation[]): string {
@@ -66,10 +34,10 @@ export function summarizeViolations(violations: AxeViolation[]): string {
 
 export async function axeBlockingViolations(page: Page): Promise<AxeViolation[]> {
   const result = await new AxeBuilder({ page })
-    .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
+    .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'])
     .analyze();
 
-  return actionableViolations(result.violations);
+  return result.violations;
 }
 
 export async function semanticPageAudit(page: Page) {

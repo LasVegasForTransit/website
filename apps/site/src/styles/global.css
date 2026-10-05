@@ -202,11 +202,10 @@
   --color-outline-variant: var(--ink);
 
   /* Accent (Ember). Fill stays saturated in both themes; ember-as-text
-     (primary-ink) and the container pair lighten in dark. on-primary is Cream
-     (--paper) — light text reads better on the Ember fill. (Cream on Ember is
-     ~3.6:1, under WCAG AA; a deliberate look-over-number call.) */
+     (primary-ink) and the container pair lighten in dark. on-primary is Ink
+     in both themes so small text on the saturated fill clears WCAG AA. */
   --color-primary: var(--ember);
-  --color-on-primary: var(--paper);
+  --color-on-primary: var(--ink);
   --color-primary-container: var(--peach);
   --color-on-primary-container: var(--ink);
   --color-primary-warm: var(--coral);
@@ -316,7 +315,7 @@
     --color-outline-variant: var(--paper);
 
     --color-primary: var(--ember);
-    --color-on-primary: var(--paper);
+    --color-on-primary: var(--ink);
     --color-primary-container: var(--ember-container);
     --color-on-primary-container: var(--on-ember-container-dark);
     --color-primary-warm: var(--coral);
@@ -512,6 +511,7 @@ html:active-view-transition-type(from-qr)::view-transition-old(root) {
     -webkit-font-smoothing: antialiased;
     text-rendering: optimizeLegibility;
     scroll-behavior: smooth;
+    scroll-padding-top: calc(var(--lvbt-header-h) + 1rem);
   }
 
   body {
@@ -566,6 +566,10 @@ html:active-view-transition-type(from-qr)::view-transition-old(root) {
     outline: 2px solid var(--color-primary);
     outline-offset: 3px;
     border-radius: 0;
+  }
+
+  :is(a, button, input, textarea, select, summary, [tabindex]) {
+    scroll-margin-block: calc(var(--lvbt-header-h) + 1rem);
   }
 
   .skip-link {
@@ -1198,6 +1202,14 @@ body[data-canvas='dark'] [data-site-header]:not([data-stuck]):not([data-nav-open
   .reveal-ready .reveal.is-visible {
     opacity: 1;
     transform: none;
+  }
+
+  /* Keyboard navigation must expose content before its scroll animation. */
+  .reveal-ready :is(.reveal, .reveal-stat, .reveal-quote):focus-within {
+    opacity: 1;
+    transform: none;
+    clip-path: none;
+    transition: none;
   }
 
   /* Stats rise from 24px below their resting position (longer than

@@ -1,6 +1,6 @@
 ---
 import BaseLayout from '../../../../layouts/BaseLayout.astro';
-import { groupCampaignEvents } from '../../../../lib/campaigns/event-schedule';
+import { campaignEventCutoff, groupCampaignEvents } from '../../../../lib/campaigns/event-schedule';
 import { buttonClass } from '../../../../components/app/styles';
 import {
   artsDistrictEvents,
@@ -25,7 +25,7 @@ const past = groupCampaignEvents([event]).past.length > 0;
   <div
     data-campaign-event-detail
     data-start={event.start}
-    data-end={event.end}
+    data-cutoff={campaignEventCutoff(event)}
     data-proposed={event.proposed ? 'true' : undefined}
   >
     <header class="container-page pt-8 pb-10 md:pt-14 md:pb-12">
@@ -40,7 +40,9 @@ const past = groupCampaignEvents([event]).past.length > 0;
           <p class="mt-6 text-title-sm text-on-surface-variant">Proposed gathering</p>
         )
       }
-      <h1 class="mt-6 max-w-4xl text-headline-lg md:text-display-md text-balance">{event.title}</h1>
+      <h1 class="mt-6 max-w-4xl text-headline-lg md:text-display-md text-balance">
+        {event.title}
+      </h1>
       <p class="lede mt-6 max-w-3xl">{event.summary}</p>
       <dl class="mt-8 grid max-w-3xl gap-6 sm:grid-cols-2">
         <div>
@@ -117,12 +119,10 @@ const past = groupCampaignEvents([event]).past.length > 0;
   </div>
 </BaseLayout>
 
-<script>
-  import '../../../../scripts/campaign-events';
-</script>
-
 <style>
   [hidden] {
     display: none !important;
   }
 </style>
+
+<script src="../../../../scripts/campaign-events.ts"></script>

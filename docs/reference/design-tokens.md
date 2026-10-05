@@ -37,7 +37,7 @@ Light and dark values. "→ primitive" shows what each role resolves to.
 | `--color-outline`              | Ink `#0f1115`   | `#524a3f`       | Strong solid line (card/button outlines)                    |
 | `--color-outline-variant`      | Ink `#0f1115`   | Cream `#f7f4ec` | Faint hairline base for `/alpha` (tracks on-surface)        |
 | `--color-primary`              | Ember `#e5471a` | Ember `#e5471a` | Primary **fill**: buttons, active states, badges            |
-| `--color-on-primary`           | Cream `#f7f4ec` | Cream `#f7f4ec` | Text/icon on `primary`                                      |
+| `--color-on-primary`           | Ink `#0f1115`   | Ink `#0f1115`   | Text/icon on `primary`                                      |
 | `--color-primary-container`    | Peach `#ffe9d6` | `#47210f`       | Soft primary surface (dark ember-brown in dark)             |
 | `--color-on-primary-container` | Ink `#0f1115`   | `#ffd9c7`       | Text on `primary-container`                                 |
 | `--color-primary-ink`          | Rust `#bf3a10`  | `#ff8a5c`       | Primary **as text** — brightens in dark (MD3 tone lift)     |
@@ -60,8 +60,8 @@ themes, never a bright surface** — while its text role `--color-on-slab` is cr
 with `bg-slab text-on-slab`. (This is deliberately _not_ named `inverse-surface`: MD3's
 inverse-surface is a _bright_ surface in dark, which would turn the footer into a glare.)
 
-**`primary`, `on-primary`, and `primary-ink`.** Ember is ~3.6:1 on Cream, and LVBT uses Cream as
-`on-primary` for brand-forward primary moments. Treat primary surfaces as short action or emphasis
+**`primary`, `on-primary`, and `primary-ink`.** Ember uses Ink as `on-primary` in both schemes,
+clearing 4.5:1 for small text and icons. Treat primary surfaces as short action or emphasis
 surfaces, not long-reading containers. When orange itself is the text color, use `primary-ink` —
 Rust on light (~5:1), brightened to `#ff8a5c` on dark. Do not use `primary-ink` as the foreground on
 `primary`.
@@ -73,7 +73,7 @@ Device-driven only, via `@media (prefers-color-scheme: dark)` — **no manual to
 Character is "Valley after dark": a warm near-black canvas, MD3 tonal elevation (lighter
 warm-charcoal containers, not drop shadows), and Ember reading like a light in the dark — including
 a `.press.bg-primary` glow applied only in dark. Neutral/content role pairs are held ≥4.5:1, rules
-≥3:1, and the primary/on-primary brand pair ≥3:1 by
+≥3:1, and the primary/on-primary brand pair ≥4.5:1 by
 [`apps/site/tests/e2e/color-contracts.spec.ts`](../../apps/site/tests/e2e/color-contracts.spec.ts),
 which runs in both schemes.
 

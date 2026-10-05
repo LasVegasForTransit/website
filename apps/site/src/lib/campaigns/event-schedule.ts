@@ -26,18 +26,31 @@ export function groupCampaignEvents<T extends CampaignEventTiming>(
       proposed.push(event);
       continue;
     }
-    const end = event.end ? new Date(event.end) : undefined;
-    // An unknown end time does not imply a duration. Keep the gathering
-    // upcoming through its local day instead of archiving it at its start.
-    const ended =
-      end && !Number.isNaN(end.getTime())
-        ? now >= end
-        : localDay.format(now) > localDay.format(start);
+    const ended = now.getTime() >= (campaignEventCutoff(event) ?? Infinity);
     (ended ? past : upcoming).push(event);
   }
   upcoming.sort((a, b) => Date.parse(a.start ?? '') - Date.parse(b.start ?? ''));
   past.sort((a, b) => Date.parse(b.start ?? '') - Date.parse(a.start ?? ''));
   return { upcoming, proposed, past };
+}
+
+// Calculate once during the build. Browser cards only need this timestamp.
+// With no published end time, use the end of the event's Las Vegas day.
+export function campaignEventCutoff(event: CampaignEventTiming): number | undefined {
+  const start = Date.parse(event.start ?? '');
+  if (!Number.isFinite(start)) return undefined;
+  const end = Date.parse(event.end ?? '');
+  if (Number.isFinite(end)) return end;
+  const day = localDay.format(new Date(start));
+  let low = start;
+  let high = start + 48 * 60 * 60 * 1000;
+  // Find the first instant in the next local day, including DST boundaries.
+  while (high - low > 1) {
+    const middle = Math.floor((low + high) / 2);
+    if (localDay.format(new Date(middle)) === day) low = middle;
+    else high = middle;
+  }
+  return high;
 }
 
 export function campaignDateParts(start: string) {
