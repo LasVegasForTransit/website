@@ -209,11 +209,10 @@ const sections = [
                       {event.lvbtEventUrl && (
                         <a
                           class="underlink event-rsvp"
-                          data-active-action
-                          hidden={kind === 'past'}
+                          data-campaign-rsvp
                           href={event.lvbtEventUrl}
                         >
-                          Event details and RSVP
+                          {kind === 'past' ? 'Event details' : 'Event details and RSVP'}
                         </a>
                       )}
                     </div>

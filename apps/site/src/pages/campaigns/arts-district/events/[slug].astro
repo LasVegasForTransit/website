@@ -71,13 +71,8 @@ const past = groupCampaignEvents([event]).past.length > 0;
         (event.lvbtEventUrl || event.venueUrl) && (
           <div class="mt-8 flex flex-wrap items-center gap-6">
             {event.lvbtEventUrl && (
-              <a
-                class={buttonClass.primary}
-                data-active-action
-                hidden={past}
-                href={event.lvbtEventUrl}
-              >
-                Event details and RSVP
+              <a class={buttonClass.primary} data-campaign-rsvp href={event.lvbtEventUrl}>
+                {past ? 'Event details' : 'Event details and RSVP'}
               </a>
             )}
             {event.venueUrl && (
