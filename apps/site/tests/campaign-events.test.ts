@@ -59,3 +59,15 @@ void test('does not feature an event with an invalid date', () => {
     ['bad'],
   );
 });
+
+void test('archives undated-end gatherings at Las Vegas midnight across daylight saving changes', () => {
+  for (const [start, cutoff] of [
+    ['2026-03-08T01:30:00-08:00', '2026-03-09T07:00:00Z'],
+    ['2026-11-01T01:30:00-07:00', '2026-11-02T08:00:00Z'],
+  ]) {
+    const event = [{ slug: 'gathering', start }];
+    const boundary = Date.parse(cutoff);
+    assert.equal(groupCampaignEvents(event, new Date(boundary - 1)).upcoming.length, 1);
+    assert.equal(groupCampaignEvents(event, new Date(boundary)).past.length, 1);
+  }
+});

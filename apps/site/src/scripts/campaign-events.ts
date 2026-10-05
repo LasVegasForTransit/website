@@ -1,24 +1,30 @@
-import { groupCampaignEvents } from '../lib/campaigns/event-schedule';
+function updateActions(root: HTMLElement, past: boolean): void {
+  root.querySelectorAll<HTMLElement>('[data-active-action]').forEach((action) => {
+    action.hidden = past;
+  });
+  root.querySelectorAll<HTMLElement>('[data-campaign-rsvp]').forEach((link) => {
+    link.textContent = past ? 'Event details' : 'Event details and RSVP';
+  });
+}
 
 function render(): void {
-  const now = new Date();
+  const now = Date.now();
   document.querySelectorAll<HTMLElement>('[data-campaign-events]').forEach((root) => {
     const upcomingList = root.querySelector<HTMLElement>('[data-campaign-list="upcoming"]');
     const pastList = root.querySelector<HTMLElement>('[data-campaign-list="past"]');
     if (!upcomingList || !pastList) return;
-    const events = Array.from(root.querySelectorAll<HTMLElement>('[data-campaign-event]')).map(
-      (element) => ({
-        element,
-        start: element.dataset.start,
-        end: element.dataset.end,
-      }),
+    const events = Array.from(root.querySelectorAll<HTMLElement>('[data-campaign-event]')).sort(
+      (a, b) => Date.parse(a.dataset.start ?? '') - Date.parse(b.dataset.start ?? ''),
     );
-    const groups = groupCampaignEvents(events, now);
+    const groups = {
+      upcoming: events.filter((event) => Number(event.dataset.cutoff) > now),
+      past: events.filter((event) => Number(event.dataset.cutoff) <= now).reverse(),
+    };
     for (const [kind, list, entries] of [
       ['upcoming', upcomingList, groups.upcoming],
       ['past', pastList, groups.past],
     ] as const) {
-      entries.forEach(({ element }, index) => {
+      entries.forEach((element, index) => {
         const featured = kind === 'upcoming' && index === 0;
         element.classList.toggle('event--featured', featured);
         element.classList.toggle('event--past', kind === 'past');
@@ -26,12 +32,7 @@ function render(): void {
         if (label)
           label.textContent =
             kind === 'past' ? 'Past gathering' : featured ? 'Next gathering' : 'Upcoming gathering';
-        element.querySelectorAll<HTMLElement>('[data-active-action]').forEach((action) => {
-          action.hidden = kind === 'past';
-        });
-        element.querySelectorAll<HTMLElement>('[data-campaign-rsvp]').forEach((link) => {
-          link.textContent = kind === 'past' ? 'Event details' : 'Event details and RSVP';
-        });
+        updateActions(element, kind === 'past');
         // Avoid moving unchanged cards every minute (including a focused link).
         if (list.children[index] !== element)
           list.insertBefore(element, list.children[index] ?? null);
@@ -43,23 +44,8 @@ function render(): void {
     if (empty) empty.hidden = groups.upcoming.length > 0;
   });
   document.querySelectorAll<HTMLElement>('[data-campaign-event-detail]').forEach((root) => {
-    const past =
-      groupCampaignEvents(
-        [
-          {
-            start: root.dataset.start,
-            end: root.dataset.end,
-            proposed: root.dataset.proposed === 'true',
-          },
-        ],
-        now,
-      ).past.length > 0;
-    root.querySelectorAll<HTMLElement>('[data-active-action]').forEach((action) => {
-      action.hidden = past;
-    });
-    root.querySelectorAll<HTMLElement>('[data-campaign-rsvp]').forEach((link) => {
-      link.textContent = past ? 'Event details' : 'Event details and RSVP';
-    });
+    const past = root.dataset.proposed !== 'true' && Number(root.dataset.cutoff) <= now;
+    updateActions(root, past);
     const label = root.querySelector<HTMLElement>('[data-past-event-label]');
     if (label) label.hidden = !past;
     const heading = root.querySelector<HTMLElement>('[data-discussion-heading]');

@@ -60,6 +60,7 @@ test('promotes the next confirmed gathering after the featured gathering ends', 
     const next = original.cloneNode(true) as HTMLElement;
     next.dataset.campaignEvent = 'next-confirmed';
     next.dataset.start = '2026-11-07T14:00:00-08:00';
+    next.dataset.cutoff = String(Date.parse('2026-11-08T08:00:00Z'));
     const title = next.querySelector('h3 a');
     if (title) title.textContent = 'Next confirmed gathering';
     original.parentElement?.appendChild(next);

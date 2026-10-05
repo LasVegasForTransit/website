@@ -1,8 +1,11 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
-import PullQuote from '../components/PullQuote.astro';
 import StructuredData from '../components/seo/StructuredData.astro';
-import { Icon } from 'astro-icon/components';
+import { Image } from 'astro:assets';
+import firstFridayPhoto from '../assets/home/first-friday-september-2026.jpg';
+import artsDistrictPhoto from '../assets/home/arts-district-meeting-september-2026.jpg';
+import route109Photo from '../assets/transit/route-109-riders-july-2026.jpg';
+import { buttonClass } from '../components/app/styles';
 import { site } from '../lib/site';
 import { websiteSchema } from '../lib/structured-data';
 
@@ -11,47 +14,39 @@ const membershipHref = membershipUrl ?? '/join#membership';
 const membershipTarget = membershipUrl ? '_blank' : undefined;
 const membershipRel = membershipUrl ? 'noopener noreferrer' : undefined;
 
-// The three ways we do the work — plain language, one line each.
-const ways: Array<{ title: string; body: string; icon: string; href: string; cta: string }> = [
+const ways = [
   {
-    title: 'Educate',
-    icon: 'mdi:school-outline',
-    body: 'We help our neighbors see how the way we get around shapes what daily life costs, in both money and time.',
-    href: '/about',
-    cta: 'Why we exist',
+    title: 'Make transit and land use understandable',
+    body: 'We explain how bus service, street design, and where homes and businesses are built affect everyday life.',
   },
   {
-    title: 'Organize',
-    icon: 'mdi:account-group-outline',
-    body: 'We bring together the many Las Vegans who want better transit, so the people who write the budget have to listen.',
-    href: '/projects',
-    cta: 'Our projects',
+    title: 'Bring neighbors together',
+    body: 'We connect riders, residents, workers, and community organizations through conversations and public gatherings.',
   },
   {
-    title: 'Advocate',
-    icon: 'mdi:bullhorn-outline',
-    body: 'We show up at public meetings and push for the funding, the street design, and the projects the Valley needs.',
-    href: '/about/strategy',
-    cta: 'Our strategy',
+    title: 'Advocate for better neighborhoods',
+    body: 'We push for reliable transit, safer streets, and places to live, work, and gather that people can reach without a car.',
   },
 ];
 
-// Real projects already moving — the reason an organized public matters now.
-const projects: Array<{ when: string; title: string; body: string }> = [
+const regionalProjects = [
   {
-    when: 'Fall 2026',
-    title: 'Maryland Parkway BRT',
-    body: '$378 million, 29 stations, and dedicated lanes running from downtown to Henderson.',
+    title: 'Maryland Parkway bus rapid transit',
+    body: 'Bus rapid transit and street improvements along Maryland Parkway and into downtown.',
+    href: 'https://marylandparkway.com/',
+    source: 'RTC of Southern Nevada',
   },
   {
-    when: 'Underway',
-    title: 'Charleston corridor',
-    body: 'A 17-mile study of light rail versus bus rapid transit — the Valley’s first real shot at rail.',
+    title: 'Charleston Boulevard',
+    body: 'A study of safer travel and improved transit along Charleston Boulevard.',
+    href: 'https://charlestonblvd.com/',
+    source: 'RTC of Southern Nevada',
   },
   {
-    when: 'Expected 2029',
     title: 'Brightline West',
-    body: 'High-speed rail to Southern California that only pays off if local transit can meet it here.',
+    body: 'Planned high-speed rail connecting Las Vegas and Southern California.',
+    href: 'https://www.brightlinewest.com/overview/project',
+    source: 'Brightline West',
   },
 ];
 ---
@@ -62,147 +57,216 @@ const projects: Array<{ when: string; title: string; body: string }> = [
 >
   <StructuredData slot="head" data={websiteSchema()} />
 
-  {/* LVBT's enduring invitation is the hero. */}
-  <section class="container-page pt-8 pb-4 md:pt-12 md:pb-12">
-    <div class="reveal max-w-5xl">
-      <h1 class="text-display-lg">
-        We're building the public transit <span class="text-primary">movement</span> Las&nbsp;Vegas has
-        never had.
-      </h1>
-      <p
-        class="mt-5 max-w-3xl text-body-md text-on-surface-variant text-pretty md:mt-6 md:text-body-lg"
-      >
-        We want safe, reliable, and useful public transportation for everyone and vibrant, walkable
-        neighborhoods to support world-class transit.
-      </p>
-    </div>
-  </section>
-
-  {/* The current campaign follows the mission as a distinct way to participate. */}
-  <section class="border-t-4 border-primary bg-primary-container text-on-primary-container">
-    <div class="container-page pt-5 pb-6 md:py-8">
-      <div class="reveal max-w-3xl">
-        <p class="text-body-sm font-bold text-primary-ink">October 1–8, 2026</p>
-        <h2 class="text-display-sm mt-3">Week Without Driving</h2>
-        <p class="mt-4 max-w-2xl text-body-lg leading-relaxed text-pretty">
-          One trip counts. Share what it's like to get around without driving.
+  <section class="container-page py-10 md:py-16 lg:py-20">
+    <div class="grid gap-12 lg:grid-cols-[minmax(0,1.7fr)_minmax(0,1fr)] lg:items-center lg:gap-16">
+      <div class="reveal">
+        <h1 class="text-display-sm text-balance sm:text-display-md">
+          We're building the public transit <span class="text-primary">movement</span> Las&nbsp;Vegas
+          has never had.
+        </h1>
+        <p class="mt-6 max-w-2xl text-body-lg text-on-surface-variant text-pretty">
+          We want safe, reliable, and useful public transportation for everyone and vibrant,
+          walkable neighborhoods to support world-class transit.
         </p>
-        <a
-          href={site.weekWithoutDriving.url}
-          aria-label="Take the One Trip Challenge"
-          class="press mt-4 inline-flex items-center gap-2 bg-primary text-on-primary px-6 py-3 font-bold no-underline hover:bg-on-surface hover:text-surface focus-visible:bg-on-surface focus-visible:text-surface"
-        >
-          Take the One Trip Challenge
-          <Icon name="mdi:arrow-right" class="size-4" aria-hidden="true" />
-        </a>
+        <div class="mt-8 flex flex-wrap items-center gap-x-6 gap-y-4">
+          <a href="/join" class:list={[buttonClass.primary, 'no-underline']}>Get involved</a>
+          <a href="/about" class="body-link font-semibold">About LVBT</a>
+        </div>
       </div>
+      <aside
+        aria-labelledby="campaigns-title"
+        class="reveal border-t border-outline-variant/25 pt-8 lg:border-t-0 lg:border-l lg:pt-0 lg:pl-10"
+      >
+        <h2 id="campaigns-title" class="text-title-lg">Take part</h2>
+        <div class="mt-6 grid gap-8 sm:grid-cols-2 lg:grid-cols-1">
+          <article>
+            <p class="text-body-sm font-semibold text-primary-ink">October 1–8, 2026</p>
+            <h3 class="mt-2 text-headline-sm">Week Without Driving</h3>
+            <p class="mt-3 text-body-md leading-relaxed text-on-surface-variant">
+              Share what it’s like to get around without driving. One trip counts.
+            </p>
+            <a href={site.weekWithoutDriving.url} class="body-link mt-4 inline-block font-semibold">
+              Take the One Trip Challenge
+            </a>
+          </article>
+          <article>
+            <h3 class="text-headline-sm text-balance">Arts District Neighborhood Campaign</h3>
+            <p class="mt-3 text-body-md leading-relaxed text-on-surface-variant">
+              Tell us what would make it easier to live, work, and spend time in the Arts District.
+              Help plan better transit, streets, and places to gather.
+            </p>
+            <a href="/campaigns/arts-district/" class="body-link mt-4 inline-block font-semibold">
+              Explore the campaign
+            </a>
+          </article>
+        </div>
+      </aside>
     </div>
   </section>
 
   <section
-    aria-labelledby="arts-district-title"
-    class="border-t border-outline-variant/20 bg-surface-container"
+    class="container-page border-t border-outline-variant/15 py-12 md:py-20"
+    aria-labelledby="work-title"
   >
-    <div
-      class="container-page grid gap-6 py-8 md:grid-cols-[minmax(0,1fr)_auto] md:items-center md:py-10"
-    >
-      <div class="reveal max-w-3xl">
-        <h2 id="arts-district-title" class="text-headline-md">
-          Arts District Neighborhood Campaign
+    <div class="grid items-center gap-10 md:grid-cols-2 lg:gap-16">
+      <figure class="reveal">
+        <Image
+          src={firstFridayPhoto}
+          alt="Two people at First Friday, one holding a handmade train costume, with vendors and neighbors along the street."
+          widths={[400, 640, 960, 1200]}
+          sizes="(min-width: 1280px) 560px, (min-width: 768px) 45vw, 100vw"
+          format="webp"
+          class="aspect-[4/5] w-full object-cover object-[center_65%]"
+          loading="lazy"
+        />
+      </figure>
+      <div class="reveal">
+        <h2 id="work-title" class="text-headline-lg text-balance">
+          How we’re building the movement
         </h2>
-        <p class="mt-3 max-w-2xl text-body-md leading-relaxed text-on-surface-variant">
-          Help identify what’s difficult about living, working, or spending time in the Arts
-          District, and help plan better transit, streets, and places to live and gather.
+        <p class="mt-5 text-body-lg leading-relaxed text-pretty">
+          Better transit starts with people who want better places to live. We bring that shared
+          interest into conversations, neighborhood plans, and public decisions.
         </p>
+        <div class="mt-8 space-y-6">
+          {
+            ways.map((way) => (
+              <div>
+                <h3 class="text-title-lg">{way.title}</h3>
+                <p class="mt-2 text-body-md leading-relaxed text-on-surface-variant text-pretty">
+                  {way.body}
+                </p>
+              </div>
+            ))
+          }
+        </div>
+        <a href="/programs" class="body-link mt-8 inline-block font-semibold"
+          >Explore our programs</a
+        >
       </div>
-      <a
-        href="/campaigns/arts-district/"
-        class="body-link justify-self-start text-title-sm font-bold"
-      >
-        Explore the campaign
-      </a>
     </div>
   </section>
 
-  {/* HOW WE FIGHT — three plain ways we do the work */}
-  <section class="container-page border-t border-outline-variant/15 py-16 md:py-24">
-    <div class="reveal">
-      <h2 class="text-headline-lg max-w-3xl">How we fight for better transit.</h2>
-    </div>
-    <div class="reveal-stagger mt-12 grid gap-12 md:grid-cols-3">
-      {
-        ways.map((way) => (
-          <div class="reveal">
-            <div class="flex items-center gap-3">
-              <Icon name={way.icon} class="size-8 text-primary-ink" aria-hidden="true" />
-              <h3 class="text-title-lg">{way.title}</h3>
-            </div>
-            <p class="mt-4 text-body-md leading-relaxed text-pretty">{way.body}</p>
-            <a href={way.href} class="body-link mt-4 inline-block font-semibold">
-              {way.cta} &#8594;
-            </a>
-          </div>
-        ))
-      }
+  <section class="bg-surface-container" aria-labelledby="updates-title">
+    <div class="container-page py-12 md:py-16">
+      <div class="reveal flex flex-wrap items-baseline justify-between gap-4">
+        <h2 id="updates-title" class="text-headline-lg">From LVBT</h2>
+        <a href="/newsletter" class="body-link font-semibold">Get our newsletter</a>
+      </div>
+      <div class="mt-8 grid gap-8 md:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)] md:gap-12">
+        <article class="reveal">
+          <p class="text-body-sm text-on-surface-variant">
+            Newsletter · <time datetime="2026-07-10">July 10, 2026</time>
+          </p>
+          <h3 class="mt-3 max-w-xl text-headline-md text-balance">Transit Tuesday… on a Friday?</h3>
+          <p class="mt-4 max-w-xl text-body-md leading-relaxed text-on-surface-variant">
+            Plans for a walk audit and an RTC presentation, plus a look at high-speed rail and the
+            proposed Vegas Loop station at UNLV.
+          </p>
+          <a
+            href="https://mail.lasvegasfortransit.org/p/transit-tuesday-on-a-friday"
+            class="body-link mt-5 inline-block font-semibold">Read the issue</a
+          >
+        </article>
+        <article
+          class="reveal border-t border-outline-variant/25 pt-8 md:border-t-0 md:border-l md:pt-0 md:pl-12"
+        >
+          <p class="text-body-sm text-on-surface-variant">
+            Letter · <time datetime="2026-04-23">April 23, 2026</time>
+          </p>
+          <h3 class="mt-3 text-headline-md">Letter from the Founder</h3>
+          <p class="mt-4 text-body-md leading-relaxed text-on-surface-variant">
+            Why LVBT began, and the case for better transit and walkable, mixed-use neighborhoods in
+            Las Vegas.
+          </p>
+          <a
+            href="/letters/2026-04-23-letter-from-the-founder/"
+            class="body-link mt-5 inline-block font-semibold">Read the letter</a
+          >
+        </article>
+      </div>
     </div>
   </section>
 
-  {/* PROOF — real projects already in motion */}
-  <section class="container-page border-t border-outline-variant/15 py-16 md:py-24">
-    <div class="reveal max-w-3xl">
-      <h2 class="text-headline-lg">Real projects are already in motion.</h2>
-      <p class="lede mt-4">
-        The Valley is finally building. These projects only pay off with a public organized to use
-        them and defend them.
+  <section class="container-page py-12 md:py-20" aria-labelledby="regional-title">
+    <div class="reveal grid gap-5 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] md:gap-12">
+      <h2 id="regional-title" class="text-headline-lg text-balance">Changes across the Valley</h2>
+      <p class="text-body-md leading-relaxed text-on-surface-variant text-pretty">
+        New transit service and better streets can change how our neighborhoods grow. Follow these
+        regional projects through the teams planning and building them.
       </p>
     </div>
-    <div class="reveal-stagger mt-12 grid gap-6 md:grid-cols-3">
-      {
-        projects.map((p) => (
-          <div class="reveal relative overflow-hidden border border-outline bg-surface-container p-8">
-            <span class="absolute inset-y-0 left-0 w-2 bg-primary" aria-hidden="true" />
-            <p class="text-body-sm font-semibold text-on-surface-variant">{p.when}</p>
-            <h3 class="text-title-lg mt-2">{p.title}</h3>
-            <p class="mt-3 text-body-md leading-relaxed text-on-surface-variant text-pretty">
-              {p.body}
-            </p>
-          </div>
-        ))
-      }
+    <div class="mt-8 grid items-start gap-8 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)] lg:gap-12">
+      <div class="divide-y divide-outline-variant/20 border-y border-outline-variant/20">
+        {
+          regionalProjects.map((project) => (
+            <article class="reveal py-6">
+              <div>
+                <h3 class="text-title-lg">
+                  <a href={project.href} class="body-link">
+                    {project.title}
+                  </a>
+                </h3>
+                <p class="mt-2 text-body-sm text-on-surface-variant">{project.source}</p>
+              </div>
+              <p class="mt-3 max-w-xl text-body-md leading-relaxed text-on-surface-variant">
+                {project.body}
+              </p>
+            </article>
+          ))
+        }
+      </div>
+      <figure class="reveal">
+        <Image
+          src={route109Photo}
+          alt="People with luggage waiting beside an RTC Route 109 North bus at the airport."
+          widths={[400, 640, 960, 1200]}
+          sizes="(min-width: 1280px) 480px, (min-width: 1024px) 40vw, 100vw"
+          format="webp"
+          class="aspect-square w-full object-cover object-[center_60%]"
+          loading="lazy"
+        />
+      </figure>
     </div>
   </section>
 
-  {/* THE CLOSE — the ask again, on the serious band, with the stakes in the founder's words */}
-  <section data-print-callout class="bg-slab text-on-slab">
-    <div class="container-page grid items-center gap-12 py-16 md:grid-cols-2 md:gap-20 md:py-20">
+  <section
+    class="container-page border-t border-outline-variant/15 py-12 md:py-20"
+    aria-labelledby="join-title"
+  >
+    <div class="grid items-center gap-10 md:grid-cols-2 lg:gap-16">
       <div class="reveal">
-        <h2 class="text-display-sm">We win this by being too many to ignore.</h2>
-        <p class="mt-6 max-w-md text-body-lg leading-relaxed text-on-slab/85 text-pretty">
-          Membership is free and takes about a minute. The more Las&nbsp;Vegans behind this, the
-          stronger the case we make to the people who fund transit.
+        <h2 id="join-title" class="text-headline-lg text-balance">
+          Help build a better Las Vegas.
+        </h2>
+        <p class="mt-5 max-w-xl text-body-lg leading-relaxed text-pretty">
+          Bring your experience, your time, or your organization. You can help with outreach,
+          support a neighborhood gathering, or work with us on transit and land use.
         </p>
-        <div class="mt-8 flex flex-wrap items-center gap-4">
+        <p class="mt-4 text-body-md text-on-surface-variant">Membership is free.</p>
+        <div class="mt-6 flex flex-wrap items-center gap-x-6 gap-y-4">
           <a
             href={membershipHref}
             target={membershipTarget}
             rel={membershipRel}
-            class="press inline-flex items-center gap-2 bg-primary text-on-primary px-6 py-3 font-bold no-underline hover:bg-surface hover:text-on-surface focus-visible:bg-surface focus-visible:text-on-surface"
+            class:list={[buttonClass.primary, 'no-underline']}>Become a member</a
           >
-            Become a member
-            <Icon name="mdi:arrow-right" class="size-4" aria-hidden="true" />
-          </a>
-          <a href="/newsletter" class="body-link font-semibold text-primary-soft">
-            Or get our newsletter &#8594;
-          </a>
+          <a href={`mailto:${site.email.partners}`} class="body-link font-semibold"
+            >Partner with LVBT</a
+          >
         </div>
       </div>
-      <div class="reveal">
-        <PullQuote cite="RTC of Southern Nevada, March 2026" surface="slab">
-          "Without a new dedicated funding source, the Regional Transportation Commission of
-          Southern Nevada will be forced to eliminate fifteen routes and reduce service across the
-          network — affecting hundreds of thousands of riders by 2028."
-        </PullQuote>
-      </div>
+      <figure class="reveal">
+        <Image
+          src={artsDistrictPhoto}
+          alt="Two people sitting together in an Arts District gallery surrounded by colorful paintings."
+          widths={[400, 640, 960, 1200]}
+          sizes="(min-width: 1280px) 560px, (min-width: 768px) 45vw, 100vw"
+          format="webp"
+          class="aspect-[4/3] w-full object-cover"
+          loading="lazy"
+        />
+      </figure>
     </div>
   </section>
 </BaseLayout>

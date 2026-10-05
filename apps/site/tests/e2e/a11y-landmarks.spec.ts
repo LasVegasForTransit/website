@@ -7,26 +7,33 @@ test.describe('landmark accessibility', () => {
 
     const hero = page.locator('main > section').first();
     await expect(hero.getByRole('heading', { level: 1 })).toContainText(/public transit movement/i);
-    await expect(hero.getByRole('link')).toHaveCount(0);
+    await expect(hero.getByRole('link', { name: 'About LVBT' })).toHaveAttribute('href', '/about');
 
-    const campaign = page.locator('main > section').nth(1);
-    await expect(campaign.getByRole('heading', { level: 2 })).toHaveText('Week Without Driving');
+    const campaign = hero.getByRole('complementary', { name: 'Take part' });
+    await expect(campaign.getByRole('heading', { level: 3 }).first()).toHaveText(
+      'Week Without Driving',
+    );
     await expect(campaign).toContainText('October 1–8, 2026');
     await expect(
       campaign.getByRole('link', { name: 'Take the One Trip Challenge' }),
     ).toHaveAttribute('href', 'https://lvwwd.org/');
+    await expect(campaign.getByRole('link', { name: 'Explore the campaign' })).toHaveAttribute(
+      'href',
+      '/campaigns/arts-district/',
+    );
   });
 
-  test('Week Without Driving action is visible without scrolling', async ({ page }) => {
+  test('participation actions remain reachable on phone and desktop', async ({ page }) => {
     for (const viewport of [
       { width: 390, height: 664 },
       { width: 1280, height: 720 },
     ]) {
       await page.setViewportSize(viewport);
       await page.goto('/');
-      await expect(page.getByRole('link', { name: 'Take the One Trip Challenge' })).toBeInViewport({
-        ratio: 1,
-      });
+      const action = page.getByRole('link', { name: 'Take the One Trip Challenge' });
+      await action.focus();
+      await expect(action).toBeFocused();
+      await expect(action).toBeInViewport({ ratio: 1 });
     }
   });
 

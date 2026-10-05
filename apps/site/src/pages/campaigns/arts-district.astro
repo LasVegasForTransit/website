@@ -8,7 +8,11 @@ import {
   artsDistrictEventPath,
 } from '../../lib/campaigns/arts-district';
 
-import { campaignDateParts, groupCampaignEvents } from '../../lib/campaigns/event-schedule';
+import {
+  campaignDateParts,
+  campaignEventCutoff,
+  groupCampaignEvents,
+} from '../../lib/campaigns/event-schedule';
 
 const schedule = groupCampaignEvents(artsDistrictEvents);
 const sections = [
@@ -164,7 +168,7 @@ const sections = [
                     ]}
                     data-campaign-event={event.slug}
                     data-start={event.start}
-                    data-end={event.end}
+                    data-cutoff={campaignEventCutoff(event)}
                   >
                     <div class="date" aria-hidden="true">
                       <strong>{campaignDateParts(event.start ?? '').day}</strong>
@@ -254,23 +258,18 @@ const sections = [
     <section class="join" id="lvbt-auth-join" aria-labelledby="lvbt-auth-organize-title">
       <div>
         <h2 id="lvbt-auth-organize-title">Help organize the campaign</h2>
-        <p>
-          You can help bring more people into these conversations. Partner with us through your
-          community organization or business, volunteer with the campaign, or help make the
-          gatherings happen.
-        </p>
+        <p>Help bring neighbors into the conversation and make these gatherings happen.</p>
         <ul class="organizing-needs">
-          <li>Connect us with community organizations and local businesses.</li>
-          <li>Invite neighbors, coworkers, and artists to join the conversation.</li>
-          <li>Help organize gatherings and keep outreach going between events.</li>
-          <li>Provide food, help with publicity, or share other resources for events.</li>
+          <li>Partner with us through your community organization or local business.</li>
+          <li>Help with outreach to neighbors, workers, and artists in the Arts District.</li>
+          <li>Contribute food, event supplies, or help with marketing.</li>
         </ul>
       </div>
       <div class="join-actions">
         <a
           class="button"
           href="mailto:hello@lasvegasfortransit.org?subject=Help%20organize%20the%20Arts%20District%20Neighborhood%20Campaign"
-          >Help organize this campaign</a
+          >Help organize</a
         >
         <a class="underlink" href="/join/#membership">Become an LVBT member</a>
       </div>
@@ -576,24 +575,25 @@ const sections = [
     color: var(--color-on-primary-container);
     padding: 50px max(var(--page-pad), calc((100cqw - 80rem) / 2 + var(--page-pad)));
     display: grid;
-    grid-template-columns: 1fr auto;
-    gap: 26px;
-    align-items: end;
+    grid-template-columns: 1fr;
+    gap: 20px;
+    align-items: start;
   }
   #lvbt-arts-authentic .join .eyebrow {
     color: inherit;
   }
   #lvbt-arts-authentic .join h2 {
     max-width: 600px;
-    margin: 10px 0 14px;
+    margin: 0 0 14px;
   }
   #lvbt-arts-authentic .join p {
-    max-width: 490px;
+    max-width: 640px;
   }
   #lvbt-arts-authentic .join-actions {
-    display: grid;
-    justify-items: start;
-    gap: 24px;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 12px 24px;
   }
   #lvbt-arts-authentic .campaign-record {
     padding-bottom: 72px;
@@ -616,9 +616,9 @@ const sections = [
   }
   #lvbt-arts-authentic .organizing-needs {
     display: grid;
-    gap: 12px;
-    max-width: 600px;
-    margin-top: 24px;
+    gap: 4px;
+    max-width: 640px;
+    margin-top: 16px;
     padding-left: 1.25rem;
     list-style: disc;
   }
@@ -1018,6 +1018,4 @@ const sections = [
   }
 </style>
 
-<script>
-  import '../../scripts/campaign-events';
-</script>
+<script src="../../scripts/campaign-events.ts"></script>

@@ -97,7 +97,7 @@ async function primaryRoles(page: Page): Promise<PrimaryRole[]> {
         backgroundClasses: ['bg-primary'],
         foregroundClass: 'text-on-primary',
         foregroundCss: resolveColor('text-on-primary', 'color'),
-        minContrast: 3,
+        minContrast: 4.5,
         name: 'primary',
       },
       {
@@ -115,11 +115,7 @@ async function primaryRoles(page: Page): Promise<PrimaryRole[]> {
   });
 }
 
-/**
- * Resolve a foreground/background token pair from utility classes on a bare
- * probe element. Surface-context classes (e.g. .bg-slab) are applied to the
- * probe so the on-* roles remap exactly as they do in the page.
- */
+// Resolve role pairs in their surface context, including slab overrides.
 async function neutralPairs(page: Page) {
   return page.evaluate(() => {
     const probe = document.createElement('div');

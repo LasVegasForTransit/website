@@ -91,7 +91,7 @@ const printLinkSheetSections: Array<{ links: PrintLinkSheetLink[] }> = [
       it should read as a utility strip, not another content band.
 
     LINK STYLING
-      One style everywhere: `nav-link no-underline hover:text-primary`.
+      One style everywhere: `nav-link no-underline hover:text-primary-soft`.
       `.nav-link` provides the scaleX underline reveal. Do not
       introduce a second link style; the consistency is the point.
 
@@ -170,23 +170,31 @@ const printLinkSheetSections: Array<{ links: PrintLinkSheetLink[] }> = [
       <div class="footer-nav reveal" data-footer-nav="organization">
         <p class="text-title-md font-bold text-primary-soft">Organization</p>
         <ul class="footer-nav-list text-base font-semibold">
-          <li><a href="/about" class="nav-link no-underline hover:text-primary">About</a></li>
-          <li><a href="/programs" class="nav-link no-underline hover:text-primary">Programs</a></li>
-          <li><a href="/projects" class="nav-link no-underline hover:text-primary">Projects</a></li>
+          <li><a href="/about" class="nav-link no-underline hover:text-primary-soft">About</a></li>
+          <li>
+            <a href="/programs" class="nav-link no-underline hover:text-primary-soft">Programs</a>
+          </li>
+          <li>
+            <a href="/projects" class="nav-link no-underline hover:text-primary-soft">Projects</a>
+          </li>
           <li>
             <a
               href="https://labs.lasvegasfortransit.org/"
               rel="noopener"
-              class="nav-link no-underline hover:text-primary">Labs</a
+              class="nav-link no-underline hover:text-primary-soft">Labs</a
             >
           </li>
-          <li><a href="/events" class="nav-link no-underline hover:text-primary">Events</a></li>
-          <li><a href="/contact" class="nav-link no-underline hover:text-primary">Contact</a></li>
+          <li>
+            <a href="/events" class="nav-link no-underline hover:text-primary-soft">Events</a>
+          </li>
+          <li>
+            <a href="/contact" class="nav-link no-underline hover:text-primary-soft">Contact</a>
+          </li>
           <li>
             <a
               href={site.transparency.candidUrl}
               rel="noopener"
-              class="nav-link no-underline hover:text-primary">Candid</a
+              class="nav-link no-underline hover:text-primary-soft">Candid</a
             >
           </li>
         </ul>
@@ -194,9 +202,11 @@ const printLinkSheetSections: Array<{ links: PrintLinkSheetLink[] }> = [
       <div class="footer-nav reveal" data-footer-nav="get-involved">
         <p class="text-title-md font-bold text-primary-soft">Get involved</p>
         <ul class="footer-nav-list text-base font-semibold">
-          <li><a href="/join" class="nav-link no-underline hover:text-primary">Join us</a></li>
+          <li><a href="/join" class="nav-link no-underline hover:text-primary-soft">Join us</a></li>
           <li>
-            <a href="/newsletter" class="nav-link no-underline hover:text-primary">Newsletter</a>
+            <a href="/newsletter" class="nav-link no-underline hover:text-primary-soft"
+              >Newsletter</a
+            >
           </li>
           {
             site.donate.url && (
@@ -204,7 +214,7 @@ const printLinkSheetSections: Array<{ links: PrintLinkSheetLink[] }> = [
                 <a
                   href={site.donate.url}
                   rel="noopener"
-                  class="nav-link no-underline hover:text-primary"
+                  class="nav-link no-underline hover:text-primary-soft"
                 >
                   Donate
                 </a>
@@ -217,7 +227,7 @@ const printLinkSheetSections: Array<{ links: PrintLinkSheetLink[] }> = [
                 <a
                   href={site.social.discord}
                   rel="noopener"
-                  class="nav-link no-underline hover:text-primary"
+                  class="nav-link no-underline hover:text-primary-soft"
                 >
                   Discord
                 </a>
@@ -230,7 +240,7 @@ const printLinkSheetSections: Array<{ links: PrintLinkSheetLink[] }> = [
                 <a
                   href={site.social.instagram}
                   rel="noopener"
-                  class="nav-link no-underline hover:text-primary"
+                  class="nav-link no-underline hover:text-primary-soft"
                 >
                   Instagram
                 </a>
@@ -243,7 +253,7 @@ const printLinkSheetSections: Array<{ links: PrintLinkSheetLink[] }> = [
                 <a
                   href={site.social.linkedin}
                   rel="noopener"
-                  class="nav-link no-underline hover:text-primary"
+                  class="nav-link no-underline hover:text-primary-soft"
                 >
                   LinkedIn
                 </a>
@@ -253,7 +263,7 @@ const printLinkSheetSections: Array<{ links: PrintLinkSheetLink[] }> = [
           <li>
             <a
               href={`mailto:${site.email.general}`}
-              class="nav-link no-underline hover:text-primary">Email</a
+              class="nav-link no-underline hover:text-primary-soft">Email</a
             >
           </li>
         </ul>
@@ -359,15 +369,15 @@ const printLinkSheetSections: Array<{ links: PrintLinkSheetLink[] }> = [
       aria-label="Site utilities"
     >
       <span class="footer-utility-group">
-        <a href="/colophon" class="nav-link no-underline hover:text-primary">Colophon</a>
-        <a href="/brand" class="nav-link no-underline hover:text-primary">Brand</a>
+        <a href="/colophon" class="nav-link no-underline hover:text-primary-soft">Colophon</a>
+        <a href="/brand" class="nav-link no-underline hover:text-primary-soft">Brand</a>
       </span>
       <span class="footer-utility-group">
-        <a href="/sitemap" class="nav-link no-underline hover:text-primary">Sitemap</a>
+        <a href="/sitemap" class="nav-link no-underline hover:text-primary-soft">Sitemap</a>
         <a
           href="https://github.com/LasVegasForTransit/website"
           rel="noopener"
-          class="nav-link no-underline hover:text-primary">Source</a
+          class="nav-link no-underline hover:text-primary-soft">Source</a
         >
         {
           /* Opens the QR presenter (/qr) — a chromeless deck of scan cards for
@@ -378,7 +388,7 @@ const printLinkSheetSections: Array<{ links: PrintLinkSheetLink[] }> = [
         }
         <a
           href="/qr"
-          class="qr-portal inline-flex items-center hover:text-primary"
+          class="qr-portal inline-flex items-center hover:text-primary-soft"
           aria-label="Scan cards"
           title="Scan cards"
         >

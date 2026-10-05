@@ -11,7 +11,7 @@ almost all of the color in the interface.
 | Name  | Token                          | Hex       | Role                            |
 | ----- | ------------------------------ | --------- | ------------------------------- |
 | Ember | `--color-primary`              | `#e5471a` | Primary fill                    |
-| Cream | `--color-on-primary`           | `#f7f4ec` | Text / icons on Ember           |
+| Ink   | `--color-on-primary`           | `#0f1115` | Text / icons on Ember           |
 | Peach | `--color-primary-container`    | `#ffe9d6` | Soft primary surface            |
 | Ink   | `--color-on-primary-container` | `#0f1115` | Text / icons on Peach           |
 | Rust  | `--color-primary-ink`          | `#bf3a10` | Ember as readable text on light |
@@ -28,7 +28,7 @@ semantic token names are the source of truth.
 These rules are what keep the site from drifting into a generic "colorful" look. They are deliberate
 constraints, not defaults.
 
-- **Use color in pairs.** Ember surfaces use Cream through `on-primary`; Peach surfaces use Ink
+- **Use color in pairs.** Ember surfaces use Ink through `on-primary`; Peach surfaces use Ink
   through `on-primary-container`.
 - **Skew heavily to the primary.** Ember is the one color. Reach for it for emphasis and action
   before anything else. The palette is intentionally narrow.
@@ -51,14 +51,13 @@ background) — it vibrates and cheapens; use it as the highlight.
 
 ## Why the primary roles are split
 
-The bright Ember (`#e5471a`) is only ~3.6:1 on Cream, and Cream text on Ember is also ~3.6:1. LVBT
-intentionally keeps Cream as `on-primary` because it reads as the brand voice on Ember. Primary
-surfaces should be short action or emphasis moments, not long reading surfaces. Links and inline
-primary text on light surfaces use a darkened Rust (`primary-ink`, ~5.0:1).
+The bright Ember (`#e5471a`) is only ~3.6:1 on Cream. Ember surfaces use Ink as `on-primary` so
+small button and status text clears WCAG AA. Primary surfaces should be short action or emphasis
+moments, not long reading surfaces. Links and inline primary text on light surfaces use a darkened
+Rust (`primary-ink`, ~5.0:1).
 
-**Why it's deliberate:** one primary value everywhere either fails contrast or forces the whole
-brand darker. The split keeps Ember bright as a fill, uses Cream for the brand-forward foreground on
-Ember, and uses Rust only when orange itself is the text.
+The split keeps Ember bright as a fill, uses Ink for readable foreground text on Ember, and uses
+Rust when orange itself is the text.
 
 ## Dark theme
 

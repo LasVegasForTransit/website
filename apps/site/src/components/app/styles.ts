@@ -15,7 +15,7 @@ const buttonBase =
 export const buttonClass = {
   primary: `${buttonBase} bg-on-surface text-surface border-on-surface hover:bg-primary hover:border-primary hover:text-on-primary focus-visible:bg-primary focus-visible:text-on-primary`,
   secondary: `${buttonBase} bg-transparent text-on-surface border-on-surface hover:bg-surface-container`,
-  destructive: `${buttonBase} bg-primary-ink text-on-primary border-primary-ink hover:bg-on-surface hover:border-on-surface`,
+  destructive: `${buttonBase} bg-primary-ink text-surface border-primary-ink hover:bg-on-surface hover:border-on-surface`,
 } as const;
 
 export const linkClass = 'font-bold underline underline-offset-4 decoration-2 decoration-primary';

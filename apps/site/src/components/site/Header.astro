@@ -47,7 +47,7 @@ const path = normalizePath(Astro.url.pathname);
                       href="/join"
                       data-auth="signed-out"
                       aria-current={active ? 'page' : undefined}
-                      class="nav-link no-underline hover:text-primary"
+                      class="nav-link no-underline hover:text-primary-ink"
                     >
                       Join
                     </a>
@@ -56,7 +56,7 @@ const path = normalizePath(Astro.url.pathname);
                       data-auth="signed-in"
                       hidden
                       aria-current={path === '/go' ? 'page' : undefined}
-                      class="nav-link no-underline hover:text-primary"
+                      class="nav-link no-underline hover:text-primary-ink"
                     >
                       Get involved
                     </a>
@@ -65,7 +65,7 @@ const path = normalizePath(Astro.url.pathname);
                   <a
                     href={item.href}
                     aria-current={active ? 'page' : undefined}
-                    class="nav-link no-underline hover:text-primary"
+                    class="nav-link no-underline hover:text-primary-ink"
                   >
                     {item.label}
                   </a>
@@ -85,12 +85,16 @@ const path = normalizePath(Astro.url.pathname);
     }
     <div class="hidden md:flex items-center gap-6">
       <div class="flex items-center gap-5 text-sm font-semibold">
-        <a href="/sign-in/" data-auth="signed-out" class="nav-link no-underline hover:text-primary">
+        <a
+          href="/sign-in/"
+          data-auth="signed-out"
+          class="nav-link no-underline hover:text-primary-ink"
+        >
           {t('header.signIn')}
         </a>
         <details data-auth="signed-in" hidden class="relative group">
           <summary
-            class="flex cursor-pointer list-none items-center gap-2 font-semibold hover:text-primary"
+            class="flex cursor-pointer list-none items-center gap-2 font-semibold hover:text-primary-ink"
           >
             <span
               class="flex size-9 items-center justify-center rounded-full bg-primary-container text-primary-ink"
@@ -101,13 +105,13 @@ const path = normalizePath(Astro.url.pathname);
           <div class="absolute right-0 top-full z-50 mt-3 w-48 bg-surface-container p-3 shadow-lg">
             <a
               href="/account/"
-              class="block px-3 py-2 no-underline font-semibold hover:bg-surface hover:text-primary"
+              class="block px-3 py-2 no-underline font-semibold hover:bg-surface hover:text-primary-ink"
               >{t('header.account')}</a
             >
             <form method="post" action="/sign-out/">
               <button
                 type="submit"
-                class="block w-full px-3 py-2 text-left font-semibold hover:bg-surface hover:text-primary"
+                class="block w-full px-3 py-2 text-left font-semibold hover:bg-surface hover:text-primary-ink"
                 >{t('header.signOut')}</button
               >
             </form>
@@ -179,7 +183,7 @@ const path = normalizePath(Astro.url.pathname);
               <a
                 href={item.href}
                 aria-current={active ? 'page' : undefined}
-                class="flex items-center py-5 text-2xl font-extrabold tracking-tight no-underline hover:text-primary aria-[current=page]:text-primary"
+                class="flex items-center py-5 text-2xl font-extrabold tracking-tight no-underline hover:text-primary-ink aria-[current=page]:text-primary-ink"
               >
                 {item.label}
               </a>
@@ -189,7 +193,7 @@ const path = normalizePath(Astro.url.pathname);
     }
   </ul>
   <div class="px-6 pt-4 flex flex-wrap items-center gap-6 text-lg font-bold">
-    <a href="/sign-in/" data-auth="signed-out" class="no-underline hover:text-primary">
+    <a href="/sign-in/" data-auth="signed-out" class="no-underline hover:text-primary-ink">
       {t('header.signIn')}
     </a>
     <details data-auth="signed-in" hidden class="w-full bg-surface-container p-4">
@@ -200,9 +204,13 @@ const path = normalizePath(Astro.url.pathname);
         ><span>Profile</span></summary
       >
       <div class="mt-4 space-y-3 pl-13 text-base">
-        <a href="/account/" class="block no-underline hover:text-primary">{t('header.account')}</a>
+        <a href="/account/" class="block no-underline hover:text-primary-ink"
+          >{t('header.account')}</a
+        >
         <form method="post" action="/sign-out/">
-          <button type="submit" class="font-bold hover:text-primary">{t('header.signOut')}</button>
+          <button type="submit" class="font-bold hover:text-primary-ink"
+            >{t('header.signOut')}</button
+          >
         </form>
       </div>
     </details>
