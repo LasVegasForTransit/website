@@ -58,7 +58,7 @@ const renderedInitiatives = initiatives.filter(
     </a>
   </PageHero>
 
-  <section class="container-page pb-12" aria-labelledby="arts-district-campaign">
+  <section class="campaign-entry container-page pb-12" aria-labelledby="arts-district-campaign">
     <div
       class="grid items-center gap-8 border-y border-outline-variant/20 py-8 md:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)] md:gap-12"
     >
@@ -176,6 +176,19 @@ const renderedInitiatives = initiatives.filter(
   /* /projects print layout — the sticky initiative headers unpin and the
      permalink affordances disappear on paper. Only this route ships it. */
   @media print {
+    .campaign-entry figure {
+      display: none !important;
+    }
+
+    .campaign-entry > div {
+      display: block !important;
+      padding-block: 0.08in !important;
+    }
+
+    .campaign-entry .body-link {
+      display: none !important;
+    }
+
     [data-initiative-header] {
       position: static !important;
       z-index: auto !important;
