@@ -29,6 +29,9 @@ function render(): void {
         element.querySelectorAll<HTMLElement>('[data-active-action]').forEach((action) => {
           action.hidden = kind === 'past';
         });
+        element.querySelectorAll<HTMLElement>('[data-campaign-rsvp]').forEach((link) => {
+          link.textContent = kind === 'past' ? 'Event details' : 'Event details and RSVP';
+        });
         // Avoid moving unchanged cards every minute (including a focused link).
         if (list.children[index] !== element)
           list.insertBefore(element, list.children[index] ?? null);
@@ -53,6 +56,9 @@ function render(): void {
       ).past.length > 0;
     root.querySelectorAll<HTMLElement>('[data-active-action]').forEach((action) => {
       action.hidden = past;
+    });
+    root.querySelectorAll<HTMLElement>('[data-campaign-rsvp]').forEach((link) => {
+      link.textContent = past ? 'Event details' : 'Event details and RSVP';
     });
     const label = root.querySelector<HTMLElement>('[data-past-event-label]');
     if (label) label.hidden = !past;

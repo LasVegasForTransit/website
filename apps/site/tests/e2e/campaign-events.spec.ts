@@ -12,6 +12,13 @@ test('archives the listening session when its Las Vegas day ends without a redep
     'Community listening session',
   );
   await expect(session).toHaveClass(/event--featured/);
+  await session.evaluate((card) => {
+    const link = document.createElement('a');
+    link.href = '/events/test-gathering';
+    link.dataset.campaignRsvp = '';
+    link.textContent = 'Event details and RSVP';
+    card.querySelector('.event-copy')?.appendChild(link);
+  });
   await page.clock.fastForward(60_000);
   await expect(page.locator('[data-campaign-group="past"]')).toBeVisible();
   await expect(page.locator('[data-campaign-list="past"]')).toContainText(
@@ -19,6 +26,10 @@ test('archives the listening session when its Las Vegas day ends without a redep
   );
   await expect(session).not.toHaveClass(/event--featured/);
   await expect(session.getByRole('link', { name: 'Get directions' })).toBeHidden();
+  await expect(session.getByRole('link', { name: 'Event details', exact: true })).toHaveAttribute(
+    'href',
+    '/events/test-gathering',
+  );
   await expect(page.locator('[data-campaign-empty]')).toBeVisible();
   await expect(page.locator('[data-campaign-list="proposed"] article')).toHaveCount(3);
 });
