@@ -228,7 +228,7 @@ for (const scheme of SCHEMES) {
       page,
     }) => {
       await page.emulateMedia({ colorScheme: scheme });
-      await page.goto(path, { waitUntil: 'domcontentloaded' });
+      await page.goto(path, { waitUntil: 'networkidle' });
 
       const roles = await primaryRoles(page);
       const violations = await page.evaluate((roleList) => {
@@ -276,7 +276,7 @@ for (const scheme of SCHEMES) {
     page,
   }) => {
     await page.emulateMedia({ colorScheme: scheme });
-    await page.goto('/events/', { waitUntil: 'domcontentloaded' });
+    await page.goto('/events/', { waitUntil: 'networkidle' });
 
     const surfaces = page
       .locator('.hover\\:bg-on-surface, .focus-visible\\:bg-on-surface')
@@ -315,7 +315,7 @@ for (const scheme of SCHEMES) {
 for (const scheme of SCHEMES) {
   test(`neutral role pairs clear AA [${scheme}]`, async ({ page }) => {
     await page.emulateMedia({ colorScheme: scheme });
-    await page.goto('/', { waitUntil: 'domcontentloaded' });
+    await page.goto('/', { waitUntil: 'networkidle' });
 
     const pairs = await neutralPairs(page);
     for (const pair of pairs) {
@@ -331,7 +331,7 @@ for (const scheme of SCHEMES) {
   for (const path of paths) {
     test(`horizontal rules clear non-text contrast [${scheme}]: ${path}`, async ({ page }) => {
       await page.emulateMedia({ colorScheme: scheme });
-      await page.goto(path, { waitUntil: 'domcontentloaded' });
+      await page.goto(path, { waitUntil: 'networkidle' });
 
       const pairs = await renderedRulePairs(page);
       for (const pair of pairs) {
