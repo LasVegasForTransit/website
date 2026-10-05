@@ -19,7 +19,7 @@ export const test = base.extend<{ accessRequest: Pick<APIRequestContext, 'get'> 
       },
     });
   },
-  context: async ({ context, baseURL }, use) => {
+  page: async ({ page, context, baseURL }, use) => {
     const credentials = accessCredentials(process.env);
     if (credentials) {
       if (!baseURL) throw new Error('Access browser checks require a baseURL.');
@@ -37,9 +37,9 @@ export const test = base.extend<{ accessRequest: Pick<APIRequestContext, 'get'> 
       });
     }
     try {
-      await use(context);
+      await use(page);
     } finally {
-      // Finish Access fetch/fulfill handlers before Playwright disposes their responses.
+      // Drain authenticated requests before the page closes and aborts its routes.
       await context.unrouteAll({ behavior: 'wait' });
     }
   },

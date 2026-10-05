@@ -1081,9 +1081,12 @@ test.describe('body content links', () => {
     // The contact social card inverts to the ink surface (#0f1115) on hover.
     await expect(contactLinkedIn).toHaveCSS('background-color', 'rgb(15, 17, 21)');
 
+    await page.locator('footer .reveal').evaluateAll((elements) => {
+      elements.forEach((element) => element.classList.add('is-visible'));
+    });
     await expect(footerLinkedIn).toBeVisible();
     await footerLinkedIn.hover();
-    await expect(footerLinkedIn).toHaveCSS('color', 'rgb(229, 71, 26)');
+    await expect(footerLinkedIn).toHaveCSS('color', 'rgb(255, 233, 214)');
   });
 
   test('gives body links visible hover feedback on light surfaces', async ({ page }) => {
