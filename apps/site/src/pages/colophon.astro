@@ -1,7 +1,12 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
+import { getCollection } from 'astro:content';
 import PageHero from '../components/PageHero.astro';
 import { site } from '../lib/site';
+
+const programImageCredits = (await getCollection('programs')).flatMap(({ data }) =>
+  data.image?.credit ? [{ title: data.title, ...data.image.credit }] : [],
+);
 ---
 
 <BaseLayout
@@ -72,4 +77,21 @@ import { site } from '../lib/site';
       </p>
     </div>
   </section>
+  {
+    programImageCredits.length > 0 && (
+      <section class="container-page pb-12 md:pb-16" aria-labelledby="image-credits">
+        <h2 id="image-credits" class="text-headline-md">
+          Image credits
+        </h2>
+        <div class="prose-doc mt-6 max-w-2xl">
+          {programImageCredits.map((credit) => (
+            <p>
+              {credit.title} photo: <a href={credit.url}>{credit.name}</a>, licensed under{' '}
+              <a href={credit.licenseUrl}>{credit.license}</a>.
+            </p>
+          ))}
+        </div>
+      </section>
+    )
+  }
 </BaseLayout>

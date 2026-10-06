@@ -1,0 +1,57 @@
+---
+import { Icon } from 'astro-icon/components';
+import type { CollectionEntry } from 'astro:content';
+import ProgramEventFeature from './ProgramEventFeature.astro';
+import { paths } from '../../lib/paths';
+import type { ProgramEvent } from '../../lib/program-events';
+
+interface Props {
+  program: CollectionEntry<'programs'>;
+  events?: ProgramEvent[];
+  next: { title: string; href: string };
+}
+
+const { program, events = [], next } = Astro.props;
+const { title, icon, summary, image, calendarSeriesUid } = program.data;
+---
+
+<section id={program.id} class="program-feature" aria-labelledby={`${program.id}-name`}>
+  <div class="program-feature-copy">
+    <header class="program-feature-identity">
+      <span class="program-feature-icon" aria-hidden="true"><Icon name={icon} /></span>
+      <h2 id={`${program.id}-name`} class="text-display-sm">{title}</h2>
+    </header>
+    <div class="program-feature-body">
+      <p class="text-body-lg text-on-surface-variant">{summary}</p>
+      <a class="body-link program-feature-link" href={paths.program(program.id)}>
+        About {title}
+        <span aria-hidden="true">→</span>
+      </a>
+    </div>
+  </div>
+  {
+    image ? (
+      <figure class="program-feature-aside program-feature-media">
+        <img
+          src={image.src}
+          alt={image.alt}
+          width={image.width}
+          height={image.height}
+          loading="lazy"
+          decoding="async"
+          class:list={{ 'program-feature-tool-image': image.kind === 'screenshot' }}
+        />
+      </figure>
+    ) : calendarSeriesUid ? (
+      <ProgramEventFeature
+        program={program.data}
+        events={events}
+        headingId={`${program.id}-event-heading`}
+      />
+    ) : null
+  }
+  <a class="program-feature-onward" href={next.href} data-screen-action>
+    <span>{next.title}</span>
+    <Icon name="mdi:arrow-down" class="size-6" aria-hidden="true" />
+  </a>
+</section>

@@ -1,29 +1,13 @@
 import { defineCollection } from 'astro:content';
 import { glob } from 'astro/loaders';
 import { z } from 'zod';
+import { programSchema } from './program-schema';
 
 const excludeTemplates = ['**/*.{md,mdx}', '!**/_*.{md,mdx}'];
 
 export const programs = defineCollection({
   loader: glob({ pattern: excludeTemplates, base: './src/content/programs' }),
-  schema: z.object({
-    title: z.string(),
-    summary: z.string(),
-    designation: z.enum(['community-gatherings', 'annual-challenges']),
-    icon: z.string(),
-    order: z.number(),
-    cadence: z.string(),
-    status: z.enum(['active', 'planned']),
-    participationUrl: z.url().optional(),
-    venue: z
-      .object({
-        name: z.string(),
-        address: z.string(),
-        mapUrl: z.url(),
-        status: z.enum(['proposed', 'confirmed']),
-      })
-      .optional(),
-  }),
+  schema: programSchema,
 });
 
 // Broad areas of work explain how projects connect across named programs.

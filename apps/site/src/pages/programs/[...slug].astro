@@ -1,14 +1,17 @@
 ---
+import { Icon } from 'astro-icon/components';
 import { getCollection, render } from 'astro:content';
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import Breadcrumbs from '../../components/Breadcrumbs.astro';
-import VegasUrbanistsPage from '../../components/programs/VegasUrbanistsPage.astro';
 import { paths } from '../../lib/paths';
+import { programParticipationAction } from '../../lib/program-events';
+import ProgramEventPanel from '../../components/programs/ProgramEventPanel.astro';
 
 export async function getStaticPaths() {
-  const [programs, projects] = await Promise.all([
+  const [programs, projects, events] = await Promise.all([
     getCollection('programs'),
     getCollection('projects'),
+    getCollection('events'),
   ]);
   const programIds = new Set(programs.map((program) => program.id));
   for (const project of projects) {
@@ -22,85 +25,80 @@ export async function getStaticPaths() {
     params: { slug: program.id },
     props: {
       program,
+      occurrences: events.filter(
+        (event) => event.data.calendarUid === program.data.calendarSeriesUid,
+      ),
       relatedProjects: projects.filter((project) => project.data.program === program.id),
     },
   }));
 }
 
-const { program, relatedProjects } = Astro.props;
+const { program, occurrences, relatedProjects } = Astro.props;
 const { Content } = await render(program);
+const { title, summary, calendarSeriesUid } = program.data;
+const action = programParticipationAction(program.data, undefined);
 ---
 
-<BaseLayout title={program.data.title} description={program.data.summary}>
-  {
-    program.id === 'vegas-urbanists' ? (
-      <VegasUrbanistsPage cadence={program.data.cadence} venue={program.data.venue}>
-        <Content />
-      </VegasUrbanistsPage>
-    ) : (
-      <>
-        <header class="container-page pt-6 pb-8 md:pt-10">
-          <Breadcrumbs
-            section={{ name: 'Programs', href: paths.programs }}
-            current={program.data.title}
-          />
-          <h1 class="mt-3 text-display-md">{program.data.title}</h1>
-          <p class="lede mt-5 max-w-3xl">{program.data.summary}</p>
-          <p class="mt-6 text-title-lg font-semibold">{program.data.cadence}</p>
-        </header>
+<BaseLayout title={title} description={summary}>
+  <div class="container-page pt-6 pb-16 md:pt-10 md:pb-24">
+    <Breadcrumbs section={{ name: 'Programs', href: paths.programs }} current={title} />
 
-        <hr class="rule-thick container-page" />
+    <header class="max-w-4xl">
+      <h1 class="text-display-md">{title}</h1>
+      <p class="mt-6 max-w-3xl text-title-lg font-normal leading-snug text-on-surface-variant">
+        {summary}
+      </p>
+    </header>
 
-        <div class="container-page grid gap-12 pt-8 pb-16 md:grid-cols-[2fr_1fr]">
-          <article class="prose-doc max-w-none">
-            <Content />
-          </article>
-          <aside class="space-y-8 md:border-l md:border-outline-variant/20 md:pl-10">
-            <div>
-              <h2 class="text-title-lg font-bold">Join in</h2>
-              {program.data.participationUrl ? (
-                <>
-                  <p class="mt-3 text-on-surface-variant">
-                    Find current dates, details, and resources on the participant site.
-                  </p>
-                  <a
-                    href={program.data.participationUrl}
-                    class="mt-4 inline-block font-bold underline underline-offset-4"
-                  >
-                    Visit the participant site →
-                  </a>
-                </>
-              ) : (
-                <>
-                  <p class="mt-3 text-on-surface-variant">
-                    Check the events calendar for confirmed meetup details.
-                  </p>
-                  <a
-                    href={paths.events}
-                    class="mt-4 inline-block font-bold underline underline-offset-4"
-                  >
-                    See upcoming events →
-                  </a>
-                </>
-              )}
-            </div>
-            {relatedProjects.length > 0 && (
-              <div>
-                <h2 class="text-title-lg font-bold">Related projects</h2>
-                <ul class="mt-3 space-y-3">
-                  {relatedProjects.map((project) => (
-                    <li>
-                      <a href={paths.project(project.id)} class="nav-link">
-                        {project.data.title}
-                      </a>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
-          </aside>
-        </div>
-      </>
-    )
-  }
+    <div
+      class:list={[
+        'mt-12 grid gap-12 md:mt-16',
+        calendarSeriesUid &&
+          'max-w-6xl lg:grid-cols-[minmax(0,1.25fr)_minmax(20rem,0.75fr)] lg:gap-20',
+      ]}
+    >
+      {calendarSeriesUid && <ProgramEventPanel program={program.data} events={occurrences} />}
+
+      <div class="min-w-0 max-w-2xl">
+        <div class="prose-doc text-body-lg text-on-surface-variant"><Content /></div>
+
+        {
+          !calendarSeriesUid && action && (
+            <a
+              href={action.href}
+              class="group mt-8 inline-flex items-center gap-4 bg-slab px-6 py-4 font-semibold text-on-slab no-underline transition-colors hover:bg-primary hover:text-on-primary focus-visible:bg-primary focus-visible:text-on-primary"
+            >
+              {action.label}
+              <Icon name="mdi:open-in-new" class="size-5 shrink-0" aria-hidden="true" />
+            </a>
+          )
+        }
+
+        {
+          relatedProjects.length > 0 && (
+            <section class="mt-12" aria-labelledby="related-projects">
+              <h2 id="related-projects" class="text-title-lg">
+                Related projects
+              </h2>
+              <ul class="mt-4 grid gap-4 sm:grid-cols-2">
+                {relatedProjects.map((project) => (
+                  <li>
+                    <a
+                      href={paths.project(project.id)}
+                      class="group block h-full min-w-0 bg-surface-container p-4 no-underline transition-colors hover:bg-slab hover:text-on-slab focus-visible:bg-slab focus-visible:text-on-slab"
+                    >
+                      <span class="font-bold leading-tight">{project.data.title}</span>
+                      <span class="mt-2 block text-sm leading-relaxed text-on-surface-variant text-pretty group-hover:text-on-slab/75 group-focus-visible:text-on-slab/75">
+                        {project.data.tldr}
+                      </span>
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )
+        }
+      </div>
+    </div>
+  </div>
 </BaseLayout>

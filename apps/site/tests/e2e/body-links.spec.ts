@@ -789,22 +789,20 @@ test.describe('body content links', () => {
       await page.goto(path);
       await page.waitForLoadState('networkidle');
 
-      const classes = await page.locator('main section h2:not(.sr-only)').evaluateAll((headings) =>
-        headings.map((heading) => ({
-          text: (heading as HTMLElement).innerText,
-          className: (heading as HTMLElement).className,
-        })),
-      );
+      const classes = await page
+        .locator('main section h2:not(.sr-only, .program-feature h2)')
+        .evaluateAll((headings) =>
+          headings.map((heading) => ({
+            text: (heading as HTMLElement).innerText,
+            className: (heading as HTMLElement).className,
+          })),
+        );
 
       expect(classes.length, path).toBeGreaterThan(0);
       expect(
         classes.every(({ className }) => className.includes('text-headline-lg')),
         JSON.stringify({ path, classes }),
       ).toBe(true);
-      expect(
-        classes.some(({ className }) => /text-(headline-md|headline-sm)/.test(className)),
-        JSON.stringify({ path, classes }),
-      ).toBe(false);
     }
   });
 

@@ -36,6 +36,8 @@ const events = defineCollection({
   schema: z
     .object({
       title: z.string(),
+      calendarUid: z.string(),
+      calendarOccurrenceId: z.string(),
       date: z.coerce.date(),
       endDate: z.coerce.date().optional(),
       // How to attend, as a discriminated union (`format` is its discriminant).
@@ -106,11 +108,9 @@ const events = defineCollection({
     }),
 });
 
-// Optional long-form MDX body for an event. File name = event slug
-// (e.g. 2026-05-28-general-meeting.mdx matches the calendar event whose
-// derived slug is 2026-05-28-general-meeting). When a fragment is
-// present, the detail page renders it below the header; otherwise the
-// header is the full page. Frontmatter is intentionally minimal.
+// Optional rich body or recap for an event. Calendar occurrence identity
+// keeps authored copy attached through renames and reschedules. Fragments
+// without an identity continue to match the derived slug by filename.
 const EVENT_BODIES_DIR = './src/content/event-bodies';
 
 const eventBodiesLoader = existsSync(EVENT_BODIES_DIR)
@@ -126,6 +126,8 @@ const eventBodies = defineCollection({
   loader: eventBodiesLoader,
   schema: z.object({
     slug: z.string(),
+    calendarOccurrenceId: z.string().optional(),
+    discussionTopic: z.string().trim().min(1).optional(),
   }),
 });
 

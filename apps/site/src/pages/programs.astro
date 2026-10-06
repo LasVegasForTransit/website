@@ -3,14 +3,18 @@ import { Icon } from 'astro-icon/components';
 import { getCollection, render } from 'astro:content';
 import BaseLayout from '../layouts/BaseLayout.astro';
 import PageHero from '../components/PageHero.astro';
+import ProgramFeature from '../components/programs/ProgramFeature.astro';
 import { byOrderThenTitle, isActiveProject } from '../lib/projects';
 import { paths } from '../lib/paths';
-import { programDesignations } from '../lib/programs';
+import { selectEventBody } from '../lib/event-bodies';
+import '../styles/programs.css';
 
-const [programs, workAreas, projects] = await Promise.all([
+const [programs, workAreas, projects, events, eventBodies] = await Promise.all([
   getCollection('programs'),
   getCollection('workAreas'),
   getCollection('projects'),
+  getCollection('events'),
+  getCollection('eventBodies'),
 ]);
 
 const programIds = new Set(programs.map((program) => program.id));
@@ -21,6 +25,15 @@ for (const project of projects) {
     );
   }
 }
+
+const namedPrograms = programs.toSorted((a, b) => a.data.order - b.data.order);
+const programEvents = events.map((event) => ({
+  ...event,
+  data: {
+    ...event.data,
+    discussionTopic: selectEventBody(eventBodies, event)?.data.discussionTopic,
+  },
+}));
 
 const projectsById = new Map(projects.map((project) => [project.id, project]));
 const renderedWorkAreas = await Promise.all(
@@ -44,50 +57,37 @@ const renderedWorkAreas = await Promise.all(
 
 <BaseLayout
   title="Programs"
-  description="LVBT's named programs and ongoing work in Southern Nevada."
+  description="Ongoing programs for transportation and urbanism in Southern Nevada."
+  mainClass="programs-directory"
 >
   <PageHero
     title="Our programs"
-    lede="Meet up, take part in an annual challenge, or explore our ongoing work."
+    lede="Ongoing programs for transportation and urbanism in Southern Nevada."
   />
 
-  <div class="container-page pt-12 pb-16 md:pt-16 md:pb-24">
-    <section aria-labelledby="named-programs">
-      <h2 id="named-programs" class="sr-only">Named programs</h2>
-      <div class="grid gap-12 md:gap-16">
-        {
-          programDesignations.map((designation) => {
-            const entries = programs
-              .filter((program) => program.data.designation === designation.id)
-              .sort((a, b) => a.data.order - b.data.order);
-            if (entries.length === 0) return null;
-            return (
-              <div>
-                <h3 class="text-headline-lg">{designation.title}</h3>
-                <ul class="mt-5 max-w-5xl">
-                  {entries.map((program) => (
-                    <li class="grid gap-3 py-5 md:grid-cols-[minmax(14rem,1fr)_minmax(0,1.5fr)] md:gap-8">
-                      <div>
-                        <a
-                          href={paths.program(program.id)}
-                          class="nav-link text-title-lg font-bold"
-                        >
-                          {program.data.title} →
-                        </a>
-                        <p class="mt-2 text-sm font-semibold">{program.data.cadence}</p>
-                      </div>
-                      <p class="text-on-surface-variant">{program.data.summary}</p>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            );
-          })
-        }
-      </div>
-    </section>
+  <section class="container-page program-directory" aria-label="Named programs">
+    {
+      namedPrograms.map((program, index) => {
+        const nextProgram = namedPrograms[index + 1];
+        return (
+          <ProgramFeature
+            program={program}
+            events={programEvents.filter(
+              ({ data }) => data.calendarUid === program.data.calendarSeriesUid,
+            )}
+            next={
+              nextProgram
+                ? { title: nextProgram.data.title, href: `#${nextProgram.id}` }
+                : { title: 'Ongoing work', href: '#ongoing-work' }
+            }
+          />
+        );
+      })
+    }
+  </section>
 
-    <section aria-labelledby="ongoing-work" class="mt-16 md:mt-20">
+  <div class="container-page pt-16 pb-16 md:pt-20 md:pb-24">
+    <section aria-labelledby="ongoing-work">
       <h2 id="ongoing-work" class="text-headline-lg">Ongoing work</h2>
       <div class="mt-10 grid gap-16 md:gap-20 lg:gap-28 xl:gap-36">
         {
@@ -180,4 +180,17 @@ const renderedWorkAreas = await Promise.all(
       </div>
     </section>
   </div>
+  <nav class="program-index" aria-label="Programs on this page" hidden>
+    {
+      namedPrograms.map((program) => (
+        <a href={`#${program.id}`} aria-label={program.data.title}>
+          <span class="program-index-marker" aria-hidden="true" />
+        </a>
+      ))
+    }
+  </nav>
 </BaseLayout>
+
+<script>
+  import '../scripts/program-index';
+</script>
