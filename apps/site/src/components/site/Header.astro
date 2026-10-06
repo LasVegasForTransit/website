@@ -9,7 +9,7 @@ const normalizePath = (value: string) => {
 };
 
 const path = normalizePath(Astro.url.pathname);
-const tabletNavHrefs = new Set(['/programs', '/events']);
+const tabletNavigation = new Set(['/programs', '/events']);
 ---
 
 {
@@ -44,7 +44,7 @@ const tabletNavHrefs = new Set(['/programs', '/events']);
           navMain.map((item) => {
             const active = path === normalizePath(item.href);
             return (
-              <li class={tabletNavHrefs.has(item.href) ? undefined : 'hidden lg:block'}>
+              <li class={tabletNavigation.has(item.href) ? undefined : 'hidden lg:block'}>
                 {item.href === '/join' ? (
                   <>
                     <a
