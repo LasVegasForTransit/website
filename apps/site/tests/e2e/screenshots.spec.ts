@@ -86,6 +86,16 @@ for (const path of paths) {
     });
 
     test('full page (entire scroll)', async ({ page }) => {
+      // Full-page captures include imagery outside the initial viewport.
+      // Decode lazy images before comparing so loading cannot race the capture.
+      await page.evaluate(async () => {
+        await Promise.all(
+          Array.from(document.images, (image) => {
+            image.loading = 'eager';
+            return image.decode();
+          }),
+        );
+      });
       await expect(page).toHaveScreenshot(`${base}-full.png`, { fullPage: true });
     });
   });
