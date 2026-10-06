@@ -5,21 +5,25 @@ import ShareButton from '../../components/ShareButton.astro';
 import Breadcrumbs from '../../components/Breadcrumbs.astro';
 import { eventSchema } from '../../lib/structured-data';
 import { paths, canonicalUrl } from '../../lib/paths';
-import { getCollection, getEntry, render } from 'astro:content';
+import { getCollection, render } from 'astro:content';
+import { selectEventBody } from '../../lib/event-bodies';
 import EventBadgePill from '../../components/EventBadgePill.astro';
 import { whereLabel } from '../../lib/event-format';
 import { relativeLabel, formatEventTime, TIMEZONE } from '../../lib/event-time';
 import { eventMetaDescription, eventMetaTitle } from '../../lib/event-seo';
 
 export async function getStaticPaths() {
-  const events = await getCollection('events');
+  const [events, bodies] = await Promise.all([
+    getCollection('events'),
+    getCollection('eventBodies'),
+  ]);
   return events.map((event) => ({
     params: { slug: event.id },
-    props: { event },
+    props: { event, fragment: selectEventBody(bodies, event) },
   }));
 }
 
-const { event } = Astro.props;
+const { event, fragment } = Astro.props;
 // Two possible body sources, in priority order:
 //
 //   1. An MDX fragment under src/content/event-bodies/<slug>.mdx —
@@ -30,7 +34,6 @@ const { event } = Astro.props;
 //
 // Most events ship with just the header; a body only renders when one
 // of these sources is present.
-const fragment = await getEntry('eventBodies', event.id);
 const FragmentContent = fragment ? (await render(fragment)).Content : null;
 const calendarBodyHtml = !FragmentContent && event.data.body ? event.data.body : null;
 const eventUrl = canonicalUrl(Astro.url.pathname);

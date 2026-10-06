@@ -643,8 +643,8 @@ html:active-view-transition-type(from-qr)::view-transition-old(root) {
   /* ─── Mobile navigation overlay ──────────────────────────────────── */
 
   /* Hamburger bars: smooth morph to × on expand.
-     Gap between bars is 5px; bar height is 1.5px.
-     Bar 1 center → bar 2 center = 1.5 + 5 = 6.5px, same for bar 3. */
+     Gap between bars is 4px; bar height is 2px.
+     Bar 1 center → bar 2 center = 2 + 4 = 6px, same for bar 3. */
   [data-nav-toggle] span {
     transition:
       transform 220ms var(--ease-out),
@@ -659,13 +659,13 @@ html:active-view-transition-type(from-qr)::view-transition-old(root) {
     }
   }
   [data-nav-toggle][aria-expanded='true'] span:nth-child(1) {
-    transform: translateY(6.5px) rotate(45deg);
+    transform: translateY(6px) rotate(45deg);
   }
   [data-nav-toggle][aria-expanded='true'] span:nth-child(2) {
     opacity: 0;
   }
   [data-nav-toggle][aria-expanded='true'] span:nth-child(3) {
-    transform: translateY(-6.5px) rotate(-45deg);
+    transform: translateY(-6px) rotate(-45deg);
   }
 
   /* Dark canvas: bars should be paper-colored when header is transparent */

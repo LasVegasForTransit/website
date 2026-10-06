@@ -1,0 +1,95 @@
+---
+import { Icon } from 'astro-icon/components';
+import {
+  programEventPanel,
+  programEventPayload,
+  selectProgramEvent,
+  type ProgramEvent,
+  type ProgramParticipation,
+} from '../../lib/program-events';
+
+interface Props {
+  program: ProgramParticipation;
+  events: ProgramEvent[];
+}
+
+const { program, events } = Astro.props;
+const now = new Date();
+const panel = programEventPanel(
+  program,
+  selectProgramEvent(events, program.calendarSeriesUid, now),
+  now,
+);
+const payload = programEventPayload(program, events);
+const venueAddress = [panel.venue?.address, panel.venue?.tentative ? '(tentative)' : undefined]
+  .filter(Boolean)
+  .join(' ');
+---
+
+<aside class="min-w-0 self-start lg:sticky lg:top-24 lg:order-last" data-program-event-panel>
+  <h2 class="mb-4 text-body-lg font-medium" data-program-event-heading>{panel.heading}</h2>
+  <div class="flex flex-col bg-surface-container">
+    <span class="h-2 bg-primary" aria-hidden="true"></span>
+    <div class="p-6 md:p-8">
+      <p class="flex items-start gap-3 font-semibold">
+        <Icon name="mdi:calendar-blank-outline" class="size-5 shrink-0" aria-hidden="true" />
+        <span>
+          <span data-program-event-date-group hidden={!panel.eventHref}>
+            <time datetime={panel.dateIso} data-program-event-date>
+              <a
+                href={panel.eventHref}
+                class="underline underline-offset-4"
+                data-program-event-link
+              >
+                {panel.dateLabel}
+              </a>
+            </time>
+            <span class="block" data-program-event-time>{panel.timeLabel}</span>
+          </span>
+          <span data-program-event-schedule hidden={!!panel.eventHref}>{panel.schedule}</span>
+        </span>
+      </p>
+      <div data-program-event-venue hidden={!panel.venue}>
+        <p class="mt-3 flex items-start gap-3">
+          <Icon name="mdi:map-marker-outline" class="mt-0.5 size-5 shrink-0" aria-hidden="true" />
+          <span>
+            <span data-program-event-venue-link-group hidden={!panel.venue?.mapUrl}>
+              <a
+                href={panel.venue?.mapUrl}
+                class="font-semibold underline underline-offset-4"
+                data-program-event-venue-link
+              >
+                {panel.venue?.name}
+              </a>
+            </span>
+            <span data-program-event-venue-name hidden={!!panel.venue?.mapUrl}
+              >{panel.venue?.name}</span
+            >
+            <span class="block text-on-surface-variant" data-program-event-venue-address
+              >{venueAddress}</span
+            >
+          </span>
+        </p>
+      </div>
+    </div>
+    <div data-program-event-action-group hidden={!panel.action}>
+      <a
+        href={panel.action?.href}
+        class="group flex items-center justify-between gap-4 bg-slab px-6 py-4 font-semibold text-on-slab no-underline transition-colors hover:bg-primary hover:text-on-primary focus-visible:bg-primary focus-visible:text-on-primary md:px-8"
+        data-program-event-action
+      >
+        <span data-program-event-action-label>{panel.action?.label}</span>
+        <Icon
+          name={panel.action?.external ? 'mdi:open-in-new' : 'mdi:arrow-right'}
+          class="arrow size-6 shrink-0 transition-transform"
+          aria-hidden="true"
+        />
+      </a>
+    </div>
+  </div>
+  <script is:inline type="application/json" data-program-events set:html={payload} />
+</aside>
+
+<script>
+  import '../../scripts/program-events';
+</script>

@@ -9,6 +9,7 @@ const normalizePath = (value: string) => {
 };
 
 const path = normalizePath(Astro.url.pathname);
+const tabletNavHrefs = new Set(['/programs', '/events']);
 ---
 
 {
@@ -18,9 +19,9 @@ const path = normalizePath(Astro.url.pathname);
 <div data-header-sentinel aria-hidden="true" class="h-px"></div>
 <header
   data-site-header
-  class="sticky top-0 z-(--z-header) bg-surface/80 border-b border-transparent data-[stuck]:backdrop-blur-md data-[stuck]:backdrop-saturate-150 data-[stuck]:border-outline-variant/15 transition-[border-color] duration-200 ease-out [view-transition-name:site-header]"
+  class="sticky top-0 h-(--lvbt-header-h) z-(--z-header) bg-surface/80 border-b border-transparent data-[stuck]:backdrop-blur-md data-[stuck]:backdrop-saturate-150 data-[stuck]:border-outline-variant/15 transition-[border-color] duration-200 ease-out [view-transition-name:site-header]"
 >
-  <div class="container-page py-4 flex items-center justify-between gap-6">
+  <div class="container-page h-full flex items-center justify-between gap-3 lg:gap-6">
     {
       /* Wordmark sits at text-xl across breakpoints: at 18px (text-lg)
         the primary "for Better Transit" reads 3.64:1 on cream, which
@@ -30,17 +31,20 @@ const path = normalizePath(Astro.url.pathname);
         a11y on every paper-canvas page. text-xl (20px) clears it on
         every viewport. */
     }
-    <a href="/" class="font-extrabold tracking-tight text-xl no-underline">
+    <a
+      href="/"
+      class="shrink-0 whitespace-nowrap font-extrabold tracking-tight text-xl no-underline"
+    >
       <span class="block leading-none">Las Vegans</span>
       <span class="block leading-none text-primary">for Better Transit</span>
     </a>
-    <nav aria-label="Primary" class="hidden md:block">
-      <ul class="flex items-center gap-7 text-sm font-semibold">
+    <nav aria-label="Primary" class="hidden md:block shrink-0">
+      <ul class="flex items-center gap-5 lg:gap-7 whitespace-nowrap text-sm font-semibold">
         {
           navMain.map((item) => {
             const active = path === normalizePath(item.href);
             return (
-              <li>
+              <li class={tabletNavHrefs.has(item.href) ? undefined : 'hidden lg:block'}>
                 {item.href === '/join' ? (
                   <>
                     <a
@@ -83,7 +87,7 @@ const path = normalizePath(Astro.url.pathname);
         server. Without JavaScript a public page shows "Sign in", which
         sends a signed-in member straight to their account. */
     }
-    <div class="hidden md:flex items-center gap-6">
+    <div class="hidden lg:flex shrink-0 items-center gap-6 whitespace-nowrap">
       <div class="flex items-center gap-5 text-sm font-semibold">
         <a
           href="/sign-in/"
@@ -129,8 +133,8 @@ const path = normalizePath(Astro.url.pathname);
       </div>
     </div>
     {/* Mobile controls: Join CTA (hidden when nav open) + hamburger toggle */}
-    <div class="md:hidden flex items-center gap-3">
-      <div data-auth="signed-out">
+    <div class="lg:hidden flex shrink-0 items-center gap-3 whitespace-nowrap">
+      <div data-auth="signed-out" class="hidden min-[375px]:block">
         <a
           href="/join"
           data-mobile-join
@@ -153,11 +157,11 @@ const path = normalizePath(Astro.url.pathname);
         aria-label="Open menu"
         aria-expanded="false"
         aria-controls="mobile-nav-overlay"
-        class="flex flex-col items-center justify-center gap-[5px] p-2 -mr-2 w-10 h-10"
+        class="flex flex-col items-center justify-center gap-1 p-2 -mr-2 w-10 h-10"
       >
-        <span class="block w-5 h-[1.5px] rounded-[1px] bg-current" aria-hidden="true"></span>
-        <span class="block w-5 h-[1.5px] rounded-[1px] bg-current" aria-hidden="true"></span>
-        <span class="block w-5 h-[1.5px] rounded-[1px] bg-current" aria-hidden="true"></span>
+        <span class="block w-5 h-0.5 bg-current" aria-hidden="true"></span>
+        <span class="block w-5 h-0.5 bg-current" aria-hidden="true"></span>
+        <span class="block w-5 h-0.5 bg-current" aria-hidden="true"></span>
       </button>
     </div>
   </div>
@@ -169,7 +173,7 @@ const path = normalizePath(Astro.url.pathname);
   data-nav-overlay
   aria-label="Mobile navigation"
   inert
-  class="md:hidden fixed left-0 right-0 bottom-0 bg-surface z-(--z-mobile-nav) flex flex-col overflow-y-auto"
+  class="lg:hidden fixed left-0 right-0 bottom-0 bg-surface z-(--z-mobile-nav) flex flex-col overflow-y-auto"
   style="top: var(--lvbt-header-h)"
 >
   <ul class="flex-1 list-none m-0 px-6 py-2">

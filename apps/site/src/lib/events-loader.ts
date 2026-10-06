@@ -7,7 +7,8 @@
 // silently shipping an empty /events page.
 //
 // Body content is handled by a separate `eventBodies` collection (globbed
-// from src/content/event-bodies/*.mdx). The detail page joins on slug.
+// from src/content/event-bodies/*.mdx). The detail page joins on calendar
+// occurrence identity, with slug matching for legacy fragments.
 
 import type { Loader } from 'astro/loaders';
 import ICAL from 'ical.js';
@@ -22,8 +23,10 @@ import type {
 } from './event-format';
 import { TIMEZONE } from './event-time';
 
-type EventData = {
+interface EventData {
   title: string;
+  calendarUid: string;
+  calendarOccurrenceId: string;
   date: Date;
   endDate?: Date;
   // Undefined when the event has no arranged join URL or venue yet.
@@ -35,7 +38,7 @@ type EventData = {
   summary: string;
   body?: string;
   schema?: EventSchemaMetadata;
-};
+}
 
 const CONFERENCE_HOST_RE =
   /(meet\.google\.com|zoom\.us|teams\.microsoft\.com|webex\.com|whereby\.com)/i;
@@ -66,7 +69,10 @@ function findConferenceUrl(text: string): string | undefined {
 }
 
 function findRsvpUrl(description: string): string | undefined {
-  const m = description.match(/^\s*RSVP:\s*(https?:\/\/\S+)/im);
+  const lines = decodeEntities(description.replace(/<br\s*\/?>|<\/?p\b[^>]*>/gi, '\n'));
+  const m = lines.match(
+    /^\s*RSVP(?: here)?:\s*(?:<a\b[^>]*\bhref\s*=\s*["'])?(https?:\/\/[^\s"'<>]+)/im,
+  );
   return m?.[1];
 }
 
@@ -161,10 +167,12 @@ function parseDescription(
     return { summary: summaryText, body: rest || undefined };
   }
 
-  // Plain-text description (no <p> wrapping). Split on blank lines.
-  const [first, ...rest] = authored.split(/\r?\n\s*\r?\n/).map((p) => p.trim());
+  // Descriptions without <p> wrapping use blank lines or consecutive <br> tags.
+  const [first, ...rest] = authored
+    .split(/\r?\n\s*\r?\n|(?:<br\s*\/?>\s*){2,}/i)
+    .map((p) => p.trim());
   return {
-    summary: first || title,
+    summary: stripHtml(first) || title,
     body: rest.filter(Boolean).join('\n\n') || undefined,
   };
 }
@@ -218,9 +226,20 @@ function buildEventEntry(
   const slug = `${ptDateSlug(startDate)}-${slugify(title)}`;
   const { summary, body } = parseDescription(description, title);
   const admission = findAdmissionLink(description);
+  const status =
+    event.component.getFirstPropertyValue('status') === 'CANCELLED'
+      ? 'EventCancelled'
+      : 'EventScheduled';
 
   const data: EventData = {
     title,
+    calendarUid: uid,
+    // RECURRENCE-ID stays at the original start when an instance is moved.
+    // One-off events need only their UID, which also survives rescheduling.
+    calendarOccurrenceId:
+      event.isRecurring() || event.component.getFirstProperty('recurrence-id')
+        ? `${uid}#${recurrenceKey}`
+        : uid,
     date: startDate,
     endDate,
     location,
@@ -232,6 +251,7 @@ function buildEventEntry(
     body,
     schema: {
       schemaType: title.toLowerCase().includes('teach-in') ? 'EducationEvent' : 'Event',
+      status,
       isAccessibleForFree: true,
       about: ['Public transit', 'Transit advocacy', 'Southern Nevada'],
       audience: ['Las Vegas Valley residents', 'Transit riders'],
@@ -250,6 +270,7 @@ function buildEventEntry(
       endDate?.toISOString() ?? '',
       rawLocation,
       description,
+      status,
     ].join('|'),
   };
 }
@@ -353,10 +374,13 @@ export function calendarEventsLoader(): Loader {
       // events/index.astro fallback at the entry level so every consumer
       // gets the same featured flag.
       entries.sort((a, b) => a.data.date.getTime() - b.data.date.getTime());
-      const nearestUpcoming = entries.find((e) => e.data.date.getTime() >= now);
+      const upcoming = entries.filter(
+        (e) => e.data.date.getTime() >= now && e.data.schema?.status !== 'EventCancelled',
+      );
+      const nearestUpcoming = upcoming.at(0);
       if (nearestUpcoming) nearestUpcoming.data.featured = true;
 
-      const upcomingCount = entries.filter((e) => e.data.date.getTime() >= now).length;
+      const upcomingCount = upcoming.length;
       if (upcomingCount === 0) {
         throw new Error(
           'No upcoming events in the Google Calendar feed. Add at least one upcoming event in Google Calendar before deploying.',

@@ -1,0 +1,78 @@
+---
+import {
+  programEventFeature,
+  programEventPayload,
+  selectProgramEvent,
+  type ProgramEvent,
+  type ProgramParticipation,
+} from '../../lib/program-events';
+
+interface Props {
+  program: ProgramParticipation;
+  events: ProgramEvent[];
+  headingId: string;
+}
+const { program, events, headingId } = Astro.props;
+const now = new Date();
+const panel = programEventFeature(
+  program,
+  selectProgramEvent(events, program.calendarSeriesUid, now),
+  now,
+);
+---
+
+<aside
+  class="program-feature-aside program-feature-event"
+  aria-labelledby={headingId}
+  data-program-event-panel
+  data-program-event-feature
+>
+  <h3 id={headingId} class="text-body-lg" data-program-event-heading>{panel.heading}</h3>
+  <div class="program-feature-event-content">
+    <p class="program-feature-event-topic" data-program-event-topic>{panel.headline}</p>
+    <div class="program-feature-event-footer">
+      <div>
+        <p
+          class="program-feature-event-date"
+          data-program-event-date-group
+          hidden={!panel.dateLabel}
+        >
+          <time datetime={panel.dateIso} data-program-event-date>
+            <span data-program-event-feature-date>{panel.dateLabel}</span>
+          </time>
+        </p>
+        <p class="text-on-surface-variant">
+          <span data-program-event-time>{panel.timeLabel}</span>
+          <span data-program-event-separator hidden={!panel.timeLabel || !panel.venue}> · </span>
+          <span data-program-event-venue-name
+            >{panel.venue?.name}{panel.venue?.tentative ? ' (tentative)' : ''}</span
+          >
+        </p>
+      </div>
+      <div data-program-event-action-group hidden={!panel.action}>
+        <a
+          class="program-feature-event-action"
+          href={panel.action?.href}
+          data-program-event-action
+          data-print-url={panel.action?.href}
+        >
+          <span data-program-event-action-label>{panel.action?.label}</span>
+          <span aria-hidden="true">→</span>
+          <span data-print-link aria-hidden="true"
+            ><span data-program-event-print-url>{panel.printUrl}</span></span
+          >
+        </a>
+      </div>
+    </div>
+  </div>
+  <script
+    is:inline
+    type="application/json"
+    data-program-events
+    set:html={programEventPayload(program, events)}
+  />
+</aside>
+
+<script>
+  import '../../scripts/program-events';
+</script>

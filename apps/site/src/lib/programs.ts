@@ -1,12 +1,8 @@
-export const programDesignations = [
-  {
-    id: 'community-gatherings',
-    title: 'Community gatherings',
-    description: 'Meet people who care about better streets, transit, and neighborhoods.',
-  },
-  {
-    id: 'annual-challenges',
-    title: 'Annual challenges',
-    description: 'Take part in shared experiences that change how we see our city.',
-  },
+/** Editorial classifications; they do not select a page layout. */
+export const PROGRAM_DESIGNATIONS = [
+  'community-gatherings',
+  'annual-challenges',
+  'civic-technology',
 ] as const;
+
+export type ProgramDesignation = (typeof PROGRAM_DESIGNATIONS)[number];
