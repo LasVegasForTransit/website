@@ -270,6 +270,12 @@ html:has(main.programs-directory) {
 }
 
 @media (min-width: 1024px) {
+  /* Keep zero a snap position: the header sentinel otherwise shifts the
+     opening hero by one pixel before the page finishes painting. */
+  html:has(main.programs-directory) [data-header-sentinel] {
+    scroll-snap-align: start;
+  }
+
   .program-feature {
     --program-inset: clamp(3rem, 8svh, 5rem);
     grid-template-columns: minmax(0, 22.5rem) minmax(0, 1fr);
