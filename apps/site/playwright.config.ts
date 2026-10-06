@@ -37,7 +37,7 @@ export default defineConfig({
     {
       name: 'ui-contracts',
       testMatch:
-        /(campaign-events|body-links|color-contracts|event-metadata|footer-colophon|header-current|not-found-search|print-layout|typography-contracts)\.spec\.ts$/,
+        /(campaign-events|body-links|color-contracts|event-metadata|footer-colophon|header-current|not-found-search|print-layout|program-scroll|typography-contracts)\.spec\.ts$/,
       use: { ...devices['Desktop Chrome'] },
     },
     {
