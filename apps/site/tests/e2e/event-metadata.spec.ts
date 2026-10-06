@@ -1,7 +1,14 @@
+import { readFileSync } from 'node:fs';
 import { expect, test } from '../../scripts/deploy/access-browser';
 import { eventSchema } from '../../src/lib/structured-data';
 
 type JsonLd = Record<string, unknown>;
+
+const sitemap = readFileSync(new URL('../../dist/sitemap-0.xml', import.meta.url), 'utf8');
+const eventPaths = [...sitemap.matchAll(/<loc>([^<]+)<\/loc>/g)]
+  .map((match) => new URL(match[1]).pathname)
+  .filter((path) => /^\/events\/[^/.]+\/?$/.test(path));
+if (eventPaths.length === 0) throw new Error('The built sitemap contains no event pages.');
 
 async function jsonLdBlocks(page: import('@playwright/test').Page): Promise<JsonLd[]> {
   return page
@@ -110,25 +117,10 @@ test.describe('event metadata', () => {
     }
   });
 
-  test('publishes stable Schema.org event details on event pages', async ({ page }) => {
-    await page.goto('/events');
-
-    const eventPaths = [
-      ...new Set(
-        await page
-          .locator('main a[href^="/events/"]')
-          .evaluateAll((links) =>
-            links
-              .map((link) => new URL((link as HTMLAnchorElement).href).pathname)
-              .filter((path) => /^\/events\/[^/.]+\/?$/.test(path)),
-          ),
-      ),
-    ];
-
-    expect(eventPaths.length).toBeGreaterThan(0);
-
-    for (const eventPath of eventPaths) {
-      await page.goto(eventPath);
+  // Each occurrence has its own deadline, independent of the calendar's size.
+  for (const eventPath of eventPaths) {
+    test(`publishes stable Schema.org event details: ${eventPath}`, async ({ page }) => {
+      await page.goto(eventPath, { waitUntil: 'domcontentloaded' });
 
       const event = await eventJsonLd(page);
       const canonicalPath = eventPath.endsWith('/') ? eventPath : `${eventPath}/`;
@@ -154,8 +146,8 @@ test.describe('event metadata', () => {
       expect(organizer?.['@id'], eventPath).toBe('https://lasvegasfortransit.org/#organization');
       expect(organizer?.name, eventPath).toBe('Las Vegans for Better Transit');
       expect(organizer?.url, eventPath).toBe('https://lasvegasfortransit.org');
-    }
-  });
+    });
+  }
 
   test('keeps virtual events valid Schema.org events', async ({ page }) => {
     await page.goto('/events/2026-07-16-lvbt-general-member-meeting');
