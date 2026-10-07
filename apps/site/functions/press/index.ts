@@ -10,7 +10,7 @@ interface PressEnv {
 }
 
 const UNAVAILABLE =
-  '<li class="py-4 md:py-5"><p class="text-body-lg">Press coverage could not be loaded right now. Please check back soon.</p></li>';
+  '<li class="col-span-full"><p class="text-body-lg">Press coverage could not be loaded right now. Please check back soon.</p></li>';
 
 export const onRequestGet: PagesFunction<PressEnv> = async ({ env, request }) => {
   const page = await builtPage(env, request, '/press/');
