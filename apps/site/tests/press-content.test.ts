@@ -110,7 +110,8 @@ void test('renderPressEntries escapes Notion text and links only to validated ar
   assert.match(markup, /Coverage &lt;script&gt;alert\(1\)&lt;\/script&gt;/);
   assert.match(markup, /https:\/\/example\.org\/story\?x=1&amp;y=2/);
   assert.match(markup, /no-underline/);
-  assert.doesNotMatch(markup, /border-b|body-link/);
+  assert.match(markup, /font-semibold text-on-surface/);
+  assert.doesNotMatch(markup, /border-b|body-link|uppercase/);
   assert.doesNotMatch(markup, /<script>/);
 });
 
