@@ -506,7 +506,8 @@ const printLinkSheetSections: Array<{ links: PrintLinkSheetLink[] }> = [
     }
 
     .footer-nav-list > * + * {
-      margin-top: 0.45rem;
+      /* Keep both eight-link columns inside the landscape height budget. */
+      margin-top: calc(var(--spacing) * 0.5);
     }
 
     .footer-mission {

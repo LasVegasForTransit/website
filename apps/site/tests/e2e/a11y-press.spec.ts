@@ -11,7 +11,7 @@ test('publishes the LVBT press page and makes it reachable from About and the fo
 
   await expect(page.locator('h1')).toHaveText('LVBT in the press');
   await expect(page.getByRole('heading', { name: 'Coverage' })).toHaveCount(0);
-  const archive = page.getByRole('list', { name: 'Press coverage' });
+  const archive = page.getByRole('region', { name: 'Press coverage' }).getByRole('list');
   await expect(archive).toBeVisible();
   await expect(
     archive.getByText('Press coverage could not be loaded right now. Please check back soon.'),
