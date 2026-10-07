@@ -124,6 +124,18 @@ The command supplies a unique request ID. If the dispatch response is lost, it f
 request's run. An unconfirmed dispatch or timed-out run reports its ID/URL and stops without a
 second dispatch.
 
+## Manual recovery deployment
+
+`pnpm run deploy` builds the site and uses `cf` with the typed configuration in
+`apps/deploy/cloudflare.config.ts`. Set `CLOUDFLARE_ACCOUNT_ID` in the deployment environment.
+Production and preview settings are checked against `apps/site/wrangler.jsonc`, including their
+separate databases, runtime variables, and Worker-first routes. Application secrets must already be
+stored on the selected Worker; this command does not create them.
+
+Use `pnpm run deploy --dry-run` to review the production bundle without uploading it. Preview mode
+uses `pnpm -C apps/deploy exec cf deploy --mode preview --dry-run` after the site is built. Normal
+releases continue through staging and the reviewed-version promotion workflow described above.
+
 ## Scheduled link audit
 
 The weekly audit checks internal links against its own compiled local Worker, including relative
