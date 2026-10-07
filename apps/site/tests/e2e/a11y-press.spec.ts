@@ -20,10 +20,9 @@ test('publishes the LVBT press page and makes it reachable from About and the fo
   expect(browserRequests.some(({ pathname }) => pathname === '/__lvbt/press-entries.json')).toBe(
     false,
   );
-  await expect(page.getByRole('link', { name: 'Email the press team' })).toHaveAttribute(
-    'href',
-    'mailto:press@lasvegasfortransit.org',
-  );
+  await expect(
+    page.getByRole('link', { name: 'press@lasvegasfortransit.org', exact: true }),
+  ).toHaveAttribute('href', 'mailto:press@lasvegasfortransit.org');
 
   await page.goto('/about');
   await page.waitForLoadState('networkidle');
