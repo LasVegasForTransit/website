@@ -6,6 +6,10 @@ import { parseArgs, promisify } from 'node:util';
 import { previewUploadReceipt } from '@lasvegasfortransit/web-platform/release';
 import { packageRelease, verifyRelease, type WebsiteRelease } from './release-artifact';
 import { releaseSource } from './release-source';
+import { accessCredentials } from './access-auth';
+import { readReleaseIdentity } from './release-identity';
+import { resolveRelease } from './resolve-release';
+import { githubJson } from './github';
 
 const execute = promisify(execFile);
 function printRelease(release: WebsiteRelease): void {
@@ -30,13 +34,37 @@ const command = positionals[0];
 const directory = values.directory ? path.resolve(values.directory) : undefined;
 const target = values.target;
 if (command === 'source') {
-  if (!values['run-file'] || !values.repository || !values['run-id'])
-    throw new Error('Pass --run-file, --repository and --run-id.');
-  const source = releaseSource(
-    JSON.parse(await readFile(values['run-file'], 'utf8')),
-    values.repository,
-    values['run-id'],
-  );
+  if (!values.repository) throw new Error('Pass --repository.');
+  const source =
+    values['run-file'] && values['run-id']
+      ? releaseSource(
+          JSON.parse(await readFile(values['run-file'], 'utf8')),
+          values.repository,
+          values['run-id'],
+        )
+      : await resolveRelease(
+          values.repository,
+          values['run-id'] === '' ? undefined : values['run-id'],
+          {
+            previewIdentity: async () => {
+              const credentials = accessCredentials(process.env);
+              if (!credentials)
+                throw new Error(
+                  'The worker-preview environment needs its Access service credentials.',
+                );
+              return await readReleaseIdentity('https://preview.lasvegasfortransit.org', {
+                credentials,
+              });
+            },
+            getRun: async (id) =>
+              await githubJson(['api', `repos/${values.repository}/actions/runs/${id}`]),
+            getArtifacts: async (id) =>
+              await githubJson([
+                'api',
+                `repos/${values.repository}/actions/runs/${id}/artifacts?per_page=100`,
+              ]),
+          },
+        );
   // eslint-disable-next-line turbo/no-undeclared-env-vars -- Actions provides this output file.
   const output = process.env.GITHUB_OUTPUT;
   if (output)
@@ -104,7 +132,11 @@ if (command === 'source') {
       // eslint-disable-next-line turbo/no-undeclared-env-vars -- Actions provides this output file.
       const output = process.env.GITHUB_OUTPUT;
       if (output)
-        await writeFile(output, `url=${receipt.url}\nversion=${receipt.version}\n`, { flag: 'a' });
+        await writeFile(
+          output,
+          `url=${receipt.url}\nversion=${receipt.version}\nartifact-hash=${release.artifactHash}\n`,
+          { flag: 'a' },
+        );
       process.stdout.write(
         `${JSON.stringify({ ...receipt, releaseId: release.releaseId, commit: release.commit, artifactHash: release.artifactHash })}\n`,
       );
@@ -134,4 +166,4 @@ if (command === 'source') {
     { maxBuffer: 16 * 1024 * 1024 },
   );
   process.stdout.write(stdout);
-} else throw new Error('Use package, verify, upload, or activate.');
+} else throw new Error('Use source, package, verify, upload, or activate.');

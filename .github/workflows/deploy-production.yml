@@ -126,7 +126,7 @@ jobs:
       - name: Verify permanent preview domain
         run: >-
           pnpm worker:smoke --url https://preview.lasvegasfortransit.org --protected --commit
-          "$GITHUB_SHA" --release-id "$RELEASE_ID"
+          "$GITHUB_SHA" --release-id "$RELEASE_ID" --wait-for-propagation
       - name: Record release
         env:
           VERSION_ID: ${{ steps.upload.outputs.version }}

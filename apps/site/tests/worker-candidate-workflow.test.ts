@@ -11,14 +11,14 @@ const previewWorkflowUrl = new URL(
   import.meta.url,
 );
 
-void test('production promotion requires an explicit selection and never rebuilds', async () => {
+void test('production promotion resolves a selected immutable release and never rebuilds', async () => {
   const workflow = await readFile(workflowUrl, 'utf8');
 
   assert.match(workflow, /workflow_dispatch:/);
   assert.match(workflow, /run_id:/);
   assert.doesNotMatch(workflow, /workflow_run:/);
   assert.match(workflow, /pnpm worker:release source/);
-  assert.match(workflow, /run-id: \$\{\{ inputs.run_id \}\}/);
+  assert.match(workflow, /run-id: \$\{\{ needs.source.outputs.release-id \}\}/);
   assert.match(workflow, /pnpm worker:release verify/);
   assert.match(workflow, /pnpm worker:release upload/);
   assert.match(workflow, /pnpm worker:release activate/);

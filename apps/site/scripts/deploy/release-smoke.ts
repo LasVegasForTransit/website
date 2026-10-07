@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import { parseArgs } from 'node:util';
 import { chromium } from '@playwright/test';
 import { accessCredentials, accessFetch, accessHeaders } from './access-auth';
+import { waitForReleaseIdentity } from './release-identity';
 
 const { values } = parseArgs({
   options: {
@@ -9,6 +10,8 @@ const { values } = parseArgs({
     'release-id': { type: 'string' },
     commit: { type: 'string' },
     protected: { type: 'boolean', default: false },
+    'wait-for-propagation': { type: 'boolean', default: false },
+    public: { type: 'boolean', default: false },
   },
 });
 if (!values.url) throw new Error('Pass --url with an HTTPS origin.');
@@ -27,10 +30,16 @@ if (values.protected) {
   );
 }
 if (values['release-id'] || values.commit) {
-  const marker = await accessFetch(`${origin}/lvbt-release.json`, origin, credentials);
-  assert.equal(marker.status, 200, 'Release marker is unavailable or Access rejected credentials.');
-  const identity: unknown = await marker.json();
-  assert.deepEqual(identity, { commit: values.commit, releaseId: values['release-id'] });
+  if (!values.commit || !values['release-id'])
+    throw new Error('Pass both --commit and --release-id.');
+  await waitForReleaseIdentity(
+    origin,
+    { commit: values.commit, releaseId: values['release-id'] },
+    {
+      credentials,
+      timeoutMs: values['wait-for-propagation'] ? 180_000 : 0,
+    },
+  );
 }
 const browser = await chromium.launch();
 try {
@@ -59,6 +68,22 @@ try {
   assert.equal(new URL(page.url()).origin, origin, 'Browser was redirected away from the website.');
   assert.match(await page.title(), /Las Vegans for Better Transit|Las Vegas|LVBT/i);
   assert.ok(await page.locator('main').isVisible(), 'The website main content is not visible.');
+  if (values.public) {
+    assert.equal(
+      origin,
+      'https://lasvegasfortransit.org',
+      'Public checks require the production origin.',
+    );
+    const nested = await page.goto(`${origin}/colophon/`, { waitUntil: 'networkidle' });
+    assert.equal(nested?.status(), 200, 'A nested production route did not render.');
+    assert.ok(await page.locator('main').isVisible());
+    await page.goto('https://www.lasvegasfortransit.org/colophon/', { waitUntil: 'networkidle' });
+    assert.equal(
+      page.url(),
+      `${origin}/colophon/`,
+      'www did not redirect to the canonical nested route.',
+    );
+  }
   if (values.protected) {
     // Cloudflare overwrites this header on versioned workers.dev preview URLs.
     const robots = parsed.hostname.endsWith('.workers.dev')
