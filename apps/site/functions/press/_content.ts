@@ -190,7 +190,28 @@ export function renderPressEntries(entries: PressEntry[]): string {
         dateStyle: 'long',
         timeZone: 'UTC',
       });
-      return `<li><article class="grid gap-2 md:grid-cols-[minmax(10rem,0.3fr)_1fr] md:gap-8"><div class="flex flex-wrap items-baseline gap-x-4 gap-y-1 md:flex-col md:gap-1"><p class="font-semibold text-on-surface-variant">${escapeHtml(entry.outlet)}</p><time class="text-sm text-on-surface-variant" datetime="${escapeAttribute(datetime)}">${escapeHtml(displayDate)}</time></div><h2 class="text-title-lg md:text-headline-sm"><a class="font-semibold text-on-surface no-underline transition-colors hover:text-primary-ink focus-visible:text-primary-ink focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary-ink" href="${escapeAttribute(entry.url)}" target="_blank" rel="noopener noreferrer" data-external-icon="false">${escapeHtml(entry.title)}<span class="ml-1 align-baseline text-sm font-normal text-on-surface-variant" aria-hidden="true">↗</span></a></h2></article></li>`;
+      return `
+        <li>
+          <article class="max-w-4xl">
+            <p class="flex flex-wrap items-baseline gap-x-2 text-body-sm text-on-surface-variant">
+              <span class="font-semibold">${escapeHtml(entry.outlet)}</span>
+              <span aria-hidden="true">·</span>
+              <time datetime="${escapeAttribute(datetime)}">${escapeHtml(displayDate)}</time>
+            </p>
+            <h2 class="mt-2 text-title-lg md:text-headline-sm">
+              <a
+                class="font-semibold text-on-surface no-underline transition-colors hover:text-primary-ink focus-visible:text-primary-ink focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary-ink"
+                href="${escapeAttribute(entry.url)}"
+                target="_blank"
+                rel="noopener noreferrer"
+                data-external-icon="false"
+              >
+                ${escapeHtml(entry.title)}<span class="ml-1 whitespace-nowrap align-baseline text-body-sm font-normal text-on-surface-variant" aria-hidden="true">↗</span>
+              </a>
+            </h2>
+          </article>
+        </li>
+      `;
     })
     .join('');
 }
