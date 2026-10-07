@@ -82,20 +82,55 @@ or Access secrets. PRs may include preview-only prototype pages; those builds ca
 
 ## Production promotion
 
-`Promote website release` accepts the originating **Actions run ID**, and runs only from `main`. It
-requires a completed, successful `Deploy staging` run from this repository on `main`, triggered by a
-push or manual dispatch. PR runs, old automatic production runs, failed runs, and foreign
-repositories are rejected.
+`pnpm promote` dispatches `Promote website release` from `main`, tracks that exact request, waits
+for the publication receipt, and verifies the live public marker. It requires `gh` authentication
+with repository Actions write access. The operator does not need local Cloudflare credentials or an
+authenticated preview browser. The same workflow can be dispatched in GitHub without inputs. An
+explicit request to promote is the publication authorization; a new screenshot review is needed only
+when requested as part of that task.
 
-The workflow downloads the selected run's artifact, verifies it against the recorded commit, uploads
-a production candidate, checks its release marker and browser contracts, and activates its exact
-version ID. It then checks the public release marker and rendered page. Staging and `main` may
-advance during this process without changing the selected artifact.
+By default, the workflow reads the authenticated marker currently served by preview, using the
+existing `worker-preview` environment's Access service credentials. It pins that identity once, then
+validates its successful main `Deploy staging` run, matching full commit SHA and retained artifact.
+If preview was just activated, it waits for that same staging run's final checks to finish. It never
+substitutes the newest main commit or run. An optional `run_id` input selects a specific reviewed
+release; the command accepts it as `pnpm promote --run-id <id>`.
 
-The existing `worker-candidate` GitHub environment supplies the production Workers token. Its
-historical name is retained to reuse the established credential scope. Environment reviewers may
-provide an additional publication gate. Dispatching this workflow is the explicit publication
-request; nothing automatically dispatches it.
+The source must be a completed, successful main staging run from this repository, triggered by a
+push or manual dispatch. PR runs, failed runs, foreign repositories, missing artifacts, and expired
+artifacts are rejected. Both jobs use trusted verification tools from the dispatched workflow
+revision, so fixes to promotion tooling also apply to older retained releases.
+
+The workflow verifies the selected artifact and every file, uploads without rebuilding, verifies its
+production candidate marker and browser contracts, and activates its exact Worker version. Candidate
+checks require the expected marker immediately. After activation, the permanent domain may propagate
+for up to 180 seconds, polling every five seconds with bounded requests. Authentication failures
+stop immediately. Public verification checks the selected marker, browser rendering, a nested route,
+and the `www` redirect. Staging and main may advance without changing selection.
+
+The existing `worker-candidate` environment supplies the production Workers token. Its historical
+name is retained to reuse the established credential scope. Environment reviewers may provide an
+additional publication gate; the command reports a waiting run with its URL. Nothing automatically
+dispatches production promotion.
+
+Each promotion retains `publication-<promotion-run-id>-<attempt>` for 90 days, including the
+baseline public release, selected source, artifact hash, uploaded version, activation outcome, and
+public verification outcome. The receipt and summary are written even after a failed activation or
+public check. Confirmed activation with failed verification means production may already have
+changed. A failed activation has an unknown outcome until reconciled. Inspect the exact run and live
+identity before taking another publication action; do not automatically redispatch or roll back.
+
+The command supplies a unique request ID. If the dispatch response is lost, it finds only that
+request's run. An unconfirmed dispatch or timed-out run reports its ID/URL and stops without a
+second dispatch.
+
+## Scheduled link audit
+
+The weekly audit checks internal links against its own compiled local Worker, including relative
+links, absolute apex/`www` links, redirect routes, and generated calendar endpoints. Those URLs are
+not checked against a potentially older public deployment. Genuine external links, including
+external redirect destinations, remain in the lychee check alongside repository Markdown. Local
+document links also retain the existing `check:docs` gate. Broken links still fail the workflow.
 
 ## Rollback
 

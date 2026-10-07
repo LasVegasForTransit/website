@@ -50,7 +50,10 @@
     "worker:deploy": "pnpm build && wrangler deploy",
     "worker:dev": "pnpm build && pnpm preview",
     "worker:release": "tsx scripts/deploy/worker-release.ts",
-    "worker:smoke": "tsx scripts/deploy/release-smoke.ts"
+    "worker:smoke": "tsx scripts/deploy/release-smoke.ts",
+    "worker:publication": "tsx scripts/deploy/record-publication.ts",
+    "worker:promote": "tsx scripts/deploy/promote.ts",
+    "check:links": "tsx scripts/audit/check-build-links.ts"
   },
   "dependencies": {
     "@astrojs/sitemap": "catalog:",

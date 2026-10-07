@@ -28,6 +28,7 @@ Every LVBT repository answers to the same commands, run from the repository root
 | `pnpm build`          | Build the site and its Worker                                               |
 | `pnpm test`           | Run the unit tests                                                          |
 | `pnpm test:e2e`       | Run the Playwright suites against a local build                             |
+| `pnpm promote`        | Publish the current saved preview through GitHub Actions                    |
 | `pnpm run deploy`     | Build, then `wrangler deploy` the Worker (maintainers only; see below)      |
 | `turbo gen workspace` | Scaffold a new package or app                                               |
 
@@ -35,7 +36,17 @@ Every LVBT repository answers to the same commands, run from the repository root
 `apps/site/scripts/bootstrap/`, because it also sets up the site's environment file, Worker,
 domains, and secrets; see [`docs/reference/bootstrap.md`](./docs/reference/bootstrap.md). Production
 normally deploys through the explicit Promote website release workflow in GitHub Actions, which
-verifies a saved staging release before it goes live, so `pnpm run deploy` is for recovery only.
+verifies a saved staging release before it goes live, so `pnpm run deploy` is for recovery only. An
+explicit request to promote preview to production authorizes dispatching `pnpm promote` from this
+repository. The command resolves the current preview in GitHub Actions, using the existing
+`worker-preview` Access credentials, and publishes through `worker-candidate`. Local Cloudflare
+sign-in, Studio presence, a browser session, and fresh route screenshots are not prerequisites.
+Existing Actions/environment permissions and CI release checks still apply. Use
+`pnpm promote --run-id <id>` when the request selects a specific reviewed staging release. Never
+silently substitute newest main, redispatch an uncertain publication, or bypass a failed check. A
+request to inspect/review changes is separate from a request to publish; perform the requested
+review without imposing a new approval on an already authorized publication.
+
 Commands only the site has, such as `event:new` or `worker:dev`, live in `apps/site/package.json`:
 run them with `pnpm -C apps/site <command>`.
 

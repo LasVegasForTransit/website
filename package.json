@@ -19,7 +19,8 @@
     "prepare": "git config --local core.hooksPath .githooks 2>/dev/null || true",
     "deploy": "lvbt deploy",
     "standards:update": "node .lvbt/web-platform/standards/web-platform-cli.ts update",
-    "standards:check": "node .lvbt/web-platform/standards/web-platform-cli.ts check"
+    "standards:check": "node .lvbt/web-platform/standards/web-platform-cli.ts check",
+    "promote": "pnpm -C apps/site worker:promote"
   },
   "lint-staged": {
     "*": "prettier --write --ignore-unknown"

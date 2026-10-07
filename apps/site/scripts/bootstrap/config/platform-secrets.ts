@@ -165,7 +165,7 @@ export const PLATFORM_SECRETS: readonly PlatformSecret[] = [
     use: 'live',
     skipNote:
       'Skip only if you cannot sign in to Beehiiv today: joining and newsletter signup fail until this is set.',
-    url: 'https://app.beehiiv.com/settings/workspace/api',
+    url: 'https://www.beehiiv.com/support/article/13091918395799-how-to-access-your-publication-id-or-api-keys',
     steps: [
       'Sign in to Beehiiv as an Owner or Admin of the LVBT workspace.',
       'Under "API Keys", click "Create New API Key".',
@@ -183,7 +183,7 @@ export const PLATFORM_SECRETS: readonly PlatformSecret[] = [
     sensitive: false,
     skipNote:
       'Skip only if you cannot sign in to Beehiiv today: joining and newsletter signup fail until this is set.',
-    url: 'https://app.beehiiv.com/settings/workspace/api',
+    url: 'https://www.beehiiv.com/support/article/13091918395799-how-to-access-your-publication-id-or-api-keys',
     steps: [
       'On the same Beehiiv API page, find "Publication ID".',
       'Copy it and paste it here. It starts with pub_; for LVBT it is pub_d3178023-f8d5-4e9d-a768-0c4eaa6b7280.',
