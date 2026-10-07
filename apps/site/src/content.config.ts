@@ -117,8 +117,9 @@ const eventBodiesLoader = existsSync(EVENT_BODIES_DIR)
   ? glob({ pattern: '**/*.{md,mdx}', base: EVENT_BODIES_DIR })
   : {
       name: 'empty-event-bodies-loader',
-      load: async ({ store }: { store: { clear: () => void } }) => {
+      load: ({ store }: { store: { clear: () => void } }) => {
         store.clear();
+        return Promise.resolve();
       },
     };
 

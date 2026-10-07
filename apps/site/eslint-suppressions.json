@@ -365,11 +365,6 @@
       "count": 1
     }
   },
-  "src/content.config.ts": {
-    "@typescript-eslint/require-await": {
-      "count": 1
-    }
-  },
   "src/lib/event-format.ts": {
     "@typescript-eslint/consistent-type-definitions": {
       "count": 3

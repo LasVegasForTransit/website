@@ -34,6 +34,7 @@ just say guides.)
 - [Add an event](./guides/add-an-event.md)
 - [Add a project](./guides/add-a-project.md)
 - [Add an initiative](./guides/add-an-initiative.md)
+- [Add press coverage](./guides/add-press-coverage.md) — add stories to `/press` from Notion
 - [Add transit news](./guides/add-transit-news.md) — three ways to push articles into the Notion
   database
 - [Connect the membership form](./guides/connect-the-membership-form.md) — wire the Google Form's

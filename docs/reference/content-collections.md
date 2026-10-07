@@ -30,6 +30,10 @@ see [glossary](./glossary.md#mdx)).
 | _(newsletter)_                        | Beehiiv RSS     | Newsletter issues. Pulled at build time by the loader in `apps/site/src/lib/newsletter-loader.ts` from the feed at `PUBLIC_LVBT_NEWSLETTER_FEED_URL`. Drives `/newsletter`; each card links out to the Beehiiv post (issues are never hosted on this site). |
 | `apps/site/src/content/initiatives/`  | JSON            | Project tags. Drives the chips on `/projects`.                                                                                                                                                                                                              |
 
+Press coverage on `/press` lives in the **LVBT Press** Notion database and is rendered into the page
+HTML by a Cloudflare Pages Function. See [add press coverage](../guides/add-press-coverage.md) for
+the one-time setup and the staff publishing workflow.
+
 ## Frontmatter shapes
 
 ### Event
