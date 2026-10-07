@@ -7,10 +7,6 @@
 //
 // Underscore-prefixed so Cloudflare Pages does not treat it as a route.
 
-// The Notion API version the endpoint and the provisioner both pin. Shared so a
-// schema created at one version can't drift from writes made at another.
-export const NOTION_VERSION = '2026-03-11';
-
 export type NotionPropertyType = 'title' | 'email' | 'rich_text' | 'date' | 'url';
 
 export interface IntakeProperty {

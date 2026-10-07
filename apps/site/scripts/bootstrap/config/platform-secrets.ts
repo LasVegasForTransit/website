@@ -101,7 +101,7 @@ export function skipNoteFor(secret: PlatformSecret): string {
 const minLength = (length: number) => (value: string) =>
   value.length < length ? `Expected at least ${length} characters.` : undefined;
 
-const INTAKE_TARGETS = ['pages', 'worker', 'github:worker-candidate'] as const;
+const SITE_RUNTIME_TARGETS = ['pages', 'worker', 'github:worker-candidate'] as const;
 const PLATFORM_TARGETS = ['pages', 'worker'] as const;
 
 const STAFF_CONSOLE_SKIP =
@@ -173,7 +173,7 @@ export const PLATFORM_SECRETS: readonly PlatformSecret[] = [
       'Copy the key now and paste it here. Beehiiv shows it only once. Then click "I\'ve saved the key".',
     ],
     neededFor: 'Joining, newsletter signup, mailing list sync',
-    targets: INTAKE_TARGETS,
+    targets: SITE_RUNTIME_TARGETS,
     validate: minLength(20),
   },
   {
@@ -189,7 +189,7 @@ export const PLATFORM_SECRETS: readonly PlatformSecret[] = [
       'Copy it and paste it here. It starts with pub_; for LVBT it is pub_d3178023-f8d5-4e9d-a768-0c4eaa6b7280.',
     ],
     neededFor: 'Joining, newsletter signup, mailing list sync',
-    targets: INTAKE_TARGETS,
+    targets: SITE_RUNTIME_TARGETS,
     validate: (value) => (value.startsWith('pub_') ? undefined : 'Expected an ID starting pub_.'),
   },
   {
@@ -207,24 +207,25 @@ export const PLATFORM_SECRETS: readonly PlatformSecret[] = [
       'Scroll to "Script Properties", copy the value of LVBT_MEMBERSHIP_INTAKE_SECRET, and paste it here.',
     ],
     neededFor: 'The Google Form fallback',
-    targets: INTAKE_TARGETS,
+    targets: SITE_RUNTIME_TARGETS,
     validate: minLength(20),
   },
   {
     name: 'LVBT_NOTION_API_KEY',
     purpose:
-      "Lets the site write each new member and each transit news submission into LVBT's Notion workspace for staff follow-up.",
+      "Lets the site read the LVBT Press database and write member and transit news submissions into LVBT's Notion workspace.",
     use: 'live',
     skipNote:
-      'Skip only if you cannot reach Notion today: staff do not see new members or transit news submissions in Notion until this is set.',
+      'Skip only if you cannot reach Notion today: the press page cannot load coverage and staff do not see new member or transit news submissions until this is set.',
     url: 'https://www.notion.so/profile/integrations',
     steps: [
       'Sign in to Notion as an owner of the LVBT workspace.',
       'Click the integration connected to the Membership intake database. To check its name, open https://www.notion.so/6bad03ffdebf4072a34a6408d3e7180d → ••• → Connections.',
+      'Connect this same integration to the LVBT Press database.',
       'Under "Internal Integration Secret", click "Show", then "Copy", and paste it here. It starts with ntn_.',
     ],
-    neededFor: 'Joining (staff follow-up), transit news intake',
-    targets: INTAKE_TARGETS,
+    neededFor: 'Joining (staff follow-up), transit news intake, press coverage',
+    targets: SITE_RUNTIME_TARGETS,
     validate: minLength(20),
   },
   {
@@ -241,7 +242,24 @@ export const PLATFORM_SECRETS: readonly PlatformSecret[] = [
       'Click ••• → "Copy data source ID" and paste it here. For LVBT it is 6e3df57f-d336-4c0c-a814-a0be68c7f455.',
     ],
     neededFor: 'Joining (staff follow-up)',
-    targets: INTAKE_TARGETS,
+    targets: SITE_RUNTIME_TARGETS,
+    validate: minLength(32),
+  },
+  {
+    name: 'LVBT_PRESS_DATA_SOURCE_ID',
+    purpose: 'Tells the site which dedicated Notion table contains the coverage shown on /press.',
+    use: 'live',
+    sensitive: false,
+    skipNote:
+      'Skip only until the LVBT Press database is created and connected to the LVBT Notion integration; the /press archive cannot load coverage until this is set.',
+    url: 'https://www.notion.so/',
+    steps: [
+      'Open the LVBT Press database in Notion.',
+      'Open ••• → Connections and connect the LVBT Notion integration used by the website.',
+      'Open ••• → Copy data source ID, then paste it here. The ID is 32 characters, with or without hyphens.',
+    ],
+    neededFor: 'The LVBT in the press page',
+    targets: SITE_RUNTIME_TARGETS,
     validate: minLength(32),
   },
   {
@@ -259,7 +277,7 @@ export const PLATFORM_SECRETS: readonly PlatformSecret[] = [
     afterSet:
       'Paste the same value into the Notion transit news automation webhook header as "Authorization: Bearer <value>".',
     neededFor: 'Transit news intake',
-    targets: INTAKE_TARGETS,
+    targets: SITE_RUNTIME_TARGETS,
   },
   {
     name: 'LVBT_SIGN_IN_SECRET',

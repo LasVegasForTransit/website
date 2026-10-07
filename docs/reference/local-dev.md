@@ -102,20 +102,21 @@ pnpm -C apps/site exec wrangler d1 execute lvbt-platform --local --command "INSE
 Then open `/sign-in`, enter that email and type the code from the terminal. Each address can ask for
 5 codes an hour, the same as on the live site.
 
-### `/api/membership-intake` returns an error locally
+### Notion-backed pages have no data locally
 
-Wrangler reads the intake, Beehiiv, and Notion secrets from `apps/site/.env.local`:
+Wrangler reads the membership and press Notion settings from `apps/site/.env.local`:
 
 ```text
-LVBT_MEMBERSHIP_INTAKE_SECRET=...
 LVBT_BEEHIIV_API_KEY=...
 LVBT_BEEHIIV_PUBLICATION_ID=pub_...
 LVBT_NOTION_API_KEY=...
 LVBT_NOTION_DATA_SOURCE_ID=...
+LVBT_PRESS_DATA_SOURCE_ID=...
 ```
 
-See [membership intake automation](./membership-intake.md) for the endpoint contract and Google
-Forms setup.
+The membership intake endpoint also needs `LVBT_MEMBERSHIP_INTAKE_SECRET`. See
+[membership intake automation](./membership-intake.md) for its endpoint contract and Google Forms
+setup. See [add press coverage](../guides/add-press-coverage.md) to configure the `/press` database.
 
 ### HMR not reflecting changes
 

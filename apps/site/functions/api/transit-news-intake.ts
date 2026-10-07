@@ -17,7 +17,7 @@
 // webhook.site to inspect it), so we depend only on the page ID and then read
 // the authoritative URL via the API.
 
-import { NOTION_VERSION } from './_intake-schema';
+import { NOTION_VERSION } from './_notion';
 import { fetchArticle } from '../../scripts/notion/lib/article-extract';
 import {
   inferLocation,

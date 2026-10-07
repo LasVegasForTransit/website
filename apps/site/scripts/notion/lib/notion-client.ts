@@ -1,12 +1,5 @@
-/**
- * Minimal Notion REST client shared by the Notion provisioning/intake scripts.
- *
- * Pins the API version to the single source of truth in
- * functions/api/_intake-schema.ts, so every script and the Pages Function speak
- * the same (current) data-source-era API. Pure fetch + JSON — no Node-only
- * globals — so it stays safe to import anywhere.
- */
-import { NOTION_VERSION } from '../../../functions/api/_intake-schema.js';
+/** Small runtime-neutral Notion client; its API version is shared in `functions/api/_notion.ts`. */
+import { NOTION_VERSION } from '../../../functions/api/_notion.js';
 
 const NOTION_API = 'https://api.notion.com/v1';
 
