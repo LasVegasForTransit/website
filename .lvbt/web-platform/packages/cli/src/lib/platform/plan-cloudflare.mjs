@@ -1,3 +1,4 @@
+import { configForEnvironment } from './config-scope.mjs';
 import { turnstileGuide } from './guides.mjs';
 import { item, manualGuide, SETUP, TOKEN_HINT, unknownItem } from './plan-items.mjs';
 
@@ -49,7 +50,11 @@ function databaseItem({ state, configPath }, database) {
       status: 'missing',
       detail: 'does not exist',
       next: `${SETUP} creates it`,
-      action: { type: 'd1.create', name: database.name },
+      action: {
+        type: 'd1.create',
+        name: database.name,
+        ...(database.environment ? { environment: database.environment } : {}),
+      },
     });
   if (!state.config.ok) return unknownItem(fields, state.config);
   const bound = state.config.ok
@@ -88,7 +93,11 @@ function migrationsItem({ state, configPath }, database) {
       detail: `cannot read ${database.migrations}: ${files?.reason ?? 'missing'}`,
       next: 'fix the migrations path in platform.json',
     });
-  const action = { type: 'd1.migrate', name: database.name };
+  const action = {
+    type: 'd1.migrate',
+    name: database.name,
+    ...(database.environment ? { environment: database.environment } : {}),
+  };
   const real = state.d1.ok ? state.d1.value[database.name] : undefined;
   if (state.d1.ok && !real)
     // Setup applies migrations after creating the database only if the config
@@ -137,10 +146,19 @@ function pendingItem({ state, configPath }, database, { fields, files, real, act
 }
 
 export function planD1(context) {
-  return (context.manifest.d1 ?? []).flatMap((database) => [
-    databaseItem(context, database),
-    ...(database.migrations ? [migrationsItem(context, database)] : []),
-  ]);
+  return (context.manifest.d1 ?? []).flatMap((database) => {
+    const scoped = {
+      ...context,
+      state: {
+        ...context.state,
+        config: configForEnvironment(context.state.config, database.environment),
+      },
+    };
+    return [
+      databaseItem(scoped, database),
+      ...(database.migrations ? [migrationsItem(scoped, database)] : []),
+    ];
+  });
 }
 
 export function planR2({ manifest, state, configPath }) {
@@ -155,17 +173,20 @@ export function planR2({ manifest, state, configPath }) {
         next: `${SETUP} creates it`,
         action: { type: 'r2.create', name: bucket.name },
       });
-    const bound = state.config.ok
-      ? state.config.value.r2.find((entry) => entry.binding === bucket.binding)
-      : undefined;
-    if (state.config.ok && bound?.name !== bucket.name)
+    const config = configForEnvironment(state.config, bucket.environment);
+    if (!config.ok) return unknownItem(fields, config);
+    const bound = (config.value.r2 ?? []).find((entry) => entry.binding === bucket.binding);
+    const location = bucket.environment
+      ? `${bucket.environment} environment of ${configPath}`
+      : configPath;
+    if (bound?.name !== bucket.name)
       return item({
         ...fields,
         status: 'mismatch',
-        detail: `${configPath} does not bind ${bucket.binding} to ${bucket.name}`,
+        detail: `${location} does not bind ${bucket.binding} to ${bucket.name}`,
         next: configPath.endsWith('.ts')
-          ? `set worker.env.${bucket.binding} to bindings.r2({ name: "${bucket.name}" }) in ${configPath}`
-          : `add it to r2_buckets in ${configPath}`,
+          ? `set worker.env.${bucket.binding} to bindings.r2({ name: "${bucket.name}" }) in ${location}`
+          : `add it to r2_buckets in ${location}`,
       });
     return item({ ...fields, status: 'ok', detail: `exists and is bound as ${bucket.binding}` });
   });

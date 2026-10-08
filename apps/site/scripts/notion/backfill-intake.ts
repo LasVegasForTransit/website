@@ -14,7 +14,7 @@
 import { readFileSync } from 'node:fs';
 import process from 'node:process';
 
-import { loadEnvLocal } from '../bootstrap/lib/load-env.js';
+import { loadEnvLocal } from '@lasvegasfortransit/cli/env';
 import { die, requireEnv } from './lib/cli.js';
 import { intakeFieldsFromBody, intakeLookupQuery, intakePage } from './lib/intake-page.js';
 import { getArray, isRecord, notionErrorMessage, notionFetch } from './lib/notion-client.js';

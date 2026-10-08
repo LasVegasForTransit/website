@@ -39,6 +39,7 @@ export default defineConfig((ctx) => {
         worker: {
           ...commonWorker,
           name: 'lvbt-website-preview',
+          domains: ['preview.lasvegasfortransit.org'],
           assets: { ...commonWorker.assets, runWorkerFirst: true },
           env: {
             PLATFORM_DB: bindings.d1({
@@ -47,6 +48,16 @@ export default defineConfig((ctx) => {
             }),
             ASSETS: bindings.assets(),
             LVBT_DEPLOYMENT_ENV: bindings.text('preview'),
+            LVBT_RESEND_API_KEY: bindings.secret(),
+            LVBT_BEEHIIV_API_KEY: bindings.secret(),
+            LVBT_BEEHIIV_PUBLICATION_ID: bindings.secret(),
+            LVBT_MEMBERSHIP_INTAKE_SECRET: bindings.secret(),
+            LVBT_NOTION_API_KEY: bindings.secret(),
+            LVBT_NOTION_DATA_SOURCE_ID: bindings.secret(),
+            LVBT_PRESS_DATA_SOURCE_ID: bindings.secret(),
+            LVBT_TRANSIT_NEWS_INTAKE_SECRET: bindings.secret(),
+            LVBT_SIGN_IN_SECRET: bindings.secret(),
+            LVBT_LINK_SIGNING_SECRET: bindings.secret(),
           },
         },
       };
@@ -56,6 +67,7 @@ export default defineConfig((ctx) => {
         worker: {
           ...commonWorker,
           name: 'lvbt-website',
+          domains: ['lasvegasfortransit.org', 'www.lasvegasfortransit.org'],
           env: {
             PLATFORM_DB: bindings.d1({
               name: 'lvbt-platform',

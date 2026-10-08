@@ -1,12 +1,15 @@
 import { test as base, type APIRequestContext } from '@playwright/test';
-import { accessCredentials, accessHeaders, accessRequestOptions } from './access-auth';
+import { scopeBrowserAccess } from '@lasvegasfortransit/web-platform/release';
+import { accessRequestOptions } from './access-auth';
+import { releaseBrowserCredentials } from './release-access';
+import { releaseConfiguration } from './release-config';
 
 export * from '@playwright/test';
 export const test = base.extend<{ accessRequest: Pick<APIRequestContext, 'get'> }>({
   accessRequest: async ({ request, baseURL }, use) => {
     if (!baseURL) throw new Error('API browser checks require a baseURL.');
     const origin = new URL(baseURL).origin;
-    const credentials = accessCredentials(process.env);
+    const credentials = releaseBrowserCredentials(origin, releaseConfiguration);
     await use({
       get: (url, options) => {
         const absolute = new URL(url, baseURL).href;
@@ -20,21 +23,11 @@ export const test = base.extend<{ accessRequest: Pick<APIRequestContext, 'get'> 
     });
   },
   context: async ({ context, baseURL }, use) => {
-    const credentials = accessCredentials(process.env);
+    if (!baseURL) throw new Error('Access browser checks require a baseURL.');
+    const origin = new URL(baseURL).origin;
+    const credentials = releaseBrowserCredentials(origin, releaseConfiguration);
     if (credentials) {
-      if (!baseURL) throw new Error('Access browser checks require a baseURL.');
-      const origin = new URL(baseURL).origin;
-      await context.route('**/*', async (route) => {
-        const headers = accessHeaders(route.request().url(), origin, credentials);
-        if (Object.keys(headers).length === 0) return route.continue();
-        // route.continue headers survive redirects. Fetch with redirects disabled,
-        // then let the browser follow the returned response as a new request.
-        const response = await route.fetch({
-          headers: { ...route.request().headers(), ...headers },
-          maxRedirects: 0,
-        });
-        await route.fulfill({ response });
-      });
+      await scopeBrowserAccess(context, origin, credentials);
     }
     try {
       await use(context);

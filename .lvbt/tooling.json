@@ -1,0 +1,289 @@
+{
+  "version": 1,
+  "local": {
+    "env": [
+      {
+        "example": "apps/site/.env.example",
+        "file": "apps/site/.env.local"
+      }
+    ],
+    "optional": [
+      {
+        "name": "LVBT_BEEHIIV_API_KEY",
+        "purpose": "Newsletter signup"
+      },
+      {
+        "name": "LVBT_BEEHIIV_PUBLICATION_ID",
+        "purpose": "Newsletter signup"
+      },
+      {
+        "name": "LVBT_MEMBERSHIP_INTAKE_SECRET",
+        "purpose": "Local form intake"
+      },
+      {
+        "name": "LVBT_NOTION_API_KEY",
+        "purpose": "Staff follow-up and press archive"
+      },
+      {
+        "name": "LVBT_NOTION_DATA_SOURCE_ID",
+        "purpose": "Staff membership follow-up"
+      },
+      {
+        "name": "LVBT_PRESS_DATA_SOURCE_ID",
+        "purpose": "Press archive"
+      },
+      {
+        "name": "LVBT_NOTION_PARENT_PAGE_ID",
+        "purpose": "Notion database setup"
+      },
+      {
+        "name": "LVBT_TRANSIT_NEWS_DB_ID",
+        "purpose": "Transit news publishing"
+      },
+      {
+        "name": "LVBT_TRANSIT_NEWS_INTAKE_SECRET",
+        "purpose": "Local transit news webhook"
+      }
+    ]
+  },
+  "audits": {
+    "workflow": ".github/workflows/audit-scheduled.yml",
+    "artifactName": "lvbt-audit-report",
+    "dependencies": {
+      "local": {
+        "command": ["pnpm", "audit", "--prod", "--audit-level=low", "--json"],
+        "format": "pnpm"
+      },
+      "production": {
+        "command": ["pnpm", "audit", "--prod", "--audit-level=low", "--json"],
+        "format": "pnpm"
+      }
+    },
+    "links": {
+      "local": {
+        "cwd": "apps/site",
+        "command": [
+          "pnpm",
+          "exec",
+          "tsx",
+          "scripts/audit/check-build-links.ts",
+          "--report",
+          "audit-links.json"
+        ],
+        "output": "apps/site/audit-links.json",
+        "format": "links"
+      },
+      "production": {
+        "cwd": "apps/site",
+        "command": [
+          "pnpm",
+          "exec",
+          "tsx",
+          "scripts/audit/check-build-links.ts",
+          "--report",
+          "audit-links.json",
+          "--target",
+          "production"
+        ],
+        "output": "apps/site/audit-links.json",
+        "format": "links"
+      }
+    },
+    "lighthouse": {
+      "local": {
+        "cwd": "apps/site",
+        "command": ["pnpm", "exec", "lhci", "autorun"],
+        "output": "apps/site/.lighthouseci/assertion-results.json",
+        "format": "lhci"
+      },
+      "production": {
+        "cwd": "apps/site",
+        "command": ["pnpm", "exec", "lhci", "autorun"],
+        "output": "apps/site/.lighthouseci/assertion-results.json",
+        "format": "lhci",
+        "env": {
+          "LIGHTHOUSE_PRESET": "prod"
+        }
+      }
+    }
+  },
+  "release": {
+    "repository": "LasVegasForTransit/website",
+    "appDirectory": "apps/deploy",
+    "productionUrl": "https://lasvegasfortransit.org",
+    "previewUrl": "https://preview.lasvegasfortransit.org",
+    "productionWorker": "lvbt-website",
+    "previewWorker": "lvbt-website-preview",
+    "artifactPrefix": "website-release",
+    "stagingWorkflow": {
+      "name": "Deploy staging",
+      "path": ".github/workflows/deploy-production.yml",
+      "branch": "main"
+    },
+    "promotionWorkflow": {
+      "file": "deploy-worker-candidate.yml",
+      "titlePrefix": "Promote website",
+      "branch": "main"
+    },
+    "artifactAcceptance": {
+      "forbiddenPaths": ["patterns", "prototypes"],
+      "forbiddenLanguages": ["en-XA"]
+    },
+    "artifactSource": "typed-worker",
+    "typedConfig": "cloudflare.config.ts",
+    "assetsDirectory": "../site/dist",
+    "workersDevSubdomain": "las-vegas-for-better-transit",
+    "previewBindings": {
+      "PLATFORM_DB": {
+        "type": "d1",
+        "name": "lvbt-platform-preview",
+        "id": "8bb072e7-9865-487a-8867-d97fdb2ea00b"
+      },
+      "ASSETS": {
+        "type": "assets"
+      },
+      "LVBT_DEPLOYMENT_ENV": {
+        "type": "text",
+        "value": "preview"
+      },
+      "LVBT_RESEND_API_KEY": {
+        "type": "secret"
+      },
+      "LVBT_BEEHIIV_API_KEY": {
+        "type": "secret"
+      },
+      "LVBT_BEEHIIV_PUBLICATION_ID": {
+        "type": "secret"
+      },
+      "LVBT_MEMBERSHIP_INTAKE_SECRET": {
+        "type": "secret"
+      },
+      "LVBT_NOTION_API_KEY": {
+        "type": "secret"
+      },
+      "LVBT_NOTION_DATA_SOURCE_ID": {
+        "type": "secret"
+      },
+      "LVBT_PRESS_DATA_SOURCE_ID": {
+        "type": "secret"
+      },
+      "LVBT_TRANSIT_NEWS_INTAKE_SECRET": {
+        "type": "secret"
+      },
+      "LVBT_SIGN_IN_SECRET": {
+        "type": "secret"
+      },
+      "LVBT_LINK_SIGNING_SECRET": {
+        "type": "secret"
+      }
+    },
+    "migrations": [
+      {
+        "binding": "PLATFORM_DB",
+        "directory": "../site/platform/storage/migrations"
+      }
+    ],
+    "attestation": {
+      "signerWorkflow": "LasVegasForTransit/repository-tooling/.github/workflows/release-attest.yml",
+      "signerCommit": "ac987b64a242c142b668abed03fb0aca73632767",
+      "legacyArtifacts": [
+        {
+          "runId": "37677421103",
+          "sourceCommit": "eacbc6b17c4434a66be087f52172fa6ae4101ebc",
+          "artifactId": 11507199447,
+          "expiresAt": "2027-01-05T19:49:42Z"
+        },
+        {
+          "runId": "37664140514",
+          "sourceCommit": "eacbc6b17c4434a66be087f52172fa6ae4101ebc",
+          "artifactId": 11500744980,
+          "expiresAt": "2027-01-05T18:05:31Z"
+        },
+        {
+          "runId": "37656972673",
+          "sourceCommit": "eb1df6ec511e09bdffed7dfc634e69a2bd30d9e3",
+          "artifactId": 11499900491,
+          "expiresAt": "2027-01-05T17:10:11Z"
+        },
+        {
+          "runId": "37593685920",
+          "sourceCommit": "12bcf56043ab7cea7bd559dda019afb992686a5d",
+          "artifactId": 11470160357,
+          "expiresAt": "2027-01-05T08:25:44Z"
+        },
+        {
+          "runId": "37558305431",
+          "sourceCommit": "12bcf56043ab7cea7bd559dda019afb992686a5d",
+          "artifactId": 11456005865,
+          "expiresAt": "2027-01-05T01:40:55Z"
+        },
+        {
+          "runId": "37554922011",
+          "sourceCommit": "f04373de067c2b5dbb5e4ffd4a7987d411a3a507",
+          "artifactId": 11454054484,
+          "expiresAt": "2027-01-05T01:00:39Z"
+        },
+        {
+          "runId": "37526434745",
+          "sourceCommit": "044197c093327450644e64861b0af0021e72d2e8",
+          "artifactId": 11442930347,
+          "expiresAt": "2027-01-04T20:26:18Z"
+        },
+        {
+          "runId": "37518490058",
+          "sourceCommit": "7c083d2a7aca52c10262886fc465c7e3351a54e3",
+          "artifactId": 11437907917,
+          "expiresAt": "2027-01-04T19:22:37Z"
+        },
+        {
+          "runId": "37438527201",
+          "sourceCommit": "7c083d2a7aca52c10262886fc465c7e3351a54e3",
+          "artifactId": 11400665872,
+          "expiresAt": "2027-01-04T08:47:55Z"
+        },
+        {
+          "runId": "37376232003",
+          "sourceCommit": "7c083d2a7aca52c10262886fc465c7e3351a54e3",
+          "artifactId": 11371792480,
+          "expiresAt": "2027-01-03T21:29:59Z"
+        },
+        {
+          "runId": "37285496978",
+          "sourceCommit": "7c083d2a7aca52c10262886fc465c7e3351a54e3",
+          "artifactId": 11334316319,
+          "expiresAt": "2027-01-03T08:44:21Z"
+        },
+        {
+          "runId": "37272395314",
+          "sourceCommit": "7c083d2a7aca52c10262886fc465c7e3351a54e3",
+          "artifactId": 11329096054,
+          "expiresAt": "2027-01-03T06:26:06Z"
+        },
+        {
+          "runId": "37222900522",
+          "sourceCommit": "bc3013c28a605511f513684823f6975cfdea8ad7",
+          "artifactId": 11311560015,
+          "expiresAt": "2027-01-02T18:03:29Z"
+        },
+        {
+          "runId": "37188300002",
+          "sourceCommit": "bc3013c28a605511f513684823f6975cfdea8ad7",
+          "artifactId": 11297558609,
+          "expiresAt": "2027-01-02T08:14:58Z"
+        },
+        {
+          "runId": "37169092967",
+          "sourceCommit": "bc3013c28a605511f513684823f6975cfdea8ad7",
+          "artifactId": 11290833099,
+          "expiresAt": "2027-01-02T01:47:53Z"
+        },
+        {
+          "runId": "37166866167",
+          "sourceCommit": "8f019d9c57767a6eefb7cbf034b8fa4bb484e6f2",
+          "artifactId": 11289870567,
+          "expiresAt": "2027-01-02T01:03:56Z"
+        }
+      ]
+    }
+  }
+}

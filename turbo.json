@@ -3,10 +3,16 @@
   "ui": "tui",
   "globalEnv": ["CI"],
   "tasks": {
+    "//#security:secrets": {
+      "cache": false
+    },
+    "//#security:dependencies": {
+      "cache": false
+    },
     "build": {
       "dependsOn": ["^build"],
       "inputs": ["$TURBO_DEFAULT$", ".env*"],
-      "outputs": ["dist/**"]
+      "outputs": ["dist/**", ".wrangler/worker/**"]
     },
     "sync": {
       "outputs": [".astro/**"]
@@ -21,7 +27,8 @@
       "dependsOn": ["^build"]
     },
     "validate": {
-      "dependsOn": ["^build"]
+      "dependsOn": ["^build"],
+      "cache": false
     },
     "test:e2e": {
       "dependsOn": ["build"],
@@ -36,6 +43,15 @@
       "dependsOn": ["build"],
       "cache": false,
       "persistent": true
+    },
+    "lint:styles": {},
+    "lint:brand": {},
+    "check:docs": {},
+    "check-types:scripts": {},
+    "@lasvegasfortransit/site#validate": {
+      "dependsOn": ["build", "lint:styles", "lint:brand", "check:docs", "check-types:scripts"],
+      "cache": false
     }
-  }
+  },
+  "globalDependencies": [".lvbt/web-platform.json", ".lvbt/tooling.json", ".github/workflows/**"]
 }

@@ -11,9 +11,11 @@ pnpm dev
 ```
 
 Run it from the repository root. The site itself lives in `apps/site`, so your private settings live
-there too: `apps/site/.env.local`, `apps/site/.dev.vars`, and bootstrap's record in
-`apps/site/.lvbt/dev-readiness.json`. If you set up your checkout before the site moved into
-`apps/site`, move those three files from the repository root into `apps/site` once.
+there too: `apps/site/.env.local` and `apps/site/.dev.vars`. Run `pnpm bootstrap` once from a fresh
+clone to install dependencies and seed `.env.local`; an existing file is preserved. No Cloudflare
+login is required. Empty optional integration settings produce warnings and leave only the
+corresponding feature unavailable. If you set up your checkout before the site moved into
+`apps/site`, move your local environment files into `apps/site` once.
 
 `pnpm dev` needs Node 24.20.0 or newer in the 24.x line, the range `engines.node` in `package.json`
 names. It starts the local servers for you:

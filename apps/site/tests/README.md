@@ -30,8 +30,8 @@ The suite covers 19 representative routes × 6 viewports × 2 captures = **228 b
 
 The baseline PNGs are stored in **Git LFS** (`tests/snapshots/**/*.png`) so they stay out of the git
 pack. Install git-lfs before the baselines will materialize — without it a clone gets pointer files
-instead of images and Playwright can't compare. `pnpm bootstrap` installs it. The commands on this
-page run from `apps/site`; to set up by hand:
+instead of images and Playwright can't compare. Local bootstrap installs project packages; install
+Git LFS separately for visual comparisons. The commands on this page run from `apps/site`:
 
 ```sh
 brew install git-lfs && git lfs install   # macOS (apt-get install git-lfs on Linux)

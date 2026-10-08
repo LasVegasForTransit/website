@@ -1,7 +1,12 @@
 import assert from 'node:assert/strict';
 import { parseArgs } from 'node:util';
 import { chromium } from '@playwright/test';
-import { accessCredentials, accessFetch, accessHeaders } from './access-auth';
+import {
+  scopeBrowserAccess,
+  validateWorkerSmokeOrigin,
+} from '@lasvegasfortransit/web-platform/release';
+import { releaseConfiguration } from './release-config';
+import { accessCredentials, accessFetch } from './access-auth';
 import { waitForReleaseIdentity } from './release-identity';
 
 const { values } = parseArgs({
@@ -19,6 +24,7 @@ const parsed = new URL(values.url);
 if (parsed.protocol !== 'https:' || parsed.pathname !== '/' || parsed.search || parsed.hash)
   throw new Error('Pass an HTTPS origin without a path.');
 const origin = parsed.origin;
+validateWorkerSmokeOrigin(origin, releaseConfiguration, values.protected);
 const credentials = values.protected ? accessCredentials(process.env) : undefined;
 if (values.protected && !credentials)
   throw new Error('Protected staging verification requires Access credentials.');
@@ -44,15 +50,7 @@ if (values['release-id'] || values.commit) {
 const browser = await chromium.launch();
 try {
   const context = await browser.newContext({ serviceWorkers: 'block' });
-  await context.route('**/*', async (route) => {
-    const headers = accessHeaders(route.request().url(), origin, credentials);
-    if (Object.keys(headers).length === 0) return route.continue();
-    const response = await route.fetch({
-      headers: { ...route.request().headers(), ...headers },
-      maxRedirects: 0,
-    });
-    await route.fulfill({ response });
-  });
+  await scopeBrowserAccess(context, origin, credentials);
   const page = await context.newPage();
   const analyticsRequests: string[] = [];
   page.on('request', (request) => {

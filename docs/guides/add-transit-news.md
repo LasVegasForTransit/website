@@ -107,12 +107,12 @@ triggers it (see [glossary](../reference/glossary.md#notion-automation)).
 
 #### 2. Set the Cloudflare secret
 
-- Run `pnpm bootstrap --phase secrets`. If `LVBT_TRANSIT_NEWS_INTAKE_SECRET` is not set anywhere
-  yet, bootstrap generates a random value, stores it on the production Worker, Pages fallback and
-  GitHub, and offers to show it once. Copy it for step 3. It also asks for `LVBT_NOTION_API_KEY` if
-  that is missing.
+- Run `pnpm bootstrap --production`. If `LVBT_TRANSIT_NEWS_INTAKE_SECRET` is not set anywhere yet,
+  bootstrap generates a random value, stores it on the production Worker, Pages fallback and GitHub,
+  and offers to show it once. Copy it for step 3. It also asks for `LVBT_NOTION_API_KEY` if that is
+  missing.
 - If the secret is already set but nobody has the value, run
-  `pnpm bootstrap --phase secrets --rotate LVBT_TRANSIT_NEWS_INTAKE_SECRET` to make a new one
+  `pnpm bootstrap --production --rotate LVBT_TRANSIT_NEWS_INTAKE_SECRET` to make a new one
   everywhere, then use it in step 3. See [platform secrets](../reference/platform-secrets.md).
 
 #### 3. Create the Notion automation

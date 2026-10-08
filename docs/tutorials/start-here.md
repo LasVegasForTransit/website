@@ -36,11 +36,11 @@ them.
 
 ```bash
 # 1. Download the code (clone the repo)
-git clone <the repo URL>
+git clone https://github.com/LasVegasForTransit/website.git
 cd website
 
-# 2. Install the project's dependencies
-pnpm install
+# 2. Set up dependencies, git hooks, and local settings
+pnpm bootstrap
 
 # 3. Start the local preview server
 pnpm dev
@@ -49,6 +49,10 @@ pnpm dev
 `pnpm dev` prints `https://lvbt.localhost`. Open it in your browser — that's the site, running on
 your machine. Edits you make to files show up there within a second or two (that live-update is
 called [HMR](../reference/glossary.md#hmr)). Press `Ctrl+C` in the terminal to stop it.
+
+Warnings about empty Beehiiv or Notion settings are expected: page and content work needs no
+provider login. Those integrations are optional locally; their features remain unavailable until you
+configure a test integration. Bootstrap preserves any existing local settings file.
 
 Stuck on this step? [local-dev.md](../reference/local-dev.md) covers ports and common errors. (If
 you're also setting up deployment and a domain, that's the longer
@@ -83,16 +87,19 @@ Find your task and follow its guide. Each guide lists what you need before you s
 
 ## 5. Saving and sharing your change
 
-When you've edited a file and previewed it locally, you save it with git ("commit") and push it. Our
-commit messages follow a small set of rules so the history stays readable — see
-[commit-messages.md](../standards/commit-messages.md) and
+Create a branch for your change before editing, for example `git switch -c your-name/fix-copy`. When
+you've edited a file and previewed it locally, run `pnpm check`, fix anything it reports, save it
+with git ("commit"), and push your branch. Our commit messages follow a small set of rules so the
+history stays readable — see [commit-messages.md](../standards/commit-messages.md) and
 [git-guidelines.md](../standards/git-guidelines.md). They look strict at first; the
 [git hooks](../reference/glossary.md#git-hook) (scripts that run automatically on commit) check your
 message and tell you exactly what to fix.
 
-A pushed change to the main branch deploys to the live site automatically (see
-[deployment-pipeline.md](../reference/deployment-pipeline.md)). When in doubt, ask a teammate to
-look before you push.
+Open a pull request using the repository template and ask a teammate to review it. When the reviewed
+change merges into `main`, GitHub Actions updates protected staging at
+`preview.lasvegasfortransit.org` and saves the release. A maintainer reviews that staging release
+and explicitly promotes it to the live site with `pnpm promote`; merging alone does not publish. See
+[deployment-pipeline.md](../reference/deployment-pipeline.md).
 
 ## 6. Where to get unstuck
 

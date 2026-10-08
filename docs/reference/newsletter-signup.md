@@ -90,13 +90,13 @@ only thing they ever did with LVBT.
 
 ## Troubleshooting
 
-| Symptom                                      | Cause                                                                | Fix                                                                                                                       |
-| -------------------------------------------- | -------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
-| "We couldn't finish joining you just now"    | Beehiiv refused the subscription, or its secrets are missing         | Check the `lvbt-website` Worker logs for "Beehiiv subscribe failed" and run `pnpm bootstrap --doctor --phase secrets`     |
-| Every join shows that message                | The `PLATFORM_DB` binding or `LVBT_LINK_SIGNING_SECRET` is missing   | The logs say which; the binding is set in `apps/site/wrangler.jsonc`, the secret through `pnpm bootstrap --phase secrets` |
-| No confirmation email                        | `LVBT_RESEND_API_KEY` isn't set, or the Resend domain isn't verified | Set the key; until then Beehiiv's welcome email is sent instead                                                           |
-| The region step says it has expired          | More than an hour passed, or cookies are blocked                     | The person is already a member; they can set their region later from their account                                        |
-| A join returns a server error after a deploy | A migration wasn't applied                                           | Run the migrations in the [schema](../../apps/site/platform/storage/migrations/schema.md)                                 |
+| Symptom                                      | Cause                                                                | Fix                                                                                                                                 |
+| -------------------------------------------- | -------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| "We couldn't finish joining you just now"    | Beehiiv refused the subscription, or its secrets are missing         | Check the `lvbt-website` Worker logs for "Beehiiv subscribe failed" and run `pnpm preflight --production`                           |
+| Every join shows that message                | The `PLATFORM_DB` binding or `LVBT_LINK_SIGNING_SECRET` is missing   | The logs say which; the binding is declared in `apps/deploy/cloudflare.config.ts`, the secret through `pnpm bootstrap --production` |
+| No confirmation email                        | `LVBT_RESEND_API_KEY` isn't set, or the Resend domain isn't verified | Set the key; until then Beehiiv's welcome email is sent instead                                                                     |
+| The region step says it has expired          | More than an hour passed, or cookies are blocked                     | The person is already a member; they can set their region later from their account                                                  |
+| A join returns a server error after a deploy | A migration wasn't applied                                           | Run the migrations in the [schema](../../apps/site/platform/storage/migrations/schema.md)                                           |
 
 ## Related
 

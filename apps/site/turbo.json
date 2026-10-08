@@ -23,7 +23,15 @@
     },
     "check-types:scripts": {},
     "validate": {
-      "dependsOn": ["^build", "build", "check:docs", "worker:types", "worker:check"]
+      "dependsOn": [
+        "^build",
+        "build",
+        "check:docs",
+        "worker:types",
+        "worker:check",
+        "//#security:secrets",
+        "//#security:dependencies"
+      ]
     },
     "check:docs": {
       "inputs": ["$TURBO_DEFAULT$", "../../docs/**"]

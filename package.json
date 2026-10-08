@@ -3,8 +3,8 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "bootstrap": "pnpm --dir apps/site run bootstrap",
-    "preflight": "pnpm --dir apps/site run preflight",
+    "bootstrap": "node .lvbt/web-platform/packages/cli/src/cli.mjs bootstrap",
+    "preflight": "node .lvbt/web-platform/packages/cli/src/cli.mjs preflight",
     "build": "turbo run build",
     "dev": "turbo run dev",
     "preview": "turbo run preview",
@@ -14,13 +14,17 @@
     "test:e2e": "turbo run test:e2e --concurrency=1",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "check": "pnpm standards:check && pnpm format:check && markdownlint-cli2 && lvbt check && turbo run lint check-types test validate",
+    "check": "pnpm format:check && markdownlint-cli2 && lvbt check && turbo run lint check-types test validate",
     "check:fix": "pnpm format && markdownlint-cli2 --fix && turbo run lint -- --fix",
     "prepare": "git config --local core.hooksPath .githooks 2>/dev/null || true",
     "deploy": "lvbt deploy --filter deploy",
     "standards:update": "node .lvbt/web-platform/standards/web-platform-cli.ts update",
     "standards:check": "node .lvbt/web-platform/standards/web-platform-cli.ts check",
-    "promote": "pnpm -C apps/site worker:promote"
+    "promote": "lvbt promote",
+    "audit": "lvbt audit",
+    "security:secrets": "lvbt check secrets",
+    "security:dependencies": "pnpm audit --prod --audit-level=high",
+    "postinstall": "lvbt setup-record"
   },
   "lint-staged": {
     "*": "prettier --write --ignore-unknown"
@@ -35,7 +39,9 @@
     "prettier-plugin-astro": "catalog:",
     "turbo": "catalog:",
     "typescript": "catalog:",
-    "wrangler": "catalog:"
+    "wrangler": "catalog:",
+    "@lasvegasfortransit/web-platform": "file:.lvbt/web-platform/packages/web-platform",
+    "tsx": "catalog:"
   },
   "packageManager": "pnpm@11.25.0",
   "engines": {

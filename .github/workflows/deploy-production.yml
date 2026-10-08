@@ -15,127 +15,45 @@ concurrency:
   group: website-staging
   cancel-in-progress: false
 
-defaults:
-  run:
-    working-directory: apps/site
-
 jobs:
   build:
     name: Build
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    # Deployment config baked into the static HTML — see apps/site/src/lib/site.ts.
-    # Job env propagates into the build-site composite step.
-    env:
-      PUBLIC_LVBT_INSTAGRAM: ${{ vars.PUBLIC_LVBT_INSTAGRAM }}
-      PUBLIC_LVBT_LINKEDIN: ${{ vars.PUBLIC_LVBT_LINKEDIN }}
-      PUBLIC_LVBT_BLUESKY: ${{ vars.PUBLIC_LVBT_BLUESKY }}
-      PUBLIC_LVBT_DISCORD: ${{ vars.PUBLIC_LVBT_DISCORD }}
-      PUBLIC_LVBT_DONATE_URL: ${{ vars.PUBLIC_LVBT_DONATE_URL }}
-      PUBLIC_LVBT_MEMBERSHIP_FORM_URL: ${{ vars.PUBLIC_LVBT_MEMBERSHIP_FORM_URL }}
-      PUBLIC_LVBT_NEWSLETTER_URL: ${{ vars.PUBLIC_LVBT_NEWSLETTER_URL }}
-      PUBLIC_LVBT_NEWSLETTER_FEED_URL: ${{ vars.PUBLIC_LVBT_NEWSLETTER_FEED_URL }}
-      PUBLIC_LVBT_CWA_TOKEN: ${{ vars.PUBLIC_LVBT_CWA_TOKEN }}
-      LVBT_REQUIRE_ANALYTICS: '1'
-    steps:
-      - name: Checkout
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
-        with:
-          persist-credentials: false
-          lfs: true
+    uses: LasVegasForTransit/repository-tooling/.github/workflows/release-build.yml@ac987b64a242c142b668abed03fb0aca73632767
+    with:
+      artifact-source: typed-worker
+      require-analytics: true
+      app-directory: apps/site
+      validation-browser-directory: apps/site
+      artifact-prefix: website-release
+    secrets: inherit
 
-      - name: Setup Node + pnpm
-        uses: ./.github/actions/setup-node-pnpm
-
-      - name: Build site
-        uses: ./.github/actions/build-site
-
-      - name: Validate release
-        working-directory: .
-        run: pnpm check
-
-      - name: Package immutable release
-        env:
-          RELEASE_ID: ${{ github.run_id }}
-        run: >-
-          pnpm worker:release package --directory "$RUNNER_TEMP/website-release" --commit
-          "$GITHUB_SHA" --release-id "$RELEASE_ID"
-
-      - name: Save reviewed release
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
-        with:
-          name: website-release-${{ github.run_id }}
-          path: ${{ runner.temp }}/website-release/
-          include-hidden-files: true
-          if-no-files-found: error
-          retention-days: 90
+  attest:
+    name: Sign retained release
+    needs: build
+    permissions:
+      contents: read
+      actions: read
+      packages: read
+      attestations: write
+      id-token: write
+    uses: LasVegasForTransit/repository-tooling/.github/workflows/release-attest.yml@ac987b64a242c142b668abed03fb0aca73632767
+    with:
+      artifact-prefix: website-release
 
   staging:
     name: Verify and update staging
-    needs: build
+    needs: [build, attest]
     if: github.ref == 'refs/heads/main'
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
-    environment:
-      name: worker-preview
+    uses: LasVegasForTransit/repository-tooling/.github/workflows/release-publish.yml@ac987b64a242c142b668abed03fb0aca73632767
+    with:
+      target: preview
+      release-id: ${{ github.run_id }}
+      commit: ${{ github.sha }}
+      artifact-prefix: website-release
+      attestation-prefix: attestation-website-release
+      app-directory: apps/site
       url: https://preview.lasvegasfortransit.org
-    env:
-      CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
-      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_WORKERS_API_TOKEN }}
-      CF_ACCESS_CLIENT_ID: ${{ secrets.CF_ACCESS_CLIENT_ID }}
-      CF_ACCESS_CLIENT_SECRET: ${{ secrets.CF_ACCESS_CLIENT_SECRET }}
-      RELEASE_ID: ${{ github.run_id }}
-    steps:
-      - name: Checkout
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
-        with:
-          persist-credentials: false
-          lfs: true
-      - name: Setup Node + pnpm
-        uses: ./.github/actions/setup-node-pnpm
-      - name: Download release
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
-        with:
-          name: website-release-${{ github.run_id }}
-          path: ${{ runner.temp }}/website-release
-      - name: Install Chromium
-        run: pnpm exec playwright install --with-deps chromium
-      - name: Verify saved release
-        run: >-
-          pnpm worker:release verify --directory "$RUNNER_TEMP/website-release" --commit
-          "$GITHUB_SHA" --release-id "$RELEASE_ID"
-      - name: Upload staging version
-        id: upload
-        run: pnpm worker:release upload --directory "$RUNNER_TEMP/website-release" --target preview
-      - name: Verify protected candidate
-        env:
-          PREVIEW_URL: ${{ steps.upload.outputs.url }}
-        run: >-
-          pnpm worker:smoke --url "$PREVIEW_URL" --protected --commit "$GITHUB_SHA" --release-id
-          "$RELEASE_ID"
-      - name: Browser acceptance
-        env:
-          PLAYWRIGHT_BASE_URL: ${{ steps.upload.outputs.url }}
-        run: |
-          cp -R "$RUNNER_TEMP/website-release/dist" ./dist
-          pnpm worker:test:browser --project=ui-contracts
-      - name: Activate staging
-        env:
-          VERSION_ID: ${{ steps.upload.outputs.version }}
-        run: pnpm worker:release activate --target preview --version "$VERSION_ID"
-      - name: Verify permanent preview domain
-        run: >-
-          pnpm worker:smoke --url https://preview.lasvegasfortransit.org --protected --commit
-          "$GITHUB_SHA" --release-id "$RELEASE_ID" --wait-for-propagation
-      - name: Record release
-        env:
-          VERSION_ID: ${{ steps.upload.outputs.version }}
-        run: |
-          {
-            echo '### Staging release verified'
-            echo "Release: $RELEASE_ID"
-            echo "Commit: $GITHUB_SHA"
-            echo "Staging Worker version: $VERSION_ID"
-            echo 'Review: https://preview.lasvegasfortransit.org'
-            echo "Promote by selecting Actions run $GITHUB_RUN_ID in Promote website release."
-          } >> "$GITHUB_STEP_SUMMARY"
+      smoke-script: worker:smoke
+      browser-script: worker:test:browser
+      browser-project: ui-contracts
+    secrets: inherit

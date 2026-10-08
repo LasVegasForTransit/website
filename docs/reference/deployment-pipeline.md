@@ -27,9 +27,13 @@ production build, generated Worker types, Wrangler dry run, and local Worker par
 writes static assets and Pagefind to `apps/site/dist/` and compiled Pages Functions to
 `apps/site/.wrangler/worker/`.
 
-`Deploy staging` retains a `website-release-<run-id>` Actions artifact for 90 days. It contains only
-the compiled Worker, static assets, Wrangler configuration, and `release.json`. The manifest records
-the commit, release ID, sorted file inventory, and SHA-256 hashes. The `/lvbt-release.json` response
+`Deploy staging` calls the shared build workflow with required analytics and the site's existing
+browser acceptance checks. New artifacts use `apps/deploy/cloudflare.config.ts` as their canonical
+typed configuration. The shared adapter bundles the existing compiled Pages Functions entry point,
+preserves both production domains and preview settings, and retains a `website-release-<run-id>`
+Actions artifact for 90 days. It contains the compiled Worker, static assets, reviewed configuration
+and binding declarations, exact database migration SQL, and `release.json`. The manifest records the
+commit, release ID, sorted file inventory, and SHA-256 hashes. The `/lvbt-release.json` response
 identifies the deployed release. Prototype routes and the audit-only language cannot enter a
 promotable artifact.
 
@@ -37,6 +41,12 @@ Promotion downloads this artifact from its originating run, verifies its identit
 uploads a temporary copy with bundling disabled. It performs no site or Worker rebuild. Production
 and staging have different Worker version IDs because their bindings differ; their compiled code and
 asset files come from the same artifact.
+
+The shared migration step applies the saved SQL to the selected preview or production database
+before activation. It never reads newer checkout SQL during promotion. A failed migration may have
+applied earlier files; inspect the selected database's migration history before retrying. The
+existing artifact reader continues to accept older retained releases without a migration inventory;
+it cannot substitute current SQL for missing reviewed SQL.
 
 ## Cloudflare Access
 
@@ -54,9 +64,12 @@ The `worker-preview` GitHub environment supplies:
 | `CF_ACCESS_CLIENT_SECRET`      | Authenticate the preview verification service |
 
 `CLOUDFLARE_ACCOUNT_ID` remains a repository variable. Access credentials are supplied only to the
-specific preview origin. HTTP verification disables automatic redirects; browser verification
-fetches authenticated responses without following redirects, then lets the browser navigate the
-returned response. Third-party origins receive no Access headers.
+specific preview origin or a version URL under the configured
+`las-vegas-for-better-transit.workers.dev` account suffix. Another account's Worker with the same
+name is rejected before authentication. Public production candidates and local browser checks
+receive no Access service credentials. HTTP verification disables automatic redirects; browser
+verification fetches authenticated responses without following redirects, then lets the browser
+navigate the returned response. Third-party origins receive no Access headers.
 
 Preview responses carry `X-Robots-Tag: noindex, nofollow, noarchive` and
 `Cache-Control: private, no-store`. Preview runs the Worker before every asset request to apply
@@ -70,13 +83,15 @@ new staging run when a rebuild is needed.
 
 ## Main and PR deployment
 
-Main pushes and scheduled calendar rebuilds run `Deploy staging`. The workflow validates and saves
-the artifact, uploads a preview version, checks anonymous denial and authenticated browser
+Main pushes and scheduled calendar rebuilds run `Deploy staging`. The workflow validates, saves and
+signs the artifact, uploads a preview version, checks anonymous denial and authenticated browser
 rendering, runs browser contract checks, activates that exact preview version, and checks the
 permanent staging hostname. Its summary records the release, commit, version, and originating run.
 
-Same-repository PRs use `Deploy Worker preview` when `CLOUDFLARE_WORKERS_PREVIEW_ENABLED=true`. It
-uploads a preview version, verifies Access and browser contracts, and comments its URL on the PR. PR
+Same-repository PRs use `Deploy Worker preview` when `CLOUDFLARE_WORKERS_PREVIEW_ENABLED=true`. Its
+thin caller delegates setup, validation, upload, smoke, browser contracts, and the sticky comment to
+the pinned shared `release-pr-preview.yml` workflow, using the existing `worker-preview`
+environment. The application keeps its thin upload adapter and product acceptance scripts. PR
 uploads never activate a version or move the permanent staging domain. Forks receive no Cloudflare
 or Access secrets. PRs may include preview-only prototype pages; those builds cannot be promoted.
 
@@ -99,7 +114,16 @@ release; the command accepts it as `pnpm promote --run-id <id>`.
 The source must be a completed, successful main staging run from this repository, triggered by a
 push or manual dispatch. PR runs, failed runs, foreign repositories, missing artifacts, and expired
 artifacts are rejected. Both jobs use trusted verification tools from the dispatched workflow
-revision, so fixes to promotion tooling also apply to older retained releases.
+revision, so fixes to promotion tooling also apply to older retained releases. The manifest lists
+the exact 16 unexpired unsigned releases retained at attestation adoption, with their run ID, source
+commit, artifact ID and original expiry. The shared verifier downloads and checks their retained
+bytes and remote provenance before accepting them. New artifacts require signed proof; this bounded
+compatibility does not extend retention or permit replacement artifacts.
+
+The optional `expected_version` dispatch input prevents publication if the active production Worker
+version changes. First adoption requires this reviewed current version when production has no shared
+release marker. The command accepts it as `pnpm promote --expected-version <version-id>`. The shared
+publication receipt records the provider-version baseline.
 
 The workflow verifies the selected artifact and every file, uploads without rebuilding, verifies its
 production candidate marker and browser contracts, and activates its exact Worker version. Candidate
@@ -128,9 +152,11 @@ second dispatch.
 
 `pnpm run deploy` builds the site and uses `cf` with the typed configuration in
 `apps/deploy/cloudflare.config.ts`. Set `CLOUDFLARE_ACCOUNT_ID` in the deployment environment.
-Production and preview settings are checked against `apps/site/wrangler.jsonc`, including their
-separate databases, runtime variables, and Worker-first routes. Application secrets must already be
-stored on the selected Worker; this command does not create them.
+Generate the local and recovery mirror with `pnpm -C apps/deploy compat:generate` after changing the
+canonical configuration or its declarations in `.lvbt/tooling.json`. The shared generator writes
+`apps/site/wrangler.jsonc`, including separate databases, runtime variables, migration paths, and
+Worker-first routes. Do not edit this mirror directly. Application secrets must already be stored on
+the selected Worker; this command does not create them.
 
 Use `pnpm run deploy --dry-run` to review the production bundle without uploading it. Preview mode
 uses `pnpm -C apps/deploy exec cf deploy --mode preview --dry-run` after the site is built. Normal

@@ -27,8 +27,6 @@
     "test:install": "playwright install --with-deps chromium",
     "validate": "tsx scripts/audit/worker-parity.ts",
     "astro": "astro",
-    "bootstrap": "tsx scripts/bootstrap/cold-start.ts",
-    "preflight": "tsx scripts/bootstrap/cold-start.ts --doctor",
     "setup:notion": "tsx scripts/notion/provision-intake-db.ts",
     "add:transit-news": "tsx scripts/notion/add-transit-news.ts",
     "event:new": "tsx scripts/event-new.ts",
@@ -46,13 +44,11 @@
     "worker:test:live": "tsx scripts/audit/worker-live-parity.ts",
     "worker:test:browser": "playwright test",
     "worker:preview": "tsx scripts/deploy/worker-preview.ts",
-    "worker:upload": "pnpm build && wrangler versions upload",
-    "worker:deploy": "pnpm build && wrangler deploy",
     "worker:dev": "pnpm build && pnpm preview",
     "worker:release": "tsx scripts/deploy/worker-release.ts",
     "worker:smoke": "tsx scripts/deploy/release-smoke.ts",
     "worker:publication": "tsx scripts/deploy/record-publication.ts",
-    "worker:promote": "tsx scripts/deploy/promote.ts",
+    "worker:promote": "pnpm --dir ../.. promote",
     "check:links": "tsx scripts/audit/check-build-links.ts"
   },
   "dependencies": {

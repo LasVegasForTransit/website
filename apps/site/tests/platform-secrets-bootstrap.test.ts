@@ -1,43 +1,49 @@
 import assert from 'node:assert/strict';
+import { existsSync, readFileSync } from 'node:fs';
 import { test } from 'node:test';
-import { PLATFORM_SECRETS } from '../scripts/bootstrap/config/platform-secrets.js';
-import { canGenerateSecret } from '../scripts/bootstrap/phases/secrets.js';
 
-const transitNewsSecret = PLATFORM_SECRETS.find(
-  (secret) => secret.name === 'LVBT_TRANSIT_NEWS_INTAKE_SECRET',
-);
+interface Requirement {
+  name: string;
+  use?: string;
+  targets?: string[];
+  listOnly?: boolean;
+}
 
-if (!transitNewsSecret) throw new Error('Transit news secret is not configured');
+function manifest(): { secrets: Requirement[]; forbidden: Requirement[] } {
+  const file = new URL('../platform.json', import.meta.url);
+  assert.ok(existsSync(file), 'shared production setup requires apps/site/platform.json');
+  return JSON.parse(readFileSync(file, 'utf8')) as {
+    secrets: Requirement[];
+    forbidden: Requirement[];
+  };
+}
 
-void test('bootstrap generates a shared secret only when all targets are known empty', () => {
-  assert.equal(
-    canGenerateSecret(transitNewsSecret, {
-      pages: new Set(),
-      worker: new Set(),
-      'github:worker-candidate': new Set(),
-    }),
-    true,
+void test('production readiness includes every credential the deployed Worker binds', () => {
+  const config = readFileSync(
+    new URL('../../deploy/cloudflare.config.ts', import.meta.url),
+    'utf8',
   );
+  const bound = [...config.matchAll(/(LVBT_[A-Z_]+): bindings\.secret\(\)/g)].map(
+    (match) => match[1],
+  );
+  assert.ok(bound.length > 0, 'the canonical config must declare runtime credentials');
+  const requirements = manifest().secrets;
+  for (const name of bound) {
+    const requirement = requirements.find((entry) => entry.name === name);
+    assert.equal(requirement?.use, 'live', `${name} must gate production readiness`);
+    assert.ok(requirement.targets?.includes('worker'), `${name} must reach the production Worker`);
+  }
 });
 
-void test('bootstrap reuses an existing shared secret when only GitHub is missing it', () => {
-  assert.equal(
-    canGenerateSecret(transitNewsSecret, {
-      pages: new Set([transitNewsSecret.name]),
-      worker: new Set([transitNewsSecret.name]),
-      'github:worker-candidate': new Set(),
-    }),
-    false,
-  );
+void test('future volunteer account credentials remain listed without setup actions', () => {
+  const requirements = manifest().secrets;
+  for (const name of ['LVBT_GOOGLE_SERVICE_ACCOUNT_KEY', 'LVBT_GOOGLE_ADMIN_SUBJECT']) {
+    const requirement = requirements.find((entry) => entry.name === name);
+    assert.equal(requirement?.use, 'future');
+    assert.equal(requirement.listOnly, true, `${name} has no consumer and must never be prompted`);
+  }
 });
 
-void test('bootstrap does not generate while a target is unreadable', () => {
-  assert.equal(
-    canGenerateSecret(transitNewsSecret, {
-      pages: null,
-      worker: new Set(),
-      'github:worker-candidate': new Set(),
-    }),
-    false,
-  );
+void test('production forbids local sign-in code logging', () => {
+  assert.ok(manifest().forbidden.some((entry) => entry.name === 'LVBT_DEV_LOG_CODES'));
 });

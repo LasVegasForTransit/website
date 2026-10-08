@@ -1,86 +1,72 @@
 # First-time setup
 
-This walkthrough takes a website checkout through local setup and checks the existing LVBT
-production resources. `pnpm bootstrap` presents each missing action before it changes GitHub or
-Cloudflare.
-
-If you just want the flag list, see [reference/bootstrap.md](../reference/bootstrap.md) instead.
-**Just want to edit content, not deploy your own copy of the whole site?** You probably don't need
-this page — see [Start here](./start-here.md).
+This tutorial gets a fresh website checkout ready for local work. Production maintenance is a
+separate step for maintainers with provider access. You can edit pages and content without signing
+in to Cloudflare or configuring the live site's integrations.
 
 ## Before you start
 
-You need:
+Install git, Node 24.20.0 or newer in the 24.x line, and pnpm 11.25.0. The exact supported versions
+are recorded in the root `package.json`; `pnpm preflight` reports a mismatch.
 
-- A terminal with [`node`](../reference/glossary.md#node) 24.20.0,
-  [`pnpm`](../reference/glossary.md#pnpm) 11.25.0, `gh` (the GitHub command-line tool), and
-  [`wrangler`](../reference/glossary.md#wrangler) (Cloudflare's command-line tool). The `install`
-  phase offers to install missing tools.
-- A GitHub account (for the `repo` phase).
-- Access to the LVBT Cloudflare account and the `lasvegasfortransit.org`
-  [zone](../reference/glossary.md#zone).
+You also need an editor and a terminal. For unfamiliar words, keep the
+[glossary](../reference/glossary.md) open.
 
-## Run it
+## Clone and bootstrap
 
 ```sh
-pnpm install
+git clone https://github.com/LasVegasForTransit/website.git
+cd website
 pnpm bootstrap
+pnpm dev
 ```
 
-`pnpm bootstrap` is interactive. It prints an overview of all eight phases, then runs them in order.
-You can `Ctrl+C` at any time. Run the same command again later and it picks up where you left off,
-because every phase checks what is already done before it changes anything.
+Bootstrap installs the pinned packages, enables the commit hooks, and creates `apps/site/.env.local`
+from its example. It preserves a local file you already have. Open `https://lvbt.localhost` after
+the development server starts, then edit a page and watch it update. Press `Ctrl+C` to stop the
+server.
 
-## What each phase does, in plain language
+If package installation reports a GitHub Packages authentication error, ask a maintainer for the
+organization's package-read setup. The registry setting is already in `.npmrc`; keep credentials in
+your personal package-manager configuration, never in this repository. A package-read credential is
+separate from Cloudflare deployment access.
 
-1. **install** — Verifies your toolchain. If anything's missing or out of date, it offers to install
-   it via Homebrew (macOS) or apt (Linux). Skip if you only need local dev today.
+Bootstrap warnings about Beehiiv or Notion are expected on a new checkout. The page shell and
+content preview work without those integrations. Membership submissions, the live press archive, and
+transit news intake need test integration values only if you are working on those features. See
+[local development](../reference/local-dev.md) for that setup.
 
-2. **auth** — Confirms `gh auth status` and `wrangler whoami` succeed. If not, drops you into the
-   interactive login flows.
+## Check and share a change
 
-3. **workspace** — Runs `pnpm install --frozen-lockfile` (installs the exact dependency versions
-   pinned in the [lockfile](../reference/glossary.md#lockfile), no surprises) and a `pnpm build`
-   smoke test. Catches setup issues before you touch anything remote.
+Create a branch before editing:
 
-4. **env** — Creates `apps/site/.env.local` from `apps/site/.env.example`. Shows which values are
-   still placeholders. Asks once whether you want to fill them in now; if not, placeholders stay and
-   the site still builds. Everything here is for your machine only; the live site gets its values
-   elsewhere (step 8 and GitHub Actions variables).
+```sh
+git switch -c your-name/describe-the-change
+```
 
-5. **repo** — If `origin` isn't set yet, creates a GitHub repo via `gh repo create` and wires
-   `origin` to its **SSH URL** (the `git@github.com:…` address Git pushes to, which relies on your
-   SSH key being set up). Auto-creates an initial commit if the working tree has none. Defaults the
-   name to `<parent-dir>/<dir>` (so `~/Projects/LasVegansForTransit/website` becomes
-   `LasVegansForTransit/website`).
+Preview your change, run `pnpm check`, and fix anything it reports. Save the change with the
+[atomic staging and commit workflow](../standards/git-guidelines.md), push your branch, and open a
+pull request using the repository template. Ask a teammate to review it. See
+[Start here](./start-here.md#5-saving-and-sharing-your-change) for the full contributor path.
 
-6. **deploy** — Checks for a production deployment of the `lvbt-website` Worker. If one exists, it
-   does nothing. Otherwise it offers to build and deploy the Worker. Routine releases from `main`
-   run through GitHub Actions.
+A reviewed pull request merges into `main`. The staging workflow then saves a release and updates
+`preview.lasvegasfortransit.org` behind Cloudflare Access. It does not publish to the public site. A
+maintainer reviews that staging release and explicitly promotes it through `pnpm promote`.
 
-7. **domain** — Confirms that the [apex domain](../reference/glossary.md#apex-domain) and `www`
-   belong to the production Worker. It offers to attach missing custom domains; Cloudflare handles
-   their DNS records and certificates. A hostname already owned by another service is left
-   untouched.
+## Maintainer production setup
 
-8. **secrets** — Checks every server-side secret the live site needs and asks for each missing one
-   once, with click-by-click steps. See [platform secrets](../reference/platform-secrets.md).
+Read existing readiness first:
 
-## What you'll see at the end
+```sh
+pnpm preflight --production
+```
 
-A bordered status panel showing which phases completed, a follow-up panel grouped by category (auth
-/ local / remote actions), and a "next steps" panel with day-to-day commands.
+The report checks [the platform manifest](../../apps/site/platform.json). Missing credentials or
+provider access are named separately from missing resources. A maintainer can then run
+`pnpm bootstrap --production` to work through missing platform configuration. This is not required
+for contributing or running the local site. Agents do not create or change production credentials.
 
-If a phase reports `partial` (it did some of its work but couldn't finish — e.g. it created the repo
-but a remote step still needs your input), the next-steps panel tells you exactly which
-`pnpm bootstrap --phase <id>` to re-run.
-
-## Re-running
-
-The whole flow is [idempotent](../reference/glossary.md#idempotent) — safe to run again; it won't
-redo or duplicate work it already finished, and it never asks again for a secret that is already
-stored. On a finished setup, a second run changes nothing and reports every phase as ready.
-`pnpm bootstrap --resume` skips completed phases. `pnpm bootstrap --phase env` re-runs a single
-phase. `pnpm preflight` does a read-only check without changing anything. To push the site again or
-replace a secret on purpose, see the `--redeploy` and `--rotate` options in the
-[bootstrap reference](../reference/bootstrap.md#running-it-again-is-safe).
+Routine publication uses the [deployment pipeline](../reference/deployment-pipeline.md); production
+bootstrap does not deploy a new release. The [bootstrap reference](../reference/bootstrap.md)
+explains setup and rotation, and [platform secrets](../reference/platform-secrets.md) explains what
+each integration needs.

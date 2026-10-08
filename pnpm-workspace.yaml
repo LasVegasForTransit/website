@@ -31,10 +31,16 @@ overrides:
   smol-toml: 1.8.0
   svgo: 4.1.0
 
-# The organization version baseline. Every LVBT repository carries this same
-# catalog, so a package declares "catalog:" and two repositories cannot drift
-# onto different versions of one tool without it showing up as a change here.
-# The entries after it are this repository's own.
+  # The organization version baseline. Every LVBT repository carries this same
+  # catalog, so a package declares "catalog:" and two repositories cannot drift
+  # onto different versions of one tool without it showing up as a change here.
+  # The entries after it are this repository's own.
+  'brace-expansion': '5.0.12'
+  'braces': 'npm:@dieub/braces-depth-guard@3.0.3-pn.3'
+  'fast-uri': '3.1.8'
+  'http-cache-semantics': '4.3.0'
+  'undici@^7.0.0': '7.29.1'
+  'undici@^8.0.0': '8.10.2'
 catalog:
   '@axe-core/playwright': 4.13.0
   '@astrojs/check': 0.9.10
@@ -115,3 +121,6 @@ peerDependencyRules:
 # Lighthouse subprocess can resolve it.
 publicHoistPattern:
   - 'tslib'
+
+# Shared setup validates before installing; preflight never installs.
+verifyDepsBeforeRun: false

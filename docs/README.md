@@ -49,12 +49,12 @@ just say guides.)
 Information you look up, not read.
 
 - [Platform secrets](./reference/platform-secrets.md) — every server-side secret, what it is for,
-  and how `pnpm bootstrap --phase secrets` sets it
+  and how `pnpm bootstrap --production` sets it
 - [Glossary](./reference/glossary.md) — plain-English definitions of every tool and acronym in these
   docs
 - [Local development](./reference/local-dev.md) — dev server ports, troubleshooting
 - [Content collections](./reference/content-collections.md) — schemas, folder layout, Zod
-- [Bootstrap CLI](./reference/bootstrap.md) — phases, flags, state file
+- [Bootstrap and preflight](./reference/bootstrap.md) — local setup and production readiness
 - [Deployment pipeline](./reference/deployment-pipeline.md) — how code gets from `git push` to
   lasvegasfortransit.org
 - [Key facts](./reference/key-facts.md) — verified numbers used across copy

@@ -1,3 +1,4 @@
+import { configForEnvironment } from './config-scope.mjs';
 import { SETUP } from './plan.mjs';
 import { configVarEntry, configVarLocation } from './guides.mjs';
 import { paint } from './terminal.mjs';
@@ -179,8 +180,9 @@ export async function deleteSecret(context, action) {
 export async function namedInConfig(context, action) {
   const state = context.observe ? await context.observe() : context.state;
   const real = state.d1.ok ? state.d1.value[action.name] : undefined;
-  const bound = state.config.ok
-    ? state.config.value.d1.find((entry) => entry.binding === action.binding)
+  const config = configForEnvironment(state.config, action.environment);
+  const bound = config.ok
+    ? config.value.d1.find((entry) => entry.binding === action.binding)
     : undefined;
   if (real && bound?.name === action.name && (bound.id === undefined || bound.id === real.id))
     return true;

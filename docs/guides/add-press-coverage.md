@@ -18,7 +18,7 @@ Create a database named **LVBT Press** in the LVBT Notion workspace with these p
 Connect the Notion integration used by the LVBT website to this database. Copy its data source ID
 from the database menu and set `LVBT_PRESS_DATA_SOURCE_ID` alongside the existing
 `LVBT_NOTION_API_KEY` in the website's local and production Worker environments. Run
-`pnpm bootstrap --phase secrets` to configure production values.
+`pnpm bootstrap --production` to configure production values.
 
 ## Add or update an entry
 

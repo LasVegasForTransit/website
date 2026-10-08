@@ -10,78 +10,74 @@ request time (see the [glossary](./glossary.md#env-var)).
 
 ## Set them with bootstrap
 
-You don't need to set secrets by hand. Run:
+The production requirements and value-finding steps live in
+[`apps/site/platform.json`](../../apps/site/platform.json). A maintainer first reads readiness:
 
 ```sh
-pnpm bootstrap --phase secrets
+pnpm preflight --production
 ```
 
-It checks the production Worker, the Pages fallback, and the `worker-candidate` GitHub environment.
-Missing values are grouped by urgency: live features and features not yet built. Choose how far to
-go. Two values that no feature reads yet, for volunteer management, are listed under "Not asked for"
-and never asked for; see [Google service account](#google-service-account).
-
-For each value, the guide shows what it is for, whether it is fine to skip it for now, where
-bootstrap stores it, and click-by-click steps to find or create it. You paste the value once and
-bootstrap stores it on every target that is missing it. Random signing keys are generated only when
-every target is known to be empty. If a shared secret already exists or a target cannot be checked,
-the guide asks for the existing value instead. Leave a prompt empty to skip that secret; re-run the
-command later to finish.
-
-Credentials, such as API keys, tokens and signing secrets, are typed into hidden input and never
-shown. Values that are not credentials, such as IDs, domains and public keys, are typed in plain
-view so you can see what you pasted, and the report shows them back so you can check them.
-Cloudflare and GitHub never show a stored value again, so the report shows the value bootstrap last
-stored from your machine, which it keeps in `apps/site/.lvbt/dev-readiness.json`; if it has none, it
-says so. Credentials are never kept there. The "Credential" column below says which is which.
-
-Running the command again is always safe. It never asks for a secret that is already stored, never
-replaces one, and never generates a new value for a key that exists. When every secret is in place
-it prints the report and stops.
-
-To only see the report, without changing anything:
+Then, when ready to configure missing values:
 
 ```sh
-pnpm bootstrap --doctor --phase secrets
+pnpm bootstrap --production
 ```
 
-**Before you start:** sign in to Wrangler (`pnpm -C apps/site exec wrangler login`) and to GitHub
-(`gh auth login`). You need Cloudflare access to the LVBT account and admin access to the website
-repository.
+Local `pnpm bootstrap` never configures production. Agents do not set or change production
+credentials; a maintainer runs production bootstrap. The production report separates live features,
+future features, and requirements that are only listed because no code consumes them yet.
+
+Credentials are entered through hidden input and never printed. IDs, domains and public keys are
+visible so they can be checked. Cloudflare and GitHub cannot reveal stored credentials; setup
+preserves values that already exist. A missing provider permission is reported as unknown, not as an
+empty target. A shared signing key can be generated only when every target is known to be empty.
+Keep an existing shared value when filling a missing target; if that value is unavailable, perform
+an explicit rotation instead of creating divergent copies.
 
 ## Replace a secret on purpose
 
-To replace a value that is already set, for example after a key leaked or after you reset it in the
-other service, name it with `--rotate` (see [glossary](./glossary.md#rotate)):
+A maintainer names the value to replace with `--rotate`:
 
 ```sh
-pnpm bootstrap --phase secrets --rotate LVBT_RESEND_API_KEY
-pnpm bootstrap --phase secrets --rotate LVBT_SIGN_IN_SECRET,LVBT_LINK_SIGNING_SECRET
+pnpm bootstrap --production --rotate LVBT_RESEND_API_KEY
+pnpm bootstrap --production --rotate LVBT_SIGN_IN_SECRET,LVBT_LINK_SIGNING_SECRET
 ```
 
-Bootstrap first checks that it can read every place the secret is stored, so a shared value is never
-left different in different places. Then it asks for the new value, or generates one for the random
-signing keys, and stores it everywhere. The old value stops working as soon as the new one is
-stored. A misspelled name is refused before anything runs.
+Rotation replaces the named value on its declared targets. Existing sign-in codes stop working after
+rotating `LVBT_SIGN_IN_SECRET`; existing email links stop working after rotating
+`LVBT_LINK_SIGNING_SECRET`. When rotating `LVBT_TRANSIT_NEWS_INTAKE_SECRET`, the maintainer must
+also set the same value in the Notion webhook's `Authorization: Bearer` header. Keep that external
+consumer aligned before accepting a rotation as complete.
 
 ## Where each secret lives
 
-| Target                                | What it serves                                        |
-| ------------------------------------- | ----------------------------------------------------- |
-| Worker `lvbt-website`                 | Production site and candidate versions                |
-| Pages project `lvbt-website`          | Emergency rollback at its `pages.dev` address         |
-| GitHub environment `worker-candidate` | The workflow that uploads and deploys main candidates |
+| Target                                | What it serves                                           |
+| ------------------------------------- | -------------------------------------------------------- |
+| Worker `lvbt-website`                 | Production site and candidate versions                   |
+| GitHub environment `worker-candidate` | Promotion credentials and retained runtime-secret copies |
+| GitHub environment `worker-preview`   | Staging upload and protected-preview verification        |
 
-Pull request previews run on the separate `lvbt-website-preview` Worker without these secrets, so
-preview API routes answer `503` by design.
+The runtime-secret copies already declared for `worker-candidate` remain requirements; removing
+those copies needs its own migration. The Cloudflare deployment token and Access service-token
+credentials needed by release workflows are also listed in the manifest. Public build values remain
+GitHub Actions variables, separate from private Worker credentials. The manifest checks their
+presence and checks the release environments' account IDs against the declared Cloudflare account.
+It never overwrites an existing public setting automatically. The optional Google Form fallback may
+remain empty because membership uses `/join/member` by default. Retained historical candidate and
+production feature flags have no current workflow consumers and are not readiness gates.
 
-The copies in your own `apps/site/.env.local` are only for your machine. The bootstrap never copies
-them to production; this phase is the only place production values come from.
+Production uses the Worker. Pages remains an emergency rollback destination and is not a mandatory
+secret target for routine Worker readiness or setup. A deliberate Pages rollback must check and
+configure that fallback independently; see
+[the deployment pipeline](./deployment-pipeline.md#rollback).
+
+Pull request previews run on the separate `lvbt-website-preview` Worker without the production
+runtime secrets, so unavailable preview API integrations answer `503` by design. Values in
+`apps/site/.env.local` and `.dev.vars` stay local and are never copied to production by bootstrap.
 
 ## The secrets
 
-The single source of truth is `apps/site/scripts/bootstrap/config/platform-secrets.ts`. The table
-below mirrors it.
+The single source of truth is `apps/site/platform.json`. The table below mirrors it.
 
 | Secret                            | Used for                                      | Credential | Needed    | Start here                                                                                             |
 | --------------------------------- | --------------------------------------------- | ---------- | --------- | ------------------------------------------------------------------------------------------------------ |
@@ -113,6 +109,11 @@ does, so it is always fine to skip a "Later" value; bootstrap asks again next ti
 means nothing reads the value yet, so bootstrap lists it but never asks for it. Skipping a "Now"
 value leaves the feature in the "Used for" column broken until it is set. Bootstrap shows the
 click-by-click steps for each value, with the link, and offers to open the page in your browser.
+
+The sending domain `notify.lasvegasfortransit.org` uses Resend's Forge DNS layout: DNS-only CNAME
+`rsend.notify` → `rsend.forge.rmta.net`, CNAME `send.notify` → `send.forge.rmta.net`, and the
+provider's DKIM TXT record. The manifest follows these existing records; the former SES MX/SPF setup
+instructions are obsolete for this domain.
 
 ## Set up each service from scratch
 
@@ -188,9 +189,9 @@ These already exist for LVBT, so you copy values rather than create anything.
 `LVBT_TRANSIT_NEWS_INTAKE_SECRET`, `LVBT_SIGN_IN_SECRET` and `LVBT_LINK_SIGNING_SECRET` are random
 values bootstrap makes for you the first time, when no target has them yet. Cloudflare and GitHub
 never show a stored secret again, so if one of these exists in some places and not others, there is
-nothing to copy. Run `pnpm bootstrap --phase secrets --rotate <NAME>` to make a new value and store
-it everywhere. For the transit news secret, bootstrap then offers to show the new value once so you
-can paste it into the Notion automation's `Authorization: Bearer` header. A new sign-in secret means
+nothing to copy. Run `pnpm bootstrap --production --rotate <NAME>` to make a new value and store it
+everywhere. For the transit news secret, bootstrap then offers to show the new value once so you can
+paste it into the Notion automation's `Authorization: Bearer` header. A new sign-in secret means
 anyone waiting for a code asks for a new one; a new link-signing secret means links already sent by
 email stop working.
 
@@ -423,7 +424,7 @@ at the `LVBT_DISCORD_GUILD_ID` prompt.
 
 The client secret and the bot token are the two real secrets here. Resetting either later makes the
 old one stop working, so store the new one with
-`pnpm bootstrap --phase secrets --rotate LVBT_DISCORD_CLIENT_SECRET` (or `LVBT_DISCORD_BOT_TOKEN`).
+`pnpm bootstrap --production --rotate LVBT_DISCORD_CLIENT_SECRET` (or `LVBT_DISCORD_BOT_TOKEN`).
 
 ### Google service account
 

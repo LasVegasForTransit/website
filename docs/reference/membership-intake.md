@@ -15,7 +15,7 @@ what they agreed to** — not a spreadsheet, and not Notion.
 > newsletter platform) account with an API key, a Notion workspace where you can create a connection
 > (for staff follow-up, until the staff console replaces it — see
 > [below](#staff-follow-up-in-notion)), and access to the LVBT Cloudflare account to set Worker
-> secrets. The fastest setup path (`pnpm bootstrap --phase secrets`) is described under
+> secrets. The fastest setup path (`pnpm bootstrap --production`) is described under
 > [Required Cloudflare secrets](#required-cloudflare-secrets).
 
 ## How someone joins
@@ -91,18 +91,17 @@ real form. You do not need to touch any code to connect a new form tool.
 
 ## Required Cloudflare secrets
 
-The fastest path is `pnpm bootstrap --phase secrets` (see
-[platform secrets](./platform-secrets.md)). It checks which of these the live site already has, asks
-for each missing one once, and stores it on the production Worker, the Pages fallback and the
-`worker-candidate` GitHub environment. It never replaces a value that is already stored. For
-`LVBT_MEMBERSHIP_INTAKE_SECRET` it asks for the value the Apps Script already uses, so the form
-keeps working.
+The fastest path is `pnpm bootstrap --production` (see [platform secrets](./platform-secrets.md)).
+It checks which of these the live site already has, asks for each missing one once, and stores it on
+the production Worker and the `worker-candidate` GitHub environment. It never replaces a value that
+is already stored. For `LVBT_MEMBERSHIP_INTAKE_SECRET` it asks for the value the Apps Script already
+uses, so the form keeps working.
 
-`pnpm bootstrap --phase env` is only for your own machine: it writes the Beehiiv keys, your Notion
-access token and a random intake secret into `apps/site/.env.local` for local testing, and never
-sends them to production. Never paste that local intake secret into Apps Script.
-`LVBT_NOTION_DATA_SOURCE_ID` is created for you by `pnpm -C apps/site setup:notion` (see
-[Staff follow-up in Notion](#staff-follow-up-in-notion)).
+`pnpm bootstrap` seeds `apps/site/.env.local` only when the file is missing. Add test Beehiiv keys,
+your test Notion access token, and a local intake secret there only when your task needs them. Those
+values stay on your machine and are never sent to production. Never paste that local intake secret
+into Apps Script. `LVBT_NOTION_DATA_SOURCE_ID` is created for you by
+`pnpm -C apps/site setup:notion` (see [Staff follow-up in Notion](#staff-follow-up-in-notion)).
 
 The five runtime secrets:
 
@@ -117,9 +116,9 @@ The five runtime secrets:
 Only when the form is set up for the first time does the intake secret need a new value. Generate
 one with `openssl rand -hex 32` (`openssl` is a command-line crypto tool; this prints a random
 64-character hex string), put it in the Apps Script script property, and paste the same value when
-`pnpm bootstrap --phase secrets` asks for it. To change an existing value, update the script
-property first, then run `pnpm bootstrap --phase secrets --rotate LVBT_MEMBERSHIP_INTAKE_SECRET`
-with the new value.
+`pnpm bootstrap --production` asks for it. To change an existing value, update the script property
+first, then run `pnpm bootstrap --production --rotate LVBT_MEMBERSHIP_INTAKE_SECRET` with the new
+value.
 
 ## Google Forms setup
 
@@ -143,9 +142,9 @@ execution and sends the trigger owner the standard failure email.
 > new person who joins, and the steps below are current.**
 
 Two parts: a one-time manual setup the Notion API can't do for you (creating the connection and
-sharing a page), then a script that builds the database with the right schema.
-`pnpm bootstrap --phase env` prompts for both values below and saves them in `apps/site/.env.local`
-on your machine.
+sharing a page), then a script that builds the database with the right schema. Run `pnpm bootstrap`
+to create your local environment file, then add the two values below to `apps/site/.env.local` on
+your machine when working on this integration.
 
 ### 1. Connection and parent page (manual)
 
@@ -170,8 +169,8 @@ pnpm -C apps/site setup:notion
 This creates a **Membership intake** database under your parent page with the columns below, reads
 back its [data source ID](./glossary.md#data-source) (the ID the endpoint writes to), and writes
 `LVBT_NOTION_DATA_SOURCE_ID` into `apps/site/.env.local`. Re-running reuses the existing database
-instead of duplicating it. Store the value in production with `pnpm bootstrap --phase secrets`,
-which asks for it if it is missing.
+instead of duplicating it. Store the value in production with `pnpm bootstrap --production`, which
+asks for it if it is missing.
 
 The schema lives in one place — `apps/site/functions/api/_intake-schema.ts` — which both the
 endpoint and the provisioner import, so the columns can't drift from what the code writes. The
@@ -278,7 +277,7 @@ Apps Script treats any non-2xx response as a failed execution and emails the tri
 status in that email says what went wrong:
 
 - **`503 service_unavailable`**: a Worker secret is missing. Nothing reached Beehiiv or Notion, and
-  every submission fails the same way until it is fixed. Run `pnpm bootstrap --phase secrets` to set
+  every submission fails the same way until it is fixed. Run `pnpm bootstrap --production` to set
   the names in `missing` on the production Worker, deploy the resulting Worker version, then replay
   as below.
 - **`401 unauthorized`**: the Apps Script `LVBT_MEMBERSHIP_INTAKE_SECRET` property no longer matches
