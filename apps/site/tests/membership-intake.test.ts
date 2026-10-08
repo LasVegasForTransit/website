@@ -66,7 +66,7 @@ function context(body: unknown, env = baseEnv, headers: HeadersInit = {}) {
   } as Parameters<typeof onRequestPost>[0];
 }
 
-test('subscribes a valid form response and creates a Notion intake page', async () => {
+void test('subscribes a valid form response and creates a Notion intake page', async () => {
   mockFetch();
 
   const response = await onRequestPost(
@@ -129,14 +129,14 @@ test('subscribes a valid form response and creates a Notion intake page', async 
 
   const blockText = (block: {
     bulleted_list_item: { rich_text: { text: { content: string } }[] };
-  }) => block.bulleted_list_item.rich_text[0].text.content;
+  }) => block.bulleted_list_item.rich_text[0]?.text.content;
   assert.equal(notionBody.children.length, 2);
   assert.equal(notionBody.children[0].type, 'bulleted_list_item');
   assert.equal(blockText(notionBody.children[0]), 'Name: Test Rider');
   assert.equal(blockText(notionBody.children[1]), 'Interests: Bus reliability, Safer stops');
 });
 
-test('renders a placeholder paragraph when no answers are supplied', async () => {
+void test('renders a placeholder paragraph when no answers are supplied', async () => {
   mockFetch();
 
   await onRequestPost(context({ email: 'rider@example.com' }));
@@ -150,7 +150,7 @@ test('renders a placeholder paragraph when no answers are supplied', async () =>
   );
 });
 
-test('rejects requests without the intake bearer token', async () => {
+void test('rejects requests without the intake bearer token', async () => {
   mockFetch();
 
   const response = await onRequestPost(
@@ -164,7 +164,7 @@ test('rejects requests without the intake bearer token', async () => {
   assert.equal(calls.length, 0);
 });
 
-test('rejects invalid email without calling downstream systems', async () => {
+void test('rejects invalid email without calling downstream systems', async () => {
   mockFetch();
 
   const response = await onRequestPost(context({ email: 'not-an-email' }));
@@ -174,7 +174,7 @@ test('rejects invalid email without calling downstream systems', async () => {
   assert.equal(calls.length, 0);
 });
 
-test('rejects non-object JSON without calling downstream systems', async () => {
+void test('rejects non-object JSON without calling downstream systems', async () => {
   mockFetch();
 
   const response = await onRequestPost(context(null));
@@ -184,7 +184,7 @@ test('rejects non-object JSON without calling downstream systems', async () => {
   assert.equal(calls.length, 0);
 });
 
-test('reports missing runtime configuration before downstream calls', async () => {
+void test('reports missing runtime configuration before downstream calls', async () => {
   mockFetch();
 
   const response = await onRequestPost(
@@ -205,7 +205,7 @@ test('reports missing runtime configuration before downstream calls', async () =
   assert.equal(calls.length, 0);
 });
 
-test('reports Beehiiv subscription failure', async () => {
+void test('reports Beehiiv subscription failure', async () => {
   mockFetch([500]);
 
   const response = await onRequestPost(context({ email: 'rider@example.com' }));
@@ -216,7 +216,7 @@ test('reports Beehiiv subscription failure', async () => {
   assert.equal(calls.length, 2);
 });
 
-test('reports Notion sync failure when the duplicate lookup fails', async () => {
+void test('reports Notion sync failure when the duplicate lookup fails', async () => {
   mockFetch([200, 500]);
 
   const response = await onRequestPost(context({ email: 'rider@example.com' }));
@@ -226,7 +226,7 @@ test('reports Notion sync failure when the duplicate lookup fails', async () => 
   assert.equal(calls.length, 2);
 });
 
-test('reports Notion sync failure when the page create fails', async () => {
+void test('reports Notion sync failure when the page create fails', async () => {
   mockFetch([200, 200, 500]);
 
   const response = await onRequestPost(context({ email: 'rider@example.com' }));
@@ -236,7 +236,7 @@ test('reports Notion sync failure when the page create fails', async () => {
   assert.equal(calls.length, 3);
 });
 
-test('does not create a second Notion page for a replayed response', async () => {
+void test('does not create a second Notion page for a replayed response', async () => {
   mockFetch([200, 200], [{ id: 'page-1' }]);
 
   const response = await onRequestPost(
@@ -248,7 +248,7 @@ test('does not create a second Notion page for a replayed response', async () =>
   assert.equal(calls.length, 2);
 });
 
-test('dedupes by email when the request carries no response ID', async () => {
+void test('dedupes by email when the request carries no response ID', async () => {
   mockFetch([200, 200], [{ id: 'page-1' }]);
 
   const response = await onRequestPost(context({ email: 'Rider@Example.com' }));
@@ -261,7 +261,7 @@ test('dedupes by email when the request carries no response ID', async () => {
   assert.equal(calls.length, 2);
 });
 
-test('reports Beehiiv as failed when the request itself throws', async () => {
+void test('reports Beehiiv as failed when the request itself throws', async () => {
   mockFetch([], [], 1);
 
   const response = await onRequestPost(context({ email: 'rider@example.com' }));
@@ -270,7 +270,7 @@ test('reports Beehiiv as failed when the request itself throws', async () => {
   assert.deepEqual(await response.json(), { error: 'subscription_failed' });
 });
 
-test('reports Notion as failed when the lookup throws after Beehiiv succeeds', async () => {
+void test('reports Notion as failed when the lookup throws after Beehiiv succeeds', async () => {
   mockFetch([], [], 2);
 
   const response = await onRequestPost(context({ email: 'rider@example.com' }));
@@ -280,7 +280,7 @@ test('reports Notion as failed when the lookup throws after Beehiiv succeeds', a
   assert.equal(calls.length, 2);
 });
 
-test('rejects a non-string email without calling downstream systems', async () => {
+void test('rejects a non-string email without calling downstream systems', async () => {
   mockFetch();
 
   const response = await onRequestPost(context({ email: 12345 }));
@@ -290,7 +290,7 @@ test('rejects a non-string email without calling downstream systems', async () =
   assert.equal(calls.length, 0);
 });
 
-test('treats non-string optional fields as absent instead of failing', async () => {
+void test('treats non-string optional fields as absent instead of failing', async () => {
   mockFetch();
 
   const response = await onRequestPost(
@@ -318,7 +318,7 @@ test('treats non-string optional fields as absent instead of failing', async () 
   assert.deepEqual(notionBody.properties['Response ID'].rich_text, []);
 });
 
-test('caps the Notion page body at the 100-block create limit', async () => {
+void test('caps the Notion page body at the 100-block create limit', async () => {
   mockFetch();
   const answers = Object.fromEntries(
     Array.from({ length: 150 }, (_, i) => [`Question ${i + 1}`, `Answer ${i + 1}`]),
@@ -334,7 +334,7 @@ test('caps the Notion page body at the 100-block create limit', async () => {
   assert.match(notionBody.children[99].paragraph.rich_text[0].text.content, /51 more answer/);
 });
 
-test('does not reveal missing configuration to unauthenticated callers', async () => {
+void test('does not reveal missing configuration to unauthenticated callers', async () => {
   mockFetch();
 
   const response = await onRequestPost(
@@ -352,7 +352,7 @@ test('does not reveal missing configuration to unauthenticated callers', async (
   assert.equal(calls.length, 0);
 });
 
-test('reports a missing intake secret since no caller could authenticate', async () => {
+void test('reports a missing intake secret since no caller could authenticate', async () => {
   mockFetch();
 
   const response = await onRequestPost(

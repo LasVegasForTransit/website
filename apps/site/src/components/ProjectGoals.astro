@@ -6,7 +6,7 @@ type GoalStatus = 'planned' | 'in-progress' | 'done';
 interface Goal {
   text: string;
   status: GoalStatus;
-  target?: Date;
+  target?: Date | undefined;
 }
 
 interface Props {

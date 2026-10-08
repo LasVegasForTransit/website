@@ -119,8 +119,7 @@ async function firstCalendarPath(): Promise<string> {
 async function request(originValue: string, pathname: string, method = 'GET'): Promise<Response> {
   return fetch(`${originValue}${pathname}`, {
     method,
-    body: method === 'POST' ? '{}' : undefined,
-    headers: method === 'POST' ? { 'content-type': 'application/json' } : undefined,
+    ...(method === 'POST' ? { body: '{}', headers: { 'content-type': 'application/json' } } : {}),
     redirect: 'manual',
   });
 }

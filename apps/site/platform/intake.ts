@@ -23,15 +23,15 @@ export interface IntakeSubmission {
   source: IntakeSource;
   submittedAt: string;
   person: {
-    givenName?: string;
-    familyName?: string;
+    givenName?: string | undefined;
+    familyName?: string | undefined;
     email: string;
-    phone?: string;
-    zip?: string;
+    phone?: string | undefined;
+    zip?: string | undefined;
   };
-  consent?: { newsletter: boolean; wordingVersion?: string };
-  interests?: string[];
-  heardFrom?: string;
+  consent?: { newsletter: boolean; wordingVersion?: string | undefined } | undefined;
+  interests?: string[] | undefined;
+  heardFrom?: string | undefined;
 }
 
 export interface IntakeResponse {
@@ -231,9 +231,9 @@ export const GOOGLE_FORM_WORDING = 'gform-2026-06';
 
 export function googleFormSubmission(fields: {
   email: string;
-  name?: string;
-  submittedAt?: string;
-  responseId?: string;
+  name?: string | undefined;
+  submittedAt?: string | undefined;
+  responseId?: string | undefined;
 }): IntakeSubmission {
   const [givenName, ...rest] = (fields.name ?? '').split(/\s+/).filter(Boolean);
   const submittedAt =

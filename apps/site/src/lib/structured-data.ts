@@ -75,18 +75,18 @@ interface EventLike {
     title: string;
     summary: string;
     date: Date;
-    endDate?: Date;
-    location?: EventLocation;
-    rsvpUrl?: string;
-    admissionUrl?: string;
-    admissionLabel?: string;
-    image?: string;
-    schema?: EventSchemaMetadata;
+    endDate?: Date | undefined;
+    location?: EventLocation | undefined;
+    rsvpUrl?: string | undefined;
+    admissionUrl?: string | undefined;
+    admissionLabel?: string | undefined;
+    image?: string | undefined;
+    schema?: EventSchemaMetadata | undefined;
   };
   id: string;
 }
 
-function compactObject<T extends Record<string, unknown>>(obj: T): JsonLd {
+function compactObject(obj: Record<string, unknown>): JsonLd {
   return Object.fromEntries(
     Object.entries(obj).filter(([, value]) => {
       if (value === undefined || value === null) return false;
@@ -308,7 +308,7 @@ interface RoleLike {
     title: string;
     summary: string;
     commitment: string;
-    team?: string;
+    team?: string | undefined;
     datePosted: Date;
   };
 }

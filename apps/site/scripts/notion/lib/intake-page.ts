@@ -16,12 +16,12 @@ const DEFAULT_SOURCE = 'Google Forms membership intake';
 export interface IntakeFields {
   /** Normalized (trimmed, lower-cased) email. */
   email: string;
-  name?: string;
-  discord?: string;
-  source?: string;
-  submittedAt?: string;
-  rawResponseUrl?: string;
-  responseId?: string;
+  name?: string | undefined;
+  discord?: string | undefined;
+  source?: string | undefined;
+  submittedAt?: string | undefined;
+  rawResponseUrl?: string | undefined;
+  responseId?: string | undefined;
   answers?: unknown;
 }
 
@@ -57,10 +57,16 @@ function plainTextProperty(value: string | undefined) {
 
 function pageProperties(fields: IntakeFields) {
   return {
-    [PROP.name.label]: { title: [{ text: { content: fields.name || fields.email } }] },
+    [PROP.name.label]: {
+      title: [
+        { text: { content: fields.name === '' ? fields.email : (fields.name ?? fields.email) } },
+      ],
+    },
     [PROP.email.label]: { email: fields.email },
     [PROP.discord.label]: plainTextProperty(fields.discord),
-    [PROP.source.label]: plainTextProperty(fields.source || DEFAULT_SOURCE),
+    [PROP.source.label]: plainTextProperty(
+      fields.source === '' ? DEFAULT_SOURCE : (fields.source ?? DEFAULT_SOURCE),
+    ),
     [PROP.submittedAt.label]: fields.submittedAt
       ? { date: { start: fields.submittedAt } }
       : { date: null },

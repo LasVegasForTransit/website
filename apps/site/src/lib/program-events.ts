@@ -6,21 +6,22 @@ export interface ProgramEvent {
   id: string;
   data: {
     calendarUid: string;
-    discussionTopic?: string;
+    discussionTopic?: string | undefined;
     date: Date;
-    endDate?: Date;
-    location?: EventLocation;
-    schema?: { status?: string };
+    endDate?: Date | undefined;
+    location?: EventLocation | undefined;
+    schema?: { status?: string | undefined } | undefined;
   };
 }
 
 export interface ProgramParticipation {
-  participationUrl?: string;
-  participationLabel?: string;
-  calendarSeriesUid?: string;
-  eventNoun?: string;
-  cadence?: string;
-  venue?: { name: string; address: string; mapUrl: string; status: 'proposed' | 'confirmed' };
+  participationUrl?: string | undefined;
+  participationLabel?: string | undefined;
+  calendarSeriesUid?: string | undefined;
+  eventNoun?: string | undefined;
+  cadence?: string | undefined;
+  venue?:
+    { name: string; address: string; mapUrl: string; status: 'proposed' | 'confirmed' } | undefined;
 }
 
 export function programParticipationAction(
@@ -52,8 +53,8 @@ export function programParticipationAction(
 
 interface PanelVenue {
   name: string;
-  address?: string;
-  mapUrl?: string;
+  address?: string | undefined;
+  mapUrl?: string | undefined;
   tentative?: boolean;
 }
 

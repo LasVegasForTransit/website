@@ -4,7 +4,7 @@
 // sends nothing and says so, so callers can fall back.
 
 export interface EmailConfig {
-  resendApiKey?: string;
+  resendApiKey?: string | undefined;
 }
 
 export interface Email {

@@ -18,13 +18,13 @@ import { XMLParser } from 'fast-xml-parser';
 import { site } from './site';
 import { truncate } from './truncate';
 
-type NewsletterData = {
+interface NewsletterData {
   title: string;
   link: string;
   pubDate: Date;
   excerpt: string;
-  image?: string;
-};
+  image?: string | undefined;
+}
 
 const EXCERPT_MAX = 220;
 

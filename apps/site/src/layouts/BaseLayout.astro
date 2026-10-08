@@ -12,13 +12,13 @@ import { canonicalUrl } from '../lib/paths';
 import { LOCALE } from '../../platform/messages';
 
 interface Props {
-  title?: string;
-  description?: string;
-  ogImage?: string;
+  title?: string | undefined;
+  description?: string | undefined;
+  ogImage?: string | undefined;
   noindex?: boolean;
   searchIndex?: boolean;
   chrome?: 'site' | 'none';
-  mainClass?: string;
+  mainClass?: string | undefined;
   /**
    * Root canvas color. 'paper' (default) is the standard cream surface every
    * page uses. 'dark' paints the body ink and asks the header to render
@@ -34,8 +34,8 @@ interface Props {
    * so the `article:*` OG tags below actually populate.
    */
   ogType?: 'website' | 'article';
-  articlePublishedTime?: string;
-  articleAuthor?: string;
+  articlePublishedTime?: string | undefined;
+  articleAuthor?: string | undefined;
 }
 
 const {

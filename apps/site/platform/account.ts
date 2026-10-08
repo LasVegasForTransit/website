@@ -18,8 +18,8 @@ import { normalizeEmail, PersonService, type Person } from './storage/person-ser
 import { transactionalEmailHtml } from './transactional-email';
 
 export interface AccountEnv extends SignInEnv {
-  LVBT_BEEHIIV_API_KEY?: string;
-  LVBT_BEEHIIV_PUBLICATION_ID?: string;
+  LVBT_BEEHIIV_API_KEY?: string | undefined;
+  LVBT_BEEHIIV_PUBLICATION_ID?: string | undefined;
 }
 
 export interface AccountDependencies {

@@ -1,5 +1,6 @@
 // Screenshot and behavior harness; baseline policy: tests/README.md.
 import { defineConfig, devices } from '@playwright/test';
+import { sharedConfig } from '@lasvegasfortransit/playwright-config';
 
 // AUDIT_PORT lets the baseline orchestrator pick a non-default port so it
 // doesn't collide with a `pnpm dev` server (which holds 4321) — that
@@ -10,10 +11,14 @@ const REMOTE_BASE_URL = process.env.PLAYWRIGHT_BASE_URL?.trim();
 const BASE_URL = REMOTE_BASE_URL?.length ? REMOTE_BASE_URL : `http://localhost:${PORT}`;
 
 export default defineConfig({
+  ...sharedConfig,
   testDir: './tests/e2e',
   fullyParallel: true,
   reporter: [['list'], ['html', { open: 'never' }]],
   use: {
+    ...sharedConfig.use,
+    // Protected browser requests carry Access headers; retain the existing no-trace policy.
+    trace: 'off',
     baseURL: BASE_URL,
   },
   expect: {
@@ -89,21 +94,23 @@ export default defineConfig({
       use: { ...devices['Desktop Chrome'] },
     },
   ],
-  webServer: REMOTE_BASE_URL
-    ? undefined
+  ...(REMOTE_BASE_URL
+    ? {}
     : {
-        // AUDIT_SKIP_BUILD lets the baseline orchestrator (which already builds
-        // up front) reuse that dist instead of triggering a rebuild here. A
-        // mid-test rebuild rewrites dist/sitemap-0.xml under tests/a11y.spec.ts,
-        // which reads it at module load and ENOENTs across late-spawning workers.
-        command:
-          process.env.AUDIT_SKIP_BUILD === '1'
-            ? `pnpm preview --port ${PORT}`
-            : `pnpm build && pnpm preview --port ${PORT}`,
-        url: BASE_URL,
-        reuseExistingServer: !process.env.CI,
-        timeout: 180_000,
-        stdout: 'pipe',
-        stderr: 'pipe',
-      },
+        webServer: {
+          // AUDIT_SKIP_BUILD lets the baseline orchestrator (which already builds
+          // up front) reuse that dist instead of triggering a rebuild here. A
+          // mid-test rebuild rewrites dist/sitemap-0.xml under tests/a11y.spec.ts,
+          // which reads it at module load and ENOENTs across late-spawning workers.
+          command:
+            process.env.AUDIT_SKIP_BUILD === '1'
+              ? `pnpm preview --port ${PORT}`
+              : `pnpm build && pnpm preview --port ${PORT}`,
+          url: BASE_URL,
+          reuseExistingServer: !process.env.CI,
+          timeout: 180_000,
+          stdout: 'pipe',
+          stderr: 'pipe',
+        },
+      }),
 });

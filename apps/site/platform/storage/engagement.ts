@@ -31,7 +31,7 @@ export interface EngagementInput {
    * reference is recorded once. For a `correction`, the ID of the event it
    * marks as a mistake.
    */
-  reference?: string;
+  reference?: string | undefined;
   details?: Record<string, unknown>;
 }
 

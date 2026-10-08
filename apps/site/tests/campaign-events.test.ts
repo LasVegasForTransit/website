@@ -64,7 +64,7 @@ void test('archives undated-end gatherings at Las Vegas midnight across daylight
   for (const [start, cutoff] of [
     ['2026-03-08T01:30:00-08:00', '2026-03-09T07:00:00Z'],
     ['2026-11-01T01:30:00-07:00', '2026-11-02T08:00:00Z'],
-  ]) {
+  ] as const) {
     const event = [{ slug: 'gathering', start }];
     const boundary = Date.parse(cutoff);
     assert.equal(groupCampaignEvents(event, new Date(boundary - 1)).upcoming.length, 1);

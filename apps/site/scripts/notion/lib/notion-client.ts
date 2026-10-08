@@ -28,7 +28,7 @@ export function notionClient(fetcher?: typeof fetch) {
         'Notion-Version': NOTION_VERSION,
         'Content-Type': 'application/json',
       },
-      body: body === undefined ? undefined : JSON.stringify(body),
+      ...(body === undefined ? {} : { body: JSON.stringify(body) }),
     });
     let json: unknown = null;
     try {

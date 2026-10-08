@@ -33,7 +33,7 @@ const hiddenDocIds = new Set(['vision']);
 
 const u = (path: string): string => new URL(path, site.url).toString();
 
-const fmtDate = (d: Date | undefined): string => (d ? d.toISOString().split('T')[0] : '');
+const fmtDate = (d: Date | undefined): string => (d ? d.toISOString().slice(0, 10) : '');
 
 export const GET: APIRoute = async () => {
   const [docs, pages, projects, programs, workAreas, initiatives] = await Promise.all([

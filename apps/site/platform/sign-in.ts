@@ -31,20 +31,20 @@ export const STEP_COOKIE = 'lvbt_sign_in';
 export const ACCOUNT_PATH = '/account/';
 
 export interface SignInEnv extends AuthEnv {
-  LVBT_RESEND_API_KEY?: string;
+  LVBT_RESEND_API_KEY?: string | undefined;
   /**
    * Local development only: with "1" and no Resend key, codes are printed to
    * the console instead of emailed. Never set in production.
    */
-  LVBT_DEV_LOG_CODES?: string;
+  LVBT_DEV_LOG_CODES?: string | undefined;
 }
 
 /** The environment, or null when the database or sign-in secret is missing. */
 export function signInEnv(env: {
   PLATFORM_DB?: unknown;
-  LVBT_SIGN_IN_SECRET?: string;
-  LVBT_RESEND_API_KEY?: string;
-  LVBT_DEV_LOG_CODES?: string;
+  LVBT_SIGN_IN_SECRET?: string | undefined;
+  LVBT_RESEND_API_KEY?: string | undefined;
+  LVBT_DEV_LOG_CODES?: string | undefined;
 }): SignInEnv | null {
   if (!env.PLATFORM_DB || !env.LVBT_SIGN_IN_SECRET) {
     console.error('sign-in: PLATFORM_DB binding or LVBT_SIGN_IN_SECRET is missing');

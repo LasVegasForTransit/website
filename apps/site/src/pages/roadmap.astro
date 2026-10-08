@@ -47,7 +47,7 @@ for (const project of [...sorted].sort(
     timelineByKey.set(key, {
       quarter: `${year}Q${quarterIndex + 1}`,
       title: `${QUARTER_NAMES[quarterIndex]} ${year}`,
-      description: QUARTER_DESCRIPTIONS[quarterIndex],
+      description: QUARTER_DESCRIPTIONS[quarterIndex] ?? '',
       projects: [],
     });
   }

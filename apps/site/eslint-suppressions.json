@@ -31,11 +31,6 @@
       "count": 1
     }
   },
-  "playwright.config.ts": {
-    "turbo/no-undeclared-env-vars": {
-      "count": 3
-    }
-  },
   "public/scripts/brand-guide.js": {
     "no-undef": {
       "count": 17
@@ -176,9 +171,6 @@
   "scripts/notion/lib/intake-page.ts": {
     "@typescript-eslint/no-base-to-string": {
       "count": 1
-    },
-    "@typescript-eslint/prefer-nullish-coalescing": {
-      "count": 2
     }
   },
   "scripts/notion/lib/notion-client.ts": {
@@ -222,19 +214,9 @@
       "count": 1
     }
   },
-  "src/lib/event-format.ts": {
-    "@typescript-eslint/consistent-type-definitions": {
-      "count": 3
-    }
-  },
-  "src/lib/event-time.ts": {
-    "@typescript-eslint/consistent-type-definitions": {
-      "count": 1
-    }
-  },
   "src/lib/events-loader.ts": {
     "@typescript-eslint/no-unnecessary-condition": {
-      "count": 15
+      "count": 13
     },
     "@typescript-eslint/no-unnecessary-type-assertion": {
       "count": 1
@@ -249,7 +231,7 @@
       "count": 1
     },
     "@typescript-eslint/prefer-regexp-exec": {
-      "count": 5
+      "count": 4
     },
     "@typescript-eslint/unbound-method": {
       "count": 2
@@ -268,13 +250,7 @@
     }
   },
   "src/lib/newsletter-loader.ts": {
-    "@typescript-eslint/consistent-type-definitions": {
-      "count": 1
-    },
     "@typescript-eslint/no-base-to-string": {
-      "count": 1
-    },
-    "@typescript-eslint/no-unnecessary-type-assertion": {
       "count": 1
     },
     "@typescript-eslint/unbound-method": {
@@ -282,9 +258,6 @@
     }
   },
   "src/lib/qr-svg.ts": {
-    "@typescript-eslint/no-non-null-assertion": {
-      "count": 1
-    },
     "complexity": {
       "count": 1
     },
@@ -303,9 +276,6 @@
     }
   },
   "src/lib/structured-data.ts": {
-    "@typescript-eslint/no-unnecessary-type-parameters": {
-      "count": 1
-    },
     "complexity": {
       "count": 1
     },
@@ -354,15 +324,12 @@
       "count": 5
     },
     "@typescript-eslint/prefer-optional-chain": {
-      "count": 2
+      "count": 1
     }
   },
   "tests/e2e/event-metadata.spec.ts": {
     "@typescript-eslint/consistent-type-imports": {
       "count": 2
-    },
-    "@typescript-eslint/no-non-null-assertion": {
-      "count": 1
     },
     "@typescript-eslint/no-unnecessary-condition": {
       "count": 18
@@ -386,7 +353,7 @@
   },
   "tests/e2e/print-layout.spec.ts": {
     "@typescript-eslint/no-unnecessary-condition": {
-      "count": 23
+      "count": 18
     },
     "complexity": {
       "count": 2
@@ -413,9 +380,6 @@
     "@typescript-eslint/no-explicit-any": {
       "count": 1
     },
-    "@typescript-eslint/no-floating-promises": {
-      "count": 18
-    },
     "@typescript-eslint/no-misused-spread": {
       "count": 1
     },
@@ -437,15 +401,10 @@
   },
   "tests/support/a11y-helpers.ts": {
     "@typescript-eslint/no-unnecessary-condition": {
-      "count": 6
+      "count": 5
     },
     "@typescript-eslint/no-unsafe-member-access": {
       "count": 3
-    }
-  },
-  "tests/support/sitemap-paths.ts": {
-    "@typescript-eslint/no-unnecessary-condition": {
-      "count": 1
     }
   }
 }

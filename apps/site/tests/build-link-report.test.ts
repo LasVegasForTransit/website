@@ -33,7 +33,7 @@ void test('combined internal and external results name each failure and count ch
   assert.equal(merged.checked, 5);
   assert.equal(merged.results.length, 2);
   assert.equal(merged.results[1]?.source, 'docs/guide.md');
-  assert.match(merged.results[1]?.diagnostic ?? '', /404.*Not Found/);
+  assert.match(merged.results[1].diagnostic ?? '', /404.*Not Found/);
 });
 void test('malformed lychee output cannot turn missing external evidence into pass', () => {
   assert.throws(
@@ -55,7 +55,7 @@ void test('compiled source pages stay attached to broken internal routes', async
   );
   assert.equal(report.checked, 1);
   assert.equal(report.results[0]?.source, '/');
-  assert.equal(report.results[0]?.url, 'http://127.0.0.1:1234/missing');
+  assert.equal(report.results[0].url, 'http://127.0.0.1:1234/missing');
   assert.deepEqual(report.external, ['https://outside.test/']);
 });
 void test('production uses current public evidence and never invokes the compiled Worker', async () => {

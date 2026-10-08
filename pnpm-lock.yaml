@@ -274,6 +274,12 @@ importers:
       '@lasvegasfortransit/eslint-config':
         specifier: file:../../.lvbt/web-platform/packages/eslint-config
         version: file:.lvbt/web-platform/packages/eslint-config(eslint@10.9.1(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2)(turbo@2.10.12)(typescript@6.0.3)
+      '@lasvegasfortransit/playwright-config':
+        specifier: file:../../.lvbt/web-platform/packages/playwright-config
+        version: file:.lvbt/web-platform/packages/playwright-config(@playwright/test@1.62.1)
+      '@lasvegasfortransit/typescript-config':
+        specifier: file:../../.lvbt/web-platform/packages/typescript-config
+        version: file:.lvbt/web-platform/packages/typescript-config
       '@lasvegasfortransit/web-platform':
         specifier: file:../../.lvbt/web-platform/packages/web-platform
         version: file:.lvbt/web-platform/packages/web-platform
@@ -1478,6 +1484,11 @@ packages:
     peerDependencies:
       eslint: '>=10'
       typescript: '>=5.9'
+
+  '@lasvegasfortransit/playwright-config@file:.lvbt/web-platform/packages/playwright-config':
+    resolution: {directory: .lvbt/web-platform/packages/playwright-config, type: directory}
+    peerDependencies:
+      '@playwright/test': '>=1.60'
 
   '@lasvegasfortransit/prettier-config@file:.lvbt/web-platform/packages/prettier-config':
     resolution: {directory: .lvbt/web-platform/packages/prettier-config, type: directory}
@@ -7168,6 +7179,12 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
       - turbo
+
+  '@lasvegasfortransit/playwright-config@file:.lvbt/web-platform/packages/playwright-config(@playwright/test@1.62.1)':
+    dependencies:
+      '@axe-core/playwright': 4.13.0(playwright-core@1.62.1)
+      '@playwright/test': 1.62.1
+      playwright-core: 1.62.1
 
   '@lasvegasfortransit/prettier-config@file:.lvbt/web-platform/packages/prettier-config(prettier@3.9.6)':
     dependencies:

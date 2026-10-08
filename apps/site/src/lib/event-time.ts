@@ -10,7 +10,10 @@
 // Deliberately free of astro:content types so this module is safe to import
 // from a browser <script>; the labels are recomputed client-side at view time
 // (see src/scripts/event-relative.ts) so a card built days ago stays accurate.
-type EventTiming = { date: Date; endDate?: Date };
+interface EventTiming {
+  date: Date;
+  endDate?: Date | undefined;
+}
 
 // The Valley is in PT; "Today" / displayed times are always in this zone
 // regardless of the visitor's locale. Shared by every event surface.

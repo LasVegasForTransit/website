@@ -59,41 +59,41 @@ export const EVENT_STATUS_VALUES = [
 ] as const;
 export type EventStatusValue = (typeof EVENT_STATUS_VALUES)[number];
 
-export type EventSchemaPersonOrOrg = {
-  type?: 'Person' | 'Organization';
+export interface EventSchemaPersonOrOrg {
+  type?: 'Person' | 'Organization' | undefined;
   name: string;
-  url?: string;
-};
+  url?: string | undefined;
+}
 
-export type EventOffer = {
+export interface EventOffer {
   url: string;
-  price?: number | string;
-  priceCurrency?: string;
-  availability?: 'InStock' | 'SoldOut' | 'PreOrder';
-  validFrom?: Date;
-};
+  price?: number | string | undefined;
+  priceCurrency?: string | undefined;
+  availability?: 'InStock' | 'SoldOut' | 'PreOrder' | undefined;
+  validFrom?: Date | undefined;
+}
 
 export const EVENT_ADMISSION_LABELS = ['Admission', 'Tickets'] as const;
 export type EventAdmissionLabel = (typeof EVENT_ADMISSION_LABELS)[number];
 
-export type EventSchemaMetadata = {
-  schemaType?: EventSchemaType;
-  status?: EventStatusValue;
-  previousStartDate?: Date;
-  doorTime?: Date;
-  images?: string[];
-  offer?: EventOffer;
-  isAccessibleForFree?: boolean;
-  keywords?: string[];
-  about?: string[];
-  audience?: string[];
-  performer?: EventSchemaPersonOrOrg[];
-  contributor?: EventSchemaPersonOrOrg[];
-  sponsor?: EventSchemaPersonOrOrg[];
-  funder?: EventSchemaPersonOrOrg[];
-  maximumAttendeeCapacity?: number;
-  remainingAttendeeCapacity?: number;
-};
+export interface EventSchemaMetadata {
+  schemaType?: EventSchemaType | undefined;
+  status?: EventStatusValue | undefined;
+  previousStartDate?: Date | undefined;
+  doorTime?: Date | undefined;
+  images?: string[] | undefined;
+  offer?: EventOffer | undefined;
+  isAccessibleForFree?: boolean | undefined;
+  keywords?: string[] | undefined;
+  about?: string[] | undefined;
+  audience?: string[] | undefined;
+  performer?: EventSchemaPersonOrOrg[] | undefined;
+  contributor?: EventSchemaPersonOrOrg[] | undefined;
+  sponsor?: EventSchemaPersonOrOrg[] | undefined;
+  funder?: EventSchemaPersonOrOrg[] | undefined;
+  maximumAttendeeCapacity?: number | undefined;
+  remainingAttendeeCapacity?: number | undefined;
+}
 
 export const FORMAT_LABEL: Record<EventFormat, string> = {
   virtual: 'Virtual',
