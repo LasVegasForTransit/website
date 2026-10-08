@@ -88,6 +88,7 @@ jobs:
         with:
           name: lighthouse-${{ github.sha }}
           path: apps/site/.lighthouseci/
+          include-hidden-files: true
           if-no-files-found: ignore
           retention-days: 14
 
@@ -124,6 +125,7 @@ jobs:
           name: lighthouse-mobile-${{ github.sha }}
           # outputDir for LIGHTHOUSE_PRESET=mobile in apps/site/lighthouserc.cjs.
           path: apps/site/.lighthouseci-mobile/
+          include-hidden-files: true
           if-no-files-found: ignore
           retention-days: 14
 
