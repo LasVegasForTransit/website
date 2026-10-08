@@ -39,7 +39,7 @@
     "check:third-party": "tsx scripts/audit/third-party-scan.ts",
     "check:a11y": "pnpm test:e2e --project=a11y",
     "check:content": "alex src/content && cspell --no-progress --no-summary 'src/**/*.{md,mdx,astro}'",
-    "worker:types": "wrangler types worker-configuration.d.ts --include-runtime=false --check",
+    "worker:types": "CLOUDFLARE_LOAD_DEV_VARS_FROM_DOT_ENV=false wrangler types worker-configuration.d.ts --include-runtime=false --check",
     "worker:check": "wrangler deploy --dry-run --outdir .wrangler/deploy-dry-run",
     "worker:test:live": "tsx scripts/audit/worker-live-parity.ts",
     "worker:test:browser": "pnpm test:e2e",
