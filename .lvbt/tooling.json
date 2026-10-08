@@ -185,7 +185,7 @@
     ],
     "attestation": {
       "signerWorkflow": "LasVegasForTransit/repository-tooling/.github/workflows/release-attest.yml",
-      "signerCommit": "ac987b64a242c142b668abed03fb0aca73632767",
+      "signerCommit": "3567f0cb1345e8756eb5d84e0a3ea7b62695125a",
       "legacyArtifacts": [
         {
           "runId": "37677421103",

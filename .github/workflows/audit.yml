@@ -223,7 +223,7 @@ jobs:
       - name: Check the join and sign-in pages
         env:
           AUDIT_SKIP_BUILD: '1'
-        run: pnpm exec playwright test tests/e2e/a11y-pseudo-locale.spec.ts --project=a11y
+        run: pnpm test:e2e tests/e2e/a11y-pseudo-locale.spec.ts --project=a11y
 
   perf-memory:
     name: Runtime memory
@@ -276,7 +276,7 @@ jobs:
         # parallel worker rewrites it mid-import.
         env:
           AUDIT_SKIP_BUILD: '1'
-        run: pnpm exec playwright test --project=perf-memory --reporter=line
+        run: pnpm test:e2e --project=perf-memory --reporter=line
 
   visual-regression:
     name: Visual regression
@@ -331,7 +331,7 @@ jobs:
         env:
           AUDIT_SKIP_BUILD: '1'
         run: |
-          pnpm exec playwright test \
+          pnpm test:e2e \
             --project=mobile-portrait \
             --project=mobile-landscape \
             --project=tablet-portrait \

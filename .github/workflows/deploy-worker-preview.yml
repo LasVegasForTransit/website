@@ -12,7 +12,7 @@ permissions:
 
 jobs:
   preview:
-    uses: LasVegasForTransit/repository-tooling/.github/workflows/release-pr-preview.yml@ac987b64a242c142b668abed03fb0aca73632767
+    uses: LasVegasForTransit/repository-tooling/.github/workflows/release-pr-preview.yml@3567f0cb1345e8756eb5d84e0a3ea7b62695125a
     with:
       enabled: ${{ vars.CLOUDFLARE_WORKERS_PREVIEW_ENABLED == 'true' }}
       publication-mode: version

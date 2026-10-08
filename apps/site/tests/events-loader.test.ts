@@ -53,6 +53,53 @@ async function loadCalendar() {
   return entries;
 }
 
+for (const [location, expected] of [
+  [
+    'Huntridge Park, Las Vegas, NV 89104, USA',
+    {
+      name: 'Huntridge Park',
+      streetAddress: '1251 S. Maryland Parkway',
+      addressLocality: 'Las Vegas',
+      addressRegion: 'NV',
+      postalCode: '89104',
+      addressCountry: 'US',
+    },
+  ],
+  [
+    '7-Eleven, 4728 W Craig Rd, North Las Vegas, NV 89032, USA',
+    {
+      name: '7-Eleven',
+      streetAddress: '4728 W Craig Rd',
+      addressLocality: 'North Las Vegas',
+      addressRegion: 'NV',
+      postalCode: '89032',
+      addressCountry: 'US',
+    },
+  ],
+  [
+    'Unknown Park, Las Vegas, NV 89104, USA',
+    {
+      name: 'Unknown Park, Las Vegas, NV 89104, USA',
+      addressLocality: 'Las Vegas',
+      addressRegion: 'NV',
+      addressCountry: 'US',
+    },
+  ],
+] as const) {
+  void test(`calendar venue addresses retain full, verified and unknown locations: ${location}`, async (t) => {
+    t.mock.method(Date, 'now', () => now.getTime());
+    const feed = calendar('CONFIRMED').replace('LOCATION:New cafe', `LOCATION:${location}`);
+    t.mock.method(globalThis, 'fetch', () => Promise.resolve(new Response(feed)));
+    const moved = (await loadCalendar()).find(
+      (entry) => entry.id === '2026-10-22-neighborhood-night',
+    );
+    assert.ok(moved);
+    assert.deepEqual((moved.data.location as { venue: unknown }).venue, expected);
+    assert.equal(moved.data.calendarUid, seriesUid);
+    assert.equal((moved.data.date as Date).toISOString(), '2026-10-22T19:00:00.000Z');
+  });
+}
+
 void test('calendar loading retains series UID and the renamed, rescheduled occurrence details', async (t) => {
   t.mock.method(Date, 'now', () => now.getTime());
   t.mock.method(globalThis, 'fetch', () => Promise.resolve(new Response(calendar('CONFIRMED'))));

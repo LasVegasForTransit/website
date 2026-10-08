@@ -31,13 +31,13 @@ concurrency:
 jobs:
   source:
     if: github.ref == 'refs/heads/main'
-    uses: LasVegasForTransit/repository-tooling/.github/workflows/release-source.yml@ac987b64a242c142b668abed03fb0aca73632767
+    uses: LasVegasForTransit/repository-tooling/.github/workflows/release-source.yml@3567f0cb1345e8756eb5d84e0a3ea7b62695125a
     with:
       run-id: ${{ inputs.run_id }}
     secrets: inherit
   promote:
     needs: source
-    uses: LasVegasForTransit/repository-tooling/.github/workflows/release-publish.yml@ac987b64a242c142b668abed03fb0aca73632767
+    uses: LasVegasForTransit/repository-tooling/.github/workflows/release-publish.yml@3567f0cb1345e8756eb5d84e0a3ea7b62695125a
     with:
       target: production
       expected-version: ${{ inputs.expected_version }}

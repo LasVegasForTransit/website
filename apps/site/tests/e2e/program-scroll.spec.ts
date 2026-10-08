@@ -10,7 +10,11 @@ test('opens programs at the top and snaps navigation below the header', async ({
     'y',
   );
 
+  // The index is shown while a program occupies the viewport, not on the
+  // introductory hero. Enter the first program before using its navigation.
+  await page.locator('#vegas-urbanists').scrollIntoViewIfNeeded();
   const destination = page.locator('.program-index a[href="#week-without-driving"]');
+  await expect(destination).toBeVisible();
   await destination.click();
   await expect(destination).toHaveAttribute('aria-current', 'location');
   await expect
