@@ -40,7 +40,7 @@ void test('required Turbo validation includes uncached dependency and secret gat
     await readFile(new URL('../turbo.json', import.meta.url), 'utf8'),
   ) as { tasks: { validate: { dependsOn: string[] } } };
   for (const name of ['security:secrets', 'security:dependencies']) {
-    assert.equal(rootTurbo.tasks[`//#${name}`].cache, false);
+    assert.equal(rootTurbo.tasks[`//#${name}`]?.cache, false);
     assert.ok(siteTurbo.tasks.validate.dependsOn.includes(`//#${name}`));
   }
 });

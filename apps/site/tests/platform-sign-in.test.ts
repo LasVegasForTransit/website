@@ -338,7 +338,7 @@ void test('the current member is looked up once per request, and not at all with
   );
   assert.ok(answers.every((answer) => answer.signedIn));
   const [first] = answers;
-  assert.ok(first.signedIn);
+  assert.ok(first?.signedIn);
   assert.deepEqual(Object.keys(first.person).sort(), [
     'email',
     'givenName',

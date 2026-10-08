@@ -130,12 +130,14 @@ export class PersonService {
    */
   async upsertFromSource(
     input: IncomingRecord & {
-      consent?: {
-        scope: ConsentScope;
-        source: ConsentSource;
-        method: ConsentMethod;
-        wordingVersion: string;
-      };
+      consent?:
+        | {
+            scope: ConsentScope;
+            source: ConsentSource;
+            method: ConsentMethod;
+            wordingVersion: string;
+          }
+        | undefined;
     },
   ): Promise<{ person: Person; action: UpsertAction }> {
     const decision = await decideMatch(this.db, input);
@@ -186,7 +188,8 @@ export class PersonService {
       .bind(personId, now, now)
       .run();
     const withheld = decision.withholdEmail ? input.fields.email : undefined;
-    const fields = withheld ? { ...input.fields, email: undefined } : input.fields;
+    const fields = { ...input.fields };
+    if (withheld) delete fields.email;
     await this.updateFields(personId, { source: input.source, fields });
     const details = withheld ? { email: normalizeEmail(withheld) } : null;
     await queueForReview(this.db, personId, { ...decision, details }, now);

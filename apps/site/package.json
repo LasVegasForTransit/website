@@ -72,6 +72,8 @@
     "@iconify-json/mdi": "catalog:",
     "@lasvegasfortransit/analytics": "catalog:",
     "@lasvegasfortransit/eslint-config": "file:../../.lvbt/web-platform/packages/eslint-config",
+    "@lasvegasfortransit/playwright-config": "file:../../.lvbt/web-platform/packages/playwright-config",
+    "@lasvegasfortransit/typescript-config": "file:../../.lvbt/web-platform/packages/typescript-config",
     "@lasvegasfortransit/web-platform": "file:../../.lvbt/web-platform/packages/web-platform",
     "@lhci/cli": "catalog:",
     "@playwright/test": "catalog:",

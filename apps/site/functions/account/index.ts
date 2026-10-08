@@ -63,7 +63,7 @@ export const onRequestGet: PagesFunction<SignInPagesEnv> = async ({ env, request
           .on('[data-slot="membership-inactive"]', show());
       }
       const text =
-        notice.key && Object.hasOwn(NOTICES, notice.key) ? NOTICES[notice.key]() : undefined;
+        notice.key && Object.hasOwn(NOTICES, notice.key) ? NOTICES[notice.key]?.() : undefined;
       if (text) filled = filled.on('[data-slot="notice"]', showText(text));
       return filled;
     },

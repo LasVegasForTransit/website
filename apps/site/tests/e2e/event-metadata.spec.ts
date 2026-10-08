@@ -6,7 +6,7 @@ type JsonLd = Record<string, unknown>;
 
 const sitemap = readFileSync(new URL('../../dist/sitemap-0.xml', import.meta.url), 'utf8');
 const eventPaths = [...sitemap.matchAll(/<loc>([^<]+)<\/loc>/g)]
-  .map((match) => new URL(match[1]).pathname)
+  .map((match) => new URL(match[1] ?? '').pathname)
   .filter((path) => /^\/events\/[^/.]+\/?$/.test(path));
 if (eventPaths.length === 0) throw new Error('The built sitemap contains no event pages.');
 
@@ -25,7 +25,8 @@ async function eventJsonLd(page: import('@playwright/test').Page): Promise<JsonL
     return typeof schemaType === 'string' && schemaType.endsWith('Event');
   });
   expect(event).toBeTruthy();
-  return event!;
+  if (!event) throw new Error('Expected event structured data.');
+  return event;
 }
 
 test.describe('event metadata', () => {

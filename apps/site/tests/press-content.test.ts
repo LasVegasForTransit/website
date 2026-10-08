@@ -90,10 +90,10 @@ void test('fetchPressEntries reads all Notion pages, omits incomplete rows, and 
   );
   assert.equal(calls.length, 2);
   assert.equal(calls[0]?.url, 'https://api.notion.com/v1/data_sources/press-data-source/query');
-  assert.match(calls[0]?.body ?? '', /"page_size":100/);
+  assert.match(calls[0].body, /"page_size":100/);
   assert.match(calls[1]?.body ?? '', /"start_cursor":"next-page"/);
-  assert.equal(calls[0]?.headers.get('Authorization'), 'Bearer notion-token');
-  assert.equal(calls[0]?.headers.get('Notion-Version'), '2026-03-11');
+  assert.equal(calls[0].headers.get('Authorization'), 'Bearer notion-token');
+  assert.equal(calls[0].headers.get('Notion-Version'), '2026-03-11');
 });
 
 void test('renderPressEntries escapes Notion text and links only to validated article URLs', () => {

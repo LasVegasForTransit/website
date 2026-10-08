@@ -1,6 +1,6 @@
 interface EventBody {
   id: string;
-  data: { calendarOccurrenceId?: string };
+  data: { calendarOccurrenceId?: string | undefined };
 }
 
 /** Prefer immutable calendar identity; filename matching is for legacy fragments. */

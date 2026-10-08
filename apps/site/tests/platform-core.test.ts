@@ -175,9 +175,9 @@ void test('every catalog key is used and every used key exists', () => {
 
 void test('pages built on request send the same security headers as public/_headers', () => {
   const headersFile = readFileSync(new URL('public/_headers', root), 'utf8');
-  const block = headersFile.split(/\n(?=\/)/)[0] ?? '';
-  const fromFile = Object.fromEntries(
-    [...block.matchAll(/^ {2}([\w-]+): (.+)$/gm)].map((match) => [match[1], match[2]]),
+  const block = headersFile.split(/\n(?=\/)/).at(0) ?? '';
+  const fromFile = Object.fromEntries<string>(
+    [...block.matchAll(/^ {2}([\w-]+): (.+)$/gm)].map((match) => [match[1] ?? '', match[2] ?? '']),
   );
   assert.deepEqual(SECURITY_HEADERS, fromFile);
 });

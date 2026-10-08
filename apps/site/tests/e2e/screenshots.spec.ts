@@ -12,7 +12,7 @@ const PROD_ORIGIN = 'https://lasvegasfortransit.org';
 
 const sitemap = readFileSync(SITEMAP_PATH, 'utf8');
 const allPaths = [...sitemap.matchAll(/<loc>([^<]+)<\/loc>/g)]
-  .map((m) => m[1].replace(PROD_ORIGIN, ''))
+  .map((m) => (m[1] ?? '').replace(PROD_ORIGIN, ''))
   .map((p) => p || '/');
 
 if (allPaths.length === 0) {

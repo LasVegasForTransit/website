@@ -5,7 +5,7 @@ interface Props {
   // for an upcoming project, computed by src/lib/projects.ts's
   // `projectDisplayStatus`, which is also what decides which `status`
   // (and therefore which style) actually gets passed in.
-  label?: string;
+  label?: string | undefined;
 }
 const { status, label: labelOverride } = Astro.props;
 

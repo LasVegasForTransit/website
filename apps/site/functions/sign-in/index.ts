@@ -25,9 +25,9 @@ import {
 
 interface PageState {
   next: string;
-  email?: string;
+  email?: string | undefined;
   emailError?: boolean;
-  notice?: string;
+  notice?: string | undefined;
 }
 
 async function render(

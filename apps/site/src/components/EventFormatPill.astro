@@ -19,7 +19,7 @@ import {
 interface Props {
   // Optional: an event whose attendance details aren't set yet has no format,
   // and the pill falls back to the "details to come" presentation.
-  format?: EventFormat;
+  format?: EventFormat | undefined;
   canvas?: 'paper' | 'ink';
   size?: 'sm' | 'md';
 }

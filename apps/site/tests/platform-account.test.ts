@@ -155,6 +155,7 @@ void test('an email change waits for the code, then notifies the old address', a
   assert.deepEqual(started, { kind: 'sent', newEmail: 'ana.new@example.org' });
   assert.equal((await new PersonService(db).getPerson(person.id))?.email, 'ana@example.org');
   const [codeEmail] = emails();
+  assert.ok(codeEmail);
   assert.deepEqual(codeEmail.to, ['ana.new@example.org']);
 
   const confirmed = await confirmEmailChange(env(db), person, codeFrom(codeEmail.subject), fetcher);

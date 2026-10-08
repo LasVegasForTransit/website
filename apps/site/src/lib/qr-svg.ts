@@ -11,6 +11,14 @@ const PAD_CODEWORDS = [0xec, 0x11] as const;
 
 type Matrix = boolean[][];
 
+// The protocol fixes each matrix/array dimension; reject invalid indices
+// instead of relying on unchecked access while retaining the exact encoding.
+function at<T>(values: readonly T[], index: number): T {
+  const value = values[index];
+  if (value === undefined) throw new RangeError(`QR index out of bounds: ${index}`);
+  return value;
+}
+
 function blankMatrix(): Matrix {
   return Array.from({ length: SIZE }, () => Array.from({ length: SIZE }, () => false));
 }
@@ -40,8 +48,8 @@ function drawFinder(modules: Matrix, reserved: Matrix, x: number, y: number): vo
           dy === 0 ||
           dy === 6 ||
           (dx >= 2 && dx <= 4 && dy >= 2 && dy <= 4));
-      modules[yy][xx] = isDark;
-      reserved[yy][xx] = true;
+      at(modules, yy)[xx] = isDark;
+      at(reserved, yy)[xx] = true;
     }
   }
 }
@@ -52,8 +60,8 @@ function drawAlignment(modules: Matrix, reserved: Matrix, cx: number, cy: number
       const xx = cx + dx;
       const yy = cy + dy;
       const dist = Math.max(Math.abs(dx), Math.abs(dy));
-      modules[yy][xx] = dist !== 1;
-      reserved[yy][xx] = true;
+      at(modules, yy)[xx] = dist !== 1;
+      at(reserved, yy)[xx] = true;
     }
   }
 }
@@ -65,26 +73,26 @@ function drawFunctionPatterns(modules: Matrix, reserved: Matrix): void {
   drawAlignment(modules, reserved, 30, 30);
 
   for (let i = 0; i < SIZE; i += 1) {
-    if (!reserved[6][i]) {
-      modules[6][i] = i % 2 === 0;
-      reserved[6][i] = true;
+    if (!at(reserved, 6)[i]) {
+      at(modules, 6)[i] = i % 2 === 0;
+      at(reserved, 6)[i] = true;
     }
-    if (!reserved[i][6]) {
-      modules[i][6] = i % 2 === 0;
-      reserved[i][6] = true;
+    if (!at(reserved, i)[6]) {
+      at(modules, i)[6] = i % 2 === 0;
+      at(reserved, i)[6] = true;
     }
   }
 
-  modules[SIZE - 8][8] = true;
-  reserved[SIZE - 8][8] = true;
+  at(modules, SIZE - 8)[8] = true;
+  at(reserved, SIZE - 8)[8] = true;
 
   for (let i = 0; i < 9; i += 1) {
-    reserved[8][i] = true;
-    reserved[i][8] = true;
+    at(reserved, 8)[i] = true;
+    at(reserved, i)[8] = true;
   }
   for (let i = SIZE - 8; i < SIZE; i += 1) {
-    reserved[8][i] = true;
-    reserved[i][8] = true;
+    at(reserved, 8)[i] = true;
+    at(reserved, i)[8] = true;
   }
 }
 
@@ -106,12 +114,12 @@ function encodeData(text: string): number[] {
   const codewords: number[] = [];
   for (let i = 0; i < buffer.bits.length; i += 8) {
     let value = 0;
-    for (let j = 0; j < 8; j += 1) value = (value << 1) | buffer.bits[i + j];
+    for (let j = 0; j < 8; j += 1) value = (value << 1) | at(buffer.bits, i + j);
     codewords.push(value);
   }
 
   for (let i = 0; codewords.length < DATA_CODEWORDS; i += 1) {
-    codewords.push(PAD_CODEWORDS[i % 2]);
+    codewords.push(at(PAD_CODEWORDS, i % 2));
   }
 
   return codewords;
@@ -132,8 +140,8 @@ function reedSolomonDivisor(degree: number): number[] {
   let root = 1;
   for (let i = 0; i < degree; i += 1) {
     for (let j = 0; j < degree; j += 1) {
-      result[j] = gfMultiply(result[j], root);
-      if (j + 1 < degree) result[j] ^= result[j + 1];
+      result[j] = gfMultiply(at(result, j), root);
+      if (j + 1 < degree) result[j] = at(result, j) ^ at(result, j + 1);
     }
     root = gfMultiply(root, 0x02);
   }
@@ -143,10 +151,10 @@ function reedSolomonDivisor(degree: number): number[] {
 function reedSolomonRemainder(data: number[], divisor: number[]): number[] {
   const result = Array.from({ length: divisor.length }, () => 0);
   for (const byte of data) {
-    const factor = byte ^ result.shift()!;
+    const factor = byte ^ (result.shift() ?? 0);
     result.push(0);
     divisor.forEach((coefficient, i) => {
-      result[i] ^= gfMultiply(coefficient, factor);
+      result[i] = at(result, i) ^ gfMultiply(coefficient, factor);
     });
   }
   return result;
@@ -161,10 +169,10 @@ function interleaveCodewords(data: number[]): number[] {
   const result: number[] = [];
 
   for (let i = 0; i < DATA_CODEWORDS_PER_BLOCK; i += 1) {
-    for (const block of blocks) result.push(block[i]);
+    for (const block of blocks) result.push(at(block, i));
   }
   for (let i = 0; i < ECC_CODEWORDS_PER_BLOCK; i += 1) {
-    for (const block of errorBlocks) result.push(block[i]);
+    for (const block of errorBlocks) result.push(at(block, i));
   }
 
   return result;
@@ -187,10 +195,10 @@ function drawData(modules: Matrix, reserved: Matrix, codewords: number[]): void 
       const y = upward ? SIZE - 1 - vert : vert;
       for (let j = 0; j < 2; j += 1) {
         const x = right - j;
-        if (reserved[y][x]) continue;
+        if (at(reserved, y)[x]) continue;
 
         const bit = bitIndex < bits.length ? bits[bitIndex] === 1 : false;
-        modules[y][x] = bit !== maskBit(x, y);
+        at(modules, y)[x] = bit !== maskBit(x, y);
         bitIndex += 1;
       }
     }
@@ -201,14 +209,14 @@ function drawData(modules: Matrix, reserved: Matrix, codewords: number[]): void 
 function drawFormatBits(modules: Matrix): void {
   const bitAt = (i: number) => ((FORMAT_BITS >>> i) & 1) === 1;
 
-  for (let i = 0; i <= 5; i += 1) modules[i][8] = bitAt(i);
-  modules[7][8] = bitAt(6);
-  modules[8][8] = bitAt(7);
-  modules[8][7] = bitAt(8);
-  for (let i = 9; i < 15; i += 1) modules[8][14 - i] = bitAt(i);
+  for (let i = 0; i <= 5; i += 1) at(modules, i)[8] = bitAt(i);
+  at(modules, 7)[8] = bitAt(6);
+  at(modules, 8)[8] = bitAt(7);
+  at(modules, 8)[7] = bitAt(8);
+  for (let i = 9; i < 15; i += 1) at(modules, 8)[14 - i] = bitAt(i);
 
-  for (let i = 0; i < 8; i += 1) modules[8][SIZE - 1 - i] = bitAt(i);
-  for (let i = 8; i < 15; i += 1) modules[SIZE - 15 + i][8] = bitAt(i);
+  for (let i = 0; i < 8; i += 1) at(modules, 8)[SIZE - 1 - i] = bitAt(i);
+  for (let i = 8; i < 15; i += 1) at(modules, SIZE - 15 + i)[8] = bitAt(i);
 }
 
 function qrMatrix(text: string): Matrix {

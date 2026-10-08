@@ -29,16 +29,16 @@ interface EventData {
   calendarUid: string;
   calendarOccurrenceId: string;
   date: Date;
-  endDate?: Date;
+  endDate?: Date | undefined;
   // Undefined when the event has no arranged join URL or venue yet.
-  location?: EventLocation;
-  rsvpUrl?: string;
-  admissionUrl?: string;
-  admissionLabel?: EventAdmissionLabel;
+  location?: EventLocation | undefined;
+  rsvpUrl?: string | undefined;
+  admissionUrl?: string | undefined;
+  admissionLabel?: EventAdmissionLabel | undefined;
   featured: boolean;
   summary: string;
-  body?: string;
-  schema?: EventSchemaMetadata;
+  body?: string | undefined;
+  schema?: EventSchemaMetadata | undefined;
 }
 
 const CONFERENCE_HOST_RE =
@@ -115,7 +115,7 @@ function parseGooglePlaceLocation(rawLocation: string): EventVenue {
     name,
     streetAddress,
     addressLocality,
-    addressRegion: regionPostalMatch[1],
+    addressRegion: regionPostalMatch[1] ?? 'NV',
     postalCode: regionPostalMatch[2],
     addressCountry: country === 'USA' ? 'US' : (country ?? 'US'),
   };
@@ -164,7 +164,7 @@ function parseDescription(
 
   const firstP = authored.match(/<p[^>]*>([\s\S]*?)<\/p>/i);
   if (firstP && firstP.index !== undefined) {
-    const summaryText = stripHtml(firstP[1]) || title;
+    const summaryText = stripHtml(firstP[1] ?? '') || title;
     const rest = (
       authored.slice(0, firstP.index) + authored.slice(firstP.index + firstP[0].length)
     ).trim();
@@ -172,7 +172,7 @@ function parseDescription(
   }
 
   // Descriptions without <p> wrapping use blank lines or consecutive <br> tags.
-  const [first, ...rest] = authored
+  const [first = '', ...rest] = authored
     .split(/\r?\n\s*\r?\n|(?:<br\s*\/?>\s*){2,}/i)
     .map((p) => p.trim());
   return {

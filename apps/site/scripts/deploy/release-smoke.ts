@@ -42,7 +42,7 @@ if (values['release-id'] || values.commit) {
     origin,
     { commit: values.commit, releaseId: values['release-id'] },
     {
-      credentials,
+      ...(credentials ? { credentials } : {}),
       timeoutMs: values['wait-for-propagation'] ? 180_000 : 0,
     },
   );

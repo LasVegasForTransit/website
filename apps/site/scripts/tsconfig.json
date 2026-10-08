@@ -1,16 +1,9 @@
 {
+  "extends": "@lasvegasfortransit/typescript-config/base.json",
   "compilerOptions": {
-    "module": "ESNext",
-    "moduleResolution": "Bundler",
-    "target": "ES2022",
-    "strict": true,
-    "noUncheckedIndexedAccess": true,
     "esModuleInterop": true,
-    "resolveJsonModule": true,
-    "isolatedModules": true,
-    "skipLibCheck": true,
-    "noEmit": true,
-    "types": ["node"]
+    "types": ["node"],
+    "lib": ["ES2024", "DOM", "DOM.Iterable"]
   },
   "include": ["**/*.ts"]
 }
