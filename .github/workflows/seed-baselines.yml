@@ -44,6 +44,7 @@ jobs:
       PUBLIC_LVBT_MEMBERSHIP_FORM_URL: ${{ vars.PUBLIC_LVBT_MEMBERSHIP_FORM_URL }}
       PUBLIC_LVBT_NEWSLETTER_URL: ${{ vars.PUBLIC_LVBT_NEWSLETTER_URL }}
       PUBLIC_LVBT_NEWSLETTER_FEED_URL: ${{ vars.PUBLIC_LVBT_NEWSLETTER_FEED_URL }}
+      PUBLIC_LVBT_PREVIEW_PAGES: '1'
     steps:
       - name: Checkout
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
@@ -73,7 +74,7 @@ jobs:
         env:
           AUDIT_SKIP_BUILD: '1'
         run: |
-          pnpm exec playwright test \
+          pnpm test:e2e \
             --project=mobile-portrait \
             --project=mobile-landscape \
             --project=tablet-portrait \

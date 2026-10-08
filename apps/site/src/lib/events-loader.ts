@@ -14,6 +14,7 @@ import type { Loader } from 'astro/loaders';
 import ICAL from 'ical.js';
 import { site } from './site';
 import { slugify } from './slugify';
+import { verifiedCalendarVenues } from './event-venues';
 
 import type {
   EventAdmissionLabel,
@@ -100,12 +101,15 @@ function parseGooglePlaceLocation(rawLocation: string): EventVenue {
     .map((part) => part.trim())
     .filter(Boolean);
 
-  if (parts.length < 4) return fallback;
+  const incomplete = Object.hasOwn(verifiedCalendarVenues, rawLocation)
+    ? (verifiedCalendarVenues[rawLocation] ?? fallback)
+    : fallback;
+  if (parts.length < 4) return incomplete;
 
   const [name, streetAddress, addressLocality, regionPostal, country] = parts;
   const regionPostalMatch = regionPostal?.match(/^([A-Z]{2})\s+(\d{5}(?:-\d{4})?)$/);
 
-  if (!name || !streetAddress || !addressLocality || !regionPostalMatch) return fallback;
+  if (!name || !streetAddress || !addressLocality || !regionPostalMatch) return incomplete;
 
   return {
     name,

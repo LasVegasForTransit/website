@@ -151,6 +151,12 @@ automatic freshness guarantee while a release awaits review.
 - **Event with neither join URL nor venue** → the page still builds and shows "Location to be
   announced." The structured-data audit reports a non-fatal Google eligibility note until you add a
   meeting URL or physical address.
+- **Physical venue missing its address** → the structured-data audit fails. Add the full street,
+  city, state and ZIP to the calendar location. A small reviewed venue catalog in
+  `apps/site/src/lib/event-venues.ts` supplies the official city address for the calendar's exact
+  Huntridge Park location. Full calendar addresses take precedence; unknown venues are never
+  assigned a guessed address. The catalog does not change calendar titles, dates or occurrence
+  identities.
 - **End time missing** → currently allowed (the schema's `endDate` is optional), but downstream
   behavior degrades: `.ics` falls back to a 1-hour duration and "Live now" never fires correctly.
   Always set an end time.

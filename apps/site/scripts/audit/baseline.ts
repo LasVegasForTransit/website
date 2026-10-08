@@ -182,12 +182,10 @@ if (!skip.has('axe')) {
   // otherwise Playwright silently reuses the dev server and tests run
   // against whatever checkout that server is serving.
   waveBResults.push(
-    await runTool(
-      'axe',
-      'pnpm',
-      ['exec', 'playwright', 'test', '--project=a11y', '--reporter=line'],
-      { AUDIT_SKIP_BUILD: '1', AUDIT_PORT: '4399' },
-    ),
+    await runTool('axe', 'pnpm', ['run', 'test:e2e', '--project=a11y', '--reporter=line'], {
+      AUDIT_SKIP_BUILD: '1',
+      AUDIT_PORT: '4399',
+    }),
   );
 }
 if (!skip.has('perf-memory')) {
@@ -199,7 +197,7 @@ if (!skip.has('perf-memory')) {
     await runTool(
       'perf-memory',
       'pnpm',
-      ['exec', 'playwright', 'test', '--project=perf-memory', '--reporter=line'],
+      ['run', 'test:e2e', '--project=perf-memory', '--reporter=line'],
       { AUDIT_SKIP_BUILD: '1', AUDIT_PORT: '4399' },
     ),
   );

@@ -18,7 +18,7 @@ concurrency:
 jobs:
   build:
     name: Build
-    uses: LasVegasForTransit/repository-tooling/.github/workflows/release-build.yml@ac987b64a242c142b668abed03fb0aca73632767
+    uses: LasVegasForTransit/repository-tooling/.github/workflows/release-build.yml@3567f0cb1345e8756eb5d84e0a3ea7b62695125a
     with:
       artifact-source: typed-worker
       require-analytics: true
@@ -36,7 +36,7 @@ jobs:
       packages: read
       attestations: write
       id-token: write
-    uses: LasVegasForTransit/repository-tooling/.github/workflows/release-attest.yml@ac987b64a242c142b668abed03fb0aca73632767
+    uses: LasVegasForTransit/repository-tooling/.github/workflows/release-attest.yml@3567f0cb1345e8756eb5d84e0a3ea7b62695125a
     with:
       artifact-prefix: website-release
 
@@ -44,7 +44,7 @@ jobs:
     name: Verify and update staging
     needs: [build, attest]
     if: github.ref == 'refs/heads/main'
-    uses: LasVegasForTransit/repository-tooling/.github/workflows/release-publish.yml@ac987b64a242c142b668abed03fb0aca73632767
+    uses: LasVegasForTransit/repository-tooling/.github/workflows/release-publish.yml@3567f0cb1345e8756eb5d84e0a3ea7b62695125a
     with:
       target: preview
       release-id: ${{ github.run_id }}

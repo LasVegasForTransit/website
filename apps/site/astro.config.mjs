@@ -113,6 +113,9 @@ export default defineConfig({
   },
   vite: {
     plugins: [tailwindcss()],
+    // The site's script-src policy permits external scripts. Astro otherwise
+    // inlines small module bundles, which the browser correctly refuses.
+    build: { assetsInlineLimit: (filePath) => (filePath.endsWith('.js') ? false : undefined) },
   },
   markdown: {
     shikiConfig: {

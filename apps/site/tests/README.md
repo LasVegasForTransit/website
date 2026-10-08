@@ -43,8 +43,8 @@ pnpm test:install                         # downloads chromium (~150 MB, one-tim
 ## Day-to-day
 
 ```sh
-pnpm exec playwright test tests/e2e/screenshots.spec.ts
-pnpm exec playwright test tests/e2e/screenshots.spec.ts --update-snapshots
+pnpm test:e2e tests/e2e/screenshots.spec.ts
+pnpm test:e2e tests/e2e/screenshots.spec.ts --update-snapshots
 pnpm exec playwright show-report   # open the HTML report (diffs included)
 ```
 
@@ -72,7 +72,7 @@ If you already have it running locally it will be reused; in CI it always starts
 ## Baseline workflow
 
 1. Make an intentional UI change.
-2. Run `pnpm exec playwright test tests/e2e/screenshots.spec.ts`. Failing tests indicate the diffs.
+2. Run `pnpm test:e2e tests/e2e/screenshots.spec.ts`. Failing tests indicate the diffs.
 3. Review the failures via `pnpm exec playwright show-report` — each failed test shows expected /
    actual / diff side-by-side.
 4. If the new output is correct, rerun the screenshot test with `--update-snapshots`. Commit the
