@@ -3,14 +3,3 @@
 set -eu
 ROOT=$(git rev-parse --show-toplevel)
 sh "$ROOT/node_modules/@lasvegasfortransit/cli/hooks/pre-push.sh" "$@"
-
-# Git LFS. core.hooksPath replaces the pre-push hook git-lfs installs, so the
-# upload runs here, after the check. Without it the screenshot baselines reach
-# GitHub as pointers to objects it never received. git-lfs reads the refs
-# being pushed from stdin, which the check leaves unread.
-if command -v git-lfs >/dev/null 2>&1; then
-  git lfs pre-push "$@"
-else
-  printf '  note: git-lfs is not installed, so screenshot baselines are not uploaded.\n' >&2
-  printf '        Install it with: brew install git-lfs && git lfs install\n' >&2
-fi

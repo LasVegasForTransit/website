@@ -30,7 +30,7 @@ New to any of these? Each links to its [glossary](./docs/reference/glossary.md) 
 To preview the site on your own computer — all most contributors ever need:
 
 ```sh
-pnpm install   # one-time: install dependencies
+pnpm bootstrap # one-time: dependencies, hooks, and missing local settings
 pnpm dev       # start the local site at https://lvbt.localhost
 ```
 
@@ -38,21 +38,22 @@ That's it: edit a file, see it update live. New to the project or our tools?
 [`docs/tutorials/start-here.md`](./docs/tutorials/start-here.md) walks through this from scratch,
 and the [glossary](./docs/reference/glossary.md) defines any unfamiliar term.
 
-### Full setup (deploying your own copy)
+### Setup and production readiness
 
-`pnpm bootstrap` is a single command that takes an empty checkout all the way to a deployed site. It
-runs eight phases in order — `install` → `auth` → `workspace` → `env` → `repo` → `deploy` → `domain`
-→ `secrets`. Every phase checks what already exists first, so running it again is safe and an
-interrupted run picks up where it stopped:
+`pnpm bootstrap` prepares a local checkout and preserves existing local environment files. Empty
+Beehiiv or Notion integration settings produce warnings; page and content work needs no provider
+login. The [first-time setup tutorial](./docs/tutorials/first-time-setup.md) covers clone,
+bootstrap, development, checks, and the pull request path.
 
 ```sh
-pnpm install
-pnpm bootstrap   # full interactive setup; add --local-only to skip GitHub/Cloudflare
+pnpm preflight              # read local readiness without changing anything
+pnpm preflight --production # read the existing production platform requirements
 ```
 
-For what each phase does, the other flags, and how to add a phase, see the
-[bootstrap reference](./docs/reference/bootstrap.md); the
-[first-time-setup tutorial](./docs/tutorials/first-time-setup.md) is the hand-held version.
+Production setup is a separate maintainer operation, `pnpm bootstrap --production`. It uses
+[`apps/site/platform.json`](./apps/site/platform.json) and never publishes a website release.
+Reviewed changes merge through pull requests, update protected staging, and reach the public site
+only through explicit promotion. See the [bootstrap reference](./docs/reference/bootstrap.md).
 
 ---
 
@@ -124,7 +125,7 @@ apps/site/                  # The website (package @lasvegasfortransit/site)
   public/                   # Static assets, favicon, robots.txt
   functions/                # The Worker routes (join, sign-in, account, intake APIs)
   platform/                 # The Organizing Platform code and database migrations
-  scripts/bootstrap/        # The bootstrap CLI (TypeScript via tsx)
+  platform.json             # Production resources and credentials checked by the shared CLI
   scripts/audit/            # Build, bundle, and Worker audits
   tests/                    # Unit tests; tests/e2e holds the Playwright suites (see tests/README.md)
   astro.config.mjs          # Astro + integrations
@@ -159,11 +160,11 @@ in [`.github/actions/`](./.github/actions/) (`setup-node-pnpm`, `build-site`,
 | `deploy-worker-preview.yml`                             | Same-repository PR updates                     | Verify and comment an independent protected preview |
 | `deploy-worker-candidate.yml` (Promote website release) | Explicit selection of a successful staging run | Publish the saved release after candidate checks    |
 
-`ci.yml` (the required `Validate` check: `pnpm check`, a dependency audit, and a secret scan, no
-deploy), `audit.yml`, `audit-scheduled.yml`, `cron-rebuild.yml`, `seed-baselines.yml` and
-`standard-update.yml` (daily: opens a pull request when a newer repository standard is released)
-need no Cloudflare credentials. The full pipeline — every setting and the exact dashboard clicks for
-each token — is in
+`ci.yml` (the required `Validate` check runs `pnpm check`, including the required uncached
+production dependency audit and full-history secret scan), `audit.yml`, `audit-scheduled.yml`,
+`cron-rebuild.yml`, `seed-baselines.yml` and `standard-update.yml` (daily: opens a pull request when
+a newer repository standard is released) need no Cloudflare credentials. The full pipeline — every
+setting and the exact dashboard clicks for each token — is in
 [`docs/reference/deployment-pipeline.md`](./docs/reference/deployment-pipeline.md) and
 [`docs/guides/test-the-workers-candidate.md`](./docs/guides/test-the-workers-candidate.md).
 

@@ -16,7 +16,7 @@
 import path from 'node:path';
 import process from 'node:process';
 
-import { parseEnvFile, mergeEnvFile } from '../bootstrap/lib/env-file.js';
+import { parseEnvFile, mergeEnvFile } from '@lasvegasfortransit/cli/env';
 import {
   INTAKE_PROPERTIES,
   intakeDataSourceProperties,
@@ -48,7 +48,7 @@ async function main(): Promise<void> {
     die(
       'LVBT_NOTION_API_KEY is not set in .env.local.\n' +
         '  Create an internal integration at https://www.notion.so/my-integrations,\n' +
-        '  copy its token, then run `pnpm bootstrap --phase env` (or set it by hand).',
+        '  copy its test token into apps/site/.env.local on your machine.',
     );
   }
 
@@ -91,7 +91,7 @@ async function main(): Promise<void> {
   const existingId = existing ? getString(existing, 'id') : undefined;
   if (existingId) {
     console.log(`• Found an existing "${DB_TITLE}" data source — reusing it.`);
-    await writeDataSourceId(envPath, existingId);
+    writeDataSourceId(envPath, existingId);
     return;
   }
 
@@ -118,15 +118,15 @@ async function main(): Promise<void> {
     .map((p) => p.label)
     .join(', ');
   console.log(`✓ Created "${DB_TITLE}" with columns: ${columns}`);
-  await writeDataSourceId(envPath, dataSourceId);
+  writeDataSourceId(envPath, dataSourceId);
 }
 
-async function writeDataSourceId(envPath: string, id: string): Promise<void> {
+function writeDataSourceId(envPath: string, id: string): void {
   mergeEnvFile(envPath, new Map([['LVBT_NOTION_DATA_SOURCE_ID', id]]));
   console.log(`✓ Wrote LVBT_NOTION_DATA_SOURCE_ID=${id} to .env.local`);
   console.log(
-    '\nNext: push it to production with `pnpm bootstrap --phase deploy`\n' +
-      '(or set LVBT_NOTION_DATA_SOURCE_ID in the Cloudflare Pages dashboard) and redeploy.',
+    '\nNext: a maintainer configures LVBT_NOTION_DATA_SOURCE_ID using\n' +
+      '`pnpm bootstrap --production`, then promotes a verified website release.',
   );
 }
 

@@ -4,5 +4,5 @@
     "allowImportingTsExtensions": true,
     "types": ["node"]
   },
-  "include": ["*.config.ts", "tests"]
+  "include": ["*.config.ts", "tests", "scripts"]
 }

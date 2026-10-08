@@ -16,7 +16,7 @@
 import path from 'node:path';
 import process from 'node:process';
 
-import { parseEnvFile } from '../bootstrap/lib/env-file.js';
+import { parseEnvFile } from '@lasvegasfortransit/cli/env';
 import { fetchArticle } from './lib/article-extract.js';
 import { inferPublication, inferTopics, inferLocation } from './lib/transit-topics.js';
 import { makeParagraphBlocks } from './lib/notion-blocks.js';

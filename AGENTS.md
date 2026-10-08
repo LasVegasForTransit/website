@@ -16,36 +16,31 @@ Contributors here are often students and junior devs — keep docs and explanati
 
 ## Standard commands
 
-Every LVBT repository answers to the same commands, run from the repository root:
+Follow the shared
+[developer workflow](https://github.com/LasVegasForTransit/repository-tooling/blob/main/docs/reference/developer-workflow.md)
+for common setup, validation, audit and release commands. This site's `pnpm dev` starts
+`https://lvbt.localhost`; `pnpm test:e2e` runs product browser acceptance against a local build.
 
-| Command               | What it does                                                                |
-| --------------------- | --------------------------------------------------------------------------- |
-| `pnpm bootstrap`      | Set up this machine, and production for maintainers, one phase at a time    |
-| `pnpm preflight`      | Report what `pnpm bootstrap` would still do, without changing anything      |
-| `pnpm check`          | Format, docs, shape rules, lint, types, tests, the build, and Worker checks |
-| `pnpm check:fix`      | Apply formatting and lint fixes                                             |
-| `pnpm dev`            | Run the site at `https://lvbt.localhost`                                    |
-| `pnpm build`          | Build the site and its Worker                                               |
-| `pnpm test`           | Run the unit tests                                                          |
-| `pnpm test:e2e`       | Run the Playwright suites against a local build                             |
-| `pnpm promote`        | Publish the current saved preview through GitHub Actions                    |
-| `pnpm run deploy`     | Build, then `wrangler deploy` the Worker (maintainers only; see below)      |
-| `turbo gen workspace` | Scaffold a new package or app                                               |
-
-`pnpm bootstrap` and `pnpm preflight` run the site's own setup script in
-`apps/site/scripts/bootstrap/`, because it also sets up the site's environment file, Worker,
-domains, and secrets; see [`docs/reference/bootstrap.md`](./docs/reference/bootstrap.md). Production
-normally deploys through the explicit Promote website release workflow in GitHub Actions, which
-verifies a saved staging release before it goes live, so `pnpm run deploy` is for recovery only. An
-explicit request to promote preview to production authorizes dispatching `pnpm promote` from this
-repository. The command resolves the current preview in GitHub Actions, using the existing
-`worker-preview` Access credentials, and publishes through `worker-candidate`. Local Cloudflare
-sign-in, Studio presence, a browser session, and fresh route screenshots are not prerequisites.
-Existing Actions/environment permissions and CI release checks still apply. Use
-`pnpm promote --run-id <id>` when the request selects a specific reviewed staging release. Never
-silently substitute newest main, redispatch an uncertain publication, or bypass a failed check. A
-request to inspect/review changes is separate from a request to publish; perform the requested
-review without imposing a new approval on an already authorized publication.
+`pnpm bootstrap` and `pnpm preflight` use the shared `@lasvegasfortransit/cli` implementation. Local
+requirements are declared in `.lvbt/tooling.json`; local development requires no Cloudflare or
+GitHub provider sign-in. `apps/site/platform.json` declares production requirements.
+`pnpm preflight --production` reads provider readiness; a maintainer runs
+`pnpm bootstrap --production` to configure what is missing. Never set or change a production
+credential from an agent session. See
+[`docs/reference/bootstrap.md`](./docs/reference/bootstrap.md). Production normally deploys through
+the explicit Promote website release workflow in GitHub Actions, which verifies a saved staging
+release before it goes live. Retained recovery uses `pnpm promote --run-id <id>` with an explicit
+`--expected-version <current-version>` when production lacks a shared release marker. Direct
+`pnpm run deploy` is rejected by the shared release contract. An explicit request to promote preview
+to production authorizes dispatching `pnpm promote` from this repository. The command resolves the
+current preview in GitHub Actions, using the existing `worker-preview` Access credentials, and
+publishes through `worker-candidate`. Local Cloudflare sign-in, Studio presence, a browser session,
+and fresh route screenshots are not prerequisites. Existing Actions/environment permissions and CI
+release checks still apply. Use `pnpm promote --run-id <id>` when the request selects a specific
+reviewed staging release. Never silently substitute newest main, redispatch an uncertain
+publication, or bypass a failed check. A request to inspect/review changes is separate from a
+request to publish; perform the requested review without imposing a new approval on an already
+authorized publication.
 
 Commands only the site has, such as `event:new` or `worker:dev`, live in `apps/site/package.json`:
 run them with `pnpm -C apps/site <command>`.
@@ -200,7 +195,8 @@ markers or GitHub-side prose checks.
   promotion
 - pnpm 11.25.0 and Node 24.20 or newer in the 24.x line, run through Turborepo
 - Playwright for tests and ad-hoc screenshots
-- `apps/site/scripts/bootstrap/` is the interactive setup CLI (`pnpm bootstrap`, `pnpm preflight`)
+- `.lvbt/tooling.json` declares local setup; `apps/site/platform.json` declares production setup
+  (`pnpm bootstrap`, `pnpm preflight`, and their explicit `--production` mode)
 - `apps/site/scripts/audit/` is the CI/release audit baseline
 - `apps/site/src/lib/site.ts` is the runtime config object (org name, URLs, social handles)
 - Events are sourced from a public Google Calendar at build time — see
@@ -215,7 +211,7 @@ markers or GitHub-side prose checks.
   the `lvwwd` Worker; this repo only redirects `/wwd`, `/wwd/` and `/week-without-driving` there —
   see
   [`docs/reference/week-without-driving-site.md`](./docs/reference/week-without-driving-site.md).
-- Membership intake: Google Form → Cloudflare Pages Function → Beehiiv + Notion — see
+- Membership intake: Google Form → Cloudflare Worker → Beehiiv + Notion — see
   [`docs/reference/membership-intake.md`](./docs/reference/membership-intake.md).
 - Transit news intake: three ways to push articles into a Notion database (pnpm script, Claude Code
   skill, public Notion form + Cloudflare enrichment) — see

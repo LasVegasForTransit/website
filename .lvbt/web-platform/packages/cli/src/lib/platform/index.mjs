@@ -2,7 +2,7 @@ import path from 'node:path';
 import { CliError } from '../arguments.mjs';
 import { applyPlan, rotateSecrets } from './apply.mjs';
 import { setupTokenGuide } from './guides.mjs';
-import { findManifests, loadManifest, MANIFEST_FILE } from './manifest.mjs';
+import { findManifests, loadManifest, MANIFEST_FILE, resolveManifestZone } from './manifest.mjs';
 import { observePlatform } from './observe.mjs';
 import { planPlatform, readiness, SETUP } from './plan.mjs';
 import { formatReport } from './report.mjs';
@@ -35,6 +35,7 @@ export function defaultServices() {
 
 /** Resolve a manifest's account selector before any production API call. */
 export function resolveManifestAccount(manifest, env) {
+  manifest = resolveManifestZone(manifest, env);
   if (!manifest.cloudflare.accountIdEnv) return manifest;
   const name = manifest.cloudflare.accountIdEnv;
   const accountId = env[name]?.trim();
@@ -213,6 +214,13 @@ export function rotationNames(option, manifests) {
       `--rotate names ${unknownNames.join(', ')}, which platform.json does not declare as a secret.`,
       2,
     );
+  const listOnly = new Set(
+    manifests.flatMap((manifest) =>
+      (manifest.secrets ?? []).filter((secret) => secret.listOnly).map((secret) => secret.name),
+    ),
+  );
+  if (names.some((name) => listOnly.has(name)))
+    throw new CliError('--rotate cannot replace list-only future credentials.', 2);
   return names;
 }
 

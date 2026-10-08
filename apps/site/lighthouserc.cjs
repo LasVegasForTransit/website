@@ -1,20 +1,12 @@
 /**
- * Lighthouse CI config. One file, three presets switched via
- * `LIGHTHOUSE_PRESET`:
+ * Lighthouse CI presets selected by `LIGHTHOUSE_PRESET`:
+ *   (unset) desktop against dist/ with tight CWV budgets
+ *   mobile  mobile against dist/ with mobile CWV budgets
+ *   prod    mobile against production, retaining the mobile thresholds
  *
- *   (unset)   desktop preset, dist/ as the source, tight CWV budgets
- *   mobile    mobile preset, dist/ as the source, looser CWV budgets
- *   prod      mobile preset, live production URLs (no staticDistDir);
- *             same mobile thresholds — what's good enough for the CI
- *             build artifact is the floor for production.
- *
- * The URL list is derived from the built sitemap (see `sampledPaths`) so
- * new pages are audited automatically instead of waiting for someone to
- * edit a hand-kept array. lhci serves dist/ itself for the dist presets
- * and wants `.../index.html` paths; the prod preset uses absolute
- * production URLs. When dist/ isn't present at config-load — the
- * scheduled prod job hits the live origin without building — the list
- * falls back to a small evergreen set.
+ * `sampledPaths` derives URLs from the built sitemap. Dist presets serve
+ * `.../index.html`; production uses absolute URLs. Scheduled production
+ * audits can run without dist/ and use the evergreen fallback routes.
  */
 
 const { readFileSync, existsSync } = require('node:fs');
@@ -172,6 +164,7 @@ module.exports = {
   ci: {
     collect,
     assert: {
+      includePassedAssertions: true,
       assertions: isProd ? prodAssertions : isMobile ? mobileAssertions : desktopAssertions,
     },
     upload: {

@@ -51,3 +51,19 @@ void test('broken built routes and redirects still fail the audit', async () => 
     /redirect/i,
   );
 });
+
+void test('structured build link reports retain every broken route and reports all failures', async () => {
+  const { checkInternalLinkResults } = await import('../scripts/audit/build-links');
+  assert.equal(typeof checkInternalLinkResults, 'function', 'structured link checker is missing');
+  const report = await checkInternalLinkResults(
+    ['http://127.0.0.1:1234/one', 'http://127.0.0.1:1234/two'],
+    'http://127.0.0.1:1234',
+    () => Promise.resolve(new Response('', { status: 404 })),
+  );
+  assert.equal(report.checked, 2);
+  assert.deepEqual(
+    report.results.map((result) => result.url),
+    ['http://127.0.0.1:1234/one', 'http://127.0.0.1:1234/two'],
+  );
+  assert.ok(report.results.every((result) => result.status === 'fail'));
+});

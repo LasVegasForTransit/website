@@ -10,103 +10,19 @@ permissions:
   packages: read
   pull-requests: write
 
-concurrency:
-  group: deploy-worker-preview-${{ github.event.pull_request.number }}
-  cancel-in-progress: true
-
-# The site lives in apps/site; every run step works from there unless it
-# says otherwise.
-defaults:
-  run:
-    working-directory: apps/site
-
 jobs:
   preview:
-    name: Worker preview
-    if: >-
-      github.event.pull_request.head.repo.full_name == github.repository &&
-      vars.CLOUDFLARE_WORKERS_PREVIEW_ENABLED == 'true'
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-    environment:
-      name: worker-preview
-      url: ${{ steps.upload.outputs.url }}
-    env:
-      CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
-      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_WORKERS_API_TOKEN }}
-      PUBLIC_LVBT_INSTAGRAM: ${{ vars.PUBLIC_LVBT_INSTAGRAM }}
-      PUBLIC_LVBT_LINKEDIN: ${{ vars.PUBLIC_LVBT_LINKEDIN }}
-      PUBLIC_LVBT_BLUESKY: ${{ vars.PUBLIC_LVBT_BLUESKY }}
-      PUBLIC_LVBT_DISCORD: ${{ vars.PUBLIC_LVBT_DISCORD }}
-      PUBLIC_LVBT_DONATE_URL: ${{ vars.PUBLIC_LVBT_DONATE_URL }}
-      PUBLIC_LVBT_MEMBERSHIP_FORM_URL: ${{ vars.PUBLIC_LVBT_MEMBERSHIP_FORM_URL }}
-      PUBLIC_LVBT_NEWSLETTER_URL: ${{ vars.PUBLIC_LVBT_NEWSLETTER_URL }}
-      PUBLIC_LVBT_NEWSLETTER_FEED_URL: ${{ vars.PUBLIC_LVBT_NEWSLETTER_FEED_URL }}
-      PUBLIC_LVBT_CWA_TOKEN: ${{ vars.PUBLIC_LVBT_CWA_TOKEN }}
-      LVBT_REQUIRE_ANALYTICS: '1'
-      PUBLIC_LVBT_PREVIEW_PAGES: '1'
-      CF_ACCESS_CLIENT_ID: ${{ secrets.CF_ACCESS_CLIENT_ID }}
-      CF_ACCESS_CLIENT_SECRET: ${{ secrets.CF_ACCESS_CLIENT_SECRET }}
-    steps:
-      - name: Checkout
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
-        with:
-          lfs: true
-          persist-credentials: false
-
-      - name: Setup Node + pnpm
-        uses: ./.github/actions/setup-node-pnpm
-
-      - name: Install Chromium
-        run: pnpm exec playwright install --with-deps chromium
-
-      # pnpm check is the repository's own check, so it runs from the root.
-      - name: Build and validate
-        working-directory: .
-        run: pnpm check
-
-      - name: Upload Worker version
-        id: upload
-        run: >-
-          pnpm worker:preview --alias pr-${{ github.event.pull_request.number }} --env preview
-          --message "PR #${{ github.event.pull_request.number }} at ${{ github.sha }}"
-
-      - name: Verify preview
-        env:
-          PREVIEW_URL: ${{ steps.upload.outputs.url }}
-        run: pnpm worker:smoke --url "$PREVIEW_URL" --protected
-
-      - name: Browser acceptance
-        env:
-          PLAYWRIGHT_BASE_URL: ${{ steps.upload.outputs.url }}
-        run: pnpm worker:test:browser --project=ui-contracts
-
-      - name: Upsert pull request comment
-        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
-        env:
-          PREVIEW_URL: ${{ steps.upload.outputs.url }}
-        with:
-          script: |
-            const marker = '<!-- lvbt-worker-preview -->';
-            const body = `${marker}\nWorker candidate: ${process.env.PREVIEW_URL}`;
-            const { data: comments } = await github.rest.issues.listComments({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number: context.issue.number,
-            });
-            const existing = comments.find((comment) => comment.body?.includes(marker));
-            if (existing) {
-              await github.rest.issues.updateComment({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                comment_id: existing.id,
-                body,
-              });
-            } else {
-              await github.rest.issues.createComment({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                issue_number: context.issue.number,
-                body,
-              });
-            }
+    uses: LasVegasForTransit/repository-tooling/.github/workflows/release-pr-preview.yml@ac987b64a242c142b668abed03fb0aca73632767
+    with:
+      enabled: ${{ vars.CLOUDFLARE_WORKERS_PREVIEW_ENABLED == 'true' }}
+      publication-mode: version
+      preview-environment: worker-preview
+      protection: access
+      app-directory: apps/site
+      preview-script: worker:preview
+      smoke-script: worker:smoke
+      browser-script: worker:test:browser
+      browser-project: ui-contracts
+      require-analytics: true
+      preview-pages: true
+    secrets: inherit
