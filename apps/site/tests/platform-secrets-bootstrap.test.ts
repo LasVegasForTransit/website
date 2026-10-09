@@ -31,7 +31,13 @@ void test('production readiness includes every credential the deployed Worker bi
   for (const name of bound) {
     const requirement = requirements.find((entry) => entry.name === name);
     assert.equal(requirement?.use, 'live', `${name} must gate production readiness`);
-    assert.ok(requirement.targets?.includes('worker'), `${name} must reach the production Worker`);
+    assert.deepEqual(requirement.targets, ['worker'], `${name} must stay on the production Worker`);
+    const forbidden = manifest().forbidden.find((entry) => entry.name === name);
+    assert.deepEqual(
+      forbidden?.targets,
+      ['github:worker-preview', 'github:worker-candidate'],
+      `${name} must never be copied into release environments`,
+    );
   }
 });
 

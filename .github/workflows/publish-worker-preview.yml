@@ -1,0 +1,26 @@
+name: Publish Worker preview
+
+on:
+  workflow_run:
+    workflows: [Deploy Worker preview]
+    types: [completed]
+
+permissions:
+  contents: read
+  actions: read
+  deployments: write
+  packages: read
+  pull-requests: write
+
+jobs:
+  publish:
+    uses: LasVegasForTransit/repository-tooling/.github/workflows/release-pr-preview-publish.yml@09262d57ffbc0dc03120e15e7f257e1f5a28f43e
+    with:
+      enabled: ${{ vars.CLOUDFLARE_WORKERS_PREVIEW_ENABLED == 'true' }}
+      build-workflow: .github/workflows/deploy-worker-preview.yml
+      preview-environment: worker-preview
+      acceptance-directory: apps/site
+      smoke-script: worker:smoke
+      browser-script: worker:test:browser
+      browser-project: ui-contracts
+    secrets: inherit
