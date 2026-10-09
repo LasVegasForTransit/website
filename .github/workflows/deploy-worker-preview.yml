@@ -6,23 +6,14 @@ on:
 
 permissions:
   contents: read
-  deployments: write
   packages: read
-  pull-requests: write
 
 jobs:
   preview:
-    uses: LasVegasForTransit/repository-tooling/.github/workflows/release-pr-preview.yml@3567f0cb1345e8756eb5d84e0a3ea7b62695125a
+    uses: LasVegasForTransit/repository-tooling/.github/workflows/release-pr-preview-build.yml@09262d57ffbc0dc03120e15e7f257e1f5a28f43e
     with:
       enabled: ${{ vars.CLOUDFLARE_WORKERS_PREVIEW_ENABLED == 'true' }}
-      publication-mode: version
-      preview-environment: worker-preview
-      protection: access
-      app-directory: apps/site
-      preview-script: worker:preview
-      smoke-script: worker:smoke
-      browser-script: worker:test:browser
-      browser-project: ui-contracts
+      artifact-prefix: website-release
+      validation-browser-directory: apps/site
       require-analytics: true
       preview-pages: true
-    secrets: inherit

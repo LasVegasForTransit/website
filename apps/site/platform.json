@@ -57,7 +57,7 @@
       "purpose": "Lets the site add new members to LVBT's newsletter in Beehiiv and read changes to their subscription.",
       "use": "live",
       "neededFor": "Joining, newsletter signup, mailing list sync",
-      "targets": ["worker", "github:worker-candidate"],
+      "targets": ["worker"],
       "url": "https://www.beehiiv.com/support/article/13091918395799-how-to-access-your-publication-id-or-api-keys",
       "steps": [
         "Skip only if you cannot sign in to Beehiiv today: joining and newsletter signup fail until this is set.",
@@ -74,7 +74,7 @@
       "purpose": "Tells Beehiiv which publication, LVBT's newsletter, the site's requests are about.",
       "use": "live",
       "neededFor": "Joining, newsletter signup, mailing list sync",
-      "targets": ["worker", "github:worker-candidate"],
+      "targets": ["worker"],
       "url": "https://www.beehiiv.com/support/article/13091918395799-how-to-access-your-publication-id-or-api-keys",
       "steps": [
         "Skip only if you cannot sign in to Beehiiv today: joining and newsletter signup fail until this is set.",
@@ -90,7 +90,7 @@
       "purpose": "Proves that a membership sign-up came from LVBT's Google Form, so no one else can post sign-ups to the site.",
       "use": "live",
       "neededFor": "The Google Form fallback",
-      "targets": ["worker", "github:worker-candidate"],
+      "targets": ["worker"],
       "url": "https://script.google.com/home",
       "steps": [
         "Skip only if you cannot open the Apps Script project today: sign-ups from the Google Form and other connected form tools fail until this is set.",
@@ -107,7 +107,7 @@
       "purpose": "Lets the site read the LVBT Press database and write member and transit news submissions into LVBT's Notion workspace.",
       "use": "live",
       "neededFor": "Joining (staff follow-up), transit news intake, press coverage",
-      "targets": ["worker", "github:worker-candidate"],
+      "targets": ["worker"],
       "url": "https://www.notion.so/profile/integrations",
       "steps": [
         "Skip only if you cannot reach Notion today: the press page cannot load coverage and staff do not see new member or transit news submissions until this is set.",
@@ -124,7 +124,7 @@
       "purpose": "Tells Notion which table, the Membership intake data source, new members are written to.",
       "use": "live",
       "neededFor": "Joining (staff follow-up)",
-      "targets": ["worker", "github:worker-candidate"],
+      "targets": ["worker"],
       "url": "https://www.notion.so/6bad03ffdebf4072a34a6408d3e7180d",
       "steps": [
         "Skip only if you cannot reach Notion today: staff do not see new members in Notion until this is set.",
@@ -140,7 +140,7 @@
       "purpose": "Tells the site which dedicated Notion table contains the coverage shown on /press.",
       "use": "live",
       "neededFor": "The LVBT in the press page",
-      "targets": ["worker", "github:worker-candidate"],
+      "targets": ["worker"],
       "url": "https://www.notion.so/",
       "steps": [
         "Skip only until the LVBT Press database is created and connected to the LVBT Notion integration; the /press archive cannot load coverage until this is set.",
@@ -157,12 +157,12 @@
       "purpose": "Proves that a transit news submission came from LVBT's Notion automation.",
       "use": "live",
       "neededFor": "Transit news intake",
-      "targets": ["worker", "github:worker-candidate"],
+      "targets": ["worker"],
       "steps": [
         "Skip only if you cannot open the Notion automation today: transit news submissions fail until this is set.",
         "Open the LVBT transit news automation in Notion and inspect its webhook action.",
         "Copy the value after \"Bearer \" in its Authorization header and paste that same value here.",
-        "If the value is unavailable, leave this empty and run `pnpm bootstrap --production --rotate LVBT_TRANSIT_NEWS_INTAKE_SECRET`. It makes a new value, stores it on the Worker and its declared GitHub targets together, and shows it once so you can paste it into the automation."
+        "If the value is unavailable, leave this empty and run `pnpm bootstrap --production --rotate LVBT_TRANSIT_NEWS_INTAKE_SECRET`. It makes a new value, stores it on the production Worker, and shows it once so you can paste it into the automation."
       ],
       "generate": true,
       "afterSet": "Paste the same value into the Notion transit news automation webhook header as \"Authorization: Bearer <value>\"."
@@ -414,43 +414,90 @@
     },
     {
       "name": "CLOUDFLARE_WORKERS_API_TOKEN",
-      "purpose": "Lets the staging and promotion workflows upload and publish website Worker versions.",
+      "purpose": "Uploads and activates versions of the lvbt-website-preview Worker only.",
       "use": "live",
-      "neededFor": "staging upload and explicit production promotion",
-      "targets": ["github:worker-preview", "github:worker-candidate"],
+      "neededFor": "staging and PR preview publication",
+      "targets": ["github:worker-preview"],
       "url": "https://dash.cloudflare.com/",
       "steps": [
-        "Open the LVBT Cloudflare account and inspect the existing website deployment token and its owner before creating anything.",
-        "Use the account-owned token scoped to website deployment, with Workers Scripts Edit and the required account-read and Worker-domain permissions. Keep preview and production permissions aligned with the reviewed release configuration; do not broaden an existing token.",
-        "Paste the existing token at this prompt. If it cannot be recovered, a maintainer must review and deliberately rotate it; never create deployment credentials from an agent session."
+        "Open the existing LVBT Cloudflare account and inspect its account-owned API tokens before rotating anything.",
+        "Use an account-owned token with the Workers Editor role restricted to the existing lvbt-website-preview Worker. Keep it separate from the other website Worker and from database-migration credentials.",
+        "Store this token only as CLOUDFLARE_WORKERS_API_TOKEN in the worker-preview GitHub environment. Do not grant account-wide Workers Scripts Edit or store it as a repository secret.",
+        "A maintainer can authorize an agent to rotate and install this scoped credential. Ordinary promotion uses the installed GitHub credential and requires no local Cloudflare sign-in."
       ],
       "pattern": "^\\S{40,}$",
       "patternHint": "A Cloudflare API token has at least 40 characters and no spaces."
     },
     {
-      "name": "CF_ACCESS_CLIENT_ID",
-      "purpose": "Lets release verification read the protected website staging and candidate URLs through Cloudflare Access.",
+      "name": "CLOUDFLARE_MIGRATIONS_API_TOKEN",
+      "purpose": "Applies retained, reviewed schema migrations for worker-preview; never available to pull request builds.",
       "use": "live",
-      "neededFor": "protected staging verification and production promotion",
-      "targets": ["github:worker-preview", "github:worker-candidate"],
+      "neededFor": "retained schema migrations before staging or production activation",
+      "targets": ["github:worker-preview"],
+      "url": "https://dash.cloudflare.com/",
+      "pattern": "^\\S{40,}$",
+      "patternHint": "A Cloudflare API token has at least 40 characters and no spaces.",
+      "steps": [
+        "Inspect the existing LVBT account-owned database migration credential before rotating anything.",
+        "Use only the D1 write permission required to apply schema migrations, with the narrowest resource scope supported by Cloudflare. D1 permission may be account-wide; it is kept separate from the per-Worker deployment tokens.",
+        "Store it only as CLOUDFLARE_MIGRATIONS_API_TOKEN in worker-preview. It is supplied only to the trusted retained-migration step and must not be stored at repository scope or exposed to PR builds."
+      ]
+    },
+    {
+      "name": "CLOUDFLARE_WORKERS_API_TOKEN",
+      "purpose": "Uploads and activates versions of the lvbt-website Worker only.",
+      "use": "live",
+      "neededFor": "explicit production promotion",
+      "targets": ["github:worker-candidate"],
+      "url": "https://dash.cloudflare.com/",
+      "steps": [
+        "Open the existing LVBT Cloudflare account and inspect its account-owned API tokens before rotating anything.",
+        "Use an account-owned token with the Workers Editor role restricted to the existing lvbt-website Worker. Keep it separate from the other website Worker and from database-migration credentials.",
+        "Store this token only as CLOUDFLARE_WORKERS_API_TOKEN in the worker-candidate GitHub environment. Do not grant account-wide Workers Scripts Edit or store it as a repository secret.",
+        "A maintainer can authorize an agent to rotate and install this scoped credential. Ordinary promotion uses the installed GitHub credential and requires no local Cloudflare sign-in."
+      ],
+      "pattern": "^\\S{40,}$",
+      "patternHint": "A Cloudflare API token has at least 40 characters and no spaces."
+    },
+    {
+      "name": "CLOUDFLARE_MIGRATIONS_API_TOKEN",
+      "purpose": "Applies retained, reviewed schema migrations for worker-candidate; never available to pull request builds.",
+      "use": "live",
+      "neededFor": "retained schema migrations before staging or production activation",
+      "targets": ["github:worker-candidate"],
+      "url": "https://dash.cloudflare.com/",
+      "pattern": "^\\S{40,}$",
+      "patternHint": "A Cloudflare API token has at least 40 characters and no spaces.",
+      "steps": [
+        "Inspect the existing LVBT account-owned database migration credential before rotating anything.",
+        "Use only the D1 write permission required to apply schema migrations, with the narrowest resource scope supported by Cloudflare. D1 permission may be account-wide; it is kept separate from the per-Worker deployment tokens.",
+        "Store it only as CLOUDFLARE_MIGRATIONS_API_TOKEN in worker-candidate. It is supplied only to the trusted retained-migration step and must not be stored at repository scope or exposed to PR builds."
+      ]
+    },
+    {
+      "name": "CF_ACCESS_CLIENT_ID",
+      "purpose": "Lets trusted release verification read the protected preview Worker through Cloudflare Access.",
+      "use": "live",
+      "neededFor": "protected staging and PR preview verification, and promotion source selection",
+      "targets": ["github:worker-preview"],
       "sensitive": true,
       "url": "https://one.dash.cloudflare.com/",
       "steps": [
         "Open the existing LVBT website release-verification service token in Cloudflare One. Its policy must cover the protected preview URLs the workflow verifies.",
-        "Copy the existing Client ID and paste it at this prompt. If the secret is unavailable, a maintainer must deliberately rotate the paired service token and update both release environments; never create provider credentials from an agent session."
+        "Copy the existing Client ID and paste it at this prompt. If the secret is unavailable, a maintainer must authorize rotation of the paired service token and its installation in worker-preview. An agent may carry out that authorized setup. Ordinary promotion uses the installed pair."
       ]
     },
     {
       "name": "CF_ACCESS_CLIENT_SECRET",
-      "purpose": "Lets release verification read the protected website staging and candidate URLs through Cloudflare Access.",
+      "purpose": "Lets trusted release verification read the protected preview Worker through Cloudflare Access.",
       "use": "live",
-      "neededFor": "protected staging verification and production promotion",
-      "targets": ["github:worker-preview", "github:worker-candidate"],
+      "neededFor": "protected staging and PR preview verification, and promotion source selection",
+      "targets": ["github:worker-preview"],
       "sensitive": true,
       "url": "https://one.dash.cloudflare.com/",
       "steps": [
         "Open the existing LVBT website release-verification service token in Cloudflare One. Its policy must cover the protected preview URLs the workflow verifies.",
-        "Copy the existing Client Secret and paste it at this prompt. If the secret is unavailable, a maintainer must deliberately rotate the paired service token and update both release environments; never create provider credentials from an agent session."
+        "Copy the existing Client Secret and paste it at this prompt. If the secret is unavailable, a maintainer must authorize rotation of the paired service token and its installation in worker-preview. An agent may carry out that authorized setup. Ordinary promotion uses the installed pair."
       ]
     }
   ],
@@ -530,12 +577,132 @@
         "use": "live",
         "value": "true"
       }
+    ],
+    "environments": [
+      {
+        "name": "worker-preview",
+        "branch": "main"
+      },
+      {
+        "name": "worker-candidate",
+        "branch": "main"
+      }
     ]
   },
   "forbidden": [
     {
       "name": "LVBT_DEV_LOG_CODES",
       "reason": "It prints private sign-in codes to a local terminal for development and must never expose production sign-in codes."
+    },
+    {
+      "name": "LVBT_BEEHIIV_API_KEY",
+      "targets": ["github:worker-preview", "github:worker-candidate"],
+      "reason": "Runtime integration credentials belong only on the production Worker; release workflows do not consume them."
+    },
+    {
+      "name": "LVBT_BEEHIIV_PUBLICATION_ID",
+      "targets": ["github:worker-preview", "github:worker-candidate"],
+      "reason": "Runtime integration credentials belong only on the production Worker; release workflows do not consume them."
+    },
+    {
+      "name": "LVBT_MEMBERSHIP_INTAKE_SECRET",
+      "targets": ["github:worker-preview", "github:worker-candidate"],
+      "reason": "Runtime integration credentials belong only on the production Worker; release workflows do not consume them."
+    },
+    {
+      "name": "LVBT_NOTION_API_KEY",
+      "targets": ["github:worker-preview", "github:worker-candidate"],
+      "reason": "Runtime integration credentials belong only on the production Worker; release workflows do not consume them."
+    },
+    {
+      "name": "LVBT_NOTION_DATA_SOURCE_ID",
+      "targets": ["github:worker-preview", "github:worker-candidate"],
+      "reason": "Runtime integration credentials belong only on the production Worker; release workflows do not consume them."
+    },
+    {
+      "name": "LVBT_PRESS_DATA_SOURCE_ID",
+      "targets": ["github:worker-preview", "github:worker-candidate"],
+      "reason": "Runtime integration credentials belong only on the production Worker; release workflows do not consume them."
+    },
+    {
+      "name": "LVBT_TRANSIT_NEWS_INTAKE_SECRET",
+      "targets": ["github:worker-preview", "github:worker-candidate"],
+      "reason": "Runtime integration credentials belong only on the production Worker; release workflows do not consume them."
+    },
+    {
+      "name": "LVBT_RESEND_API_KEY",
+      "targets": ["github:worker-preview", "github:worker-candidate"],
+      "reason": "Runtime integration values belong only on the production Worker; release workflows do not consume them."
+    },
+    {
+      "name": "LVBT_SIGN_IN_SECRET",
+      "targets": ["github:worker-preview", "github:worker-candidate"],
+      "reason": "Runtime integration values belong only on the production Worker; release workflows do not consume them."
+    },
+    {
+      "name": "LVBT_LINK_SIGNING_SECRET",
+      "targets": ["github:worker-preview", "github:worker-candidate"],
+      "reason": "Runtime integration values belong only on the production Worker; release workflows do not consume them."
+    },
+    {
+      "name": "LVBT_GOOGLE_OAUTH_CLIENT_ID",
+      "targets": ["github:worker-preview", "github:worker-candidate"],
+      "reason": "Runtime integration values belong only on the production Worker; release workflows do not consume them."
+    },
+    {
+      "name": "LVBT_GOOGLE_OAUTH_CLIENT_SECRET",
+      "targets": ["github:worker-preview", "github:worker-candidate"],
+      "reason": "Runtime integration values belong only on the production Worker; release workflows do not consume them."
+    },
+    {
+      "name": "LVBT_ACCESS_TEAM_DOMAIN",
+      "targets": ["github:worker-preview", "github:worker-candidate"],
+      "reason": "Runtime integration values belong only on the production Worker; release workflows do not consume them."
+    },
+    {
+      "name": "LVBT_ACCESS_AUD",
+      "targets": ["github:worker-preview", "github:worker-candidate"],
+      "reason": "Runtime integration values belong only on the production Worker; release workflows do not consume them."
+    },
+    {
+      "name": "LVBT_DISCORD_APPLICATION_ID",
+      "targets": ["github:worker-preview", "github:worker-candidate"],
+      "reason": "Runtime integration values belong only on the production Worker; release workflows do not consume them."
+    },
+    {
+      "name": "LVBT_DISCORD_PUBLIC_KEY",
+      "targets": ["github:worker-preview", "github:worker-candidate"],
+      "reason": "Runtime integration values belong only on the production Worker; release workflows do not consume them."
+    },
+    {
+      "name": "LVBT_DISCORD_CLIENT_SECRET",
+      "targets": ["github:worker-preview", "github:worker-candidate"],
+      "reason": "Runtime integration values belong only on the production Worker; release workflows do not consume them."
+    },
+    {
+      "name": "LVBT_DISCORD_BOT_TOKEN",
+      "targets": ["github:worker-preview", "github:worker-candidate"],
+      "reason": "Runtime integration values belong only on the production Worker; release workflows do not consume them."
+    },
+    {
+      "name": "LVBT_DISCORD_GUILD_ID",
+      "targets": ["github:worker-preview", "github:worker-candidate"],
+      "reason": "Runtime integration values belong only on the production Worker; release workflows do not consume them."
+    },
+    {
+      "name": "LVBT_GOOGLE_SERVICE_ACCOUNT_KEY",
+      "targets": ["github:worker-preview", "github:worker-candidate"],
+      "reason": "Runtime integration values belong only on the production Worker; release workflows do not consume them."
+    },
+    {
+      "name": "LVBT_GOOGLE_ADMIN_SUBJECT",
+      "targets": ["github:worker-preview", "github:worker-candidate"],
+      "reason": "Runtime integration values belong only on the production Worker; release workflows do not consume them."
+    },
+    {
+      "name": "LVBT_GIVEBUTTER_API_KEY",
+      "targets": ["github:worker-preview", "github:worker-candidate"],
+      "reason": "Runtime integration values belong only on the production Worker; release workflows do not consume them."
     }
   ]
 }

@@ -10,6 +10,10 @@ const previewWorkflowUrl = new URL(
   '../../../.github/workflows/deploy-worker-preview.yml',
   import.meta.url,
 );
+const previewPublisherUrl = new URL(
+  '../../../.github/workflows/publish-worker-preview.yml',
+  import.meta.url,
+);
 const stagingWorkflowUrl = new URL(
   '../../../.github/workflows/deploy-production.yml',
   import.meta.url,
@@ -98,14 +102,26 @@ void test('promotable builds use shared typed artifact preparation and required 
   assert.match(workflow, /artifact-prefix: website-release/);
   assert.doesNotMatch(workflow, /\.github\/actions\/build-site|worker:release package/);
 });
-void test('PR builds preserve the required analytics contract', async () => {
+void test('PR builds preserve analytics without deployment credentials or write permissions', async () => {
   const workflow = await readFile(previewWorkflowUrl, 'utf8');
-  assert.match(workflow, /release-pr-preview\.yml@[a-f0-9]{40}/);
+  assert.match(workflow, /release-pr-preview-build\.yml@[a-f0-9]{40}/);
   assert.match(workflow, /require-analytics: true/);
   assert.match(workflow, /preview-pages: true/);
-  assert.match(workflow, /protection: access/);
+  assert.match(workflow, /validation-browser-directory: apps\/site/);
+  assert.match(workflow, /contents: read/);
+  assert.doesNotMatch(workflow, /secrets:|environment:|: write|steps:|wrangler/);
+});
+void test('PR publication runs through the trusted main publisher and preview acceptance', async () => {
+  const workflow = await readFile(previewPublisherUrl, 'utf8');
+  assert.match(workflow, /workflow_run:/);
+  assert.match(workflow, /workflows: \[Deploy Worker preview\]/);
+  assert.match(workflow, /types: \[completed\]/);
+  assert.match(workflow, /release-pr-preview-publish\.yml@[a-f0-9]{40}/);
+  assert.match(workflow, /build-workflow: \.github\/workflows\/deploy-worker-preview\.yml/);
   assert.match(workflow, /preview-environment: worker-preview/);
-  assert.match(workflow, /preview-script: worker:preview/);
+  assert.match(workflow, /acceptance-directory: apps\/site/);
+  assert.match(workflow, /smoke-script: worker:smoke/);
+  assert.match(workflow, /browser-script: worker:test:browser/);
   assert.match(workflow, /browser-project: ui-contracts/);
   assert.doesNotMatch(workflow, /steps:|wrangler|upload-artifact|attestations: write/);
 });

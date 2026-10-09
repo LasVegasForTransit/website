@@ -18,7 +18,7 @@ concurrency:
 jobs:
   build:
     name: Build
-    uses: LasVegasForTransit/repository-tooling/.github/workflows/release-build.yml@3567f0cb1345e8756eb5d84e0a3ea7b62695125a
+    uses: LasVegasForTransit/repository-tooling/.github/workflows/release-build.yml@09262d57ffbc0dc03120e15e7f257e1f5a28f43e
     with:
       artifact-source: typed-worker
       require-analytics: true
@@ -44,7 +44,7 @@ jobs:
     name: Verify and update staging
     needs: [build, attest]
     if: github.ref == 'refs/heads/main'
-    uses: LasVegasForTransit/repository-tooling/.github/workflows/release-publish.yml@3567f0cb1345e8756eb5d84e0a3ea7b62695125a
+    uses: LasVegasForTransit/repository-tooling/.github/workflows/release-publish.yml@09262d57ffbc0dc03120e15e7f257e1f5a28f43e
     with:
       target: preview
       release-id: ${{ github.run_id }}
