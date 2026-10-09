@@ -421,7 +421,7 @@
       "url": "https://dash.cloudflare.com/",
       "steps": [
         "Open the LVBT Cloudflare account and inspect the existing website deployment token and its owner before creating anything.",
-        "Use the account-owned token scoped to website deployment, with Workers Scripts Edit and the required account-read and Worker-domain permissions. Keep preview and production permissions aligned with the reviewed release configuration; do not broaden an existing token.",
+        "Use the account-owned token scoped to website deployment, with Workers Scripts Edit, D1 Edit, and the required account-read and Worker-domain permissions. Keep preview and production permissions aligned with the reviewed release configuration; do not broaden an existing token.",
         "Paste the existing token at this prompt. If it cannot be recovered, a maintainer must review and deliberately rotate it; never create deployment credentials from an agent session."
       ],
       "pattern": "^\\S{40,}$",

@@ -7,6 +7,7 @@ interface Requirement {
   use?: string;
   targets?: string[];
   listOnly?: boolean;
+  steps?: string[];
 }
 
 function manifest(): { secrets: Requirement[]; forbidden: Requirement[] } {
@@ -46,4 +47,11 @@ void test('future volunteer account credentials remain listed without setup acti
 
 void test('production forbids local sign-in code logging', () => {
   assert.ok(manifest().forbidden.some((entry) => entry.name === 'LVBT_DEV_LOG_CODES'));
+});
+
+void test('website deployment credentials authorize retained D1 migration checks', () => {
+  const requirement = manifest().secrets.find(
+    (entry) => entry.name === 'CLOUDFLARE_WORKERS_API_TOKEN',
+  );
+  assert.ok(requirement?.steps?.some((step) => step.includes('D1 Edit')));
 });
