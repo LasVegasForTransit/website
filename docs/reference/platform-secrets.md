@@ -5,8 +5,9 @@ is for, and where to get it. Read it when you set up a new deployment, rotate a 
 `503 service_unavailable` that names a missing secret.
 
 A secret is a value, such as an API key, that lets the site act on LVBT's behalf in another service.
-Secrets are never committed. They are stored in Cloudflare and GitHub, and the site reads them at
-request time (see the [glossary](./glossary.md#env-var)).
+Secrets are never committed. Runtime integration secrets are stored on the production Cloudflare
+Worker and read at request time. GitHub stores only the credentials used by trusted release steps
+(see the [glossary](./glossary.md#env-var)).
 
 ## Set them with bootstrap
 
@@ -23,9 +24,11 @@ Then, when ready to configure missing values:
 pnpm bootstrap --production
 ```
 
-Local `pnpm bootstrap` never configures production. Agents do not set or change production
-credentials; a maintainer runs production bootstrap. The production report separates live features,
-future features, and requirements that are only listed because no code consumes them yet.
+Local `pnpm bootstrap` never configures production. A maintainer may run production bootstrap or
+authorize an agent to configure or rotate named credentials on their behalf. Ordinary preview
+promotion uses the already installed GitHub credentials and needs no local Cloudflare sign-in. The
+production report separates live features, future features, and requirements that are only listed
+because no code consumes them yet.
 
 Credentials are entered through hidden input and never printed. IDs, domains and public keys are
 visible so they can be checked. Cloudflare and GitHub cannot reveal stored credentials; setup
@@ -51,20 +54,25 @@ consumer aligned before accepting a rotation as complete.
 
 ## Where each secret lives
 
-| Target                                | What it serves                                           |
-| ------------------------------------- | -------------------------------------------------------- |
-| Worker `lvbt-website`                 | Production site and candidate versions                   |
-| GitHub environment `worker-candidate` | Promotion credentials and retained runtime-secret copies |
-| GitHub environment `worker-preview`   | Staging upload and protected-preview verification        |
+| Target                                | What it serves                                            |
+| ------------------------------------- | --------------------------------------------------------- |
+| Worker `lvbt-website`                 | Production site and candidate versions                    |
+| GitHub environment `worker-candidate` | Production Worker deployment and D1 migration credentials |
+| GitHub environment `worker-preview`   | Staging upload and protected-preview verification         |
 
-The runtime-secret copies already declared for `worker-candidate` remain requirements; removing
-those copies needs its own migration. The Cloudflare deployment token and Access service-token
-credentials needed by release workflows are also listed in the manifest. Public build values remain
-GitHub Actions variables, separate from private Worker credentials. The manifest checks their
-presence and checks the release environments' account IDs against the declared Cloudflare account.
-It never overwrites an existing public setting automatically. The optional Google Form fallback may
-remain empty because membership uses `/join/member` by default. Retained historical candidate and
-production feature flags have no current workflow consumers and are not readiness gates.
+Runtime integration credentials are forbidden in the GitHub release environments. They stay on
+`lvbt-website`; version uploads preserve those Worker secrets without sending their values through
+CI. Each environment has its own per-Worker `CLOUDFLARE_WORKERS_API_TOKEN` and a separate
+`CLOUDFLARE_MIGRATIONS_API_TOKEN` for trusted retained SQL. D1 write access may be account-wide, so
+it is not added to the Worker deployment token. Only `worker-preview` needs the Access service pair.
+Both environments accept only the selected branch `main`; bootstrap detects drift and preserves
+existing reviewer and timer protections when applying this restriction.
+
+Public build values remain GitHub Actions variables. The manifest checks their presence and the
+release environments' account IDs against the declared Cloudflare account. It never overwrites an
+existing public setting automatically. The optional Google Form fallback may remain empty because
+membership uses `/join/member` by default. Retained historical candidate and production feature
+flags have no current workflow consumers and are not readiness gates.
 
 Production uses the Worker. Pages remains an emergency rollback destination and is not a mandatory
 secret target for routine Worker readiness or setup. A deliberate Pages rollback must check and

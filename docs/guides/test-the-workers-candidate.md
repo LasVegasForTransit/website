@@ -37,8 +37,9 @@ Preview integrations use separate test credentials and the preview database.
 ## Review a pull request
 
 Open the Worker URL in the pull request comment and sign in through Access. The URL represents that
-PR's uploaded version; it does not move the permanent preview site. Fork PRs receive no deployment
-secrets.
+PR's uploaded version after the separate trusted `Publish Worker preview` workflow finishes. The PR
+build receives no deployment credentials; the publisher uses only configuration and acceptance tools
+from `main`. It does not move the permanent preview site. Fork PRs receive no deployment secrets.
 
 Inspect phone and desktop layouts, navigation, nested routes, event calendars, and the branded 404
 page. Use test data for preview APIs. Browser contract checks run automatically through Access.
