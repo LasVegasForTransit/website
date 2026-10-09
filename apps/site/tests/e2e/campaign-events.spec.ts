@@ -2,10 +2,10 @@ import { expect, test } from '../../scripts/deploy/access-browser';
 
 const campaign = '/campaigns/arts-district/';
 
-test('archives the listening session when its Las Vegas day ends without a redeploy', async ({
+test('archives the listening session when its end time passes without a redeploy', async ({
   page,
 }) => {
-  await page.clock.install({ time: new Date('2026-10-18T06:59:30Z') });
+  await page.clock.install({ time: new Date('2026-10-17T21:59:30Z') });
   await page.goto(campaign);
   const session = page.locator('[data-campaign-event="community-listening-session"]');
   await expect(page.locator('[data-campaign-list="upcoming"]')).toContainText(
@@ -52,7 +52,7 @@ test('archived event pages keep their details and stop offering attendance actio
 test('promotes the next confirmed gathering after the featured gathering ends', async ({
   page,
 }) => {
-  await page.clock.install({ time: new Date('2026-10-18T06:59:30Z') });
+  await page.clock.install({ time: new Date('2026-10-17T21:59:30Z') });
   await page.goto(campaign);
   // Simulate a second published gathering without adding an unconfirmed
   // date to public campaign content.
