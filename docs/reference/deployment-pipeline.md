@@ -57,14 +57,15 @@ service token in a **Service Auth** policy attached only to this Worker.
 
 The `worker-preview` GitHub environment supplies:
 
-| Secret                         | Purpose                                       |
-| ------------------------------ | --------------------------------------------- |
-| `CLOUDFLARE_WORKERS_API_TOKEN` | Upload and activate preview versions          |
-| `CF_ACCESS_CLIENT_ID`          | Identify the preview verification service     |
-| `CF_ACCESS_CLIENT_SECRET`      | Authenticate the preview verification service |
+| Secret                            | Purpose                                       |
+| --------------------------------- | --------------------------------------------- |
+| `CLOUDFLARE_WORKERS_API_TOKEN`    | Upload and activate only the preview Worker   |
+| `CLOUDFLARE_MIGRATIONS_API_TOKEN` | Apply retained preview schema migrations      |
+| `CF_ACCESS_CLIENT_ID`             | Identify the preview verification service     |
+| `CF_ACCESS_CLIENT_SECRET`         | Authenticate the preview verification service |
 
-`CLOUDFLARE_ACCOUNT_ID` remains a repository variable. Access credentials are supplied only to the
-specific preview origin or a version URL under the configured
+`CLOUDFLARE_ACCOUNT_ID` is an environment variable in each release environment. Access credentials
+are supplied only to the specific preview origin or a version URL under the configured
 `las-vegas-for-better-transit.workers.dev` account suffix. Another account's Worker with the same
 name is rejected before authentication. Public production candidates and local browser checks
 receive no Access service credentials. HTTP verification disables automatic redirects; browser
@@ -88,12 +89,28 @@ signs the artifact, uploads a preview version, checks anonymous denial and authe
 rendering, runs browser contract checks, activates that exact preview version, and checks the
 permanent staging hostname. Its summary records the release, commit, version, and originating run.
 
-Same-repository PRs use `Deploy Worker preview` when `CLOUDFLARE_WORKERS_PREVIEW_ENABLED=true`. Its
-thin caller delegates setup, validation, upload, smoke, browser contracts, and the sticky comment to
-the pinned shared `release-pr-preview.yml` workflow, using the existing `worker-preview`
-environment. The application keeps its thin upload adapter and product acceptance scripts. PR
-uploads never activate a version or move the permanent staging domain. Forks receive no Cloudflare
-or Access secrets. PRs may include preview-only prototype pages; those builds cannot be promoted.
+Same-repository PRs use `Deploy Worker preview` when `CLOUDFLARE_WORKERS_PREVIEW_ENABLED=true`. This
+build has a read-only GitHub token, no release environment, and no Cloudflare or Access credentials.
+It validates the PR and retains compiled Worker and asset bytes for seven days.
+
+`Publish Worker preview` runs separately from trusted `main` on successful build completion. It
+checks the source workflow, repository, current open PR, full commit, artifact identity and hashes.
+It uploads those bytes with configuration and preview bindings from `main`, then runs the trusted
+smoke and browser checks and updates the PR comment. It never imports PR code, runs PR migrations,
+or uses PR deployment configuration on the credentialed runner. File and computed module imports are
+rejected before upload. The build payload cannot be promoted to production.
+
+Both `worker-preview` and `worker-candidate` accept only the selected branch `main`. The preview
+publisher receives the preview Worker's deployment token and supplies Access credentials only to
+verification steps. Worker deployment tokens use the Workers Editor role for their one existing
+Worker. Schema migration steps receive a separate `CLOUDFLARE_MIGRATIONS_API_TOKEN` with the minimum
+D1 write permission Cloudflare supports; account-wide D1 access remains a separate privilege. No
+provider credentials belong at repository scope.
+
+PR uploads never activate a version or move the permanent staging domain. Fork PRs are not uploaded.
+PRs may include preview-only prototype pages. Preview and staging still share the preview database;
+PR Worker code may act on that test database, so preview must contain only test data and
+credentials.
 
 ## Production promotion
 
@@ -133,7 +150,10 @@ stop immediately. Public verification checks the selected marker, browser render
 and the `www` redirect. Staging and main may advance without changing selection.
 
 The existing `worker-candidate` environment supplies the production Workers token. Its historical
-name is retained to reuse the established credential scope. Environment reviewers may provide an
+name is retained. It supplies a per-Worker production deployment token and a separate D1 migration
+credential. Repository write and Actions access authorize dispatch; provider administration is
+needed only when maintainers first install or rotate those credentials. Bootstrap preserves the
+selected-main branch restriction and existing approval rules. Environment reviewers may provide an
 additional publication gate; the command reports a waiting run with its URL. Nothing automatically
 dispatches production promotion.
 

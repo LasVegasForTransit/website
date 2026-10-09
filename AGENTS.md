@@ -25,22 +25,23 @@ for common setup, validation, audit and release commands. This site's `pnpm dev`
 requirements are declared in `.lvbt/tooling.json`; local development requires no Cloudflare or
 GitHub provider sign-in. `apps/site/platform.json` declares production requirements.
 `pnpm preflight --production` reads provider readiness; a maintainer runs
-`pnpm bootstrap --production` to configure what is missing. Never set or change a production
-credential from an agent session. See
-[`docs/reference/bootstrap.md`](./docs/reference/bootstrap.md). Production normally deploys through
-the explicit Promote website release workflow in GitHub Actions, which verifies a saved staging
-release before it goes live. Retained recovery uses `pnpm promote --run-id <id>` with an explicit
-`--expected-version <current-version>` when production lacks a shared release marker. Direct
-`pnpm run deploy` is rejected by the shared release contract. An explicit request to promote preview
-to production authorizes dispatching `pnpm promote` from this repository. The command resolves the
-current preview in GitHub Actions, using the existing `worker-preview` Access credentials, and
-publishes through `worker-candidate`. Local Cloudflare sign-in, Studio presence, a browser session,
-and fresh route screenshots are not prerequisites. Existing Actions/environment permissions and CI
-release checks still apply. Use `pnpm promote --run-id <id>` when the request selects a specific
-reviewed staging release. Never silently substitute newest main, redispatch an uncertain
-publication, or bypass a failed check. A request to inspect/review changes is separate from a
-request to publish; perform the requested review without imposing a new approval on an already
-authorized publication.
+`pnpm bootstrap --production` to configure what is missing. Credential setup or rotation requires a
+maintainer to authorize the account, scopes, and destination. An agent may carry out that authorized
+setup. Ordinary promotion uses the existing GitHub Actions credentials and needs no local Cloudflare
+login. See [`docs/reference/bootstrap.md`](./docs/reference/bootstrap.md). Production normally
+deploys through the explicit Promote website release workflow in GitHub Actions, which verifies a
+saved staging release before it goes live. Retained recovery uses `pnpm promote --run-id <id>` with
+an explicit `--expected-version <current-version>` when production lacks a shared release marker.
+Direct `pnpm run deploy` is rejected by the shared release contract. An explicit request to promote
+preview to production authorizes dispatching `pnpm promote` from this repository. The command
+resolves the current preview in GitHub Actions, using the existing `worker-preview` Access
+credentials, and publishes through `worker-candidate`. Local Cloudflare sign-in, Studio presence, a
+browser session, and fresh route screenshots are not prerequisites. Existing Actions/environment
+permissions and CI release checks still apply. Use `pnpm promote --run-id <id>` when the request
+selects a specific reviewed staging release. Never silently substitute newest main, redispatch an
+uncertain publication, or bypass a failed check. A request to inspect/review changes is separate
+from a request to publish; perform the requested review without imposing a new approval on an
+already authorized publication.
 
 Commands only the site has, such as `event:new` or `worker:dev`, live in `apps/site/package.json`:
 run them with `pnpm -C apps/site <command>`.

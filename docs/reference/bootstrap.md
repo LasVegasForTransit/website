@@ -48,11 +48,14 @@ pnpm bootstrap --production --rotate LVBT_SIGN_IN_SECRET
 
 Production bootstrap presents missing actions and asks before applying them. It preserves existing
 credentials. `--rotate NAME` explicitly replaces the named credential, so read its consequences in
-[platform secrets](./platform-secrets.md#replace-a-secret-on-purpose) first. Agents never set or
-change production credentials; a maintainer performs that step.
+[platform secrets](./platform-secrets.md#replace-a-secret-on-purpose) first. A maintainer must
+authorize the account, scopes, and destination before credential setup or rotation. An agent can
+perform an authorized setup on their behalf. Ordinary publication uses the credentials already
+installed in GitHub Actions and does not require local Cloudflare sign-in.
 
 Production setup is separate from publication. Merging a reviewed pull request updates protected
-staging. A maintainer reviews that saved release and runs `pnpm promote` to publish it. See the
+staging. A team member with the required repository and Actions access can review that saved release
+and run `pnpm promote`, or ask an agent to run it on their behalf. See the
 [deployment pipeline](./deployment-pipeline.md). Bootstrap does not publish the website.
 
 ## Requirements and implementation
