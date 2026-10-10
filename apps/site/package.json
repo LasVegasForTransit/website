@@ -25,6 +25,7 @@
     "test:e2e": "node --import tsx node_modules/@playwright/test/cli.js test",
     "test:update": "pnpm test:e2e --update-snapshots",
     "test:install": "playwright install --with-deps chromium",
+    "roster:preview": "tsx scripts/platform/import-roster.ts",
     "validate": "tsx scripts/audit/worker-parity.ts",
     "astro": "astro",
     "setup:notion": "tsx scripts/notion/provision-intake-db.ts",
@@ -49,7 +50,8 @@
     "worker:smoke": "tsx scripts/deploy/release-smoke.ts",
     "worker:publication": "tsx scripts/deploy/record-publication.ts",
     "worker:promote": "pnpm --dir ../.. promote",
-    "check:links": "tsx scripts/audit/check-build-links.ts"
+    "check:links": "tsx scripts/audit/check-build-links.ts",
+    "test:discord-link": "node --import tsx tests/e2e/discord-link.spec.ts"
   },
   "dependencies": {
     "@astrojs/sitemap": "catalog:",
@@ -61,7 +63,10 @@
     "sharp": "catalog:",
     "sitemap": "catalog:",
     "tailwindcss": "catalog:",
-    "zod": "catalog:"
+    "zod": "catalog:",
+    "@lasvegasfortransit/platform-core": "workspace:*",
+    "@lasvegasfortransit/platform-storage": "workspace:*",
+    "@lasvegasfortransit/platform-integrations": "workspace:*"
   },
   "devDependencies": {
     "@astrojs/check": "catalog:",
@@ -91,6 +96,8 @@
     "tslib": "catalog:",
     "tsx": "catalog:",
     "typescript": "catalog:",
-    "wrangler": "catalog:"
+    "wrangler": "catalog:",
+    "jose": "catalog:",
+    "miniflare": "catalog:"
   }
 }

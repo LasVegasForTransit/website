@@ -4,8 +4,8 @@
 // deleted) or a ZIP code.
 
 import { updateArea } from '../../../platform/account';
-import { t } from '../../../platform/messages';
-import { PersonService } from '../../../platform/storage/person-service';
+import { t } from '@lasvegasfortransit/platform-core/messages';
+import { PersonService } from '@lasvegasfortransit/platform-storage/person-service';
 import { showText } from '../../join/_page';
 import { fieldError, setValue, type SignInPagesEnv } from '../../sign-in/_shared';
 import { accountPage, backToAccount, field, formOf, signedIn } from '../_account';

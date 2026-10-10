@@ -1,0 +1,159 @@
+---
+import Button from '../../../site/src/components/app/Button.astro';
+import { ulid } from '@lasvegasfortransit/platform-core/ids';
+import { can } from '@lasvegasfortransit/platform-core/permissions';
+import { formatDate } from '@lasvegasfortransit/platform-core/messages';
+import { issueFormToken } from '@lasvegasfortransit/platform-storage/form-tokens';
+import type { StaffPerson } from '@lasvegasfortransit/platform-storage/staff-people';
+import { visibleCommittees } from '../lib/people';
+import { displayLabel } from '../lib/presentation';
+import type { CommitteeFeedback } from '../lib/committees';
+import { rosterReturn } from '../lib/roster-return';
+interface Props {
+  profile: StaffPerson;
+  feedback?: CommitteeFeedback;
+}
+const { profile, feedback } = Astro.props;
+const staff = Astro.locals.staff!;
+const current = profile.assignments.filter((item) => !item.ended_at);
+const past = profile.assignments.filter((item) => item.ended_at);
+const available = (await visibleCommittees(staff.db, staff.actor)).filter(
+  (item) =>
+    item.acceptingMembers && !current.some((assignment) => assignment.committee_id === item.id),
+);
+const token = await issueFormToken(staff.db, staff.actor, `person:committee:${profile.person.id}`);
+const returnTo = rosterReturn(Astro.url.searchParams.get('return_to'));
+const returnQuery = returnTo ? `?return_to=${encodeURIComponent(returnTo)}` : '';
+const afterAssign = returnTo && Astro.url.searchParams.get('return_after_assign') === '1';
+const action = `/people/${profile.person.id}/${returnQuery}${afterAssign ? '&return_after_assign=1' : ''}#committees-heading`;
+const endReasons = {
+  stepped_back: 'Stepped back',
+  moved: 'Moved away',
+  left_lvbt: 'Left LVBT',
+  removed: 'Removed by LVBT',
+};
+---
+
+<section aria-labelledby="committees-heading">
+  <h2 id="committees-heading">Committees</h2>
+  {
+    feedback && (
+      <p role="alert" class="staff-error mt-3">
+        {feedback.message}
+      </p>
+    )
+  }
+  <ul class="staff-current-assignments">
+    {
+      current.map((item) => (
+        <li>
+          <p>
+            {can(staff.actor, 'committee.view', { committeeId: item.committee_id }) ? (
+              <a href={`/committees/${item.committee_id}/`} class="staff-person-link">
+                {item.committee_name}
+              </a>
+            ) : (
+              <strong>{item.committee_name}</strong>
+            )}{' '}
+            · {displayLabel(item.role)}
+          </p>
+          {item.account_update_state === 'retry' && (
+            <p class="staff-help">
+              <a href={`/access/?person=${profile.person.id}`}>Account access needs attention</a>
+            </p>
+          )}
+          {can(staff.actor, 'committee.assign', { committeeId: item.committee_id }) && (
+            <details class="staff-assignment-actions">
+              <summary>Change role or remove</summary>
+              <form method="post" action={action} class="staff-form staff-inline-form">
+                <input type="hidden" name="token" value={token} />
+                <input type="hidden" name="operation_id" value={ulid()} />
+                <input type="hidden" name="action" value="change" />
+                <input type="hidden" name="assignment_id" value={item.id} />
+                <div>
+                  <label for={`role-${item.id}`}>Role in {item.committee_name}</label>
+                  <select id={`role-${item.id}`} name="role">
+                    <option value="member" selected={item.role === 'member'}>
+                      Member
+                    </option>
+                    <option value="lead" selected={item.role === 'lead'}>
+                      Lead
+                    </option>
+                  </select>
+                </div>
+                <Button>Save role</Button>
+              </form>
+              <form method="post" action={action} class="staff-form staff-inline-form">
+                <input type="hidden" name="token" value={token} />
+                <input type="hidden" name="operation_id" value={ulid()} />
+                <input type="hidden" name="action" value="end" />
+                <input type="hidden" name="assignment_id" value={item.id} />
+                <div>
+                  <label for={`reason-${item.id}`}>Reason for leaving {item.committee_name}</label>
+                  <select id={`reason-${item.id}`} name="reason" required>
+                    <option value="">Choose a reason</option>
+                    {Object.entries(endReasons).map(([value, label]) => (
+                      <option value={value}>{label}</option>
+                    ))}
+                  </select>
+                </div>
+                <Button>Remove from committee</Button>
+              </form>
+            </details>
+          )}
+        </li>
+      ))
+    }
+  </ul>
+  {!current.length && <p class="mt-3">No committee assigned.</p>}
+  {
+    available.length > 0 && profile.person.membership_status === 'member' && (
+      <form method="post" action={action} class="staff-form staff-assignment-form">
+        <input type="hidden" name="token" value={token} />
+        <input type="hidden" name="operation_id" value={ulid()} />
+        <input type="hidden" name="action" value="assign" />
+        <div>
+          <label for="committee_id">Committee</label>
+          <select id="committee_id" name="committee_id" required>
+            <option value="">Choose a committee</option>
+            {available.map((item) => (
+              <option value={item.id} selected={feedback?.committeeId === item.id}>
+                {item.name}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div>
+          <label for="assignment_role">Role</label>
+          <select id="assignment_role" name="role">
+            <option value="member" selected={feedback?.role !== 'lead'}>
+              Member
+            </option>
+            <option value="lead" selected={feedback?.role === 'lead'}>
+              Lead
+            </option>
+          </select>
+        </div>
+        <Button>Add to committee</Button>
+      </form>
+    )
+  }
+  {
+    past.length > 0 && (
+      <details class="staff-assignment-history">
+        <summary>Past committees</summary>
+        <ul class="staff-past-assignments mt-3 space-y-3">
+          {past.map((item) => (
+            <li>
+              <strong>{item.committee_name}</strong> · {displayLabel(item.role)}
+              <p class="staff-help">
+                {formatDate(new Date(item.started_at))}–{formatDate(new Date(item.ended_at!))} ·{' '}
+                {displayLabel(item.end_reason ?? 'Ended')}
+              </p>
+            </li>
+          ))}
+        </ul>
+      </details>
+    )
+  }
+</section>

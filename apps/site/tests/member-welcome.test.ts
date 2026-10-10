@@ -5,7 +5,7 @@ import {
   memberWelcomeEmail,
   welcomeAction,
 } from '../platform/member-welcome';
-import { memoryDb } from './support/platform-db';
+import { memoryDb } from '@lasvegasfortransit/platform-storage/test-db';
 
 void test('configured campaigns are timely and skip their own referrals', async () => {
   const db = memoryDb();

@@ -6,10 +6,14 @@
 // trip and every flow works without JavaScript. Underscore-prefixed so
 // Cloudflare Pages does not treat this file as a route.
 
-import { signToken, verifyToken } from '../../platform/core/signing';
-import { INTERESTS, validReferral, type Interest } from '../../platform/core/join-form';
+import { signToken, verifyToken } from '@lasvegasfortransit/platform-core/signing';
+import {
+  INTERESTS,
+  validReferral,
+  type Interest,
+} from '@lasvegasfortransit/platform-core/join-form';
 import type { PlatformEnv } from '../../platform/join';
-import type { Db } from '../../platform/storage/db';
+import type { Db } from '@lasvegasfortransit/platform-storage/db';
 import { builtPage, finishPage, SECURITY_HEADERS } from '../_page-response';
 
 export { builtPage, SECURITY_HEADERS };

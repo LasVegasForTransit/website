@@ -1,0 +1,118 @@
+---
+import type { AccessRow } from '@lasvegasfortransit/platform-storage/access-view';
+import { issueFormToken } from '@lasvegasfortransit/platform-storage/form-tokens';
+import { ulid } from '@lasvegasfortransit/platform-core/ids';
+import { can } from '@lasvegasfortransit/platform-core/permissions';
+import { formatFullDate, formatTime } from '@lasvegasfortransit/platform-core/messages';
+import Button from '../../../site/src/components/app/Button.astro';
+import { accessLabel, updateFailure, pendingAccessMessage } from '../lib/account-access';
+import { displayLabel } from '../lib/presentation';
+interface Props {
+  row: AccessRow;
+}
+const { row } = Astro.props;
+const staff = Astro.locals.staff!;
+const admin = can(staff.actor, 'access.recover');
+const retryToken =
+  admin && row.operationState === 'retry' && row.operationId
+    ? await issueFormToken(staff.db, staff.actor, `access:retry:${row.operationId}`)
+    : null;
+const removeToken =
+  admin && row.assignmentId
+    ? await issueFormToken(staff.db, staff.actor, `access:remove:${row.assignmentId}`)
+    : null;
+const providers =
+  row.targetId === 'person'
+    ? [{ name: 'Discord member role', access: row.discord }]
+    : [
+        { name: 'Google group', access: row.googleWorkspace },
+        { name: 'Discord committee role', access: row.discord },
+      ];
+---
+
+<li class="staff-account-row">
+  <div>
+    <a class="staff-person-link" href={`/people/${row.personId}/`}>{row.name}</a>
+    <p class="staff-help">
+      {row.committeeName ?? 'LVBT membership'} · {
+        row.targetId === 'person'
+          ? displayLabel(row.membershipStatus)
+          : row.assignmentId
+            ? displayLabel(row.role ?? 'member')
+            : 'No longer assigned'
+      }
+    </p>
+    {
+      row.operationState === 'retry' && (
+        <p role="status" class="staff-help">
+          {updateFailure(row.lastFailure)}
+        </p>
+      )
+    }
+    {
+      (row.operationState === 'queued' || row.operationState === 'running') && (
+        <p class="staff-help">{pendingAccessMessage(row)}</p>
+      )
+    }
+  </div>
+  <dl class="staff-account-status">
+    {
+      providers.map(({ name, access }) => (
+        <div>
+          <dt>{name}</dt>
+          <dd>{accessLabel(access, row.expectedAccess)}</dd>
+          {access.observedAt && (
+            <dd class="staff-help">
+              Checked {formatFullDate(new Date(access.observedAt))},{' '}
+              {formatTime(new Date(access.observedAt))}
+            </dd>
+          )}
+        </div>
+      ))
+    }
+  </dl>
+  {
+    retryToken && (
+      <form method="post" action={Astro.url.pathname + Astro.url.search}>
+        <input type="hidden" name="token" value={retryToken} />
+        <input type="hidden" name="action" value="retry" />
+        <input type="hidden" name="target" value={row.operationId} />
+        <Button>Try update again</Button>
+      </form>
+    )
+  }
+  {
+    removeToken && (
+      <details class="staff-account-removal">
+        <summary>Remove from committee</summary>
+        <form
+          method="post"
+          action={Astro.url.pathname + Astro.url.search}
+          class="staff-form staff-inline-form"
+        >
+          <input type="hidden" name="token" value={removeToken} />
+          <input type="hidden" name="action" value="remove" />
+          <input type="hidden" name="target" value={row.assignmentId} />
+          <input type="hidden" name="operation_id" value={ulid()} />
+          <>
+            <div>
+              <>
+                <label for={`reason-${row.assignmentId}`}>Reason</label>
+                <select name="reason" id={`reason-${row.assignmentId}`} required>
+                  <option value="">Choose a reason</option>
+                  <>
+                    <option value="stepped_back">Stepped back</option>
+                    <option value="moved">Moved away</option>
+                    <option value="left_lvbt">Left LVBT</option>
+                    <option value="removed">Removed by LVBT</option>
+                  </>
+                </select>
+              </>
+            </div>
+            <Button>Remove from committee</Button>
+          </>
+        </form>
+      </details>
+    )
+  }
+</li>

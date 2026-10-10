@@ -3,18 +3,25 @@
 // deleting the account are in account-data.ts. Rendering lives in the site; this module decides what
 // happens and returns the outcome for the screen to show.
 
-import { checkCode, requestCode } from './auth';
-import { nowIso } from './core/ids';
-import { normalizePhone } from './core/join-form';
-import { isRegionId, regionForPlaces, regionName } from './core/regions';
-import { subscribe, unsubscribe } from './integrations/beehiiv';
-import { geocodeToBlock, type GeocodeResult } from './integrations/census';
-import { sendEmail } from './integrations/email';
-import { formatTime, t } from './messages';
+import { checkCode, requestCode } from '@lasvegasfortransit/platform-storage/auth';
+import { nowIso } from '@lasvegasfortransit/platform-core/ids';
+import { normalizePhone } from '@lasvegasfortransit/platform-core/join-form';
+import { isRegionId, regionForPlaces, regionName } from '@lasvegasfortransit/platform-core/regions';
+import { subscribe, unsubscribe } from '@lasvegasfortransit/platform-integrations/beehiiv';
+import {
+  geocodeToBlock,
+  type GeocodeResult,
+} from '@lasvegasfortransit/platform-integrations/census';
+import { sendEmail } from '@lasvegasfortransit/platform-integrations/email';
+import { formatTime, t } from '@lasvegasfortransit/platform-core/messages';
 import { sendCodeEmail, validEmail, type SignInEnv } from './sign-in';
-import type { Db } from './storage/db';
-import { regionForZip } from './storage/limits';
-import { normalizeEmail, PersonService, type Person } from './storage/person-service';
+import type { Db } from '@lasvegasfortransit/platform-storage/db';
+import { regionForZip } from '@lasvegasfortransit/platform-storage/limits';
+import {
+  normalizeEmail,
+  PersonService,
+  type Person,
+} from '@lasvegasfortransit/platform-storage/person-service';
 import { transactionalEmailHtml } from './transactional-email';
 
 export interface AccountEnv extends SignInEnv {
@@ -308,12 +315,13 @@ async function subscribeAddress(
   );
   if (!result.ok) return false;
   if (result.subscriptionId) {
-    await new PersonService(env.PLATFORM_DB).linkIdentity(personId, {
+    const linked = await new PersonService(env.PLATFORM_DB).linkIdentity(personId, {
       platform: 'beehiiv',
       externalId: result.subscriptionId,
       externalEmail: email,
       linkMethod: 'verified_email',
     });
+    if (linked.kind !== 'ok') return false;
   }
   return true;
 }

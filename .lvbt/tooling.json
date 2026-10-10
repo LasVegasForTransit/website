@@ -182,7 +182,7 @@
     "migrations": [
       {
         "binding": "PLATFORM_DB",
-        "directory": "../site/platform/storage/migrations"
+        "directory": "../../packages/platform-storage/migrations"
       }
     ],
     "attestation": {

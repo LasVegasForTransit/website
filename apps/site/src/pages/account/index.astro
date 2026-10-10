@@ -7,7 +7,7 @@ import Button from '../../components/app/Button.astro';
 import KeyValueSummary from '../../components/app/KeyValueSummary.astro';
 import Notice from '../../components/app/Notice.astro';
 import { hintClass, linkClass } from '../../components/app/styles';
-import { t } from '../../../platform/messages';
+import { t } from '@lasvegasfortransit/platform-core/messages';
 import { Icon } from 'astro-icon/components';
 
 const change = (href: string) => ({ href, label: t('account.change') });
@@ -119,6 +119,13 @@ const change = (href: string) => ({ href, label: t('account.change') });
           </div>
         </section>
 
+        <section id="discord" class="scroll-mt-24" data-slot="discord" hidden>
+          <h2 class="text-title-lg">Discord</h2>
+          <p class="mt-3" data-slot="discord-status">
+            Connect your Discord account to your LVBT membership.
+          </p>
+          <a href="/account/discord/" class={`${linkClass} mt-3 inline-block`}>Connect Discord</a>
+        </section>
         <section id="data" class="scroll-mt-24 bg-surface-container p-7">
           <h2 class="flex items-center gap-3 text-title-lg">
             <Icon name="mdi:database-outline" class="size-6 text-primary" aria-hidden="true" />{

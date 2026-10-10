@@ -1,3 +1,23 @@
+import {
+  SITE_ORIGIN,
+  SESSION_COOKIE,
+  SIGNED_IN_COOKIE,
+  ACCOUNT_PATH,
+  readCookie,
+  sessionCookies,
+  clearedSessionCookies,
+  safeNext,
+} from '@lasvegasfortransit/platform-core/web-auth';
+export {
+  readCookie,
+  sessionCookies,
+  clearedSessionCookies,
+  safeNext,
+  SITE_ORIGIN,
+  SESSION_COOKIE,
+  SIGNED_IN_COOKIE,
+  ACCOUNT_PATH,
+} from '@lasvegasfortransit/platform-core/web-auth';
 // Member sign-in as the site uses it: asking for a code, checking it, the
 // cookies that keep a browser signed in, and finding out who is signed in.
 // The storage underneath is platform/auth.ts.
@@ -15,20 +35,20 @@ import {
   type AuthEnv,
   type CheckOutcome,
   type SessionPerson,
-} from './auth';
-import { ulid } from './core/ids';
-import { signToken, verifyToken } from './core/signing';
-import { sendEmail, type Email, type SendResult } from './integrations/email';
+} from '@lasvegasfortransit/platform-storage/auth';
+import { ulid } from '@lasvegasfortransit/platform-core/ids';
+import { signToken, verifyToken } from '@lasvegasfortransit/platform-core/signing';
+import {
+  sendEmail,
+  type Email,
+  type SendResult,
+} from '@lasvegasfortransit/platform-integrations/email';
 import { transactionalEmailHtml } from './transactional-email';
-import { formatTime, t } from './messages';
-import type { Db } from './storage/db';
-import { normalizeEmail } from './storage/person-service';
+import { formatTime, t } from '@lasvegasfortransit/platform-core/messages';
+import type { Db } from '@lasvegasfortransit/platform-storage/db';
+import { normalizeEmail } from '@lasvegasfortransit/platform-storage/person-service';
 
-export const SITE_ORIGIN = 'https://lasvegasfortransit.org';
-export const SESSION_COOKIE = '__Host-lvbt_session';
-export const SIGNED_IN_COOKIE = 'lvbt_signed_in';
 export const STEP_COOKIE = 'lvbt_sign_in';
-export const ACCOUNT_PATH = '/account/';
 
 export interface SignInEnv extends AuthEnv {
   LVBT_RESEND_API_KEY?: string | undefined;
@@ -59,31 +79,6 @@ export function signInEnv(env: {
 }
 
 // --- Cookies -------------------------------------------------------------
-
-export function readCookie(request: Request, name: string): string | null {
-  const header = request.headers.get('Cookie') ?? '';
-  for (const part of header.split(';')) {
-    const [key, ...rest] = part.trim().split('=');
-    if (key === name) return rest.join('=') || null;
-  }
-  return null;
-}
-
-/** The session cookie and the non-secret "signed in" marker for public pages. */
-export function sessionCookies(token: string, expiresAt: Date): string[] {
-  const expires = expiresAt.toUTCString();
-  return [
-    `${SESSION_COOKIE}=${token}; Expires=${expires}; Path=/; HttpOnly; Secure; SameSite=Lax`,
-    `${SIGNED_IN_COOKIE}=1; Expires=${expires}; Path=/; Secure; SameSite=Lax`,
-  ];
-}
-
-export function clearedSessionCookies(): string[] {
-  return [
-    `${SESSION_COOKIE}=; Max-Age=0; Path=/; HttpOnly; Secure; SameSite=Lax`,
-    `${SIGNED_IN_COOKIE}=; Max-Age=0; Path=/; Secure; SameSite=Lax`,
-  ];
-}
 
 // The short-lived, signed record of the code this browser asked for: which
 // email, which request, and where to go afterwards. It lasts as long as the
@@ -138,17 +133,6 @@ export function clearedNoticeCookie(): string {
  * Where to go after signing in: a path on this site, never another site.
  * Anything else becomes the account page.
  */
-export function safeNext(next: string | null | undefined): string {
-  if (!next?.startsWith('/') || next.startsWith('//') || next.includes('\\')) return ACCOUNT_PATH;
-  try {
-    const url = new URL(next, SITE_ORIGIN);
-    if (url.origin !== SITE_ORIGIN) return ACCOUNT_PATH;
-    return `${url.pathname}${url.search}`;
-  } catch {
-    return ACCOUNT_PATH;
-  }
-}
-
 /**
  * Forms that change sign-in state accept POSTs only from this site. Browsers
  * send Origin with every form POST; a request that has neither Origin nor

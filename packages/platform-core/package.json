@@ -1,0 +1,36 @@
+{
+  "name": "@lasvegasfortransit/platform-core",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./ids": "./src/ids.ts",
+    "./join-form": "./src/join-form.ts",
+    "./membership": "./src/membership.ts",
+    "./regions": "./src/regions.ts",
+    "./signing": "./src/signing.ts",
+    "./messages": "./src/messages/index.ts",
+    "./random-token": "./src/random-token.ts",
+    "./workspace-identity": "./src/workspace-identity.ts",
+    "./staff-types": "./src/staff-types.ts",
+    "./permissions": "./src/permissions.ts",
+    "./web-auth": "./src/web-auth.ts",
+    "./welcome": "./src/welcome.ts",
+    "./access": "./src/access.ts",
+    "./discord-identity": "./src/discord-identity.ts",
+    "./paper": "./src/paper.ts"
+  },
+  "scripts": {
+    "lint": "eslint . --max-warnings 0",
+    "check-types": "tsc --noEmit",
+    "test": "node --import tsx --test tests/*.test.ts"
+  },
+  "devDependencies": {
+    "@lasvegasfortransit/eslint-config": "file:../../.lvbt/web-platform/packages/eslint-config",
+    "@types/node": "catalog:",
+    "@cloudflare/workers-types": "catalog:",
+    "eslint": "catalog:",
+    "tsx": "catalog:",
+    "typescript": "catalog:"
+  }
+}

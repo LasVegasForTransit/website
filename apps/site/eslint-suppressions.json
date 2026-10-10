@@ -361,9 +361,6 @@
     }
   },
   "tests/membership-intake.test.ts": {
-    "@typescript-eslint/consistent-type-definitions": {
-      "count": 1
-    },
     "@typescript-eslint/no-base-to-string": {
       "count": 2
     },
@@ -371,9 +368,6 @@
       "count": 1
     },
     "@typescript-eslint/no-misused-spread": {
-      "count": 1
-    },
-    "@typescript-eslint/no-unnecessary-type-assertion": {
       "count": 1
     },
     "@typescript-eslint/no-unsafe-argument": {

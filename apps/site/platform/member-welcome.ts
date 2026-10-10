@@ -1,6 +1,6 @@
-import type { Interest } from './core/join-form';
-import { escapeHtml } from './integrations/email';
-import type { Db } from './storage/db';
+import type { Interest } from '@lasvegasfortransit/platform-core/join-form';
+import { escapeHtml } from '@lasvegasfortransit/platform-integrations/email';
+import type { Db } from '@lasvegasfortransit/platform-storage/db';
 
 const SITE = 'https://lasvegasfortransit.org';
 

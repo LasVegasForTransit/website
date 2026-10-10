@@ -206,7 +206,8 @@ email stop working.
 ### Google sign-in for the website
 
 `LVBT_GOOGLE_OAUTH_CLIENT_ID` and `LVBT_GOOGLE_OAUTH_CLIENT_SECRET` are for the website's own "Sign
-in with Google" button. That feature is not built yet, so both are fine to skip.
+in with Google" button. The button is hidden until both values are configured. Production sign-in
+still needs provider verification.
 
 1. Open <https://console.cloud.google.com/?project=lvbt-core> signed in with an LVBT Workspace admin
    account, and check that the project picker at the top says **LVBT Core**. Only if that project
@@ -236,9 +237,12 @@ in with Google" button. That feature is not built yet, so both are fine to skip.
 5. Open <https://console.cloud.google.com/auth/clients?project=lvbt-core>. If a client named
    `LVBT website` exists, open it. Otherwise click **Create client**, choose **Web application**,
    and name it `LVBT website`. Leave **Authorized JavaScript origins** empty; the website signs
-   people in from its server. Under **Authorized redirect URIs**, click **Add URI** and enter
-   `https://lasvegasfortransit.org/auth/google/callback`. Click **Create**, and keep the dialog that
-   opens.
+   people in from its server. Under **Authorized redirect URIs**, click **Add URI** and enter these
+   four exact addresses: `https://lasvegasfortransit.org/sign-in/google/callback`,
+   `https://staff.lasvegasfortransit.org/sign-in/google/callback`,
+   `https://preview.lasvegasfortransit.org/sign-in/google/callback`, and
+   `https://staff-preview.lasvegasfortransit.org/sign-in/google/callback`. Click **Create**, and
+   keep the dialog that opens.
 6. Copy the Client ID (it ends with `.apps.googleusercontent.com`) and paste it at the
    `LVBT_GOOGLE_OAUTH_CLIENT_ID` prompt.
 7. At the next prompt, `LVBT_GOOGLE_OAUTH_CLIENT_SECRET`, copy the Client secret from the same
@@ -271,16 +275,18 @@ part 4 is created. That takes about 20 minutes and needs a Google Workspace supe
 parts in order; each needs the one before it. After showing these steps, bootstrap asks once whether
 part 1 is done and remembers a "yes".
 
-**Part 1, the Staff Google Group.** Cloudflare Access uses LVBT's existing Staff group,
-`staff@lasvegasfortransit.org` — everyone on the team, not a group made for this.
+**Part 1, the Console users Google Group.** Cloudflare Access uses the dedicated
+`console-users@lasvegasfortransit.org` group for approved portal users. Each person must already be
+an LVBT member with an LVBT Workspace account. This group grants entry, not administrator rights.
 
-1. At <https://admin.google.com>, go to Directory → Groups and open **Staff**.
+1. At <https://admin.google.com>, go to Directory → Groups and open **Console users**.
 2. Check it before relying on it: Members should be the LVBT team only, all @lasvegasfortransit.org,
    nobody who should not see member data. Under **Access settings**, **Who can join the group**
    should be **Only invited users**, and **Allow members outside your organization** should be off.
    Add yourself if you are not already a member, so **Test** can show the group later.
-3. If the group does not exist: click **Create group**. Group name `Staff`, Group email `staff`,
-   Description `LVBT staff`. Create it, then add members the same way.
+3. If the group does not exist: click **Create group**. Group name `Console users`, Group email
+   `console-users`, Description `Approved LVBT staff portal users`. Create it, then add members the
+   same way.
 
 To add someone later, come back to the group's **Members** page and click **Add members**. To remove
 someone, point to them in the list and click **Remove**, or tick them and click **Remove members**.
@@ -316,8 +322,8 @@ and click **Save**. Without it, Google can refuse the Cloudflare sign-in.
    membership every sign-in instead. Leave the email claim and OIDC Claims fields empty. Click
    **Save** (allow the Google prompt with your LVBT admin account if it asks).
 5. Click **Test** next to Google Workspace. It should show your LVBT address and list
-   `staff@lasvegasfortransit.org` among your groups. If the group is missing, re-check part 1 and
-   the Admin SDK API in step 1.
+   `console-users@lasvegasfortransit.org` among your groups. If the group is missing, re-check part
+   1 and the Admin SDK API in step 1.
 
 **Part 4, the application.**
 
@@ -337,17 +343,17 @@ and click **Save**. Without it, Google can refuse the Cloudflare sign-in.
    RDP, SSH, or VNC sessions** off.
 4. Under **Access policies**, click **Create new policy**. Policy Name `LVBT staff` (any clear name
    is fine), Action **Allow**, Policy session duration **Same as application session duration**.
-   Include: **Google Groups** = `staff@lasvegasfortransit.org`. Click **+ Add require (AND)** and
-   add **Emails ending in** = `@lasvegasfortransit.org`, as a second check. Leave **Override global
-   multi-factor authentication settings (MFA)** and **Just-in-time access** off — 2-Step
-   Verification belongs in Google (part 1's group), not here. Save the policy. If **Google Groups**
-   is not offered, part 3 is not finished.
+   Include: **Google Groups** = `console-users@lasvegasfortransit.org`. Click **+ Add require
+   (AND)** and add **Emails ending in** = `@lasvegasfortransit.org`, as a second check. Leave
+   **Override global multi-factor authentication settings (MFA)** and **Just-in-time access** off —
+   2-Step Verification belongs in Google (part 1's group), not here. Save the policy. If **Google
+   Groups** is not offered, part 3 is not finished.
 5. Skip **Policy tester**.
 6. Under **Authentication** (Identity tab), turn off **Accept all available identity providers**,
    choose **Google Workspace** in **Choose available identity providers**, and turn on **Apply
    instant authentication**. Leave **Authenticate with Cloudflare One Client** off.
 7. Skip **Preview**. Under **Details**, set Name to `LVBT staff console` and Session Duration to
-   **24 hours**. Click **Create**.
+   **12 hours**. Click **Create**.
 8. Open the application's **Configure** page, then **Additional settings** → **Cookie settings**,
    and turn on **Enable Binding Cookie**. Leave **HTTP Only** on and **SameSite** set to **Lax**.
 9. Still under **Additional settings**, copy **Application Audience (AUD) Tag**, a long string of
@@ -361,15 +367,44 @@ security keys are the strongest option. Do not add a Cloudflare "Authentication 
 the policy above: Google does not reliably send that signal, and it can lock everyone out.
 
 To remove someone's access, remove them from Staff or suspend their account; that takes effect by
-their next sign-in, at most 24 hours. To cut them off immediately, also go to Cloudflare One → Team
+their next sign-in, at most 12 hours. To cut them off immediately, also go to Cloudflare One → Team
 & Resources → Users and revoke their session.
 
 ### Discord
 
-The five `LVBT_DISCORD_*` values are for Discord linking and roles, which are not built yet, so it
-is fine to skip all five; bootstrap asks again next time. The app is called **LVBT Bot**, and it
-must belong to the LVBT team: an app on a "Personal" team belongs to one account, and nobody else
-can manage it after that person leaves.
+Member account linking uses `LVBT_DISCORD_APPLICATION_ID` and `LVBT_DISCORD_CLIENT_SECRET`. Leaving
+either unset keeps Connect Discord disabled. The member authorizes only their Discord identity; no
+OAuth access or refresh tokens are stored, and this does not prove server roles. Register both
+`https://lasvegasfortransit.org/account/discord/callback` and
+`https://preview.lasvegasfortransit.org/account/discord/callback` before testing the respective
+deployment. Production secrets are configured by a maintainer through bootstrap.
+
+The bot token, server ID and public key remain separate setup for role synchronization and commands.
+The scheduled runner is locally verified; its deployment and live acceptance remain outstanding, and
+commands are unfinished. The app is called **LVBT Bot**, and it must belong to the LVBT team: an app
+on a "Personal" team belongs to one account, and nobody else can manage it after that person leaves.
+
+#### Scheduled Discord configuration
+
+The jobs Worker (`lvbt-jobs`) updates roles, while the staff Worker (`lvbt-staff`) matches actual
+provider observations to show confirmations. Each has a separate preview environment. Their public
+vars are documented in `DISCORD_RUNTIME_CONFIG` in
+`packages/platform-integrations/src/worker-runtime-config.ts`:
+
+| Variable                           | Purpose and value                                                                                                       |
+| ---------------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
+| `LVBT_DEPLOYMENT_ENV`              | `production` or `preview`, matching the deployed environment.                                                           |
+| `LVBT_DISCORD_SYNC_ENABLED`        | Defaults to `false`. Enable isolated preview after maintainer setup; production follows live acceptance.                |
+| `LVBT_DISCORD_APPLICATION_ID`      | The existing LVBT application ID from General Information in the Developer Portal.                                      |
+| `LVBT_DISCORD_GUILD_ID`            | The server this deployment may update; copy its server ID in Discord Developer Mode.                                    |
+| `LVBT_DISCORD_PRODUCTION_GUILD_ID` | The real LVBT server ID in both environments. Preview rejects this server as its active target.                         |
+| `LVBT_DISCORD_MEMBER_ROLE_ID`      | The intended server's Member role ID, copied in Developer Mode; it must be below the bot role and cannot be `everyone`. |
+
+Only jobs receives `LVBT_DISCORD_BOT_TOKEN`. Staff receives these public values and no bot token.
+The existing website bootstrap does not provision jobs or staff, so its readiness report cannot
+prove these Workers are ready. Their release setup and migration application remain unfinished. An
+empty or mismatched configuration performs no scheduled role changes and renders no confirmed staff
+role status. Never point preview at the production server or membership database.
 
 **The team.**
 
@@ -401,9 +436,11 @@ can manage it after that person leaves.
    with the others.
 5. Open **OAuth2**. Leave **Public Client** off: it is for apps without a server, such as phone
    apps, that cannot keep a secret. Under **Redirects**, click **Add Redirect**, enter
-   `https://lasvegasfortransit.org/account/discord/callback`, and click **Save Changes**. Under
-   **Client Secret**, click **Reset Secret**, confirm, then copy it and paste it at the
-   `LVBT_DISCORD_CLIENT_SECRET` prompt. It is shown only once.
+   `https://lasvegasfortransit.org/account/discord/callback`, and click **Save Changes**. Also
+   register `https://preview.lasvegasfortransit.org/account/discord/callback` for the isolated
+   preview. Use the existing **Client Secret** from the team's approved secret store at the
+   `LVBT_DISCORD_CLIENT_SECRET` prompt. Do not reset a working client. A necessary replacement must
+   be coordinated by a maintainer across every affected deployment.
 
 **The bot.**
 
@@ -411,9 +448,10 @@ can manage it after that person leaves.
    LVBT banner if the drive has one. Username: `LVBT Bot`.
 2. Under **Authorization Flow**, turn **Public Bot** off, so only the team can add the bot to a
    server. Leave **Requires OAuth2 Code Grant** and **Private Channel Obfuscation** off.
-3. Under **Privileged Gateway Intents**, turn **Server Members Intent** on, because the website uses
-   it to look up who is in the server. Leave **Presence Intent** and **Message Content Intent** off.
-   Click **Save Changes**.
+3. The current REST runner reads individual linked members and needs no privileged Gateway intents.
+   Discord requires **Server Members Intent** for listing all server members, which this runner does
+   not do. Check other bot features before changing existing intents. See Discord's
+   [guild API reference](https://docs.discord.com/developers/resources/guild).
 4. The **Bot Permissions** box further down is only a calculator; leave it. **App Verification** on
    the left only matters once a bot is in 100 or more servers; ignore it.
 5. Open **Installation**. Under installation contexts, keep only **Guild Install**. Under its
@@ -423,8 +461,10 @@ can manage it after that person leaves.
    server, and click **Authorize**. You need the "Manage Server" permission in that server.
 7. In Discord, open the LVBT server's **Server Settings → Roles** and drag the **LVBT Bot** role
    above every role the website gives out. A bot can only give roles below its own.
-8. Back on **Bot**, click **Reset Token**, confirm, then copy the token and paste it at the
-   `LVBT_DISCORD_BOT_TOKEN` prompt. Treat it like a password; it is shown only once.
+8. Reuse the existing bot token from the approved team secret store. Do not reset a working token. A
+   maintainer must coordinate any necessary replacement across affected deployments. The scheduled
+   jobs Worker requires this credential through its release setup, which the website bootstrap does
+   not yet provide.
 
 **The server ID.** In the Discord app, open User Settings (the gear by your name) → Advanced and
 turn on **Developer Mode**. Right-click the LVBT server icon, click **Copy Server ID**, and paste it
@@ -436,18 +476,18 @@ old one stop working, so store the new one with
 
 ### Google service account
 
-`LVBT_GOOGLE_SERVICE_ACCOUNT_KEY` and `LVBT_GOOGLE_ADMIN_SUBJECT` are for volunteer management:
-letting the website create volunteer Workspace accounts and manage Google Group membership, acting
-as a Workspace admin. That feature is not built and nothing reads these values, so leave both empty.
-Bootstrap lists them under "Not asked for" and never asks for them.
+`LVBT_GOOGLE_SERVICE_ACCOUNT_KEY` and `LVBT_GOOGLE_ADMIN_SUBJECT` were reserved for volunteer
+management. Local Google Group reconciliation now exists, but its hosted runner and token source are
+not wired; nothing reads these two values, so leave both empty. Bootstrap lists them under "Not
+asked for" and never asks for them.
 
 Do not create a service account key for them, and do not turn off the "Disable service account key
 creation" organization policy (`iam.disableServiceAccountKeyCreation`) to make one. Google turns
 that policy on by default for new organizations, because a key file works like a password that never
 expires: anyone who gets a copy could manage all of LVBT's Workspace users and groups.
 
-When volunteer management is built, it will sign in to Google with no key file at all, using
-Workload Identity Federation from a GitHub Actions job; the
+Google Group reconciliation will sign in to Google with no key file at all, using Workload Identity
+Federation from a GitHub Actions job; the
 [platform decision record](../explanation/decisions/organizing-platform.md#8-secrets-live-in-cloudflare-and-are-never-committed)
 explains how. The service account it will use already exists:
 `lvbt-website-admin@lvbt-core.iam.gserviceaccount.com` ("LVBT Website Admin") in the LVBT Core

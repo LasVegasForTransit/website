@@ -1,0 +1,98 @@
+name: Deploy staff preview
+
+on:
+  workflow_dispatch:
+    inputs:
+      release_run:
+        description: Successful Build staff release Actions run ID
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  actions: read
+  packages: read
+
+concurrency:
+  group: staff-preview-deployment
+  cancel-in-progress: false
+
+jobs:
+  preview:
+    name: Activate saved staff preview
+    if: github.ref == 'refs/heads/main'
+    environment: staff-preview
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout verifier
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+      - name: Setup verifier
+        uses: ./.github/actions/setup-node-pnpm
+      - name: Retrieve selected saved build
+        id: release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_RUN: ${{ inputs.release_run }}
+        run: >-
+          pnpm staff:release prepare --directory "$RUNNER_TEMP/staff-release" --repository
+          "$GITHUB_REPOSITORY" --run-id "$RELEASE_RUN"
+      - name: Checkout verified source
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          ref: ${{ steps.release.outputs.commit }}
+          persist-credentials: false
+          lfs: true
+      - name: Setup selected source
+        uses: ./.github/actions/setup-node-pnpm
+      - name: Check saved Workers
+        env:
+          RELEASE_COMMIT: ${{ steps.release.outputs.commit }}
+          RELEASE_ID: ${{ steps.release.outputs.release-id }}
+        run: >-
+          pnpm staff:release check --directory "$RUNNER_TEMP/staff-release" --commit
+          "$RELEASE_COMMIT" --release-id "$RELEASE_ID"
+      - name: Install Chromium
+        run: pnpm -C apps/staff exec playwright install --with-deps chromium
+      - name: Check saved runtime
+        env:
+          RELEASE_COMMIT: ${{ steps.release.outputs.commit }}
+          RELEASE_ID: ${{ steps.release.outputs.release-id }}
+        run: >-
+          pnpm -C apps/staff test:release --directory "$RUNNER_TEMP/staff-release" --commit
+          "$RELEASE_COMMIT" --release-id "$RELEASE_ID"
+      - name: Upload saved Workers
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_RUN: ${{ inputs.release_run }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_STAFF_PREVIEW_API_TOKEN }}
+        run: >-
+          pnpm staff:release upload --directory "$RUNNER_TEMP/staff-release" --repository
+          "$GITHUB_REPOSITORY" --run-id "$RELEASE_RUN" --target preview --receipt
+          "$RUNNER_TEMP/staff-deployment.json"
+      - name: Activate recorded versions
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_RUN: ${{ inputs.release_run }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_STAFF_PREVIEW_API_TOKEN }}
+        run: >-
+          pnpm staff:release activate --directory "$RUNNER_TEMP/staff-release" --repository
+          "$GITHUB_REPOSITORY" --run-id "$RELEASE_RUN" --target preview --receipt
+          "$RUNNER_TEMP/staff-deployment.json"
+      - name: Check active preview configuration
+        env:
+          CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_STAFF_PREVIEW_API_TOKEN }}
+        run: pnpm staff:preflight --preview --json
+      - name: Retain actual deployment receipt
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: staff-preview-deployment-${{ github.run_id }}
+          path: ${{ runner.temp }}/staff-deployment.json
+          if-no-files-found: warn
+          retention-days: 90

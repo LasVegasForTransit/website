@@ -1,0 +1,130 @@
+---
+import StaffLayout from '../../../layouts/StaffLayout.astro';
+import Button from '../../../../../site/src/components/app/Button.astro';
+import { getCommitteeView } from '@lasvegasfortransit/platform-storage/committee-views';
+import { can } from '@lasvegasfortransit/platform-core/permissions';
+import { ulid } from '@lasvegasfortransit/platform-core/ids';
+import { issueFormToken } from '@lasvegasfortransit/platform-storage/form-tokens';
+import {
+  INTEREST_LABELS,
+  submitSettings,
+  type SettingsFeedback,
+} from '../../../lib/committee-settings';
+import { messageResponse } from '../../../lib/responses';
+const staff = Astro.locals.staff;
+if (!staff || !can(staff.actor, 'committee.settings'))
+  return messageResponse("You don't have access to this", 404);
+const id = Astro.params.id ?? '';
+const view = await getCommitteeView(staff.db, staff.actor, id);
+if (!view) return messageResponse("You don't have access to this", 404);
+let feedback: SettingsFeedback | undefined;
+if (Astro.request.method === 'POST') {
+  const result = await submitSettings(Astro.request, staff, id);
+  if (result instanceof Response) return result;
+  feedback = result;
+  Astro.response.status = result.status;
+}
+const committee = view.committee;
+const values = feedback?.input ?? committee;
+const token = await issueFormToken(staff.db, staff.actor, `committee:settings:${id}`);
+---
+
+<StaffLayout title={`Edit ${committee.name}`}>
+  <a slot="breadcrumb" href={`/committees/${id}/`} class="staff-back">← Committee</a>
+  {
+    feedback && (
+      <p role="alert" class="staff-error mb-5">
+        {feedback.message}{' '}
+        {feedback.status === 409 && <a href={`/committees/${id}/settings/`}>Reload committee</a>}
+      </p>
+    )
+  }
+  <form method="post" action={`/committees/${id}/settings/`} class="staff-form staff-editor">
+    <input type="hidden" name="token" value={token} />
+    <input type="hidden" name="operation_id" value={ulid()} />
+    <input
+      type="hidden"
+      name="expected_version"
+      value={feedback?.input.expectedVersion ?? committee.settingsVersion}
+    />
+    <div>
+      <label for="description">Description</label><textarea
+        id="description"
+        name="description"
+        rows="3"
+        maxlength="2000">{values.description}</textarea
+      >
+    </div>
+    <div>
+      <label for="time_commitment">Time commitment</label><input
+        id="time_commitment"
+        name="time_commitment"
+        maxlength="150"
+        value={values.timeCommitment}
+        placeholder="For example, two hours a month"
+      />
+    </div>
+    <div>
+      <label for="accepting_members">Accept new assignments</label><select
+        id="accepting_members"
+        name="accepting_members"
+        ><option value="yes" selected={values.acceptingMembers}>Yes</option><option
+          value="no"
+          selected={!values.acceptingMembers}>No</option
+        ></select
+      >
+      <p class="staff-help">Choosing No keeps existing assignments.</p>
+    </div>
+    <fieldset>
+      <legend class="font-bold text-body-sm">Welcome interests</legend><p class="staff-help mb-2">
+        Which new members should this committee’s leads be able to welcome?
+      </p>
+      {
+        Object.entries(INTEREST_LABELS).map(([value, label]) => (
+          <label class="staff-choice">
+            <input
+              type="checkbox"
+              name="interests"
+              value={value}
+              checked={values.interestIds.some((interest) => interest === value)}
+            />
+            {label}
+          </label>
+        ))
+      }
+    </fieldset>
+    <details class="staff-assignment-actions" open={feedback?.status === 400}>
+      <summary>Account connections</summary>
+      <p class="staff-help mb-3">
+        Civic Tech can supply these details. Saving them queues account updates; it does not confirm
+        that access has been granted.
+      </p>
+      <div class="space-y-3">
+        <div>
+          <label for="workspace_group_email">Google group email</label><input
+            id="workspace_group_email"
+            name="workspace_group_email"
+            type="email"
+            maxlength="254"
+            value={values.workspaceGroupEmail ?? ''}
+          />
+        </div>
+        <div>
+          <label for="discord_role_id">Discord role ID</label><input
+            id="discord_role_id"
+            name="discord_role_id"
+            inputmode="numeric"
+            maxlength="20"
+            value={values.discordRoleId ?? ''}
+          />
+        </div>
+      </div>
+    </details>
+    <div class="flex flex-wrap items-center gap-5">
+      {feedback?.status !== 409 && <Button>Save committee</Button>}<a
+        href={`/committees/${id}/`}
+        class="staff-muted-link text-body-sm">Cancel</a
+      >
+    </div>
+  </form>
+</StaffLayout>

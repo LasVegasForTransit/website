@@ -1,9 +1,9 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { onRequestPost } from '../functions/join/remove';
-import { signToken } from '../platform/core/signing';
-import { PersonService } from '../platform/storage/person-service';
-import { memoryDb } from './support/platform-db';
+import { signToken } from '@lasvegasfortransit/platform-core/signing';
+import { PersonService } from '@lasvegasfortransit/platform-storage/person-service';
+import { memoryDb } from '@lasvegasfortransit/platform-storage/test-db';
 
 void test('one-click unsubscribe needs no session and updates the mailing list and consent', async (t) => {
   const db = memoryDb();

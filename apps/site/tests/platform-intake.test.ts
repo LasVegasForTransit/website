@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { onRequestPost } from '../functions/api/intake/v1';
 import { googleFormSubmission, parseIntake, processIntake } from '../platform/intake';
-import { memoryDb, type MemoryDb } from './support/platform-db';
+import { memoryDb, type MemoryDb } from '@lasvegasfortransit/platform-storage/test-db';
 
 const TOKEN = 'intake-token-for-tests';
 

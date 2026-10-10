@@ -3,7 +3,7 @@
 // /join/member/welcome: "You're in." Shows only what this browser just
 // submitted, read from the signed join-step cookie.
 
-import { t } from '../../../../platform/messages';
+import { t } from '@lasvegasfortransit/platform-core/messages';
 import { featuredWelcomeAction, welcomeAction } from '../../../../platform/member-welcome';
 import {
   builtPage,

@@ -1,0 +1,46 @@
+{
+  "name": "@lasvegasfortransit/platform-integrations",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./beehiiv": "./src/beehiiv.ts",
+    "./census": "./src/census.ts",
+    "./email": "./src/email.ts",
+    "./google-identity": "./src/google-identity.ts",
+    "./access-identity": "./src/access-identity.ts",
+    "./google-sign-in": "./src/google-sign-in.ts",
+    "./google-groups": "./src/google-groups.ts",
+    "./google-rate-limit": "./src/google-rate-limit.ts",
+    "./google-runtime": "./src/google-runtime.ts",
+    "./google-sync": "./src/google-sync.ts",
+    "./google-runner": "./src/google-runner.ts",
+    "./discord-access": "./src/discord-access.ts",
+    "./discord-sync": "./src/discord-sync.ts",
+    "./discord-link": "./src/discord-link.ts",
+    "./discord-rate-limit": "./src/discord-rate-limit.ts",
+    "./discord-runner": "./src/discord-runner.ts",
+    "./discord-runtime": "./src/discord-runtime.ts",
+    "./worker-runtime-config": "./src/worker-runtime-config.ts",
+    "./export-archive": "./src/export-archive.ts"
+  },
+  "scripts": {
+    "lint": "eslint . --max-warnings 0",
+    "check-types": "tsc --noEmit",
+    "test": "node --import tsx --test tests/*.test.ts"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "catalog:",
+    "@lasvegasfortransit/eslint-config": "file:../../.lvbt/web-platform/packages/eslint-config",
+    "@types/node": "catalog:",
+    "eslint": "catalog:",
+    "tsx": "catalog:",
+    "typescript": "catalog:"
+  },
+  "dependencies": {
+    "@lasvegasfortransit/platform-core": "workspace:*",
+    "@lasvegasfortransit/platform-storage": "workspace:*",
+    "fflate": "catalog:",
+    "jose": "catalog:"
+  }
+}

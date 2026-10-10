@@ -1,0 +1,64 @@
+---
+import { env } from 'cloudflare:workers';
+import { t } from '@lasvegasfortransit/platform-core/messages';
+import StaffLayout from '../../layouts/StaffLayout.astro';
+import Button from '../../../../site/src/components/app/Button.astro';
+import TextField from '../../../../site/src/components/app/TextField.astro';
+import type { StaffEnv } from '../../lib/context';
+import { workspaceLinkPage } from '../../lib/workspace-link-page';
+const page = await workspaceLinkPage(env as unknown as StaffEnv, Astro.request, (promise) =>
+  Astro.locals.cfContext.waitUntil(promise),
+);
+if (page instanceof Response) return page;
+const { saved, email, notice, enteredEmail, status } = page;
+Astro.response.status = status;
+---
+
+<StaffLayout title="Confirm your membership" signIn>
+  <div class="max-w-[30rem] space-y-6">
+    <p>{t('workspace.account', { email: saved.workspace_email })}</p>
+    {notice && <p role="alert">{notice}</p>}
+    {
+      email ? (
+        <>
+          <p>{t('workspace.sentTo', { email })}</p>
+          <form method="post" action="/sign-in/link-account/" class="space-y-6">
+            <input type="hidden" name="action" value="confirm" />
+            <TextField
+              name="code"
+              label={t('signIn.codeLabel')}
+              hint={t('signIn.codeHint')}
+              type="code"
+              width="code"
+              required
+              error={t('signIn.codeError')}
+            />
+            <Button>Continue to staff</Button>
+          </form>
+          <a href="/sign-in/link-account/?change_email=1">{t('signIn.differentEmail')}</a>
+        </>
+      ) : (
+        <>
+          <p>{t('workspace.intro')}</p>
+          <form method="post" action="/sign-in/link-account/" class="space-y-6">
+            <input type="hidden" name="action" value="request" />
+            <TextField
+              name="email"
+              label={t('workspace.emailLabel')}
+              type="email"
+              autocomplete="email"
+              value={enteredEmail}
+              required
+              error={t('signIn.emailError')}
+            />
+            <Button>{t('workspace.send')}</Button>
+          </form>
+        </>
+      )
+    }
+    <p>
+      If you need help finding your membership email, ask an LVBT administrator to check your
+      membership.
+    </p>
+  </div>
+</StaffLayout>
