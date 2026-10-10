@@ -35,10 +35,9 @@ export async function exerciseRosterUtility(page: Page, fixture: Fixture) {
   assert.equal(await page.locator('.staff-search-filters').getAttribute('open'), null);
   assert.match(await row.locator('.staff-roster-status').innerText(), /\bMember\b/);
   const rosterHeadings = await page.locator('.staff-roster-heading span').allTextContents();
-  const rosterColumnCount = await page.locator('.staff-roster-heading span').count();
   assert.equal(
     await row.evaluate((element) => element.children.length),
-    rosterColumnCount,
+    rosterHeadings.length,
     'a linked Discord status should not shift the roster actions under the wrong headings',
   );
   const assignAction = row.getByRole('link', {
