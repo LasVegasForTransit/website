@@ -65,6 +65,17 @@ try {
   });
   assert.equal(wrongOrigin.status, 403);
   assert.equal(fixture.providerCalls.length, 0);
+  const unsupportedSiteOrigin = await fixture.simulator.dispatchFetch(
+    'https://preview.example/account/discord/',
+    { headers: { Cookie: `__Host-lvbt_session=${fixture.session.token}` } },
+  );
+  assert.equal(unsupportedSiteOrigin.status, 403);
+  assert.match(unsupportedSiteOrigin.headers.get('Content-Type') ?? '', /text\/html/);
+  const unavailablePage = await unsupportedSiteOrigin.text();
+  assert.match(unavailablePage, /<html[^>]*lang="en"/);
+  assert.match(unavailablePage, /<title>Connect Discord/);
+  assert.match(unavailablePage, /This connection is not available at this address\./);
+  assert.doesNotMatch(unavailablePage, /Continue to Discord/);
   await page.getByRole('button', { name: 'Continue to Discord', exact: true }).click();
   await page.getByRole('link', { name: 'Authorize fixture account', exact: true }).click();
   await page.waitForURL(`${ORIGIN}/account/#discord`);

@@ -4,11 +4,44 @@ import { show, showText, SECURITY_HEADERS } from '../../join/_page';
 import { setValue, formOf, field, type SignInPagesEnv } from '../../sign-in/_shared';
 import { discordMember, discordReply, discordStateCookie } from './_discord';
 
+async function unavailablePage(
+  env: SignInPagesEnv,
+  request: Request,
+  unavailable: Response,
+): Promise<Response> {
+  if (unavailable.status < 400) return unavailable;
+  const message = await unavailable.text();
+  const response = await accountPage(env, request, '/account/discord/', {
+    fill: (rewriter) =>
+      rewriter
+        .on('[data-slot="discord-unavailable"]', showText(message))
+        .on('[data-slot="discord-connect"]', {
+          element(element) {
+            element.remove();
+          },
+        }),
+    status: unavailable.status,
+  });
+  response.headers.set(
+    'Content-Security-Policy',
+    SECURITY_HEADERS['Content-Security-Policy'].replace(
+      "form-action 'self' https://givebutter.com",
+      "form-action 'self' https://discord.com",
+    ),
+  );
+  return response;
+}
+
 export const onRequestGet: PagesFunction<SignInPagesEnv> = async ({ env, request }) => {
   const signed = await discordMember(env, request);
-  if (signed instanceof Response) return signed;
+  if (signed instanceof Response) return unavailablePage(env, request, signed);
   const csrf = await signed.client.formToken(signed.sessionToken, new URL(request.url).origin);
-  if (!csrf) return discordReply('Connecting Discord is unavailable. Please try again later.', 503);
+  if (!csrf)
+    return unavailablePage(
+      env,
+      request,
+      discordReply('Connecting Discord is unavailable. Please try again later.', 503),
+    );
   const response = await accountPage(env, request, '/account/discord/', {
     fill: (rewriter) => {
       let filled = rewriter.on('input[name="token"]', setValue(csrf));
@@ -46,9 +79,9 @@ export const onRequestGet: PagesFunction<SignInPagesEnv> = async ({ env, request
 export const onRequestPost: PagesFunction<SignInPagesEnv> = async ({ env, request }) => {
   const origin = new URL(request.url).origin;
   if (request.headers.get('Origin') !== origin)
-    return discordReply('Reload this page and try again.', 403);
+    return unavailablePage(env, request, discordReply('Reload this page and try again.', 403));
   const signed = await discordMember(env, request);
-  if (signed instanceof Response) return signed;
+  if (signed instanceof Response) return unavailablePage(env, request, signed);
   const form = await formOf(request);
   const started = await signed.client.start({
     sessionToken: signed.sessionToken,
@@ -60,5 +93,9 @@ export const onRequestPost: PagesFunction<SignInPagesEnv> = async ({ env, reques
         Location: started.url,
         'Set-Cookie': discordStateCookie(started.state),
       })
-    : discordReply('This form expired. Return to your account and connect Discord again.', 409);
+    : unavailablePage(
+        env,
+        request,
+        discordReply('This form expired. Return to your account and connect Discord again.', 409),
+      );
 };
