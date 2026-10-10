@@ -1,7 +1,7 @@
 import { readdirSync, readFileSync, statSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
-import { secretForTarget, secretTargets, scopedSecretErrors } from './secret-scope.mjs';
+import { secretForTarget, scopedSecretErrors } from './secret-scope.mjs';
 import { validateAgainstSchema } from './schema.mjs';
 import { cloudflareWorkerBindings, wranglerWorkerBindings } from './worker-bindings.mjs';
 
@@ -197,16 +197,9 @@ function secretErrors(manifest) {
 
 function forbiddenErrors(manifest) {
   const errors = [];
-  const declared = [...(manifest.secrets ?? []), ...(manifest.vars ?? [])];
+  const declared = new Set([...names(manifest.secrets), ...names(manifest.vars)]);
   for (const entry of manifest.forbidden ?? []) {
-    if (
-      declared.some(
-        (required) =>
-          required.name === entry.name &&
-          secretTargets(required).some((target) => secretTargets(entry).includes(target)),
-      )
-    )
-      errors.push(`${entry.name} is both required and forbidden.`);
+    if (declared.has(entry.name)) errors.push(`${entry.name} is both required and forbidden.`);
     if (targetsGithub(entry) && !manifest.github)
       errors.push(
         `forbidden ${entry.name} targets a GitHub environment, so github.repository is required.`,

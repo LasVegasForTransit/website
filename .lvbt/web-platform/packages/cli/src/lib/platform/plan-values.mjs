@@ -1,4 +1,3 @@
-import { hasBranchPolicy } from './branch-policy.mjs';
 import { secretTargets } from './secret-scope.mjs';
 import {
   configVarEntry,
@@ -22,26 +21,14 @@ export function planGithubEnvironments({ manifest, state }) {
       label: `environment ${environment}`,
     };
     if (!state.github.ok) return unknownItem({ ...fields, credentialHint: GH_HINT }, state.github);
-    const branch = manifest.github?.environments?.find(
-      (entry) => entry.name === environment,
-    )?.branch;
-    const present = state.github.value.environments.includes(environment);
-    if (present && branch && !hasBranchPolicy(state.github.value.policies?.[environment], branch))
-      return item({
-        ...fields,
-        status: 'missing',
-        detail: `must accept only branch ${branch}`,
-        next: `${SETUP} restricts its deployment branch`,
-        action: { type: 'github.environment', environment, branch },
-      });
-    if (present)
+    if (state.github.value.environments.includes(environment))
       return item({ ...fields, status: 'ok', detail: `exists in ${manifest.github.repository}` });
     return item({
       ...fields,
       status: 'missing',
       detail: `does not exist in ${manifest.github.repository}`,
       next: `${SETUP} creates it`,
-      action: { type: 'github.environment', environment, ...(branch ? { branch } : {}) },
+      action: { type: 'github.environment', environment },
     });
   });
 }
