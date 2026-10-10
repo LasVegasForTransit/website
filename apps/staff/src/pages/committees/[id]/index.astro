@@ -1,0 +1,118 @@
+---
+import StaffLayout from '../../../layouts/StaffLayout.astro';
+import { getCommitteeView } from '@lasvegasfortransit/platform-storage/committee-views';
+import { InvalidCursor } from '@lasvegasfortransit/platform-storage/staff-history';
+import { can } from '@lasvegasfortransit/platform-core/permissions';
+import { formatDate } from '@lasvegasfortransit/platform-core/messages';
+import { MEMBERSHIP_LABELS } from '../../../lib/people';
+import { displayLabel } from '../../../lib/presentation';
+import { welcomeName } from '../../../lib/welcome';
+import { messageResponse } from '../../../lib/responses';
+const staff = Astro.locals.staff;
+if (!staff) return messageResponse("You don't have access to this", 403);
+let view;
+const cursor = Astro.url.searchParams.get('cursor');
+const pastCursor = Astro.url.searchParams.get('past');
+try {
+  view = await getCommitteeView(staff.db, staff.actor, Astro.params.id ?? '', {
+    ...(cursor ? { cursor } : {}),
+    ...(pastCursor ? { pastCursor } : {}),
+  });
+} catch (error) {
+  if (error instanceof InvalidCursor) return messageResponse(error.message, 400);
+  throw error;
+}
+if (!view) return messageResponse("You don't have access to this", 404);
+const { committee, current, past } = view;
+function moreLink(key: string, cursor: string) {
+  const url = new URL(Astro.url);
+  url.searchParams.set(key, cursor);
+  return `${url.pathname}${url.search}`;
+}
+---
+
+<StaffLayout title={committee.name} description={committee.description || undefined}>
+  <a slot="breadcrumb" href="/committees/" class="staff-back">← Committees</a>
+  {
+    can(staff.actor, 'committee.settings') && (
+      <a slot="heading-meta" href={`/committees/${committee.id}/settings/`} class="staff-edit-link">
+        Edit committee
+      </a>
+    )
+  }
+  {
+    committee.timeCommitment && (
+      <p class="staff-help mb-4">Time commitment: {committee.timeCommitment}</p>
+    )
+  }
+  {!committee.acceptingMembers && <p class="mb-4 text-body-sm">Not accepting new assignments</p>}
+  <div class="staff-roster-toolbar">
+    <p>{committee.peopleCount} {committee.peopleCount === 1 ? 'person' : 'people'}</p>
+    {
+      staff.actor.staffAdmin && committee.acceptingMembers && (
+        <a href="/people/?committee=unassigned" class="staff-person-link">
+          Find a member to add
+        </a>
+      )
+    }
+  </div>
+  <ul class="staff-team-roster" aria-label="Current committee members">
+    {
+      current.items.map((person) => (
+        <li>
+          <div>
+            <a href={`/people/${person.personId}/`} class="staff-person-link">
+              {welcomeName(person)}
+            </a>
+            {person.email && <p class="staff-help">{person.email}</p>}
+          </div>
+          <p>
+            {displayLabel(person.role)}
+            {person.membershipStatus !== 'member' && (
+              <span class="block text-body-sm">{MEMBERSHIP_LABELS[person.membershipStatus]}</span>
+            )}
+          </p>
+          {person.accountUpdateState === 'retry' && (
+            <p class="staff-help">
+              <a href={`/access/?person=${person.personId}`}>Account access needs attention</a>
+            </p>
+          )}
+        </li>
+      ))
+    }
+  </ul>
+  {!current.items.length && <p class="mt-4">No people assigned yet.</p>}
+  {
+    current.nextCursor && (
+      <a href={moreLink('cursor', current.nextCursor)} class="staff-next">
+        Next page →
+      </a>
+    )
+  }
+  {
+    past.items.length > 0 && (
+      <details class="staff-records" open={Astro.url.searchParams.has('past')}>
+        <summary>Past assignments</summary>
+        <ul class="space-y-4 mt-3">
+          {past.items.map((person) => (
+            <li>
+              <a href={`/people/${person.personId}/`} class="staff-person-link">
+                {welcomeName(person)}
+              </a>{' '}
+              · {displayLabel(person.role)}
+              <p class="staff-help">
+                {formatDate(new Date(person.startedAt))}–{formatDate(new Date(person.endedAt!))} ·{' '}
+                {displayLabel(person.endReason ?? 'Ended')}
+              </p>
+            </li>
+          ))}
+        </ul>
+        {past.nextCursor && (
+          <a href={moreLink('past', past.nextCursor)} class="staff-next">
+            Older assignments →
+          </a>
+        )}
+      </details>
+    )
+  }
+</StaffLayout>

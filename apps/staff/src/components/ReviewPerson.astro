@@ -1,0 +1,83 @@
+---
+import type { StaffPerson } from '@lasvegasfortransit/platform-storage/staff-people';
+import { formatDate } from '@lasvegasfortransit/platform-core/messages';
+import { formatPhone } from '@lasvegasfortransit/platform-core/join-form';
+import { displayLabel } from '../lib/presentation';
+import { personName, MEMBERSHIP_LABELS } from '../lib/people';
+interface Props {
+  profile: StaffPerson;
+  label: string;
+}
+const { profile, label } = Astro.props;
+const { person } = profile;
+---
+
+<section class="staff-review-person">
+  <p class="staff-section-label">{label}</p>
+  <h2 class="mt-2 font-bold text-title-lg">
+    <a href={`/people/${person.id}/`}>{personName(person)}</a>
+  </h2>
+  <p class="mt-1 text-body-sm text-on-surface-variant">
+    {MEMBERSHIP_LABELS[person.membership_status]} · Added {formatDate(new Date(person.created_at))}
+  </p>
+  <dl class="staff-contact-details">
+    <div><dt>Email</dt><dd>{person.email ?? 'Not provided'}</dd></div>
+    <div><dt>Phone</dt><dd>{person.phone ? formatPhone(person.phone) : 'Not provided'}</dd></div>
+    <div><dt>ZIP code</dt><dd>{person.zip ?? 'Not provided'}</dd></div>
+  </dl>
+  <details class="staff-review-history">
+    <summary>Contact permissions and accounts</summary>
+    <h3 class="mt-4 font-bold">Permission to contact</h3>
+    {
+      profile.consents.length ? (
+        <ul class="mt-2 space-y-3">
+          {profile.consents.map((consent) => (
+            <li>
+              <strong>{displayLabel(consent.scope)}</strong> ·{' '}
+              {consent.withdrawn_at ? 'Permission withdrawn' : 'Permission given'}
+              <p class="text-on-surface-variant">
+                Given {formatDate(new Date(consent.given_at))}
+                {consent.withdrawn_at &&
+                  ` · Withdrawn ${formatDate(new Date(consent.withdrawn_at))}`}
+              </p>
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p class="mt-2">No permission to contact recorded.</p>
+      )
+    }
+    <h3 class="mt-4 font-bold">Member accounts</h3>
+    {
+      profile.identities.length ? (
+        <ul class="mt-2 space-y-3">
+          {profile.identities.map((identity) => (
+            <li>
+              <strong>{displayLabel(identity.platform)}</strong>
+              <p class="[overflow-wrap:anywhere]">
+                {identity.external_email ?? 'Account connected'}
+              </p>
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p class="mt-2">No accounts connected yet.</p>
+      )
+    }
+    <h3 class="mt-4 font-bold">Committees</h3>
+    {
+      profile.assignments.length ? (
+        <ul class="mt-2 space-y-3">
+          {profile.assignments.map((assignment) => (
+            <li>
+              <strong>{assignment.committee_name}</strong> · {displayLabel(assignment.role)}
+              {assignment.ended_at && ' · Ended'}
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p class="mt-2">No committees yet.</p>
+      )
+    }
+  </details>
+</section>

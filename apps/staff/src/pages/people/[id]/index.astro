@@ -1,0 +1,197 @@
+---
+import StaffLayout from '../../../layouts/StaffLayout.astro';
+import { getStaffPerson } from '@lasvegasfortransit/platform-storage/staff-people';
+import { InvalidCursor } from '@lasvegasfortransit/platform-storage/staff-history';
+import { formatDate } from '@lasvegasfortransit/platform-core/messages';
+import { MEMBERSHIP_LABELS, personName } from '../../../lib/people';
+import { formatPhone } from '@lasvegasfortransit/platform-core/join-form';
+import { regionName } from '@lasvegasfortransit/platform-core/regions';
+import { languageLabel } from '../../../lib/presentation';
+import { personMerges } from '@lasvegasfortransit/platform-storage/merge-views';
+import { listAccess, accessHistory } from '@lasvegasfortransit/platform-storage/access-view';
+import AccessHistory from '../../../components/AccessHistory.astro';
+import PersonCommittees from '../../../components/PersonCommittees.astro';
+import PersonRecord from '../../../components/PersonRecord.astro';
+import { submitCommittee, type CommitteeFeedback } from '../../../lib/committees';
+import { messageResponse } from '../../../lib/responses';
+import { can, PermissionDenied } from '@lasvegasfortransit/platform-core/permissions';
+import { rosterReturn } from '../../../lib/roster-return';
+import { rosterDetails } from '@lasvegasfortransit/platform-storage/roster-details';
+const staff = Astro.locals.staff;
+if (!staff) return messageResponse("You don't have access to this", 403);
+const returnTo = rosterReturn(Astro.url.searchParams.get('return_to'));
+const returnQuery = returnTo ? `?return_to=${encodeURIComponent(returnTo)}` : '';
+let profile;
+try {
+  profile = await getStaffPerson(staff.db, staff.actor, Astro.params.id ?? '', {
+    cursor: Astro.url.searchParams.get('cursor') ?? undefined,
+  });
+} catch (error) {
+  if (error instanceof InvalidCursor) return messageResponse(error.message, 400);
+  throw error;
+}
+if (!profile) return messageResponse("You don't have access to this", 404);
+if (profile.person.id !== Astro.params.id)
+  return Astro.redirect(`/people/${profile.person.id}/${returnQuery}`, 303);
+let feedback: CommitteeFeedback | undefined;
+if (Astro.request.method === 'POST') {
+  const result = await submitCommittee(Astro.request, staff, profile);
+  if (result instanceof Response) return result;
+  feedback = result;
+  Astro.response.status = result.status;
+}
+const { person } = profile;
+const roster = (
+  await rosterDetails(staff.db, staff.actor, [person.id], {
+    configuration: staff.accessConfiguration ?? {},
+  })
+).get(person.id);
+const discordConnected = roster?.discordConnected ?? false;
+const accountAccess = await listAccess(staff.db, staff.actor, {
+  personId: person.id,
+  configuration: staff.accessConfiguration ?? {},
+});
+const server = accountAccess.items.find((item) => item.targetId === 'person');
+const discordPresence =
+  roster?.discordInServer === true
+    ? 'In LVBT Discord'
+    : roster?.discordInServer === false
+      ? 'Not in LVBT Discord'
+      : 'Server status not checked';
+const discordRole =
+  server?.discord.state === 'granted'
+    ? server.expectedAccess
+      ? 'Member role confirmed'
+      : 'Member role still present'
+    : server?.discord.state === 'absent'
+      ? server.expectedAccess
+        ? 'Member role missing'
+        : 'Member role removed'
+      : 'Member role not confirmed';
+const combinations = await personMerges(staff.db, staff.actor, person.id);
+let providerHistory;
+if (can(staff.actor, 'access.recover')) {
+  try {
+    providerHistory = await accessHistory(staff.db, staff.actor, {
+      personId: person.id,
+      administratorsOnly: true,
+      providersOnly: true,
+      cursor: Astro.url.searchParams.get('history_cursor') ?? undefined,
+    });
+  } catch (error) {
+    if (error instanceof InvalidCursor) return messageResponse(error.message, 400);
+    if (error instanceof PermissionDenied) return messageResponse(error.message, 403);
+    throw error;
+  }
+}
+---
+
+<StaffLayout title={personName(person)}>
+  <a slot="breadcrumb" href={returnTo ?? '/people/'} class="staff-back">← Members</a>
+  {
+    can(staff.actor, 'person.update') && (
+      <a
+        slot="heading-meta"
+        href={`/people/${person.id}/edit/${returnQuery}`}
+        class="staff-edit-link"
+      >
+        Edit details
+      </a>
+    )
+  }
+  <div class="staff-profile-status">
+    <p>
+      <span>LVBT membership</span>
+      <strong>{MEMBERSHIP_LABELS[person.membership_status]}</strong>
+    </p>
+    <p>
+      <span>Discord</span>
+      <strong>{!discordConnected ? 'Not connected' : `${discordPresence} · ${discordRole}`}</strong
+      >{
+        discordConnected && (
+          <small>
+            <a href={`/access/?person=${person.id}`}>Check account access</a>
+          </small>
+        )
+      }
+    </p>
+  </div>
+  <div class="staff-profile">
+    <section aria-labelledby="contact-heading">
+      <h2 id="contact-heading">Contact</h2>
+      <dl class="staff-contact-details">
+        <div>
+          <dt>Email</dt><dd>
+            {
+              person.email ? (
+                <a href={`mailto:${person.email}`}>{person.email}</a>
+              ) : (
+                'No email recorded'
+              )
+            }
+          </dd>
+        </div>
+        {
+          person.phone && (
+            <div>
+              <>
+                <dt>Phone</dt>
+                <dd>
+                  <a href={`tel:${person.phone}`}>{formatPhone(person.phone)}</a>
+                </dd>
+              </>
+            </div>
+          )
+        }
+        {
+          person.zip && (
+            <div>
+              <>
+                <dt>Location</dt>
+                <dd>
+                  {person.zip}
+                  {(regionName(person.region_id) ?? person.place_name) &&
+                    ` · ${regionName(person.region_id) ?? person.place_name}`}
+                </dd>
+              </>
+            </div>
+          )
+        }
+        {
+          person.preferred_language !== 'en' && (
+            <div>
+              <>
+                <dt>Preferred language</dt>
+                <dd>{languageLabel(person.preferred_language)}</dd>
+              </>
+            </div>
+          )
+        }
+      </dl>
+    </section>
+    <PersonCommittees profile={profile} feedback={feedback} />
+  </div>
+  <PersonRecord profile={profile} />
+  {
+    providerHistory &&
+      (providerHistory.items.length > 0 || Astro.url.searchParams.has('history_cursor')) && (
+        <AccessHistory page={providerHistory} title="Access history" />
+      )
+  }
+  {
+    combinations.length > 0 && (
+      <details class="mb-6 text-body-sm">
+        <summary>Combined entries ({combinations.length})</summary>
+        <ul class="mt-3 space-y-3">
+          {combinations.map((item) => (
+            <li>
+              <a href={`/review/combined/${item.id}/`}>{item.mergedName}</a> ·{' '}
+              {formatDate(new Date(item.mergedAt))}
+              {item.erasedAt ? ' · Details erased' : item.undoneAt ? ' · Undone' : ''}
+            </li>
+          ))}
+        </ul>
+      </details>
+    )
+  }
+</StaffLayout>

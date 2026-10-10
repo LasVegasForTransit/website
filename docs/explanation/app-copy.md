@@ -7,8 +7,8 @@ often on a phone, often in a hurry, sometimes with a screen reader or in a secon
 
 These are rules, not suggestions. If a rule doesn't fit a case, change the rule here first.
 
-Every string goes in the [message catalog](../../apps/site/platform/messages/README.md), never
-straight into a page.
+Every string goes in the [message catalog](../../packages/platform-core/src/messages/README.md),
+never straight into a page.
 
 ## Buttons
 

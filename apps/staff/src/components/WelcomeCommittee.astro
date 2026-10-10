@@ -1,0 +1,77 @@
+---
+import { t } from '@lasvegasfortransit/platform-core/messages';
+import Button from '../../../site/src/components/app/Button.astro';
+import { welcomeCommittees } from '@lasvegasfortransit/platform-storage/welcome-committees';
+import { issueFormToken } from '@lasvegasfortransit/platform-storage/form-tokens';
+import { ulid } from '@lasvegasfortransit/platform-core/ids';
+import type { WelcomeCommitteeFeedback } from '../lib/welcome-committee';
+interface Props {
+  personId: string;
+  interests: string[];
+  feedback?: WelcomeCommitteeFeedback;
+}
+const { personId, interests, feedback } = Astro.props;
+const staff = Astro.locals.staff!;
+const committees = await welcomeCommittees(staff.db, staff.actor, personId);
+const current = committees.filter((item) => item.assigned);
+const available = committees.filter((item) => !item.assigned && item.acceptingMembers);
+const token = available.length
+  ? await issueFormToken(staff.db, staff.actor, `welcome:committee:${personId}`)
+  : null;
+const interestLabels: Record<string, string> = {
+  events: t('join.interestEvents'),
+  meetings: t('join.interestMeetings'),
+  volunteering: t('join.interestVolunteering'),
+  news: t('join.interestNews'),
+};
+---
+
+{
+  (available.length > 0 || current.length > 0 || feedback) && (
+    <section
+      id="get-involved"
+      class="staff-welcome-involvement"
+      aria-labelledby="involvement-heading"
+    >
+      <h2 id="involvement-heading">Help them get involved</h2>
+      {interests.length > 0 && (
+        <p class="staff-help">
+          Interested in: {interests.map((interest) => interestLabels[interest]).join(', ')}.
+        </p>
+      )}
+      {current.length > 0 && (
+        <p class="staff-help">In {current.map((item) => item.name).join(', ')}.</p>
+      )}
+      {feedback && (
+        <p role="alert" class="staff-error">
+          {feedback.message}
+        </p>
+      )}
+      {available.length > 0 && (
+        <>
+          <p class="staff-help">If they want to join a committee, add them here.</p>
+          <form
+            method="post"
+            action={`/welcome/${personId}/#get-involved`}
+            class="staff-form staff-inline-form"
+          >
+            <input type="hidden" name="token" value={token} />
+            <input type="hidden" name="operation_id" value={ulid()} />
+            <div>
+              <label for="welcome-committee">Committee</label>
+              <select id="welcome-committee" name="committee_id" required>
+                <option value="">Choose a committee</option>
+                {available.map((item) => (
+                  <option value={item.id} selected={feedback?.committeeId === item.id}>
+                    {item.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <Button>Add to committee</Button>
+          </form>
+        </>
+      )}
+    </section>
+  )
+}

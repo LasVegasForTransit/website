@@ -1,0 +1,134 @@
+---
+import { formatDate } from '@lasvegasfortransit/platform-core/messages';
+import type { StaffPerson } from '@lasvegasfortransit/platform-storage/staff-people';
+import { displayLabel } from '../lib/presentation';
+import { eventFacts } from '../lib/engagement';
+import { pageLink } from '../lib/people';
+interface Props {
+  profile: StaffPerson;
+}
+const { profile } = Astro.props;
+const { consents, identities, events, fieldSources } = profile;
+---
+
+<details class="staff-records" open={Astro.url.searchParams.has('cursor')}>
+  <summary>Record history</summary>
+  <div class="staff-record-grid">
+    <section aria-labelledby="consent-heading">
+      <h2 id="consent-heading">Permission to contact</h2>
+      {
+        consents.length ? (
+          <ul class="mt-3 space-y-3">
+            {consents.map((consent) => (
+              <li>
+                <strong>{displayLabel(consent.scope)}</strong> ·{' '}
+                {consent.withdrawn_at ? 'Permission withdrawn' : 'Permission given'}
+                <p class="text-body-sm">
+                  Given {formatDate(new Date(consent.given_at))} · {displayLabel(consent.source)} ·{' '}
+                  {displayLabel(consent.method)}
+                </p>
+                {consent.wording_version && (
+                  <details class="mt-2 text-body-sm">
+                    <summary>Signup form details</summary>
+                    <p class="mt-2">Form version: {consent.wording_version}</p>
+                  </details>
+                )}
+                {consent.withdrawn_at && (
+                  <p class="text-body-sm">
+                    Withdrawn {formatDate(new Date(consent.withdrawn_at))} ·{' '}
+                    {displayLabel(consent.withdrawn_source ?? 'unknown')}
+                  </p>
+                )}
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p class="mt-3">No permission to contact recorded.</p>
+        )
+      }
+    </section>
+    <section aria-labelledby="accounts-heading">
+      <h2 id="accounts-heading">Member accounts</h2>
+      {
+        identities.length ? (
+          <ul class="mt-3 space-y-3">
+            {identities.map((identity) => (
+              <li class="[overflow-wrap:anywhere]">
+                <strong>{displayLabel(identity.platform)}</strong>
+                {identity.external_email && <p>{identity.external_email}</p>}
+                <details class="mt-2 text-body-sm">
+                  <summary>Account reference</summary>
+                  <p class="mt-2">{identity.external_id}</p>
+                </details>
+                <p class="text-body-sm">
+                  Linked {formatDate(new Date(identity.linked_at))} ·{' '}
+                  {displayLabel(identity.link_method)}
+                </p>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p class="mt-3">No accounts connected yet.</p>
+        )
+      }
+    </section>
+    <section aria-labelledby="history-heading">
+      <h2 id="history-heading">Activity</h2>
+      {
+        events.items.length ? (
+          <ol class="mt-3 space-y-3">
+            {events.items.map((event) => (
+              <li>
+                <strong>{displayLabel(event.type)}</strong> ·{' '}
+                <time datetime={event.occurred_at}>{formatDate(new Date(event.occurred_at))}</time>
+                <p class="text-body-sm">
+                  {displayLabel(event.source)}
+                  {event.recorded_by && ` · Recorded by ${event.recorded_by}`}
+                </p>
+                {eventFacts(event).length > 0 && (
+                  <details class="mt-2">
+                    <summary>Details</summary>
+                    <dl class="mt-3 space-y-3">
+                      {eventFacts(event).map((fact) => (
+                        <div>
+                          <dt class="font-bold">{fact.label}</dt>
+                          <dd class="mt-1 whitespace-pre-wrap [overflow-wrap:anywhere]">
+                            {fact.value}
+                          </dd>
+                        </div>
+                      ))}
+                    </dl>
+                  </details>
+                )}
+              </li>
+            ))}
+          </ol>
+        ) : (
+          <p class="mt-3">No activity recorded yet.</p>
+        )
+      }
+      {
+        events.nextCursor && (
+          <a href={pageLink(Astro.url, events.nextCursor)} class="mt-6 inline-block font-bold">
+            Older activity
+          </a>
+        )
+      }
+    </section>
+    <section aria-labelledby="sources-heading">
+      <details>
+        <summary id="sources-heading">Where these details came from</summary>
+        <ul class="mt-3 space-y-3">
+          {
+            fieldSources.map((source) => (
+              <li>
+                {displayLabel(source.field)} · {displayLabel(source.source)} ·{' '}
+                {formatDate(new Date(source.confirmed_at))}
+              </li>
+            ))
+          }
+        </ul>
+      </details>
+    </section>
+  </div>
+</details>

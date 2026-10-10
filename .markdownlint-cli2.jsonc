@@ -15,6 +15,8 @@
     "**/playwright-report",
     // Agent worktrees are other checkouts of this repository.
     ".claude/worktrees",
+    // Git-ignored execution briefs and logs.
+    ".superpowers",
     "node_modules",
     "**/node_modules",
     "dist",

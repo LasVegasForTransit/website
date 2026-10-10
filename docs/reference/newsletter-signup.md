@@ -34,10 +34,10 @@ newsletter box            ─┴─> POST /join/member/
   gets finished HTML in one request and everything works with JavaScript turned off.
 - **Joining logic:** `apps/site/platform/join.ts`, with the person record in
   `apps/site/platform/storage/`. See the
-  [schema](../../apps/site/platform/storage/migrations/schema.md) and the
-  [person service](../../apps/site/platform/storage/person-service.md).
+  [schema](../../packages/platform-storage/migrations/schema.md) and the
+  [person service](../../packages/platform-storage/src/person-service.md).
 - **Text:** every word comes from the
-  [message catalog](../../apps/site/platform/messages/README.md).
+  [message catalog](../../packages/platform-core/src/messages/README.md).
 - **Newsletter box:** `apps/site/src/components/NewsletterEmbed.astro` posts to the same handler
   with the consent wording `newsletter-box-v1`. Its small script,
   `apps/site/public/scripts/newsletter-subscribe.js`, shows the result in place; without the script
@@ -96,7 +96,7 @@ only thing they ever did with LVBT.
 | Every join shows that message                | The `PLATFORM_DB` binding or `LVBT_LINK_SIGNING_SECRET` is missing   | The logs say which; the binding is declared in `apps/deploy/cloudflare.config.ts`, the secret through `pnpm bootstrap --production` |
 | No confirmation email                        | `LVBT_RESEND_API_KEY` isn't set, or the Resend domain isn't verified | Set the key; until then Beehiiv's welcome email is sent instead                                                                     |
 | The region step says it has expired          | More than an hour passed, or cookies are blocked                     | The person is already a member; they can set their region later from their account                                                  |
-| A join returns a server error after a deploy | A migration wasn't applied                                           | Run the migrations in the [schema](../../apps/site/platform/storage/migrations/schema.md)                                           |
+| A join returns a server error after a deploy | A migration wasn't applied                                           | Run the migrations in the [schema](../../packages/platform-storage/migrations/schema.md)                                            |
 
 ## Related
 

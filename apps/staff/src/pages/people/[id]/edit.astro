@@ -1,0 +1,96 @@
+---
+import StaffLayout from '../../../layouts/StaffLayout.astro';
+import Button from '../../../../../site/src/components/app/Button.astro';
+import { correctionView } from '@lasvegasfortransit/platform-storage/corrections';
+import { issueFormToken } from '@lasvegasfortransit/platform-storage/form-tokens';
+import { ulid } from '@lasvegasfortransit/platform-core/ids';
+import { EDIT_FIELDS, submitCorrection, type CorrectionFeedback } from '../../../lib/corrections';
+import { personName } from '../../../lib/people';
+import { messageResponse } from '../../../lib/responses';
+import { rosterReturn } from '../../../lib/roster-return';
+const staff = Astro.locals.staff;
+if (!staff) return messageResponse("You don't have access to this", 403);
+const personId = Astro.params.id ?? '';
+const person = await correctionView(staff.db, staff.actor, personId);
+if (!person) return messageResponse("You don't have access to this", 404);
+let feedback: CorrectionFeedback | undefined;
+if (Astro.request.method === 'POST') {
+  const result = await submitCorrection(Astro.request, staff, personId);
+  if (result instanceof Response) return result;
+  feedback = result;
+  Astro.response.status = result.status;
+}
+const token = await issueFormToken(staff.db, staff.actor, `person:correct:${personId}`);
+const language = feedback?.fields.preferred_language ?? person.preferred_language;
+const returnTo = rosterReturn(Astro.url.searchParams.get('return_to'));
+const returnQuery = returnTo ? `?return_to=${encodeURIComponent(returnTo)}` : '';
+const profileUrl = `/people/${personId}/${returnQuery}`;
+const editUrl = `/people/${personId}/edit/${returnQuery}`;
+---
+
+<StaffLayout title="Edit member details" description={personName(person)}>
+  <a slot="breadcrumb" href={profileUrl} class="staff-back">← Member profile</a>
+  {
+    feedback && (
+      <p role="alert" class="staff-error mb-5">
+        {feedback.message} {feedback.status === 409 && <a href={editUrl}>Reload profile</a>}
+      </p>
+    )
+  }
+  <form method="post" action={editUrl} class="staff-form staff-editor">
+    <input type="hidden" name="token" value={token} />
+    <input type="hidden" name="operation_id" value={ulid()} />
+    <input
+      type="hidden"
+      name="expected_updated_at"
+      value={feedback?.expectedUpdatedAt ?? person.updated_at}
+    />
+    <div class="staff-editor-fields">
+      {
+        EDIT_FIELDS.map((item) => (
+          <div>
+            <label for={item.name}>{item.label}</label>
+            <input
+              id={item.name}
+              name={item.name}
+              type={item.type}
+              maxlength={item.limit}
+              value={feedback ? (feedback.fields[item.name] ?? '') : (person[item.name] ?? '')}
+              inputmode={item.name === 'zip' ? 'numeric' : undefined}
+            />
+          </div>
+        ))
+      }
+      <div>
+        <label for="preferred_language">Preferred language</label>
+        <select id="preferred_language" name="preferred_language">
+          <option value="en" selected={language === 'en'}>English</option>
+          <option value="es" selected={language === 'es'}>Spanish</option>
+          {
+            !['en', 'es'].includes(language) && (
+              <option value={language} selected>
+                {new Intl.DisplayNames(['en'], { type: 'language' }).of(language) ?? language}
+              </option>
+            )
+          }
+        </select>
+      </div>
+    </div>
+    <div>
+      <label for="reason">Reason for the change</label>
+      <textarea
+        id="reason"
+        name="reason"
+        required
+        maxlength="2000"
+        rows="3"
+        placeholder="What changed, and how did you confirm it?">{feedback?.reason ?? ''}</textarea
+      >
+    </div>
+    <p class="staff-help">Changes and your reason appear in this member’s history.</p>
+    <div class="flex flex-wrap items-center gap-5">
+      {feedback?.status !== 409 && <Button>Save changes</Button>}
+      <a href={profileUrl} class="staff-muted-link text-body-sm">Cancel</a>
+    </div>
+  </form>
+</StaffLayout>

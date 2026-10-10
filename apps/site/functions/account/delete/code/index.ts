@@ -4,7 +4,7 @@
 // signed out and sees the deleted confirmation.
 
 import { deleteAccount } from '../../../../platform/account-data';
-import { t } from '../../../../platform/messages';
+import { t } from '@lasvegasfortransit/platform-core/messages';
 import { clearedSessionCookies } from '../../../../platform/sign-in';
 import { redirect, showEmailText, showText } from '../../../join/_page';
 import { appendCookies, fieldError, type SignInPagesEnv } from '../../../sign-in/_shared';

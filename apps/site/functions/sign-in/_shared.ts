@@ -9,6 +9,11 @@ import type { JoinEnv } from '../join/_page';
 export interface SignInPagesEnv extends JoinEnv {
   LVBT_SIGN_IN_SECRET?: string;
   LVBT_DEV_LOG_CODES?: string;
+  LVBT_GOOGLE_OAUTH_CLIENT_ID?: string;
+  LVBT_GOOGLE_OAUTH_CLIENT_SECRET?: string;
+  LVBT_GOOGLE_PREVIEW_ORIGINS?: string;
+  LVBT_DISCORD_APPLICATION_ID?: string;
+  LVBT_DISCORD_CLIENT_SECRET?: string;
 }
 
 export function platformSignIn(env: SignInPagesEnv): SignInEnv | null {

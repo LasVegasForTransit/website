@@ -1,0 +1,27 @@
+---
+import StaffLayout from '../../layouts/StaffLayout.astro';
+import { t } from '@lasvegasfortransit/platform-core/messages';
+import { safeNext } from '@lasvegasfortransit/platform-core/web-auth';
+const next = safeNext(Astro.url.searchParams.get('next') ?? '/');
+---
+
+<StaffLayout title="Sign in to LVBT staff" signIn>
+  <div class="max-w-[30rem] space-y-6">
+    {
+      Astro.url.searchParams.has('google_error') && (
+        <p role="alert">
+          We couldn’t sign you in. Use your LVBT Google account and try again. If you need help, ask
+          an LVBT administrator to check your membership.
+        </p>
+      )
+    }
+    <p>
+      Use your LVBT Google account. The first time you sign in, confirm the personal email for your
+      LVBT membership.
+    </p>
+    <a
+      class="press inline-flex border-2 border-on-surface bg-on-surface px-6 py-3 font-bold text-surface hover:bg-primary hover:border-primary hover:text-on-primary"
+      href={`/sign-in/google/?next=${encodeURIComponent(next)}`}>{t('workspace.signIn')}</a
+    >
+  </div>
+</StaffLayout>

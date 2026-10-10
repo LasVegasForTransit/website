@@ -3,8 +3,8 @@
 // /account/phone: change or remove your phone number.
 
 import { updatePhone } from '../../../platform/account';
-import { formatPhone } from '../../../platform/core/join-form';
-import { PersonService } from '../../../platform/storage/person-service';
+import { formatPhone } from '@lasvegasfortransit/platform-core/join-form';
+import { PersonService } from '@lasvegasfortransit/platform-storage/person-service';
 import { fieldError, setValue, type SignInPagesEnv } from '../../sign-in/_shared';
 import { accountPage, backToAccount, field, formOf, signedIn } from '../_account';
 

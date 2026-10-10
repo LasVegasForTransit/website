@@ -1,0 +1,88 @@
+---
+import StaffLayout from '../../layouts/StaffLayout.astro';
+import { WelcomeService } from '@lasvegasfortransit/platform-storage/welcome';
+import { PermissionDenied } from '@lasvegasfortransit/platform-core/permissions';
+import { InvalidCursor } from '@lasvegasfortransit/platform-storage/staff-history';
+import type { Page } from '@lasvegasfortransit/platform-core/staff-types';
+import type { WelcomeQueueRow } from '@lasvegasfortransit/platform-core/welcome';
+import { welcomeName } from '../../lib/welcome';
+import { messageResponse } from '../../lib/responses';
+const staff = Astro.locals.staff;
+if (!staff) return messageResponse("You don't have access to this", 403);
+let page: Page<WelcomeQueueRow> = { items: [], nextCursor: null };
+let error: string | null = null;
+try {
+  page = await new WelcomeService(staff.db).list(staff.actor, {
+    cursor: Astro.url.searchParams.get('cursor') ?? undefined,
+  });
+} catch (cause) {
+  if (cause instanceof PermissionDenied) return messageResponse(cause.message, 403);
+  if (cause instanceof InvalidCursor) {
+    error = 'This page link expired or is invalid. Start again from the welcome queue.';
+    Astro.response.status = 400;
+  } else throw cause;
+}
+---
+
+<StaffLayout
+  title="Welcome members"
+  description="Give new members a personal hello. Longest waiting first."
+>
+  <div class="space-y-4">
+    {
+      error && (
+        <p role="alert">
+          {error} <a href="/welcome/">Start again</a>
+        </p>
+      )
+    }
+    {
+      !error &&
+        (page.items.length ? (
+          <ul class="staff-welcome-list" aria-label="Members to welcome">
+            {page.items.map((person) => (
+              <li class="staff-welcome-row">
+                <div>
+                  <a href={`/welcome/${person.personId}/`} class="staff-person-link">
+                    {welcomeName(person)}
+                  </a>
+                  <p class="mt-1 text-body-sm text-on-surface-variant">
+                    Joined{' '}
+                    {new Date(person.joinedAt).toLocaleDateString('en-US', {
+                      month: 'short',
+                      day: 'numeric',
+                      timeZone: 'America/Los_Angeles',
+                    })}
+                    {person.overdue && ' · Waiting 7+ days'}
+                  </p>
+                </div>
+                <p>
+                  {person.claimedBy
+                    ? person.claimedBy === staff.actor.personId
+                      ? 'Assigned to you'
+                      : `Assigned to ${person.claimedByName ?? 'another staff member'}`
+                    : 'Needs a welcome'}
+                </p>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <div>
+            <>
+              <h2 class="text-title-lg font-bold">No members waiting here</h2>
+              <p class="mt-1 text-body-sm text-on-surface-variant">
+                No new members need a welcome right now.
+              </p>
+            </>
+          </div>
+        ))
+    }
+    {
+      page.nextCursor && (
+        <a href={`/welcome/?cursor=${encodeURIComponent(page.nextCursor)}`} class="staff-next">
+          Next page
+        </a>
+      )
+    }
+  </div>
+</StaffLayout>

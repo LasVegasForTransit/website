@@ -24,6 +24,7 @@ packageExtensions:
 # Temporary transitive pins for published security fixes not yet selected by
 # their direct dependents.
 overrides:
+  '@astrojs/cloudflare>@cloudflare/vite-plugin': 1.53.0
   devalue: 5.9.4
   postcss-selector-parser: 7.1.6
   sharp: 0.35.5
@@ -82,6 +83,8 @@ catalog:
   wrangler: 4.141.0
   zod: 4.5.4
   # This repository's own entries.
+  fflate: 0.8.3
+  '@astrojs/cloudflare': 14.2.0
   '@astrojs/mdx': 8.0.1
   '@clack/prompts': 1.4.0
   '@iconify-json/mdi': 1.2.3
@@ -102,6 +105,8 @@ catalog:
   sitemap: 9.0.1
   stylelint: 17.14.0
   tslib: 2.8.1
+  jose: 6.2.12
+  miniflare: 5.20260828.0-alpha
 
 # Dependencies allowed to run install scripts. Everything else installs
 # without them, so a compromised package cannot run code at install time.

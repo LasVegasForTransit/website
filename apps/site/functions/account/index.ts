@@ -4,11 +4,15 @@
 // change each part. Sends a signed-out visitor to sign in and back.
 
 import { accountView } from '../../platform/account';
-import { formatPhone } from '../../platform/core/join-form';
-import { formatFullDate, t } from '../../platform/messages';
+import { formatPhone } from '@lasvegasfortransit/platform-core/join-form';
+import { formatFullDate, t } from '@lasvegasfortransit/platform-core/messages';
 import { show, showEmailText, showText } from '../join/_page';
 import type { SignInPagesEnv } from '../sign-in/_shared';
 import { accountPage, signedIn, takeNotice } from './_account';
+import { discordLinkConfigured } from '@lasvegasfortransit/platform-integrations/discord-link';
+import { DiscordLinkService } from '@lasvegasfortransit/platform-storage/discord-link';
+import { SESSION_COOKIE, readCookie } from '@lasvegasfortransit/platform-core/web-auth';
+import { fillDiscordProfile } from '../../platform/discord-profile-page';
 
 // The notices a redirect can leave for this page, by the id in the cookie.
 const NOTICES: Record<string, () => string> = {
@@ -31,10 +35,13 @@ export const onRequestGet: PagesFunction<SignInPagesEnv> = async ({ env, request
   const { person } = view;
   const notice = takeNotice(request);
   const name = [person.given_name, person.family_name].filter(Boolean).join(' ');
+  const discord = discordLinkConfigured(env)
+    ? await new DiscordLinkService(signed.env).profile(readCookie(request, SESSION_COOKIE) ?? '')
+    : null;
 
   return accountPage(env, request, '/account/', {
     fill: (rewriter) => {
-      let filled = rewriter;
+      let filled = fillDiscordProfile(rewriter, discord);
       if (person.given_name) {
         filled = filled.on(
           '[data-slot="greeting"]',

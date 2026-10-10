@@ -2,12 +2,12 @@ import assert from 'node:assert/strict';
 import { afterEach, test } from 'node:test';
 
 import { onRequestPost } from '../functions/api/membership-intake';
-import { memoryDb } from './support/platform-db';
+import { memoryDb } from '@lasvegasfortransit/platform-storage/test-db';
 
-type FetchCall = {
+interface FetchCall {
   url: string;
   init: RequestInit;
-};
+}
 
 const baseEnv = {
   LVBT_BEEHIIV_API_KEY: 'beehiiv-key',
@@ -29,14 +29,14 @@ afterEach(() => {
 // Notion's data-source query answers with `existingPages` so a test can
 // simulate a replay; `throwAt` makes that call (1-based) reject instead.
 function mockFetch(statuses: number[] = [], existingPages: unknown[] = [], throwAt?: number) {
-  globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
+  globalThis.fetch = async (input: RequestInfo | URL, init?: RequestInit) => {
     const url = String(input);
     calls.push({ url, init: init ?? {} });
     if (calls.length === throwAt) throw new TypeError('fetch failed');
     const status = statuses.shift() ?? 200;
     const body = url.endsWith('/query') ? { results: existingPages } : { ok: status < 300 };
     return new Response(JSON.stringify(body), { status });
-  }) as typeof fetch;
+  };
 }
 
 function call(index: number): FetchCall {

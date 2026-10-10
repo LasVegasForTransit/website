@@ -1,4 +1,4 @@
-import { escapeHtml } from './integrations/email';
+import { escapeHtml } from '@lasvegasfortransit/platform-integrations/email';
 
 const SITE = 'https://lasvegasfortransit.org';
 

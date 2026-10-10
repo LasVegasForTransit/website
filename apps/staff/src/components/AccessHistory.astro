@@ -1,0 +1,77 @@
+---
+import type { AccessHistoryRow } from '@lasvegasfortransit/platform-storage/access-view';
+import type { Page } from '@lasvegasfortransit/platform-core/staff-types';
+import { formatFullDate, formatTime } from '@lasvegasfortransit/platform-core/messages';
+import { displayLabel } from '../lib/presentation';
+interface Props {
+  page: Page<AccessHistoryRow>;
+  title?: string;
+}
+const { page, title = 'Access change history' } = Astro.props;
+const next = new URL(Astro.url);
+if (page.nextCursor) next.searchParams.set('history_cursor', page.nextCursor);
+const labels: Record<string, string> = {
+  'committee.assign': 'Added to committee',
+  'committee.change': 'Committee role changed',
+  'committee.end': 'Removed from committee',
+  'committee.settings': 'Committee settings updated',
+  'access.retry': 'Account update retried',
+  'staff_admin.manage': 'Staff administrator access changed',
+  'access.granted': 'Access granted',
+  'access.revoked': 'Access removed',
+};
+const sources: Record<string, string> = {
+  discord_drift: 'Periodic account check',
+  membership_change: 'Membership changed',
+  person_deleted: 'Account deleted',
+  discord_link: 'Discord account connected',
+  'committee.assign': 'Added to committee',
+  'committee.change': 'Committee role changed',
+  'committee.end': 'Removed from committee',
+  'committee.settings': 'Committee settings changed',
+  settings_changed: 'Committee settings changed',
+  'person.merge': 'Records combined',
+  'person.unmerge': 'Records separated',
+  account_update: 'Account update',
+};
+function actionLabel(item: AccessHistoryRow): string {
+  if (item.provider && ['access.granted', 'access.revoked'].includes(item.action))
+    return `${displayLabel(item.provider)} access ${item.action === 'access.granted' ? 'granted' : 'removed'}`;
+  return labels[item.action] ?? 'Access changed';
+}
+---
+
+<details class="staff-account-history" open={Boolean(Astro.url.searchParams.get('history_cursor'))}>
+  <summary>{title}</summary>
+  <p class="staff-help">Changes from the last three years.</p>
+  {
+    page.items.length ? (
+      <ul class="staff-account-history-list">
+        {page.items.map((item) => (
+          <li>
+            <strong>{actionLabel(item)}</strong> ·{' '}
+            {item.personName ?? item.committeeName ?? 'Member'}
+            {item.personName && item.committeeName && ` · ${item.committeeName}`}
+            <p class="staff-help">
+              {formatFullDate(new Date(item.occurredAt))}, {formatTime(new Date(item.occurredAt))} ·{' '}
+              {item.actorName ?? 'LVBT staff'}
+              {item.requestedByName && ` · Requested by ${item.requestedByName}`}
+              {item.source && sources[item.source] && ` · ${sources[item.source]}`}
+              {item.role && item.action !== 'committee.end' && ` · ${displayLabel(item.role)}`}
+              {item.reason && ` · ${displayLabel(item.reason)}`}
+            </p>
+          </li>
+        ))}
+      </ul>
+    ) : (
+      <p class="staff-help">No access changes to show.</p>
+    )
+  }
+  {
+    page.nextCursor && (
+      <a class="staff-next" href={next.pathname + next.search}>
+        Earlier changes
+      </a>
+    )
+  }
+</details>
