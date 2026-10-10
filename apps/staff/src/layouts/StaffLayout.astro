@@ -59,7 +59,7 @@ const signOutToken = staff ? await issueFormToken(staff.db, staff.actor, 'sign-o
             signOutToken && (
               <form method="post" action="/sign-out/" class="staff-sign-out">
                 <input type="hidden" name="token" value={signOutToken} />
-                <button type="submit" class="staff-text-action">
+                <button type="submit" class="staff-secondary-button press">
                   Sign out
                 </button>
               </form>

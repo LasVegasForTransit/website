@@ -59,6 +59,14 @@ async function profile(path = `/people/${personId}/`) {
   return await response.text();
 }
 try {
+  const unlinkedRoster = await profile(
+    `/people/?q=${encodeURIComponent('rider00001@example.invalid')}`,
+  );
+  assert.equal(
+    unlinkedRoster.includes('Discord: not linked'),
+    true,
+    'an all-unlinked result page should keep Discord status visible when the provider is configured',
+  );
   await people.linkIdentity(personId, {
     platform: 'discord',
     externalId: userId,
