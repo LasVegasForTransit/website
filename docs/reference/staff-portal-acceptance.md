@@ -5,14 +5,12 @@ acceptance. It contains no member contact details.
 
 ## Release identity
 
-| Field                 | Current evidence                                                                                                                      |
-| --------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
-| Local checkout HEAD   | `eede3b76c8ec318e8bbd488ef613098bc9a4d595`                                                                                            |
-| Branch status         | `codex/staff-portal-current-main` is pushed and clean.                                                                                |
-| Pull request          | Draft [PR #104](https://github.com/LasVegasForTransit/website/pull/104) points to this SHA; its current checks are in progress.       |
-| Deployed source SHA   | None; no staff or jobs Worker is deployed in preview or production.                                                                   |
-| Intended staff URLs   | `https://staff-preview.lasvegasfortransit.org/` and `https://staff.lasvegasfortransit.org/`; neither hostname resolved on 2026-10-10. |
-| Human tester and date | None recorded.                                                                                                                        |
+| Field                 | Current evidence                                                                                                                                          |
+| --------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Current branch        | Clean, pushed branch `codex/staff-portal-current-main`; [PR #104](https://github.com/LasVegasForTransit/website/pull/104) shows the live head and checks. |
+| Deployed source SHA   | None; no staff or jobs Worker is deployed in preview or production.                                                                                       |
+| Intended staff URLs   | `https://staff-preview.lasvegasfortransit.org/` and `https://staff.lasvegasfortransit.org/`; neither hostname resolved on 2026-10-10.                     |
+| Human tester and date | None recorded.                                                                                                                                            |
 
 The portal implementation is pushed for review, but is not released. The passing preview workflow
 packages the website Worker; it does not deploy the protected staff portal.
@@ -43,11 +41,10 @@ finding, which cancels some Turbo tasks; the clean clone scan passes. All seven 
 also pass when run sequentially: platform core 14/14, platform storage 171/171, platform
 integrations 112/112, jobs 1/1, site 258/258, staff 45/45, and deploy 6/6. The staff, paper-signup,
 and Discord-observation browser workflows pass against isolated fixtures. For implementation SHA
-`b98e797cd87d778a927ddf4f45ba22a5c42ebcea`, remote CI run 38041286429 passes and Worker preview
-packaging run 38041286882 passes; Audit run 38041286445 was still running its desktop and mobile
-Lighthouse jobs at the last check. The documentation-only SHA
-`eede3b76c8ec318e8bbd488ef613098bc9a4d595` has CI run 38042191832, Worker preview packaging run
-38042192293 and Audit run 38042191884 in progress. The passing preview workflow packages the website
+`b98e797cd87d778a927ddf4f45ba22a5c42ebcea`, remote CI run 38041286429 passed and Worker preview
+packaging run 38041286882 passed; Audit run 38041286445 was still running its desktop and mobile
+Lighthouse jobs at the last check. Subsequent commits only update this acceptance record; the PR
+shows live checks for the current branch head. The passing preview workflow packages the website
 Worker only; it does not deploy staff or jobs. The production preflight passes all nine local
 machine checks under Node 24.20.0 when the account ID is read from Wrangler, but production is not
 ready: 21 of 29 D1 migrations are unapplied, `LVBT_PRESS_DATA_SOURCE_ID` is missing, and the Discord
