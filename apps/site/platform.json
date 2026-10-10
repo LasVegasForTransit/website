@@ -499,6 +499,32 @@
         "Open the existing LVBT website release-verification service token in Cloudflare One. Its policy must cover the protected preview URLs the workflow verifies.",
         "Copy the existing Client Secret and paste it at this prompt. If the secret is unavailable, a maintainer must authorize rotation of the paired service token and its installation in worker-preview. An agent may carry out that authorized setup. Ordinary promotion uses the installed pair."
       ]
+    },
+    {
+      "name": "CF_ACCESS_CLIENT_ID",
+      "purpose": "Identifies trusted production-candidate verification through Cloudflare Access.",
+      "use": "live",
+      "neededFor": "private production version verification before activation",
+      "targets": ["github:worker-candidate"],
+      "sensitive": true,
+      "url": "https://one.dash.cloudflare.com/",
+      "steps": [
+        "Use a dedicated production-candidate verification service token. Its Service Auth policy must cover only the lvbt-website preview_worker destination alongside the existing staff identity policy; never configure an Everyone or Bypass rule.",
+        "A maintainer must authorize creation or rotation of the paired service token and installation in worker-candidate. Save its Client ID here. Keep this pair separate from staging verification and runtime integration secrets."
+      ]
+    },
+    {
+      "name": "CF_ACCESS_CLIENT_SECRET",
+      "purpose": "Authenticates trusted production-candidate verification through Cloudflare Access.",
+      "use": "live",
+      "neededFor": "private production version verification before activation",
+      "targets": ["github:worker-candidate"],
+      "sensitive": true,
+      "url": "https://one.dash.cloudflare.com/",
+      "steps": [
+        "Use the same dedicated production-candidate verification service token as CF_ACCESS_CLIENT_ID. Its Service Auth policy must cover only the lvbt-website preview_worker destination alongside the existing staff identity policy; never configure an Everyone or Bypass rule.",
+        "Save its Client Secret here. If unavailable, a maintainer must authorize rotation and installation of the pair in worker-candidate. Ordinary promotion uses the installed GitHub credentials without a local Cloudflare login."
+      ]
     }
   ],
   "vars": [

@@ -55,6 +55,12 @@ the custom staging domain and versioned PR URLs without protecting unrelated pub
 authenticate with the existing LVBT staff identity policy. Automation uses a dedicated Access
 service token in a **Service Auth** policy attached only to this Worker.
 
+The production Worker's version URLs also require staff authentication. Its separate Access
+application must select **Preview URLs** (`preview_worker`) for `lvbt-website`, with the existing
+staff identity policy and a dedicated production-candidate **Service Auth** policy. Production
+custom domains remain public. An **Everyone** or **Bypass** policy is never permitted for preview
+verification. CI checks that an anonymous candidate request is denied before authenticating.
+
 The `worker-preview` GitHub environment supplies:
 
 | Secret                            | Purpose                                       |
@@ -64,13 +70,19 @@ The `worker-preview` GitHub environment supplies:
 | `CF_ACCESS_CLIENT_ID`             | Identify the preview verification service     |
 | `CF_ACCESS_CLIENT_SECRET`         | Authenticate the preview verification service |
 
+`worker-candidate` supplies its own deployment and migration tokens and a separate
+`CF_ACCESS_CLIENT_ID` / `CF_ACCESS_CLIENT_SECRET` pair limited to production version verification.
+Both service pairs belong only in their matching GitHub environments, which accept only trusted
+`main` workflows.
+
 `CLOUDFLARE_ACCOUNT_ID` is an environment variable in each release environment. Access credentials
 are supplied only to the specific preview origin or a version URL under the configured
 `las-vegas-for-better-transit.workers.dev` account suffix. Another account's Worker with the same
-name is rejected before authentication. Public production candidates and local browser checks
-receive no Access service credentials. HTTP verification disables automatic redirects; browser
-verification fetches authenticated responses without following redirects, then lets the browser
-navigate the returned response. Third-party origins receive no Access headers.
+name is rejected before authentication. Production version candidates require authentication; the
+public production origin and local browser checks receive no Access service credentials. HTTP
+verification disables automatic redirects; browser verification fetches authenticated responses
+without following redirects, then lets the browser navigate the returned response. Third-party
+origins receive no Access headers.
 
 Preview responses carry `X-Robots-Tag: noindex, nofollow, noarchive` and
 `Cache-Control: private, no-store`. Preview runs the Worker before every asset request to apply

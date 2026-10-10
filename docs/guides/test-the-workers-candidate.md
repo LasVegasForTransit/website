@@ -34,6 +34,26 @@ Anonymous requests must reach Access rather than the website. Staff should see t
 signing in. Automation uses the service token; it does not require an interactive browser login.
 Preview integrations use separate test credentials and the preview database.
 
+## Configure private production candidates
+
+1. In Cloudflare Access, configure a separate application for `lvbt-website` with scope **Preview
+   URLs** (`preview_worker`). Attach the existing LVBT staff identity policy. This scope protects
+   production version URLs while leaving the public custom domains accessible.
+2. Add a dedicated production-candidate verification service token and a **Service Auth** policy
+   including only that token. Attach this policy alongside the staff policy. Never add an
+   **Everyone** or **Bypass** policy.
+3. Store that pair as `CF_ACCESS_CLIENT_ID` and `CF_ACCESS_CLIENT_SECRET` only in the website's
+   `worker-candidate` GitHub environment. Creation or rotation requires maintainer authorization;
+   ordinary promotion uses the installed pair.
+4. Confirm an anonymous version request is denied, a staff session can open the version, and trusted
+   CI can verify it with the service pair. Re-enable disabled version URLs only after the staff and
+   service policies are attached. Confirm the public site still loads anonymously.
+
+The release verifier rejects public candidates, missing service credentials, and origins outside the
+configured account and Workers. Anonymous requests to both the home page and release marker must be
+denied or reach the existing `lvbt.cloudflareaccess.com` Access login. An ordinary application
+redirect does not prove protection. A failed Access check stops promotion before activation.
+
 ## Review a pull request
 
 Open the Worker URL in the pull request comment and sign in through Access. The URL represents that
