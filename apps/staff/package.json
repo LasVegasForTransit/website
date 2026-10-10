@@ -1,0 +1,47 @@
+{
+  "name": "@lasvegasfortransit/staff",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "preflight": "node --import tsx scripts/preflight-cli.ts",
+    "release": "node --import tsx scripts/release-cli.ts",
+    "dev": "astro dev --host 127.0.0.1 --port 4322",
+    "build": "astro build",
+    "preview": "wrangler dev --local",
+    "sync": "astro sync",
+    "lint": "eslint . --max-warnings 0",
+    "check-types": "astro check --noSync && tsc --noEmit -p tsconfig.e2e.json",
+    "test": "node --import tsx --test tests/*.test.ts",
+    "validate": "astro build",
+    "test:e2e": "node --import tsx tests/e2e/browser.spec.ts",
+    "test:release": "node --import tsx tests/e2e/release.spec.ts",
+    "test:discord-observation": "node --import tsx tests/e2e/discord-observation.spec.ts",
+    "test:paper": "node --import tsx tests/e2e/paper.spec.ts",
+    "test:export": "node --import tsx tests/e2e/export.spec.ts"
+  },
+  "dependencies": {
+    "@lasvegasfortransit/platform-core": "workspace:*",
+    "@lasvegasfortransit/platform-storage": "workspace:*",
+    "@lasvegasfortransit/platform-integrations": "workspace:*",
+    "@astrojs/cloudflare": "catalog:",
+    "@tailwindcss/vite": "catalog:",
+    "@tailwindcss/typography": "catalog:",
+    "tailwindcss": "catalog:"
+  },
+  "devDependencies": {
+    "astro": "catalog:",
+    "@astrojs/check": "catalog:",
+    "@cloudflare/workers-types": "catalog:",
+    "@lasvegasfortransit/eslint-config": "file:../../.lvbt/web-platform/packages/eslint-config",
+    "@types/node": "catalog:",
+    "eslint": "catalog:",
+    "tsx": "catalog:",
+    "typescript": "catalog:",
+    "wrangler": "catalog:",
+    "jose": "catalog:",
+    "miniflare": "catalog:",
+    "@playwright/test": "catalog:",
+    "fflate": "catalog:"
+  }
+}

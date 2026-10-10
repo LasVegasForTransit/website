@@ -1,0 +1,7 @@
+{
+  "extends": "../../.lvbt/web-platform/packages/typescript-config/worker.json",
+  "compilerOptions": {
+    "types": ["@cloudflare/workers-types", "node"]
+  },
+  "include": ["src/**/*.ts", "tests/**/*.ts"]
+}

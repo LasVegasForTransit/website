@@ -634,7 +634,7 @@ applied to production. Task 12 remains incomplete.
 ### Task 13: Prepare protected preview and the production release
 
 **Files:** Modify `.github/workflows/ci.yml`, add staff/jobs deployment workflows, update deployment
-scripts and `apps/site/scripts/bootstrap/config/platform-secrets.ts`; add
+scripts and the shared Worker runtime configuration; add
 `docs/reference/staff-portal-operations.md`, staff bootstrap/preflight scripts and release tests.
 
 **Interfaces:** `preflightStaff(environment)` reports each app/domain/Access/database/credential

@@ -1,0 +1,27 @@
+---
+import BaseLayout from '../../../layouts/BaseLayout.astro';
+import Button from '../../../components/app/Button.astro';
+import { linkClass } from '../../../components/app/styles';
+---
+
+<BaseLayout title="Connect Discord" noindex>
+  <section class="container-page py-12">
+    <div class="mx-auto max-w-xl">
+      <a href="/account/#discord" class={linkClass}>← Your account</a>
+      <h1 class="text-headline-md mt-6">Connect Discord</h1>
+      <p class="mt-4">Connect your own Discord account to your LVBT membership.</p>
+      <p class="mt-3" data-slot="discord-status" hidden></p>
+      <p class="mt-4" data-slot="discord-review" hidden>
+        Ask the membership team to check your connected Discord accounts.
+      </p>
+      <p class="mt-4" role="alert" data-slot="discord-error" hidden>
+        We couldn’t connect that account. Try again with your own Discord account. If it still
+        fails, ask the membership team for help.
+      </p>
+      <form method="post" action="/account/discord/" class="mt-6" data-slot="discord-connect">
+        <input type="hidden" name="token" value="" />
+        <Button>Continue to Discord</Button>
+      </form>
+    </div>
+  </section>
+</BaseLayout>

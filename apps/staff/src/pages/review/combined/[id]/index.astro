@@ -1,0 +1,94 @@
+---
+import StaffLayout from '../../../../layouts/StaffLayout.astro';
+import Button from '../../../../../../site/src/components/app/Button.astro';
+import { mergeView } from '@lasvegasfortransit/platform-storage/merge-views';
+import { issueFormToken } from '@lasvegasfortransit/platform-storage/form-tokens';
+import { ulid } from '@lasvegasfortransit/platform-core/ids';
+import { formatDate } from '@lasvegasfortransit/platform-core/messages';
+import { uncombineAction, type MergeFailure } from '../../../../lib/merges';
+import { messageResponse } from '../../../../lib/responses';
+const staff = Astro.locals.staff;
+if (!staff) return messageResponse("You don't have access to this", 403);
+const item = await mergeView(staff.db, staff.actor, Astro.params.id ?? '');
+if (!item) return messageResponse("You don't have access to this", 404);
+let failure: MergeFailure | undefined;
+if (Astro.request.method === 'POST') {
+  const result = await uncombineAction(Astro.request, staff, item);
+  if (result instanceof Response) return result;
+  failure = result;
+  Astro.response.status = 409;
+}
+const token =
+  !item.undoneAt && !item.erasedAt
+    ? await issueFormToken(staff.db, staff.actor, `merge:undo:${item.id}`)
+    : null;
+---
+
+<StaffLayout title={item.undoneAt ? 'Combination undone' : 'Entries combined'}>
+  <a slot="breadcrumb" href="/review/" class="staff-back">← Check duplicates</a>
+  <section class="staff-editor" aria-label="Combination details">
+    <p>
+      {
+        item.erasedAt
+          ? 'Saved personal details from this combination have been erased.'
+          : item.undoneAt
+            ? 'These entries are separate again.'
+            : 'These entries now share one member profile.'
+      }
+    </p>
+    <ul class="mt-4 space-y-2">
+      <li>
+        <a class="font-bold" href={`/people/${item.survivorId}/`}>{item.survivorName}</a> · Entry kept
+      </li>
+      <li>
+        {
+          item.undoneAt && !item.erasedAt ? (
+            <a class="font-bold" href={`/people/${item.mergedId}/`}>
+              {item.mergedName}
+            </a>
+          ) : (
+            item.mergedName
+          )
+        } · {item.erasedAt ? 'Details erased' : item.undoneAt ? 'Entry restored' : 'Entry combined'}
+      </li>
+    </ul>
+    <p class="mt-4 text-body-sm text-on-surface-variant">
+      Combined {formatDate(new Date(item.mergedAt))}{item.actorName && ` by ${item.actorName}`}.
+    </p>
+    {item.reason && <p class="mt-2 whitespace-pre-wrap [overflow-wrap:anywhere]">{item.reason}</p>}
+    {item.undoneAt && <p class="mt-4">Undone {formatDate(new Date(item.undoneAt))}.</p>}
+  </section>
+  {
+    !item.undoneAt && !item.erasedAt && (
+      <section class="staff-review-decision" aria-labelledby="undo-heading">
+        <h2 id="undo-heading" class="font-bold">
+          Combined by mistake?
+        </h2>
+        <p class="staff-help">
+          Undo restores the entries that were combined. Later activity stays on the member profile
+          where it was added.
+        </p>
+        {failure && (
+          <p role="alert" class="staff-error mt-4">
+            {failure.error}
+          </p>
+        )}
+        <form method="post" action={`/review/combined/${item.id}/`} class="staff-form max-w-2xl">
+          <>
+            <input type="hidden" name="token" value={token} />
+            <input type="hidden" name="operation_id" value={ulid()} />
+          </>
+          <div>
+            <>
+              <label for="reason">Reason for undoing</label>
+              <textarea id="reason" name="reason" maxlength="2000" rows="2" required>
+                {failure?.reason ?? ''}
+              </textarea>
+            </>
+          </div>
+          <Button variant="secondary">Undo combination</Button>
+        </form>
+      </section>
+    )
+  }
+</StaffLayout>

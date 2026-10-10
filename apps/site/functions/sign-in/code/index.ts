@@ -3,7 +3,7 @@
 // /sign-in/code: "Check your email". GET shows the address this browser asked
 // for, from its signed step cookie. POST checks the code and signs in.
 
-import { t } from '../../../platform/messages';
+import { t } from '@lasvegasfortransit/platform-core/messages';
 import {
   clearedStepCookie,
   fromThisSite,

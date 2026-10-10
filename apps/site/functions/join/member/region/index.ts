@@ -4,8 +4,8 @@
 // only right after joining in this browser. The answer is saved with source
 // `member_choice`; "I'd rather not say" saves nothing.
 
-import { isRegionId } from '../../../../platform/core/regions';
-import { PersonService } from '../../../../platform/storage/person-service';
+import { isRegionId } from '@lasvegasfortransit/platform-core/regions';
+import { PersonService } from '@lasvegasfortransit/platform-storage/person-service';
 import { builtPage, finish, platformEnv, readJoinStep, redirect, type JoinEnv } from '../../_page';
 
 // Without this browser's join step there is nothing to ask: the person is

@@ -2,11 +2,11 @@
 // in Beehiiv, and delete the person if joining was the only thing they ever
 // did with LVBT.
 
-import { nowIso } from './core/ids';
-import { verifyToken } from './core/signing';
-import { unsubscribe } from './integrations/beehiiv';
+import { nowIso } from '@lasvegasfortransit/platform-core/ids';
+import { verifyToken } from '@lasvegasfortransit/platform-core/signing';
+import { unsubscribe } from '@lasvegasfortransit/platform-integrations/beehiiv';
 import type { PlatformEnv } from './join';
-import { PersonService } from './storage/person-service';
+import { PersonService } from '@lasvegasfortransit/platform-storage/person-service';
 
 export type RemovalCheck = { kind: 'valid'; personId: string; email: string } | { kind: 'invalid' };
 

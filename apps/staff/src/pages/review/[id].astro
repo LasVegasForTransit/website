@@ -1,0 +1,134 @@
+---
+import StaffLayout from '../../layouts/StaffLayout.astro';
+import ReviewPerson from '../../components/ReviewPerson.astro';
+import Button from '../../../../site/src/components/app/Button.astro';
+import { reviewItem } from '@lasvegasfortransit/platform-storage/reviews';
+import { issueFormToken } from '@lasvegasfortransit/platform-storage/form-tokens';
+import { ulid } from '@lasvegasfortransit/platform-core/ids';
+import { formatDate } from '@lasvegasfortransit/platform-core/messages';
+import { reviewReason, separateAction, submittedEmail } from '../../lib/reviews';
+import { combineAction, type MergeFailure } from '../../lib/merges';
+import { messageResponse } from '../../lib/responses';
+const staff = Astro.locals.staff;
+if (!staff) return messageResponse("You don't have access to this", 403);
+const id = Astro.params.id ?? '';
+const item = await reviewItem(staff.db, staff.actor, id);
+if (!item) return messageResponse("You don't have access to this", 404);
+let failure: MergeFailure | undefined;
+if (Astro.request.method === 'POST') {
+  if (Astro.url.searchParams.get('decision') !== 'combine')
+    return separateAction(Astro.request, staff, id);
+  const result = await combineAction(Astro.request, staff, item);
+  if (result instanceof Response) return result;
+  failure = result;
+  Astro.response.status = 409;
+}
+const token = !item.resolvedAt
+  ? await issueFormToken(staff.db, staff.actor, `review:separate:${id}`)
+  : null;
+const combineToken = !item.resolvedAt
+  ? await issueFormToken(staff.db, staff.actor, `review:combine:${id}`)
+  : null;
+const email = submittedEmail(item.details);
+---
+
+<StaffLayout title="Are these the same person?" description={reviewReason(item.reason)}>
+  <a slot="breadcrumb" href="/review/" class="staff-back">← Check duplicates</a>
+  {email && <p class="mb-5 text-body-sm [overflow-wrap:anywhere]">Submitted email: {email}</p>}
+  <div class="staff-review-comparison">
+    <ReviewPerson profile={item.candidate} label="New entry" />
+    <ReviewPerson profile={item.existing} label="Already on our list" />
+  </div>
+  {
+    failure && (
+      <p role="alert" class="staff-error mt-4">
+        {failure.error}
+      </p>
+    )
+  }
+  {
+    item.resolvedAt ? (
+      <div class="staff-review-decision">
+        <>
+          <h2 class="font-bold">
+            {item.resolution === 'kept_separate' ? 'Kept as two people' : 'Review completed'}
+          </h2>
+          <p class="staff-help">Reviewed {formatDate(new Date(item.resolvedAt))}.</p>
+          <a class="staff-next" href="/review/">
+            Back to possible duplicates
+          </a>
+        </>
+      </div>
+    ) : (
+      <>
+        <section class="staff-review-decision" aria-labelledby="separate-heading">
+          <h2 id="separate-heading" class="font-bold">
+            Different people?
+          </h2>
+          <p class="staff-help">
+            Keep them separate if you’ve confirmed they are different people.
+          </p>
+          <form method="post" action={`/review/${id}/`} class="staff-form max-w-2xl">
+            <input type="hidden" name="token" value={token} />
+            <input type="hidden" name="operation_id" value={ulid()} />
+            <div>
+              <>
+                <label for="note">
+                  Note <span class="staff-optional">(optional)</span>
+                </label>
+                <textarea id="note" name="note" maxlength="2000" rows="2" />
+              </>
+            </div>
+            <Button variant="secondary">Keep separate</Button>
+          </form>
+        </section>
+        <details class="staff-review-decision staff-combine-options" open={Boolean(failure)}>
+          <summary>Combine if they are the same person</summary>
+          <p class="staff-help">
+            Choose which entry to keep. Its current contact details will be used.
+          </p>
+          <form
+            method="post"
+            action={`/review/${id}/?decision=combine`}
+            class="staff-form max-w-2xl"
+          >
+            <>
+              <input type="hidden" name="token" value={combineToken} />
+              <input type="hidden" name="operation_id" value={ulid()} />
+            </>
+            <fieldset>
+              <legend class="font-bold text-body-sm">Entry to keep</legend>
+              <label class="staff-choice">
+                <input
+                  type="radio"
+                  name="keep_person"
+                  value={item.existingId}
+                  checked={!failure || failure.survivorId === item.existingId}
+                />
+                Already on our list: {item.existingName}
+              </label>
+              <label class="staff-choice">
+                <input
+                  type="radio"
+                  name="keep_person"
+                  value={item.candidateId}
+                  checked={failure?.survivorId === item.candidateId}
+                />
+                New entry: {item.candidateName}
+              </label>
+            </fieldset>
+            <div>
+              <>
+                <label for="combine-reason">Reason for combining</label>
+                <textarea id="combine-reason" name="reason" maxlength="2000" rows="2" required>
+                  {failure?.reason ?? ''}
+                </textarea>
+              </>
+            </div>
+            <Button>Combine entries</Button>
+          </form>
+        </details>
+      </>
+    )
+  }
+</StaffLayout>

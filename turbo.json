@@ -51,6 +51,20 @@
     "@lasvegasfortransit/site#validate": {
       "dependsOn": ["build", "lint:styles", "lint:brand", "check:docs", "check-types:scripts"],
       "cache": false
+    },
+    "@lasvegasfortransit/staff#validate": {
+      "dependsOn": ["^build", "sync"]
+    },
+    "@lasvegasfortransit/staff#check-types": {
+      "dependsOn": ["^check-types", "sync"]
+    },
+    "preflight": {
+      "cache": false,
+      "passThroughEnv": ["CLOUDFLARE_ACCOUNT_ID", "CLOUDFLARE_API_TOKEN"]
+    },
+    "release": {
+      "cache": false,
+      "passThroughEnv": ["CLOUDFLARE_ACCOUNT_ID", "CLOUDFLARE_API_TOKEN"]
     }
   },
   "globalDependencies": [".lvbt/web-platform.json", ".lvbt/tooling.json", ".github/workflows/**"],

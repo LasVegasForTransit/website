@@ -5,8 +5,8 @@
 // nothing and calls no outside service. On a production build the prototype
 // pages don't exist, so this answers 404.
 
-import { ulid } from '../../../platform/core/ids';
-import { hasErrors, readJoinForm, validateJoin } from '../../../platform/core/join-form';
+import { ulid } from '@lasvegasfortransit/platform-core/ids';
+import { hasErrors, readJoinForm, validateJoin } from '@lasvegasfortransit/platform-core/join-form';
 import { renderJoinForm } from '../../join/_form';
 import { builtPage, redirect, type JoinEnv } from '../../join/_page';
 

@@ -5,6 +5,8 @@
   "scripts": {
     "bootstrap": "node .lvbt/web-platform/packages/cli/src/cli.mjs bootstrap",
     "preflight": "node .lvbt/web-platform/packages/cli/src/cli.mjs preflight",
+    "staff:preflight": "pnpm --silent --dir apps/staff run preflight",
+    "staff:release": "pnpm --silent --dir apps/staff run release",
     "build": "turbo run build",
     "dev": "turbo run dev",
     "preview": "turbo run preview",

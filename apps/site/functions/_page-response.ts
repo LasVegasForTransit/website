@@ -1,6 +1,6 @@
 /// <reference types="@cloudflare/workers-types" />
 
-export const SECURITY_HEADERS: Record<string, string> = {
+export const SECURITY_HEADERS = {
   'Strict-Transport-Security': 'max-age=63072000; includeSubDomains; preload',
   'X-Content-Type-Options': 'nosniff',
   'Referrer-Policy': 'strict-origin-when-cross-origin',

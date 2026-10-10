@@ -8,13 +8,13 @@ import {
   type AccountEnv,
   type CodeCheck,
 } from './account';
-import { checkCode, endAllSessions, requestCode } from './auth';
-import { nowIso } from './core/ids';
-import { regionName } from './core/regions';
-import { formatFullDate, formatTime, t } from './messages';
+import { checkCode, endAllSessions, requestCode } from '@lasvegasfortransit/platform-storage/auth';
+import { nowIso } from '@lasvegasfortransit/platform-core/ids';
+import { regionName } from '@lasvegasfortransit/platform-core/regions';
+import { formatFullDate, formatTime, t } from '@lasvegasfortransit/platform-core/messages';
 import { sendCodeEmail } from './sign-in';
-import type { Db } from './storage/db';
-import { PersonService, type Person } from './storage/person-service';
+import type { Db } from '@lasvegasfortransit/platform-storage/db';
+import { PersonService, type Person } from '@lasvegasfortransit/platform-storage/person-service';
 
 // --- Your data -----------------------------------------------------------
 
@@ -26,20 +26,27 @@ export async function exportData(
   const view = await accountView(db, personId);
   if (!view) return null;
   const rows = async (sql: string) => (await db.prepare(sql).bind(personId).all()).results;
-  const [consents, identities, events, fieldSources] = await Promise.all([
-    rows(
-      'SELECT scope, given_at, source, method, wording_version, withdrawn_at, withdrawn_source FROM consent_records WHERE person_id = ? ORDER BY given_at',
-    ),
-    rows(
-      'SELECT platform, external_id, external_email, linked_at, link_method FROM identities WHERE person_id = ? ORDER BY linked_at',
-    ),
-    rows(
-      'SELECT type, occurred_at, source, reference, details FROM engagement_events WHERE person_id = ? ORDER BY occurred_at',
-    ),
-    rows(
-      'SELECT field, source, confirmed_at FROM field_sources WHERE person_id = ? ORDER BY field',
-    ),
-  ]);
+  const [consents, identities, events, fieldSources, discordProfiles, discordServerProfiles] =
+    await Promise.all([
+      rows(
+        'SELECT scope, given_at, source, method, wording_version, withdrawn_at, withdrawn_source, import_run_id FROM consent_records WHERE person_id = ? ORDER BY given_at',
+      ),
+      rows(
+        'SELECT platform, external_id, external_email, linked_at, link_method FROM identities WHERE person_id = ? ORDER BY linked_at',
+      ),
+      rows(
+        'SELECT type, occurred_at, source, reference, details FROM engagement_events WHERE person_id = ? ORDER BY occurred_at',
+      ),
+      rows(
+        'SELECT field, source, confirmed_at FROM field_sources WHERE person_id = ? ORDER BY field',
+      ),
+      rows(
+        'SELECT i.external_id,p.username,p.display_name,p.avatar,p.verified_at FROM identities i JOIN discord_identity_profiles p ON p.identity_record_id=i.id WHERE i.person_id=? ORDER BY i.id',
+      ),
+      rows(
+        'SELECT i.external_id,p.guild_id,p.username,p.display_name,p.avatar,p.nickname,p.in_guild,p.pending,p.observed_at,p.expires_at FROM identities i JOIN discord_profiles p ON p.identity_record_id=i.id WHERE i.person_id=? ORDER BY i.id,p.guild_id',
+      ),
+    ]);
   const { person } = view;
   return {
     summary: t('data.summary', {
@@ -65,6 +72,8 @@ export async function exportData(
     where_each_detail_came_from: fieldSources,
     consent_records: consents,
     connected_accounts: identities,
+    discord_account_profiles: discordProfiles,
+    discord_server_profiles: discordServerProfiles,
     activity: events.map((event) => ({
       ...event,
       details:

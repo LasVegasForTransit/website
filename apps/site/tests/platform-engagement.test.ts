@@ -1,8 +1,8 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { engagementCounts } from '../platform/storage/engagement';
-import { PersonService } from '../platform/storage/person-service';
-import { memoryDb, type MemoryDb } from './support/platform-db';
+import { engagementCounts } from '@lasvegasfortransit/platform-storage/engagement';
+import { PersonService } from '@lasvegasfortransit/platform-storage/person-service';
+import { memoryDb, type MemoryDb } from '@lasvegasfortransit/platform-storage/test-db';
 
 const NOW = new Date('2026-10-01T12:00:00Z');
 const daysAgo = (days: number) => new Date(NOW.getTime() - days * 86_400_000).toISOString();
@@ -155,14 +155,15 @@ void test('counts for a person with 1,000 events come back quickly', async () =>
   assert.ok(performance.now() - started < 50);
 });
 
-void test("a deleted person's events can be removed, with or without the person row", async () => {
+void test("a deleted person's events remain removed after profile retention", async () => {
   const db = memoryDb();
   const people = new PersonService(db);
   const id = await person(db);
   await people.recordEngagement(id, { type: 'attended', occurredAt: daysAgo(1), source: 'paper' });
   await people.deletePerson(id);
-  db.raw.exec('PRAGMA foreign_keys = OFF');
-  db.raw.prepare('DELETE FROM people WHERE id = ?').run(id);
-  db.raw.prepare('DELETE FROM engagement_events WHERE person_id = ?').run(id);
+  assert.equal(eventCount(db), 0);
+  const { runMaintenance } = await import('@lasvegasfortransit/platform-storage/retention');
+  await runMaintenance(db, { now: new Date(Date.now() + 31 * 86_400_000) });
+  assert.equal(db.raw.prepare('SELECT id FROM people WHERE id=?').get(id), undefined);
   assert.equal(eventCount(db), 0);
 });

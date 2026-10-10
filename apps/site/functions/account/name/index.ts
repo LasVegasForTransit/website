@@ -3,7 +3,7 @@
 // /account/name: change your name.
 
 import { updateName } from '../../../platform/account';
-import { PersonService } from '../../../platform/storage/person-service';
+import { PersonService } from '@lasvegasfortransit/platform-storage/person-service';
 import { setValue, type SignInPagesEnv } from '../../sign-in/_shared';
 import { accountPage, backToAccount, field, formOf, signedIn } from '../_account';
 

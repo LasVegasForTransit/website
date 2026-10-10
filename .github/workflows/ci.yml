@@ -45,3 +45,10 @@ jobs:
 
       - name: Check
         run: pnpm check
+
+      - name: Verify staff release packaging
+        env:
+          RELEASE_ID: ${{ github.run_id }}
+        run: |
+          pnpm staff:release package --directory "$RUNNER_TEMP/staff-release" --commit "$GITHUB_SHA" --release-id "$RELEASE_ID"
+          pnpm staff:release check --directory "$RUNNER_TEMP/staff-release" --commit "$GITHUB_SHA" --release-id "$RELEASE_ID"

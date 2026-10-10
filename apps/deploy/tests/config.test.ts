@@ -66,7 +66,7 @@ void test('new release artifacts use typed configuration, frozen SQL and explici
   assert.equal(tooling.release.workersDevSubdomain, 'las-vegas-for-better-transit');
   assert.deepEqual(tooling.release.previewBindings, preview.worker.env);
   assert.deepEqual(tooling.release.migrations, [
-    { binding: 'PLATFORM_DB', directory: '../site/platform/storage/migrations' },
+    { binding: 'PLATFORM_DB', directory: '../../packages/platform-storage/migrations' },
   ]);
   assert.deepEqual(preview.worker.env.PLATFORM_DB, {
     type: 'd1',
@@ -133,7 +133,7 @@ void test('generated compatibility mirror preserves actual routes, database iden
         binding: 'PLATFORM_DB',
         database_name: built.worker.env.PLATFORM_DB.name,
         database_id: built.worker.env.PLATFORM_DB.id,
-        migrations_dir: 'platform/storage/migrations',
+        migrations_dir: '../../packages/platform-storage/migrations',
       },
     ]);
   }

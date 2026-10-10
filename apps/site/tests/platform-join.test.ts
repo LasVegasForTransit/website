@@ -1,10 +1,14 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { readJoinForm, type JoinInput } from '../platform/core/join-form';
-import type { GeocodeResult } from '../platform/integrations/census';
+import { readJoinForm, type JoinInput } from '@lasvegasfortransit/platform-core/join-form';
+import type { GeocodeResult } from '@lasvegasfortransit/platform-integrations/census';
 import { processJoin, type PlatformEnv } from '../platform/join';
 import { removeEmail } from '../platform/remove';
-import { everyStoredText, memoryDb, type MemoryDb } from './support/platform-db';
+import {
+  everyStoredText,
+  memoryDb,
+  type MemoryDb,
+} from '@lasvegasfortransit/platform-storage/test-db';
 
 interface Call {
   url: string;
