@@ -11,6 +11,7 @@ const deployDir = path.dirname(fileURLToPath(new URL('../package.json', import.m
 const siteDir = path.resolve(deployDir, '../site');
 const platform = JSON.parse(await readFile(path.join(siteDir, 'platform.json'), 'utf8')) as {
   secrets: Array<{ name: string; use?: string; targets?: string[] }>;
+  forbidden: Array<{ name: string; targets?: string[]; reason: string }>;
 };
 const tooling = JSON.parse(
   await readFile(path.resolve(deployDir, '../../.lvbt/tooling.json'), 'utf8'),
@@ -38,6 +39,13 @@ void test('canonical config identifies both public domains and the protected pre
   assert.equal(preview.worker.name, 'lvbt-website-preview');
   assert.equal('accountId' in production, false);
 });
+void test('the production Worker serves Discord interactions before static assets', () => {
+  assert.ok(Array.isArray(production.worker.assets.runWorkerFirst));
+  assert.ok(
+    production.worker.assets.runWorkerFirst.includes('/platform/discord/interactions'),
+    'Discord interaction POSTs must reach the Worker handler, not the asset response',
+  );
+});
 void test('production and preview retain existing secret types and declared integration names without values', () => {
   const names = platform.secrets
     .filter((secret) => secret.use === 'live' && secret.targets?.includes('worker'))
@@ -56,6 +64,26 @@ void test('production and preview retain existing secret types and declared inte
       names,
     );
     for (const name of names) assert.deepEqual(bindings[name], { type: 'secret' });
+  }
+});
+void test('the website Worker never receives the Discord role-management bot token', () => {
+  assert.equal(
+    platform.secrets.some(
+      (secret) =>
+        secret.name === 'LVBT_DISCORD_BOT_TOKEN' &&
+        (secret.targets ?? ['worker']).includes('worker'),
+    ),
+    false,
+    'role changes run on jobs, so the website must not request or store the bot token',
+  );
+  assert.ok(
+    platform.forbidden.some(
+      (secret) => secret.name === 'LVBT_DISCORD_BOT_TOKEN' && secret.targets?.includes('worker'),
+    ),
+    'the platform manifest must guard the website Worker against this secret',
+  );
+  for (const built of [production, preview]) {
+    assert.equal('LVBT_DISCORD_BOT_TOKEN' in built.worker.env, false);
   }
 });
 void test('new release artifacts use typed configuration, frozen SQL and explicit isolated preview declarations', () => {

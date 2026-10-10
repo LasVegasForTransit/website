@@ -33,7 +33,36 @@ export async function exerciseRosterUtility(page: Page, fixture: Fixture) {
   const row = page.locator('.staff-roster li').filter({ hasText: 'Utility Member' });
   await page.goto(search);
   assert.equal(await page.locator('.staff-search-filters').getAttribute('open'), null);
-  assert.equal(await row.getByText('Member', { exact: true }).count(), 1);
+  assert.match(await row.locator('.staff-roster-status').innerText(), /\bMember\b/);
+  const rosterHeadings = await page.locator('.staff-roster-heading span').allTextContents();
+  const rosterColumnCount = await page.locator('.staff-roster-heading span').count();
+  assert.equal(
+    await row.evaluate((element) => element.children.length),
+    rosterColumnCount,
+    'a linked Discord status should not shift the roster actions under the wrong headings',
+  );
+  const assignAction = row.getByRole('link', {
+    name: 'Add Utility Member to a committee',
+    exact: true,
+  });
+  const initialActionStyle = await assignAction.evaluate((element) => {
+    const style = getComputedStyle(element);
+    return {
+      background: style.backgroundColor,
+      border: style.borderTopWidth,
+      minHeight: style.minHeight,
+    };
+  });
+  assert.equal(initialActionStyle.border, '2px');
+  assert.equal(initialActionStyle.minHeight, '44px');
+  assert.notEqual(initialActionStyle.background, 'rgba(0, 0, 0, 0)');
+  await assignAction.hover();
+  await page.waitForTimeout(250);
+  assert.notEqual(
+    await assignAction.evaluate((element) => getComputedStyle(element).backgroundColor),
+    initialActionStyle.background,
+    'primary roster actions should visibly respond to hover',
+  );
   await row.getByRole('link', { name: 'Utility Member', exact: true }).click();
   assert.equal(
     new URL(page.url()).searchParams.get('return_to'),
@@ -43,7 +72,7 @@ export async function exerciseRosterUtility(page: Page, fixture: Fixture) {
   await page.getByRole('link', { name: 'Cancel', exact: true }).click();
   await page.getByRole('link', { name: '← Members', exact: true }).click();
   assert.equal(page.url(), search);
-  await row.getByRole('link', { name: 'Add Utility Member to a committee', exact: true }).click();
+  await assignAction.click();
   assert.equal(new URL(page.url()).hash, '#committees-heading');
   await page.getByLabel('Committee', { exact: true }).selectOption('events');
   const [assigned] = await Promise.all([

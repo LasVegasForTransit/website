@@ -44,6 +44,7 @@ const details = await rosterDetails(
   { configuration: staff.accessConfiguration ?? {} },
 );
 const showWelcome = [...details.values()].some((item) => item.welcome);
+const showDiscord = staff.accessConfiguration?.discord?.configured ?? false;
 const canAssign = committees.some((item) => item.acceptingMembers);
 ---
 
@@ -182,7 +183,7 @@ const canAssign = committees.some((item) => item.acceptingMembers);
             'staff-roster-results',
             {
               'staff-roster-with-follow-up': showWelcome,
-              'staff-roster-with-membership': showMembership,
+              'staff-roster-with-status': showMembership || showDiscord,
             },
           ]}
         >
@@ -202,7 +203,15 @@ const canAssign = committees.some((item) => item.acceptingMembers);
           <div class="staff-roster-heading" aria-hidden="true">
             <>
               <span>Name / email</span>
-              {showMembership && <span>Membership</span>}
+              {(showMembership || showDiscord) && (
+                <span>
+                  {showMembership && showDiscord
+                    ? 'Membership / Discord'
+                    : showDiscord
+                      ? 'Discord'
+                      : 'Membership'}
+                </span>
+              )}
               <span>Committee</span>
               {showWelcome && <span>Follow-up</span>}
             </>
@@ -214,6 +223,7 @@ const canAssign = committees.some((item) => item.acceptingMembers);
                 details={details.get(person.id)}
                 showWelcome={showWelcome}
                 showMembership={showMembership}
+                showDiscord={showDiscord}
                 canAssign={canAssign}
               />
             ))}

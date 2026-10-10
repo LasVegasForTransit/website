@@ -8,9 +8,10 @@ interface Props {
   details?: RosterDetails;
   showWelcome: boolean;
   showMembership: boolean;
+  showDiscord: boolean;
   canAssign: boolean;
 }
-const { person, details, showWelcome, showMembership, canAssign } = Astro.props;
+const { person, details, showWelcome, showMembership, showDiscord, canAssign } = Astro.props;
 const name = personName(person);
 const welcome = details?.welcome;
 const discordPresence =
@@ -21,7 +22,11 @@ const discordPresence =
       : 'status not checked';
 const rosterStatus = [
   showMembership ? MEMBERSHIP_LABELS[person.membership_status] : null,
-  details?.discordConnected ? `Discord: ${discordPresence}` : null,
+  showDiscord
+    ? details?.discordConnected
+      ? `Discord: ${discordPresence}`
+      : 'Discord: not linked'
+    : null,
 ]
   .filter(Boolean)
   .join(' · ');
@@ -36,17 +41,17 @@ const staff = Astro.locals.staff!;
     <a href={profile}>{name}</a>
     {person.email && person.email !== name && <p>{person.email}</p>}
   </div>
-  {
-    (showMembership || details?.discordConnected) && (
-      <p class="staff-roster-status">{rosterStatus}</p>
-    )
-  }
+  {(showMembership || showDiscord) && <p class="staff-roster-status">{rosterStatus}</p>}
   <div class="staff-roster-committee">
     {
       details?.committees.length ? (
         <p>{details.committees.join(', ')}</p>
       ) : person.membership_status === 'member' && canAssign ? (
-        <a href={assignLink} aria-label={`Add ${name} to a committee`}>
+        <a
+          href={assignLink}
+          class="staff-action-link press"
+          aria-label={`Add ${name} to a committee`}
+        >
           Add to committee
         </a>
       ) : (
@@ -63,6 +68,7 @@ const staff = Astro.locals.staff!;
           ) : (
             <a
               href={`/welcome/${person.id}/`}
+              class="staff-action-link press"
               aria-label={`${welcome.claimedBy ? 'Continue welcome for' : 'Welcome'} ${name}`}
             >
               {welcome.claimedBy ? 'Continue welcome' : 'Welcome member'}

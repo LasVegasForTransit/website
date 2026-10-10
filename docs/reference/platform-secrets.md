@@ -59,14 +59,16 @@ consumer aligned before accepting a rotation as complete.
 | Worker `lvbt-website`                 | Production site and candidate versions                    |
 | GitHub environment `worker-candidate` | Production Worker deployment and D1 migration credentials |
 | GitHub environment `worker-preview`   | Staging upload and protected-preview verification         |
+| Worker `lvbt-jobs`                    | Scheduled Discord role reconciliation                     |
 
-Runtime integration credentials are forbidden in the GitHub release environments. They stay on
-`lvbt-website`; version uploads preserve those Worker secrets without sending their values through
-CI. Each environment has its own per-Worker `CLOUDFLARE_WORKERS_API_TOKEN` and a separate
-`CLOUDFLARE_MIGRATIONS_API_TOKEN` for trusted retained SQL. D1 write access may be account-wide, so
-it is not added to the Worker deployment token. Only `worker-preview` needs the Access service pair.
-Both environments accept only the selected branch `main`; bootstrap detects drift and preserves
-existing reviewer and timer protections when applying this restriction.
+Runtime integration credentials are forbidden in the GitHub release environments. Website
+credentials stay on `lvbt-website`; the Discord role bot token belongs only on `lvbt-jobs`. Version
+uploads preserve Worker secrets without sending their values through CI. Each environment has its
+own per-Worker `CLOUDFLARE_WORKERS_API_TOKEN` and a separate `CLOUDFLARE_MIGRATIONS_API_TOKEN` for
+trusted retained SQL. D1 write access may be account-wide, so it is not added to the Worker
+deployment token. Only `worker-preview` needs the Access service pair. Both environments accept only
+the selected branch `main`; bootstrap detects drift and preserves existing reviewer and timer
+protections when applying this restriction.
 
 Public build values remain GitHub Actions variables. The manifest checks their presence and the
 release environments' account IDs against the declared Cloudflare account. It never overwrites an
@@ -85,7 +87,9 @@ runtime secrets, so unavailable preview API integrations answer `503` by design.
 
 ## The secrets
 
-The single source of truth is `apps/site/platform.json`. The table below mirrors it.
+The website bootstrap's source of truth is `apps/site/platform.json`. The table below mirrors its
+secrets. The Discord bot token is listed separately because it belongs to the jobs Worker, not the
+website.
 
 | Secret                            | Used for                                      | Credential | Needed    | Start here                                                                                             |
 | --------------------------------- | --------------------------------------------- | ---------- | --------- | ------------------------------------------------------------------------------------------------------ |
@@ -106,17 +110,23 @@ The single source of truth is `apps/site/platform.json`. The table below mirrors
 | `LVBT_DISCORD_APPLICATION_ID`     | Discord linking and roles                     | No         | Later     | <https://discord.com/developers/teams>                                                                 |
 | `LVBT_DISCORD_PUBLIC_KEY`         | Discord link command                          | No         | Later     | <https://discord.com/developers/applications>                                                          |
 | `LVBT_DISCORD_CLIENT_SECRET`      | Discord linking                               | Yes        | Later     | <https://discord.com/developers/applications>                                                          |
-| `LVBT_DISCORD_BOT_TOKEN`          | Discord roles                                 | Yes        | Later     | <https://discord.com/developers/applications>                                                          |
 | `LVBT_DISCORD_GUILD_ID`           | Discord roles                                 | No         | Later     | <https://discord.com/channels/@me>                                                                     |
 | `LVBT_GOOGLE_SERVICE_ACCOUNT_KEY` | Volunteer management                          | Yes        | Not asked | Leave empty; see [Google service account](#google-service-account)                                     |
 | `LVBT_GOOGLE_ADMIN_SUBJECT`       | Volunteer management                          | No         | Not asked | Leave empty; see [Google service account](#google-service-account)                                     |
 | `LVBT_GIVEBUTTER_API_KEY`         | Donor support                                 | Yes        | Later     | <https://givebutter.com/dashboard>                                                                     |
 
-"Now" means a feature on the live site uses it. "Later" means only a feature that isn't built yet
-does, so it is always fine to skip a "Later" value; bootstrap asks again next time. "Not asked"
-means nothing reads the value yet, so bootstrap lists it but never asks for it. Skipping a "Now"
-value leaves the feature in the "Used for" column broken until it is set. Bootstrap shows the
-click-by-click steps for each value, with the link, and offers to open the page in your browser.
+**Jobs-only Discord secret.** `LVBT_DISCORD_BOT_TOKEN` lets `lvbt-jobs` update LVBT-managed roles.
+It is not part of website bootstrap and must never be stored on `lvbt-website` or in a GitHub
+environment. Jobs deployment and secret setup are still outstanding; leave synchronization disabled
+until an approved jobs release setup can provision this token to that Worker. The `/link` registrar
+uses it only in its local process environment, supplied from the approved secret store.
+
+"Now" means a feature on the live site uses it. "Later" means no live production feature depends on
+the value yet. The feature may already exist in code but still need setup or deployment, so it is
+always fine to skip a "Later" value; bootstrap asks again next time. "Not asked" means nothing reads
+the value yet, so bootstrap lists it but never asks for it. Skipping a "Now" value leaves the
+feature in the "Used for" column broken until it is set. Bootstrap shows the click-by-click steps
+for each value, with the link, and offers to open the page in your browser.
 
 The sending domain `notify.lasvegasfortransit.org` uses Resend's Forge DNS layout: DNS-only CNAME
 `rsend.notify` → `rsend.forge.rmta.net`, CNAME `send.notify` → `send.forge.rmta.net`, and the
@@ -380,9 +390,29 @@ OAuth access or refresh tokens are stored, and this does not prove server roles.
 deployment. Production secrets are configured by a maintainer through bootstrap.
 
 The bot token, server ID and public key remain separate setup for role synchronization and commands.
-The scheduled runner is locally verified; its deployment and live acceptance remain outstanding, and
-commands are unfinished. The app is called **LVBT Bot**, and it must belong to the LVBT team: an app
-on a "Personal" team belongs to one account, and nobody else can manage it after that person leaves.
+The `/link` interaction endpoint and guild-only registration command now exist in the site code.
+They still need the Discord app setup, a deployed endpoint, and live server acceptance. The
+scheduled role runner also needs deployment and live acceptance. The app is called **LVBT Bot**, and
+it must belong to the LVBT team: an app on a "Personal" team belongs to one account, and nobody else
+can manage it after that person leaves.
+
+#### Register the `/link` command
+
+After creating the LVBT app, make sure the application ID, LVBT server ID and bot token are
+available to the command process from the approved secret store. From the repository root, run:
+
+```sh
+pnpm --dir apps/site discord:register-link
+```
+
+The script lists commands for the configured LVBT server, then creates `/link` there or updates that
+one command if it already exists. It does not touch commands in other servers or replace the guild's
+other commands. Keep the bot token out of committed files and shell command text.
+
+In the Developer Portal, set **Interactions Endpoint URL** to
+`https://lasvegasfortransit.org/platform/discord/interactions` after the site release containing the
+endpoint is deployed. Test both a linked and an unlinked member in the LVBT server before
+considering the command ready for staff or members.
 
 #### Scheduled Discord configuration
 
@@ -471,8 +501,9 @@ turn on **Developer Mode**. Right-click the LVBT server icon, click **Copy Serve
 at the `LVBT_DISCORD_GUILD_ID` prompt.
 
 The client secret and the bot token are the two real secrets here. Resetting either later makes the
-old one stop working, so store the new one with
-`pnpm bootstrap --production --rotate LVBT_DISCORD_CLIENT_SECRET` (or `LVBT_DISCORD_BOT_TOKEN`).
+old one stop working. Store a replacement client secret with
+`pnpm bootstrap --production --rotate LVBT_DISCORD_CLIENT_SECRET`. The bot token belongs only to
+`lvbt-jobs`; never rotate or store it through the website bootstrap.
 
 ### Google service account
 

@@ -77,7 +77,6 @@ try {
   const page = await context.newPage();
   await exerciseMemberSearch(page, fixture);
   await exerciseRosterUtility(page, fixture);
-  await page.goto(`${ORIGIN}/people/`);
   await page.getByLabel('Name or email').fill('Rider01234');
   await page.locator('.staff-search-filters > summary').click();
   await page.getByLabel('ZIP code', { exact: true }).fill('89104');

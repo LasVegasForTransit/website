@@ -22,6 +22,51 @@ html {
   font-size: 0.875rem;
 }
 
+.staff-shell .staff-action-link {
+  display: inline-flex;
+  min-height: 2.75rem;
+  align-items: center;
+  justify-content: center;
+  padding: 0.5rem 0.75rem;
+  border: 2px solid var(--color-on-surface);
+  background: var(--color-on-surface);
+  color: var(--color-surface);
+  font-size: 0.8125rem;
+  font-weight: 700;
+  line-height: 1.25;
+  text-align: center;
+  text-decoration: none;
+}
+
+.staff-shell .staff-action-link:hover,
+.staff-shell .staff-action-link:focus-visible {
+  border-color: var(--color-primary);
+  background: var(--color-primary);
+  color: var(--color-on-primary);
+}
+
+.staff-shell .staff-secondary-button {
+  display: inline-flex;
+  min-height: 2.75rem;
+  align-items: center;
+  justify-content: center;
+  padding: 0.5rem 0.75rem;
+  border: 2px solid var(--color-on-surface);
+  background: transparent;
+  color: var(--color-on-surface);
+  font: inherit;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  line-height: 1.25;
+  text-align: center;
+  cursor: pointer;
+}
+
+.staff-shell .staff-secondary-button:hover,
+.staff-shell .staff-secondary-button:focus-visible {
+  background: var(--color-surface-container);
+}
+
 @layer components {
   .staff-header {
     border-bottom: 1px solid var(--color-outline-variant);
@@ -84,15 +129,6 @@ html {
   .staff-nav a:hover,
   .staff-muted-link:hover {
     color: var(--color-primary-ink);
-  }
-
-  .staff-text-action {
-    min-height: 2.75rem;
-    font-size: 0.875rem;
-    font-weight: 600;
-    text-decoration: underline;
-    text-underline-offset: 0.25em;
-    cursor: pointer;
   }
 
   .staff-main {
@@ -199,8 +235,8 @@ html {
     gap: 1rem;
   }
 
-  :where(.staff-roster-with-membership) .staff-roster-heading,
-  :where(.staff-roster-with-membership) .staff-roster li {
+  :where(.staff-roster-with-status) .staff-roster-heading,
+  :where(.staff-roster-with-status) .staff-roster li {
     grid-template-columns: minmax(0, 1.5fr) 8rem minmax(0, 1fr);
   }
 
@@ -209,8 +245,8 @@ html {
     grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr) minmax(0, 1fr);
   }
 
-  :where(.staff-roster-with-membership.staff-roster-with-follow-up) .staff-roster-heading,
-  :where(.staff-roster-with-membership.staff-roster-with-follow-up) .staff-roster li {
+  :where(.staff-roster-with-status.staff-roster-with-follow-up) .staff-roster-heading,
+  :where(.staff-roster-with-status.staff-roster-with-follow-up) .staff-roster li {
     grid-template-columns: minmax(0, 1.5fr) 8rem minmax(0, 1fr) minmax(0, 1fr);
   }
 
@@ -249,7 +285,6 @@ html {
   .staff-roster-follow-up a {
     display: inline-flex;
     align-items: center;
-    min-height: 2.75rem;
     color: var(--color-primary-ink);
     font-weight: 600;
     text-underline-offset: 0.2em;
