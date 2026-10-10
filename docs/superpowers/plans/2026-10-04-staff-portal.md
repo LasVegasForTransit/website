@@ -157,8 +157,11 @@ Google subject. Existing 12-hour staff sessions remain the session contract.
 - [x] Implement returning-user sign-in and first-time confirmation of an existing member email.
       Workspace accounts belong only to existing LVBT members. Linking creates no person or consent;
       active membership is required for linking, session creation and every protected session read.
-- [ ] Implement and verify the administrator-confirmed linking flow with the same membership and
-      conflict rules.
+- [x] Scope ruling: keep administrator-confirmed Workspace linking out of scope. The approved
+      identity flow binds a signed-in Google account through the member's own verified email code;
+      the design defines no staff proof that another person controls that Google account. Do not add
+      a staff-side identity bypass. If support needs a recovery path, approve its proof-of-control
+      design first.
 - [x] Run focused tests and `pnpm check`; exercise arbitrary preview hosts, normalized personal
       emails, cancelled Google consent and replay in local compiled tests.
 - [ ] Record the three real volunteer prototype sessions, including assistive technology; tests do
@@ -246,9 +249,9 @@ identities, current/past assignments and `Page<EngagementEvent>` of 50 events, o
       screens.
 - [x] Run storage/staff tests, browser tests with JavaScript disabled, and `pnpm check`.
 
-Local compiled-Worker search over 5,000 synthetic members: 26 ms; native forms verified with
-JavaScript disabled at 1440 and 320 pixels. The protected remote-preview latency gate above remains
-open.
+Local compiled-Worker search over 5,000 synthetic members: 18 ms in the latest browser run; native
+forms verified with JavaScript disabled at 1440 and 320 pixels. The protected remote-preview latency
+gate above remains open.
 
 Further local usability verification: the roster orders displayed names with stable tie pagination
 and an email fallback for unnamed records. Opening, editing, cancelling, saving and changing
@@ -548,6 +551,14 @@ fields; erasing the identity also erases its Discord snapshot. Successful Discor
 shared job incomplete until other providers are proven. Equal-time observations prefer the later
 database append; email-inferred Discord identities cannot carry verified role proof.
 
+The compiled staff Worker also displays a fresh Discord server-presence observation separately from
+the managed Member role on the member profile and roster. It only trusts one verified linked
+identity and a current observation for the configured guild; absent, expired, mismatched, or
+ambiguous observations are reported as unchecked, and an unlinked account is reported as not
+connected. A successful Discord “Unknown Member” response is recorded as fresh absence rather than a
+provider retry. The local browser test covers presence and role independently; this is fixture
+evidence, not live server acceptance.
+
 Verified account linking now includes member-session-bound one-use browser authorization, the actual
 confidential OAuth exchange, stable-account ownership checks and a compact member connection page.
 It requests only account identity, stores no OAuth tokens, preserves membership/contact data, and
@@ -644,15 +655,20 @@ SHA, migration version and staff/jobs Worker versions.
       claims/events/consents and does not re-enable obsolete follow-up. Public promotion remains
       separate.
 - [x] Run local `pnpm check`, `pnpm build`, staff/jobs dry-run bundles and compiled browser/release
-      artifact tests. The fresh preflight still reports remote configuration as unverified.
+      artifact tests. The latest preflight still reports remote configuration as unverified. Direct
+      read-only inspection on 2026-10-10 found no staff or jobs Worker in either environment,
+      migrations 0009–0029 pending in both D1 databases, and no A/AAAA answers for either staff
+      hostname. The worktree is also 45 commits behind `origin/main`, with 33 modified tracked paths
+      overlapping upstream changes; no rebase was attempted. No remote configuration or data was
+      changed.
 - [ ] Complete protected-preview smoke/browser tests and prepare a reviewed release from current
       `main`; do not commit or perform production-secret operations without their existing
       authorization and maintainer setup.
 
 ### Task 14: Prove usability, hand over intake and finish launch tracking
 
-**Files:** Create `docs/reference/staff-portal-acceptance.md`; update operations instructions and
-existing work items with evidence. No unit test can replace these human/provider gates.
+**Files:** `docs/reference/staff-portal-acceptance.md`; update operations instructions and existing
+work items with evidence. No unit test can replace these human/provider gates.
 
 **Interfaces:** The acceptance record names source SHA, deployed URLs, tester/date, scenario,
 observed result, remaining issue and linked evidence; it contains no member contact details.
@@ -663,8 +679,10 @@ observed result, remaining issue and linked evidence; it contains no member cont
 - [ ] Record at least three real staff/volunteer sessions, including an assistive-technology user;
       fix blockers and document their outcomes.
 - [x] Run the compiled protected routes with JavaScript disabled and 320-pixel layouts.
-- [ ] Verify keyboard-only navigation, the 35 KB gzip JavaScript budget and three-second
-      slow-network content budget; record actual VoiceOver and specified-phone evidence.
+- [x] Verify the staff client ships no JavaScript (0 B gzip), and the compiled Worker member-search
+      skip link and form can be used with keyboard-only input.
+- [ ] Complete keyboard-only review across protected routes; verify the three-second slow-network
+      content budget and record actual VoiceOver and specified-phone evidence.
 - [ ] Verify real president linking/admin access, a current committee lead's restricted access,
       unapproved-account refusal, provider retry/revocation and complete imported roster on
       production.
