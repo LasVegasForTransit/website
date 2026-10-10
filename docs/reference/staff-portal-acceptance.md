@@ -5,17 +5,17 @@ acceptance. It contains no member contact details.
 
 ## Release identity
 
-| Field                 | Current evidence                                                                                                                                                      |
-| --------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Local checkout HEAD   | `469b3e4c6a06c700fde7b41a58502428d053eb36`                                                                                                                            |
-| Branch status         | `codex/staff-portal-current-main` is 4 commits ahead of `origin/main`; Discord interaction, command-registration, configuration and staff UI changes are uncommitted. |
-| Pull request          | Draft PR #104 points to this HEAD and its latest remote checks passed. Local uncommitted changes are not included in those checks.                                    |
-| Deployed source SHA   | None; no staff or jobs Worker is deployed in preview or production.                                                                                                   |
-| Intended staff URLs   | `https://staff-preview.lasvegasfortransit.org/` and `https://staff.lasvegasfortransit.org/`; neither hostname returned an A or AAAA DNS answer on 2026-10-10.         |
-| Human tester and date | None recorded.                                                                                                                                                        |
+| Field                 | Current evidence                                                                                                                                    |
+| --------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Local checkout HEAD   | `b98e797cd87d778a927ddf4f45ba22a5c42ebcea`                                                                                                          |
+| Branch status         | `codex/staff-portal-current-main` is pushed and clean, with six commits ahead of `origin/main`.                                                     |
+| Pull request          | Draft [PR #104](https://github.com/LasVegasForTransit/website/pull/104) points to this SHA. CI and Worker preview packaging pass; Audit is running. |
+| Deployed source SHA   | None; no staff or jobs Worker is deployed in preview or production.                                                                                 |
+| Intended staff URLs   | `https://staff-preview.lasvegasfortransit.org/` and `https://staff.lasvegasfortransit.org/`; neither hostname resolved on 2026-10-10.               |
+| Human tester and date | None recorded.                                                                                                                                      |
 
-The local checkout has uncommitted portal implementation work. Its HEAD is not a releasable source
-revision.
+The portal implementation is pushed for review, but is not released. The passing preview workflow
+packages the website Worker; it does not deploy the protected staff portal.
 
 ## Local evidence
 
@@ -42,15 +42,17 @@ under Node 24.20.0. The linked development checkout still reports a local full-h
 finding, which cancels some Turbo tasks; the clean clone scan passes. All seven package test suites
 also pass when run sequentially: platform core 14/14, platform storage 171/171, platform
 integrations 112/112, jobs 1/1, site 258/258, staff 45/45, and deploy 6/6. The staff, paper-signup,
-and Discord-observation browser workflows pass against isolated fixtures. A clean remote CI run for
-the updated branch SHA is still needed. The production preflight passes all nine local machine
-checks under Node 24.20.0 when the account ID is read from Wrangler, but production is not ready: 21
-of 29 D1 migrations are unapplied, `LVBT_PRESS_DATA_SOURCE_ID` is missing, and the Discord bot token
-remains on the public website Worker. The staff-specific preflight confirms the source configuration
-uses the shared membership database and protected staff domain, but Discord remains disabled and
-remote staff/jobs, Access, and human acceptance checks are unverified without a scoped Cloudflare
-API token. These checks were read-only; no production settings changed. Local test results establish
-behavior only; they do not establish a deployed portal.
+and Discord-observation browser workflows pass against isolated fixtures. For this SHA, remote CI
+run 38041286429 passes, Worker preview packaging run 38041286882 passes, and Audit run 38041286445
+is still running its desktop and mobile Lighthouse jobs. The passing preview workflow packages the
+website Worker only; it does not deploy staff or jobs. The production preflight passes all nine
+local machine checks under Node 24.20.0 when the account ID is read from Wrangler, but production is
+not ready: 21 of 29 D1 migrations are unapplied, `LVBT_PRESS_DATA_SOURCE_ID` is missing, and the
+Discord bot token remains on the public website Worker. The staff-specific preflight confirms the
+source configuration uses the shared membership database and protected staff domain, but Discord
+remains disabled. Remote staff/jobs Workers were checked separately; Access, credential validity and
+human acceptance remain unverified. These checks were read-only; no production settings changed.
+Local test results establish behavior only; they do not establish a deployed portal.
 
 ## Remote inventory
 
@@ -58,21 +60,20 @@ The latest read-only site preflight on 2026-10-10 confirms that the public `lvbt
 its custom domains are deployed, and that `lvbt-platform` exists and is bound. It confirms that 21
 of 29 migrations remain unapplied, from `0009_workspace_sign_in.sql` through
 `0029_roster_import_provenance.sql`; `LVBT_PRESS_DATA_SOURCE_ID` is missing; and the Discord bot
-token is set on the public Worker even though the local manifest now forbids it there. The Discord
-application credentials are also set on the public Worker. An unsigned POST to
-`/platform/discord/interactions` returned HTTP 405 on 2026-10-10, so the interaction handler is not
-live. The current local release artifact routes that path to the Worker, but it has not been
-deployed. Separate read-only Wrangler checks on 2026-10-10 returned “Worker does not exist” for
-`lvbt-staff`, `lvbt-staff-preview`, `lvbt-jobs`, and `lvbt-jobs-preview`. DNS lookups returned no A
-or AAAA records for the staff or staff-preview hostnames. The staff-specific preflight cannot
-inspect remote Workers or Access without a scoped read-only Cloudflare API token. No Worker, route,
-DNS record, secret, Access policy or migration was created or changed during these checks.
+token and Discord application credentials are set on the public Worker even though the local
+manifest now forbids the token there. An unsigned POST to `/platform/discord/interactions` returned
+HTTP 405 on 2026-10-10, so the interaction handler is not live. The current local release artifact
+routes that path to the Worker, but it has not been deployed. Separate read-only Wrangler checks on
+2026-10-10 returned “Worker does not exist” for `lvbt-staff`, `lvbt-staff-preview`, `lvbt-jobs`, and
+`lvbt-jobs-preview`. The GitHub `staff-preview` environment lookup returned 404, so the required
+protected environment and its reviewer/token setup are absent. DNS lookups could not resolve either
+staff hostname. No Worker, route, DNS record, secret, Access policy or migration was created or
+changed during these checks.
 
 Cloudflare Access applications and policies, credential validity, provider configuration and current
 account-zone coverage remain unverified. The staff preflight reports Discord synchronization
-disabled in the staff/jobs Worker configuration. Whether the existing public Worker has a bot token
-is also unverified; the local manifest now forbids it there. Remote staff/jobs and Access checks
-were not run because the preflight has no scoped Cloudflare API token.
+disabled in the staff/jobs Worker configuration. Access checks could not be run because the
+preflight has no scoped Cloudflare API token.
 
 ## Required acceptance
 
