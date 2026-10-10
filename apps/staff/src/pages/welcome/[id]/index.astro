@@ -99,7 +99,7 @@ const releaseToken = contact
             <form method="post" action={`/welcome/${personId}/release/`}>
               <input type="hidden" name="token" value={releaseToken} />
               <input type="hidden" name="operation_id" value={ulid()} />
-              <button class="staff-text-action" type="submit">
+              <button class="staff-secondary-button press" type="submit">
                 Unassign me
               </button>
             </form>

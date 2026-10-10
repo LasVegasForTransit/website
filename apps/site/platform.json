@@ -17,7 +17,7 @@
     {
       "binding": "PLATFORM_DB",
       "name": "lvbt-platform",
-      "migrations": "platform/storage/migrations"
+      "migrations": "../../packages/platform-storage/migrations"
     }
   ],
   "email": [
@@ -290,7 +290,7 @@
       "targets": ["worker"],
       "url": "https://discord.com/developers/teams",
       "steps": [
-        "Discord linking and roles are not built yet. You can leave this and the next four Discord values empty now; bootstrap asks again next time.",
+        "Discord linking and role synchronization are implemented in code but are not live yet. Leave this and the next four Discord values empty until setup; bootstrap asks again next time.",
         "The app belongs to an LVBT team, not to one person, so the next maintainer can manage it. Open https://discord.com/developers/teams while signed in to Discord.",
         "If \"Las Vegans for Better Transit\" is under \"My Teams\", you are already in the team; go to the next step. If the team exists but you are not in it, ask someone in it to invite you from the team's page. If there is no team at all, click \"New Team\", name it \"Las Vegans for Better Transit\" and click \"Create\". Every team member has admin rights over the team's apps, so add only trusted maintainers. Discord may ask you to turn on two-factor authentication.",
         "Give the team the LVBT logo if its page offers an icon: in Google Drive, open the shared drive \"Marketing & Communications\", find the square LVBT logo (a PNG at least 512 by 512 pixels), download it and upload it as the team icon. Skip this if you cannot reach that drive.",
@@ -309,7 +309,7 @@
       "targets": ["worker"],
       "url": "https://discord.com/developers/applications",
       "steps": [
-        "Discord linking and roles are not built yet, so it is fine to leave this empty now; bootstrap asks again next time.",
+        "Discord linking and role synchronization are implemented in code but are not live yet. Leave this empty until setup; bootstrap asks again next time.",
         "Skip this if you skipped the Application ID.",
         "In the LVBT Bot app, on \"General Information\", copy the Public Key (a long string of letters and numbers) and paste it here."
       ],
@@ -323,33 +323,12 @@
       "targets": ["worker"],
       "url": "https://discord.com/developers/applications",
       "steps": [
-        "Discord linking and roles are not built yet, so it is fine to leave this empty now; bootstrap asks again next time.",
+        "Discord linking and role synchronization are implemented in code but are not live yet. Leave this empty until setup; bootstrap asks again next time.",
         "Skip this if you skipped the Application ID.",
         "In the LVBT Bot app, open \"OAuth2\" on the left.",
         "Leave \"Public Client\" off. It is for apps without a server, such as phone apps, that cannot keep the client secret private; the website keeps it on the server.",
         "Under \"Redirects\", click \"Add Redirect\", enter https://lasvegasfortransit.org/account/discord/callback and click \"Save Changes\".",
         "Under \"Client Secret\", click \"Reset Secret\", confirm, copy it and paste it here. Discord shows it only once. Resetting it later breaks \"Connect Discord\" until the new one is stored here."
-      ]
-    },
-    {
-      "name": "LVBT_DISCORD_BOT_TOKEN",
-      "purpose": "Lets the website give and remove LVBT-managed roles in the Discord server.",
-      "use": "future",
-      "neededFor": "Discord roles",
-      "targets": ["worker"],
-      "url": "https://discord.com/developers/applications",
-      "steps": [
-        "Discord linking and roles are not built yet, so it is fine to leave this empty now; bootstrap asks again next time.",
-        "Skip this if you skipped the Application ID.",
-        "In the LVBT Bot app, open \"Bot\" on the left.",
-        "Icon: upload the square LVBT logo from the \"Marketing & Communications\" shared drive (1024 by 1024, PNG). Banner is optional: use the 680 by 240 LVBT banner if the drive has one. Username: \"LVBT Bot\".",
-        "Under \"Authorization Flow\", turn \"Public Bot\" off, so only the team can add the bot to a server. Leave \"Requires OAuth2 Code Grant\" and \"Private Channel Obfuscation\" off.",
-        "Under \"Privileged Gateway Intents\", turn \"Server Members Intent\" on (the website uses it to look up who is in the server). Leave \"Presence Intent\" and \"Message Content Intent\" off. Click \"Save Changes\".",
-        "The \"Bot Permissions\" box further down is only a calculator; leave it. The bot gets its one permission when it is installed, in the next step. \"App Verification\" on the left only matters once a bot is in 100 or more servers; ignore it.",
-        "Open \"Installation\" on the left. Under installation contexts, keep only \"Guild Install\". Under its default install settings, add the scopes \"bot\" and \"applications.commands\" and the permission \"Manage Roles\", and save.",
-        "Copy the install link on that page and paste it into your browser's address bar, choose the LVBT server and click \"Authorize\". You need the \"Manage Server\" permission in that server.",
-        "In Discord, open the LVBT server's Server Settings \u2192 Roles and drag the \"LVBT Bot\" role above every role the website gives out. A bot can only give roles below its own.",
-        "Back on \"Bot\", click \"Reset Token\", confirm, copy the token and paste it here. Discord shows it only once; treat it like a password. Resetting it later stops role changes until the new one is stored here."
       ]
     },
     {
@@ -360,7 +339,7 @@
       "targets": ["worker"],
       "url": "https://discord.com/channels/@me",
       "steps": [
-        "Discord linking and roles are not built yet, so it is fine to leave this empty now; bootstrap asks again next time.",
+        "Discord linking and role synchronization are implemented in code but are not live yet. Leave this empty until setup; bootstrap asks again next time.",
         "Skip this if you skipped the Application ID.",
         "In the Discord app, open User Settings (the gear by your name) \u2192 Advanced, and turn on \"Developer Mode\".",
         "Right-click the LVBT server icon on the left and click \"Copy Server ID\" (a long number), and paste it here."
@@ -593,6 +572,11 @@
     {
       "name": "LVBT_DEV_LOG_CODES",
       "reason": "It prints private sign-in codes to a local terminal for development and must never expose production sign-in codes."
+    },
+    {
+      "name": "LVBT_DISCORD_BOT_TOKEN",
+      "targets": ["worker"],
+      "reason": "Discord role changes belong to lvbt-jobs; the website and its command endpoint do not need bot credentials."
     },
     {
       "name": "LVBT_BEEHIIV_API_KEY",

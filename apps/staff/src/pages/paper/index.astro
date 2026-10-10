@@ -146,7 +146,13 @@ const token = await issueFormToken(staff.db, staff.actor, 'paper:submit');
     <div class="staff-paper-actions">
       <Button name="intent" value="save">Save sheet</Button>{
         input.rows.length < MAX_PAPER_ROWS && (
-          <button type="submit" name="intent" value="add" class="staff-text-action" formnovalidate>
+          <button
+            type="submit"
+            name="intent"
+            value="add"
+            class="staff-secondary-button press"
+            formnovalidate
+          >
             Add row
           </button>
         )

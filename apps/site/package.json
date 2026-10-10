@@ -26,6 +26,7 @@
     "test:update": "pnpm test:e2e --update-snapshots",
     "test:install": "playwright install --with-deps chromium",
     "roster:preview": "tsx scripts/platform/import-roster.ts",
+    "discord:register-link": "tsx scripts/discord/register-link-command.ts",
     "validate": "tsx scripts/audit/worker-parity.ts",
     "astro": "astro",
     "setup:notion": "tsx scripts/notion/provision-intake-db.ts",
