@@ -1,0 +1,30 @@
+{
+  "name": "@lasvegasfortransit/jobs",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "wrangler deploy --dry-run --outdir dist",
+    "validate": "pnpm build",
+    "lint": "eslint . --max-warnings 0",
+    "check-types": "wrangler types worker-configuration.d.ts --include-runtime=false --check && tsc --noEmit",
+    "test": "node --import tsx --test tests/*.test.ts",
+    "test:e2e": "node --import tsx tests/e2e/scheduled.spec.ts",
+    "test:maintenance": "node --import tsx tests/e2e/maintenance.spec.ts"
+  },
+  "dependencies": {
+    "@lasvegasfortransit/platform-core": "workspace:*",
+    "@lasvegasfortransit/platform-storage": "workspace:*",
+    "@lasvegasfortransit/platform-integrations": "workspace:*"
+  },
+  "devDependencies": {
+    "@lasvegasfortransit/eslint-config": "file:../../.lvbt/web-platform/packages/eslint-config",
+    "@cloudflare/workers-types": "catalog:",
+    "@types/node": "catalog:",
+    "eslint": "catalog:",
+    "tsx": "catalog:",
+    "typescript": "catalog:",
+    "wrangler": "catalog:",
+    "miniflare": "catalog:"
+  }
+}

@@ -12,3 +12,4 @@ test-results/
 apps/site/tests/snapshots/
 pnpm-lock.yaml
 .env*
+.superpowers/

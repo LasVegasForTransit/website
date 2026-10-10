@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { PersonService, type Source } from '../platform/storage/person-service';
-import { memoryDb, type MemoryDb } from './support/platform-db';
+import { PersonService, type Source } from '@lasvegasfortransit/platform-storage/person-service';
+import { memoryDb, type MemoryDb } from '@lasvegasfortransit/platform-storage/test-db';
 
 async function existing(
   db: MemoryDb,
@@ -156,7 +156,7 @@ void test('a pair kept separate is not queued again for the same reason', async 
   const [item] = queue(db);
   assert.ok(item);
   // The same pair seen the other way round, as a later sync might, changes nothing.
-  const { queueForReview } = await import('../platform/storage/matching');
+  const { queueForReview } = await import('@lasvegasfortransit/platform-storage/matching');
   await queueForReview(
     db,
     item.existing_person_id,

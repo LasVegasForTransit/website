@@ -1,0 +1,36 @@
+---
+import StaffLayout from '../../layouts/StaffLayout.astro';
+import { listCommittees } from '@lasvegasfortransit/platform-storage/committee-views';
+import { messageResponse } from '../../lib/responses';
+const staff = Astro.locals.staff;
+if (!staff) return messageResponse("You don't have access to this", 403);
+const committees = await listCommittees(staff.db, staff.actor);
+---
+
+<StaffLayout title="Committees">
+  <div class="staff-committee-heading" aria-hidden="true">
+    <span>Committee</span><span>People</span><span>Lead</span>
+  </div>
+  <ul class="staff-committee-list" aria-label="Committees">
+    {
+      committees.map((committee) => (
+        <li>
+          <div>
+            <a href={`/committees/${committee.id}/`} class="staff-person-link">
+              {committee.name}
+            </a>
+            {committee.description && <p class="staff-help">{committee.description}</p>}
+            {!committee.acceptingMembers && <p class="staff-help">Not accepting new assignments</p>}
+          </div>
+          <p class="staff-committee-count">
+            {committee.peopleCount} <span>people</span>
+          </p>
+          <p class="staff-committee-leads">
+            {committee.leadNames.length ? committee.leadNames.join(', ') : 'Lead not assigned'}
+          </p>
+        </li>
+      ))
+    }
+  </ul>
+  {!committees.length && <p>No committees available.</p>}
+</StaffLayout>

@@ -26,8 +26,8 @@ Whichever form someone fills in, the same three things happen:
    them a member today (see [membership program](../explanation/membership-program.md)).
 2. Their answers are written into their person record — the row for them in the platform database,
    read and written only through the
-   [person service](../../apps/site/platform/storage/person-service.md). See the
-   [schema](../../apps/site/platform/storage/migrations/schema.md) for every column that record can
+   [person service](../../packages/platform-storage/src/person-service.md). See the
+   [schema](../../packages/platform-storage/migrations/schema.md) for every column that record can
    hold. A person is matched to an existing record by email address, so filling in a second form
    links to the same person instead of creating a duplicate.
 3. Staff learn about the new person for follow-up. Today that's a Notion page (see

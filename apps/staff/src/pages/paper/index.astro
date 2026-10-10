@@ -1,0 +1,165 @@
+---
+import StaffLayout from '../../layouts/StaffLayout.astro';
+import Button from '../../../../site/src/components/app/Button.astro';
+import PaperRow from '../../components/PaperRow.astro';
+import {
+  MAX_PAPER_ROWS,
+  PAPER_WORDING_VERSION,
+  PAPER_CONSENT_TEXT,
+} from '@lasvegasfortransit/platform-core/paper';
+import { ulid } from '@lasvegasfortransit/platform-core/ids';
+import { can } from '@lasvegasfortransit/platform-core/permissions';
+import { issueFormToken } from '@lasvegasfortransit/platform-storage/form-tokens';
+import { paperBatchSummary } from '@lasvegasfortransit/platform-storage/paper-intake';
+import { initialPaper, submitPaper, type PaperFeedback } from '../../lib/paper';
+import { messageResponse } from '../../lib/responses';
+const staff = Astro.locals.staff;
+if (!staff || !can(staff.actor, 'attendance.record'))
+  return messageResponse("You don't have access to this", 403);
+let feedback: PaperFeedback | undefined;
+if (Astro.request.method === 'POST') {
+  const result = await submitPaper(Astro.request, staff);
+  if (result instanceof Response) return result;
+  feedback = result;
+  Astro.response.status = result.status;
+}
+const input = feedback?.input ?? initialPaper(ulid());
+const errors = feedback?.errors ?? {};
+const saved = Astro.url.searchParams.get('saved');
+const summary = saved ? await paperBatchSummary(staff.db, staff.actor, saved.slice(0, 100)) : null;
+const token = await issueFormToken(staff.db, staff.actor, 'paper:submit');
+---
+
+<StaffLayout
+  title="Paper signups"
+  description="Enter what’s on the sheet. Check mailing-list signup only when Yes is marked."
+>
+  <a slot="breadcrumb" href="/people/" class="staff-back">← Members</a>
+  <a slot="heading-meta" href="/paper/sheet/" class="staff-edit-link">Print blank signup sheet</a>
+  {
+    summary && (
+      <p role="status" class="staff-paper-saved">
+        Saved {summary.rows} {summary.rows === 1 ? 'entry' : 'entries'}.
+        {summary.heldSignups > 0 && (
+          <>
+            {' '}
+            {summary.heldSignups} mailing-list{' '}
+            {summary.heldSignups === 1 ? 'signup did' : 'signups did'} not renew membership. A
+            withdrawal was recorded on or after the sheet’s date.
+          </>
+        )}
+        {summary.reviews > 0 &&
+          (can(staff.actor, 'review_queue.resolve') ? (
+            <>
+              {' '}
+              <a href="/review/">Check possible duplicates</a>.
+            </>
+          ) : (
+            <> An administrator will check possible duplicates.</>
+          ))}
+      </p>
+    )
+  }
+  {
+    feedback?.message && (
+      <p role="alert" class="staff-error">
+        {feedback.message}
+      </p>
+    )
+  }
+  <form method="post" action="/paper/" class="staff-form staff-paper-form" novalidate>
+    <input type="hidden" name="token" value={token} /><input
+      type="hidden"
+      name="batch_id"
+      value={input.batchId}
+    /><input type="hidden" name="row_count" value={input.rows.length} />
+    <div class="staff-paper-event">
+      <div>
+        <label for="event_name">Event name on the sheet</label><input
+          id="event_name"
+          name="event_name"
+          value={input.eventName}
+          maxlength="160"
+          aria-invalid={errors.eventName ? 'true' : undefined}
+          aria-describedby={errors.eventName ? 'event_name_error' : undefined}
+        />{
+          errors.eventName && (
+            <p id="event_name_error" class="staff-error">
+              {errors.eventName}
+            </p>
+          )
+        }
+      </div>
+      <div>
+        <label for="event_date">Date on the sheet</label><input
+          id="event_date"
+          name="event_date"
+          type="date"
+          value={input.eventDate}
+          aria-invalid={errors.eventDate ? 'true' : undefined}
+          aria-describedby={errors.eventDate ? 'event_date_error' : undefined}
+        />{
+          errors.eventDate && (
+            <p id="event_date_error" class="staff-error">
+              {errors.eventDate}
+            </p>
+          )
+        }
+      </div>
+      <div>
+        <label for="wording_version">Wording on the sheet</label><select
+          id="wording_version"
+          name="wording_version"
+          aria-invalid={errors.wordingVersion ? 'true' : undefined}
+          aria-describedby={errors.wordingVersion ? 'wording_error' : 'consent_wording'}
+          ><option value="" selected={!input.wordingVersion}>Choose wording</option><option
+            value={PAPER_WORDING_VERSION}
+            selected={input.wordingVersion === PAPER_WORDING_VERSION}
+            >Current LVBT signup sheet</option
+          ></select
+        >{
+          errors.wordingVersion && (
+            <p id="wording_error" class="staff-error">
+              {errors.wordingVersion}
+            </p>
+          )
+        }
+      </div>
+    </div>
+    <details class="staff-paper-wording">
+      <summary>Check the signup wording</summary><p id="consent_wording">{PAPER_CONSENT_TEXT}</p><p
+        class="staff-help"
+      >
+        If the sheet uses different wording, have an administrator check it before entering signups.
+      </p>
+    </details>
+    {
+      errors.rows && (
+        <p role="alert" class="staff-error">
+          {errors.rows}
+        </p>
+      )
+    }
+    <div>
+      {input.rows.map((row, index) => <PaperRow row={row} index={index} errors={errors} />)}
+    </div>
+    <div class="staff-paper-actions">
+      <Button name="intent" value="save">Save sheet</Button>{
+        input.rows.length < MAX_PAPER_ROWS && (
+          <button
+            type="submit"
+            name="intent"
+            value="add"
+            class="staff-secondary-button press"
+            formnovalidate
+          >
+            Add row
+          </button>
+        )
+      }
+    </div>
+    <p class="staff-help">
+      Blank rows are skipped. Attendance without signup does not create membership.
+    </p>
+  </form>
+</StaffLayout>

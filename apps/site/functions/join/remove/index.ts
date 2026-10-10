@@ -4,7 +4,7 @@
 // shows a button, because email security scanners open links automatically;
 // POST removes the email.
 
-import { t } from '../../../platform/messages';
+import { t } from '@lasvegasfortransit/platform-core/messages';
 import { checkRemovalToken, removeEmail } from '../../../platform/remove';
 import {
   builtPage,

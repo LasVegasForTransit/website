@@ -1,0 +1,8 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "types": ["node"]
+  },
+  "include": ["tests/e2e/**/*.ts", "tests/support/runtime.ts"],
+  "exclude": []
+}

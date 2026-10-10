@@ -4,7 +4,7 @@
 // new address; nothing changes until it is entered.
 
 import { startEmailChange } from '../../../platform/account';
-import { t } from '../../../platform/messages';
+import { t } from '@lasvegasfortransit/platform-core/messages';
 import { redirect, showText } from '../../join/_page';
 import { fieldError, setValue, type SignInPagesEnv } from '../../sign-in/_shared';
 import { accountPage, callerAddress, field, formOf, signedIn } from '../_account';

@@ -1,0 +1,54 @@
+---
+import StaffLayout from '../../layouts/StaffLayout.astro';
+import { PAPER_WORDING_VERSION, PAPER_CONSENT_TEXT } from '@lasvegasfortransit/platform-core/paper';
+import { can } from '@lasvegasfortransit/platform-core/permissions';
+import { messageResponse } from '../../lib/responses';
+const staff = Astro.locals.staff;
+if (!staff || !can(staff.actor, 'attendance.record'))
+  return messageResponse("You don't have access to this", 403);
+---
+
+<StaffLayout title="Signup sheet" printPage>
+  <a slot="breadcrumb" href="/paper/" class="staff-back">← Paper signups</a>
+  <p class="staff-print-instructions">
+    Use your browser’s Print command. This sheet fits US letter paper.
+  </p>
+  <section class="staff-signup-sheet" aria-label="Printable signup sheet">
+    <h2>Las Vegans for Better Transit</h2>
+    <p class="staff-signup-event">Event: <span></span> Date: <span></span></p>
+    <p class="staff-signup-wording"><strong>Check Yes to sign up:</strong> {PAPER_CONSENT_TEXT}</p>
+    <table>
+      <caption class="sr-only"
+        >12 rows for names, email addresses, optional phone numbers and mailing-list signup</caption
+      ><thead
+        ><tr
+          ><th scope="col" class="staff-signup-number">#</th><th scope="col">Name</th><th
+            scope="col">Email</th
+          ><th scope="col">Phone <small>(optional)</small></th><th
+            scope="col"
+            class="staff-signup-yes">Signup<br />Yes</th
+          ></tr
+        ></thead
+      ><tbody
+        >{
+          Array.from({ length: 12 }, (_, i) => (
+            <tr>
+              <>
+                <td>{i + 1}</td>
+                <td />
+                <td />
+                <td />
+                <td>
+                  <span class="staff-signup-checkbox" aria-label="Check Yes" />
+                </td>
+              </>
+            </tr>
+          ))
+        }</tbody
+      >
+    </table>
+    <p class="staff-signup-footer">
+      lasvegasfortransit.org · Signup wording: {PAPER_WORDING_VERSION}
+    </p>
+  </section>
+</StaffLayout>

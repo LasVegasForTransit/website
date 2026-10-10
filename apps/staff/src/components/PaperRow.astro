@@ -1,0 +1,54 @@
+---
+import type { PaperRow, PaperErrors } from '@lasvegasfortransit/platform-core/paper';
+import { PAPER_FIELDS } from '../lib/paper';
+interface Props {
+  row: PaperRow;
+  index: number;
+  errors: PaperErrors;
+}
+const { row, index, errors } = Astro.props;
+const prefix = `rows.${index}.`;
+---
+
+<fieldset class="staff-paper-row">
+  <legend>Row {index + 1}</legend>
+  <div class="staff-paper-fields">
+    {
+      PAPER_FIELDS.map((item) => (
+        <div>
+          <label for={`row-${index}-${item.name}`}>{item.label}</label>
+          <input
+            id={`row-${index}-${item.name}`}
+            name={prefix + item.name}
+            type={item.type}
+            maxlength={item.limit}
+            value={row[item.name]}
+            aria-invalid={errors[prefix + item.name] ? 'true' : undefined}
+            aria-describedby={
+              errors[prefix + item.name] ? `row-${index}-${item.name}-error` : undefined
+            }
+          />
+          {errors[prefix + item.name] && (
+            <p id={`row-${index}-${item.name}-error`} class="staff-error">
+              {errors[prefix + item.name]}
+            </p>
+          )}
+        </div>
+      ))
+    }
+    <div class="staff-paper-consent">
+      <label for={`row-${index}-consent`}
+        ><input
+          id={`row-${index}-consent`}
+          name={prefix + 'newsletterConsent'}
+          type="checkbox"
+          checked={row.newsletterConsent}
+        /> Mailing-list signup</label
+      >{
+        errors[prefix + 'newsletterConsent'] && (
+          <p class="staff-error">{errors[prefix + 'newsletterConsent']}</p>
+        )
+      }
+    </div>
+  </div>
+</fieldset>

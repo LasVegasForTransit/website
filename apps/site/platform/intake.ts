@@ -4,12 +4,15 @@
 // any other person, so the interface can't be used to test whether an email
 // address is on LVBT's list.
 
-import { normalizePhone } from './core/join-form';
-import { nowIso } from './core/ids';
-import { subscribe } from './integrations/beehiiv';
+import { normalizePhone } from '@lasvegasfortransit/platform-core/join-form';
+import { nowIso } from '@lasvegasfortransit/platform-core/ids';
+import { subscribe } from '@lasvegasfortransit/platform-integrations/beehiiv';
 import type { PlatformEnv } from './join';
-import type { Db } from './storage/db';
-import { PersonService, type PersonFields } from './storage/person-service';
+import type { Db } from '@lasvegasfortransit/platform-storage/db';
+import {
+  PersonService,
+  type PersonFields,
+} from '@lasvegasfortransit/platform-storage/person-service';
 
 export const INTAKE_SOURCES = ['google_form', 'join_form', 'external_form'] as const;
 export type IntakeSource = (typeof INTAKE_SOURCES)[number];

@@ -9,23 +9,29 @@ import {
   validateJoin,
   type JoinErrors,
   type JoinInput,
-} from './core/join-form';
-import { nowIso } from './core/ids';
-import { isRegionId, regionForPlaces } from './core/regions';
-import { hashWithSecret, signToken } from './core/signing';
-import { subscribe, type SubscribeResult } from './integrations/beehiiv';
-import { geocodeToBlock, type GeocodeResult } from './integrations/census';
-import { emailConfigured, sendEmail } from './integrations/email';
+} from '@lasvegasfortransit/platform-core/join-form';
+import { nowIso } from '@lasvegasfortransit/platform-core/ids';
+import { isRegionId, regionForPlaces } from '@lasvegasfortransit/platform-core/regions';
+import { hashWithSecret, signToken } from '@lasvegasfortransit/platform-core/signing';
+import { subscribe, type SubscribeResult } from '@lasvegasfortransit/platform-integrations/beehiiv';
+import {
+  geocodeToBlock,
+  type GeocodeResult,
+} from '@lasvegasfortransit/platform-integrations/census';
+import { emailConfigured, sendEmail } from '@lasvegasfortransit/platform-integrations/email';
 import { featuredWelcomeAction, memberWelcomeEmail, welcomeAction } from './member-welcome';
-import { t } from './messages';
-import type { Db } from './storage/db';
+import { t } from '@lasvegasfortransit/platform-core/messages';
+import type { Db } from '@lasvegasfortransit/platform-storage/db';
 import {
   personForFormToken,
   recordFormToken,
   regionForZip,
   withinHourlyLimit,
-} from './storage/limits';
-import { PersonService, type PersonFields } from './storage/person-service';
+} from '@lasvegasfortransit/platform-storage/limits';
+import {
+  PersonService,
+  type PersonFields,
+} from '@lasvegasfortransit/platform-storage/person-service';
 import { getArray, notionClient, notionErrorMessage } from '../scripts/notion/lib/notion-client';
 import { intakeLookupQuery, intakePage } from '../scripts/notion/lib/intake-page';
 
@@ -248,12 +254,13 @@ async function recordMember(
     },
   });
   if (subscriptionId) {
-    await people.linkIdentity(person.id, {
+    const linked = await people.linkIdentity(person.id, {
       platform: 'beehiiv',
       externalId: subscriptionId,
       externalEmail: input.email,
       linkMethod: 'created_by_platform',
     });
+    if (linked.kind !== 'ok') throw new Error('join: subscription identity conflict');
   }
   await people.recordEngagement(person.id, {
     type: 'joined',

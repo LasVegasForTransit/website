@@ -4,7 +4,7 @@
 // is already signed in straight on. POST asks for a code and goes to the code
 // page, answering the same way whether or not the email is on LVBT's list.
 
-import { t } from '../../platform/messages';
+import { t } from '@lasvegasfortransit/platform-core/messages';
 import {
   askForCode,
   currentMember,
@@ -38,6 +38,19 @@ async function render(
 ): Promise<Response> {
   const page = await builtPage(env, request, '/sign-in/');
   let rewriter = new HTMLRewriter().on('[data-slot="next"]', setValue(state.next));
+  if (env.LVBT_GOOGLE_OAUTH_CLIENT_ID && env.LVBT_GOOGLE_OAUTH_CLIENT_SECRET) {
+    rewriter = rewriter
+      .on('[data-slot="google-sign-in"]', {
+        element(element) {
+          element.removeAttribute('hidden');
+        },
+      })
+      .on('[data-slot="google-link"]', {
+        element(element) {
+          element.setAttribute('href', `/sign-in/google/?next=${encodeURIComponent(state.next)}`);
+        },
+      });
+  }
   if (state.email) rewriter = rewriter.on('input[name="email"]', setValue(state.email));
   if (state.emailError) rewriter = fieldError(rewriter, 'email');
   if (state.notice) rewriter = rewriter.on('[data-slot="notice"]', showText(state.notice));
@@ -49,7 +62,11 @@ export const onRequestGet: PagesFunction<SignInPagesEnv> = async ({ env, request
   const next = safeNext(url.searchParams.get('next'));
   const platform = platformSignIn(env);
   if (platform && (await currentMember(platform, request)).signedIn) return redirect(next);
-  const notice = url.searchParams.has('expired') ? t('signIn.expired') : undefined;
+  const notice = url.searchParams.has('google_error')
+    ? t('workspace.failed')
+    : url.searchParams.has('expired')
+      ? t('signIn.expired')
+      : undefined;
   return render(env, request, { next, notice }, 200);
 };
 

@@ -1,0 +1,86 @@
+---
+import '../styles/staff.css';
+import { issueFormToken } from '@lasvegasfortransit/platform-storage/form-tokens';
+import { welcomeVisible } from '../lib/welcome';
+interface Props {
+  title: string;
+  signIn?: boolean;
+  printPage?: boolean;
+  description?: string;
+}
+const { title, signIn = false, printPage = false, description } = Astro.props;
+const staff = Astro.locals.staff;
+const signOutToken = staff ? await issueFormToken(staff.db, staff.actor, 'sign-out') : null;
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex, nofollow" />
+    <title>{title} · LVBT staff</title>
+  </head>
+  <body class={printPage ? 'staff-print-sheet' : undefined}>
+    <a href="#main" class="skip-link">Skip to content</a>
+    <div class="staff-shell">
+      <header class="staff-header">
+        <div class="container-page staff-header-inner">
+          <a href="/" class="staff-identity" aria-label="LVBT staff home">
+            LVBT <span>staff</span>
+          </a>
+          {
+            !signIn && (
+              <nav aria-label="Staff navigation" class="staff-nav">
+                <a
+                  href="/people/"
+                  aria-current={Astro.url.pathname.startsWith('/people') ? 'page' : undefined}
+                >
+                  Members
+                </a>
+                {staff && welcomeVisible(staff) && (
+                  <a
+                    href="/welcome/"
+                    aria-current={Astro.url.pathname.startsWith('/welcome') ? 'page' : undefined}
+                  >
+                    Welcome
+                  </a>
+                )}
+                <a
+                  href="/committees/"
+                  aria-current={Astro.url.pathname.startsWith('/committees') ? 'page' : undefined}
+                >
+                  Committees
+                </a>
+              </nav>
+            )
+          }
+          {
+            signOutToken && (
+              <form method="post" action="/sign-out/" class="staff-sign-out">
+                <input type="hidden" name="token" value={signOutToken} />
+                <button type="submit" class="staff-secondary-button press">
+                  Sign out
+                </button>
+              </form>
+            )
+          }
+        </div>
+      </header>
+      <main id="main" class="container-page staff-main" tabindex="-1">
+        <slot name="breadcrumb" />
+        <div class="staff-page-heading">
+          <h1>{title}</h1>
+          <slot name="heading-meta" />
+          {description && <p>{description}</p>}
+        </div>
+        <slot />
+      </main>
+    </div>
+    {
+      signIn && (
+        <footer class="container-page py-8 text-body-sm">Las Vegans for Better Transit</footer>
+      )
+    }
+  </body>
+</html>

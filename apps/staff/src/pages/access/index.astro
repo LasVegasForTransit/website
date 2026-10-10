@@ -1,0 +1,141 @@
+---
+import StaffLayout from '../../layouts/StaffLayout.astro';
+import Button from '../../../../site/src/components/app/Button.astro';
+import AccountAccessRow from '../../components/AccountAccessRow.astro';
+import AccessHistory from '../../components/AccessHistory.astro';
+import { listAccess, accessHistory } from '@lasvegasfortransit/platform-storage/access-view';
+import { InvalidCursor } from '@lasvegasfortransit/platform-storage/staff-history';
+import { PermissionDenied } from '@lasvegasfortransit/platform-core/permissions';
+import { submitAccessAction, type AccessFeedback } from '../../lib/account-access';
+import { visibleCommittees } from '../../lib/people';
+import { messageResponse } from '../../lib/responses';
+const staff = Astro.locals.staff;
+if (!staff) return messageResponse("You don't have access to this", 403);
+let feedback: AccessFeedback | undefined;
+if (Astro.request.method === 'POST') {
+  const result = await submitAccessAction(Astro.request, staff);
+  if (result instanceof Response) return result;
+  feedback = result;
+  Astro.response.status = result.status;
+}
+const personId = Astro.url.searchParams.get('person') ?? undefined;
+const committeeId = Astro.url.searchParams.get('committee') ?? undefined;
+const text = Astro.url.searchParams.get('q') ?? '';
+const needsAttention =
+  !personId && !committeeId && !text && Astro.url.searchParams.get('view') !== 'all';
+let page, history;
+try {
+  page = await listAccess(staff.db, staff.actor, {
+    personId,
+    committeeId,
+    text,
+    needsAttention,
+    cursor: Astro.url.searchParams.get('cursor') ?? undefined,
+    configuration: staff.accessConfiguration ?? {},
+  });
+  history = await accessHistory(staff.db, staff.actor, {
+    personId,
+    committeeId,
+    cursor: Astro.url.searchParams.get('history_cursor') ?? undefined,
+  });
+} catch (error) {
+  if (error instanceof InvalidCursor)
+    return messageResponse('This page link expired. Return to account updates and try again.', 400);
+  if (error instanceof PermissionDenied) return messageResponse(error.message, 403);
+  throw error;
+}
+const committees = await visibleCommittees(staff.db, staff.actor);
+const next = new URL(Astro.url);
+if (page.nextCursor) next.searchParams.set('cursor', page.nextCursor);
+---
+
+<StaffLayout
+  title="Account updates"
+  description="Check whether Discord and Google access matches a member’s current role."
+>
+  <a slot="breadcrumb" href={personId ? `/people/${personId}/` : '/people/'} class="staff-back"
+    >← {personId ? 'Member profile' : 'Members'}</a
+  >
+  {
+    feedback && (
+      <p role="alert" class="staff-error">
+        {feedback.message}
+      </p>
+    )
+  }
+  {
+    !personId && (
+      <form
+        method="get"
+        action="/access/"
+        class="staff-search"
+        role="search"
+        aria-label="Find account updates"
+      >
+        <div class="staff-search-row">
+          <>
+            <div class="staff-search-query">
+              <>
+                <label for="q">Name or email</label>
+                <input id="q" name="q" type="search" value={text} maxlength="254" />
+              </>
+            </div>
+            <Button>Search</Button>
+          </>
+        </div>
+        <details class="staff-search-filters" open={Boolean(committeeId)}>
+          <>
+            <summary>Committee filter</summary>
+            <div class="staff-filter-row">
+              <div>
+                <>
+                  <label for="committee">Committee</label>
+                  <select id="committee" name="committee">
+                    <option value="">All</option>
+                    {committees.map((item) => (
+                      <option value={item.id} selected={committeeId === item.id}>
+                        {item.name}
+                      </option>
+                    ))}
+                  </select>
+                </>
+              </div>
+            </div>
+          </>
+        </details>
+        <input type="hidden" name="view" value="all" />
+      </form>
+    )
+  }
+  <div class="staff-results-meta">
+    <p>
+      {needsAttention ? 'Failed updates' : 'Account access'} · <a
+        href={needsAttention ? '/access/?view=all' : '/access/'}
+        >{needsAttention ? 'Show all' : 'Show failed updates'}</a
+      >
+    </p>
+  </div>
+  {
+    page.items.length ? (
+      <ul class="staff-account-list" aria-label="Account updates">
+        {page.items.map((row) => (
+          <AccountAccessRow row={row} />
+        ))}
+      </ul>
+    ) : (
+      <p>
+        {needsAttention
+          ? 'No failed updates to show. This does not confirm that account syncing is set up or that roles match.'
+          : 'No account updates match this search.'}
+      </p>
+    )
+  }
+  {
+    page.nextCursor && (
+      <a href={next.pathname + next.search} class="staff-next">
+        Next page
+      </a>
+    )
+  }
+  <AccessHistory page={history} />
+</StaffLayout>

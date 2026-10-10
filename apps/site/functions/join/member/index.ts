@@ -5,10 +5,10 @@
 // input and the errors. The newsletter box posts here too, as JSON when its
 // script runs and as an ordinary form when it doesn't.
 
-import { ulid } from '../../../platform/core/ids';
-import { readJoinForm, validReferral } from '../../../platform/core/join-form';
+import { ulid } from '@lasvegasfortransit/platform-core/ids';
+import { readJoinForm, validReferral } from '@lasvegasfortransit/platform-core/join-form';
 import { processJoin, type JoinOutcome } from '../../../platform/join';
-import { t } from '../../../platform/messages';
+import { t } from '@lasvegasfortransit/platform-core/messages';
 import { renderJoinForm, type FormState } from '../_form';
 import { joinStepCookie, platformEnv, redirect, wantsJson, type JoinEnv } from '../_page';
 

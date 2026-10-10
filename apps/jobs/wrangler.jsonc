@@ -1,0 +1,49 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "lvbt-jobs",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-09-04",
+  "compatibility_flags": ["nodejs_compat"],
+  "workers_dev": false,
+  "preview_urls": false,
+  "observability": { "enabled": true, "head_sampling_rate": 1 },
+  "triggers": { "crons": ["* * * * *"] },
+  "vars": {
+    "LVBT_DEPLOYMENT_ENV": "production",
+    "LVBT_DISCORD_SYNC_ENABLED": "false",
+    "LVBT_DISCORD_APPLICATION_ID": "",
+    "LVBT_DISCORD_GUILD_ID": "",
+    "LVBT_DISCORD_PRODUCTION_GUILD_ID": "",
+    "LVBT_DISCORD_MEMBER_ROLE_ID": "",
+  },
+  "d1_databases": [
+    {
+      "binding": "PLATFORM_DB",
+      "database_name": "lvbt-platform",
+      "database_id": "dcde8dbd-d827-4405-85b4-97bc2accc906",
+      "migrations_dir": "../../packages/platform-storage/migrations",
+    },
+  ],
+  "env": {
+    "preview": {
+      "name": "lvbt-jobs-preview",
+      "triggers": { "crons": ["* * * * *"] },
+      "vars": {
+        "LVBT_DEPLOYMENT_ENV": "preview",
+        "LVBT_DISCORD_SYNC_ENABLED": "false",
+        "LVBT_DISCORD_APPLICATION_ID": "",
+        "LVBT_DISCORD_GUILD_ID": "",
+        "LVBT_DISCORD_PRODUCTION_GUILD_ID": "",
+        "LVBT_DISCORD_MEMBER_ROLE_ID": "",
+      },
+      "d1_databases": [
+        {
+          "binding": "PLATFORM_DB",
+          "database_name": "lvbt-platform-preview",
+          "database_id": "8bb072e7-9865-487a-8867-d97fdb2ea00b",
+          "migrations_dir": "../../packages/platform-storage/migrations",
+        },
+      ],
+    },
+  },
+}

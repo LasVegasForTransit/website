@@ -11,6 +11,7 @@ const deployDir = path.dirname(fileURLToPath(new URL('../package.json', import.m
 const siteDir = path.resolve(deployDir, '../site');
 const platform = JSON.parse(await readFile(path.join(siteDir, 'platform.json'), 'utf8')) as {
   secrets: Array<{ name: string; use?: string; targets?: string[] }>;
+  forbidden: Array<{ name: string; targets?: string[]; reason: string }>;
 };
 const tooling = JSON.parse(
   await readFile(path.resolve(deployDir, '../../.lvbt/tooling.json'), 'utf8'),
@@ -38,6 +39,13 @@ void test('canonical config identifies both public domains and the protected pre
   assert.equal(preview.worker.name, 'lvbt-website-preview');
   assert.equal('accountId' in production, false);
 });
+void test('the production Worker serves Discord interactions before static assets', () => {
+  assert.ok(Array.isArray(production.worker.assets.runWorkerFirst));
+  assert.ok(
+    production.worker.assets.runWorkerFirst.includes('/platform/discord/interactions'),
+    'Discord interaction POSTs must reach the Worker handler, not the asset response',
+  );
+});
 void test('production and preview retain existing secret types and declared integration names without values', () => {
   const names = platform.secrets
     .filter((secret) => secret.use === 'live' && secret.targets?.includes('worker'))
@@ -58,6 +66,26 @@ void test('production and preview retain existing secret types and declared inte
     for (const name of names) assert.deepEqual(bindings[name], { type: 'secret' });
   }
 });
+void test('the website Worker never receives the Discord role-management bot token', () => {
+  assert.equal(
+    platform.secrets.some(
+      (secret) =>
+        secret.name === 'LVBT_DISCORD_BOT_TOKEN' &&
+        (secret.targets ?? ['worker']).includes('worker'),
+    ),
+    false,
+    'role changes run on jobs, so the website must not request or store the bot token',
+  );
+  assert.ok(
+    platform.forbidden.some(
+      (secret) => secret.name === 'LVBT_DISCORD_BOT_TOKEN' && secret.targets?.includes('worker'),
+    ),
+    'the platform manifest must guard the website Worker against this secret',
+  );
+  for (const built of [production, preview]) {
+    assert.equal('LVBT_DISCORD_BOT_TOKEN' in built.worker.env, false);
+  }
+});
 void test('new release artifacts use typed configuration, frozen SQL and explicit isolated preview declarations', () => {
   assert.equal(tooling.release.appDirectory, 'apps/deploy');
   assert.equal(tooling.release.artifactSource, 'typed-worker');
@@ -66,7 +94,7 @@ void test('new release artifacts use typed configuration, frozen SQL and explici
   assert.equal(tooling.release.workersDevSubdomain, 'las-vegas-for-better-transit');
   assert.deepEqual(tooling.release.previewBindings, preview.worker.env);
   assert.deepEqual(tooling.release.migrations, [
-    { binding: 'PLATFORM_DB', directory: '../site/platform/storage/migrations' },
+    { binding: 'PLATFORM_DB', directory: '../../packages/platform-storage/migrations' },
   ]);
   assert.deepEqual(preview.worker.env.PLATFORM_DB, {
     type: 'd1',
@@ -133,7 +161,7 @@ void test('generated compatibility mirror preserves actual routes, database iden
         binding: 'PLATFORM_DB',
         database_name: built.worker.env.PLATFORM_DB.name,
         database_id: built.worker.env.PLATFORM_DB.id,
-        migrations_dir: 'platform/storage/migrations',
+        migrations_dir: '../../packages/platform-storage/migrations',
       },
     ]);
   }

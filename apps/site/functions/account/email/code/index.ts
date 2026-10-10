@@ -4,8 +4,8 @@
 // new address confirms it, and the old address gets a notice.
 
 import { confirmEmailChange } from '../../../../platform/account';
-import { pendingNewEmail } from '../../../../platform/auth';
-import { t } from '../../../../platform/messages';
+import { pendingNewEmail } from '@lasvegasfortransit/platform-storage/auth';
+import { t } from '@lasvegasfortransit/platform-core/messages';
 import { redirect, showEmailText, showText } from '../../../join/_page';
 import { fieldError, type SignInPagesEnv } from '../../../sign-in/_shared';
 import { accountPage, backToAccount, field, formOf, signedIn } from '../../_account';

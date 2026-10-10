@@ -1,0 +1,160 @@
+---
+import { formatPhone } from '@lasvegasfortransit/platform-core/join-form';
+import StaffLayout from '../../../layouts/StaffLayout.astro';
+import Button from '../../../../../site/src/components/app/Button.astro';
+import { WelcomeService } from '@lasvegasfortransit/platform-storage/welcome';
+import { issueFormToken } from '@lasvegasfortransit/platform-storage/form-tokens';
+import { ulid } from '@lasvegasfortransit/platform-core/ids';
+import { WELCOME_METHODS } from '@lasvegasfortransit/platform-core/welcome';
+import { METHOD_LABELS, welcomeName, fullProfileAllowed } from '../../../lib/welcome';
+import WelcomeCommittee from '../../../components/WelcomeCommittee.astro';
+import {
+  submitWelcomeCommittee,
+  type WelcomeCommitteeFeedback,
+} from '../../../lib/welcome-committee';
+import { messageResponse } from '../../../lib/responses';
+const staff = Astro.locals.staff;
+if (!staff) return messageResponse("You don't have access to this", 403);
+const personId = Astro.params.id ?? '';
+const service = new WelcomeService(staff.db);
+const person = await service.entry(staff.actor, personId);
+if (!person) return messageResponse('This member is unavailable in your welcome queue.', 404);
+const contact = await service.contact(staff.actor, personId);
+let feedback: WelcomeCommitteeFeedback | undefined;
+if (Astro.request.method === 'POST') {
+  if (!contact) return messageResponse('This welcome is no longer assigned to you.', 409);
+  const result = await submitWelcomeCommittee(Astro.request, staff, personId);
+  if (result instanceof Response) return result;
+  feedback = result;
+  Astro.response.status = result.status;
+}
+const profileAllowed = await fullProfileAllowed(staff.db, staff.actor.personId, personId);
+const kind = contact ? 'complete' : 'claim';
+const token = await issueFormToken(staff.db, staff.actor, `welcome:${kind}:${personId}`);
+const releaseToken = contact
+  ? await issueFormToken(staff.db, staff.actor, `welcome:release:${personId}`)
+  : null;
+---
+
+<StaffLayout title={welcomeName(person)}>
+  <a slot="breadcrumb" href="/welcome/" class="staff-back">← Welcome members</a>
+  <div slot="heading-meta" class="staff-member-meta">
+    <span
+      >Joined {
+        new Date(person.joinedAt).toLocaleDateString('en-US', {
+          month: 'short',
+          day: 'numeric',
+          timeZone: 'America/Los_Angeles',
+        })
+      }</span
+    >
+    {person.overdue && <span class="text-primary-ink">Waiting 7+ days</span>}
+    {profileAllowed && <a href={`/people/${personId}/`}>View member profile</a>}
+  </div>
+  {
+    contact ? (
+      <div class="staff-welcome-workspace">
+        <section aria-labelledby="contact-heading" class="staff-welcome-contact">
+          <p class="staff-section-label">Assigned to you</p>
+          <h2 id="contact-heading">Contact details</h2>
+          <dl class="staff-contact-details">
+            <div>
+              <>
+                <dt>Email</dt>
+                <dd>
+                  {contact.email ? (
+                    <a href={`mailto:${encodeURIComponent(contact.email)}`}>{contact.email}</a>
+                  ) : (
+                    'Not provided'
+                  )}
+                </dd>
+              </>
+            </div>
+            <div>
+              <>
+                <dt>Phone</dt>
+                <dd>
+                  {contact.phone ? (
+                    <a href={`tel:${encodeURIComponent(contact.phone)}`}>
+                      {formatPhone(contact.phone)}
+                    </a>
+                  ) : (
+                    'Not provided'
+                  )}
+                </dd>
+              </>
+            </div>
+          </dl>
+          <WelcomeCommittee personId={personId} interests={contact.interests} feedback={feedback} />
+          <div class="staff-welcome-release">
+            <p>
+              Follow up by{' '}
+              {new Date(person.claimExpiresAt ?? '').toLocaleDateString('en-US', {
+                month: 'short',
+                day: 'numeric',
+                timeZone: 'America/Los_Angeles',
+              })}
+              .
+            </p>
+            <form method="post" action={`/welcome/${personId}/release/`}>
+              <input type="hidden" name="token" value={releaseToken} />
+              <input type="hidden" name="operation_id" value={ulid()} />
+              <button class="staff-secondary-button press" type="submit">
+                Unassign me
+              </button>
+            </form>
+          </div>
+        </section>
+        <section aria-labelledby="record-heading" class="staff-welcome-record">
+          <h2 id="record-heading">After you’ve welcomed them</h2>
+          <form method="post" action={`/welcome/${personId}/complete/`} class="staff-form">
+            <input type="hidden" name="token" value={token} />
+            <input type="hidden" name="operation_id" value={ulid()} />
+            <div>
+              <label for="method">Contact method</label>
+              <select id="method" name="method" required>
+                <option value="">Choose a method</option>
+                {WELCOME_METHODS.map((method) => (
+                  <option value={method}>{METHOD_LABELS[method]}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label for="note">
+                Notes <span class="staff-optional">(optional)</span>
+              </label>
+              <textarea
+                id="note"
+                name="note"
+                rows="3"
+                maxlength="2000"
+                placeholder="Interests, questions or next steps"
+              />
+            </div>
+            <Button>Mark welcomed</Button>
+          </form>
+        </section>
+      </div>
+    ) : person.claimedBy ? (
+      <div class="staff-empty">
+        <>
+          <h2>Assigned to {person.claimedByName ?? 'another staff member'}</h2>
+          <p>They’re following up with this member.</p>
+        </>
+      </div>
+    ) : (
+      <section class="staff-welcome-start">
+        <h2>Give them a personal welcome</h2>
+        <p>
+          Take this welcome to see their contact details and help them find a committee. Follow up
+          within seven days.
+        </p>
+        <form method="post" action={`/welcome/${personId}/claim/`}>
+          <input type="hidden" name="token" value={token} />
+          <input type="hidden" name="operation_id" value={ulid()} />
+          <Button>Assign to me</Button>
+        </form>
+      </section>
+    )
+  }
+</StaffLayout>

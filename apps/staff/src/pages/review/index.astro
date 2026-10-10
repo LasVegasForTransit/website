@@ -1,0 +1,62 @@
+---
+import StaffLayout from '../../layouts/StaffLayout.astro';
+import { listReviews, type ReviewRow } from '@lasvegasfortransit/platform-storage/reviews';
+import type { Page } from '@lasvegasfortransit/platform-core/staff-types';
+import { InvalidCursor } from '@lasvegasfortransit/platform-storage/staff-history';
+import { PermissionDenied } from '@lasvegasfortransit/platform-core/permissions';
+import { reviewReason } from '../../lib/reviews';
+import { messageResponse } from '../../lib/responses';
+const staff = Astro.locals.staff;
+if (!staff) return messageResponse("You don't have access to this", 403);
+let page: Page<ReviewRow> = { items: [], nextCursor: null };
+let error: string | undefined;
+try {
+  page = await listReviews(staff.db, staff.actor, {
+    cursor: Astro.url.searchParams.get('cursor') ?? undefined,
+  });
+} catch (cause) {
+  if (cause instanceof PermissionDenied) return messageResponse(cause.message, 403);
+  if (!(cause instanceof InvalidCursor)) throw cause;
+  error = 'This page link is invalid. Open the list of possible duplicates again.';
+  Astro.response.status = 400;
+}
+---
+
+<StaffLayout title="Check duplicates" description="Check whether two entries are the same person.">
+  {
+    error && (
+      <p role="alert">
+        {error} <a href="/review/">Start again</a>
+      </p>
+    )
+  }
+  {
+    !error &&
+      (page.items.length ? (
+        <ul class="staff-review-list" aria-label="Possible duplicates">
+          {page.items.map((item) => (
+            <li>
+              <a href={`/review/${item.id}/`} class="staff-person-link">
+                {item.candidateName} <span aria-hidden="true">↔</span> {item.existingName}
+              </a>
+              <p>{reviewReason(item.reason)}</p>
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <div class="staff-empty">
+          <>
+            <h2>No possible duplicates to check</h2>
+            <p>Possible duplicates will appear here when we find them.</p>
+          </>
+        </div>
+      ))
+  }
+  {
+    page.nextCursor && (
+      <a class="staff-next" href={`/review/?cursor=${encodeURIComponent(page.nextCursor)}`}>
+        Next page
+      </a>
+    )
+  }
+</StaffLayout>

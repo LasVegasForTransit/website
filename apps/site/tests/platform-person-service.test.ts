@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { PersonService } from '../platform/storage/person-service';
-import { memoryDb } from './support/platform-db';
+import { PersonService } from '@lasvegasfortransit/platform-storage/person-service';
+import { memoryDb } from '@lasvegasfortransit/platform-storage/test-db';
 
 const consent = {
   scope: 'newsletter' as const,

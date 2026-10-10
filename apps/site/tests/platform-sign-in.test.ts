@@ -7,7 +7,7 @@ import {
   requestCode,
   useLink,
   type AuthEnv,
-} from '../platform/auth';
+} from '@lasvegasfortransit/platform-storage/auth';
 import {
   askForCode,
   currentMember,
@@ -19,9 +19,13 @@ import {
   signOut,
   type SignInEnv,
 } from '../platform/sign-in';
-import type { Db, Statement } from '../platform/storage/db';
-import { PersonService } from '../platform/storage/person-service';
-import { everyStoredText, memoryDb, type MemoryDb } from './support/platform-db';
+import type { Db, Statement } from '@lasvegasfortransit/platform-storage/db';
+import { PersonService } from '@lasvegasfortransit/platform-storage/person-service';
+import {
+  everyStoredText,
+  memoryDb,
+  type MemoryDb,
+} from '@lasvegasfortransit/platform-storage/test-db';
 
 const CALLER = '203.0.113.9';
 const DAY = 24 * 60 * 60 * 1000;

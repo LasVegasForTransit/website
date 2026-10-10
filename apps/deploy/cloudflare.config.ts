@@ -14,6 +14,7 @@ const commonWorker = {
     notFoundHandling: '404-page' as const,
     runWorkerFirst: [
       '/api/*',
+      '/platform/discord/interactions',
       '/press',
       '/press/*',
       '/join/member',

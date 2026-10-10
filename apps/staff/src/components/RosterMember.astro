@@ -1,0 +1,80 @@
+---
+import type { Person } from '@lasvegasfortransit/platform-storage/person-service';
+import type { RosterDetails } from '@lasvegasfortransit/platform-storage/roster-details';
+import { MEMBERSHIP_LABELS, personName } from '../lib/people';
+import { rosterReturn } from '../lib/roster-return';
+interface Props {
+  person: Person;
+  details?: RosterDetails;
+  showWelcome: boolean;
+  showMembership: boolean;
+  showDiscord: boolean;
+  canAssign: boolean;
+}
+const { person, details, showWelcome, showMembership, showDiscord, canAssign } = Astro.props;
+const name = personName(person);
+const welcome = details?.welcome;
+const discordPresence =
+  details?.discordInServer === true
+    ? 'in server'
+    : details?.discordInServer === false
+      ? 'not in server'
+      : 'status not checked';
+const rosterStatus = [
+  showMembership ? MEMBERSHIP_LABELS[person.membership_status] : null,
+  showDiscord
+    ? details?.discordConnected
+      ? `Discord: ${discordPresence}`
+      : 'Discord: not linked'
+    : null,
+]
+  .filter(Boolean)
+  .join(' · ');
+const returnTo = rosterReturn(Astro.url.pathname + Astro.url.search) ?? '/people/';
+const profile = `/people/${person.id}/?return_to=${encodeURIComponent(returnTo)}`;
+const assignLink = `${profile}&return_after_assign=1#committees-heading`;
+const staff = Astro.locals.staff!;
+---
+
+<li>
+  <div class="staff-roster-person">
+    <a href={profile}>{name}</a>
+    {person.email && person.email !== name && <p>{person.email}</p>}
+  </div>
+  {(showMembership || showDiscord) && <p class="staff-roster-status">{rosterStatus}</p>}
+  <div class="staff-roster-committee">
+    {
+      details?.committees.length ? (
+        <p>{details.committees.join(', ')}</p>
+      ) : person.membership_status === 'member' && canAssign ? (
+        <a
+          href={assignLink}
+          class="staff-action-link press"
+          aria-label={`Add ${name} to a committee`}
+        >
+          Add to committee
+        </a>
+      ) : (
+        <p>{person.membership_status === 'member' ? 'No committee yet' : '—'}</p>
+      )
+    }
+  </div>
+  {
+    showWelcome && (
+      <div class="staff-roster-follow-up">
+        {welcome &&
+          (welcome.claimedBy && welcome.claimedBy !== staff.actor.personId ? (
+            <p>Welcome: {welcome.claimedByName ?? 'another staff member'}</p>
+          ) : (
+            <a
+              href={`/welcome/${person.id}/`}
+              class="staff-action-link press"
+              aria-label={`${welcome.claimedBy ? 'Continue welcome for' : 'Welcome'} ${name}`}
+            >
+              {welcome.claimedBy ? 'Continue welcome' : 'Welcome member'}
+            </a>
+          ))}
+      </div>
+    )
+  }
+</li>

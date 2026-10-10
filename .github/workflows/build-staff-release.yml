@@ -1,0 +1,65 @@
+name: Build staff release
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: read
+
+concurrency:
+  group: staff-release-build
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: Validate and save staff release
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+          lfs: true
+      - name: Setup Node + pnpm
+        uses: ./.github/actions/setup-node-pnpm
+      - name: Install Chromium
+        run: pnpm -C apps/staff exec playwright install --with-deps chromium
+      - name: Validate source and build applications
+        run: pnpm check
+      - name: Package source-matched release
+        env:
+          RELEASE_ID: ${{ github.run_id }}
+        run: >-
+          pnpm staff:release package --directory "$RUNNER_TEMP/staff-release" --commit "$GITHUB_SHA"
+          --release-id "$RELEASE_ID"
+      - name: Verify compiled maintenance and Discord reconciliation
+        run: |
+          pnpm -C apps/jobs test:maintenance
+          pnpm -C apps/jobs test:e2e
+      - name: Verify compiled staff workflows
+        run: pnpm -C apps/staff test:e2e
+      - name: Verify saved artifact runtime
+        env:
+          RELEASE_ID: ${{ github.run_id }}
+        run: >-
+          pnpm -C apps/staff test:release --directory "$RUNNER_TEMP/staff-release" --commit
+          "$GITHUB_SHA" --release-id "$RELEASE_ID"
+      - name: Check saved Workers without rebuilding
+        env:
+          RELEASE_ID: ${{ github.run_id }}
+        run: >-
+          pnpm staff:release check --directory "$RUNNER_TEMP/staff-release" --commit "$GITHUB_SHA"
+          --release-id "$RELEASE_ID"
+      - name: Save immutable staff release
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: staff-release-${{ github.run_id }}
+          path: ${{ runner.temp }}/staff-release/
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 90

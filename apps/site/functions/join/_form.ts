@@ -4,7 +4,7 @@
 // submit with the visitor's input and errors. Shared by the real join form
 // and its prototype. Underscore-prefixed so Pages does not route it.
 
-import type { JoinErrors, JoinInput } from '../../platform/core/join-form';
+import type { JoinErrors, JoinInput } from '@lasvegasfortransit/platform-core/join-form';
 import { builtPage, finish, show, showText, type JoinEnv } from './_page';
 
 export interface FormState {

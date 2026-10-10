@@ -1,0 +1,48 @@
+---
+import StaffLayout from '../../layouts/StaffLayout.astro';
+import Button from '../../../../site/src/components/app/Button.astro';
+import { can } from '@lasvegasfortransit/platform-core/permissions';
+import { exportPeople } from '@lasvegasfortransit/platform-integrations/export-archive';
+import { issueFormToken, consumeFormToken } from '@lasvegasfortransit/platform-storage/form-tokens';
+import { auditDenied } from '@lasvegasfortransit/platform-storage/audits';
+import { field } from '../../lib/forms';
+import { messageResponse } from '../../lib/responses';
+const staff = Astro.locals.staff;
+if (!staff || !can(staff.actor, 'export.full')) {
+  if (staff) await auditDenied(staff.db, staff.actor.personId, 'export.full');
+  return messageResponse("You don't have access to this", 403);
+}
+if (Astro.request.method === 'POST') {
+  const form = await Astro.request.formData();
+  if (
+    !(await consumeFormToken(staff.db, staff.actor, {
+      action: 'export:download',
+      token: field(form, 'token', 43),
+    }))
+  )
+    return messageResponse('Reload the download page and try again.', 409);
+  return await exportPeople(staff.db, staff.actor);
+}
+const token = await issueFormToken(staff.db, staff.actor, 'export:download');
+---
+
+<StaffLayout
+  title="Download member records"
+  description="Get LVBT’s records in a file you can keep."
+>
+  <a slot="breadcrumb" href="/people/" class="staff-back">← Members</a>
+  <div class="staff-form">
+    <p>
+      The download includes member details, mailing-list permissions, connected accounts and
+      activity. Deleted people are left out.
+    </p>
+    <p class="staff-help">
+      The ZIP contains spreadsheets, the original records and a guide to reading them. It includes
+      personal contact information.
+    </p>
+    <form method="post" action="/export/">
+      <input type="hidden" name="token" value={token} />
+      <Button>Download records</Button>
+    </form>
+  </div>
+</StaffLayout>

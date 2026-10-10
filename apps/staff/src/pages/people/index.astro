@@ -1,0 +1,264 @@
+---
+import StaffLayout from '../../layouts/StaffLayout.astro';
+import Button from '../../../../site/src/components/app/Button.astro';
+import RosterMember from '../../components/RosterMember.astro';
+import { searchStaffPeople } from '@lasvegasfortransit/platform-storage/staff-people';
+import { InvalidCursor } from '@lasvegasfortransit/platform-storage/staff-history';
+import { PermissionDenied } from '@lasvegasfortransit/platform-core/permissions';
+import type { Page } from '@lasvegasfortransit/platform-core/staff-types';
+import type { Person } from '@lasvegasfortransit/platform-storage/person-service';
+import {
+  PeopleQueryError,
+  allMembershipsLink,
+  MEMBERSHIP_LABELS,
+  pageLink,
+  peopleQuery,
+  peopleStatus,
+  visibleCommittees,
+} from '../../lib/people';
+import { messageResponse } from '../../lib/responses';
+import { rosterDetails } from '@lasvegasfortransit/platform-storage/roster-details';
+import { can } from '@lasvegasfortransit/platform-core/permissions';
+const staff = Astro.locals.staff;
+if (!staff) return messageResponse("You don't have access to this", 403);
+const committees = await visibleCommittees(staff.db, staff.actor);
+let page: Page<Person> = { items: [], nextCursor: null };
+let error: string | null = null;
+try {
+  page = await searchStaffPeople(staff.db, staff.actor, peopleQuery(Astro.url));
+} catch (cause) {
+  if (cause instanceof PermissionDenied) return messageResponse(cause.message, 403);
+  if (cause instanceof InvalidCursor || cause instanceof PeopleQueryError) {
+    error = cause.message;
+    Astro.response.status = 400;
+  } else throw cause;
+}
+const status = peopleStatus(Astro.url);
+const showMembership = status !== 'member';
+const searchStatus = Astro.url.searchParams.get('status') ?? 'all';
+const unassigned = Astro.url.searchParams.get('committee') === 'unassigned';
+const details = await rosterDetails(
+  staff.db,
+  staff.actor,
+  page.items.map((person) => person.id),
+  { configuration: staff.accessConfiguration ?? {} },
+);
+const showWelcome = [...details.values()].some((item) => item.welcome);
+const showDiscord = staff.accessConfiguration?.discord?.configured ?? false;
+const canAssign = committees.some((item) => item.acceptingMembers);
+---
+
+<StaffLayout
+  title={unassigned ? 'No committee yet' : 'Members'}
+  description={staff.actor.staffAdmin ? undefined : 'Members of the committees you lead.'}
+>
+  {
+    error && (
+      <p role="alert" class="staff-error">
+        {error} <a href="/people/">Clear filters</a>
+      </p>
+    )
+  }
+  {
+    staff.actor.staffAdmin && (
+      <a
+        slot="heading-meta"
+        class="staff-edit-link"
+        href={unassigned ? '/people/' : '/people/?committee=unassigned'}
+      >
+        {unassigned ? 'All members' : 'No committee yet'}
+      </a>
+    )
+  }
+  <form
+    method="get"
+    action="/people/"
+    class="staff-search"
+    role="search"
+    aria-label="Find a person"
+  >
+    <div class="staff-search-row">
+      <div class="staff-search-query">
+        <label for="q">Name or email</label>
+        <input
+          id="q"
+          name="q"
+          type="search"
+          placeholder="Search members…"
+          value={Astro.url.searchParams.get('q') ?? Astro.url.searchParams.get('email') ?? ''}
+          maxlength="254"
+        />
+      </div>
+      <Button>Search</Button>
+    </div>
+    <details
+      class="staff-search-filters"
+      open={Boolean(
+        Astro.url.searchParams.get('zip') ||
+        Astro.url.searchParams.get('email') ||
+        (status !== 'all' && status !== 'member') ||
+        (Astro.url.searchParams.get('committee') && !unassigned),
+      )}
+    >
+      <summary
+        >{
+          status === 'member'
+            ? 'Filters'
+            : `Filters · ${
+                status === 'all'
+                  ? 'Everyone'
+                  : (MEMBERSHIP_LABELS[status as keyof typeof MEMBERSHIP_LABELS] ?? 'Members')
+              }`
+        }</summary
+      >
+      <div class="staff-filter-row">
+        <div>
+          <label for="status">Membership</label>
+          <select id="status" name="status">
+            {
+              Object.entries(MEMBERSHIP_LABELS).map(([value, label]) => (
+                <option value={value} selected={searchStatus === value}>
+                  {label}
+                </option>
+              ))
+            }
+            <option value="all" selected={searchStatus === 'all'}>Everyone</option>
+          </select>
+        </div>
+        <div>
+          <label for="committee">Committee</label>
+          <select id="committee" name="committee">
+            <option value="">All</option>
+            {
+              staff.actor.staffAdmin && (
+                <option
+                  value="unassigned"
+                  selected={Astro.url.searchParams.get('committee') === 'unassigned'}
+                >
+                  No committee yet
+                </option>
+              )
+            }
+            {
+              committees.map((committee) => (
+                <option
+                  value={committee.id}
+                  selected={Astro.url.searchParams.get('committee') === committee.id}
+                >
+                  {committee.name}
+                </option>
+              ))
+            }
+          </select>
+        </div>
+        <div class="staff-zip">
+          <label for="zip">ZIP code</label>
+          <input
+            id="zip"
+            name="zip"
+            inputmode="numeric"
+            maxlength="5"
+            value={Astro.url.searchParams.get('zip') ?? ''}
+            aria-invalid={error === 'Enter a five-digit ZIP code.' ? 'true' : undefined}
+          />
+        </div>
+      </div>
+    </details>
+    {
+      Astro.url.search && (
+        <div class="staff-search-options">
+          <a href="/people/" class="staff-muted-link">
+            Clear filters
+          </a>
+        </div>
+      )
+    }
+  </form>
+  {
+    !error &&
+      (page.items.length ? (
+        <section
+          aria-label="Search results"
+          class:list={[
+            'staff-roster-results',
+            {
+              'staff-roster-with-follow-up': showWelcome,
+              'staff-roster-with-status': showMembership || showDiscord,
+            },
+          ]}
+        >
+          <div class="staff-results-meta">
+            <p>
+              {page.items.length}{' '}
+              {status === 'member'
+                ? page.items.length === 1
+                  ? 'member'
+                  : 'members'
+                : page.items.length === 1
+                  ? 'person'
+                  : 'people'}
+              {page.nextCursor ? ' · More on the next page' : ''}
+            </p>
+          </div>
+          <div class="staff-roster-heading" aria-hidden="true">
+            <>
+              <span>Name / email</span>
+              {(showMembership || showDiscord) && (
+                <span>
+                  {showMembership && showDiscord
+                    ? 'Membership / Discord'
+                    : showDiscord
+                      ? 'Discord'
+                      : 'Membership'}
+                </span>
+              )}
+              <span>Committee</span>
+              {showWelcome && <span>Follow-up</span>}
+            </>
+          </div>
+          <ul class="staff-roster" aria-label={status === 'member' ? 'Members' : 'People'}>
+            {page.items.map((person) => (
+              <RosterMember
+                person={person}
+                details={details.get(person.id)}
+                showWelcome={showWelcome}
+                showMembership={showMembership}
+                showDiscord={showDiscord}
+                canAssign={canAssign}
+              />
+            ))}
+          </ul>
+          {page.nextCursor && (
+            <a href={pageLink(Astro.url, page.nextCursor)} class="staff-next">
+              Next page <span aria-hidden="true">→</span>
+            </a>
+          )}
+        </section>
+      ) : (
+        <div class="staff-empty">
+          <>
+            <h2>No matches</h2>
+            <p>Try another name or email, or change the filters.</p>
+            {status !== 'all' && (
+              <a href={allMembershipsLink(Astro.url)}>Include former members and other records</a>
+            )}
+          </>
+        </div>
+      ))
+  }
+  {
+    can(staff.actor, 'review_queue.resolve') && (
+      <p class="mt-8 text-body-sm">
+        <a href="/review/">Check duplicates</a> · <a href="/access/">Account updates</a> ·{' '}
+        <a href="/paper/">Paper signups</a> · <a href="/export/">Download records</a>
+      </p>
+    )
+  }
+  {
+    !staff.actor.staffAdmin && can(staff.actor, 'attendance.record') && (
+      <p class="mt-8 text-body-sm">
+        <a href="/paper/">Paper signups</a>
+      </p>
+    )
+  }
+</StaffLayout>

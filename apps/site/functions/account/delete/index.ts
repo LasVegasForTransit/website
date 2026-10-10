@@ -4,7 +4,7 @@
 // to the member's email and goes to the code step.
 
 import { sendDeleteCode } from '../../../platform/account-data';
-import { t } from '../../../platform/messages';
+import { t } from '@lasvegasfortransit/platform-core/messages';
 import { redirect, show, showText } from '../../join/_page';
 import type { SignInPagesEnv } from '../../sign-in/_shared';
 import { accountPage, callerAddress, signedIn, type Signed } from '../_account';
