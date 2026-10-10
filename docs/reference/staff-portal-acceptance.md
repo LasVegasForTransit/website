@@ -37,19 +37,20 @@ static assets. Deployment tests confirm that routing and that the website manife
 unlinked roster test also confirms a filtered page retains its Discord status column. These local
 changes still need a reviewed release before the endpoint can be reached there.
 
-The latest whole-repository `pnpm check` remains non-passing in this linked worktree:
-`security:secrets` reports matches in Git history, and Turbo cancels some parallel tasks afterward,
-which appears as pending-Promise errors. All seven package test suites pass when run sequentially:
-platform core 14/14, platform storage 171/171, platform integrations 112/112, jobs 1/1, site
-258/258, staff 45/45, and deploy 6/6. A clean remote CI run for the current branch SHA is still
-needed. The production preflight passes all nine local machine checks under Node 24.20.0 when the
-account ID is read from Wrangler, but production is not ready: 21 of 29 D1 migrations are unapplied,
-`LVBT_PRESS_DATA_SOURCE_ID` is missing, and the Discord bot token remains on the public website
-Worker. The staff-specific preflight confirms the source configuration uses the shared membership
-database and protected staff domain, but Discord remains disabled and remote staff/jobs, Access, and
-human acceptance checks are unverified without a scoped Cloudflare API token. These checks were
-read-only; no production settings changed. Local test results establish behavior only; they do not
-establish a deployed portal.
+The latest whole-repository `pnpm check` passes all 36 tasks in a fresh clone of the current branch
+under Node 24.20.0. The linked development checkout still reports a local full-history secret-scan
+finding, which cancels some Turbo tasks; the clean clone scan passes. All seven package test suites
+also pass when run sequentially: platform core 14/14, platform storage 171/171, platform
+integrations 112/112, jobs 1/1, site 258/258, staff 45/45, and deploy 6/6. The staff, paper-signup,
+and Discord-observation browser workflows pass against isolated fixtures. A clean remote CI run for
+the updated branch SHA is still needed. The production preflight passes all nine local machine
+checks under Node 24.20.0 when the account ID is read from Wrangler, but production is not ready: 21
+of 29 D1 migrations are unapplied, `LVBT_PRESS_DATA_SOURCE_ID` is missing, and the Discord bot token
+remains on the public website Worker. The staff-specific preflight confirms the source configuration
+uses the shared membership database and protected staff domain, but Discord remains disabled and
+remote staff/jobs, Access, and human acceptance checks are unverified without a scoped Cloudflare
+API token. These checks were read-only; no production settings changed. Local test results establish
+behavior only; they do not establish a deployed portal.
 
 ## Remote inventory
 
