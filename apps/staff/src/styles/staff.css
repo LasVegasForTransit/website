@@ -231,7 +231,7 @@ html {
     margin-block: 1rem;
     padding: 1rem;
     border: 1px solid var(--color-outline-variant);
-    background: var(--color-surface-container-low);
+    background: var(--color-surface-container);
   }
 
   .staff-discord-review h2 {
