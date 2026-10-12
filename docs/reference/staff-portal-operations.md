@@ -68,8 +68,15 @@ credentials.
    and the public site needs its existing OAuth client configuration for account linking. Use a
    separate preview server. Review the Member role and every committee's current and retired role
    mappings; confirm the bot can manage them while leaving unrelated roles alone.
-7. Verify the president's linked Workspace identity before running the existing explicit
-   administrator designation. Do not infer admin access from a domain, group, email or token.
+7. Before the first administrator signs in, set the secret
+   `LVBT_INITIAL_STAFF_ADMIN_WORKSPACE_EMAIL` on the selected staff Worker to the president's exact
+   `@lasvegasfortransit.org` account. Use a separate test member account on `lvbt-staff-preview`;
+   never put a production account on preview. Do not store this value in source control or use a
+   personal email. The one-time setup page checks that this exact Workspace account is linked to an
+   active LVBT member and that no administrator designation exists, then records the grant in the
+   staff audit log. Once deployed, the first sign-in goes to that page automatically; the president
+   completes the setup and verifies access. Remove the temporary secret after the audited
+   designation is confirmed. Do not infer admin access from a domain or group alone.
 
 ## Release order and rollback
 

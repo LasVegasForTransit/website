@@ -22,6 +22,8 @@ import type { Db } from '@lasvegasfortransit/platform-storage/db';
 export interface StaffEnv
   extends GoogleSignInEnv, AccessEnv, DiscordRuntimeEnv, GoogleAccessRuntimeEnv {
   LVBT_RESEND_API_KEY?: string;
+  /** Set only for the one-time, maintainer-approved first administrator bootstrap. */
+  LVBT_INITIAL_STAFF_ADMIN_WORKSPACE_EMAIL?: string;
 }
 export interface StaffContext {
   actor: Actor;

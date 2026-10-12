@@ -1,8 +1,16 @@
 ---
+import { env } from 'cloudflare:workers';
 import StaffLayout from '../../layouts/StaffLayout.astro';
 import { t } from '@lasvegasfortransit/platform-core/messages';
 import { safeNext } from '@lasvegasfortransit/platform-core/web-auth';
-const next = safeNext(Astro.url.searchParams.get('next') ?? '/');
+import type { StaffEnv } from '../../lib/context';
+const staffEnv = env as unknown as StaffEnv;
+const hasAdministrator = await staffEnv.PLATFORM_DB.prepare(
+  'SELECT 1 AS present FROM staff_administrators LIMIT 1',
+).first();
+const next = safeNext(
+  Astro.url.searchParams.get('next') ?? (hasAdministrator ? '/' : '/sign-in/initial-admin/'),
+);
 ---
 
 <StaffLayout title="Sign in to LVBT staff" signIn>

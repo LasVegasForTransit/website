@@ -1,0 +1,55 @@
+---
+import { env } from 'cloudflare:workers';
+import Button from '../../../../site/src/components/app/Button.astro';
+import StaffLayout from '../../layouts/StaffLayout.astro';
+import type { StaffEnv } from '../../lib/context';
+import { bootstrapInitialStaffAdmin, getInitialStaffAdminState } from '../../lib/initial-admin';
+
+const staffEnv = env as unknown as StaffEnv;
+const access = Astro.locals.access;
+if (!access) return new Response("You don't have access to this", { status: 403 });
+
+let state =
+  Astro.request.method === 'POST'
+    ? await bootstrapInitialStaffAdmin(staffEnv, Astro.request, access)
+    : await getInitialStaffAdminState(staffEnv, Astro.request, access);
+
+if (state.kind === 'ok' || state.kind === 'already_initialized') return Astro.redirect('/', 303);
+if (state.kind === 'needs_sign_in')
+  return Astro.redirect(`/sign-in/?next=${encodeURIComponent('/sign-in/initial-admin/')}`);
+
+Astro.response.status =
+  state.kind === 'ready'
+    ? 200
+    : state.kind === 'not_authorized'
+      ? 403
+      : state.kind === 'invalid_request'
+        ? 400
+        : 503;
+---
+
+<StaffLayout title="Set up staff access" signIn>
+  <div class="max-w-[30rem] space-y-6">
+    {
+      state.kind === 'ready' ? (
+        <>
+          <p>
+            This one-time step gives staff administrator access to the LVBT member account linked to
+            the approved president’s Google account.
+          </p>
+          <form method="post" action="/sign-in/initial-admin/">
+            <Button>Set up staff access</Button>
+          </form>
+        </>
+      ) : state.kind === 'not_authorized' ? (
+        <p role="alert">You don't have access to this.</p>
+      ) : state.kind === 'invalid_request' ? (
+        <p role="alert">Reload this page and try again.</p>
+      ) : state.kind === 'unconfigured' ? (
+        <p role="alert">Staff setup is not ready yet. Ask the LVBT president for help.</p>
+      ) : (
+        <p role="alert">Staff setup is unavailable right now. Please try again later.</p>
+      )
+    }
+  </div>
+</StaffLayout>

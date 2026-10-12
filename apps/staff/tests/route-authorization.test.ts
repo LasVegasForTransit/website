@@ -1,5 +1,8 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
+import { readdir, readFile } from 'node:fs/promises';
+import { join, relative, sep } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { exportJWK, generateKeyPair, SignJWT } from 'jose';
 import { memoryDb } from '@lasvegasfortransit/platform-storage/test-db';
 import { PersonService } from '@lasvegasfortransit/platform-storage/person-service';
@@ -13,7 +16,27 @@ const keys = await generateKeyPair('RS256');
 const jwk = { ...(await exportJWK(keys.publicKey)), kid: 'staff-fixture', alg: 'RS256' };
 const fetcher: typeof fetch = () => Promise.resolve(Response.json({ keys: [jwk] }));
 const origin = 'https://staff.lasvegasfortransit.org';
-async function fixture() {
+const pagesRoot = fileURLToPath(new URL('../src/pages/', import.meta.url));
+async function pageRoutes(directory = pagesRoot): Promise<string[]> {
+  const entries = await readdir(directory, { withFileTypes: true });
+  const nested = await Promise.all(
+    entries.map(async (entry) => {
+      const path = join(directory, entry.name);
+      if (entry.isDirectory()) return await pageRoutes(path);
+      if (!entry.isFile() || !/\.(?:astro|ts)$/.test(entry.name)) return [];
+      const withoutExtension = relative(pagesRoot, path)
+        .split(sep)
+        .join('/')
+        .replace(/\.(?:astro|ts)$/, '')
+        .replace(/\[\.\.\.([^\]]+)\]/g, 'fixture-$1')
+        .replace(/\[([^\]]+)\]/g, 'fixture-$1')
+        .replace(/(^|\/)index$/, '');
+      return [`/${withoutExtension}${withoutExtension ? '/' : ''}`];
+    }),
+  );
+  return nested.flat();
+}
+async function fixture(options: { staffAdmin?: boolean } = {}) {
   const db = memoryDb();
   const env = {
     PLATFORM_DB: db,
@@ -43,12 +66,13 @@ async function fixture() {
     method: 'self_linked',
     operationId: 'link',
   });
-  await bootstrapStaffAdmin(db, {
-    presidentPersonId: person.id,
-    workspaceSubject: workspace.subject,
-    performedBy: 'fixture-maintainer',
-    operationId: 'bootstrap',
-  });
+  if (options.staffAdmin !== false)
+    await bootstrapStaffAdmin(db, {
+      presidentPersonId: person.id,
+      workspaceSubject: workspace.subject,
+      performedBy: 'fixture-maintainer',
+      operationId: 'bootstrap',
+    });
   const session = await createWorkspaceSession(env, workspace);
   assert.ok(session);
   const assertion = await new SignJWT({ email: workspace.email, type: 'app' })
@@ -182,5 +206,53 @@ void test('the Worker gateway rejects invalid Access even for assets and unknown
   });
   assert.equal(response.status, 403);
   privateHeaders(response);
+  db.raw.close();
+});
+
+void test('every file-based route requires Access and every non-sign-in route requires console access', async () => {
+  const routes = (await pageRoutes()).sort();
+  assert.ok(routes.length > 0);
+  const middleware = await readFile(new URL('../src/middleware.ts', import.meta.url), 'utf8');
+  assert.match(middleware, /staffMiddleware\(request, env, \{ locals, next \}\)/);
+  const { db, env, headers, staffMiddleware } = await fixture({ staffAdmin: false });
+  for (const path of routes) {
+    for (const method of ['GET', 'POST'] as const) {
+      const requestHeaders = new Headers(method === 'POST' ? { Origin: origin } : undefined);
+      const missingAccess = await staffMiddleware(
+        new Request(`${origin}${path}`, { method, headers: requestHeaders }),
+        env,
+        {
+          locals: {},
+          fetch: fetcher,
+          next: () => {
+            assert.fail(`${method} ${path} reached its route without Cloudflare Access`);
+          },
+        },
+      );
+      assert.equal(missingAccess.status, 403, `${method} ${path} must require Access`);
+
+      const authenticated = await staffMiddleware(
+        new Request(`${origin}${path}`, { method, headers: { ...headers, Origin: origin } }),
+        env,
+        {
+          locals: {},
+          fetch: fetcher,
+          next: () => Promise.resolve(new Response('route')),
+        },
+      );
+      if (/^\/sign-in(?:\/|$)/.test(path))
+        assert.equal(
+          authenticated.status,
+          200,
+          `${method} ${path} stays available to link members`,
+        );
+      else
+        assert.equal(
+          authenticated.status,
+          403,
+          `${method} ${path} must require an authorized committee lead or staff administrator`,
+        );
+    }
+  }
   db.raw.close();
 });

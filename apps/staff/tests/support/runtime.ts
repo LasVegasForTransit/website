@@ -52,7 +52,9 @@ function seedRoster(raw: DatabaseSync) {
     throw error;
   }
 }
-export async function startRuntime(options: { discord?: boolean } = {}) {
+async function startRuntimeInternal(
+  options: { discord?: boolean; initialAdminSetup?: boolean } = {},
+) {
   const root = fileURLToPath(new URL('../../', import.meta.url));
   const data = await mkdtemp(join(tmpdir(), 'lvbt-staff-browser-'));
   const certificate = join(data, 'fixture-cert.pem'),
@@ -107,6 +109,9 @@ export async function startRuntime(options: { discord?: boolean } = {}) {
         LVBT_SIGN_IN_SECRET: 'local-browser-fixture-only',
         LVBT_ACCESS_TEAM_DOMAIN: 'lvbt.cloudflareaccess.com',
         LVBT_ACCESS_AUD: 'browser-fixture-app',
+        ...(options.initialAdminSetup
+          ? { LVBT_INITIAL_STAFF_ADMIN_WORKSPACE_EMAIL: 'admin@lasvegasfortransit.org' }
+          : {}),
         ...(options.discord
           ? {
               LVBT_DEPLOYMENT_ENV: 'preview',
@@ -183,6 +188,18 @@ export async function startRuntime(options: { discord?: boolean } = {}) {
       return { person, session, assertion };
     }
     const admin = await staff('admin');
+    if (options.initialAdminSetup)
+      return {
+        simulator,
+        port: (await simulator.ready).port,
+        db,
+        admin,
+        root,
+        dispose: async () => {
+          await simulator.dispose();
+          await rm(data, { recursive: true, force: true });
+        },
+      };
     await bootstrapStaffAdmin(db, {
       presidentPersonId: admin.person.id,
       workspaceSubject: 'fixture-google-admin',
@@ -273,4 +290,22 @@ export async function startRuntime(options: { discord?: boolean } = {}) {
     await rm(data, { recursive: true, force: true });
     throw error;
   }
+}
+
+type RuntimeResult = Awaited<ReturnType<typeof startRuntimeInternal>>;
+type InitialAdminRuntime = Extract<RuntimeResult, { lead?: never }>;
+type FullRuntime = Extract<RuntimeResult, { lead: unknown }>;
+
+export function startRuntime(options: {
+  discord?: boolean;
+  initialAdminSetup: true;
+}): Promise<InitialAdminRuntime>;
+export function startRuntime(options?: {
+  discord?: boolean;
+  initialAdminSetup?: false;
+}): Promise<FullRuntime>;
+export function startRuntime(
+  options: { discord?: boolean; initialAdminSetup?: boolean } = {},
+): Promise<RuntimeResult> {
+  return startRuntimeInternal(options);
 }

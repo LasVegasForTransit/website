@@ -310,7 +310,8 @@ void test('per-group checkpoints resume bounded work and stale checkpoints canno
     remote.tokens,
     { fetch: fetcher },
   );
-  let clock = new Date('2026-10-10T12:00:00.000Z');
+  const startedAt = new Date();
+  let clock = startedAt;
   const options = { client, maxGroups: 1, now: () => clock };
   assert.deepEqual(await syncGoogleOperation(db, 'google-fixture', options), {
     kind: 'partial',
@@ -325,13 +326,13 @@ void test('per-group checkpoints resume bounded work and stale checkpoints canno
     )?.n,
     0,
   );
-  clock = new Date('2026-10-10T11:59:59.000Z');
+  clock = new Date(startedAt.getTime() - 1000);
   assert.deepEqual(
     await syncGoogleOperation(db, 'google-fixture', options),
     { kind: 'stale' },
     'a future-dated checkpoint cannot supply current proof',
   );
-  clock = new Date('2026-10-10T12:04:59.000Z');
+  clock = new Date(startedAt.getTime() + 299000);
   assert.deepEqual(await syncGoogleOperation(db, 'google-fixture', options), {
     kind: 'confirmed',
   });
@@ -343,7 +344,7 @@ void test('per-group checkpoints resume bounded work and stale checkpoints canno
         )
         .first()
     )?.expires_at,
-    '2026-10-10T12:05:00.000Z',
+    new Date(startedAt.getTime() + 300000).toISOString(),
     'the account receipt cannot extend the oldest group proof',
   );
   assert.equal(remote.state.direct, true);
@@ -351,7 +352,7 @@ void test('per-group checkpoints resume bounded work and stale checkpoints canno
     .prepare("UPDATE committee_assignments SET ended_at=?,end_reason='removed' WHERE person_id=?")
     .bind(new Date().toISOString(), person.id)
     .run();
-  clock = new Date('2026-10-10T12:05:01.000Z');
+  clock = new Date(startedAt.getTime() + 301000);
   assert.deepEqual(await syncGoogleOperation(db, 'google-fixture', options), {
     kind: 'partial',
   });
