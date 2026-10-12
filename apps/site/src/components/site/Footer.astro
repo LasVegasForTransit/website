@@ -25,8 +25,8 @@ const printLinkSheetSections: Array<{ links: PrintLinkSheetLink[] }> = [
   },
   {
     links: [
-      { label: 'Join', href: '/join', printUrl: internalPrintUrl('/join') },
-      { label: 'Newsletter', href: '/newsletter', printUrl: internalPrintUrl('/newsletter') },
+      { label: 'Join', href: '/join/', printUrl: internalPrintUrl('/join') },
+      { label: 'Newsletter', href: '/newsletter/', printUrl: internalPrintUrl('/newsletter') },
       ...(site.donate.url
         ? [
             {
@@ -41,9 +41,9 @@ const printLinkSheetSections: Array<{ links: PrintLinkSheetLink[] }> = [
   },
   {
     links: [
-      { label: 'Brand', href: '/brand', printUrl: internalPrintUrl('/brand') },
-      { label: 'Colophon', href: '/colophon', printUrl: internalPrintUrl('/colophon') },
-      { label: 'Sitemap', href: '/sitemap', printUrl: internalPrintUrl('/sitemap') },
+      { label: 'Brand', href: '/brand/', printUrl: internalPrintUrl('/brand') },
+      { label: 'Colophon', href: '/colophon/', printUrl: internalPrintUrl('/colophon') },
+      { label: 'Sitemap', href: '/sitemap/', printUrl: internalPrintUrl('/sitemap') },
       {
         label: 'Source',
         href: 'https://github.com/LasVegasForTransit/website',
@@ -170,13 +170,13 @@ const printLinkSheetSections: Array<{ links: PrintLinkSheetLink[] }> = [
       <div class="footer-nav reveal" data-footer-nav="organization">
         <p class="text-title-md font-bold text-primary-soft">Organization</p>
         <ul class="footer-nav-list text-base font-semibold">
-          <li><a href="/about" class="nav-link no-underline hover:text-primary-soft">About</a></li>
-          <li><a href="/press" class="nav-link no-underline hover:text-primary-soft">Press</a></li>
+          <li><a href="/about/" class="nav-link no-underline hover:text-primary-soft">About</a></li>
+          <li><a href="/press/" class="nav-link no-underline hover:text-primary-soft">Press</a></li>
           <li>
-            <a href="/programs" class="nav-link no-underline hover:text-primary-soft">Programs</a>
+            <a href="/programs/" class="nav-link no-underline hover:text-primary-soft">Programs</a>
           </li>
           <li>
-            <a href="/projects" class="nav-link no-underline hover:text-primary-soft">Projects</a>
+            <a href="/projects/" class="nav-link no-underline hover:text-primary-soft">Projects</a>
           </li>
           <li>
             <a
@@ -186,10 +186,10 @@ const printLinkSheetSections: Array<{ links: PrintLinkSheetLink[] }> = [
             >
           </li>
           <li>
-            <a href="/events" class="nav-link no-underline hover:text-primary-soft">Events</a>
+            <a href="/events/" class="nav-link no-underline hover:text-primary-soft">Events</a>
           </li>
           <li>
-            <a href="/contact" class="nav-link no-underline hover:text-primary-soft">Contact</a>
+            <a href="/contact/" class="nav-link no-underline hover:text-primary-soft">Contact</a>
           </li>
           <li>
             <a
@@ -203,9 +203,11 @@ const printLinkSheetSections: Array<{ links: PrintLinkSheetLink[] }> = [
       <div class="footer-nav reveal" data-footer-nav="get-involved">
         <p class="text-title-md font-bold text-primary-soft">Get involved</p>
         <ul class="footer-nav-list text-base font-semibold">
-          <li><a href="/join" class="nav-link no-underline hover:text-primary-soft">Join us</a></li>
           <li>
-            <a href="/newsletter" class="nav-link no-underline hover:text-primary-soft"
+            <a href="/join/" class="nav-link no-underline hover:text-primary-soft">Join us</a>
+          </li>
+          <li>
+            <a href="/newsletter/" class="nav-link no-underline hover:text-primary-soft"
               >Newsletter</a
             >
           </li>
@@ -370,11 +372,11 @@ const printLinkSheetSections: Array<{ links: PrintLinkSheetLink[] }> = [
       aria-label="Site utilities"
     >
       <span class="footer-utility-group">
-        <a href="/colophon" class="nav-link no-underline hover:text-primary-soft">Colophon</a>
-        <a href="/brand" class="nav-link no-underline hover:text-primary-soft">Brand</a>
+        <a href="/colophon/" class="nav-link no-underline hover:text-primary-soft">Colophon</a>
+        <a href="/brand/" class="nav-link no-underline hover:text-primary-soft">Brand</a>
       </span>
       <span class="footer-utility-group">
-        <a href="/sitemap" class="nav-link no-underline hover:text-primary-soft">Sitemap</a>
+        <a href="/sitemap/" class="nav-link no-underline hover:text-primary-soft">Sitemap</a>
         <a
           href="https://github.com/LasVegasForTransit/website"
           rel="noopener"
@@ -388,7 +390,7 @@ const printLinkSheetSections: Array<{ links: PrintLinkSheetLink[] }> = [
             so this glyph container-transforms into the live code on the way in. */
         }
         <a
-          href="/qr"
+          href="/qr/"
           class="qr-portal inline-flex items-center hover:text-primary-soft"
           aria-label="Scan cards"
           title="Scan cards"

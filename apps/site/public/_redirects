@@ -15,3 +15,36 @@
 /week-without-driving/   https://lvwwd.org/  302
 # Street interviews on transit was folded into Bus Buddies.
 /projects/social-media-just-talking   /projects/bus-buddies   301
+
+# Calendar-confirmed move: the July 9 occurrence shares the July 16 event UID.
+/events/2026-07-09-lvbt-general-member-meeting   /events/2026-07-16-lvbt-general-member-meeting/  301
+/events/2026-07-09-lvbt-general-member-meeting/  /events/2026-07-16-lvbt-general-member-meeting/  301
+# Same first walk audit; the placeholder title no longer carries "TBD".
+/events/2026-07-11-lvbt-s-first-walk-audit-tbd   /events/2026-07-11-lvbt-s-first-walk-audit/  301
+/events/2026-07-11-lvbt-s-first-walk-audit-tbd/  /events/2026-07-11-lvbt-s-first-walk-audit/  301
+
+# Vegas Urbanists became Vegas Urbanist Social Club; keep each dated occurrence.
+/events/2026-10-15-vegas-urbanists  /events/2026-10-15-vegas-urbanist-social-club/  301
+/events/2026-10-15-vegas-urbanists/  /events/2026-10-15-vegas-urbanist-social-club/  301
+/events/2026-11-19-vegas-urbanists  /events/2026-11-19-vegas-urbanist-social-club/  301
+/events/2026-11-19-vegas-urbanists/  /events/2026-11-19-vegas-urbanist-social-club/  301
+/events/2026-12-17-vegas-urbanists  /events/2026-12-17-vegas-urbanist-social-club/  301
+/events/2026-12-17-vegas-urbanists/  /events/2026-12-17-vegas-urbanist-social-club/  301
+/events/2027-01-21-vegas-urbanists  /events/2027-01-21-vegas-urbanist-social-club/  301
+/events/2027-01-21-vegas-urbanists/  /events/2027-01-21-vegas-urbanist-social-club/  301
+/events/2027-02-18-vegas-urbanists  /events/2027-02-18-vegas-urbanist-social-club/  301
+/events/2027-02-18-vegas-urbanists/  /events/2027-02-18-vegas-urbanist-social-club/  301
+/events/2027-03-18-vegas-urbanists  /events/2027-03-18-vegas-urbanist-social-club/  301
+/events/2027-03-18-vegas-urbanists/  /events/2027-03-18-vegas-urbanist-social-club/  301
+/events/2027-04-15-vegas-urbanists  /events/2027-04-15-vegas-urbanist-social-club/  301
+/events/2027-04-15-vegas-urbanists/  /events/2027-04-15-vegas-urbanist-social-club/  301
+/events/2027-05-20-vegas-urbanists  /events/2027-05-20-vegas-urbanist-social-club/  301
+/events/2027-05-20-vegas-urbanists/  /events/2027-05-20-vegas-urbanist-social-club/  301
+/events/2027-06-17-vegas-urbanists  /events/2027-06-17-vegas-urbanist-social-club/  301
+/events/2027-06-17-vegas-urbanists/  /events/2027-06-17-vegas-urbanist-social-club/  301
+/events/2027-07-15-vegas-urbanists  /events/2027-07-15-vegas-urbanist-social-club/  301
+/events/2027-07-15-vegas-urbanists/  /events/2027-07-15-vegas-urbanist-social-club/  301
+/events/2027-08-19-vegas-urbanists  /events/2027-08-19-vegas-urbanist-social-club/  301
+/events/2027-08-19-vegas-urbanists/  /events/2027-08-19-vegas-urbanist-social-club/  301
+/events/2027-09-16-vegas-urbanists  /events/2027-09-16-vegas-urbanist-social-club/  301
+/events/2027-09-16-vegas-urbanists/  /events/2027-09-16-vegas-urbanist-social-club/  301

@@ -15,6 +15,18 @@ void test('built relative, apex and www links resolve to build routes while exte
   ]);
   assert.deepEqual(links.external, ['https://willie.page/']);
 });
+void test('same-host HTTP anchors map to local Worker paths', () => {
+  const links = linksFromHtml(
+    '<a href="http://lasvegasfortransit.org/go/?source=about#newsletter">Go</a><a href="http://www.lasvegasfortransit.org/press/">Press</a>',
+    '/about/',
+    'http://127.0.0.1:1234',
+  );
+  assert.deepEqual(links.internal, [
+    'http://127.0.0.1:1234/go/?source=about',
+    'http://127.0.0.1:1234/press/',
+  ]);
+  assert.deepEqual(links.external, []);
+});
 void test('runtime calendar and redirect endpoints are checked with GET against the build', async () => {
   const paths: string[] = [];
   const external = await checkInternalLinks(

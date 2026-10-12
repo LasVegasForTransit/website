@@ -8,6 +8,7 @@
 import type { APIRoute } from 'astro';
 import { getCollection } from 'astro:content';
 import { site } from '../lib/site';
+import { canonicalUrl as u } from '../lib/paths';
 import { byOrderThenTitle } from '../lib/projects';
 import { programContentLines } from '../lib/llms-programs';
 
@@ -30,8 +31,6 @@ const docRoutes: Record<string, string> = {
 // Docs to omit from the dump entirely while their public surfaces are hidden.
 // Keeps LLM-ingested content in sync with what visitors can actually browse.
 const hiddenDocIds = new Set(['vision']);
-
-const u = (path: string): string => new URL(path, site.url).toString();
 
 const fmtDate = (d: Date | undefined): string => (d ? d.toISOString().slice(0, 10) : '');
 

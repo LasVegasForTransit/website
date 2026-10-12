@@ -2,7 +2,7 @@ import { expect, test } from '../../scripts/deploy/access-browser';
 
 test.describe('header current navigation', () => {
   test('marks nav links current only on exact route matches', async ({ page }) => {
-    const desktopPrograms = page.locator('nav[aria-label="Primary"] a[href="/programs"]');
+    const desktopPrograms = page.locator('nav[aria-label="Primary"] a[href="/programs/"]');
 
     await page.goto('/programs');
     await page.waitForLoadState('networkidle');
@@ -12,9 +12,15 @@ test.describe('header current navigation', () => {
     );
 
     const inactiveDesktopColor = await page
-      .locator('nav[aria-label="Primary"] a[href="/about"]')
+      .locator('nav[aria-label="Primary"] a[href="/about/"]')
       .evaluate((link) => getComputedStyle(link).color);
     expect(activeDesktopColor).not.toBe(inactiveDesktopColor);
+
+    await page.setViewportSize({ width: 820, height: 1180 });
+    await expect(desktopPrograms).toBeVisible();
+    await expect(page.locator('nav[aria-label="Primary"] a[href="/events/"]')).toBeVisible();
+    await expect(page.locator('nav[aria-label="Primary"] a[href="/about/"]')).toBeHidden();
+    await page.setViewportSize({ width: 1280, height: 720 });
 
     await page.goto('/projects');
     await page.waitForLoadState('networkidle');
@@ -25,14 +31,14 @@ test.describe('header current navigation', () => {
     await page.waitForLoadState('networkidle');
     await page.locator('button[data-nav-toggle]').click();
     await expect(
-      page.locator('nav[aria-label="Mobile navigation"] a[href="/about"]'),
+      page.locator('nav[aria-label="Mobile navigation"] a[href="/about/"]'),
     ).toHaveAttribute('aria-current', 'page');
 
     await page.goto('/about/strategy');
     await page.waitForLoadState('networkidle');
     await page.locator('button[data-nav-toggle]').click();
     await expect(
-      page.locator('nav[aria-label="Mobile navigation"] a[href="/about"]'),
+      page.locator('nav[aria-label="Mobile navigation"] a[href="/about/"]'),
     ).not.toHaveAttribute('aria-current', 'page');
   });
 });

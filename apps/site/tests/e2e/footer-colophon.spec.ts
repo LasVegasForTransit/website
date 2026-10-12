@@ -95,15 +95,15 @@ test.describe('footer colophon', () => {
 
     await expect(page.locator('footer')).not.toContainText('Website made with love');
     const utilityNav = page.locator('footer nav[aria-label="Site utilities"]');
-    await expect(utilityNav.locator('a[href="/colophon"]', { hasText: 'Colophon' })).toBeVisible();
-    await expect(utilityNav.locator('a[href="/brand"]', { hasText: 'Brand' })).toBeVisible();
-    await expect(utilityNav.locator('a[href="/sitemap"]', { hasText: 'Sitemap' })).toBeVisible();
+    await expect(utilityNav.locator('a[href="/colophon/"]', { hasText: 'Colophon' })).toBeVisible();
+    await expect(utilityNav.locator('a[href="/brand/"]', { hasText: 'Brand' })).toBeVisible();
+    await expect(utilityNav.locator('a[href="/sitemap/"]', { hasText: 'Sitemap' })).toBeVisible();
     await expect(
       utilityNav.locator('a[href="https://github.com/LasVegasForTransit/website"]', {
         hasText: 'Source',
       }),
     ).toBeVisible();
-    await expect(utilityNav.locator('a[href="/qr"][aria-label="Scan cards"]')).toBeVisible();
+    await expect(utilityNav.locator('a[href="/qr/"][aria-label="Scan cards"]')).toBeVisible();
 
     const utilityLinks = utilityNav.locator('a');
     await expect(utilityLinks).toHaveCount(5);

@@ -6,6 +6,8 @@ import {
 } from '@lasvegasfortransit/web-platform/links';
 
 const canonicalOrigins = new Set([
+  'http://lasvegasfortransit.org',
+  'http://www.lasvegasfortransit.org',
   'https://lasvegasfortransit.org',
   'https://www.lasvegasfortransit.org',
 ]);

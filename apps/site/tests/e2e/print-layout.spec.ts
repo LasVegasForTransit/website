@@ -121,7 +121,7 @@ test.describe('print layout', () => {
         ),
         sourceChunkCount: footerLinkSheet.querySelectorAll('.print-link-sheet__chunk').length,
         programsHref:
-          footerLinkSheet.querySelector('a[href="/programs"]')?.getAttribute('href') ?? '',
+          footerLinkSheet.querySelector('a[href="/programs/"]')?.getAttribute('href') ?? '',
         emailHref:
           footerLinkSheet.querySelector('a[href^="mailto:hello@"]')?.getAttribute('href') ?? '',
       };
@@ -165,7 +165,7 @@ test.describe('print layout', () => {
     expect(chrome.footerBottomAnchorPosition).toBe('absolute');
     expect(chrome.footerBottomAnchorBottomGap).toBeLessThan(24);
     expect(chrome.sourceChunkCount).toBeGreaterThanOrEqual(3);
-    expect(chrome.programsHref).toBe('/programs');
+    expect(chrome.programsHref).toBe('/programs/');
     expect(chrome.emailHref).toBe('mailto:hello@lasvegasfortransit.org');
   });
 
@@ -255,7 +255,7 @@ test.describe('print layout', () => {
     expect(Number.parseFloat(directory.cardPaddingLeft)).toBeGreaterThan(10);
     expect(Number.parseFloat(directory.cardBorderTopWidth)).toBeGreaterThan(0);
     expect(directory.cardBackground).not.toBe('rgba(0, 0, 0, 0)');
-    expect(directory.cardUrl).toMatch(/^\/projects\/[a-z0-9-]+$/);
+    expect(directory.cardUrl).toMatch(/^\/projects\/[a-z0-9-]+\/$/);
     expect(directory.printedUrlDisplay).not.toBe('none');
     expect(directory.printedUrlText).toContain('lasvegasfortransit.org');
     expect(directory.printedUrlText).toContain(directory.cardUrl);
@@ -286,10 +286,10 @@ test.describe('print layout', () => {
       };
     });
 
-    expect(card.cardUrl).toMatch(/^\/projects\/[a-z0-9-]+$/);
+    expect(card.cardUrl).toMatch(/^\/projects\/[a-z0-9-]+\/$/);
     expect(card.printedLinkDisplay).toBe('block');
     expect(card.printedLinkText).toContain('lasvegasfortransit.org');
-    expect(card.printedLinkText).toContain(card.cardUrl);
+    expect(card.printedLinkText).toContain(card.cardUrl?.replace(/\/$/, ''));
     expect(card.printedLinkBefore).toBe('none');
     expect(card.printedLinkAfter).toBe('none');
     expect(card.actionDisplay).toBe('none');
@@ -443,7 +443,7 @@ test.describe('print layout', () => {
     });
 
     expect(links.membershipPrintUrl).toMatch(
-      /^(https:\/\/lasvegasfortransit\.org\/join\/member$|https:\/\/forms\.gle\/)/,
+      /^(https:\/\/lasvegasfortransit\.org\/join\/member\/$|https:\/\/forms\.gle\/)/,
     );
     expect(links.membershipPrintUrl).not.toContain('subject=');
     expect(links.membershipPrintUrl).not.toContain('body=');

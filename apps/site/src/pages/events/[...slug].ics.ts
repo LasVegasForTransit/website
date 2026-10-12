@@ -22,6 +22,7 @@ export const GET: APIRoute = ({ props }) => {
   return new Response(buildIcs(event), {
     headers: {
       'Content-Type': 'text/calendar; charset=utf-8',
+      'X-Robots-Tag': 'noindex, nofollow',
     },
   });
 };
