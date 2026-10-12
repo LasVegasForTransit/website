@@ -76,15 +76,38 @@ try {
   const page = await context.newPage();
   const response = await page.goto(`${ORIGIN}/access/`);
   const pageBody = await page.locator('body').innerText();
+  const reviewSection = page.locator('.staff-discord-review');
   assert.equal(response?.status(), 200, pageBody);
   assert.equal(pageBody.includes('Discord accounts to review'), true, pageBody);
-  assert.equal(await page.getByText(`Discord account ${firstAccount}`, { exact: true }).count(), 1);
   assert.equal(
-    await page.getByText(`Discord account ${secondAccount}`, { exact: true }).count(),
+    await reviewSection
+      .getByText('LVBT Member, Advocacy Team, Events Committee', { exact: true })
+      .count(),
     1,
   );
-  assert.equal(await page.getByText('LVBT Member, Advocacy Team, Events Committee').count(), 1);
-  const openDiscord = page.getByRole('link', { name: 'Open in Discord', exact: true }).first();
+  assert.equal(await reviewSection.getByText('Advocacy Team', { exact: true }).count(), 1);
+  assert.equal(
+    await reviewSection.getByText(`Discord ID: ${firstAccount}`, { exact: true }).count(),
+    1,
+  );
+  assert.equal(
+    await reviewSection.getByText(`Discord ID: ${secondAccount}`, { exact: true }).count(),
+    1,
+  );
+  assert.equal(
+    await reviewSection
+      .getByText(
+        'These accounts have LVBT roles but aren’t linked to a member. Their current roles stay in place until staff reviews them.',
+        { exact: true },
+      )
+      .count(),
+    1,
+  );
+  const openDiscord = reviewSection.getByRole('link', {
+    name: `Open Discord profile for account ${firstAccount}`,
+    exact: true,
+  });
+  assert.equal(await openDiscord.innerText(), 'Open in Discord');
   assert.equal(await openDiscord.getAttribute('href'), `https://discord.com/users/${firstAccount}`);
   assert.equal(
     (await openDiscord.getAttribute('class'))?.split(' ').includes('staff-action-link'),
@@ -96,6 +119,19 @@ try {
     animations: 'disabled',
     path: join(fixture.root, 'test-results/staff/discord-review-desktop.png'),
   });
+  const lightSurface = await page
+    .locator('.staff-discord-review')
+    .evaluate((element) => getComputedStyle(element).backgroundColor);
+  await page.emulateMedia({ colorScheme: 'dark' });
+  const darkSurface = await page
+    .locator('.staff-discord-review')
+    .evaluate((element) => getComputedStyle(element).backgroundColor);
+  assert.notEqual(darkSurface, lightSurface);
+  await page.screenshot({
+    animations: 'disabled',
+    path: join(fixture.root, 'test-results/staff/discord-review-dark.png'),
+  });
+  await page.emulateMedia({ colorScheme: 'light' });
   await page.setViewportSize({ width: 320, height: 900 });
   await page.screenshot({
     animations: 'disabled',
@@ -107,14 +143,16 @@ try {
   await setSession('lead');
   await page.goto(`${ORIGIN}/access/`);
   await page.getByRole('heading', { name: 'Discord accounts to review' }).waitFor();
-  assert.equal(await page.getByText(`Discord account ${firstAccount}`, { exact: true }).count(), 1);
+  assert.equal(await reviewSection.getByText('Events Committee', { exact: true }).count(), 1);
   assert.equal(
-    await page.getByText(`Discord account ${secondAccount}`, { exact: true }).count(),
+    await reviewSection.getByText(`Discord ID: ${firstAccount}`, { exact: true }).count(),
+    1,
+  );
+  assert.equal(
+    await reviewSection.getByText(`Discord ID: ${secondAccount}`, { exact: true }).count(),
     0,
   );
-  assert.equal(await page.getByText('Events Committee', { exact: true }).count(), 1);
-  assert.equal(await page.getByText('Advocacy Team', { exact: true }).count(), 0);
-  assert.equal(await page.getByText('LVBT Member', { exact: true }).count(), 0);
+  assert.equal(await reviewSection.getByText('Advocacy Team', { exact: true }).count(), 0);
   await context.close();
   console.log(
     JSON.stringify({
