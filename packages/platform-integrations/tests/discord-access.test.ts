@@ -57,6 +57,47 @@ void test('server reads validate the stable account and only an Unknown Member 4
   response = Response.json({ user: { id: user, username: 'rider' } });
   await assert.rejects(client.readMember(user), { kind: 'invalid_response' });
 });
+void test('guild member pages fetch up to 1000 accounts without retaining profile details', async () => {
+  const { DiscordAccess } = await api();
+  const cursor = '777777777777777777';
+  const page = Array.from({ length: 1000 }, (_, index) => ({
+    user: {
+      id: `6${String(index).padStart(17, '0')}`,
+      username: `transit-member-${index}`,
+      global_name: `Transit member ${index}`,
+      avatar: 'a'.repeat(32),
+      ...(index === 2 ? { bot: true } : {}),
+    },
+    roles: index === 0 ? [memberRole, unrelatedRole] : [],
+    pending: false,
+    nick: null,
+  }));
+  assert.ok(new TextEncoder().encode(JSON.stringify(page)).byteLength > 131_072);
+  let calls = 0;
+  const client = new DiscordAccess(configuration, {
+    fetch: (input, init) => {
+      calls++;
+      const request = new URL(address(input));
+      assert.equal(request.pathname, `/api/v10/guilds/${guild}/members`);
+      assert.equal(request.searchParams.get('limit'), '1000');
+      assert.equal(request.searchParams.get('after'), cursor);
+      assert.equal(new Headers(init?.headers).get('Authorization'), 'Bot synthetic-bot-token');
+      return Promise.resolve(Response.json(page));
+    },
+  });
+  const members = await client.listGuildMembers(cursor);
+  assert.equal(calls, 1);
+  assert.equal(members.length, 1000);
+  assert.deepEqual(members[0], {
+    id: '600000000000000000',
+    roleIds: [memberRole, unrelatedRole],
+    pending: false,
+    bot: false,
+  });
+  assert.equal(members.at(2)?.bot, true);
+  assert.equal('username' in members[0], false);
+  assert.equal('avatar' in members[0], false);
+});
 void test('a verified Discord 404 records server absence without retrying an impossible role grant', async () => {
   const { DiscordAccess } = await api();
   let calls = 0;

@@ -3,12 +3,19 @@ import {
   DiscordApiFailure,
   discordConfigured,
   discordId,
+  parseDiscordGuildMembers,
   parseDiscordMember,
   type DiscordConfiguration,
+  type DiscordGuildMember,
   type DiscordMember,
   type DiscordOptions,
 } from './discord-types';
-export { DiscordApiFailure, type DiscordConfiguration, type DiscordMember } from './discord-types';
+export {
+  DiscordApiFailure,
+  type DiscordConfiguration,
+  type DiscordGuildMember,
+  type DiscordMember,
+} from './discord-types';
 export interface DiscordReconciliation {
   identityId: string;
   managedRoleIds: string[];
@@ -52,6 +59,17 @@ export class DiscordAccess {
       { authorization: `Bot ${this.configuration.botToken}`, unknownMember: true },
     );
     return data === null ? null : parseDiscordMember(data, identityId);
+  }
+  async listGuildMembers(after?: string): Promise<DiscordGuildMember[]> {
+    if (!discordConfigured(this.configuration) || (after !== undefined && !discordId(after)))
+      throw new DiscordApiFailure('not_configured');
+    const query = new URLSearchParams({ limit: '1000' });
+    if (after !== undefined) query.set('after', after);
+    const data = await this.http.request(
+      `/guilds/${this.configuration.guildId}/members?${query.toString()}`,
+      { authorization: `Bot ${this.configuration.botToken}`, responseSize: 'guild-members' },
+    );
+    return parseDiscordGuildMembers(data);
   }
   private async role(input: DiscordReconciliation, roleId: string, add: boolean): Promise<void> {
     if (!(await input.isCurrent())) throw new DiscordApiFailure('stale_operation');
