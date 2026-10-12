@@ -41,7 +41,7 @@ jobs:
   promote:
     name: Verify and publish selected release
     needs: source
-    uses: LasVegasForTransit/repository-tooling/.github/workflows/release-publish.yml@71bd6ea8a314417be4d85829480444bb61bba232
+    uses: LasVegasForTransit/repository-tooling/.github/workflows/release-publish.yml@ce57a60324a13a55f25eee6230860f91cc5436a5
     with:
       target: production
       publication-mode: named-staging
