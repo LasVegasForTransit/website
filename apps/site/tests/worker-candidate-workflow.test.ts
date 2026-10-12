@@ -89,6 +89,17 @@ void test('production promotion uses shared selected-release verification and ne
   assert.match(workflow, /browser-project: ui-contracts/);
   assert.doesNotMatch(workflow, /pnpm build|pnpm check\s|wrangler deploy|worker:deploy/);
 });
+void test('production promotion uses the shared protected named-staging mode', async () => {
+  const workflow = await readFile(workflowUrl, 'utf8');
+  const tooling = JSON.parse(
+    await readFile(new URL('../../../.lvbt/tooling.json', import.meta.url), 'utf8'),
+  ) as {
+    release: { publicationMode?: string; productionPublicationMode?: string };
+  };
+  assert.equal(tooling.release.publicationMode, 'version');
+  assert.equal(tooling.release.productionPublicationMode, 'named-staging');
+  assert.match(workflow, /publication-mode: named-staging/);
+});
 void test('promotable builds use shared typed artifact preparation and required analytics', async () => {
   const workflow = await readFile(stagingWorkflowUrl, 'utf8');
   assert.match(

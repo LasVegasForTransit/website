@@ -115,6 +115,8 @@
     "productionWorker": "lvbt-website",
     "previewWorker": "lvbt-website-preview",
     "artifactPrefix": "website-release",
+    "publicationMode": "version",
+    "productionPublicationMode": "named-staging",
     "stagingWorkflow": {
       "name": "Deploy staging",
       "path": ".github/workflows/deploy-production.yml",
