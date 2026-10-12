@@ -3,9 +3,21 @@
 [extend]
 useDefault = true
 
-[allowlist]
+[[allowlists]]
 description = "Paths that carry no secrets but trip generic entropy rules."
 paths = [
   '''pnpm-lock\.yaml''',
   '''docs/superpowers/.*\.md''',
 ]
+
+[[allowlists]]
+description = "Release manifests list Discord variable names, not secret values."
+paths = ['''^apps/staff/scripts/release-config\.ts$''']
+regexTarget = "line"
+regexes = ['''^\s*'LVBT_DISCORD_(?:SYNC_ENABLED|APPLICATION_ID|GUILD_ID|PRODUCTION_GUILD_ID|MEMBER_ROLE_ID)',$''']
+
+[[allowlists]]
+description = "Committee settings tests use public Discord role IDs."
+paths = ['''^packages/platform-storage/tests/committee-settings\.test\.ts$''']
+regexTarget = "line"
+regexes = ['''^\s*discordRoleId:\s*(?:discordSnowflake\(\d+\)|'\d{17,20}'),$''']
