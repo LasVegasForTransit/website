@@ -7,7 +7,7 @@ test.describe('landmark accessibility', () => {
 
     const hero = page.locator('main > section').first();
     await expect(hero.getByRole('heading', { level: 1 })).toContainText(/public transit movement/i);
-    await expect(hero.getByRole('link', { name: 'About LVBT' })).toHaveAttribute('href', '/about');
+    await expect(hero.getByRole('link', { name: 'About LVBT' })).toHaveAttribute('href', '/about/');
 
     const campaign = hero.getByRole('complementary', { name: 'Take part' });
     await expect(campaign.getByRole('heading', { level: 3 }).first()).toHaveText(
