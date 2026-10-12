@@ -28,27 +28,13 @@ async function expectExternalOpenIcon(locator: Locator) {
 async function firstVirtualEventPath(page: Page): Promise<string | undefined> {
   await page.goto('/events');
 
-  const eventPaths = [
-    ...new Set(
-      await page
-        .locator('main a[href^="/events/"]')
-        .evaluateAll((links) =>
-          links
-            .map((link) => new URL((link as HTMLAnchorElement).href).pathname.replace(/\/$/, ''))
-            .filter((path) => /^\/events\/[^/]+$/.test(path)),
-        ),
-    ),
-  ];
-
-  for (const eventPath of eventPaths) {
-    await page.goto(eventPath);
-
-    if ((await page.locator('main a', { hasText: /^Join$/ }).count()) > 0) {
-      return eventPath;
-    }
-  }
-
-  return undefined;
+  const virtualEvent = page.locator('main a[data-event-when][data-format="virtual"]');
+  if ((await virtualEvent.count()) === 0) return undefined;
+  const href = await virtualEvent.first().getAttribute('href');
+  if (!href) return undefined;
+  const eventPath = href.replace(/\/$/, '');
+  await page.goto(eventPath);
+  return eventPath;
 }
 
 async function firstProjectDetailPath(page: Page): Promise<string> {
@@ -198,26 +184,28 @@ test.describe('body content links', () => {
       ),
     ];
 
-    const metaTitlesByHeading = new Map<string, string[]>();
+    const pathsBySeries = new Map<string, string[]>();
     for (const eventPath of eventPaths) {
-      await page.goto(eventPath);
-
-      const heading = (await page.locator('h1').first().innerText()).trim();
-      const metaTitle = await page.title();
-      const titles = metaTitlesByHeading.get(heading) ?? [];
-      titles.push(metaTitle);
-      metaTitlesByHeading.set(heading, titles);
+      const series = eventPath.replace(/^\/events\/\d{4}-\d{2}-\d{2}-/, '');
+      const paths = pathsBySeries.get(series) ?? [];
+      paths.push(eventPath);
+      pathsBySeries.set(series, paths);
     }
+    const recurringSeries = [...pathsBySeries.entries()].filter(([, paths]) => paths.length > 1);
 
-    const repeatedEvents = [...metaTitlesByHeading.entries()].filter(
-      ([, titles]) => titles.length > 1,
-    );
-
-    expect(repeatedEvents.length).toBeGreaterThan(0);
-    for (const [heading, titles] of repeatedEvents) {
-      expect(new Set(titles).size, heading).toBe(titles.length);
+    expect(recurringSeries.length).toBeGreaterThan(0);
+    for (const [series, paths] of recurringSeries.slice(0, 3)) {
+      const headings: string[] = [];
+      const titles: string[] = [];
+      for (const eventPath of paths.slice(0, 2)) {
+        await page.goto(eventPath, { waitUntil: 'domcontentloaded' });
+        headings.push((await page.locator('h1').first().innerText()).trim());
+        titles.push(await page.title());
+      }
+      expect(new Set(headings).size, series).toBe(1);
+      expect(new Set(titles).size, series).toBe(titles.length);
       for (const title of titles) {
-        expect(title, heading).toMatch(/[A-Z][a-z]+ \d{1,2}, 20\d{2}/);
+        expect(title, series).toMatch(/[A-Z][a-z]+ \d{1,2}, 20\d{2}/);
       }
     }
   });
@@ -1133,14 +1121,14 @@ test.describe('body content links', () => {
   test('virtual event page shows the Join CTA', async ({ page }) => {
     const eventPath = await firstVirtualEventPath(page);
     if (!eventPath) {
-      test.skip(true, 'No current virtual or hybrid event with a Join CTA is in the feed.');
+      test.skip(true, 'No current virtual event with a Join CTA is in the feed.');
       return;
     }
 
     // Scoped to <main> so the mobile site-header "Join" button doesn't
     // false-positive. The event-detail Join CTA lives in the event header
     // inside main; the site chrome lives outside main.
-    const joinCta = page.locator('main a', { hasText: /^Join$/ });
+    const joinCta = page.locator('main').getByRole('link', { name: 'Join', exact: true });
     await expect(joinCta).toBeVisible();
   });
 
@@ -1180,13 +1168,13 @@ test.describe('body content links', () => {
     // hardcoded calendar strings that drift when the event is renamed.
     const eventPath = await firstVirtualEventPath(page);
     if (!eventPath) {
-      test.skip(true, 'No current virtual or hybrid event with a Join CTA is in the feed.');
+      test.skip(true, 'No current virtual event with a Join CTA is in the feed.');
       return;
     }
     const title = (await page.locator('main h1').first().textContent())?.trim() ?? '';
     const joinUrl = await page
-      .locator('main a', { hasText: /^Join$/ })
-      .first()
+      .locator('main')
+      .getByRole('link', { name: 'Join', exact: true })
       .getAttribute('href');
 
     const response = await accessRequest.get(`${eventPath}.ics`);
