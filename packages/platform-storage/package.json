@@ -46,6 +46,8 @@
     "./provider-completion": "./src/provider-completion.ts",
     "./discord-pending": "./src/discord-pending.ts",
     "./discord-drift": "./src/discord-drift.ts",
+    "./discord-scan-store": "./src/discord-scan-store.ts",
+    "./discord-roster": "./src/discord-roster.ts",
     "./discord-change-audit": "./src/discord-change-audit.ts",
     "./retention": "./src/retention.ts",
     "./paper-intake": "./src/paper-intake.ts",

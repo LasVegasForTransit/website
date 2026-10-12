@@ -11,6 +11,7 @@ import { enqueueOperation } from '@lasvegasfortransit/platform-storage/outbox';
 const root = fileURLToPath(new URL('../../', import.meta.url));
 const data = await mkdtemp(join(tmpdir(), 'lvbt-jobs-fixture-'));
 const identityId = '222222222222222222';
+const reviewUserId = '777777777777777777';
 const memberRoleId = '333333333333333333';
 const committeeRoleId = '444444444444444444';
 const unrelatedRoleId = '666666666666666666';
@@ -41,6 +42,25 @@ const simulator = new Miniflare(
       const url = new URL(request.url);
       assert.equal(url.origin, 'https://discord.com');
       assert.equal(request.headers.get('Authorization'), 'Bot fixture-only');
+      const rosterRoute = `/api/v10/guilds/${guildId}/members`;
+      if (url.pathname === rosterRoute) {
+        assert.equal(request.method, 'GET');
+        assert.equal(url.searchParams.get('limit'), '1000');
+        calls.push(`${request.method} ${url.pathname}`);
+        return Promise.resolve(
+          new RuntimeResponse(
+            JSON.stringify([
+              { user: { id: identityId, bot: false }, roles: [...roles], pending: false },
+              {
+                user: { id: reviewUserId, bot: false },
+                roles: [memberRoleId, unrelatedRoleId],
+                pending: false,
+              },
+            ]),
+            { headers: { 'Content-Type': 'application/json' } },
+          ),
+        );
+      }
       const route = `/api/v10/guilds/${guildId}/members/${identityId}`;
       assert.ok(url.pathname === route || url.pathname.startsWith(`${route}/roles/`));
       calls.push(`${request.method} ${url.pathname}`);
@@ -132,6 +152,14 @@ try {
   assert.equal((await worker.fetch('https://jobs.example.invalid/')).status, 404);
   assert.equal((await worker.scheduled({ cron: '* * * * *' })).outcome, 'ok');
   assert.deepEqual([...roles].sort(), [memberRoleId, committeeRoleId, unrelatedRoleId].sort());
+  assert.deepEqual(
+    await db.prepare('SELECT discord_user_id,managed_role_ids FROM discord_role_reviews').first(),
+    {
+      discord_user_id: reviewUserId,
+      managed_role_ids: JSON.stringify([memberRoleId]),
+    },
+    'an unlinked account is flagged for review without changing its roles',
+  );
   assert.equal(
     (await db.prepare('SELECT username FROM discord_profiles').first())?.username,
     'fixture.member',

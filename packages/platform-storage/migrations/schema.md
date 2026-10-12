@@ -371,6 +371,15 @@ expired workers cannot overwrite resumed scans or release a successor lease. The
 no contact or provider profile fields. Scan completion proves queue coverage, not provider
 convergence. Migration 0019 has not been applied to production.
 
+Migration 0030 adds a separate `guild-roster:<guild-id>` checkpoint alongside the existing linked
+person scan. The guild scan reads Discord's member list one 1,000-account page per scheduled run,
+records its page/account/review/error counts, and resumes from the last completed page after a
+restart or rate limit. `discord_role_reviews` contains only the server ID, Discord account ID,
+LVBT-managed role IDs, and first/last seen times. The scan never changes roles on unlinked accounts.
+A completed roster scan removes review rows that no longer match; interrupted scans leave the prior
+review list intact. Staff see only role mappings within their current committee scope, while
+administrators see the full list. Migration 0030 has not been applied to production.
+
 ### Deleted account cleanup (0020)
 
 The deletion trigger advances existing person and committee generations, supersedes old work and
