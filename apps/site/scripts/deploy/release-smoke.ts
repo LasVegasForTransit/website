@@ -1,12 +1,9 @@
 import assert from 'node:assert/strict';
 import { parseArgs } from 'node:util';
 import { chromium } from '@playwright/test';
-import {
-  scopeBrowserAccess,
-  validateWorkerSmokeOrigin,
-} from '@lasvegasfortransit/web-platform/release';
+import { scopeBrowserAccess } from '@lasvegasfortransit/web-platform/release';
 import { releaseConfiguration } from './release-config';
-import { accessCredentials, accessFetch } from './access-auth';
+import { verifyReleaseAccess } from './release-access';
 import { waitForReleaseIdentity } from './release-identity';
 
 const { values } = parseArgs({
@@ -24,17 +21,7 @@ const parsed = new URL(values.url);
 if (parsed.protocol !== 'https:' || parsed.pathname !== '/' || parsed.search || parsed.hash)
   throw new Error('Pass an HTTPS origin without a path.');
 const origin = parsed.origin;
-validateWorkerSmokeOrigin(origin, releaseConfiguration, values.protected);
-const credentials = values.protected ? accessCredentials(process.env) : undefined;
-if (values.protected && !credentials)
-  throw new Error('Protected staging verification requires Access credentials.');
-if (values.protected) {
-  const anonymous = await accessFetch(`${origin}/`, origin);
-  assert.ok(
-    [302, 401, 403].includes(anonymous.status),
-    `Anonymous request reached staging (${anonymous.status}).`,
-  );
-}
+const credentials = await verifyReleaseAccess(origin, releaseConfiguration, values);
 if (values['release-id'] || values.commit) {
   if (!values.commit || !values['release-id'])
     throw new Error('Pass both --commit and --release-id.');
@@ -67,11 +54,6 @@ try {
   assert.match(await page.title(), /Las Vegans for Better Transit|Las Vegas|LVBT/i);
   assert.ok(await page.locator('main').isVisible(), 'The website main content is not visible.');
   if (values.public) {
-    assert.equal(
-      origin,
-      'https://lasvegasfortransit.org',
-      'Public checks require the production origin.',
-    );
     const nested = await page.goto(`${origin}/colophon/`, { waitUntil: 'networkidle' });
     assert.equal(nested?.status(), 200, 'A nested production route did not render.');
     assert.ok(await page.locator('main').isVisible());
@@ -82,7 +64,7 @@ try {
       'www did not redirect to the canonical nested route.',
     );
   }
-  if (values.protected) {
+  if (credentials) {
     // Cloudflare overwrites this header on versioned workers.dev preview URLs.
     const robots = parsed.hostname.endsWith('.workers.dev')
       ? 'noindex'

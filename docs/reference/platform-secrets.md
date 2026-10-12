@@ -54,19 +54,22 @@ consumer aligned before accepting a rotation as complete.
 
 ## Where each secret lives
 
-| Target                                | What it serves                                            |
-| ------------------------------------- | --------------------------------------------------------- |
-| Worker `lvbt-website`                 | Production site and candidate versions                    |
-| GitHub environment `worker-candidate` | Production Worker deployment and D1 migration credentials |
-| GitHub environment `worker-preview`   | Staging upload and protected-preview verification         |
+| Target                                | What it serves                                                        |
+| ------------------------------------- | --------------------------------------------------------------------- |
+| Worker `lvbt-website`                 | Production site and candidate versions                                |
+| GitHub environment `worker-candidate` | Production deployment, D1 migrations and private version verification |
+| GitHub environment `worker-preview`   | Staging upload and protected-preview verification                     |
 
 Runtime integration credentials are forbidden in the GitHub release environments. They stay on
 `lvbt-website`; version uploads preserve those Worker secrets without sending their values through
 CI. Each environment has its own per-Worker `CLOUDFLARE_WORKERS_API_TOKEN` and a separate
 `CLOUDFLARE_MIGRATIONS_API_TOKEN` for trusted retained SQL. D1 write access may be account-wide, so
-it is not added to the Worker deployment token. Only `worker-preview` needs the Access service pair.
-Both environments accept only the selected branch `main`; bootstrap detects drift and preserves
-existing reviewer and timer protections when applying this restriction.
+it is not added to the Worker deployment token. Each environment has a separate Access service pair:
+`worker-preview` verifies staging and PR versions; `worker-candidate` verifies private production
+versions. The candidate pair's Service Auth policy covers only `lvbt-website` preview URLs,
+alongside the staff identity policy. Never use a public bypass for these URLs. Both environments
+accept only the selected branch `main`; bootstrap detects drift and preserves existing reviewer and
+timer protections when applying this restriction.
 
 Public build values remain GitHub Actions variables. The manifest checks their presence and the
 release environments' account IDs against the declared Cloudflare account. It never overwrites an

@@ -43,6 +43,10 @@ uncertain publication, or bypass a failed check. A request to inspect/review cha
 from a request to publish; perform the requested review without imposing a new approval on an
 already authorized publication.
 
+Every staging, PR, and production version preview URL requires the existing staff identity policy.
+Trusted CI verifies private versions with a narrowly scoped Access service token. Never add a public
+or Everyone bypass to make a release check pass. Production custom domains remain public.
+
 Commands only the site has, such as `event:new` or `worker:dev`, live in `apps/site/package.json`:
 run them with `pnpm -C apps/site <command>`.
 
