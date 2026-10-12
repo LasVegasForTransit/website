@@ -14,7 +14,7 @@
     "check-types": "astro check --noSync && tsc --noEmit -p tsconfig.e2e.json",
     "test": "node --import tsx --test tests/*.test.ts",
     "validate": "astro build",
-    "test:e2e": "node --import tsx tests/e2e/browser.spec.ts",
+    "test:e2e": "node --import tsx tests/e2e/browser.spec.ts && node --import tsx tests/e2e/initial-admin.spec.ts",
     "test:release": "node --import tsx tests/e2e/release.spec.ts",
     "test:discord-observation": "node --import tsx tests/e2e/discord-observation.spec.ts",
     "test:paper": "node --import tsx tests/e2e/paper.spec.ts",
