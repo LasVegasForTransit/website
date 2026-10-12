@@ -13,7 +13,7 @@ const blueskyHandle = handleFromUrl(site.social.bluesky);
 // form when configured, falling back to the /join membership section (an
 // always-valid internal route) rather than a stale literal.
 const membershipUrl = site.membership.formUrl;
-const membershipHref = membershipUrl ?? '/join#membership';
+const membershipHref = membershipUrl ?? '/join/#membership';
 
 const leadProjectMailto = `mailto:${site.email.general}?subject=Project%20lead%20interest`;
 const partnerMailto = `mailto:${site.email.partners}?subject=Partnership%20inquiry`;
@@ -187,7 +187,7 @@ const partnerMailto = `mailto:${site.email.partners}?subject=Partnership%20inqui
 
     <div class="mt-8 grid gap-4 sm:grid-cols-2">
       <a
-        href="/join#team"
+        href="/join/#team"
         class="group flex flex-col gap-2 border border-outline bg-surface-container p-6 no-underline transition-colors hover:bg-slab hover:text-on-slab focus-visible:bg-slab focus-visible:text-on-slab"
       >
         <Icon

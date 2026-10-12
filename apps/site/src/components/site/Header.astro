@@ -9,7 +9,7 @@ const normalizePath = (value: string) => {
 };
 
 const path = normalizePath(Astro.url.pathname);
-const tabletNavigation = new Set(['/programs', '/events']);
+const tabletNavigation = new Set(['/programs/', '/events/']);
 ---
 
 {
@@ -45,10 +45,10 @@ const tabletNavigation = new Set(['/programs', '/events']);
             const active = path === normalizePath(item.href);
             return (
               <li class={tabletNavigation.has(item.href) ? undefined : 'hidden lg:block'}>
-                {item.href === '/join' ? (
+                {item.href === '/join/' ? (
                   <>
                     <a
-                      href="/join"
+                      href="/join/"
                       data-auth="signed-out"
                       aria-current={active ? 'page' : undefined}
                       class="nav-link no-underline hover:text-primary-ink"
@@ -124,7 +124,7 @@ const tabletNavigation = new Set(['/programs', '/events']);
       </div>
       <div data-auth="signed-out">
         <a
-          href="/go"
+          href="/go/"
           data-header-cta
           class="press inline-flex items-center gap-1.5 bg-on-surface text-surface px-4 py-2 text-sm font-bold no-underline hover:bg-primary hover:text-on-primary focus-visible:bg-primary focus-visible:text-on-primary"
         >
@@ -136,7 +136,7 @@ const tabletNavigation = new Set(['/programs', '/events']);
     <div class="lg:hidden flex shrink-0 items-center gap-3 whitespace-nowrap">
       <div data-auth="signed-out" class="hidden min-[375px]:block">
         <a
-          href="/join"
+          href="/join/"
           data-mobile-join
           class="press inline-flex items-center gap-1.5 bg-on-surface text-surface px-4 py-2 text-sm font-bold no-underline hover:bg-primary hover:text-on-primary focus-visible:bg-primary focus-visible:text-on-primary"
         >
@@ -179,7 +179,7 @@ const tabletNavigation = new Set(['/programs', '/events']);
   <ul class="flex-1 list-none m-0 px-6 py-2">
     {
       navMain
-        .filter((item) => item.href !== '/join')
+        .filter((item) => item.href !== '/join/')
         .map((item) => {
           const active = path === normalizePath(item.href);
           return (
@@ -221,7 +221,7 @@ const tabletNavigation = new Set(['/programs', '/events']);
   </div>
   <div class="px-6 pb-8 pt-4">
     <a
-      href="/go"
+      href="/go/"
       class="press flex items-center justify-center gap-1.5 bg-on-surface text-surface py-4 text-sm font-bold no-underline hover:bg-primary hover:text-on-primary focus-visible:bg-primary focus-visible:text-on-primary"
     >
       Get involved <span class="arrow" aria-hidden="true">→</span>

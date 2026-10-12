@@ -10,7 +10,7 @@ import { site } from '../lib/site';
 import { websiteSchema } from '../lib/structured-data';
 
 const membershipUrl = site.membership.formUrl;
-const membershipHref = membershipUrl ?? '/join#membership';
+const membershipHref = membershipUrl ?? '/join/#membership';
 const membershipTarget = membershipUrl ? '_blank' : undefined;
 const membershipRel = membershipUrl ? 'noopener noreferrer' : undefined;
 
@@ -69,8 +69,8 @@ const regionalProjects = [
           walkable neighborhoods to support world-class transit.
         </p>
         <div class="mt-8 flex flex-wrap items-center gap-x-6 gap-y-4">
-          <a href="/join" class:list={[buttonClass.primary, 'no-underline']}>Get involved</a>
-          <a href="/about" class="body-link font-semibold">About LVBT</a>
+          <a href="/join/" class:list={[buttonClass.primary, 'no-underline']}>Get involved</a>
+          <a href="/about/" class="body-link font-semibold">About LVBT</a>
         </div>
       </div>
       <aside
@@ -140,7 +140,7 @@ const regionalProjects = [
             ))
           }
         </div>
-        <a href="/programs" class="body-link mt-8 inline-block font-semibold"
+        <a href="/programs/" class="body-link mt-8 inline-block font-semibold"
           >Explore our programs</a
         >
       </div>
@@ -151,7 +151,7 @@ const regionalProjects = [
     <div class="container-page py-12 md:py-16">
       <div class="reveal flex flex-wrap items-baseline justify-between gap-4">
         <h2 id="updates-title" class="text-headline-lg">From LVBT</h2>
-        <a href="/newsletter" class="body-link font-semibold">Get our newsletter</a>
+        <a href="/newsletter/" class="body-link font-semibold">Get our newsletter</a>
       </div>
       <div class="mt-8 grid gap-8 md:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)] md:gap-12">
         <article class="reveal">

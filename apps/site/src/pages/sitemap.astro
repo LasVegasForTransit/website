@@ -1,11 +1,11 @@
 ---
+import { paths, canonicalUrl } from '../lib/paths';
 import BaseLayout from '../layouts/BaseLayout.astro';
 import PageHero from '../components/PageHero.astro';
 import StructuredData from '../components/seo/StructuredData.astro';
 import { getCollection } from 'astro:content';
 import { site } from '../lib/site';
 import { byOrderThenTitle } from '../lib/projects';
-import { paths } from '../lib/paths';
 
 type Entry = {
   name: string;
@@ -31,22 +31,22 @@ const topGroups: Group[] = [
       },
       {
         name: 'About',
-        href: '/about',
+        href: '/about/',
         description: "Who we are, what we're fighting for, and how we're organized.",
       },
       {
         name: 'Press',
-        href: '/press',
+        href: '/press/',
         description: 'News coverage and media appearances featuring LVBT.',
       },
       {
         name: 'Strategy',
-        href: '/about/strategy',
+        href: '/about/strategy/',
         description: 'Our theory of change — how we plan to win in Nevada.',
       },
       {
         name: 'Letters from Leadership',
-        href: '/letters',
+        href: '/letters/',
         description: "Periodic notes from LVBT's team.",
       },
     ],
@@ -56,17 +56,17 @@ const topGroups: Group[] = [
     entries: [
       {
         name: 'Programs',
-        href: '/programs',
+        href: '/programs/',
         description: 'Named gatherings and challenges you can join.',
       },
       {
         name: 'Projects',
-        href: '/projects',
+        href: '/projects/',
         description: 'The roadmap of named, reportable project lines.',
       },
       {
         name: 'Events',
-        href: '/events',
+        href: '/events/',
         description: 'Upcoming events, talks, and organizing actions.',
       },
     ],
@@ -76,7 +76,7 @@ const topGroups: Group[] = [
     entries: [
       {
         name: 'Get involved',
-        href: '/go',
+        href: '/go/',
         description: 'Newsletter, volunteer signup, and ways to plug in.',
       },
       {
@@ -87,7 +87,7 @@ const topGroups: Group[] = [
       },
       {
         name: 'Newsletter',
-        href: '/newsletter',
+        href: '/newsletter/',
         description: 'Recent issues and the link to subscribe on Beehiiv.',
       },
       ...(site.donate.url
@@ -102,7 +102,7 @@ const topGroups: Group[] = [
         : []),
       {
         name: 'Contact',
-        href: '/contact',
+        href: '/contact/',
         description: 'General, press, and partnership contacts.',
       },
     ],
@@ -208,7 +208,7 @@ const navSchema = {
     ...projects.map((p) => ({
       '@type': 'SiteNavigationElement',
       name: p.data.title,
-      url: new URL(`/projects/${p.id}`, site.url).toString(),
+      url: canonicalUrl(paths.project(p.id)),
     })),
     ...programs.map((p) => ({
       '@type': 'SiteNavigationElement',
@@ -276,7 +276,7 @@ const navSchema = {
       <div class="pb-3 border-b-2 border-outline flex items-baseline justify-between gap-4">
         <h2 class="text-title-lg">Projects</h2>
         <a
-          href="/projects"
+          href="/projects/"
           class="text-body-sm text-on-surface-variant hover:text-primary-ink no-underline"
         >
           {projects.length} total · open the directory →
@@ -286,7 +286,7 @@ const navSchema = {
         {
           projects.map((p) => (
             <li class="border-b border-outline-variant/15">
-              <a href={`/projects/${p.id}`} class="group block py-3 no-underline">
+              <a href={paths.project(p.id)} class="group block py-3 no-underline">
                 <p class="font-semibold group-hover:text-primary transition-colors leading-snug">
                   {p.data.title}
                 </p>

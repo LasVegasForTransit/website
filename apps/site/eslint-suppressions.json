@@ -265,16 +265,6 @@
       "count": 1
     }
   },
-  "src/lib/site.ts": {
-    "@typescript-eslint/prefer-optional-chain": {
-      "count": 1
-    }
-  },
-  "src/lib/strategy-content.ts": {
-    "@typescript-eslint/consistent-type-definitions": {
-      "count": 1
-    }
-  },
   "src/lib/structured-data.ts": {
     "complexity": {
       "count": 1

@@ -6,15 +6,17 @@ import { site } from './site';
  * groups projects by initiative under matching section ids.
  */
 export const paths = {
-  programs: '/programs',
-  program: (id: string) => `/programs/${id}`,
-  projects: '/projects',
-  project: (id: string) => `/projects/${id}`,
-  initiative: (id: string) => `/projects#${id}`,
-  letters: '/letters',
-  letter: (id: string) => `/letters/${id}`,
-  events: '/events',
-  join: '/join',
+  programs: '/programs/',
+  program: (id: string) => `/programs/${id}/`,
+  projects: '/projects/',
+  project: (id: string) => `/projects/${id}/`,
+  initiative: (id: string) => `/projects/#${id}`,
+  letters: '/letters/',
+  letter: (id: string) => `/letters/${id}/`,
+  events: '/events/',
+  event: (id: string) => `/events/${id}/`,
+  join: '/join/',
+  role: (id: string) => `/join/${id}/`,
 } as const;
 
 /**
@@ -24,7 +26,12 @@ export const paths = {
  * of independently re-typed per page.
  */
 export function canonicalUrl(pathname: string): string {
-  return new URL(pathname, site.url).toString();
+  const url = new URL(pathname, site.url);
+  // HTML routes use directory indexes. File downloads keep their extension.
+  if (!url.pathname.endsWith('/') && !url.pathname.split('/').at(-1)?.includes('.')) {
+    url.pathname += '/';
+  }
+  return url.toString();
 }
 
 /**

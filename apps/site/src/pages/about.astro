@@ -87,7 +87,7 @@ const contacts: Array<{ label: string; email: string; context: string; icon: str
 ];
 
 const membershipUrl = site.membership.formUrl;
-const membershipHref = membershipUrl ?? '/go';
+const membershipHref = membershipUrl ?? '/go/';
 
 // Underlined mission "thrusts" that highlight their matching pillar on hover.
 const thrustClass =
@@ -213,7 +213,7 @@ const thrustClass =
       }
     </ul>
 
-    <a href="/projects" data-screen-action class="body-link mt-8 inline-block font-semibold"
+    <a href="/projects/" data-screen-action class="body-link mt-8 inline-block font-semibold"
       >See our projects &#8594;</a
     >
   </section>
@@ -273,7 +273,7 @@ const thrustClass =
       }
     </div>
     <p class="mt-6 text-body-md">
-      Looking for previous coverage? <a href="/press" class="body-link font-semibold"
+      Looking for previous coverage? <a href="/press/" class="body-link font-semibold"
         >LVBT in the press</a
       >.
     </p>

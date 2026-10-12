@@ -26,8 +26,8 @@ test('publishes the LVBT press page and makes it reachable from About and the fo
 
   await page.goto('/about');
   await page.waitForLoadState('networkidle');
-  await expect(page.locator('main a[href="/press"]')).toBeVisible();
-  await expect(page.locator('footer a[href="/press"]')).toBeVisible();
+  await expect(page.locator('main a[href="/press/"]')).toBeVisible();
+  await expect(page.locator('footer a[href="/press/"]')).toBeVisible();
 
   const sitemap = await request.get('/sitemap-0.xml');
   expect(sitemap.ok()).toBe(true);

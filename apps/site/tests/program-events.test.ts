@@ -174,7 +174,7 @@ void test('a completed meetup links to its record even when it retains an old si
 
 void test('without any occurrence, an event series keeps the events calendar available', () => {
   assert.deepEqual(programParticipationAction({ calendarSeriesUid: seriesUid }, undefined, now), {
-    href: '/events',
+    href: '/events/',
     label: 'Events calendar',
     external: false,
   });
@@ -324,7 +324,7 @@ void test('the directory feature uses the recurring schedule when no occurrence 
   assert.equal(feature.heading, 'Schedule');
   assert.equal(feature.headline, 'Third Thursdays at 6:30 p.m.');
   assert.equal(feature.timeLabel, undefined);
-  assert.equal(feature.action?.href, '/events');
+  assert.equal(feature.action?.href, '/events/');
   assert.equal(feature.action.label, 'Events calendar');
 });
 

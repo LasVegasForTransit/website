@@ -91,8 +91,8 @@ test.describe('body content links', () => {
     await expect(page.locator('[aria-label="Helpful pages"]')).toHaveCount(0);
     await expect(page.locator('main')).not.toContainText('Better frequency pending');
     await expect(page.locator('main')).not.toContainText('blaming the land use');
-    await expect(page.locator('main a[href="/events"]')).toBeVisible();
-    await expect(page.locator('main a[href="/go"]')).toBeVisible();
+    await expect(page.locator('main a[href="/events/"]')).toBeVisible();
+    await expect(page.locator('main a[href="/go/"]')).toBeVisible();
     await expect(page.locator('main a[href="/sitemap"]')).toHaveCount(0);
   });
 
@@ -232,7 +232,7 @@ test.describe('body content links', () => {
         links.map((link) => (link as HTMLAnchorElement).getAttribute('href')),
       );
 
-    expect(breadcrumbLinks).toEqual(['/', '/projects']);
+    expect(breadcrumbLinks).toEqual(['/', '/projects/']);
 
     const breadcrumbSchema = await page.evaluate(() => {
       const schemas = Array.from(
@@ -251,7 +251,7 @@ test.describe('body content links', () => {
 
     expect(breadcrumbSchema).toBeTruthy();
     expect(breadcrumbSchema?.itemListElement[0]?.item).toBe('/');
-    expect(breadcrumbSchema?.itemListElement[1]?.item).toBe('/projects');
+    expect(breadcrumbSchema?.itemListElement[1]?.item).toBe('/projects/');
   });
 
   test('keeps the footer usable on wide-short and landscape viewports', async ({ page }) => {
@@ -333,8 +333,8 @@ test.describe('body content links', () => {
 
     await expect(page.locator('footer')).not.toContainText('Website made with love');
     const utilityNav = page.locator('footer nav[aria-label="Site utilities"]');
-    await expect(utilityNav.locator('a[href="/colophon"]', { hasText: 'Colophon' })).toBeVisible();
-    await expect(utilityNav.locator('a[href="/brand"]', { hasText: 'Brand' })).toBeVisible();
+    await expect(utilityNav.locator('a[href="/colophon/"]', { hasText: 'Colophon' })).toBeVisible();
+    await expect(utilityNav.locator('a[href="/brand/"]', { hasText: 'Brand' })).toBeVisible();
 
     const utilityLinks = utilityNav.locator('a');
     await expect(utilityLinks).toHaveCount(5);
@@ -927,29 +927,29 @@ test.describe('body content links', () => {
     await page.goto('/about');
     await page.waitForLoadState('networkidle');
 
-    await expect(page.locator('nav[aria-label="Primary"] a[href="/join"]')).toHaveText('Join');
+    await expect(page.locator('nav[aria-label="Primary"] a[href="/join/"]')).toHaveText('Join');
     await expect(page.locator('header a[data-mobile-join]')).toContainText('Join');
-    await expect(page.locator('footer a[href="/join"]', { hasText: 'Join us' })).toBeVisible();
+    await expect(page.locator('footer a[href="/join/"]', { hasText: 'Join us' })).toBeVisible();
   });
 
   test('exposes the Programs page from persistent site chrome', async ({ page }) => {
     await page.goto('/about');
     await page.waitForLoadState('networkidle');
 
-    await expect(page.locator('nav[aria-label="Primary"] a[href="/programs"]')).toHaveText(
+    await expect(page.locator('nav[aria-label="Primary"] a[href="/programs/"]')).toHaveText(
       'Programs',
     );
-    await expect(page.locator('nav[aria-label="Primary"] a[href="/projects"]')).toHaveText(
+    await expect(page.locator('nav[aria-label="Primary"] a[href="/projects/"]')).toHaveText(
       'Projects',
     );
-    expect(await page.locator('footer a[href="/programs"]').count()).toBeGreaterThan(0);
-    expect(await page.locator('footer a[href="/projects"]').count()).toBeGreaterThan(0);
+    expect(await page.locator('footer a[href="/programs/"]').count()).toBeGreaterThan(0);
+    expect(await page.locator('footer a[href="/projects/"]').count()).toBeGreaterThan(0);
 
     await page.goto('/programs');
     await page.waitForLoadState('networkidle');
 
     await expect(page.locator('main h1')).toBeVisible();
-    await expect(page.locator('main a[href="/projects"]')).toBeVisible();
+    await expect(page.locator('main a[href="/projects/"]')).toBeVisible();
     expect(await page.locator('main article, main li').count()).toBeGreaterThan(0);
   });
 
@@ -1040,7 +1040,7 @@ test.describe('body content links', () => {
   });
 
   test('marks header nav links current only on exact route matches', async ({ page }) => {
-    const desktopJoin = page.locator('nav[aria-label="Primary"] a[href="/join"]');
+    const desktopJoin = page.locator('nav[aria-label="Primary"] a[href="/join/"]');
 
     await page.goto('/join');
     await page.waitForLoadState('networkidle');
@@ -1055,14 +1055,14 @@ test.describe('body content links', () => {
     await page.waitForLoadState('networkidle');
     await page.locator('button[data-nav-toggle]').click();
     await expect(
-      page.locator('nav[aria-label="Mobile navigation"] a[href="/about"]'),
+      page.locator('nav[aria-label="Mobile navigation"] a[href="/about/"]'),
     ).toHaveAttribute('aria-current', 'page');
 
     await page.goto('/about/strategy');
     await page.waitForLoadState('networkidle');
     await page.locator('button[data-nav-toggle]').click();
     await expect(
-      page.locator('nav[aria-label="Mobile navigation"] a[href="/about"]'),
+      page.locator('nav[aria-label="Mobile navigation"] a[href="/about/"]'),
     ).not.toHaveAttribute('aria-current', 'page');
   });
 
@@ -1092,7 +1092,7 @@ test.describe('body content links', () => {
     await page.waitForLoadState('networkidle');
     await page.evaluate(() => document.fonts.ready);
 
-    const bodyLink = page.locator('main a.body-link[href="/projects"]').first();
+    const bodyLink = page.locator('main a.body-link[href="/projects/"]').first();
 
     await bodyLink.hover();
     await expect(bodyLink).toHaveCSS('color', 'rgb(191, 58, 16)');
@@ -1117,8 +1117,8 @@ test.describe('body content links', () => {
 
     // The about-page prose link target tracks src/content/pages/about.mdx —
     // /about/strategy is the surviving in-body link while /vision is hidden.
-    const storyLink = page.locator('.prose-doc a[href="/about/strategy"]').first();
-    const bodyLink = page.locator('main a.body-link[href="/projects"]').first();
+    const storyLink = page.locator('.prose-doc a[href="/about/strategy/"]').first();
+    const bodyLink = page.locator('main a.body-link[href="/projects/"]').first();
 
     await expect(storyLink).toHaveCSS('text-decoration-line', 'underline');
     await expect(storyLink).toHaveCSS('font-weight', '600');

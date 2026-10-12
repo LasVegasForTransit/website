@@ -24,15 +24,14 @@ test.describe('not found search recovery', () => {
     await expect(page.locator('[aria-label="Helpful pages"]')).toHaveCount(0);
     await expect(page.locator('main')).not.toContainText('Better frequency pending');
     await expect(page.locator('main')).not.toContainText('blaming the land use');
-    await expect(page.locator('main a[href="/events"]')).toBeVisible();
-    await expect(page.locator('main a[href="/go"]')).toBeVisible();
-    await expect(page.locator('main a[href="/sitemap"]')).toHaveCount(0);
+    await expect(page.locator('main a[href="/events/"]')).toBeVisible();
+    await expect(page.locator('main a[href="/go/"]')).toBeVisible();
+    await expect(page.locator('main a[href="/sitemap/"]')).toHaveCount(0);
   });
 
   test('keeps the not found scene immersive through the main viewport', async ({ page }) => {
     await page.setViewportSize({ width: 1180, height: 820 });
-    await page.goto('/totally-missing-seo-audit-test/');
-    await page.waitForLoadState('networkidle');
+    await page.goto('/totally-missing-seo-audit-test/', { waitUntil: 'networkidle' });
 
     const coverage = await page.evaluate(() => {
       const main = document.querySelector('main');
@@ -60,8 +59,7 @@ test.describe('not found search recovery', () => {
   });
 
   test('builds 404 search results for public pages only', async ({ page }) => {
-    await page.goto('/totally-missing-seo-audit-test/');
-    await page.waitForLoadState('networkidle');
+    await page.goto('/totally-missing-seo-audit-test/', { waitUntil: 'networkidle' });
 
     const results = await page.evaluate(async () => {
       type PagefindResult = { data: () => Promise<{ url: string }> };
