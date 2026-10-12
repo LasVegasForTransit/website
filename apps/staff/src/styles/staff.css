@@ -229,8 +229,9 @@ html {
 
   .staff-discord-review {
     margin-block: 1rem;
-    padding: 1rem;
-    border: 1px solid var(--color-outline-variant);
+    padding: 0.75rem;
+    border-top: 2px solid var(--color-on-surface);
+    border-bottom: 1px solid var(--color-outline-variant);
     background: var(--color-surface-container);
   }
 
@@ -241,12 +242,12 @@ html {
 
   .staff-discord-review > p {
     max-width: 42rem;
-    margin-block: 0.5rem 0;
+    margin-block: 0.375rem 0;
     color: var(--color-on-surface-variant);
   }
 
   .staff-discord-review-list {
-    margin: 0.75rem 0 0;
+    margin: 0.5rem 0 0;
     padding: 0;
     list-style: none;
   }
@@ -256,12 +257,24 @@ html {
     align-items: center;
     justify-content: space-between;
     gap: 1rem;
-    padding-block: 0.75rem;
+    padding-block: 0.5rem;
     border-top: 1px solid var(--color-outline-variant);
   }
 
   .staff-discord-review-list p {
     margin-block: 0.25rem 0;
+  }
+
+  .staff-discord-review-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.25rem 1rem;
+    font-size: 0.75rem;
+  }
+
+  .staff-discord-review-id {
+    font-variant-numeric: tabular-nums;
+    overflow-wrap: anywhere;
   }
 
   @media (max-width: 40rem) {

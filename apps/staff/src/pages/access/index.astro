@@ -88,24 +88,23 @@ if (discordReviews?.nextCursor)
       <section class="staff-discord-review" aria-labelledby="discord-review-heading">
         <h2 id="discord-review-heading">Discord accounts to review</h2>
         <p>
-          These accounts have an LVBT role but aren’t connected to a member record. Their roles stay
-          as they are until staff reviews them.
+          These accounts have LVBT roles but aren’t linked to a member. Their current roles stay in
+          place until staff reviews them.
         </p>
         {discordReviews.items.length ? (
           <ul class="staff-discord-review-list">
             {discordReviews.items.map((review) => (
               <li>
                 <div>
-                  <strong>Discord account {review.discordUserId}</strong>
-                  <p class="staff-help">
-                    Roles: {review.roles.map((role) => role.label).join(', ')}
-                  </p>
-                  <p class="staff-help">
-                    First seen {formatFullDate(new Date(review.firstSeenAt))}
+                  <strong>{review.roles.map((role) => role.label).join(', ')}</strong>
+                  <p class="staff-help staff-discord-review-meta">
+                    <span class="staff-discord-review-id">Discord ID: {review.discordUserId}</span>
+                    <span>First seen {formatFullDate(new Date(review.firstSeenAt))}</span>
                   </p>
                 </div>
                 <a
                   class="staff-action-link"
+                  aria-label={`Open Discord profile for account ${review.discordUserId}`}
                   href={`https://discord.com/users/${review.discordUserId}`}
                   target="_blank"
                   rel="noreferrer"
