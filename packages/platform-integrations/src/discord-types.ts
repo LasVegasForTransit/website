@@ -39,6 +39,12 @@ export interface DiscordMember {
   pending: boolean;
   nickname: string | null;
 }
+export interface DiscordGuildMember {
+  id: string;
+  roleIds: string[];
+  pending: boolean;
+  bot: boolean;
+}
 export function object(value: unknown): Record<string, unknown> {
   if (typeof value !== 'object' || value === null || Array.isArray(value))
     throw new DiscordApiFailure('invalid_response');
@@ -87,6 +93,32 @@ export function parseDiscordMember(value: unknown, expectedId: string): DiscordM
     pending: data.pending === true,
     nickname: nullableText(data.nick, 32),
   };
+}
+export function parseDiscordGuildMember(value: unknown): DiscordGuildMember {
+  const data = object(value);
+  const user = object(data.user);
+  if (
+    !discordId(user.id) ||
+    !Array.isArray(data.roles) ||
+    data.roles.length > 1000 ||
+    !data.roles.every(discordId) ||
+    (data.pending !== undefined && typeof data.pending !== 'boolean') ||
+    (user.bot !== undefined && typeof user.bot !== 'boolean')
+  )
+    throw new DiscordApiFailure('invalid_response');
+  return {
+    id: user.id,
+    roleIds: [...new Set(data.roles)].sort(),
+    pending: data.pending === true,
+    bot: user.bot === true,
+  };
+}
+export function parseDiscordGuildMembers(value: unknown): DiscordGuildMember[] {
+  if (!Array.isArray(value) || value.length > 1000) throw new DiscordApiFailure('invalid_response');
+  const members = value.map(parseDiscordGuildMember);
+  if (new Set(members.map(({ id }) => id)).size !== members.length)
+    throw new DiscordApiFailure('invalid_response');
+  return members;
 }
 export function discordConfigured(configuration: DiscordConfiguration): boolean {
   return (

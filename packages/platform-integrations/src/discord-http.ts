@@ -11,8 +11,9 @@ interface RequestInput {
   reason?: string;
   body?: URLSearchParams;
   unknownMember?: boolean;
+  responseSize?: 'guild-members';
 }
-async function json(response: Response, signal: AbortSignal): Promise<unknown> {
+async function json(response: Response, signal: AbortSignal, maximum = 131072): Promise<unknown> {
   const reader = response.body?.getReader();
   if (!reader) throw new DiscordApiFailure('invalid_response');
   const abort = () => {
@@ -29,7 +30,7 @@ async function json(response: Response, signal: AbortSignal): Promise<unknown> {
       const chunk: unknown = part.value;
       if (!(chunk instanceof Uint8Array)) throw new DiscordApiFailure('invalid_response');
       size += chunk.byteLength;
-      if (size > 131072) throw new DiscordApiFailure('invalid_response');
+      if (size > maximum) throw new DiscordApiFailure('invalid_response');
       text += decoder.decode(chunk, { stream: true });
     }
     return JSON.parse(text + decoder.decode()) as unknown;
@@ -125,7 +126,11 @@ export class DiscordHttp {
       throw new DiscordApiFailure('permission_denied');
     if (response.status >= 500) throw new DiscordApiFailure('provider_unavailable');
     if (response.status === 429) return await this.limited(response, signal);
-    const data = await json(response, signal);
+    const data = await json(
+      response,
+      signal,
+      input.responseSize === 'guild-members' ? 2_097_152 : 131_072,
+    );
     if (response.status === 404 && input.unknownMember && object(data).code === 10007) return null;
     if (response.status !== 200) throw new DiscordApiFailure('unknown');
     if (input.method === 'PUT' || input.method === 'DELETE')
