@@ -21,6 +21,7 @@
     "./discord-rate-limit": "./src/discord-rate-limit.ts",
     "./discord-runner": "./src/discord-runner.ts",
     "./discord-runtime": "./src/discord-runtime.ts",
+    "./discord-roster": "./src/discord-roster.ts",
     "./worker-runtime-config": "./src/worker-runtime-config.ts",
     "./export-archive": "./src/export-archive.ts"
   },

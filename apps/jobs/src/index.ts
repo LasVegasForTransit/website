@@ -3,8 +3,11 @@ import {
   type DiscordRuntimeEnv,
 } from '@lasvegasfortransit/platform-integrations/discord-runtime';
 import { reconcileDiscordPending } from '@lasvegasfortransit/platform-integrations/discord-runner';
+import { DiscordAccess } from '@lasvegasfortransit/platform-integrations/discord-access';
+import { discordRateLimit } from '@lasvegasfortransit/platform-integrations/discord-rate-limit';
 import { runMaintenance } from '@lasvegasfortransit/platform-storage/retention';
 import { queueDiscordDrift } from '@lasvegasfortransit/platform-storage/discord-drift';
+import { scanDiscordGuildRoster } from '@lasvegasfortransit/platform-integrations/discord-roster';
 import { completeProviderOperations } from '@lasvegasfortransit/platform-storage/provider-completion';
 export default {
   fetch() {
@@ -43,6 +46,13 @@ export default {
       const drift = await queueDiscordDrift(env.PLATFORM_DB, {
         guildId: runtime.configuration.guildId,
       });
+      const rosterClient = new DiscordAccess(runtime.configuration, {
+        rateLimit: discordRateLimit(env.PLATFORM_DB, runtime.applicationId),
+      });
+      const roster = await scanDiscordGuildRoster(env.PLATFORM_DB, {
+        client: rosterClient,
+        memberRoleId: runtime.memberRoleId,
+      });
       const counts = await reconcileDiscordPending(env.PLATFORM_DB, runtime);
       const completed = await completeProviderOperations(env.PLATFORM_DB, {
         now: new Date(controller.scheduledTime),
@@ -53,6 +63,7 @@ export default {
           ready: true,
           cron: controller.cron,
           drift,
+          roster,
           ...counts,
           completed,
         }),

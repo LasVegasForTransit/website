@@ -74,7 +74,7 @@ async function advance(
         Number(more),
         Number(more),
         stamp,
-        scan.guildId,
+        scan.contextId,
         ...guard,
       ),
   ]);

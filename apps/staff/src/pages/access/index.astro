@@ -4,6 +4,11 @@ import Button from '../../../../site/src/components/app/Button.astro';
 import AccountAccessRow from '../../components/AccountAccessRow.astro';
 import AccessHistory from '../../components/AccessHistory.astro';
 import { listAccess, accessHistory } from '@lasvegasfortransit/platform-storage/access-view';
+import {
+  listDiscordRoleReviews,
+  InvalidDiscordRosterCursor,
+} from '@lasvegasfortransit/platform-storage/discord-roster';
+import { formatFullDate } from '@lasvegasfortransit/platform-core/messages';
 import { InvalidCursor } from '@lasvegasfortransit/platform-storage/staff-history';
 import { PermissionDenied } from '@lasvegasfortransit/platform-core/permissions';
 import { submitAccessAction, type AccessFeedback } from '../../lib/account-access';
@@ -23,7 +28,7 @@ const committeeId = Astro.url.searchParams.get('committee') ?? undefined;
 const text = Astro.url.searchParams.get('q') ?? '';
 const needsAttention =
   !personId && !committeeId && !text && Astro.url.searchParams.get('view') !== 'all';
-let page, history;
+let page, history, discordReviews;
 try {
   page = await listAccess(staff.db, staff.actor, {
     personId,
@@ -38,7 +43,19 @@ try {
     committeeId,
     cursor: Astro.url.searchParams.get('history_cursor') ?? undefined,
   });
+  const discord = staff.accessConfiguration?.discord;
+  if (needsAttention && discord?.configured && discord.contextId && discord.memberRoleId)
+    discordReviews = await listDiscordRoleReviews(staff.db, staff.actor, {
+      guildId: discord.contextId,
+      memberRoleId: discord.memberRoleId,
+      cursor: Astro.url.searchParams.get('review_cursor') ?? undefined,
+    });
 } catch (error) {
+  if (error instanceof InvalidDiscordRosterCursor)
+    return messageResponse(
+      'This review list link expired. Return to Account updates and try again.',
+      400,
+    );
   if (error instanceof InvalidCursor)
     return messageResponse('This page link expired. Return to account updates and try again.', 400);
   if (error instanceof PermissionDenied) return messageResponse(error.message, 403);
@@ -47,6 +64,9 @@ try {
 const committees = await visibleCommittees(staff.db, staff.actor);
 const next = new URL(Astro.url);
 if (page.nextCursor) next.searchParams.set('cursor', page.nextCursor);
+const reviewNext = new URL(Astro.url);
+if (discordReviews?.nextCursor)
+  reviewNext.searchParams.set('review_cursor', discordReviews.nextCursor);
 ---
 
 <StaffLayout
@@ -61,6 +81,49 @@ if (page.nextCursor) next.searchParams.set('cursor', page.nextCursor);
       <p role="alert" class="staff-error">
         {feedback.message}
       </p>
+    )
+  }
+  {
+    discordReviews && (
+      <section class="staff-discord-review" aria-labelledby="discord-review-heading">
+        <h2 id="discord-review-heading">Discord accounts to review</h2>
+        <p>
+          These accounts have an LVBT role but aren’t connected to a member record. Their roles stay
+          as they are until staff reviews them.
+        </p>
+        {discordReviews.items.length ? (
+          <ul class="staff-discord-review-list">
+            {discordReviews.items.map((review) => (
+              <li>
+                <div>
+                  <strong>Discord account {review.discordUserId}</strong>
+                  <p class="staff-help">
+                    Roles: {review.roles.map((role) => role.label).join(', ')}
+                  </p>
+                  <p class="staff-help">
+                    First seen {formatFullDate(new Date(review.firstSeenAt))}
+                  </p>
+                </div>
+                <a
+                  class="staff-action-link"
+                  href={`https://discord.com/users/${review.discordUserId}`}
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  Open in Discord
+                </a>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p class="staff-help">None to review.</p>
+        )}
+        {discordReviews.nextCursor && (
+          <a href={reviewNext.pathname + reviewNext.search} class="staff-next">
+            More Discord accounts
+          </a>
+        )}
+      </section>
     )
   }
   {
