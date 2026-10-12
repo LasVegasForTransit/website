@@ -31,7 +31,14 @@ async function fixture(root: string) {
     JSON.stringify({
       name: 'app',
       logpush: true,
-      env: { preview: { name: 'app-preview', logpush: true } },
+      routes: [{ pattern: 'example.org', custom_domain: true }],
+      env: {
+        preview: {
+          name: 'app-preview',
+          logpush: true,
+          routes: [{ pattern: 'preview.example.org', custom_domain: true }],
+        },
+      },
     }),
   );
   const directory = path.join(root, 'release');
@@ -94,6 +101,10 @@ test('named candidate writes only staging, production activation rechecks identi
       expect.arrayContaining(['deploy', '--name', 'app', '--no-bundle']),
     );
     expect(calls[1]?.config).toMatchObject({ logpush: true });
+    expect(calls[0]?.config).not.toHaveProperty('env.preview.routes');
+    expect(calls[0]?.config).not.toHaveProperty('routes');
+    expect(calls[1]?.config).not.toHaveProperty('env.preview.routes');
+    expect(calls[1]?.config).not.toHaveProperty('routes');
     expect(await verifyRelease(directory)).toEqual(release);
     await expect(
       runWorkerRelease({ ...config, previewOnly: true }, [
