@@ -1,0 +1,5 @@
+# Environment-variable name in the public-variable allowlist, not a credential.
+e09dce812744071e47a6430ec1a3b10cf8fd74ae:apps/staff/scripts/release-config.ts:discord-client-secret:11
+# Synthetic Discord role IDs in platform storage tests.
+e09dce812744071e47a6430ec1a3b10cf8fd74ae:packages/platform-storage/tests/committee-settings.test.ts:discord-client-id:17
+e09dce812744071e47a6430ec1a3b10cf8fd74ae:packages/platform-storage/tests/committee-settings.test.ts:discord-client-id:78
