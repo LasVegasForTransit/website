@@ -481,10 +481,8 @@ test.describe('print layout', () => {
         deckDisplay: getComputedStyle(deck).display,
         slideMinWidth: getComputedStyle(slide).minWidth,
         slideBreakAfter: getComputedStyle(slide).breakAfter,
-        // The flyer's outer sheet keeps the same paper background as every
-        // individual scan card (`.qr-shell` unsets its own fill so the same
-        // paper shows through) — only the inner grid reuses
-        // [data-print-link-sheet]'s transparent styling.
+        // The flyer sheet keeps the scan-card paper background; only its inner
+        // grid reuses the transparent print-link-sheet styling.
         flyerSlideBackground: getComputedStyle(flyerSlide).backgroundColor,
         paperColor,
         flyerSlideHasPrintLinkSheet: flyerSlide.hasAttribute('data-print-link-sheet'),

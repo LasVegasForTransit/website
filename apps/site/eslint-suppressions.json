@@ -327,7 +327,7 @@
   },
   "tests/e2e/footer-colophon.spec.ts": {
     "@typescript-eslint/no-non-null-assertion": {
-      "count": 10
+      "count": 3
     }
   },
   "tests/e2e/not-found-search.spec.ts": {

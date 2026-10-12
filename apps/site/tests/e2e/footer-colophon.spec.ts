@@ -111,11 +111,10 @@ test.describe('footer colophon', () => {
     const meta = page.locator('footer .footer-meta');
 
     const [metaBox, navBox] = await Promise.all([meta.boundingBox(), utilityNav.boundingBox()]);
-    expect(metaBox).not.toBeNull();
-    expect(navBox).not.toBeNull();
-    expect(metaBox!.height).toBeLessThanOrEqual(48);
-    expect(navBox!.x).toBeGreaterThanOrEqual(metaBox!.x);
-    expect(navBox!.x + navBox!.width).toBeLessThanOrEqual(metaBox!.x + metaBox!.width);
+    if (!metaBox || !navBox) throw new Error('Missing footer layout boxes');
+    expect(metaBox.height).toBeLessThanOrEqual(48);
+    expect(navBox.x).toBeGreaterThanOrEqual(metaBox.x);
+    expect(navBox.x + navBox.width).toBeLessThanOrEqual(metaBox.x + metaBox.width);
   });
 
   test('uses the footer wordmark as a single non-wrapping logo asset', async ({ page }) => {
