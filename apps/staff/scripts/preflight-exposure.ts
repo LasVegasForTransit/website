@@ -7,7 +7,7 @@ export async function inspectJobsExposure(
   const subdomain = object(
     await client.get(`/workers/scripts/${encodeURIComponent(worker)}/subdomain`),
   );
-  const domains = await client.list('/workers/domains');
+  const domains = await client.list(`/workers/domains?service=${encodeURIComponent(worker)}`);
   const zones = await client.zones();
   let routed = false;
   for (const zone of zones) {

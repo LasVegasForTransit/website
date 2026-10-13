@@ -22,16 +22,19 @@ pnpm --silent staff:preflight --production --json
 
 The command reads local Worker configuration and migration filenames. With `CLOUDFLARE_ACCOUNT_ID`
 and an approved `CLOUDFLARE_API_TOKEN` in the environment, it also reads bindings of every actively
-served Worker version, active deployments, custom domains, schedules, Access applications and every
-page of their policies. It checks jobs subdomain flags, custom domains and ordinary routes in every
-accessible account zone. Its only POST is the fixed `SELECT name FROM d1_migrations ORDER BY id`
-metadata query. It never creates resources, changes secrets, applies migrations, deploys code or
-prints provider response bodies.
+served Worker version, active deployments, custom domains for the selected staff and jobs Workers,
+schedules, Access applications and every page of their policies. It checks jobs subdomain flags,
+custom domains and ordinary routes in every accessible account zone. Its only POST is the fixed
+`SELECT name FROM d1_migrations ORDER BY id` metadata query. It never creates resources, changes
+secrets, applies migrations, deploys code or prints provider response bodies.
 
-Use an account-scoped token with permission to read Workers, custom domains, Access applications and
-policies, and D1 migration metadata. A denied or incomplete inventory is reported as **unverified**.
-The command does not load or transfer another tool's login. Never paste a token into a command
-argument or save it in a tracked file.
+Limit Worker edit access to the selected staff and jobs Workers. The checks also need Access
+applications and policies Read, D1 Read, and Zone Read and Workers Routes Read across the account's
+zones. D1 Read permits reading database records, including member data; the command itself only
+queries migration names. Custom-domain queries include the selected Worker name instead of asking
+for all Workers' domains. A denied or incomplete inventory is reported as **unverified**. The
+command does not load or transfer another tool's login. Never paste a token into a command argument
+or save it in a tracked file.
 
 Exit status 0 means all inspected configuration requirements passed. It does **not** mean the portal
 is ready for staff: the report separately lists live acceptance as unverified. Exit status 1 means

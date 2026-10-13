@@ -15,7 +15,9 @@ export function remoteProbes(
       run: async () => [
         check(
           'staff.domain',
-          (await client.list('/workers/domains')).some(
+          (
+            await client.list(`/workers/domains?service=${encodeURIComponent(config.staffWorker)}`)
+          ).some(
             (domain) =>
               domain.hostname === config.hostname && domain.service === config.staffWorker,
           ),
