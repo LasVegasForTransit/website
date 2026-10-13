@@ -49,7 +49,7 @@ const canAssign = committees.some((item) => item.acceptingMembers);
 ---
 
 <StaffLayout
-  title={unassigned ? 'No committee yet' : 'Members'}
+  title={unassigned ? 'Members without a committee' : 'Members'}
   description={staff.actor.staffAdmin ? undefined : 'Members of the committees you lead.'}
 >
   {
@@ -63,7 +63,8 @@ const canAssign = committees.some((item) => item.acceptingMembers);
     staff.actor.staffAdmin && (
       <a
         slot="heading-meta"
-        class="staff-edit-link"
+        class="staff-secondary-button press"
+        aria-label={unassigned ? 'Show all members' : 'Show members without a committee'}
         href={unassigned ? '/people/' : '/people/?committee=unassigned'}
       >
         {unassigned ? 'All members' : 'No committee yet'}
@@ -249,15 +250,16 @@ const canAssign = committees.some((item) => item.acceptingMembers);
   {
     can(staff.actor, 'review_queue.resolve') && (
       <p class="mt-8 text-body-sm">
-        <a href="/review/">Check duplicates</a> · <a href="/access/">Account updates</a> ·{' '}
-        <a href="/paper/">Paper signups</a> · <a href="/export/">Download records</a>
+        <a href="/review/">Review possible duplicates</a> ·{' '}
+        <a href="/access/">Google and Discord access</a> · <a href="/paper/">Enter paper signups</a>{' '}
+        · <a href="/export/">Download member records</a>
       </p>
     )
   }
   {
     !staff.actor.staffAdmin && can(staff.actor, 'attendance.record') && (
       <p class="mt-8 text-body-sm">
-        <a href="/paper/">Paper signups</a>
+        <a href="/paper/">Enter paper signups</a>
       </p>
     )
   }

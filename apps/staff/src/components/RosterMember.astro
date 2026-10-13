@@ -16,16 +16,16 @@ const name = personName(person);
 const welcome = details?.welcome;
 const discordPresence =
   details?.discordInServer === true
-    ? 'in server'
+    ? 'In LVBT Discord'
     : details?.discordInServer === false
-      ? 'not in server'
-      : 'status not checked';
+      ? 'Not in LVBT Discord'
+      : 'Discord not checked yet';
 const rosterStatus = [
   showMembership ? MEMBERSHIP_LABELS[person.membership_status] : null,
   showDiscord
     ? details?.discordConnected
-      ? `Discord: ${discordPresence}`
-      : 'Discord: not linked'
+      ? discordPresence
+      : 'Discord account not connected'
     : null,
 ]
   .filter(Boolean)

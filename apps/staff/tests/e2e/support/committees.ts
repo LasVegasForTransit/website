@@ -15,7 +15,13 @@ async function submit(page: Page, name: string) {
 export async function exerciseCommittees(page: Page, fixture: Fixture) {
   await page.setViewportSize({ width: 1440, height: 1000 });
   await page.goto(new URL('/people/', page.url()).href);
-  await page.getByRole('link', { name: 'No committee yet', exact: true }).click();
+  const unassignedLink = page.getByRole('link', {
+    name: 'Show members without a committee',
+    exact: true,
+  });
+  assert.ok((await unassignedLink.getAttribute('class'))?.includes('staff-secondary-button'));
+  await unassignedLink.click();
+  await page.getByRole('heading', { name: 'Members without a committee', exact: true }).waitFor();
   await page.getByLabel('Name or email').fill('New');
   await Promise.all([
     page.waitForURL((url) => url.searchParams.get('committee') === 'unassigned'),

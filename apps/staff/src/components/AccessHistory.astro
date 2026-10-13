@@ -7,7 +7,7 @@ interface Props {
   page: Page<AccessHistoryRow>;
   title?: string;
 }
-const { page, title = 'Access change history' } = Astro.props;
+const { page, title = 'Recent changes' } = Astro.props;
 const next = new URL(Astro.url);
 if (page.nextCursor) next.searchParams.set('history_cursor', page.nextCursor);
 const labels: Record<string, string> = {
