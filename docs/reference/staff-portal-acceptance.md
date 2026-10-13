@@ -5,12 +5,13 @@ acceptance. It contains no member contact details.
 
 ## Release identity
 
-| Field                 | Current evidence                                                                                                                                |
-| --------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
-| Current branch        | `codex/staff-portal-current-main`; [draft PR #104](https://github.com/LasVegasForTransit/website/pull/104) is the review surface for this work. |
-| Deployed source SHA   | None; no staff or jobs Worker is deployed in preview or production.                                                                             |
-| Intended staff URLs   | `https://staff-preview.lasvegasfortransit.org/` and `https://staff.lasvegasfortransit.org/`; neither hostname resolved on 2026-10-12.           |
-| Human tester and date | None recorded.                                                                                                                                  |
+| Field                     | Current evidence                                                                                                                                |
+| ------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
+| Current branch            | `codex/staff-portal-current-main`; [draft PR #104](https://github.com/LasVegasForTransit/website/pull/104) is the review surface for this work. |
+| Latest implementation SHA | `64083652eed8395c7f8abef2178b88f816384af3`; local repository and staff browser checks pass.                                                     |
+| Deployed source SHA       | None; no staff or jobs Worker is deployed in preview or production.                                                                             |
+| Intended staff URLs       | `https://staff-preview.lasvegasfortransit.org/` and `https://staff.lasvegasfortransit.org/`; neither hostname resolved on 2026-10-12.           |
+| Human tester and date     | None recorded.                                                                                                                                  |
 
 The portal is not released. The passing preview workflow packages the website Worker; it does not
 deploy the protected staff portal.
@@ -31,11 +32,10 @@ both the configured email and Cloudflare Access identity, plus an active linked 
 The operation is one-time and audited. The maintainer removes the temporary secret after setup; the
 procedure is in [staff portal operations](./staff-portal-operations.md).
 
-The whole-repository `pnpm check` passed all 36 tasks in a clean clone with this change applied
-under Node 24.20.0. In the linked development checkout, the same gate stops at its full-history
-secret scan because the shared Git metadata includes unrelated historical material; that local scan
-failure cancels remaining Turbo tasks. Production preflight evidence below remains read-only and
-does not establish a deployed portal.
+With Node 24.20.0, the whole-repository `pnpm check` passed all 36 tasks in the linked development
+checkout on 2026-10-12, including its full-history secret scan. The complete staff browser suite
+also passed against the compiled Worker. These fixture checks do not establish a deployed portal,
+provider configuration or human acceptance.
 
 ## Remote inventory
 
@@ -57,6 +57,13 @@ Cloudflare Access applications and policies, credential validity, provider confi
 account-zone coverage remain unverified. The staff preflight reports Discord synchronization
 disabled in the staff/jobs Worker configuration. Access checks could not be run because the
 preflight has no scoped Cloudflare API token.
+
+The read-only staff preview preflight on 2026-10-12 passed local source checks, but failed
+`source.discord.enabled`; the repository configuration still keeps Discord synchronization disabled.
+Remote Worker, Access, database and account-zone inventory is unverified because the environment had
+no `CLOUDFLARE_ACCOUNT_ID` or scoped `CLOUDFLARE_API_TOKEN`. All seven live acceptance gates remain
+unverified. The pull request's preview job builds and packages without deployment credentials; it
+does not upload or activate the staff or jobs Workers.
 
 ## Required acceptance
 
