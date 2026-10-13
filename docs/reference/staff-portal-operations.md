@@ -17,6 +17,7 @@ From the repository root:
 
 ```sh
 pnpm staff:preflight --preview
+pnpm staff:preflight --preview --setup
 pnpm --silent staff:preflight --production --json
 ```
 
@@ -40,6 +41,14 @@ Exit status 0 means all inspected configuration requirements passed. It does **n
 is ready for staff: the report separately lists live acceptance as unverified. Exit status 1 means
 configuration is missing, invalid or unverified; 2 means invalid command arguments. The command
 defaults to preview and rejects selecting both environments.
+
+`--setup` checks whether the protected preview can be deployed for sign-in and staff workflow
+testing before Discord is configured. It requires the same authentication, Access, isolated
+database, migrations and exposure checks. Both source configurations and every active Worker version
+must explicitly keep Discord disabled, and jobs must have no cron triggers. Only the Discord launch
+configuration, bot-token and minute-schedule requirements can remain incomplete. The JSON includes
+`stage: "setup"` and `setupReady`; it retains every launch check and unverified acceptance item.
+This mode is refused for production and does not establish launch readiness.
 
 ## Maintainer setup
 
@@ -138,9 +147,12 @@ SQL, changes secrets, creates Workers or changes routes and schedules.
 Before using the workflow, a maintainer must create the `staff-preview` GitHub environment with
 required reviewers and main-only deployment protection. Set its `CLOUDFLARE_ACCOUNT_ID` variable and
 scoped `CLOUDFLARE_STAFF_PREVIEW_API_TOKEN` secret. Referencing an environment in YAML does not
-create its review protections. Complete the existing Worker, Access, database migration, domain,
-schedule and provider setup first. Cloudflare version uploads require an existing Worker; a failed
-upload does not fall back to a first deployment.
+create its review protections. Complete the existing Worker, Access, database migration and domain
+setup first. The workflow's default **launch** stage additionally requires schedule and provider
+configuration. Choose **setup** for the initial protected preview with Discord disabled and no cron
+triggers. This lets staff test sign-in and workflows before provider activation. It cannot enable
+Discord, run background jobs, or deploy production. Cloudflare version uploads require an existing
+Worker; a failed upload does not fall back to a first deployment.
 
 A maintainer with a clean checkout of the verified build's commit can run the same two steps:
 
@@ -148,6 +160,11 @@ A maintainer with a clean checkout of the verified build's commit can run the sa
 pnpm staff:release upload --repository LasVegasForTransit/website --run-id <Actions-run-ID> --directory /tmp/selected-staff-release --target preview --receipt /tmp/staff-deployment.json
 pnpm staff:release activate --repository LasVegasForTransit/website --run-id <Actions-run-ID> --directory /tmp/selected-staff-release --target preview --receipt /tmp/staff-deployment.json
 ```
+
+For initial setup, add `--stage setup` to both commands. The deployment receipt records the stage; a
+setup receipt cannot be resumed as a launch deployment. Omitting the option retains the full launch
+gate. Resolve the remaining configuration and live-provider acceptance before enabling schedules or
+treating a setup preview as operational.
 
 Both commands require explicit scoped `CLOUDFLARE_ACCOUNT_ID` and `CLOUDFLARE_API_TOKEN`
 credentials. They recheck the successful main build's GitHub artifact and reject a changed checkout

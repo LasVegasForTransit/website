@@ -10,6 +10,7 @@ import {
   type DeploymentReceipt,
 } from './release-receipt';
 import { inspectDiscord } from './preflight-workers';
+import { setupBindings } from './preview-setup';
 
 const execute = promisify(execFile);
 export function releaseMessage(receipt: DeploymentReceipt) {
@@ -76,18 +77,29 @@ export async function verifyVersion(
           binding.name === name && binding.type === 'plain_text' && binding.text === text,
       ),
     ) ||
-    !STAFF_WORKER_BINDINGS[worker.app].every((name) =>
-      bindings.some(
-        (binding) =>
-          binding.name === name &&
-          (binding.type === 'secret_text' ||
-            (['LVBT_ACCESS_AUD', 'LVBT_ACCESS_TEAM_DOMAIN', 'LVBT_GOOGLE_OAUTH_CLIENT_ID'].includes(
-              name,
-            ) &&
-              binding.type === 'plain_text' &&
-              Boolean(binding.text))),
-      ),
-    ) ||
+    !STAFF_WORKER_BINDINGS[worker.app]
+      .filter(
+        (name) =>
+          !(
+            receipt.stage === 'setup' &&
+            receipt.environment === 'preview' &&
+            name === 'LVBT_DISCORD_BOT_TOKEN'
+          ),
+      )
+      .every((name) =>
+        bindings.some(
+          (binding) =>
+            binding.name === name &&
+            (binding.type === 'secret_text' ||
+              ([
+                'LVBT_ACCESS_AUD',
+                'LVBT_ACCESS_TEAM_DOMAIN',
+                'LVBT_GOOGLE_OAUTH_CLIENT_ID',
+              ].includes(name) &&
+                binding.type === 'plain_text' &&
+                Boolean(binding.text))),
+        ),
+      ) ||
     (worker.app === 'staff' &&
       bindings.some((binding) => binding.name === 'LVBT_DISCORD_BOT_TOKEN'))
   )
@@ -134,7 +146,11 @@ export async function recordedTransition(client: MetadataClient, receipt: Deploy
     for (const row of traffic) {
       const version = object(await client.get(`${workerPath(worker)}/versions/${row.versionId}`));
       const bindings = array(object(version.resources).bindings);
-      if (inspectDiscord(bindings, bindings, receipt.environment).status !== 'passed')
+      if (
+        receipt.stage === 'setup'
+          ? receipt.environment !== 'preview' || !setupBindings(bindings)
+          : inspectDiscord(bindings, bindings, receipt.environment).status !== 'passed'
+      )
         return { valid: false, selectedActive };
     }
   }

@@ -13,7 +13,14 @@ import { deployFromBuild } from './release-deploy-cli';
 const execute = promisify(execFile);
 type Arguments = Partial<
   Record<
-    'directory' | 'repository' | 'run-id' | 'commit' | 'release-id' | 'receipt' | 'target',
+    | 'directory'
+    | 'repository'
+    | 'run-id'
+    | 'commit'
+    | 'release-id'
+    | 'receipt'
+    | 'target'
+    | 'stage',
     string
   >
 >;
@@ -46,7 +53,7 @@ async function deployment(positionals: string[], values: Arguments) {
     process.stdout.write(`${JSON.stringify(await deployFromBuild(positionals[0], values))}\n`);
     return true;
   }
-  if (values.receipt || values.target)
+  if (values.receipt || values.target || values.stage)
     throw new Error('Receipt and target options require upload or activate.');
   return false;
 }
@@ -61,6 +68,7 @@ async function main() {
       'run-id': { type: 'string' },
       receipt: { type: 'string' },
       target: { type: 'string' },
+      stage: { type: 'string' },
     },
   });
   if (await deployment(positionals, values)) return;

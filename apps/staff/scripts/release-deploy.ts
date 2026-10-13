@@ -6,6 +6,7 @@ import { portableConfiguration } from './release-config';
 import { type Environment } from './preflight-config';
 import { preflightStaff } from './preflight';
 import { MetadataClient, object } from './preflight-api';
+import { previewSetupReady } from './preview-setup';
 import {
   activeDeployment,
   providerOutput,
@@ -29,23 +30,39 @@ import {
 export interface DeploymentOptions {
   root: string;
   environment: Environment;
+  stage?: 'setup' | 'launch';
   accountId: string;
   token: string;
   fetch?: typeof fetch;
   run?: (args: string[], output: string) => Promise<void>;
 }
-async function ready(options: DeploymentOptions, receipt?: DeploymentReceipt) {
+function assertDeploymentOptions(options: DeploymentOptions) {
   if (
     !options.accountId ||
     !options.token ||
-    !['preview', 'production'].includes(options.environment)
+    !['preview', 'production'].includes(options.environment) ||
+    (options.stage !== undefined && !['setup', 'launch'].includes(options.stage)) ||
+    (options.stage === 'setup' && options.environment !== 'preview')
   )
     throw new Error('Select an environment and explicit scoped deployment credentials.');
+}
+async function ready(options: DeploymentOptions, receipt?: DeploymentReceipt) {
+  assertDeploymentOptions(options);
   const report = await preflightStaff(options.environment, options);
   const failures = report.checks.filter((check) => check.status !== 'passed');
   const transition = receipt
     ? await recordedTransition(new MetadataClient(options), receipt)
     : null;
+  if (options.stage === 'setup') {
+    if (
+      (receipt && !transition?.valid) ||
+      !(await previewSetupReady(options.root, new MetadataClient(options), report.checks))
+    )
+      throw new Error(
+        'Preview setup requires protected authentication, isolated data, disabled Discord and no scheduled jobs.',
+      );
+    return;
+  }
   if (
     (receipt && !transition?.valid) ||
     (failures.length &&
@@ -81,7 +98,10 @@ async function withRelease<T>(
       )
         throw new Error('Saved configuration differs from the selected source.');
     }
-    return await run(copy, newReceipt(release, options.accountId, options.environment));
+    return await run(
+      copy,
+      newReceipt(release, options.accountId, options.environment, options.stage),
+    );
   } finally {
     await rm(temporary, { recursive: true, force: true });
   }
