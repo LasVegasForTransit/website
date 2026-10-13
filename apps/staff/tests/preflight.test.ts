@@ -26,6 +26,30 @@ void test('launch check inventories isolated deployments without confusing confi
   );
 });
 
+void test('domain checks request only the selected Workers and still detect an exposed jobs domain', async () => {
+  for (const exposedDomain of [false, true]) {
+    const fixture = cloudflareFixture({ exposedDomain });
+    const requested = new Set<string>();
+    const fetcher: typeof fetch = async (input, init) => {
+      const url = new URL(input instanceof Request ? input.url : input);
+      if (url.pathname.endsWith('/workers/domains')) {
+        const service = url.searchParams.get('service');
+        if (service !== 'lvbt-staff-preview' && service !== 'lvbt-jobs-preview')
+          return Response.json({ success: false }, { status: 403 });
+        requested.add(service);
+      }
+      return await fixture.options.fetch(input, init);
+    };
+    const report = await preflightStaff('preview', { ...fixture.options, fetch: fetcher });
+    assert.equal(report.checks.find((check) => check.id === 'staff.domain')?.status, 'passed');
+    assert.equal(
+      report.checks.find((check) => check.id === 'jobs.exposure')?.status,
+      exposedDomain ? 'failed' : 'passed',
+    );
+    assert.deepEqual([...requested].sort(), ['lvbt-jobs-preview', 'lvbt-staff-preview']);
+  }
+});
+
 void test('wrong database, broad second policy and incomplete migrations prevent configuration readiness', async () => {
   const fixture = cloudflareFixture({ unsafe: true });
   const report = await preflightStaff('preview', fixture.options);

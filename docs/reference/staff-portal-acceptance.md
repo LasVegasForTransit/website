@@ -8,8 +8,8 @@ acceptance. It contains no member contact details.
 | Field                     | Current evidence                                                                                                                                |
 | ------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
 | Current branch            | `codex/staff-portal-current-main`; [draft PR #104](https://github.com/LasVegasForTransit/website/pull/104) is the review surface for this work. |
-| Latest implementation SHA | `0aba6ef2a83bc653f9470fd886be6b0f45163445`; local repository and staff browser checks pass with Node 24.20.0.                                   |
-| Deployed source SHA       | None recorded; the last provider inventory (2026-10-10) found no staff or jobs Worker. Current remote inventory is unverified.                  |
+| Latest implementation SHA | `51b46c77b44a4406093abb16a865e5f7f9a6aa99`; local repository and staff browser checks pass with Node 24.20.0.                                   |
+| Deployed source SHA       | No application release deployed. Two preview Workers were provisioned on 2026-10-13 with placeholder code and no database bindings.             |
 | Intended staff URLs       | `https://staff-preview.lasvegasfortransit.org/` and `https://staff.lasvegasfortransit.org/`; neither hostname resolved on 2026-10-13.           |
 | Human tester and date     | None recorded.                                                                                                                                  |
 
@@ -54,18 +54,28 @@ the required protected environment and its reviewer/token setup were absent at t
 DNS requests on 2026-10-13 still cannot resolve either staff hostname. No Worker, route, DNS record,
 secret, Access policy or migration was created or changed during these checks.
 
-Cloudflare Access applications and policies, credential validity, provider configuration and current
-account-zone coverage remain unverified. The staff preflight reports Discord synchronization
-disabled in the staff/jobs Worker configuration. Access checks could not be run because the
-preflight has no scoped Cloudflare API token.
+On 2026-10-13, `lvbt-staff-preview` and `lvbt-jobs-preview` were provisioned behind the existing
+LVBT staff Google Workspace policy. Both Workers' direct workers.dev and preview URLs are disabled;
+neither has a custom domain or database binding. No member data or application release was deployed.
+The restricted GitHub `staff-preview` environment now exists with its account variable and a 90-day
+deployment credential. Worker edit permission is limited to those two preview Workers; database,
+Access, zone and route permissions are read-only.
 
-The read-only staff preflights for preview and production on 2026-10-13 pass the shared database,
-staff-domain, protected-assets and jobs-exposure source checks, but fail `source.discord.enabled`;
-the repository keeps synchronization disabled until maintainers configure and verify both apps.
-Remote Worker, Access, database and account-zone inventory is unverified because the environment has
-no `CLOUDFLARE_ACCOUNT_ID` or scoped `CLOUDFLARE_API_TOKEN`. All seven live acceptance gates remain
-unverified. The pull request's preview job builds and packages without deployment credentials; it
-does not upload or activate the staff or jobs Workers.
+The authenticated preview preflight confirms both active placeholder deployments. It reports missing
+database and sign-in bindings, incomplete canonical migrations, disabled Discord, no jobs schedule
+and no Access application for the exact staff-preview hostname. Two account-wide domain inventory
+checks were denied with the restricted credential. The checker now requests domains for the selected
+Worker; live verification of that narrower query remains outstanding. The existing production-host
+Access application admits the `staff@lasvegasfortransit.org` Workspace group, while the portal
+specification requires the dedicated console-users group. That group's configuration, complete
+account-zone coverage, provider validity and real allow/deny outcomes remain unverified.
+
+The source checks for preview and production on 2026-10-13 pass the shared database, staff-domain,
+protected-assets and jobs-exposure source checks, but fail `source.discord.enabled`; the repository
+keeps synchronization disabled until maintainers configure and verify both apps. Production Worker
+and database inventory has not been refreshed. All seven live acceptance gates remain unverified.
+The pull request's preview job builds and packages without deployment credentials; it does not
+upload or activate the staff or jobs Workers.
 
 ## Required acceptance
 
