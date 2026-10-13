@@ -28,20 +28,17 @@ export async function exerciseMemberSearch(page: Page, fixture: Fixture) {
     page.waitForURL((url) => url.searchParams.get('q') === 'former-search@example.invalid'),
     page.getByRole('button', { name: 'Search', exact: true }).click(),
   ]);
-  const row = page.locator('.staff-roster li').filter({ hasText: 'Search Former' });
+  const row = page.locator('.staff-roster tbody tr').filter({ hasText: 'Search Former' });
   await row.getByRole('link', { name: 'Search Former', exact: true }).waitFor();
   assert.equal(await row.getByText('Former member', { exact: true }).count(), 1);
   assert.equal(
     await row.getByRole('link', { name: 'Add Search Former to a committee', exact: true }).count(),
     0,
   );
-  assert.equal(
-    await row.getByRole('link', { name: 'Welcome Search Former', exact: true }).count(),
-    0,
-  );
-  await page.locator('.staff-search-filters > summary').click();
+  const filters = page.locator('.staff-search-filters');
+  if ((await filters.getAttribute('open')) === null) await filters.locator('summary').click();
   await page.getByLabel('Membership', { exact: true }).selectOption('member');
-  await page.getByRole('button', { name: 'Search', exact: true }).click();
+  await page.getByRole('button', { name: 'Apply filters', exact: true }).click();
   await page.getByRole('heading', { name: 'No matches', exact: true }).waitFor();
   await page.getByRole('link', { name: 'Include former members and other records' }).click();
   await page.getByRole('link', { name: 'Search Former', exact: true }).waitFor();
@@ -67,17 +64,14 @@ export async function exerciseMemberSearch(page: Page, fixture: Fixture) {
   await page.keyboard.press('Enter');
   assert.equal(await page.evaluate(() => document.activeElement?.id), 'main');
   await page.keyboard.press('Tab');
-  assert.equal(
-    await page.evaluate(() => (document.activeElement as HTMLAnchorElement).href),
-    `${ORIGIN}/people/?committee=unassigned`,
+  assert.ok(
+    Number.parseFloat(
+      await page.evaluate(() =>
+        document.activeElement ? getComputedStyle(document.activeElement).outlineWidth : '0',
+      ),
+    ) > 0,
+    'keyboard focus remains visible on the search field',
   );
-  assert.equal(
-    await page.evaluate(() =>
-      document.activeElement ? getComputedStyle(document.activeElement).outlineWidth : '',
-    ),
-    '3px',
-  );
-  await page.keyboard.press('Tab');
   assert.equal(await page.evaluate(() => document.activeElement?.id), 'q');
   await page.keyboard.type('former-search@example.invalid');
   await Promise.all([

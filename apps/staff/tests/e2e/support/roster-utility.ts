@@ -1,8 +1,6 @@
 import assert from 'node:assert/strict';
 import type { Page } from '@playwright/test';
 import { PersonService } from '@lasvegasfortransit/platform-storage/person-service';
-import { WelcomeService } from '@lasvegasfortransit/platform-storage/welcome';
-import { loadActor } from '@lasvegasfortransit/platform-storage/staff-roles';
 import { ORIGIN, type startRuntime } from '../../support/runtime';
 type Fixture = Awaited<ReturnType<typeof startRuntime>>;
 
@@ -30,15 +28,15 @@ async function utilityMember(fixture: Fixture) {
 export async function exerciseRosterUtility(page: Page, fixture: Fixture) {
   const person = await utilityMember(fixture);
   const search = `${ORIGIN}/people/?q=utility%40example.invalid`;
-  const row = page.locator('.staff-roster li').filter({ hasText: 'Utility Member' });
+  const row = page.locator('.staff-roster tbody tr').filter({ hasText: 'Utility Member' });
   await page.goto(search);
   assert.equal(await page.locator('.staff-search-filters').getAttribute('open'), null);
   assert.match(await row.locator('.staff-roster-status').innerText(), /\bMember\b/);
-  const rosterHeadings = await page.locator('.staff-roster-heading span').allTextContents();
+  const rosterHeadings = await page.locator('.staff-roster thead th').allTextContents();
   assert.equal(
     await row.evaluate((element) => element.children.length),
     rosterHeadings.length,
-    'a linked Discord status should not shift the roster actions under the wrong headings',
+    'each member row should line up with the labeled roster columns',
   );
   const assignAction = row.getByRole('link', {
     name: 'Add Utility Member to a committee',
@@ -47,21 +45,14 @@ export async function exerciseRosterUtility(page: Page, fixture: Fixture) {
   const initialActionStyle = await assignAction.evaluate((element) => {
     const style = getComputedStyle(element);
     return {
-      background: style.backgroundColor,
-      border: style.borderTopWidth,
       minHeight: style.minHeight,
+      color: style.color,
+      underline: style.textDecorationLine,
     };
   });
-  assert.equal(initialActionStyle.border, '2px');
   assert.equal(initialActionStyle.minHeight, '44px');
-  assert.notEqual(initialActionStyle.background, 'rgba(0, 0, 0, 0)');
-  await assignAction.hover();
-  await page.waitForTimeout(250);
-  assert.notEqual(
-    await assignAction.evaluate((element) => getComputedStyle(element).backgroundColor),
-    initialActionStyle.background,
-    'primary roster actions should visibly respond to hover',
-  );
+  assert.notEqual(initialActionStyle.color, 'rgba(0, 0, 0, 0)');
+  assert.equal(initialActionStyle.underline, 'underline');
   await row.getByRole('link', { name: 'Utility Member', exact: true }).click();
   assert.equal(
     new URL(page.url()).searchParams.get('return_to'),
@@ -84,58 +75,55 @@ export async function exerciseRosterUtility(page: Page, fixture: Fixture) {
   assert.equal(assigned.headers().location, '/people/?q=utility%40example.invalid#main');
   await page.waitForURL(`${search}#main`);
   await row.getByText('Events Committee', { exact: true }).waitFor();
+  const addAnother = row.getByRole('link', {
+    name: 'Add another committee for Utility Member',
+    exact: true,
+  });
+  await addAnother.click();
+  await page.getByLabel('Committee', { exact: true }).selectOption('advocacy');
+  const [addedAgain] = await Promise.all([
+    page.waitForResponse(
+      (response) => response.request().method() === 'POST' && response.url().includes('/people/'),
+    ),
+    page.getByRole('button', { name: 'Add another committee', exact: true }).click(),
+  ]);
+  assert.equal(addedAgain.status(), 303);
+  await page.waitForURL(`${search}#main`);
+  assert.deepEqual(await row.locator('.staff-committee-chips li').allTextContents(), [
+    'Advocacy Team',
+    'Events Committee',
+  ]);
   assert.equal(
-    await row.getByRole('link', { name: 'Add Utility Member to a committee', exact: true }).count(),
-    0,
-  );
-  await row.getByRole('link', { name: 'Welcome Utility Member', exact: true }).click();
-  await page.getByRole('button', { name: 'Assign to me', exact: true }).click();
-  await page.getByRole('heading', { name: 'Contact details', exact: true }).waitFor();
-  await page.goto(search);
-  await row
-    .getByRole('link', { name: 'Continue welcome for Utility Member', exact: true })
-    .waitFor();
-  const admin = await loadActor(fixture.db, fixture.admin.person.id);
-  const lead = await loadActor(fixture.db, fixture.lead.person.id);
-  assert.ok(admin && lead);
-  const welcome = new WelcomeService(fixture.db);
-  assert.equal(
-    (await welcome.release(admin, person.id, { operationId: 'utility-release' })).kind,
-    'ok',
-  );
-  assert.equal((await welcome.claim(lead, person.id, { operationId: 'utility-claim' })).kind, 'ok');
-  await page.goto(search);
-  await row.getByText('Welcome: Leon Staff', { exact: true }).waitFor();
-  assert.equal(
-    await row.getByRole('link', { name: 'Welcome Utility Member', exact: true }).count(),
-    0,
-  );
-  assert.equal(
-    (
-      await welcome.complete(lead, person.id, {
-        operationId: 'utility-complete',
-        method: 'email',
-        note: '',
+    await row
+      .getByRole('link', {
+        name: 'Add Utility Member to a committee',
+        exact: true,
       })
-    ).kind,
-    'ok',
+      .count(),
+    0,
   );
-  await page.reload();
-  assert.equal(await row.getByText('Welcome: Leon Staff', { exact: true }).count(), 0);
-  const assignment = await fixture.db
+  assert.equal(
+    await row.getByRole('link', { name: /Welcome .*Utility Member/ }).count(),
+    0,
+    'welcome follow-up belongs in its dedicated queue, not on every roster row',
+  );
+  await page.getByRole('link', { name: 'Welcome', exact: true }).waitFor();
+  const assignments = await fixture.db
     .prepare('SELECT id FROM committee_assignments WHERE person_id=? AND ended_at IS NULL')
     .bind(person.id)
-    .first<{ id: string }>();
-  assert.ok(assignment);
-  assert.equal(
-    (
-      await fixture.committees.endAssignment(
-        assignment.id,
-        'stepped_back',
-        admin.personId,
-        'utility-end',
-      )
-    ).kind,
-    'ok',
-  );
+    .all<{ id: string }>();
+  assert.equal(assignments.results.length, 2);
+  for (const [index, assignment] of assignments.results.entries()) {
+    assert.equal(
+      (
+        await fixture.committees.endAssignment(
+          assignment.id,
+          'stepped_back',
+          fixture.admin.person.id,
+          `utility-end-${index}`,
+        )
+      ).kind,
+      'ok',
+    );
+  }
 }

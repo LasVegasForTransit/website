@@ -55,7 +55,7 @@ void test('roster shows current committees and account linkage, and rechecks vie
       );
     const rows = await views.rosterDetails(db, actor, [survivor.id, merged.id]);
     assert.deepEqual(rows.get(survivor.id), {
-      committees: ['Events Committee'],
+      committees: [{ id: 'events', name: 'Events Committee' }],
       discordConnected: true,
       discordInServer: null,
       welcome: { claimedBy: null, claimedByName: null },
