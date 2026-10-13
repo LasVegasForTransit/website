@@ -34,6 +34,8 @@
       "routes": [{ "pattern": "staff-preview.lasvegasfortransit.org", "custom_domain": true }],
       "vars": {
         "LVBT_DEPLOYMENT_ENV": "preview",
+        "LVBT_ACCESS_TEAM_DOMAIN": "lvbt.cloudflareaccess.com",
+        "LVBT_ACCESS_AUD": "f89573338a947c9027f83748935d86f62041adba8672ab807c1634a85c85ef69",
         "LVBT_DISCORD_SYNC_ENABLED": "false",
         "LVBT_DISCORD_APPLICATION_ID": "",
         "LVBT_DISCORD_GUILD_ID": "",
