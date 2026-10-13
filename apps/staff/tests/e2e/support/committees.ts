@@ -16,7 +16,7 @@ export async function exerciseCommittees(page: Page, fixture: Fixture) {
   await page.setViewportSize({ width: 1440, height: 1000 });
   await page.goto(new URL('/people/', page.url()).href);
   const unassignedLink = page.getByRole('link', {
-    name: 'Show members without a committee',
+    name: 'See members without a committee',
     exact: true,
   });
   assert.ok((await unassignedLink.getAttribute('class'))?.includes('staff-secondary-button'));
