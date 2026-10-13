@@ -71,6 +71,12 @@ export async function exerciseMemberSearch(page: Page, fixture: Fixture) {
     await page.evaluate(() => (document.activeElement as HTMLAnchorElement).href),
     `${ORIGIN}/people/?committee=unassigned`,
   );
+  assert.equal(
+    await page.evaluate(() =>
+      document.activeElement ? getComputedStyle(document.activeElement).outlineWidth : '',
+    ),
+    '3px',
+  );
   await page.keyboard.press('Tab');
   assert.equal(await page.evaluate(() => document.activeElement?.id), 'q');
   await page.keyboard.type('former-search@example.invalid');

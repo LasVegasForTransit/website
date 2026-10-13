@@ -23,10 +23,10 @@ const removeToken =
     : null;
 const providers =
   row.targetId === 'person'
-    ? [{ name: 'Discord member role', access: row.discord }]
+    ? [{ name: 'LVBT member role', access: row.discord }]
     : [
-        { name: 'Google group', access: row.googleWorkspace },
-        { name: 'Discord committee role', access: row.discord },
+        { name: 'Google Workspace group', access: row.googleWorkspace },
+        { name: 'Discord role', access: row.discord },
       ];
 ---
 
@@ -77,7 +77,7 @@ const providers =
         <input type="hidden" name="token" value={retryToken} />
         <input type="hidden" name="action" value="retry" />
         <input type="hidden" name="target" value={row.operationId} />
-        <Button>Try update again</Button>
+        <Button>Try again</Button>
       </form>
     )
   }

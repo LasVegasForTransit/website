@@ -62,13 +62,17 @@ export async function exerciseAccountAccess(page: Page, fixture: Fixture) {
   );
   await markOperationFailed(fixture.db, 'recovery-grant', 'permission_denied');
   await page.goto(`${ORIGIN}/access/?person=${person.id}`);
+  await page.getByRole('heading', { name: 'Google and Discord access', exact: true }).waitFor();
   assert.equal(
     await page.getByText('Confirmed', { exact: true }).count(),
     0,
     'missing runtime configuration must not expose a stored granted confirmation',
   );
-  assert.equal(await page.getByText('Updates not set up', { exact: true }).count(), 1);
-  await submit(page, 'Try update again');
+  assert.equal(
+    await page.getByText('An administrator needs to connect this service', { exact: true }).count(),
+    1,
+  );
+  await submit(page, 'Try again');
   assert.equal(
     (
       await fixture.db
@@ -96,10 +100,7 @@ export async function exerciseAccountAccess(page: Page, fixture: Fixture) {
   assert.ok(ended?.ended_at);
   await markOperationFailed(fixture.db, 'recovery-grant', 'provider_unavailable');
   await page.reload();
-  assert.equal(
-    await page.getByRole('button', { name: 'Try update again', exact: true }).count(),
-    0,
-  );
+  assert.equal(await page.getByRole('button', { name: 'Try again', exact: true }).count(), 0);
   const removal = await fixture.db
     .prepare(
       'SELECT o.id FROM integration_outbox o JOIN reconcile_generations g ON g.person_id=o.person_id AND g.target_id=o.target_id AND g.generation=o.generation WHERE o.person_id=? AND o.target_id=?',
@@ -121,7 +122,7 @@ export async function exerciseAccountAccess(page: Page, fixture: Fixture) {
     fullPage: true,
   });
   assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
-  await submit(page, 'Try update again');
+  await submit(page, 'Try again');
   assert.equal(
     (
       await fixture.db
@@ -131,18 +132,15 @@ export async function exerciseAccountAccess(page: Page, fixture: Fixture) {
     )?.ended_at,
     ended.ended_at,
   );
-  await page.getByText('Access change history', { exact: true }).click();
+  await page.getByText('Recent changes', { exact: true }).click();
   assert.equal(await page.getByText('Account update retried', { exact: true }).count(), 2);
   await page.setViewportSize({ width: 1440, height: 1000 });
 }
 export async function exerciseLeadAccountAccess(page: Page, fixture: Fixture) {
   await page.goto(`${ORIGIN}/access/?person=${fixture.inside.id}`);
   assert.equal(await page.locator('.staff-account-row').count(), 2);
-  assert.equal(
-    await page.getByRole('button', { name: 'Try update again', exact: true }).count(),
-    0,
-  );
+  assert.equal(await page.getByRole('button', { name: 'Try again', exact: true }).count(), 0);
   assert.equal(await page.getByText('Remove from committee', { exact: true }).count(), 0);
-  await page.getByText('Access change history', { exact: true }).click();
+  await page.getByText('Recent changes', { exact: true }).click();
   assert.equal((await page.content()).includes('Advocacy Team'), false);
 }

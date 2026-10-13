@@ -59,7 +59,7 @@ export async function exerciseCommitteePages(page: Page, fixture: Fixture) {
     await markOperationFailed(fixture.db, job.id, 'permission_denied');
     await page.reload();
     await roster
-      .getByRole('link', { name: 'Account access needs attention', exact: true })
+      .getByRole('link', { name: 'Google and Discord access needs attention', exact: true })
       .waitFor();
     await stale.getByLabel('Description', { exact: true }).fill('Old tab must not overwrite.');
     assert.equal((await save(stale)).status(), 409);

@@ -45,6 +45,16 @@ html {
   color: var(--color-on-primary);
 }
 
+.staff-shell .staff-action-link:focus-visible {
+  outline: 3px solid var(--color-primary);
+  outline-offset: 3px;
+}
+
+.staff-shell .staff-action-link:active,
+.staff-shell .staff-secondary-button:active {
+  transform: translateY(1px);
+}
+
 .staff-shell .staff-secondary-button {
   display: inline-flex;
   min-height: 2.75rem;
@@ -59,7 +69,13 @@ html {
   font-weight: 700;
   line-height: 1.25;
   text-align: center;
+  text-decoration: none;
   cursor: pointer;
+}
+
+.staff-shell .staff-secondary-button:focus-visible {
+  outline: 3px solid var(--color-primary);
+  outline-offset: 3px;
 }
 
 .staff-shell .staff-secondary-button:hover,
@@ -222,9 +238,18 @@ html {
   }
 
   .staff-results-meta {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem 1rem;
     padding-block: 1rem 0.75rem;
     font-size: 0.8125rem;
     color: var(--color-on-surface-variant);
+  }
+
+  .staff-results-meta p {
+    margin: 0;
   }
 
   .staff-discord-review {
@@ -270,11 +295,6 @@ html {
     flex-wrap: wrap;
     gap: 0.25rem 1rem;
     font-size: 0.75rem;
-  }
-
-  .staff-discord-review-id {
-    font-variant-numeric: tabular-nums;
-    overflow-wrap: anywhere;
   }
 
   @media (max-width: 40rem) {

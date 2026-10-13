@@ -13,36 +13,33 @@ export function pendingAccessMessage(row: AccessRow): string {
   const visible = row.targetId === 'person' ? [row.discord] : [row.discord, row.googleWorkspace];
   const expected = row.expectedAccess ? 'granted' : 'absent';
   if (visible.some((access) => access.state === expected))
-    return 'Other account updates are still pending.';
-  return row.expectedAccess
-    ? 'Waiting to update account access.'
-    : 'Waiting to remove account access.';
+    return 'Another access change is still in progress.';
+  return row.expectedAccess ? 'Adding access…' : 'Removing access…';
 }
 export function accessLabel(access: ProviderAccess, expected: boolean): string {
   if (access.state === 'granted') return expected ? 'Confirmed' : 'Still has access';
   if (access.state === 'absent') return expected ? 'Access missing' : 'Removal confirmed';
   const labels = {
-    ambiguous_account: 'Account needs review',
+    ambiguous_account: 'More than one account is connected',
     not_linked: 'Account not connected',
-    not_mapped: 'Connection not set up',
-    not_configured: 'Updates not set up',
+    not_mapped: 'Access has not been assigned',
+    not_configured: 'An administrator needs to connect this service',
     not_checked: 'Not checked yet',
-    stale: 'Needs a fresh check',
+    stale: 'Last check is out of date',
     provider_unavailable: 'Service unavailable',
     rate_limited: 'Waiting for the service',
-    permission_denied: 'Permission needs fixing',
+    permission_denied: 'An administrator needs to check the connection',
     unknown: 'Couldn’t check access',
   };
   return access.reason ? labels[access.reason] : 'Not checked yet';
 }
 export function updateFailure(failure: string | null): string {
   if (failure === 'permission_denied')
-    return 'LVBT’s connection doesn’t have permission to update this account. Ask Civic Tech to check it.';
-  if (failure === 'rate_limited')
-    return 'The service asked us to wait. Try the update again later.';
+    return 'LVBT couldn’t update access. Ask an administrator to check the connection.';
+  if (failure === 'rate_limited') return 'Please wait a moment, then try again.';
   if (failure === 'provider_unavailable')
-    return 'The service was unavailable. Try the update again.';
-  return 'The update failed. Try again or ask Civic Tech for help.';
+    return 'This service is temporarily unavailable. Try again shortly.';
+  return 'The update didn’t go through. Try again or ask an administrator for help.';
 }
 export interface AccessFeedback {
   message: string;

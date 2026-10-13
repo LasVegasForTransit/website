@@ -63,7 +63,7 @@ try {
     `/people/?q=${encodeURIComponent('rider00001@example.invalid')}`,
   );
   assert.equal(
-    unlinkedRoster.includes('Discord: not linked'),
+    unlinkedRoster.includes('Discord account not connected'),
     true,
     'an all-unlinked result page should keep Discord status visible when the provider is configured',
   );
@@ -91,7 +91,7 @@ try {
   const confirmedProfile = await profile();
   assert.equal(confirmedProfile.includes('Member role confirmed'), true);
   assert.equal(confirmedProfile.includes('In LVBT Discord'), true);
-  assert.equal((await profile(welcomeSearch)).includes('Discord: in server'), true);
+  assert.equal((await profile(welcomeSearch)).includes('In LVBT Discord'), true);
   assert.equal(
     confirmedProfile.includes('Discord access granted'),
     true,
@@ -118,11 +118,11 @@ try {
   assert.equal(removed.includes('Discord access removed'), true);
   assert.equal(removed.includes('Membership changed'), true);
   assert.equal(
-    removed.includes('Waiting to remove account access.'),
+    removed.includes('Removing access…'),
     false,
     'a confirmed Discord removal must not be described as still waiting',
   );
-  assert.equal(removed.includes('Other account updates are still pending.'), true);
+  assert.equal(removed.includes('Another access change is still in progress.'), true);
   assert.deepEqual([...roles], ['777777777777777777']);
   const observedAt = new Date().toISOString();
   await fixture.db
@@ -130,7 +130,7 @@ try {
     .bind(observedAt, new Date(Date.now() + 300_000).toISOString(), guildId)
     .run();
   assert.equal((await profile()).includes('Not in LVBT Discord'), true);
-  assert.equal((await profile(welcomeSearch)).includes('Discord: not in server'), true);
+  assert.equal((await profile(welcomeSearch)).includes('Not in LVBT Discord'), true);
   await exerciseProviderHistory(fixture, personId);
   unreachable = true;
   await fixture.db

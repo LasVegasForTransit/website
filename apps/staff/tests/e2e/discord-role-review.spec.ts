@@ -78,7 +78,14 @@ try {
   const pageBody = await page.locator('body').innerText();
   const reviewSection = page.locator('.staff-discord-review');
   assert.equal(response?.status(), 200, pageBody);
-  assert.equal(pageBody.includes('Discord accounts to review'), true, pageBody);
+  assert.equal(pageBody.includes('Discord accounts to check'), true, pageBody);
+  assert.equal(
+    pageBody.includes(
+      'No updates need another try right now. This doesn’t confirm that members can sign in to Google Workspace or Discord.',
+    ),
+    true,
+    pageBody,
+  );
   assert.equal(
     await reviewSection
       .getByText('LVBT Member, Advocacy Team, Events Committee', { exact: true })
@@ -86,25 +93,20 @@ try {
     1,
   );
   assert.equal(await reviewSection.getByText('Advocacy Team', { exact: true }).count(), 1);
-  assert.equal(
-    await reviewSection.getByText(`Discord ID: ${firstAccount}`, { exact: true }).count(),
-    1,
-  );
-  assert.equal(
-    await reviewSection.getByText(`Discord ID: ${secondAccount}`, { exact: true }).count(),
-    1,
-  );
+  assert.equal(pageBody.includes(firstAccount), false, 'raw Discord IDs stay out of staff copy');
+  assert.equal(pageBody.includes(secondAccount), false, 'raw Discord IDs stay out of staff copy');
+  assert.equal(await reviewSection.getByText(/^Added to this list /).count(), 2);
   assert.equal(
     await reviewSection
       .getByText(
-        'These accounts have LVBT roles but aren’t linked to a member. Their current roles stay in place until staff reviews them.',
+        'We couldn’t match these accounts to a member record. Their Discord roles stay as they are while staff checks.',
         { exact: true },
       )
       .count(),
     1,
   );
-  const openDiscord = reviewSection.getByRole('link', {
-    name: `Open Discord profile for account ${firstAccount}`,
+  const openDiscord = reviewSection.locator('li').first().getByRole('link', {
+    name: 'Open Discord profile',
     exact: true,
   });
   assert.equal(await openDiscord.innerText(), 'Open in Discord');
@@ -112,6 +114,25 @@ try {
   assert.equal(
     (await openDiscord.getAttribute('class'))?.split(' ').includes('staff-action-link'),
     true,
+  );
+  assert.equal(
+    await openDiscord.evaluate((element) => getComputedStyle(element).minHeight),
+    '44px',
+  );
+  const showAllAccess = page.getByRole('link', { name: 'Show all access updates', exact: true });
+  assert.equal(await showAllAccess.getAttribute('href'), '/access/?view=all');
+  assert.equal(
+    await showAllAccess.evaluate((element) => getComputedStyle(element).minHeight),
+    '44px',
+  );
+  for (let tab = 0; tab < 30; tab++) {
+    if (await openDiscord.evaluate((element) => element === document.activeElement)) break;
+    await page.keyboard.press('Tab');
+  }
+  assert.equal(await openDiscord.evaluate((element) => element.matches(':focus-visible')), true);
+  assert.equal(
+    await openDiscord.evaluate((element) => getComputedStyle(element).outlineWidth),
+    '3px',
   );
 
   await mkdir(join(fixture.root, 'test-results/staff'), { recursive: true });
@@ -142,16 +163,9 @@ try {
 
   await setSession('lead');
   await page.goto(`${ORIGIN}/access/`);
-  await page.getByRole('heading', { name: 'Discord accounts to review' }).waitFor();
+  await page.getByRole('heading', { name: 'Discord accounts to check' }).waitFor();
   assert.equal(await reviewSection.getByText('Events Committee', { exact: true }).count(), 1);
-  assert.equal(
-    await reviewSection.getByText(`Discord ID: ${firstAccount}`, { exact: true }).count(),
-    1,
-  );
-  assert.equal(
-    await reviewSection.getByText(`Discord ID: ${secondAccount}`, { exact: true }).count(),
-    0,
-  );
+  assert.equal(await reviewSection.getByRole('link', { name: 'Open Discord profile' }).count(), 1);
   assert.equal(await reviewSection.getByText('Advocacy Team', { exact: true }).count(), 0);
   await context.close();
   console.log(
