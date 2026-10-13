@@ -25,6 +25,7 @@ export interface DeploymentReceipt {
   artifactHash: string;
   accountId: string;
   environment: Environment;
+  stage: 'setup' | 'launch';
   status: 'uploading' | 'uploaded' | 'activating' | 'active' | 'failed';
   workers: WorkerReceipt[];
 }
@@ -63,6 +64,7 @@ export function newReceipt(
   release: StaffRelease,
   accountId: string,
   environment: Environment,
+  stage: 'setup' | 'launch' = 'launch',
 ): DeploymentReceipt {
   return {
     formatVersion: 1,
@@ -71,6 +73,7 @@ export function newReceipt(
     artifactHash: release.artifactHash,
     accountId,
     environment,
+    stage,
     status: 'uploading',
     workers: [],
   };
@@ -85,9 +88,15 @@ export async function readReceipt(
   const receipt = object(JSON.parse(await readFile(file, 'utf8')));
   if (
     Object.keys(receipt).sort().join() !== Object.keys(expected).sort().join() ||
-    ['formatVersion', 'commit', 'releaseId', 'artifactHash', 'accountId', 'environment'].some(
-      (key) => receipt[key] !== object(expected)[key],
-    ) ||
+    [
+      'formatVersion',
+      'commit',
+      'releaseId',
+      'artifactHash',
+      'accountId',
+      'environment',
+      'stage',
+    ].some((key) => receipt[key] !== object(expected)[key]) ||
     !['uploaded', 'activating', 'active', 'failed'].includes(String(receipt.status)) ||
     !Array.isArray(receipt.workers) ||
     receipt.workers.length !== 2

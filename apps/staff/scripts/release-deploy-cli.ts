@@ -7,15 +7,29 @@ import { assertReleaseSource } from './release-source';
 import { uploadStaffRelease, activateStaffRelease } from './release-deploy';
 import { runWrangler } from './release-provider';
 
+function deploymentStage(value?: string) {
+  if (value === undefined || value === 'launch') return 'launch' as const;
+  if (value === 'setup') return 'setup' as const;
+  throw new Error('Select --stage launch or --stage setup for the protected preview.');
+}
+
 export async function deployFromBuild(
   action: 'upload' | 'activate',
   values: Partial<
     Record<
-      'directory' | 'repository' | 'run-id' | 'receipt' | 'target' | 'commit' | 'release-id',
+      | 'directory'
+      | 'repository'
+      | 'run-id'
+      | 'receipt'
+      | 'target'
+      | 'commit'
+      | 'release-id'
+      | 'stage',
       string
     >
   >,
 ) {
+  const stage = deploymentStage(values.stage);
   if (
     !values.directory ||
     !values.repository ||
@@ -49,6 +63,7 @@ export async function deployFromBuild(
       accountId,
       token,
       environment: 'preview' as const,
+      stage,
       run: async (args: string[], output: string) => {
         await assertReleaseSource(root, selected.commit);
         await runWrangler(args, output, { accountId, token }, root);
