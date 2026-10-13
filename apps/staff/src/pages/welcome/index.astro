@@ -25,8 +25,8 @@ try {
 ---
 
 <StaffLayout
-  title="Welcome members"
-  description="Give new members a personal hello. Longest waiting first."
+  title="Welcome new members"
+  description="Say hello and help new members find their place. Those waiting longest come first."
 >
   <div class="space-y-4">
     {
@@ -53,14 +53,14 @@ try {
                       day: 'numeric',
                       timeZone: 'America/Los_Angeles',
                     })}
-                    {person.overdue && ' · Waiting 7+ days'}
+                    {person.overdue && <span class="staff-welcome-overdue">Waiting 7+ days</span>}
                   </p>
                 </div>
                 <p>
                   {person.claimedBy
                     ? person.claimedBy === staff.actor.personId
-                      ? 'Assigned to you'
-                      : `Assigned to ${person.claimedByName ?? 'another staff member'}`
+                      ? "You're welcoming them"
+                      : `${person.claimedByName ?? 'Another staff member'} is welcoming them`
                     : 'Needs a welcome'}
                 </p>
               </li>

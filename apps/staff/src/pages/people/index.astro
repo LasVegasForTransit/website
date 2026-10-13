@@ -50,7 +50,11 @@ const canAssign = committees.some((item) => item.acceptingMembers);
 
 <StaffLayout
   title={unassigned ? 'Members without a committee' : 'Members'}
-  description={staff.actor.staffAdmin ? undefined : 'Members of the committees you lead.'}
+  description={unassigned
+    ? 'Help members find a committee where they can contribute.'
+    : staff.actor.staffAdmin
+      ? 'Find a member, update their details, or help them get involved.'
+      : 'Find someone on your committees or help a new member get started.'}
 >
   {
     error && (
@@ -64,10 +68,9 @@ const canAssign = committees.some((item) => item.acceptingMembers);
       <a
         slot="heading-meta"
         class="staff-secondary-button press"
-        aria-label={unassigned ? 'Show all members' : 'Show members without a committee'}
         href={unassigned ? '/people/' : '/people/?committee=unassigned'}
       >
-        {unassigned ? 'All members' : 'No committee yet'}
+        {unassigned ? 'All members' : 'See members without a committee'}
       </a>
     )
   }
@@ -104,8 +107,8 @@ const canAssign = committees.some((item) => item.acceptingMembers);
       <summary
         >{
           status === 'member'
-            ? 'Filters'
-            : `Filters · ${
+            ? 'More ways to search'
+            : `More ways to search · ${
                 status === 'all'
                   ? 'Everyone'
                   : (MEMBERSHIP_LABELS[status as keyof typeof MEMBERSHIP_LABELS] ?? 'Members')
@@ -214,7 +217,7 @@ const canAssign = committees.some((item) => item.acceptingMembers);
                 </span>
               )}
               <span>Committee</span>
-              {showWelcome && <span>Follow-up</span>}
+              {showWelcome && <span>Welcome</span>}
             </>
           </div>
           <ul class="staff-roster" aria-label={status === 'member' ? 'Members' : 'People'}>
