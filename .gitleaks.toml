@@ -3,6 +3,16 @@
 [extend]
 useDefault = true
 
+[[rules]]
+id = "generic-api-key"
+
+[[rules.allowlists]]
+description = "The staff preview Access audience is a public application identifier."
+condition = "AND"
+paths = ['''^apps/staff/wrangler\.jsonc$''']
+regexTarget = "line"
+regexes = ['''^\s*"LVBT_ACCESS_AUD": "f89573338a947c9027f83748935d86f62041adba8672ab807c1634a85c85ef69",$''']
+
 [[allowlists]]
 description = "Paths that carry no secrets but trip generic entropy rules."
 paths = [
