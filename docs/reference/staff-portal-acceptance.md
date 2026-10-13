@@ -8,9 +8,9 @@ acceptance. It contains no member contact details.
 | Field                     | Current evidence                                                                                                                                |
 | ------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
 | Current branch            | `codex/staff-portal-current-main`; [draft PR #104](https://github.com/LasVegasForTransit/website/pull/104) is the review surface for this work. |
-| Latest implementation SHA | `64083652eed8395c7f8abef2178b88f816384af3`; local repository and staff browser checks pass.                                                     |
-| Deployed source SHA       | None; no staff or jobs Worker is deployed in preview or production.                                                                             |
-| Intended staff URLs       | `https://staff-preview.lasvegasfortransit.org/` and `https://staff.lasvegasfortransit.org/`; neither hostname resolved on 2026-10-12.           |
+| Latest implementation SHA | `0aba6ef2a83bc653f9470fd886be6b0f45163445`; local repository and staff browser checks pass with Node 24.20.0.                                   |
+| Deployed source SHA       | None recorded; the last provider inventory (2026-10-10) found no staff or jobs Worker. Current remote inventory is unverified.                  |
+| Intended staff URLs       | `https://staff-preview.lasvegasfortransit.org/` and `https://staff.lasvegasfortransit.org/`; neither hostname resolved on 2026-10-13.           |
 | Human tester and date     | None recorded.                                                                                                                                  |
 
 The portal is not released. The passing preview workflow packages the website Worker; it does not
@@ -32,10 +32,11 @@ both the configured email and Cloudflare Access identity, plus an active linked 
 The operation is one-time and audited. The maintainer removes the temporary secret after setup; the
 procedure is in [staff portal operations](./staff-portal-operations.md).
 
-With Node 24.20.0, the whole-repository `pnpm check` passed all 36 tasks in the linked development
-checkout on 2026-10-12, including its full-history secret scan. The complete staff browser suite
-also passed against the compiled Worker. These fixture checks do not establish a deployed portal,
-provider configuration or human acceptance.
+With Node 24.20.0, the whole-repository `pnpm check` passed all 36 tasks on 2026-10-13, including
+its full-history secret scan. The compiled staff browser suite passed against 5,000 synthetic
+people. It covers the member roster at 320, 390, 640, 768, 1024 and 1440 pixels, including the
+phone/table transition and no-horizontal-overflow checks. These fixture checks do not establish a
+deployed portal, provider configuration or human acceptance.
 
 ## Remote inventory
 
@@ -45,22 +46,23 @@ of 29 migrations remain unapplied, from `0009_workspace_sign_in.sql` through
 `0029_roster_import_provenance.sql`; `LVBT_PRESS_DATA_SOURCE_ID` is missing; and the Discord bot
 token and Discord application credentials are set on the public Worker even though the local
 manifest now forbids the token there. An unsigned POST to `/platform/discord/interactions` returned
-HTTP 405 on 2026-10-10, so the interaction handler is not live. The current local release artifact
-routes that path to the Worker, but it has not been deployed. Separate read-only Wrangler checks on
-2026-10-10 returned “Worker does not exist” for `lvbt-staff`, `lvbt-staff-preview`, `lvbt-jobs`, and
-`lvbt-jobs-preview`. The GitHub `staff-preview` environment lookup returned 404, so the required
-protected environment and its reviewer/token setup are absent. DNS checks on 2026-10-12 still could
-not resolve either staff hostname. No Worker, route, DNS record, secret, Access policy or migration
-was created or changed during these checks.
+HTTP 405 on 2026-10-10, so the interaction handler was not live then. The local release artifact at
+that time routed the path to the Worker but had not been deployed. Separate read-only Wrangler
+checks on 2026-10-10 returned “Worker does not exist” for `lvbt-staff`, `lvbt-staff-preview`,
+`lvbt-jobs`, and `lvbt-jobs-preview`. The GitHub `staff-preview` environment lookup returned 404, so
+the required protected environment and its reviewer/token setup were absent at that time. Current
+DNS requests on 2026-10-13 still cannot resolve either staff hostname. No Worker, route, DNS record,
+secret, Access policy or migration was created or changed during these checks.
 
 Cloudflare Access applications and policies, credential validity, provider configuration and current
 account-zone coverage remain unverified. The staff preflight reports Discord synchronization
 disabled in the staff/jobs Worker configuration. Access checks could not be run because the
 preflight has no scoped Cloudflare API token.
 
-The read-only staff preview preflight on 2026-10-12 passed local source checks, but failed
-`source.discord.enabled`; the repository configuration still keeps Discord synchronization disabled.
-Remote Worker, Access, database and account-zone inventory is unverified because the environment had
+The read-only staff preflights for preview and production on 2026-10-13 pass the shared database,
+staff-domain, protected-assets and jobs-exposure source checks, but fail `source.discord.enabled`;
+the repository keeps synchronization disabled until maintainers configure and verify both apps.
+Remote Worker, Access, database and account-zone inventory is unverified because the environment has
 no `CLOUDFLARE_ACCOUNT_ID` or scoped `CLOUDFLARE_API_TOKEN`. All seven live acceptance gates remain
 unverified. The pull request's preview job builds and packages without deployment credentials; it
 does not upload or activate the staff or jobs Workers.
