@@ -20,6 +20,16 @@ export default defineConfig({
             new URL('../site/public/fonts/public-sans-latin.woff2', import.meta.url),
             new URL('public-sans-latin.woff2', fonts),
           );
+          const brand = new URL('brand/', dir);
+          await mkdir(brand, { recursive: true });
+          await Promise.all(
+            ['lvbt-logo.svg', 'lvbt-logo-dark.svg'].map((filename) =>
+              copyFile(
+                new URL(`../site/public/brand/${filename}`, import.meta.url),
+                new URL(filename, brand),
+              ),
+            ),
+          );
         },
       },
     },

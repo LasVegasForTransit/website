@@ -4,7 +4,7 @@ import type { Db } from './db';
 import { STAFF_PERSON_SCOPE } from './staff-scope';
 import { MEMBER_SINCE, UNWELCOMED, WELCOME_SCOPE } from './welcome-scope';
 export interface RosterDetails {
-  committees: string[];
+  committees: { id: string; name: string }[];
   discordConnected: boolean;
   discordInServer: boolean | null;
   welcome: { claimedBy: string | null; claimedByName: string | null } | null;
@@ -27,7 +27,7 @@ export async function rosterDetails(
   const { results } = await db
     .prepare(
       `SELECT p.id,
-    (SELECT json_group_array(name) FROM (SELECT c.name FROM committee_assignments a JOIN committees c ON c.id=a.committee_id WHERE a.person_id=p.id AND a.ended_at IS NULL ORDER BY c.name)) AS committees,
+    (SELECT json_group_array(json_object('id', id, 'name', name)) FROM (SELECT c.id, c.name FROM committee_assignments a JOIN committees c ON c.id=a.committee_id WHERE a.person_id=p.id AND a.ended_at IS NULL ORDER BY c.name)) AS committees,
     EXISTS(SELECT 1 FROM identities i WHERE i.person_id=p.id AND i.platform='discord' AND i.link_method IN ('self_linked','staff_confirmed')) AS discord_connected,
     (SELECT CASE WHEN d.expires_at>? AND d.observed_at<=? THEN d.in_guild ELSE NULL END
       FROM identities i JOIN discord_profiles d ON d.identity_record_id=i.id
@@ -69,7 +69,7 @@ export async function rosterDetails(
     results.map((row) => [
       row.id,
       {
-        committees: JSON.parse(row.committees) as string[],
+        committees: JSON.parse(row.committees) as { id: string; name: string }[],
         discordConnected: Boolean(row.discord_connected),
         discordInServer: row.discord_in_server === null ? null : Boolean(row.discord_in_server),
         welcome: row.welcome_pending

@@ -39,6 +39,11 @@ export function peopleQuery(url: URL): StaffPeopleQuery {
   };
 }
 export function peopleStatus(url: URL): string {
+  if (
+    url.searchParams.get('intent') === 'search' &&
+    (optionalText(url.searchParams.get('q')) || optionalText(url.searchParams.get('email')))
+  )
+    return 'all';
   return (
     url.searchParams.get('status') ??
     (optionalText(url.searchParams.get('q')) || optionalText(url.searchParams.get('email'))

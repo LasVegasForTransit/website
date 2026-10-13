@@ -100,15 +100,92 @@ try {
   const screenshots = join(fixture.root, 'test-results/staff');
   await mkdir(screenshots, { recursive: true });
   await page.goto(`${ORIGIN}/people/`);
-  await page.screenshot({ animations: 'disabled', path: join(screenshots, 'people-desktop.png') });
-  await page.setViewportSize({ width: 320, height: 900 });
-  await page.screenshot({ animations: 'disabled', path: join(screenshots, 'people-mobile.png') });
-  assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
+  const staffMark = page.locator('.staff-identity img');
+  assert.equal(
+    await staffMark.evaluate((image) => (image as HTMLImageElement).naturalWidth > 0),
+    true,
+    'the approved LVBT mark should load in the staff header',
+  );
+  for (const width of [320, 390, 640, 768, 1024, 1440]) {
+    await page.setViewportSize({ width, height: 900 });
+    assert.equal(
+      await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth),
+      true,
+      `the member roster should not scroll horizontally at ${width}px`,
+    );
+    if (width === 320) {
+      const committeeActions = await page
+        .locator('.staff-roster-add-committee')
+        .evaluateAll((links) =>
+          links.map((link) => {
+            const range = document.createRange();
+            range.selectNodeContents(link);
+            const rect = link.getBoundingClientRect();
+            return {
+              text: link.textContent.trim(),
+              lines: range.getClientRects().length,
+              width: Math.round(rect.width),
+              maxWidth: getComputedStyle(link).maxWidth,
+            };
+          }),
+        );
+      assert.ok(
+        committeeActions.length > 0 && committeeActions.every((action) => action.lines === 1),
+        `committee actions should stay on one line on a narrow phone: ${JSON.stringify(committeeActions)}`,
+      );
+      await page.screenshot({
+        animations: 'disabled',
+        path: join(screenshots, 'people-mobile.png'),
+      });
+    }
+    if (width === 640) {
+      assert.equal(
+        await page
+          .locator('.staff-roster tbody tr')
+          .first()
+          .evaluate((row) => getComputedStyle(row).display),
+        'grid',
+        'member rows should stack when the viewport is narrow',
+      );
+    }
+    if (width === 768) {
+      assert.equal(
+        await page
+          .locator('.staff-roster tbody tr')
+          .first()
+          .evaluate((row) => getComputedStyle(row).display),
+        'table-row',
+        'member columns should return when there is room to compare them',
+      );
+    }
+    if (width === 1440) {
+      await page.screenshot({
+        animations: 'disabled',
+        path: join(screenshots, 'people-desktop.png'),
+      });
+    }
+  }
   await page.setViewportSize({ width: 1440, height: 1000 });
   await page.emulateMedia({ colorScheme: 'dark' });
+  await page.reload();
+  const darkMark = await staffMark.evaluate((element) => {
+    const image = element as HTMLImageElement;
+    const source = image.closest('picture')?.querySelector('source');
+    return {
+      currentSrc: image.currentSrc,
+      prefersDark: matchMedia('(prefers-color-scheme: dark)').matches,
+      sourceMediaMatches: source ? matchMedia(source.media).matches : null,
+      source: source?.srcset,
+    };
+  });
+  assert.equal(
+    darkMark.currentSrc.endsWith('lvbt-logo-dark.svg'),
+    true,
+    `dark mode should use the approved light-on-dark LVBT mark: ${JSON.stringify(darkMark)}`,
+  );
   await page.screenshot({ animations: 'disabled', path: join(screenshots, 'people-dark.png') });
   await page.emulateMedia({ colorScheme: 'light' });
-  await page.getByRole('link', { name: 'Next page', exact: true }).click();
+  await page.getByRole('link', { name: 'More members', exact: true }).click();
   assert.ok(new URL(page.url()).searchParams.get('cursor'));
   await page.setViewportSize({ width: 320, height: 900 });
   await page.goto(`${ORIGIN}/people/${fixture.inside.id}/`);
@@ -202,7 +279,7 @@ try {
         'admin roster filters and pagination',
         'member verification search finds former members and preserves current lead scope',
         'keyboard-only skip link and member search',
-        'roster assignment returns to the same search and shows current welcome ownership',
+        'member roster shows all committee assignments and returns from assignment to the same search',
         'consent profile',
         'native attributed correction and stale-form conflict',
         'administrator-only comparison and atomic keep-separate decision',

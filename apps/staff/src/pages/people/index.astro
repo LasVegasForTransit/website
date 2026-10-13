@@ -35,7 +35,7 @@ try {
 }
 const status = peopleStatus(Astro.url);
 const showMembership = status !== 'member';
-const searchStatus = Astro.url.searchParams.get('status') ?? 'all';
+const searchStatus = status;
 const unassigned = Astro.url.searchParams.get('committee') === 'unassigned';
 const details = await rosterDetails(
   staff.db,
@@ -43,9 +43,15 @@ const details = await rosterDetails(
   page.items.map((person) => person.id),
   { configuration: staff.accessConfiguration ?? {} },
 );
-const showWelcome = [...details.values()].some((item) => item.welcome);
 const showDiscord = staff.accessConfiguration?.discord?.configured ?? false;
-const canAssign = committees.some((item) => item.acceptingMembers);
+const acceptingCommitteeIds = committees
+  .filter((item) => item.acceptingMembers)
+  .map((item) => item.id);
+const hasMemberTasks =
+  can(staff.actor, 'attendance.record') ||
+  can(staff.actor, 'review_queue.resolve') ||
+  can(staff.actor, 'access.view') ||
+  can(staff.actor, 'export.full');
 ---
 
 <StaffLayout
@@ -63,23 +69,12 @@ const canAssign = committees.some((item) => item.acceptingMembers);
       </p>
     )
   }
-  {
-    staff.actor.staffAdmin && (
-      <a
-        slot="heading-meta"
-        class="staff-secondary-button press"
-        href={unassigned ? '/people/' : '/people/?committee=unassigned'}
-      >
-        {unassigned ? 'All members' : 'See members without a committee'}
-      </a>
-    )
-  }
   <form
     method="get"
     action="/people/"
     class="staff-search"
     role="search"
-    aria-label="Find a person"
+    aria-label="Find a member"
   >
     <div class="staff-search-row">
       <div class="staff-search-query">
@@ -93,28 +88,18 @@ const canAssign = committees.some((item) => item.acceptingMembers);
           maxlength="254"
         />
       </div>
-      <Button>Search</Button>
+      <Button name="intent" value="search">Search</Button>
     </div>
     <details
       class="staff-search-filters"
       open={Boolean(
-        Astro.url.searchParams.get('zip') ||
-        Astro.url.searchParams.get('email') ||
-        (status !== 'all' && status !== 'member') ||
-        (Astro.url.searchParams.get('committee') && !unassigned),
+        Astro.url.searchParams.has('zip') ||
+        Astro.url.searchParams.has('email') ||
+        Astro.url.searchParams.has('committee') ||
+        (Astro.url.searchParams.has('status') && Astro.url.searchParams.get('intent') !== 'search'),
       )}
     >
-      <summary
-        >{
-          status === 'member'
-            ? 'More ways to search'
-            : `More ways to search · ${
-                status === 'all'
-                  ? 'Everyone'
-                  : (MEMBERSHIP_LABELS[status as keyof typeof MEMBERSHIP_LABELS] ?? 'Members')
-              }`
-        }</summary
-      >
+      <summary>Filters</summary>
       <div class="staff-filter-row">
         <div>
           <label for="status">Membership</label>
@@ -167,6 +152,7 @@ const canAssign = committees.some((item) => item.acceptingMembers);
           />
         </div>
       </div>
+      <Button name="intent" value="filters">Apply filters</Button>
     </details>
     {
       Astro.url.search && (
@@ -179,21 +165,43 @@ const canAssign = committees.some((item) => item.acceptingMembers);
     }
   </form>
   {
+    hasMemberTasks && (
+      <details class="staff-member-tasks">
+        <summary>Member records</summary>
+        <nav aria-label="Member record tasks">
+          <ul>
+            {can(staff.actor, 'attendance.record') && (
+              <li>
+                <a href="/paper/">Enter signups from a paper sheet</a>
+              </li>
+            )}
+            {can(staff.actor, 'review_queue.resolve') && (
+              <li>
+                <a href="/review/">Check for duplicate members</a>
+              </li>
+            )}
+            {can(staff.actor, 'access.view') && (
+              <li>
+                <a href="/access/">Check Google and Discord access</a>
+              </li>
+            )}
+            {can(staff.actor, 'export.full') && (
+              <li>
+                <a href="/export/">Download member records</a>
+              </li>
+            )}
+          </ul>
+        </nav>
+      </details>
+    )
+  }
+  {
     !error &&
       (page.items.length ? (
-        <section
-          aria-label="Search results"
-          class:list={[
-            'staff-roster-results',
-            {
-              'staff-roster-with-follow-up': showWelcome,
-              'staff-roster-with-status': showMembership || showDiscord,
-            },
-          ]}
-        >
+        <section aria-label="Search results" class="staff-roster-results">
           <div class="staff-results-meta">
             <p>
-              {page.items.length}{' '}
+              Showing {page.items.length}{' '}
               {status === 'member'
                 ? page.items.length === 1
                   ? 'member'
@@ -201,40 +209,47 @@ const canAssign = committees.some((item) => item.acceptingMembers);
                 : page.items.length === 1
                   ? 'person'
                   : 'people'}
-              {page.nextCursor ? ' · More on the next page' : ''}
+              {page.nextCursor ? ' on this page' : ''}
             </p>
           </div>
-          <div class="staff-roster-heading" aria-hidden="true">
-            <>
-              <span>Name / email</span>
-              {(showMembership || showDiscord) && (
-                <span>
-                  {showMembership && showDiscord
-                    ? 'Membership / Discord'
-                    : showDiscord
-                      ? 'Discord'
-                      : 'Membership'}
-                </span>
-              )}
-              <span>Committee</span>
-              {showWelcome && <span>Welcome</span>}
-            </>
-          </div>
-          <ul class="staff-roster" aria-label={status === 'member' ? 'Members' : 'People'}>
-            {page.items.map((person) => (
-              <RosterMember
-                person={person}
-                details={details.get(person.id)}
-                showWelcome={showWelcome}
-                showMembership={showMembership}
-                showDiscord={showDiscord}
-                canAssign={canAssign}
-              />
-            ))}
-          </ul>
+          <table class="staff-roster">
+            <caption class="sr-only">{status === 'member' ? 'Members' : 'People'}</caption>
+            <thead>
+              <tr>
+                <th scope="col">Member</th>
+                {(showMembership || showDiscord) && (
+                  <th scope="col">
+                    {showMembership && showDiscord
+                      ? 'Membership and Discord'
+                      : showDiscord
+                        ? 'Discord'
+                        : 'Membership'}
+                  </th>
+                )}
+                <th scope="col">Committees</th>
+              </tr>
+            </thead>
+            <tbody>
+              {page.items.map((person) => (
+                <RosterMember
+                  person={person}
+                  details={details.get(person.id)}
+                  showMembership={showMembership}
+                  showDiscord={showDiscord}
+                  canAddToAnotherCommittee={
+                    person.membership_status === 'member' &&
+                    acceptingCommitteeIds.some(
+                      (committeeId) =>
+                        !details.get(person.id)?.committees.some((item) => item.id === committeeId),
+                    )
+                  }
+                />
+              ))}
+            </tbody>
+          </table>
           {page.nextCursor && (
             <a href={pageLink(Astro.url, page.nextCursor)} class="staff-next">
-              Next page <span aria-hidden="true">→</span>
+              More {status === 'member' ? 'members' : 'people'} <span aria-hidden="true">→</span>
             </a>
           )}
         </section>
@@ -249,21 +264,5 @@ const canAssign = committees.some((item) => item.acceptingMembers);
           </>
         </div>
       ))
-  }
-  {
-    can(staff.actor, 'review_queue.resolve') && (
-      <p class="mt-8 text-body-sm">
-        <a href="/review/">Review possible duplicates</a> ·{' '}
-        <a href="/access/">Google and Discord access</a> · <a href="/paper/">Enter paper signups</a>{' '}
-        · <a href="/export/">Download member records</a>
-      </p>
-    )
-  }
-  {
-    !staff.actor.staffAdmin && can(staff.actor, 'attendance.record') && (
-      <p class="mt-8 text-body-sm">
-        <a href="/paper/">Enter paper signups</a>
-      </p>
-    )
   }
 </StaffLayout>

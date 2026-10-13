@@ -27,7 +27,15 @@ const signOutToken = staff ? await issueFormToken(staff.db, staff.actor, 'sign-o
       <header class="staff-header">
         <div class="container-page staff-header-inner">
           <a href="/" class="staff-identity" aria-label="LVBT staff home">
-            LVBT <span>staff</span>
+            <picture class="staff-identity-mark">
+              <source
+                srcset="/brand/lvbt-logo-dark.svg"
+                media="(prefers-color-scheme: dark)"
+                type="image/svg+xml"
+              />
+              <img src="/brand/lvbt-logo.svg" width="32" height="32" alt="" />
+            </picture>
+            <span>Staff</span>
           </a>
           {
             !signIn && (

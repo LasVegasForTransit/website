@@ -25,5 +25,7 @@ void test('a name or email lookup includes former members unless membership was 
   assert.equal(query('?email=known%40example.invalid').membershipStatus, undefined);
   assert.equal(query('?q=%20').membershipStatus, 'member');
   assert.equal(query('?q=Known&status=member').membershipStatus, 'member');
+  assert.equal(query('?q=Known&status=member&intent=search').membershipStatus, undefined);
+  assert.equal(query('?q=Known&status=member&intent=filters').membershipStatus, 'member');
   assert.equal(query('?q=Known&status=former_member').membershipStatus, 'former_member');
 });

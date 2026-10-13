@@ -49,13 +49,20 @@ function moreLink(key: string, cursor: string) {
   <div class="staff-roster-toolbar">
     <p>{committee.peopleCount} {committee.peopleCount === 1 ? 'person' : 'people'}</p>
     {
-      staff.actor.staffAdmin && committee.acceptingMembers && (
-        <a href="/people/?committee=unassigned" class="staff-person-link">
-          Find a member to add
-        </a>
-      )
+      can(staff.actor, 'committee.assign', { committeeId: committee.id }) &&
+        committee.acceptingMembers && (
+          <a href="/people/?status=member" class="staff-person-link">
+            Find members to add
+          </a>
+        )
     }
   </div>
+  {
+    can(staff.actor, 'committee.assign', { committeeId: committee.id }) &&
+      committee.acceptingMembers && (
+        <p class="staff-help">Members can be part of more than one committee.</p>
+      )
+  }
   <ul class="staff-team-roster" aria-label="Current committee members">
     {
       current.items.map((person) => (
