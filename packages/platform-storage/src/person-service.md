@@ -90,9 +90,10 @@ has been deleted, by the retention job. An event recorded against the wrong pers
 adding a `correction` event whose reference is the mistaken event's ID, and the counts then leave
 the mistaken event out.
 
-The event types are `subscribed`, `unsubscribed`, `joined`, `rsvp`, `attended`, `donated`,
-`volunteer_shift`, `role_changed`, `check_in_held` and `correction`. Adding a type is a code change
-in `engagement.ts`.
+The event types are `subscribed`, `unsubscribed`, `joined`, `form_response`, `welcomed`, `rsvp`,
+`attended`, `donated`, `volunteer_shift`, `role_changed`, `check_in_held`, `correction` and
+`duplicate_reviewed`. A form response without newsletter consent uses `form_response`; it does not
+record an LVBT join. Adding a type is a code change in `engagement.ts`.
 
 Other features read these counts instead of keeping their own tallies. They are worked out from the
 log whenever they are asked for:

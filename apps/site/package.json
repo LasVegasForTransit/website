@@ -52,7 +52,8 @@
     "worker:publication": "tsx scripts/deploy/record-publication.ts",
     "worker:promote": "pnpm --dir ../.. promote",
     "check:links": "tsx scripts/audit/check-build-links.ts",
-    "test:discord-link": "node --import tsx tests/e2e/discord-link.spec.ts"
+    "test:discord-link": "node --import tsx tests/e2e/discord-link.spec.ts",
+    "test:intake": "node --import tsx tests/e2e/intake-runtime.spec.ts"
   },
   "dependencies": {
     "@astrojs/sitemap": "catalog:",

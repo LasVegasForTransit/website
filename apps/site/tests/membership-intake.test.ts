@@ -18,11 +18,14 @@ const baseEnv = {
 };
 
 const calls: FetchCall[] = [];
+const databases = new Set<ReturnType<typeof memoryDb>>();
 const originalFetch = globalThis.fetch;
 
 afterEach(() => {
   calls.length = 0;
   globalThis.fetch = originalFetch;
+  for (const db of databases) db.raw.close();
+  databases.clear();
 });
 
 // Every mocked call answers in order from `statuses` (200 once exhausted).
@@ -51,9 +54,15 @@ function callBody(index: number): Record<string, any> {
 
 const NOTION_QUERY_URL = 'https://api.notion.com/v1/data_sources/notion-data-source/query';
 
-function context(body: unknown, env = baseEnv, headers: HeadersInit = {}) {
+function context(
+  body: unknown,
+  env: typeof baseEnv & { PLATFORM_DB?: ReturnType<typeof memoryDb> | undefined } = baseEnv,
+  headers: HeadersInit = {},
+) {
+  const db = env.PLATFORM_DB ?? memoryDb();
+  databases.add(db);
   return {
-    env,
+    env: Object.hasOwn(env, 'PLATFORM_DB') ? env : { ...env, PLATFORM_DB: db },
     request: new Request('https://lasvegasfortransit.org/api/membership-intake', {
       method: 'POST',
       headers: {
@@ -63,10 +72,10 @@ function context(body: unknown, env = baseEnv, headers: HeadersInit = {}) {
       },
       body: JSON.stringify(body),
     }),
-  } as Parameters<typeof onRequestPost>[0];
+  } as unknown as Parameters<typeof onRequestPost>[0];
 }
 
-void test('subscribes a valid form response and creates a Notion intake page', async () => {
+void test('records a valid form response and creates a Notion intake page', async () => {
   mockFetch();
 
   const response = await onRequestPost(
@@ -81,41 +90,33 @@ void test('subscribes a valid form response and creates a Notion intake page', a
       answers: {
         Name: 'Test Rider',
         Interests: 'Bus reliability, Safer stops',
+        'Finishing this form will sign you up for our email newsletter. Is this okay?': 'Yes',
       },
     }),
   );
 
   assert.equal(response.status, 200);
   assert.deepEqual(await response.json(), { success: true, notion: 'created' });
-  assert.equal(calls.length, 3);
+  assert.equal(calls.length, 2);
 
-  const beehiiv = call(0);
-  assert.equal(beehiiv.url, 'https://api.beehiiv.com/v2/publications/pub_123/subscriptions');
-  assert.equal(beehiiv.init.method, 'POST');
   assert.equal(
-    (beehiiv.init.headers as Record<string, string>).Authorization,
-    'Bearer beehiiv-key',
+    calls.some((call) => call.url.includes('beehiiv')),
+    false,
   );
-  assert.deepEqual(callBody(0), {
-    email: 'rider@example.com',
-    reactivate_existing: true,
-    send_welcome_email: false,
-    double_opt_override: 'off',
-  });
 
-  assert.equal(call(1).url, NOTION_QUERY_URL);
-  assert.deepEqual(callBody(1).filter, {
+  assert.equal(call(0).url, NOTION_QUERY_URL);
+  assert.deepEqual(callBody(0).filter, {
     property: 'Response ID',
     rich_text: { equals: 'form-response-id' },
   });
 
-  const notion = call(2);
+  const notion = call(1);
   assert.equal(notion.url, 'https://api.notion.com/v1/pages');
   assert.equal(notion.init.method, 'POST');
   assert.equal((notion.init.headers as Record<string, string>).Authorization, 'Bearer notion-key');
   assert.equal((notion.init.headers as Record<string, string>)['Notion-Version'], '2026-03-11');
 
-  const notionBody = callBody(2);
+  const notionBody = callBody(1);
   assert.deepEqual(notionBody.parent, { data_source_id: 'notion-data-source' });
   assert.equal(notionBody.properties.Email.email, 'rider@example.com');
   assert.equal(notionBody.properties.Name.title[0].text.content, 'Test Rider');
@@ -130,7 +131,7 @@ void test('subscribes a valid form response and creates a Notion intake page', a
   const blockText = (block: {
     bulleted_list_item: { rich_text: { text: { content: string } }[] };
   }) => block.bulleted_list_item.rich_text[0]?.text.content;
-  assert.equal(notionBody.children.length, 2);
+  assert.equal(notionBody.children.length, 3);
   assert.equal(notionBody.children[0].type, 'bulleted_list_item');
   assert.equal(blockText(notionBody.children[0]), 'Name: Test Rider');
   assert.equal(blockText(notionBody.children[1]), 'Interests: Bus reliability, Safer stops');
@@ -141,7 +142,7 @@ void test('renders a placeholder paragraph when no answers are supplied', async 
 
   await onRequestPost(context({ email: 'rider@example.com' }));
 
-  const notionBody = callBody(2);
+  const notionBody = callBody(1);
   assert.equal(notionBody.children.length, 1);
   assert.equal(notionBody.children[0].type, 'paragraph');
   assert.equal(
@@ -205,18 +206,30 @@ void test('reports missing runtime configuration before downstream calls', async
   assert.equal(calls.length, 0);
 });
 
-void test('reports Beehiiv subscription failure', async () => {
+void test('requires canonical storage before calling downstream services', async () => {
+  mockFetch();
+  const response = await onRequestPost(
+    context({ email: 'rider@example.com' }, { ...baseEnv, PLATFORM_DB: undefined }),
+  );
+  assert.equal(response.status, 503);
+  assert.deepEqual(await response.json(), {
+    error: 'service_unavailable',
+    missing: ['PLATFORM_DB'],
+  });
+  assert.equal(calls.length, 0);
+});
+
+void test('reports Notion sync failure when the duplicate lookup fails', async () => {
   mockFetch([500]);
 
   const response = await onRequestPost(context({ email: 'rider@example.com' }));
 
   assert.equal(response.status, 502);
-  assert.deepEqual(await response.json(), { error: 'subscription_failed' });
-  // The duplicate lookup runs alongside the subscribe; the page create does not.
-  assert.equal(calls.length, 2);
+  assert.deepEqual(await response.json(), { error: 'notion_sync_failed' });
+  assert.equal(calls.length, 1);
 });
 
-void test('reports Notion sync failure when the duplicate lookup fails', async () => {
+void test('reports Notion sync failure when the page create fails', async () => {
   mockFetch([200, 500]);
 
   const response = await onRequestPost(context({ email: 'rider@example.com' }));
@@ -224,16 +237,6 @@ void test('reports Notion sync failure when the duplicate lookup fails', async (
   assert.equal(response.status, 502);
   assert.deepEqual(await response.json(), { error: 'notion_sync_failed' });
   assert.equal(calls.length, 2);
-});
-
-void test('reports Notion sync failure when the page create fails', async () => {
-  mockFetch([200, 200, 500]);
-
-  const response = await onRequestPost(context({ email: 'rider@example.com' }));
-
-  assert.equal(response.status, 502);
-  assert.deepEqual(await response.json(), { error: 'notion_sync_failed' });
-  assert.equal(calls.length, 3);
 });
 
 void test('does not create a second Notion page for a replayed response', async () => {
@@ -245,7 +248,7 @@ void test('does not create a second Notion page for a replayed response', async 
 
   assert.equal(response.status, 200);
   assert.deepEqual(await response.json(), { success: true, notion: 'existing' });
-  assert.equal(calls.length, 2);
+  assert.equal(calls.length, 1);
 });
 
 void test('dedupes by email when the request carries no response ID', async () => {
@@ -254,30 +257,30 @@ void test('dedupes by email when the request carries no response ID', async () =
   const response = await onRequestPost(context({ email: 'Rider@Example.com' }));
 
   assert.equal(response.status, 200);
-  assert.deepEqual(callBody(1).filter, {
+  assert.deepEqual(callBody(0).filter, {
     property: 'Email',
     email: { equals: 'rider@example.com' },
   });
-  assert.equal(calls.length, 2);
+  assert.equal(calls.length, 1);
 });
 
-void test('reports Beehiiv as failed when the request itself throws', async () => {
+void test('reports a Notion request failure after recording the person', async () => {
   mockFetch([], [], 1);
 
   const response = await onRequestPost(context({ email: 'rider@example.com' }));
 
   assert.equal(response.status, 502);
-  assert.deepEqual(await response.json(), { error: 'subscription_failed' });
+  assert.deepEqual(await response.json(), { error: 'notion_sync_failed' });
 });
 
-void test('reports Notion as failed when the lookup throws after Beehiiv succeeds', async () => {
-  mockFetch([], [], 2);
+void test('does not expose provider error details when Notion lookup fails', async () => {
+  mockFetch([], [], 1);
 
   const response = await onRequestPost(context({ email: 'rider@example.com' }));
 
   assert.equal(response.status, 502);
   assert.deepEqual(await response.json(), { error: 'notion_sync_failed' });
-  assert.equal(calls.length, 2);
+  assert.equal(calls.length, 1);
 });
 
 void test('rejects a non-string email without calling downstream systems', async () => {
@@ -306,7 +309,7 @@ void test('treats non-string optional fields as absent instead of failing', asyn
   );
 
   assert.equal(response.status, 200);
-  const notionBody = callBody(2);
+  const notionBody = callBody(1);
   assert.equal(notionBody.properties.Name.title[0].text.content, 'rider@example.com');
   assert.deepEqual(notionBody.properties.Discord.rich_text, []);
   assert.equal(
@@ -327,7 +330,7 @@ void test('caps the Notion page body at the 100-block create limit', async () =>
   const response = await onRequestPost(context({ email: 'rider@example.com', answers }));
 
   assert.equal(response.status, 200);
-  const notionBody = callBody(2);
+  const notionBody = callBody(1);
   assert.equal(notionBody.children.length, 100);
   assert.equal(notionBody.children[98].type, 'bulleted_list_item');
   assert.equal(notionBody.children[99].type, 'paragraph');
@@ -377,8 +380,11 @@ void test('records the Google Form response in the person record when the databa
         name: 'Test Rider',
         submittedAt: '2026-06-15T18:00:00.000Z',
         responseId: 'form-response-id',
+        answers: {
+          'Finishing this form will sign you up for our email newsletter. Is this okay?': 'Yes',
+        },
       },
-      { ...baseEnv, PLATFORM_DB: db } as typeof baseEnv,
+      { ...baseEnv, PLATFORM_DB: db },
     ),
   );
   assert.equal(response.status, 200);

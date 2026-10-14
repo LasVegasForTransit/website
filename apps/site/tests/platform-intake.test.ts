@@ -19,15 +19,6 @@ function submission(overrides: Record<string, unknown> = {}) {
   };
 }
 
-function beehiiv(): { fetcher: typeof fetch; calls: string[] } {
-  const calls: string[] = [];
-  const fetcher = ((input: string | URL | Request) => {
-    calls.push(input instanceof Request ? input.url : input.toString());
-    return Promise.resolve(Response.json({ data: { id: 'sub_1' } }));
-  }) as typeof fetch;
-  return { fetcher, calls };
-}
-
 async function post(db: MemoryDb, body: unknown, token = TOKEN): Promise<Response> {
   const request = new Request('https://lasvegasfortransit.org/api/intake/v1', {
     method: 'POST',
@@ -42,16 +33,14 @@ async function post(db: MemoryDb, body: unknown, token = TOKEN): Promise<Respons
   return onRequestPost({ env, request } as unknown as Parameters<typeof onRequestPost>[0]);
 }
 
-void test('a valid submission creates a person with consent and returns created', async () => {
+void test('a valid submission records consent and queues delivery without a provider request', async (t) => {
   const db = memoryDb();
-  const { fetcher, calls } = beehiiv();
+  const fetcher = t.mock.method(globalThis, 'fetch', () => {
+    throw new Error('intake must not call the provider');
+  });
   const parsed = parseIntake(submission());
   assert.ok(parsed.ok);
-  const outcome = await processIntake(
-    { PLATFORM_DB: db, LVBT_BEEHIIV_API_KEY: 'k'.repeat(20), LVBT_BEEHIIV_PUBLICATION_ID: 'pub_1' },
-    parsed.submission,
-    { subscribe: true, fetcher },
-  );
+  const outcome = await processIntake({ PLATFORM_DB: db }, parsed.submission);
   assert.deepEqual(outcome, { kind: 'processed', response: { action: 'created' } });
   const person = db.raw
     .prepare('SELECT given_name, family_name, email, zip, membership_status FROM people')
@@ -73,7 +62,8 @@ void test('a valid submission creates a person with consent and returns created'
     { ...consent },
     { source: 'google_form', method: 'checkbox', wording_version: 'gform-2026-06' },
   );
-  assert.equal(calls.length, 1);
+  assert.equal(fetcher.mock.callCount(), 0);
+  assert.equal(db.raw.prepare('SELECT state FROM newsletter_sync_jobs').get()?.state, 'queued');
 });
 
 void test('the same idempotency key returns the first answer and changes nothing', async () => {
@@ -135,6 +125,9 @@ void test('the Google Form payload becomes a version 1 submission with consent',
     name: 'Ana Maria Reyes',
     submittedAt: '2026-10-05T18:22:10Z',
     responseId: 'abc',
+    answers: {
+      'Finishing this form will sign you up for our email newsletter. Is this okay?': 'Yes',
+    },
   });
   assert.equal(converted.idempotencyKey, 'gform-abc');
   assert.equal(converted.source, 'google_form');

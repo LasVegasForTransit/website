@@ -48,9 +48,7 @@ export const onRequestPost: PagesFunction<Env> = async ({ env, request }) => {
     });
   }
 
-  const outcome = await processIntake({ ...env, PLATFORM_DB: env.PLATFORM_DB }, parsed.submission, {
-    subscribe: true,
-  });
+  const outcome = await processIntake({ PLATFORM_DB: env.PLATFORM_DB }, parsed.submission);
   if (outcome.kind === 'unavailable') {
     return reply(503, {
       error: 'unavailable',

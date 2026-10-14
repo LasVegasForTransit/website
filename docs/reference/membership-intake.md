@@ -22,14 +22,16 @@ what they agreed to** — not a spreadsheet, and not Notion.
 
 Whichever form someone fills in, the same three things happen:
 
-1. They're subscribed to LVBT's newsletter in [Beehiiv](./glossary.md#beehiiv), which is what makes
-   them a member today (see [membership program](../explanation/membership-program.md)).
-2. Their answers are written into their person record — the row for them in the platform database,
-   read and written only through the
+1. Their answers and any explicit newsletter consent are written into their person record — the row
+   for them in the platform database, read and written only through the
    [person service](../../packages/platform-storage/src/person-service.md). See the
    [schema](../../packages/platform-storage/migrations/schema.md) for every column that record can
    hold. A person is matched to an existing record by email address, so filling in a second form
    links to the same person instead of creating a duplicate.
+2. Newsletter consent makes them a member and queues delivery in [Beehiiv](./glossary.md#beehiiv).
+   Consent retains the original submission time, so an older replay cannot reverse a newer
+   withdrawal. A provider outage does not discard the accepted membership record. A form without
+   consent remains a form response rather than a membership join.
 3. Staff learn about the new person for follow-up. Today that's a Notion page (see
    [Staff follow-up in Notion](#staff-follow-up-in-notion)); once the staff console's follow-up
    queue ships, staff will work from that queue instead.
@@ -56,12 +58,16 @@ token (see [glossary](./glossary.md#bearer-token)), and you get back whether the
 The membership Google Form still works, as a fallback alongside the website's own join form. It
 doesn't call `/api/intake/v1` directly. Instead, an Apps Script attached to the form (see
 [glossary](./glossary.md#apps-script)) posts each submission, in its own older shape, to
-`/api/membership-intake`. That handler subscribes the person in Beehiiv itself, then turns the
-submission into a version 1 intake submission and writes it to the person record through the same
-intake logic every other source uses — so a Google Form sign-up ends up in exactly the same place a
-`/api/intake/v1` sign-up does. The Google Sheet the form writes to is not the record of who joined;
-it's a convenience copy of the raw answers, kept in case a submission ever needs to be checked or
-re-entered by hand.
+`/api/membership-intake`. That handler turns the submission into a version 1 intake submission and
+writes it to the person record before contacting Notion, through the same intake logic every other
+source uses — so a Google Form sign-up ends up in exactly the same place a `/api/intake/v1` sign-up
+does. The Google Sheet the form writes to is not the record of who joined; it's a convenience copy
+of the raw answers, kept in case a submission ever needs to be checked or re-entered by hand.
+
+The answer “Yes” to “Finishing this form will sign you up for our email newsletter. Is this okay?”
+and a valid original submission time are required to record newsletter consent. A blank or negative
+answer, or an unknown submission time, does not create membership. The existing Apps Script includes
+these answers and the response timestamp; it does not need newsletter credentials.
 
 ### Switching the membership front door
 
@@ -103,15 +109,18 @@ values stay on your machine and are never sent to production. Never paste that l
 into Apps Script. `LVBT_NOTION_DATA_SOURCE_ID` is created for you by
 `pnpm -C apps/site setup:notion` (see [Staff follow-up in Notion](#staff-follow-up-in-notion)).
 
-The five runtime secrets:
+Intake runtime bindings:
 
 | Key                             | Purpose                                                                                                                                                                                                                                                                                |
 | ------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `LVBT_MEMBERSHIP_INTAKE_SECRET` | Shared bearer token (a secret string sent in the request's `Authorization: Bearer …` header to prove the caller is allowed; see [glossary](./glossary.md#bearer-token)) used by Apps Script when calling `/api/membership-intake`, and by any other form tool calling `/api/intake/v1` |
-| `LVBT_BEEHIIV_API_KEY`          | Beehiiv API key with subscriber write access                                                                                                                                                                                                                                           |
-| `LVBT_BEEHIIV_PUBLICATION_ID`   | Beehiiv publication ID, starting with `pub_`                                                                                                                                                                                                                                           |
+| `PLATFORM_DB`                   | Canonical membership database; required before a submission can be accepted                                                                                                                                                                                                            |
 | `LVBT_NOTION_API_KEY`           | Notion connection access token (starts with `ntn_`) — needed only for staff follow-up; see [Staff follow-up in Notion](#staff-follow-up-in-notion)                                                                                                                                     |
 | `LVBT_NOTION_DATA_SOURCE_ID`    | Notion data source ID (a data source is the actual table of rows inside a Notion database; the API writes to its ID, not the database ID — see [glossary](./glossary.md#data-source)) — created by `pnpm -C apps/site setup:notion`; same caveat as above                              |
+
+Newsletter credentials belong to the [scheduled membership Worker](../../apps/jobs/README.md).
+Neither intake endpoint calls Beehiiv directly. Notion failure is reported after the canonical
+record has been saved; retrying the same source response resumes follow-up safely.
 
 Only when the form is set up for the first time does the intake secret need a new value. Generate
 one with `openssl rand -hex 32` (`openssl` is a command-line crypto tool; this prints a random
@@ -215,7 +224,8 @@ Expected body:
   "responseId": "form-response-id",
   "answers": {
     "What is your preferred name?": "Test Rider",
-    "What's your Discord username?": "testrider#0001"
+    "What's your Discord username?": "testrider#0001",
+    "Finishing this form will sign you up for our email newsletter. Is this okay?": "Yes"
   }
 }
 ```
@@ -223,37 +233,37 @@ Expected body:
 Responses. The **Status** column is the [HTTP status code](./glossary.md#status-code) (`2xx` =
 success, `4xx`/`5xx` = failure):
 
-| Status | Body                                                   | Meaning                                                                                         |
-| ------ | ------------------------------------------------------ | ----------------------------------------------------------------------------------------------- |
-| `200`  | `{ "success": true, "notion": "created" }`             | Beehiiv accepted it, the person record was updated, and a Notion intake page was created        |
-| `200`  | `{ "success": true, "notion": "existing" }`            | Beehiiv accepted it and the person record was updated; a page for this response already existed |
-| `400`  | `{ "error": "invalid_body" }`                          | JSON body could not be parsed                                                                   |
-| `400`  | `{ "error": "invalid_email" }`                         | Email missing or malformed                                                                      |
-| `401`  | `{ "error": "unauthorized" }`                          | Missing or incorrect bearer token                                                               |
-| `502`  | `{ "error": "subscription_failed" }`                   | Beehiiv rejected the subscription                                                               |
-| `502`  | `{ "error": "notion_sync_failed" }`                    | Notion rejected the page create                                                                 |
-| `503`  | `{ "error": "service_unavailable", "missing": [...] }` | Required runtime secret is missing; the missing key names are included                          |
-| `500`  | Cloudflare error page (not JSON)                       | An exception escaped the handler                                                                |
+| Status | Body                                                   | Meaning                                                                                                                        |
+| ------ | ------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------ |
+| `200`  | `{ "success": true, "notion": "created" }`             | The person record was processed, any accepted newsletter consent was queued for delivery, and a Notion intake page was created |
+| `200`  | `{ "success": true, "notion": "existing" }`            | The person record was processed; a Notion page for this response already existed                                               |
+| `400`  | `{ "error": "invalid_body" }`                          | JSON body could not be parsed                                                                                                  |
+| `400`  | `{ "error": "invalid_email" }`                         | Email missing or malformed                                                                                                     |
+| `401`  | `{ "error": "unauthorized" }`                          | Missing or incorrect bearer token                                                                                              |
+| `502`  | `{ "error": "notion_sync_failed" }`                    | Notion rejected the page create                                                                                                |
+| `503`  | `{ "error": "service_unavailable", "missing": [...] }` | A required binding is missing; its name is included for authenticated callers                                                  |
+| `503`  | `{ "error": "service_unavailable" }`                   | The canonical record could not be saved; retry the same response                                                               |
+| `500`  | Cloudflare error page (not JSON)                       | An exception escaped the handler                                                                                               |
 
 The auth check runs before the config check, so only a caller with the correct bearer token sees the
 `missing` list. The exception is `LVBT_MEMBERSHIP_INTAKE_SECRET` itself: without it nobody can
 authenticate, so it is always reported.
 
-Writing the person record is best effort and happens after Beehiiv succeeds: if the database write
-fails, the response is unaffected, because the person is already subscribed and the Google Form must
-not retry and subscribe them again. A failure there is logged, not returned to the caller.
+Writing the person record is required and precedes Notion follow-up. A database failure returns
+`503` before contacting Notion. Newsletter delivery is durable work saved with accepted consent;
+replays use the original consent time and cannot reactivate a later withdrawal. Idempotency receipts
+store hashed source keys and the original response without retaining contact details.
 
 The endpoint never returns `500` deliberately; if you see one, read the deployment's **Functions**
-log in the Cloudflare dashboard or run `wrangler pages deployment tail`.
+log in the Cloudflare dashboard.
 
 ## Verification
 
 1. Submit a test response from the live Google Form.
 2. Confirm the Apps Script execution succeeded.
-3. Confirm Beehiiv shows the subscriber as `active`. Adding a member sends them **no email**: no
-   welcome email (`send_welcome_email: false`) and no confirmation click
-   (`double_opt_override: 'off'`), because Google's "Collect email addresses" setting has already
-   verified the address. Any onboarding mail is a Beehiiv automation you set up separately.
+3. Confirm the canonical profile records the original consent time only for an affirmative answer.
+   With scheduled newsletter work configured, verify delivery separately in Beehiiv. A blank or
+   negative answer must not create newsletter consent or an LVBT join event.
 4. Confirm a Notion page was created with the expected properties.
 5. Confirm the person record has a row for the test address:
 
@@ -261,15 +271,15 @@ log in the Cloudflare dashboard or run `wrangler pages deployment tail`.
    pnpm -C apps/site exec wrangler d1 execute lvbt-platform --remote --command "SELECT id, membership_status FROM people WHERE email = 'you@example.org'"
    ```
 
-For local handler checks:
+For local handler and compiled runtime checks:
 
 ```sh
-pnpm test
-pnpm check-types
+pnpm check
+pnpm -C apps/site test:intake
 ```
 
-`test:unit` runs the tests through `node --import tsx` rather than the `tsx` CLI, which cannot open
-its local IPC socket in restricted sandboxes.
+The intake runtime check runs the built Worker against an isolated local database and provider
+fixtures.
 
 ## Failure handling and recovery
 

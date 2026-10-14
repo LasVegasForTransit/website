@@ -11,6 +11,7 @@ export const EVENT_TYPES = [
   'subscribed',
   'unsubscribed',
   'joined',
+  'form_response',
   'welcomed',
   'rsvp',
   'attended',
