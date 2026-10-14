@@ -106,7 +106,6 @@ export const staffCommon = {
     serviceGranted: '{service} access granted',
     serviceRemoved: '{service} access removed',
     accessChanged: 'Access changed',
-    retention: 'Changes from the last three years.',
     requestedBy: 'Requested by {name}',
     none: 'No access changes to show.',
     earlier: 'Earlier changes',

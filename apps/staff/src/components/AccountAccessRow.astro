@@ -3,68 +3,105 @@ import type { AccessRow } from '@lasvegasfortransit/platform-storage/access-view
 import { issueFormToken } from '@lasvegasfortransit/platform-storage/form-tokens';
 import { ulid } from '@lasvegasfortransit/platform-core/ids';
 import { can } from '@lasvegasfortransit/platform-core/permissions';
-import { formatFullDate, formatTime } from '@lasvegasfortransit/platform-core/messages';
+import { t, formatFullDate, formatTime } from '@lasvegasfortransit/platform-core/messages';
 import Button from '../../../site/src/components/app/Button.astro';
-import { accessLabel, updateFailure, pendingAccessMessage } from '../lib/account-access';
-import { displayLabel } from '../lib/presentation';
+import { accessLabel, updateFailure } from '../lib/account-access';
+import { MEMBERSHIP_LABELS } from '../lib/people';
+import { needsAccessRecovery } from '@lasvegasfortransit/platform-core/access';
 interface Props {
   row: AccessRow;
+  personView?: boolean;
 }
-const { row } = Astro.props;
+const { row, personView = false } = Astro.props;
+const memberChannels = row.targetId === 'person';
 const staff = Astro.locals.staff!;
 const admin = can(staff.actor, 'access.recover');
-const retryToken =
-  admin && row.operationState === 'retry' && row.operationId
-    ? await issueFormToken(staff.db, staff.actor, `access:retry:${row.operationId}`)
-    : null;
 const removeToken =
   admin && row.assignmentId
     ? await issueFormToken(staff.db, staff.actor, `access:remove:${row.assignmentId}`)
     : null;
 const providers =
   row.targetId === 'person'
-    ? [{ name: 'Discord', access: row.discord }]
+    ? [{ name: t('staff.common.discord'), access: row.discord }]
     : [
-        { name: 'Google group', access: row.googleWorkspace },
-        { name: 'Discord', access: row.discord },
+        { name: t('staff.access.googleGroup'), access: row.googleWorkspace },
+        { name: t('staff.common.discord'), access: row.discord },
       ];
+const needsRecovery = needsAccessRecovery(row);
+const retryToken =
+  admin && needsRecovery && row.operationId
+    ? await issueFormToken(staff.db, staff.actor, `access:retry:${row.operationId}`)
+    : null;
 ---
 
 <li class="staff-account-row">
-  <div>
-    <a class="staff-person-link" href={`/people/${row.personId}/`}>{row.name}</a>
-    <p class="staff-help">
-      {row.committeeName ?? 'LVBT membership'} · {
-        row.targetId === 'person'
-          ? displayLabel(row.membershipStatus)
-          : row.assignmentId
-            ? displayLabel(row.role ?? 'member')
-            : 'No longer assigned'
+  <header class="staff-account-heading">
+    <h2>
+      {
+        personView ? (
+          memberChannels ? (
+            t('staff.access.memberChannels')
+          ) : (
+            row.committeeName
+          )
+        ) : (
+          <a class="staff-person-link" href={`/people/${row.personId}/`}>
+            {row.name}
+          </a>
+        )
       }
-    </p>
+    </h2>
     {
-      row.operationState === 'retry' && (
-        <p role="status" class="staff-help">
-          {updateFailure(row.lastFailure)}
+      !personView && (
+        <p class="staff-account-scope">
+          {memberChannels ? t('staff.access.memberChannels') : row.committeeName}
         </p>
       )
     }
-    {
-      (row.operationState === 'queued' || row.operationState === 'running') && (
-        <p class="staff-help">{pendingAccessMessage(row)}</p>
-      )
-    }
-  </div>
+    <p class="staff-help">
+      {
+        memberChannels
+          ? personView
+            ? t('staff.access.memberChannelsHint')
+            : MEMBERSHIP_LABELS[row.membershipStatus]
+          : row.assignmentId
+            ? row.role === 'lead'
+              ? t('staff.access.committeeLead')
+              : t('staff.access.committeeMember')
+            : t('staff.access.noLongerAssigned')
+      }
+    </p>
+  </header>
   <dl class="staff-account-status">
     {
       providers.map(({ name, access }) => (
         <div>
           <dt>{name}</dt>
-          <dd>{accessLabel(access, row.expectedAccess)}</dd>
+          <dd>
+            <span
+              class:list={[
+                'staff-access-status',
+                {
+                  'staff-access-status-confirmed':
+                    access.state !== 'unknown' &&
+                    access.state === (row.expectedAccess ? 'granted' : 'absent'),
+                  'staff-access-status-attention':
+                    access.state !== 'unknown' &&
+                    access.state !== (row.expectedAccess ? 'granted' : 'absent'),
+                },
+              ]}
+            >
+              {accessLabel(access, row.expectedAccess, memberChannels)}
+            </span>
+          </dd>
           {access.observedAt && (
-            <dd class="staff-help">
-              Checked {formatFullDate(new Date(access.observedAt))},{' '}
-              {formatTime(new Date(access.observedAt))}
+            <dd class="staff-access-checked">
+              <time datetime={access.observedAt}>
+                {t('staff.access.checked', {
+                  date: formatFullDate(new Date(access.observedAt)),
+                  time: formatTime(new Date(access.observedAt)),
+                })}
+              </time>
             </dd>
           )}
         </div>
@@ -72,19 +109,30 @@ const providers =
     }
   </dl>
   {
-    retryToken && (
-      <form method="post" action={Astro.url.pathname + Astro.url.search}>
-        <input type="hidden" name="token" value={retryToken} />
-        <input type="hidden" name="action" value="retry" />
-        <input type="hidden" name="target" value={row.operationId} />
-        <Button>Try again</Button>
-      </form>
+    needsRecovery && (
+      <div class="staff-access-recovery">
+        <p role="status">{updateFailure(row.lastFailure)}</p>
+        {retryToken && (
+          <form method="post" action={Astro.url.pathname + Astro.url.search}>
+            <input type="hidden" name="token" value={retryToken} />
+            <input type="hidden" name="action" value="retry" />
+            <input type="hidden" name="target" value={row.operationId} />
+            <Button>{t('staff.access.retry')}</Button>
+          </form>
+        )}
+      </div>
     )
   }
   {
     removeToken && (
       <details class="staff-account-removal">
-        <summary>Remove from committee</summary>
+        <summary>{t('staff.access.remove')}</summary>
+        <p class="staff-help">
+          {t('staff.access.removeHint', {
+            name: row.name,
+            committee: row.committeeName ?? t('staff.common.committee'),
+          })}
+        </p>
         <form
           method="post"
           action={Astro.url.pathname + Astro.url.search}
@@ -97,19 +145,19 @@ const providers =
           <>
             <div>
               <>
-                <label for={`reason-${row.assignmentId}`}>Reason</label>
+                <label for={`reason-${row.assignmentId}`}>{t('staff.access.reason')}</label>
                 <select name="reason" id={`reason-${row.assignmentId}`} required>
-                  <option value="">Choose a reason</option>
+                  <option value="">{t('staff.access.chooseReason')}</option>
                   <>
-                    <option value="stepped_back">Stepped back</option>
-                    <option value="moved">Moved away</option>
-                    <option value="left_lvbt">Left LVBT</option>
-                    <option value="removed">Removed by LVBT</option>
+                    <option value="stepped_back">{t('staff.access.steppedBack')}</option>
+                    <option value="moved">{t('staff.access.moved')}</option>
+                    <option value="left_lvbt">{t('staff.access.left')}</option>
+                    <option value="removed">{t('staff.access.removed')}</option>
                   </>
                 </select>
               </>
             </div>
-            <Button>Remove from committee</Button>
+            <Button>{t('staff.access.remove')}</Button>
           </>
         </form>
       </details>

@@ -122,7 +122,13 @@ try {
     false,
     'a confirmed Discord removal must not be described as still waiting',
   );
-  assert.equal(removed.includes('Another access change is still in progress.'), true);
+  assert.equal(
+    removed.includes('Another access change is still in progress.'),
+    false,
+    'a confirmed removal must not ask staff to interpret another background operation',
+  );
+  assert.equal(removed.includes('No member access'), true);
+  assert.equal(removed.includes('Removal confirmed'), false);
   assert.deepEqual([...roles], ['777777777777777777']);
   const observedAt = new Date().toISOString();
   await fixture.db

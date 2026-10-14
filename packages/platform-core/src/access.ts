@@ -22,6 +22,17 @@ export interface ProviderAccess {
     | null;
   observedAt: string | null;
 }
+export function needsAccessRecovery(row: {
+  targetId: string;
+  expectedAccess: boolean;
+  operationState: string | null;
+  discord: ProviderAccess;
+  googleWorkspace: ProviderAccess;
+}): boolean {
+  const providers = row.targetId === 'person' ? [row.discord] : [row.discord, row.googleWorkspace];
+  const expected = row.expectedAccess ? 'granted' : 'absent';
+  return row.operationState === 'retry' && providers.some((access) => access.state !== expected);
+}
 export interface AccessObservation {
   personId: string;
   targetId: string;

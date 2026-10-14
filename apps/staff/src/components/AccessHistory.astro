@@ -6,8 +6,9 @@ import { displayLabel } from '../lib/presentation';
 interface Props {
   page: Page<AccessHistoryRow>;
   title?: string;
+  personId?: string | undefined;
 }
-const { page, title = t('staff.history.recent') } = Astro.props;
+const { page, title = t('staff.history.recent'), personId } = Astro.props;
 const next = new URL(Astro.url);
 if (page.nextCursor) next.searchParams.set('history_cursor', page.nextCursor);
 const labels: Record<string, string> = {
@@ -52,23 +53,32 @@ function actorLabel(item: AccessHistoryRow): string {
 
 <details class="staff-account-history" open={Boolean(Astro.url.searchParams.get('history_cursor'))}>
   <summary>{title}</summary>
-  <p class="staff-help">{t('staff.history.retention')}</p>
   {
     page.items.length ? (
       <ul class="staff-account-history-list">
         {page.items.map((item) => (
           <li>
-            <strong>{actionLabel(item)}</strong> ·{' '}
-            {item.personDeleted
-              ? t('staff.history.deletedRecord')
-              : (item.personName ?? item.committeeName ?? t('staff.common.member'))}
-            {item.personName && item.committeeName && ` · ${item.committeeName}`}
+            <p class="staff-history-action">
+              <strong>{actionLabel(item)}</strong>
+            </p>
+            {((!personId && (item.personName || !item.committeeName)) || item.personDeleted) && (
+              <p class="staff-history-person">
+                {item.personDeleted
+                  ? t('staff.history.deletedRecord')
+                  : (item.personName ?? t('staff.common.member'))}
+              </p>
+            )}
+            {item.committeeName && <p class="staff-history-person">{item.committeeName}</p>}
             <p class="staff-help">
-              {formatFullDate(new Date(item.occurredAt))}, {formatTime(new Date(item.occurredAt))} ·{' '}
-              {actorLabel(item)}
+              <time datetime={item.occurredAt}>
+                {formatFullDate(new Date(item.occurredAt))}, {formatTime(new Date(item.occurredAt))}
+              </time>{' '}
+              · {actorLabel(item)}
               {item.requestedByName &&
                 ` · ${t('staff.history.requestedBy', { name: item.requestedByName })}`}
-              {item.source && sources[item.source] && ` · ${sources[item.source]}`}
+            </p>
+            <p class="staff-history-reason">
+              {item.source && item.source !== 'account_update' && sources[item.source]}
               {item.role && item.action !== 'committee.end' && ` · ${displayLabel(item.role)}`}
               {item.reason && ` · ${displayLabel(item.reason)}`}
             </p>

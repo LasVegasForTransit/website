@@ -62,16 +62,13 @@ export async function exerciseAccountAccess(page: Page, fixture: Fixture) {
   );
   await markOperationFailed(fixture.db, 'recovery-grant', 'permission_denied');
   await page.goto(`${ORIGIN}/access/?person=${person.id}`);
-  await page.getByRole('heading', { name: 'Google and Discord access', exact: true }).waitFor();
+  await page.getByRole('heading', { name: 'Recovery Member', exact: true }).waitFor();
   assert.equal(
     await page.getByText('Confirmed', { exact: true }).count(),
     0,
     'missing runtime configuration must not expose a stored granted confirmation',
   );
-  assert.equal(
-    await page.getByText('An administrator needs to connect this service', { exact: true }).count(),
-    1,
-  );
+  assert.equal(await page.getByText('Not set up yet', { exact: true }).count(), 1);
   await submit(page, 'Try again');
   assert.equal(
     (

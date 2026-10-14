@@ -1,6 +1,10 @@
 import type { Actor, Page } from '@lasvegasfortransit/platform-core/staff-types';
 import type { MembershipStatus } from '@lasvegasfortransit/platform-core/membership';
-import type { AccessConfiguration, ProviderAccess } from '@lasvegasfortransit/platform-core/access';
+import {
+  needsAccessRecovery,
+  type AccessConfiguration,
+  type ProviderAccess,
+} from '@lasvegasfortransit/platform-core/access';
 import { can, PermissionDenied } from '@lasvegasfortransit/platform-core/permissions';
 import type { Db, SqlValue } from './db';
 import { loadActor } from './staff-roles';
@@ -44,6 +48,7 @@ function observation(provider: string) {
 }
 export interface AccessQuery {
   personId?: string | undefined;
+  target?: 'member' | 'committee' | undefined;
   committeeId?: string | undefined;
   text?: string | undefined;
   cursor?: string | undefined;
@@ -79,17 +84,7 @@ function accessRow(
 function boundedLimit(limit?: number): number {
   return Number.isFinite(limit) ? Math.max(1, Math.min(100, Math.floor(limit ?? 25))) : 25;
 }
-export async function listAccess(
-  db: Db,
-  actor: Actor,
-  query: AccessQuery = {},
-): Promise<Page<AccessRow>> {
-  const current = await loadActor(db, actor.personId);
-  if (!current || !can(current, 'access.view')) {
-    await auditDenied(db, actor.personId, 'access.view');
-    throw new PermissionDenied('access.view');
-  }
-  const cursor = readAccessCursor(query.cursor);
+function accessFilters(actor: Actor, query: AccessQuery) {
   const where = [
     'p.deleted_at IS NULL',
     STAFF_PERSON_SCOPE,
@@ -111,14 +106,33 @@ export async function listAccess(
     values.push(query.text.trim().slice(0, 254));
   }
   if (query.needsAttention) where.push("o.state='retry'");
-  if (cursor) {
-    where.push('(p.id>? OR (p.id=? AND t.targetId>?))');
-    values.push(cursor[0], cursor[0], cursor[1]);
+  if (query.target)
+    where.push(query.target === 'member' ? "t.targetId='person'" : "t.targetId<>'person'");
+  return { where, values };
+}
+export async function listAccess(
+  db: Db,
+  actor: Actor,
+  query: AccessQuery = {},
+): Promise<Page<AccessRow>> {
+  const current = await loadActor(db, actor.personId);
+  if (!current || !can(current, 'access.view')) {
+    await auditDenied(db, actor.personId, 'access.view');
+    throw new PermissionDenied('access.view');
   }
+  let cursor = readAccessCursor(query.cursor);
+  const { where, values } = accessFilters(actor, query);
   const limit = boundedLimit(query.limit);
-  const { results } = await db
-    .prepare(
-      `${TARGETS}
+  const configuration = query.configuration ?? {},
+    now = query.now ?? new Date();
+  const matches: AccessRow[] = [];
+  const batchSize = query.needsAttention ? Math.max(100, limit + 1) : limit + 1;
+  while (matches.length <= limit) {
+    const cursorFilter = cursor ? ' AND (p.id>? OR (p.id=? AND t.targetId>?))' : '';
+    const cursorValues: SqlValue[] = cursor ? [cursor[0], cursor[0], cursor[1]] : [];
+    const { results } = await db
+      .prepare(
+        `${TARGETS}
     SELECT p.id AS personId,t.targetId,coalesce(nullif(trim(coalesce(p.given_name,'')||' '||coalesce(p.family_name,'')),''),p.email,'Name not recorded') AS name,
     p.email,p.membership_status AS membershipStatus,c.name AS committeeName,a.id AS assignmentId,a.role,
     CASE WHEN p.membership_status='member' AND (t.targetId='person' OR a.id IS NOT NULL) THEN 1 ELSE 0 END AS expectedAccess,
@@ -135,17 +149,21 @@ export async function listAccess(
     LEFT JOIN committee_assignments a ON a.person_id=p.id AND a.committee_id=c.id AND a.ended_at IS NULL
     LEFT JOIN reconcile_generations g ON g.person_id=p.id AND g.target_id=t.targetId
     LEFT JOIN integration_outbox o ON o.id=(${CURRENT_JOB})
-    WHERE ${where.join(' AND ')} ORDER BY p.id,t.targetId LIMIT ?`,
-    )
-    .bind(...values, limit + 1)
-    .all<Row>();
-  const configuration = query.configuration ?? {},
-    now = query.now ?? new Date();
-  const items = results.slice(0, limit).map((row) => accessRow(row, { configuration, now }));
+    WHERE ${where.join(' AND ')}${cursorFilter} ORDER BY p.id,t.targetId LIMIT ?`,
+      )
+      .bind(...values, ...cursorValues, batchSize)
+      .all<Row>();
+    const rows = results.map((row) => accessRow(row, { configuration, now }));
+    matches.push(...(query.needsAttention ? rows.filter(needsAccessRecovery) : rows));
+    const scanned = results.at(-1);
+    if (results.length < batchSize || !scanned) break;
+    cursor = [scanned.personId, scanned.targetId];
+  }
+  const items = matches.slice(0, limit);
   const last = items.at(-1);
   return {
     items,
     nextCursor:
-      results.length > limit && last ? accessCursor([last.personId, last.targetId]) : null,
+      matches.length > limit && last ? accessCursor([last.personId, last.targetId]) : null,
   };
 }
