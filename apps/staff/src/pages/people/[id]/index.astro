@@ -183,7 +183,11 @@ if (can(staff.actor, 'access.recover')) {
   {
     providerHistory &&
       (providerHistory.items.length > 0 || Astro.url.searchParams.has('history_cursor')) && (
-        <AccessHistory page={providerHistory} title={t('staff.profile.accessHistory')} />
+        <AccessHistory
+          page={providerHistory}
+          personId={person.id}
+          title={t('staff.profile.accessHistory')}
+        />
       )
   }
   {

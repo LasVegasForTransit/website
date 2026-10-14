@@ -89,6 +89,14 @@ export async function exerciseCommitteePages(page: Page, fixture: Fixture) {
     await page.goto(`${ORIGIN}/committees/events/settings/`);
     await page.getByLabel('Accept new assignments', { exact: true }).selectOption('yes');
     assert.equal((await save(page)).status(), 303);
+    await page.goto(`${ORIGIN}/access/?committee=events`);
+    await page.getByText('Recent changes', { exact: true }).click();
+    const settingsChange = page
+      .locator('.staff-account-history-list > li')
+      .filter({ hasText: 'Committee settings updated' })
+      .first();
+    assert.equal(await settingsChange.getByText('Member', { exact: true }).count(), 0);
+    assert.equal(await settingsChange.getByText('Events Committee', { exact: true }).count(), 1);
   } finally {
     await stale.close();
   }

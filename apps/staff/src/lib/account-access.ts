@@ -1,5 +1,5 @@
 import type { ProviderAccess } from '@lasvegasfortransit/platform-core/access';
-import type { AccessRow } from '@lasvegasfortransit/platform-storage/access-view';
+import { t } from '@lasvegasfortransit/platform-core/messages';
 import {
   requestAccessRetry,
   removeAssignedAccess,
@@ -9,37 +9,38 @@ import { consumeFormToken } from '@lasvegasfortransit/platform-storage/form-toke
 import type { StaffContext } from './context';
 import { field } from './forms';
 import { messageResponse } from './responses';
-export function pendingAccessMessage(row: AccessRow): string {
-  const visible = row.targetId === 'person' ? [row.discord] : [row.discord, row.googleWorkspace];
-  const expected = row.expectedAccess ? 'granted' : 'absent';
-  if (visible.some((access) => access.state === expected))
-    return 'Another access change is still in progress.';
-  return row.expectedAccess ? 'Adding access…' : 'Removing access…';
-}
-export function accessLabel(access: ProviderAccess, expected: boolean): string {
-  if (access.state === 'granted') return expected ? 'Confirmed' : 'Still has access';
-  if (access.state === 'absent') return expected ? 'Access missing' : 'Removal confirmed';
+export function accessLabel(
+  access: ProviderAccess,
+  expected: boolean,
+  memberChannels = false,
+): string {
+  if (access.state === 'granted') {
+    if (!expected) return t('staff.access.stillHasAccess');
+    return memberChannels ? t('staff.access.hasMemberAccess') : t('staff.access.hasAccess');
+  }
+  if (access.state === 'absent') {
+    if (expected) return t('staff.access.missing');
+    return memberChannels ? t('staff.access.noMemberAccess') : t('staff.access.noAccess');
+  }
   const labels = {
-    ambiguous_account: 'More than one account is connected',
-    not_linked: 'Account not connected',
-    not_mapped: 'Access has not been assigned',
-    not_configured: 'An administrator needs to connect this service',
-    not_checked: 'Not checked yet',
-    stale: 'Last check is out of date',
-    provider_unavailable: 'Service unavailable',
-    rate_limited: 'Waiting for the service',
-    permission_denied: 'An administrator needs to check the connection',
-    unknown: 'Couldn’t check access',
+    ambiguous_account: t('staff.access.ambiguous'),
+    not_linked: t('staff.access.notLinked'),
+    not_mapped: t('staff.access.notMapped'),
+    not_configured: t('staff.access.notConfigured'),
+    not_checked: t('staff.access.notChecked'),
+    stale: t('staff.access.stale'),
+    provider_unavailable: t('staff.access.unavailable'),
+    rate_limited: t('staff.access.rateLimited'),
+    permission_denied: t('staff.access.permissionDenied'),
+    unknown: t('staff.access.unknown'),
   };
-  return access.reason ? labels[access.reason] : 'Not checked yet';
+  return access.reason ? labels[access.reason] : t('staff.access.notChecked');
 }
 export function updateFailure(failure: string | null): string {
-  if (failure === 'permission_denied')
-    return 'LVBT couldn’t update access. Ask an administrator to check the connection.';
-  if (failure === 'rate_limited') return 'Please wait a moment, then try again.';
-  if (failure === 'provider_unavailable')
-    return 'This service is temporarily unavailable. Try again shortly.';
-  return 'The update didn’t go through. Try again or ask an administrator for help.';
+  if (failure === 'permission_denied') return t('staff.access.failurePermission');
+  if (failure === 'rate_limited') return t('staff.access.failureRateLimit');
+  if (failure === 'provider_unavailable') return t('staff.access.failureUnavailable');
+  return t('staff.access.failureUnknown');
 }
 export interface AccessFeedback {
   message: string;
@@ -53,17 +54,14 @@ export async function submitAccessAction(
     action = field(form, 'action', 20),
     target = field(form, 'target', 201);
   if (!['retry', 'remove'].includes(action) || !target || target.length > 200)
-    return { message: 'Reload the page and choose an update below.', status: 400 };
+    return { message: t('staff.access.reloadAction'), status: 400 };
   if (
     !(await consumeFormToken(staff.db, staff.actor, {
       action: `access:${action}:${target}`,
       token: field(form, 'token', 43),
     }))
   )
-    return messageResponse(
-      'This form expired or was already submitted. Reload the page and try again.',
-      409,
-    );
+    return messageResponse(t('staff.access.expiredForm'), 409);
   const result =
     action === 'retry'
       ? await requestAccessRetry(staff.db, staff.actor, target)
@@ -77,12 +75,12 @@ export async function submitAccessAction(
       status: 303,
       headers: { Location: new URL(request.url).pathname + new URL(request.url).search },
     });
-  if (result.kind === 'forbidden') return messageResponse("You don't have access to this", 403);
+  if (result.kind === 'forbidden') return messageResponse(t('staff.common.accessDenied'), 403);
   return {
     message:
       result.kind === 'invalid'
-        ? 'Choose a reason for removing the member.'
-        : 'This assignment or update has changed. Check the current details below.',
+        ? t('staff.access.chooseRemovalReason')
+        : t('staff.access.actionChanged'),
     status: result.kind === 'invalid' ? 400 : 409,
   };
 }

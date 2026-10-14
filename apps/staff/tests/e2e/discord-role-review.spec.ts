@@ -79,13 +79,7 @@ try {
   const reviewSection = page.locator('.staff-discord-review');
   assert.equal(response?.status(), 200, pageBody);
   assert.equal(pageBody.includes('Discord accounts to check'), true, pageBody);
-  assert.equal(
-    pageBody.includes(
-      'No updates need another try right now. This doesn’t confirm that members can sign in to Google Workspace or Discord.',
-    ),
-    true,
-    pageBody,
-  );
+  assert.equal(pageBody.includes('No access updates need a retry.'), true, pageBody);
   assert.equal(
     await reviewSection
       .getByText('LVBT Member, Advocacy Team, Events Committee', { exact: true })
@@ -99,7 +93,7 @@ try {
   assert.equal(
     await reviewSection
       .getByText(
-        'We couldn’t match these accounts to a member record. Their Discord roles stay as they are while staff checks.',
+        'We couldn’t match these accounts to a member record. Their access stays as it is while staff checks.',
         { exact: true },
       )
       .count(),
@@ -119,7 +113,7 @@ try {
     await openDiscord.evaluate((element) => getComputedStyle(element).minHeight),
     '44px',
   );
-  const showAllAccess = page.getByRole('link', { name: 'Show all access updates', exact: true });
+  const showAllAccess = page.getByRole('link', { name: 'All access', exact: true });
   assert.equal(await showAllAccess.getAttribute('href'), '/access/?view=all');
   assert.equal(
     await showAllAccess.evaluate((element) => getComputedStyle(element).minHeight),

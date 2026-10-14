@@ -8,14 +8,14 @@ import {
   listDiscordRoleReviews,
   InvalidDiscordRosterCursor,
 } from '@lasvegasfortransit/platform-storage/discord-roster';
-import { formatFullDate } from '@lasvegasfortransit/platform-core/messages';
+import { t, formatFullDate } from '@lasvegasfortransit/platform-core/messages';
 import { InvalidCursor } from '@lasvegasfortransit/platform-storage/staff-history';
 import { PermissionDenied } from '@lasvegasfortransit/platform-core/permissions';
 import { submitAccessAction, type AccessFeedback } from '../../lib/account-access';
-import { visibleCommittees } from '../../lib/people';
+import { visibleCommittees, MEMBERSHIP_LABELS } from '../../lib/people';
 import { messageResponse } from '../../lib/responses';
 const staff = Astro.locals.staff;
-if (!staff) return messageResponse("You don't have access to this", 403);
+if (!staff) return messageResponse(t('staff.common.accessDenied'), 403);
 let feedback: AccessFeedback | undefined;
 if (Astro.request.method === 'POST') {
   const result = await submitAccessAction(Astro.request, staff);
@@ -28,16 +28,26 @@ const committeeId = Astro.url.searchParams.get('committee') ?? undefined;
 const text = Astro.url.searchParams.get('q') ?? '';
 const needsAttention =
   !personId && !committeeId && !text && Astro.url.searchParams.get('view') !== 'all';
-let page, history, discordReviews;
+let page, history, discordReviews, memberAccess;
 try {
   page = await listAccess(staff.db, staff.actor, {
     personId,
+    target: personId ? 'committee' : undefined,
     committeeId,
     text,
     needsAttention,
     cursor: Astro.url.searchParams.get('cursor') ?? undefined,
     configuration: staff.accessConfiguration ?? {},
   });
+  if (personId)
+    memberAccess = (
+      await listAccess(staff.db, staff.actor, {
+        personId,
+        target: 'member',
+        limit: 1,
+        configuration: staff.accessConfiguration ?? {},
+      })
+    ).items[0];
   history = await accessHistory(staff.db, staff.actor, {
     personId,
     committeeId,
@@ -52,16 +62,15 @@ try {
     });
 } catch (error) {
   if (error instanceof InvalidDiscordRosterCursor)
-    return messageResponse(
-      'This review list link expired. Return to Google and Discord access and try again.',
-      400,
-    );
-  if (error instanceof InvalidCursor)
-    return messageResponse('This page link expired. Return to account updates and try again.', 400);
+    return messageResponse(t('staff.access.invalidReviewLink'), 400);
+  if (error instanceof InvalidCursor) return messageResponse(t('staff.access.invalidLink'), 400);
   if (error instanceof PermissionDenied) return messageResponse(error.message, 403);
   throw error;
 }
-const committees = await visibleCommittees(staff.db, staff.actor);
+const selectedPerson = memberAccess;
+if (personId && !selectedPerson) return messageResponse(t('staff.common.accessDenied'), 404);
+const committees = personId ? [] : await visibleCommittees(staff.db, staff.actor);
+const visibleRows = memberAccess ? [memberAccess, ...page.items] : page.items;
 const next = new URL(Astro.url);
 if (page.nextCursor) next.searchParams.set('cursor', page.nextCursor);
 const reviewNext = new URL(Astro.url);
@@ -70,12 +79,19 @@ if (discordReviews?.nextCursor)
 ---
 
 <StaffLayout
-  title="Google and Discord access"
-  description="See whether each member has the right access to Google and Discord."
+  title={selectedPerson?.name ?? t('staff.access.title')}
+  description={selectedPerson ? t('staff.access.title') : t('staff.access.description')}
 >
   <a slot="breadcrumb" href={personId ? `/people/${personId}/` : '/people/'} class="staff-back"
-    >← {personId ? 'Member profile' : 'Members'}</a
+    >{personId ? t('staff.navigation.backProfile') : t('staff.navigation.backMembers')}</a
   >
+  {
+    selectedPerson && (
+      <span slot="heading-meta" class="staff-membership-badge">
+        {MEMBERSHIP_LABELS[selectedPerson.membershipStatus]}
+      </span>
+    )
+  }
   {
     feedback && (
       <p role="alert" class="staff-error">
@@ -86,11 +102,8 @@ if (discordReviews?.nextCursor)
   {
     discordReviews && (
       <section class="staff-discord-review" aria-labelledby="discord-review-heading">
-        <h2 id="discord-review-heading">Discord accounts to check</h2>
-        <p>
-          We couldn’t match these accounts to a member record. Their Discord roles stay as they are
-          while staff checks.
-        </p>
+        <h2 id="discord-review-heading">{t('staff.access.reviewHeading')}</h2>
+        <p>{t('staff.access.reviewHint')}</p>
         {discordReviews.items.length ? (
           <ul class="staff-discord-review-list">
             {discordReviews.items.map((review) => (
@@ -98,27 +111,31 @@ if (discordReviews?.nextCursor)
                 <div>
                   <strong>{review.roles.map((role) => role.label).join(', ')}</strong>
                   <p class="staff-help staff-discord-review-meta">
-                    <span>Added to this list {formatFullDate(new Date(review.firstSeenAt))}</span>
+                    <span>
+                      {t('staff.access.reviewAdded', {
+                        date: formatFullDate(new Date(review.firstSeenAt)),
+                      })}
+                    </span>
                   </p>
                 </div>
                 <a
                   class="staff-action-link"
-                  aria-label="Open Discord profile"
+                  aria-label={t('staff.access.openDiscordLabel')}
                   href={`https://discord.com/users/${review.discordUserId}`}
                   target="_blank"
                   rel="noreferrer"
                 >
-                  Open in Discord
+                  {t('staff.access.openDiscord')}
                 </a>
               </li>
             ))}
           </ul>
         ) : (
-          <p class="staff-help">None to review.</p>
+          <p class="staff-help">{t('staff.access.reviewNone')}</p>
         )}
         {discordReviews.nextCursor && (
           <a href={reviewNext.pathname + reviewNext.search} class="staff-next">
-            More Discord accounts
+            {t('staff.access.reviewMore')}
           </a>
         )}
       </section>
@@ -131,28 +148,28 @@ if (discordReviews?.nextCursor)
         action="/access/"
         class="staff-search"
         role="search"
-        aria-label="Find a member"
+        aria-label={t('staff.access.findMember')}
       >
         <div class="staff-search-row">
           <>
             <div class="staff-search-query">
               <>
-                <label for="q">Name or email</label>
+                <label for="q">{t('staff.access.nameOrEmail')}</label>
                 <input id="q" name="q" type="search" value={text} maxlength="254" />
               </>
             </div>
-            <Button>Search</Button>
+            <Button>{t('staff.access.search')}</Button>
           </>
         </div>
         <details class="staff-search-filters" open={Boolean(committeeId)}>
           <>
-            <summary>Committee filter</summary>
+            <summary>{t('staff.access.committeeFilter')}</summary>
             <div class="staff-filter-row">
               <div>
                 <>
-                  <label for="committee">Committee</label>
+                  <label for="committee">{t('staff.common.committee')}</label>
                   <select id="committee" name="committee">
-                    <option value="">All</option>
+                    <option value="">{t('staff.access.allCommittees')}</option>
                     {committees.map((item) => (
                       <option value={item.id} selected={committeeId === item.id}>
                         {item.name}
@@ -170,38 +187,33 @@ if (discordReviews?.nextCursor)
   }
   {
     !personId && !committeeId && !text && (
-      <div class="staff-results-meta">
-        <p>{needsAttention ? 'Showing updates to try again' : 'Showing all access updates'}</p>
-        <a
-          class="staff-secondary-button press"
-          href={needsAttention ? '/access/?view=all' : '/access/'}
-        >
-          {needsAttention ? 'Show all access updates' : 'Show updates to try again'}
+      <nav class="staff-access-views" aria-label={t('staff.access.views')}>
+        <a href="/access/" aria-current={needsAttention ? 'page' : undefined}>
+          {t('staff.access.retries')}
         </a>
-      </div>
+        <a href="/access/?view=all" aria-current={!needsAttention ? 'page' : undefined}>
+          {t('staff.access.all')}
+        </a>
+      </nav>
     )
   }
   {
-    page.items.length ? (
-      <ul class="staff-account-list" aria-label="Google and Discord access">
-        {page.items.map((row) => (
-          <AccountAccessRow row={row} />
+    visibleRows.length ? (
+      <ul class="staff-account-list" aria-label={t('staff.access.title')}>
+        {visibleRows.map((row) => (
+          <AccountAccessRow row={row} personView={Boolean(personId)} />
         ))}
       </ul>
     ) : (
-      <p>
-        {needsAttention
-          ? 'No updates need another try right now. This doesn’t confirm that members can sign in to Google Workspace or Discord.'
-          : 'No members match this search.'}
-      </p>
+      <p>{needsAttention ? t('staff.access.noneToRetry') : t('staff.access.noResults')}</p>
     )
   }
   {
     page.nextCursor && (
       <a href={next.pathname + next.search} class="staff-next">
-        Next page
+        {t('staff.access.next')}
       </a>
     )
   }
-  <AccessHistory page={history} title="Recent changes" />
+  <AccessHistory page={history} personId={personId} />
 </StaffLayout>

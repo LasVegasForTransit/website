@@ -37,15 +37,51 @@ export async function exerciseProviderHistory(
     });
     const page = await context.newPage();
     await page.goto(`${ORIGIN}/access/?person=${personId}`);
-    await page.getByText('Recent changes', { exact: true }).click();
+    assert.equal(await page.getByRole('heading', { name: 'New Member', exact: true }).count(), 1);
+    assert.equal(
+      await page.getByRole('heading', { name: 'Member channels', exact: true }).count(),
+      1,
+    );
+    assert.equal(await page.getByText('No member access', { exact: true }).isVisible(), true);
+    assert.equal(await page.locator('.staff-account-history').getAttribute('open'), null);
+    const shots = join(fixture.root, 'test-results/staff');
+    await mkdir(shots, { recursive: true });
+    for (const [name, width] of [
+      ['desktop', 1440],
+      ['mobile', 320],
+    ] as const) {
+      await page.setViewportSize({ width, height: 900 });
+      assert.equal(
+        await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth),
+        true,
+      );
+      await page.screenshot({
+        animations: 'disabled',
+        fullPage: true,
+        path: join(shots, `access-current-${name}.png`),
+      });
+    }
+    await page.emulateMedia({ colorScheme: 'dark' });
+    await page.screenshot({
+      animations: 'disabled',
+      fullPage: true,
+      path: join(shots, 'access-current-dark.png'),
+    });
+    await page.emulateMedia({ colorScheme: 'light' });
+    const disclosure = page.getByText('Recent changes', { exact: true });
+    for (let tab = 0; tab < 15; tab++) {
+      if (await disclosure.evaluate((element) => element === document.activeElement)) break;
+      await page.keyboard.press('Tab');
+    }
+    assert.equal(await disclosure.evaluate((element) => element.matches(':focus-visible')), true);
+    await page.keyboard.press('Enter');
+
     assert.equal(await page.getByText('Discord access granted', { exact: true }).isVisible(), true);
     assert.equal(await page.getByText('Discord access removed', { exact: true }).isVisible(), true);
     assert.equal(await page.getByText('Membership changed', { exact: false }).isVisible(), true);
     const attribution = await page.locator('.staff-account-history-list').innerText();
     assert.match(attribution, / · LVBT(?: ·|$)/m);
     assert.doesNotMatch(attribution, /Automatic Discord update|Automatic Google update/);
-    const shots = join(fixture.root, 'test-results/staff');
-    await mkdir(shots, { recursive: true });
     for (const [name, width] of [
       ['desktop', 1440],
       ['mobile', 320],
@@ -61,6 +97,13 @@ export async function exerciseProviderHistory(
         path: join(shots, `access-confirmed-${name}.png`),
       });
     }
+    const pastEnd = Buffer.from(JSON.stringify(['zzzz', 'zzzz'])).toString('base64url');
+    await page.goto(`${ORIGIN}/access/?person=${personId}&cursor=${pastEnd}`);
+    assert.equal(await page.getByRole('heading', { name: 'New Member', exact: true }).count(), 1);
+    assert.equal(
+      await page.getByRole('heading', { name: 'Member channels', exact: true }).count(),
+      1,
+    );
     await page.goto(`${ORIGIN}/people/${personId}/`);
     await page.getByText('Access history', { exact: true }).click();
     assert.equal(await page.getByText('Discord access granted', { exact: true }).isVisible(), true);

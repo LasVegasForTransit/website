@@ -43,7 +43,13 @@ const signOutToken = staff ? await issueFormToken(staff.db, staff.actor, 'sign-o
               <nav aria-label={t('staff.navigation.label')} class="staff-nav">
                 <a
                   href="/people/"
-                  aria-current={Astro.url.pathname.startsWith('/people') ? 'page' : undefined}
+                  aria-current={
+                    ['/people', '/access', '/review', '/export'].some((path) =>
+                      Astro.url.pathname.startsWith(path),
+                    )
+                      ? 'page'
+                      : undefined
+                  }
                 >
                   {t('staff.navigation.members')}
                 </a>
