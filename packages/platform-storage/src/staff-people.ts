@@ -93,6 +93,8 @@ export interface ProfileFieldSource {
 }
 export interface StaffPerson {
   person: Person;
+  emailVerified: boolean;
+  mergeNotice: { mergedAt: string } | null;
   counts: EngagementCounts;
   consents: ConsentRecord[];
   identities: LinkedIdentity[];
@@ -100,22 +102,25 @@ export interface StaffPerson {
   fieldSources: ProfileFieldSource[];
   events: Page<EngagementEvent>;
 }
+const MERGE_CHAIN = `WITH RECURSIVE chain(id,merged_at,depth,path) AS (
+  SELECT ?1,NULL,0,',' || ?1 || ','
+  UNION ALL
+  SELECT m.surviving_person_id,m.merged_at,chain.depth+1,
+    chain.path || m.surviving_person_id || ','
+  FROM chain JOIN merges m ON m.merged_person_id=chain.id AND m.unmerged_at IS NULL
+  WHERE chain.depth<9 AND instr(chain.path,',' || m.surviving_person_id || ',')=0
+)`;
+const TERMINAL_RECORD = `NOT EXISTS (SELECT 1 FROM merges active
+  WHERE active.merged_person_id=chain.id AND active.unmerged_at IS NULL)`;
 async function survivorId(db: Db, personId: string): Promise<string | null> {
-  const visited = new Set<string>();
-  let id = personId;
-  for (let depth = 0; depth < 10; depth++) {
-    if (visited.has(id)) return null;
-    visited.add(id);
-    const merge = await db
-      .prepare(
-        'SELECT surviving_person_id FROM merges WHERE merged_person_id=? AND unmerged_at IS NULL ORDER BY merged_at DESC LIMIT 1',
-      )
-      .bind(id)
-      .first<{ surviving_person_id: string }>();
-    if (!merge) return id;
-    id = merge.surviving_person_id;
-  }
-  return null;
+  const record = await db
+    .prepare(
+      `${MERGE_CHAIN}
+    SELECT id FROM chain WHERE ${TERMINAL_RECORD} LIMIT 1`,
+    )
+    .bind(personId)
+    .first<{ id: string }>();
+  return record?.id ?? null;
 }
 async function profileRecords(db: Db, actorId: string, personId: string) {
   const scoped = `p.id=? AND p.deleted_at IS NULL AND ${STAFF_PERSON_SCOPE}`;
@@ -158,37 +163,51 @@ export async function getStaffPerson(
   db: Db,
   actor: Actor,
   requestedId: string,
-  input: { cursor?: string } = {},
+  input: { cursor?: string; mergedFrom?: string } = {},
 ): Promise<StaffPerson | null> {
   validatePersonCursor(requestedId);
   const personId = await survivorId(db, requestedId);
-  const person = personId
+  const record = personId
     ? await db
         .prepare(
-          `SELECT ${COLUMNS} FROM people p WHERE p.id=? AND p.deleted_at IS NULL AND ${STAFF_PERSON_SCOPE}`,
+          `SELECT ${COLUMNS},p.email_verified_at FROM people p WHERE p.id=? AND p.deleted_at IS NULL AND ${STAFF_PERSON_SCOPE}`,
         )
         .bind(personId, actor.personId)
-        .first<Person>()
+        .first<Person & { email_verified_at: string | null }>()
     : null;
-  if (!person) {
+  if (!record) {
     await auditDenied(db, actor.personId, 'person.view');
     return null;
   }
+  const { email_verified_at: emailVerifiedAt, ...person } = record;
   const [records, events, counts] = await Promise.all([
     profileRecords(db, actor.personId, person.id),
     staffHistory(db, actor.personId, person.id, input.cursor),
     engagementCounts(db, person.id, undefined, { staffActorId: actor.personId }),
   ]);
+  const mergedFrom = input.mergedFrom?.match(/^[0-9A-HJKMNP-TV-Z]{26}$/) ? input.mergedFrom : '';
   const stillVisible = await db
     .prepare(
-      `SELECT 1 AS visible FROM people p WHERE p.id=? AND p.deleted_at IS NULL AND ${STAFF_PERSON_SCOPE}`,
+      `${MERGE_CHAIN}
+       SELECT (SELECT chain.merged_at FROM chain WHERE chain.id=p.id
+         AND chain.depth>0 AND ${TERMINAL_RECORD} LIMIT 1) AS merged_at
+       FROM people p WHERE p.id=?2 AND p.deleted_at IS NULL
+         AND ${STAFF_PERSON_SCOPE.replaceAll('?', '?3')}`,
     )
-    .bind(person.id, actor.personId)
-    .first();
+    .bind(mergedFrom, person.id, actor.personId)
+    .first<{ merged_at: string | null }>();
   if (!stillVisible) {
     await auditDenied(db, actor.personId, 'person.view');
     return null;
   }
+  const mergeNotice = stillVisible.merged_at ? { mergedAt: stillVisible.merged_at } : null;
   await recordPersonView(db, actor.personId, person.id);
-  return { person, ...records, events, counts };
+  return {
+    person,
+    emailVerified: Boolean(person.email && emailVerifiedAt),
+    mergeNotice,
+    ...records,
+    events,
+    counts,
+  };
 }

@@ -1,5 +1,5 @@
 ---
-import { t } from '@lasvegasfortransit/platform-core/messages';
+import { t, formatFullDate } from '@lasvegasfortransit/platform-core/messages';
 import type { Person } from '@lasvegasfortransit/platform-storage/person-service';
 import type { RosterDetails } from '@lasvegasfortransit/platform-storage/roster-details';
 import { can } from '@lasvegasfortransit/platform-core/permissions';
@@ -40,6 +40,17 @@ const staff = Astro.locals.staff!;
   <th scope="row" class="staff-roster-person">
     <a href={profile}>{name}</a>
     {person.email && person.email !== name && <p>{person.email}</p>}
+    {
+      details?.lastEngagedAt && (
+        <p class="staff-roster-activity">
+          <time datetime={details.lastEngagedAt}>
+            {t('staff.people.lastActivity', {
+              date: formatFullDate(new Date(details.lastEngagedAt)),
+            })}
+          </time>
+        </p>
+      )
+    }
   </th>
   {(showMembership || showDiscord) && <td class="staff-roster-status">{rosterStatus}</td>}
   <td class="staff-roster-committee">

@@ -1,5 +1,6 @@
 export const staffPeople = {
   people: {
+    lastActivity: 'Last activity {date}',
     title: 'Members',
     unassignedTitle: 'Members without a committee',
     unassignedIntro: 'Help members find a committee where they can contribute.',
@@ -61,6 +62,8 @@ export const staffPeople = {
     },
   },
   profile: {
+    emailConfirmed: 'Email confirmed',
+    combinedNotice: 'This member’s records were combined on {date}.',
     membership: 'LVBT membership',
     summary: 'Member summary',
     memberSince: 'Member since {date}',

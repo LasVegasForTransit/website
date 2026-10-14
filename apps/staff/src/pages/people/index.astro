@@ -42,7 +42,7 @@ const details = await rosterDetails(
   staff.db,
   staff.actor,
   page.items.map((person) => person.id),
-  { configuration: staff.accessConfiguration ?? {} },
+  { configuration: staff.accessConfiguration ?? {}, includeActivity: true },
 );
 const showDiscord = staff.accessConfiguration?.discord?.configured ?? false;
 const acceptingCommitteeIds = committees
