@@ -129,7 +129,7 @@ export async function exerciseAccountAccess(page: Page, fixture: Fixture) {
     )?.ended_at,
     ended.ended_at,
   );
-  await page.getByText('Recent changes', { exact: true }).click();
+  await page.getByText('Access history', { exact: true }).click();
   assert.equal(await page.getByText('Account update retried', { exact: true }).count(), 2);
   await page.setViewportSize({ width: 1440, height: 1000 });
 }
@@ -138,6 +138,6 @@ export async function exerciseLeadAccountAccess(page: Page, fixture: Fixture) {
   assert.equal(await page.locator('.staff-account-row').count(), 2);
   assert.equal(await page.getByRole('button', { name: 'Try again', exact: true }).count(), 0);
   assert.equal(await page.getByText('Remove from committee', { exact: true }).count(), 0);
-  await page.getByText('Recent changes', { exact: true }).click();
+  await page.getByText('Access history', { exact: true }).click();
   assert.equal((await page.content()).includes('Advocacy Team'), false);
 }
