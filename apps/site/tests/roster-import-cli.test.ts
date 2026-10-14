@@ -17,6 +17,8 @@ void test('the roster preview CLI reports row conflicts without exposing source 
           source: 'beehiiv',
           sourceId: 'private-subscriber-1',
           email: 'member@example.org',
+          givenName: 'Private Given Name',
+          familyName: 'Private Family Name',
           newsletter: { state: 'active', givenAt: '2025-01-02T09:00:00.000Z' },
         },
         {
@@ -58,7 +60,7 @@ void test('the roster preview CLI reports row conflicts without exposing source 
     const output = JSON.stringify(report);
     assert.doesNotMatch(
       output,
-      /member@example\.org|former@example\.org|private-(subscriber|page)/,
+      /member@example\.org|former@example\.org|private-(subscriber|page)|Private Given Name|Private Family Name/,
     );
   } finally {
     await rm(directory, { recursive: true, force: true });

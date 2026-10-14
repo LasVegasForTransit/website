@@ -1,5 +1,6 @@
 import type { Db } from '@lasvegasfortransit/platform-storage/db';
 import { PersonService } from '@lasvegasfortransit/platform-storage/person-service';
+import { readRosterProfile, type RosterImportProfile } from './roster-import-profile';
 
 export type RosterImportSource = 'beehiiv' | 'notion_intake';
 export type RosterConsentState = 'active' | 'withdrawn' | 'unknown';
@@ -12,7 +13,7 @@ export interface RosterImportConsent {
   withdrawnAt?: string | null;
 }
 
-export interface RosterImportRecord {
+export interface RosterImportRecord extends RosterImportProfile {
   source: RosterImportSource;
   sourceId: string;
   email: string;
@@ -65,6 +66,7 @@ interface PreviewOptions {
 }
 
 interface ClassifiedRecord extends RosterImportPreviewRecord {
+  profile: ReturnType<typeof readRosterProfile>;
   consentState: 'active' | 'withdrawn' | null;
   givenAt: string | null;
   withdrawnAt: string | null;
@@ -143,6 +145,7 @@ function createRecord(input: Record<string, unknown> | null, index: number): Cla
     source,
     sourceId,
     email,
+    profile: readRosterProfile(input),
     classification: 'ready',
     reasons: [],
     consentState: null,
@@ -158,6 +161,7 @@ function validateIdentity(input: Record<string, unknown> | null, record: Classif
   if (!input || !source || !SOURCES.has(source)) conflict(record, 'source_invalid');
   if (!sourceId || sourceId.length > 200) conflict(record, 'source_id_invalid');
   if (!email || email.length > 254 || !EMAIL.test(email)) conflict(record, 'email_invalid');
+  if (!record.profile.valid) conflict(record, 'name_invalid');
 }
 
 function consentState(newsletter: Record<string, unknown> | null, record: ClassifiedRecord) {
@@ -293,7 +297,13 @@ export function previewRosterImport(
 
   return {
     records: classified.map(
-      ({ consentState: _state, givenAt: _givenAt, withdrawnAt: _withdrawnAt, ...record }) => record,
+      ({
+        consentState: _state,
+        givenAt: _givenAt,
+        withdrawnAt: _withdrawnAt,
+        profile: _profile,
+        ...record
+      }) => record,
     ),
     counts: {
       records: classified.length,
@@ -355,7 +365,7 @@ async function applyReadyRecord(
 
   const { person, action } = await people.upsertFromSource({
     source: 'import',
-    fields: { email },
+    fields: { email, ...record.profile.fields },
     identity: { platform: source, externalId: sourceId, externalEmail: email },
   });
   if (action === 'created_and_queued')

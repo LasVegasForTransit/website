@@ -297,6 +297,11 @@ Give the read-only import command a reviewed JSON array normalized to the roster
 prints aggregate counts and row numbers with conflict reasons; it omits email addresses and provider
 IDs. It does not write member records or a report file.
 
+Optional `givenName` and `familyName` fields retain names supplied with the source roster. Each
+accepts up to 100 characters; surrounding whitespace is removed and blank values are ignored.
+Imports fill missing names and preserve details already recorded, including a staff correction made
+while the import is being saved.
+
 ```sh
 pnpm --filter @lasvegasfortransit/site roster:preview --input /private/path/roster.json
 ```

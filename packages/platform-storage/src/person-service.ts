@@ -241,23 +241,31 @@ export class PersonService {
     }
     if (fields.length === 0) return this.getPerson(id);
     const now = nowIso();
-    const assignments = fields.map(([name]) => `${name} = ?`).join(', ');
+    const assignments = fields
+      .map(([name]) =>
+        input.onlyEmpty
+          ? `${name} = CASE WHEN ${name} IS NULL THEN ? ELSE ${name} END`
+          : `${name} = ?`,
+      )
+      .join(', ');
+    const emptyGuard = input.onlyEmpty
+      ? ` AND (${fields.map(([name]) => `${name} IS NULL`).join(' OR ')})`
+      : '';
+    const where = 'id = ? AND deleted_at IS NULL';
     const statements = [
-      this.db
-        .prepare(
-          `UPDATE people SET ${assignments}, updated_at = ? WHERE id = ? AND deleted_at IS NULL`,
-        )
-        .bind(...fields.map(([, value]) => value), now, id),
       ...fields.map(([name]) =>
         this.db
           .prepare(
             `INSERT INTO field_sources (person_id, field, source, confirmed_at, created_at, updated_at)
-             VALUES (?, ?, ?, ?, ?, ?)
+             SELECT ?, ?, ?, ?, ?, ? FROM people WHERE ${where}${input.onlyEmpty ? ` AND ${name} IS NULL` : ''}
              ON CONFLICT (person_id, field) DO UPDATE SET source = excluded.source,
                confirmed_at = excluded.confirmed_at, updated_at = excluded.updated_at`,
           )
-          .bind(id, name, input.source, now, now, now),
+          .bind(id, name, input.source, now, now, now, id),
       ),
+      this.db
+        .prepare(`UPDATE people SET ${assignments}, updated_at = ? WHERE ${where}${emptyGuard}`)
+        .bind(...fields.map(([, value]) => value), now, id),
     ];
     await this.db.batch(statements);
     return this.getPerson(id);
