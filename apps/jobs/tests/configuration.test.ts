@@ -16,6 +16,12 @@ void test('preview jobs use isolated storage and disabled public URLs', () => {
   assert.equal(production.workers_dev, false);
   assert.equal(production.preview_urls, false);
   assert.equal(production.vars.LVBT_DISCORD_SYNC_ENABLED, 'false');
+  for (const config of [production, preview]) {
+    assert.equal(config.vars.LVBT_BEEHIIV_SYNC_ENABLED, 'false');
+    assert.equal(config.vars.LVBT_BEEHIIV_PUBLICATION_ID, '');
+    assert.equal(Object.hasOwn(config.vars, 'LVBT_BEEHIIV_API_KEY'), false);
+    assert.equal(Object.hasOwn(config.vars, 'LVBT_NEWSLETTER_INTENT_KEY'), false);
+  }
   assert.notEqual(production.d1_databases[0]?.database_id, preview.d1_databases[0]?.database_id);
   assert.equal(
     production.d1_databases[0]?.migrations_dir,

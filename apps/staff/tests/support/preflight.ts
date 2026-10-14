@@ -48,6 +48,13 @@ function bindings(path: string, mode: Mode) {
     LVBT_GOOGLE_ACCESS_OBSERVATIONS_ENABLED: 'false',
     LVBT_GOOGLE_CUSTOMER_ID: '',
     LVBT_GOOGLE_PRODUCTION_CUSTOMER_ID: '',
+    ...(path.includes('jobs')
+      ? {
+          LVBT_BEEHIIV_SYNC_ENABLED: 'false',
+          LVBT_BEEHIIV_PUBLICATION_ID: '',
+          LVBT_BEEHIIV_PRODUCTION_PUBLICATION_ID: '',
+        }
+      : {}),
   };
   return [
     {

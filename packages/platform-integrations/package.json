@@ -4,6 +4,7 @@
   "private": true,
   "type": "module",
   "exports": {
+    "./beehiiv-runtime": "./src/beehiiv-runtime.ts",
     "./beehiiv-sync": "./src/beehiiv-sync.ts",
     "./beehiiv-poll": "./src/beehiiv-poll.ts",
     "./beehiiv": "./src/beehiiv.ts",

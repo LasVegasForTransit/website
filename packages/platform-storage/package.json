@@ -4,6 +4,7 @@
   "private": true,
   "type": "module",
   "exports": {
+    "./query-budget": "./src/query-budget.ts",
     "./newsletter-address": "./src/newsletter-address.ts",
     "./newsletter-work": "./src/newsletter-work.ts",
     "./newsletter-sync-store": "./src/newsletter-sync-store.ts",

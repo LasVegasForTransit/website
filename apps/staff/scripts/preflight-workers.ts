@@ -4,7 +4,19 @@ import {
   discordProviderConfiguration,
   type DiscordRuntimeEnv,
 } from '@lasvegasfortransit/platform-integrations/discord-runtime';
-import { STAFF_WORKER_BINDINGS } from '@lasvegasfortransit/platform-integrations/worker-runtime-config';
+import {
+  DISCORD_RUNTIME_CONFIG,
+  STAFF_WORKER_BINDINGS,
+} from '@lasvegasfortransit/platform-integrations/worker-runtime-config';
+const VERSION_VARIABLES = [
+  'LVBT_ACCESS_AUD',
+  'LVBT_ACCESS_TEAM_DOMAIN',
+  'LVBT_GOOGLE_OAUTH_CLIENT_ID',
+  ...DISCORD_RUNTIME_CONFIG.map(({ name }) => name),
+  'LVBT_BEEHIIV_SYNC_ENABLED',
+  'LVBT_BEEHIIV_PUBLICATION_ID',
+  'LVBT_BEEHIIV_PRODUCTION_PUBLICATION_ID',
+];
 export type Bindings = Record<string, unknown>[];
 export function value(bindings: Bindings, name: string): unknown {
   return bindings.find((binding) => binding.name === name && binding.type === 'plain_text')?.text;
@@ -60,19 +72,9 @@ export async function inspectWorker(
       check(
         `${kind}.version_configuration`,
         versions.every((candidate) =>
-          [
-            'LVBT_ACCESS_AUD',
-            'LVBT_ACCESS_TEAM_DOMAIN',
-            'LVBT_GOOGLE_OAUTH_CLIENT_ID',
-            'LVBT_DEPLOYMENT_ENV',
-            'LVBT_DISCORD_SYNC_ENABLED',
-            'LVBT_DISCORD_APPLICATION_ID',
-            'LVBT_DISCORD_GUILD_ID',
-            'LVBT_DISCORD_PRODUCTION_GUILD_ID',
-            'LVBT_DISCORD_MEMBER_ROLE_ID',
-          ].every((name) => value(candidate, name) === value(bindings, name)),
+          VERSION_VARIABLES.every((name) => value(candidate, name) === value(bindings, name)),
         ),
-        'Every active version must use matching authentication and Discord configuration.',
+        'Every active version must use matching authentication and provider configuration.',
       ),
       ...required.map((name) =>
         check(

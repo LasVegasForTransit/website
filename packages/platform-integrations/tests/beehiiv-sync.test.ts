@@ -11,6 +11,27 @@ async function runner() {
   return module.reconcileBeehiivPerson;
 }
 
+void test('selecting and delivering a fresh account fits the Free invocation query budget', async () => {
+  const f = await fixture();
+  try {
+    const budgetModule = await import('@lasvegasfortransit/platform-storage/query-budget').catch(
+      () => null,
+    );
+    assert.ok(budgetModule, 'Compiled account runs need an enforced query budget');
+    const budget = budgetModule.queryBudget(f.db, 50);
+    const pending = await import('@lasvegasfortransit/platform-storage/newsletter-sync-store');
+    assert.deepEqual(await pending.pendingNewsletterPeople(budget.db, f.now, 1), [f.person.id]);
+    assert.equal(
+      (await (await runner())(budget.db, f.person.id, { ...f.options, targetLimit: 1 })).kind,
+      'confirmed',
+    );
+    assert.ok(budget.queries <= 50);
+    assert.ok(budget.largestBindings <= 100);
+  } finally {
+    f.db.raw.close();
+  }
+});
+
 void test('a fresh join is confirmed independently and retains no clear-text remote intent', async () => {
   const f = await fixture();
   try {

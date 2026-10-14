@@ -9,7 +9,7 @@
     "lint": "eslint . --max-warnings 0",
     "check-types": "wrangler types worker-configuration.d.ts --include-runtime=false --check && tsc --noEmit",
     "test": "node --import tsx --test tests/*.test.ts",
-    "test:e2e": "node --import tsx tests/e2e/scheduled.spec.ts",
+    "test:e2e": "node --import tsx tests/e2e/scheduled.spec.ts && node --import tsx tests/e2e/newsletter.spec.ts",
     "test:maintenance": "node --import tsx tests/e2e/maintenance.spec.ts"
   },
   "dependencies": {

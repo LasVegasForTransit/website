@@ -1,5 +1,5 @@
 import { ulid } from '@lasvegasfortransit/platform-core/ids';
-import type { Db } from './db';
+import type { Db, Statement } from './db';
 import { personRetentionWrites } from './person-retention';
 import { googleGroupPruneWrites } from './google-group-snapshots';
 export interface MaintenanceResult {
@@ -37,20 +37,11 @@ function erasedCount(result: unknown): number {
     ? row.profiles_erased
     : 0;
 }
-/** Bounded per category. Scope, deletion and scope removal commit or roll back together. */
-export async function runMaintenance(
-  db: Db,
-  options: { now?: Date; limit?: number } = {},
-): Promise<MaintenanceResult> {
-  const now = options.now ?? new Date();
+function recordMaintenanceWrites(db: Db, now: Date, limit: number): Statement[] {
   const stamp = now.toISOString();
   const viewsBefore = yearsBefore(now, 1),
     auditsBefore = yearsBefore(now, 3);
-  const limit = Number.isFinite(options.limit)
-    ? Math.max(1, Math.min(1000, Math.floor(options.limit ?? 100)))
-    : 100;
-  const groupPruning = googleGroupPruneWrites(db, now, limit);
-  const result = await db.batch([
+  return [
     db
       .prepare(
         'INSERT INTO audit_retention_scope(id,run_at,views_before,audits_before) VALUES(1,?,?,?)',
@@ -71,20 +62,39 @@ export async function runMaintenance(
         'DELETE FROM welcome_claims WHERE id IN (SELECT id FROM welcome_claims WHERE expires_at<=? ORDER BY expires_at,id LIMIT ?)',
       )
       .bind(stamp, limit),
-    ...groupPruning,
-    ...personRetentionWrites(db, {
-      operationId: ulid(),
-      stamp,
-      limit,
-      deletedBefore: new Date(now.getTime() - 30 * 86_400_000).toISOString(),
-    }),
-    db.prepare('DELETE FROM audit_retention_scope WHERE id=1'),
+    ...googleGroupPruneWrites(db, now, limit),
+  ];
+}
+/** Each selected category commits its scope, cleanup and scope removal atomically. */
+export async function runMaintenance(
+  db: Db,
+  options: { now?: Date; limit?: number; category?: 'all' | 'records' | 'profiles' } = {},
+): Promise<MaintenanceResult> {
+  const now = options.now ?? new Date();
+  const stamp = now.toISOString();
+  const limit = Number.isFinite(options.limit)
+    ? Math.max(1, Math.min(1000, Math.floor(options.limit ?? 100)))
+    : 100;
+  const records = options.category === 'profiles' ? [] : recordMaintenanceWrites(db, now, limit);
+  const profiles =
+    options.category === 'records'
+      ? []
+      : personRetentionWrites(db, {
+          operationId: ulid(),
+          stamp,
+          limit,
+          deletedBefore: new Date(now.getTime() - 30 * 86_400_000).toISOString(),
+        });
+  const result = await db.batch([
+    ...records,
+    ...profiles,
+    ...(records.length ? [db.prepare('DELETE FROM audit_retention_scope WHERE id=1')] : []),
   ]);
   return {
-    viewsRemoved: changed(result[1]),
-    auditsRemoved: changed(result[2]),
-    claimsExpired: changed(result[3]),
-    profilesErased: erasedCount(result[5 + groupPruning.length]),
-    profilesRemoved: changed(result.at(-3)),
+    viewsRemoved: records.length ? changed(result[1]) : 0,
+    auditsRemoved: records.length ? changed(result[2]) : 0,
+    claimsExpired: records.length ? changed(result[3]) : 0,
+    profilesErased: profiles.length ? erasedCount(result[records.length + 1]) : 0,
+    profilesRemoved: profiles.length ? changed(result[records.length + profiles.length - 2]) : 0,
   };
 }
