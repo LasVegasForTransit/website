@@ -1,3 +1,4 @@
+import { beehiivJsonBody, beehiivRetryAfter } from './beehiiv-transport';
 // Beehiiv holds LVBT's mailing list. Subscribing someone here is what makes
 // them a member today, so the platform subscribes every new member.
 
@@ -43,49 +44,8 @@ export type BeehiivSubscriptionsResult =
       pagesRead: number;
     };
 
-const MAX_SUBSCRIPTIONS_RESPONSE_BYTES = 1_048_576;
 const MAX_SUBSCRIPTION_PAGES = 25;
 const SUBSCRIPTION_PAGE_SIZE = 100;
-
-async function jsonBody(response: Response, signal: AbortSignal): Promise<unknown> {
-  const reader = response.body?.getReader();
-  if (!reader) return null;
-  const abort = () => {
-    void reader.cancel().catch(() => undefined);
-  };
-  signal.addEventListener('abort', abort, { once: true });
-  const decoder = new TextDecoder('utf-8', { fatal: true, ignoreBOM: false });
-  let size = 0;
-  let text = '';
-  try {
-    for (;;) {
-      const part = await reader.read();
-      if (signal.aborted) return null;
-      if (part.done) break;
-      const chunk: unknown = part.value;
-      if (!(chunk instanceof Uint8Array)) return null;
-      size += chunk.byteLength;
-      if (size > MAX_SUBSCRIPTIONS_RESPONSE_BYTES) {
-        void reader.cancel().catch(() => undefined);
-        return null;
-      }
-      text += decoder.decode(chunk, { stream: true });
-    }
-    return JSON.parse(text + decoder.decode()) as unknown;
-  } catch {
-    void reader.cancel().catch(() => undefined);
-    return null;
-  } finally {
-    signal.removeEventListener('abort', abort);
-  }
-}
-
-function parseRetryAfter(response: Response, now: number): number | null {
-  const raw = response.headers.get('Retry-After');
-  if (!raw) return null;
-  const delay = /^\d+(?:\.\d+)?$/.test(raw) ? Number(raw) * 1000 : Date.parse(raw) - now;
-  return Number.isFinite(delay) && delay > 0 ? Math.ceil(Math.min(delay, 86_400_000)) : null;
-}
 
 function subscription(value: unknown): BeehiivSubscription | null {
   if (typeof value !== 'object' || value === null || Array.isArray(value)) return null;
@@ -174,6 +134,7 @@ async function requestSubscriptions(
   try {
     return await fetcher(url, {
       headers: { Authorization: `Bearer ${apiKey}` },
+      redirect: 'manual',
       signal,
     });
   } catch {
@@ -185,7 +146,7 @@ async function providerError(
   response: Response,
   now: () => number,
 ): Promise<BeehiivSubscriptionPageResult> {
-  const retryAfterMs = parseRetryAfter(response, now());
+  const retryAfterMs = beehiivRetryAfter(response, now());
   await response.body?.cancel().catch(() => undefined);
   return {
     ok: false,
@@ -216,7 +177,7 @@ export async function listSubscriptions(
 
   if (!response.ok) return providerError(response, options.now ?? Date.now);
 
-  const body = await jsonBody(response, signal);
+  const body = await beehiivJsonBody(response, signal);
   const page = parseSubscriptionPage(body, cursor, limit);
   if (!page) return invalidSubscriptionResponse(response.status);
   return {

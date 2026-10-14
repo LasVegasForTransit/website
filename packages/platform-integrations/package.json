@@ -4,7 +4,9 @@
   "private": true,
   "type": "module",
   "exports": {
+    "./beehiiv-poll": "./src/beehiiv-poll.ts",
     "./beehiiv": "./src/beehiiv.ts",
+    "./beehiiv-subscriptions": "./src/beehiiv-subscriptions.ts",
     "./census": "./src/census.ts",
     "./email": "./src/email.ts",
     "./google-identity": "./src/google-identity.ts",

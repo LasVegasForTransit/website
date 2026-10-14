@@ -4,6 +4,7 @@
   "private": true,
   "type": "module",
   "exports": {
+    "./beehiiv-poll-store": "./src/beehiiv-poll-store.ts",
     "./auth": "./src/auth.ts",
     "./db": "./src/db.ts",
     "./engagement": "./src/engagement.ts",
