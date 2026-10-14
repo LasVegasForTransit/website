@@ -81,9 +81,11 @@ secret target for routine Worker readiness or setup. A deliberate Pages rollback
 configure that fallback independently; see
 [the deployment pipeline](./deployment-pipeline.md#rollback).
 
-Pull request previews run on the separate `lvbt-website-preview` Worker without the production
-runtime secrets, so unavailable preview API integrations answer `503` by design. Values in
-`apps/site/.env.local` and `.dev.vars` stay local and are never copied to production by bootstrap.
+Pull request previews run on the separate `lvbt-website-preview` Worker with separately authorized
+preview credentials. Unconfigured preview API integrations answer `503` by design. Follow
+[staff preview setup](../guides/set-up-staff-preview.md) for shared preview sign-in and email
+credentials; the production bootstrap does not install them. Values in `apps/site/.env.local` and
+`.dev.vars` stay local and are never copied to production by bootstrap.
 
 ## The secrets
 
@@ -245,20 +247,25 @@ still needs provider verification.
    accepts sign-in addresses only on these domains. Click **Save**.
 4. Skip the **Audience** and **Data Access** pages. Signing in uses only the basic email, profile
    and openid permissions, which need no setup.
-5. Open <https://console.cloud.google.com/auth/clients?project=lvbt-core>. If a client named
-   `LVBT website` exists, open it. Otherwise click **Create client**, choose **Web application**,
-   and name it `LVBT website`. Leave **Authorized JavaScript origins** empty; the website signs
-   people in from its server. Under **Authorized redirect URIs**, click **Add URI** and enter these
-   four exact addresses: `https://lasvegasfortransit.org/sign-in/google/callback`,
-   `https://staff.lasvegasfortransit.org/sign-in/google/callback`,
-   `https://preview.lasvegasfortransit.org/sign-in/google/callback`, and
-   `https://staff-preview.lasvegasfortransit.org/sign-in/google/callback`. Click **Create**, and
-   keep the dialog that opens.
+5. Open <https://console.cloud.google.com/auth/clients?project=lvbt-core>. Select the approved
+   client for the environment. Reuse `LVBT website` for production and the approved preview client
+   for preview. Create a missing client only with authorization: choose **Web application** and name
+   it for that environment. Leave **Authorized JavaScript origins** empty; sign-in runs on the
+   server. Under **Authorized redirect URIs**, allow the website and staff callbacks for that
+   client: production uses `https://lasvegasfortransit.org/sign-in/google/callback` and
+   `https://staff.lasvegasfortransit.org/sign-in/google/callback`; preview uses
+   `https://preview.lasvegasfortransit.org/sign-in/google/callback` and
+   `https://staff-preview.lasvegasfortransit.org/sign-in/google/callback`. Save the client and
+   inspect its callback list before installing credentials. Do not add temporary or arbitrary
+   preview origins.
 6. Copy the Client ID (it ends with `.apps.googleusercontent.com`) and paste it at the
    `LVBT_GOOGLE_OAUTH_CLIENT_ID` prompt.
-7. At the next prompt, `LVBT_GOOGLE_OAUTH_CLIENT_SECRET`, copy the Client secret from the same
-   dialog and paste it. Google shows the secret only once; if you closed the dialog, open the
-   client, click **Add secret**, then copy the new secret and paste it.
+7. At the next prompt, `LVBT_GOOGLE_OAUTH_CLIENT_SECRET`, use the existing client secret from the
+   approved secret store or transfer the newly authorized secret directly from its creation dialog.
+   A missing visible secret is not permission to add or reset one. If a replacement is necessary,
+   coordinate its installation across the website and staff Worker for that environment before
+   retiring the old value. Preview installation uses the staff preview guide; production
+   installation uses the authorized bootstrap.
 
 ### Cloudflare One: the Access team domain
 
@@ -338,20 +345,29 @@ and click **Save**. Without it, Google can refuse the Cloudflare sign-in.
 
 **Part 4, the application.**
 
-1. In Cloudflare One, open Access controls → Applications. If **LVBT staff console** is listed,
-   click it, open **Configure**, and skip to step 7. Always use exactly that name, so the next
-   person finds it instead of making a second one.
+Choose the environment before editing an application:
+
+| Environment | Application name     | Exact public hostname                  | Subdomain       |
+| ----------- | -------------------- | -------------------------------------- | --------------- |
+| Production  | `LVBT staff console` | `staff.lasvegasfortransit.org`         | `staff`         |
+| Preview     | `LVBT staff preview` | `staff-preview.lasvegasfortransit.org` | `staff-preview` |
+
+Each application has its own audience identifier. Preview setup edits only the preview application.
+
+1. In Cloudflare One, open Access controls → Applications. Find the selected application by both
+   name and exact hostname. If it exists, open **Configure** and review every setting below before
+   saving; do not create a duplicate. Never select the production application to configure preview.
 2. Otherwise click **Create new application** at the top right. An account with no applications yet
    shows only a prerequisites list, which parts 1 to 3 have now done. In the dialog, choose
    **Self-hosted and private**, then the **Public DNS** tab (not "Private destinations"), then
    **Continue with Self-hosted and private**.
 3. Under **Destinations**, the Subdomain box starts empty — leave it empty and the application puts
    all of lasvegasfortransit.org behind Google sign-in, not just the staff console. Fill in one
-   public hostname: subdomain `staff`, domain `lasvegasfortransit.org`, path empty, and add no other
-   destination (**Add private hostname**, **Add private IP** and **Add Workers** all stay unused).
-   If lasvegasfortransit.org is not in the domain list, you are in the wrong Cloudflare account;
-   switch to the LVBT account and start part 4 again. Leave **Allow access through browser-based
-   RDP, SSH, or VNC sessions** off.
+   public hostname: the selected subdomain from the table, domain `lasvegasfortransit.org`, path
+   empty, and add no other destination (**Add private hostname**, **Add private IP** and **Add
+   Workers** all stay unused). If lasvegasfortransit.org is not in the domain list, you are in the
+   wrong Cloudflare account; switch to the LVBT account and start part 4 again. Leave **Allow access
+   through browser-based RDP, SSH, or VNC sessions** off.
 4. Under **Access policies**, click **Create new policy**. Policy Name `LVBT staff` (any clear name
    is fine), Action **Allow**, Policy session duration **Same as application session duration**.
    Include: **Google Groups** = `console-users@lasvegasfortransit.org`. Click **+ Add require
@@ -363,8 +379,8 @@ and click **Save**. Without it, Google can refuse the Cloudflare sign-in.
 6. Under **Authentication** (Identity tab), turn off **Accept all available identity providers**,
    choose **Google Workspace** in **Choose available identity providers**, and turn on **Apply
    instant authentication**. Leave **Authenticate with Cloudflare One Client** off.
-7. Skip **Preview**. Under **Details**, set Name to `LVBT staff console` and Session Duration to
-   **12 hours**. Click **Create**.
+7. Skip **Preview**. Under **Details**, use the selected application name and set Session Duration
+   to **12 hours**. Click **Create**, or **Save** when editing an existing application.
 8. Open the application's **Configure** page, then **Additional settings** → **Cookie settings**,
    and turn on **Enable Binding Cookie**. Leave **HTTP Only** on and **SameSite** set to **Lax**.
 9. Still under **Additional settings**, copy **Application Audience (AUD) Tag**, a long string of
@@ -537,13 +553,17 @@ explains how. The service account it will use already exists:
 project. Until then, a Workspace admin adds and removes volunteer accounts and group members by hand
 at <https://admin.google.com>.
 
-`LVBT_GOOGLE_ADMIN_SUBJECT` names the Workspace super-admin account the website acts as. It is the
-organization's own root super-admin account, not a person's; at LVBT that is
-`root@lasvegasfortransit.org`. There are three reasons not to use a person's admin address. The
-website keeps working when staff change, instead of breaking the day that person leaves or loses
-admin rights. The Workspace audit log shows the website's automated changes under the system
-account, not under a volunteer's name. And if the website's access were ever misused, it could not
-act as a real person and reach their mailbox and files.
+The decision record names `root@lasvegasfortransit.org` as the intended delegated administrator.
+`LVBT_GOOGLE_ADMIN_SUBJECT` is a deprecated configuration placeholder, not a functioning runner
+setting; leave it empty. Verify the approved administrator and scopes before enabling a future
+runner. A dedicated organization account can avoid depending on a volunteer's continued admin access
+and make automated changes easier to identify in audits. It does not itself restrict access to mail
+or files: the granted scopes and administrator privileges define that boundary.
+
+Follow
+[the read-only Google setup inspection](./staff-portal-operations.md#inspect-google-setup-without-granting-access)
+to check the existing service account, identity trust, and Workspace delegation without granting
+permissions. Google sign-in succeeding does not prove group automation is configured.
 
 ### Givebutter
 

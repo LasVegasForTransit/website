@@ -1,90 +1,136 @@
 # Staff portal acceptance
 
-The portal is **not released**. This record separates local fixture results from deployed and human
-acceptance. It contains no member contact details.
+Use this checklist to decide whether the staff portal is ready for real work. It covers the deployed
+application, outside services, and staff experience; keep release receipts and test results in the
+private acceptance record or the build system.
 
-## Release identity
+Start with [the protected preview setup guide](../guides/set-up-staff-preview.md). The
+[operations reference](./staff-portal-operations.md) explains configuration checks, release
+selection, and recovery.
 
-| Field                     | Current evidence                                                                                                                                |
-| ------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
-| Current branch            | `codex/staff-portal-current-main`; [draft PR #104](https://github.com/LasVegasForTransit/website/pull/104) is the review surface for this work. |
-| Latest implementation SHA | `51b46c77b44a4406093abb16a865e5f7f9a6aa99`; local repository and staff browser checks pass with Node 24.20.0.                                   |
-| Deployed source SHA       | No application release deployed. Two preview Workers were provisioned on 2026-10-13 with placeholder code and no database bindings.             |
-| Intended staff URLs       | `https://staff-preview.lasvegasfortransit.org/` and `https://staff.lasvegasfortransit.org/`; neither hostname resolved on 2026-10-13.           |
-| Human tester and date     | None recorded.                                                                                                                                  |
+## Before you start
 
-The portal is not released. The passing preview workflow packages the website Worker; it does not
-deploy the protected staff portal.
+Choose a reviewed release and an explicitly named environment. Use approved test memberships and
+accounts, including an administrator, a committee lead, and an unapproved account. The person
+running the session needs permission to inspect the relevant provider settings. Obtain approval
+before a test changes a real account, permission, or membership.
 
-## Local evidence
+For every scenario below, record the environment, tester, observed behavior, and a concise result.
+Link detailed evidence from the private acceptance record. Mark a scenario unverified when its
+provider, device, user, or evidence is unavailable. Keep contact details, credentials, verification
+codes, and private task content out of public evidence.
 
-With Node 24.20.0, the staff Astro/type check, Worker build, 50 unit tests and compiled-Worker
-browser journey pass locally. The browser journey covers roster search and assignment, access
-controls, profile corrections, Discord status alignment and staff actions. The route-authorization
-test now enumerates every file-based staff route and checks Access and console permissions. A
-separate first-administrator journey verifies that the configured active member can complete setup
-once, that the audit is recorded, and that the member roster opens afterward. These tests use
-isolated fixtures; they do not prove a live deployment, provider configuration or human acceptance.
+## 1. Verify the deployed release and access boundary
 
-First-administrator setup uses a temporary `LVBT_INITIAL_STAFF_ADMIN_WORKSPACE_EMAIL` secret on the
-staff Worker. Setup requires the approved president's existing Google Workspace session to match
-both the configured email and Cloudflare Access identity, plus an active linked membership record.
-The operation is one-time and audited. The maintainer removes the temporary secret after setup; the
-procedure is in [staff portal operations](./staff-portal-operations.md).
+1. Check the selected saved build and its deployment receipt. Confirm both staff and jobs are
+   serving the recorded versions and the expected database.
+2. Open the staff hostname while signed out. Confirm Cloudflare Access requires authentication.
+3. Open it with an approved staff account, then with an unapproved account. Confirm only the
+   approved account can pass the Access gate.
+4. Check direct staff asset requests and alternate hostnames. Confirm they cannot bypass the gate.
+5. Confirm the jobs Worker has no public route, custom domain, direct `workers.dev` address, or
+   preview URL. In setup mode, confirm schedules and provider writes remain disabled.
+6. Rehearse application recovery against the current schema using the documented saved-artifact
+   procedure. Preserve accepted member activity and pending cleanup work.
 
-With Node 24.20.0, the whole-repository `pnpm check` passed all 36 tasks on 2026-10-13, including
-its full-history secret scan. The compiled staff browser suite passed against 5,000 synthetic
-people. It covers the member roster at 320, 390, 640, 768, 1024 and 1440 pixels, including the
-phone/table transition and no-horizontal-overflow checks. These fixture checks do not establish a
-deployed portal, provider configuration or human acceptance.
+Success means the intended release is reachable through the protected hostname and the alternative
+paths remain closed. Record application activation separately from staff and provider acceptance.
 
-## Remote inventory
+## 2. Verify membership linking and staff permissions
 
-The latest read-only site preflight on 2026-10-10 confirms that the public `lvbt-website` Worker and
-its custom domains are deployed, and that `lvbt-platform` exists and is bound. It confirms that 21
-of 29 migrations remain unapplied, from `0009_workspace_sign_in.sql` through
-`0029_roster_import_provenance.sql`; `LVBT_PRESS_DATA_SOURCE_ID` is missing; and the Discord bot
-token and Discord application credentials are set on the public Worker even though the local
-manifest now forbids the token there. An unsigned POST to `/platform/discord/interactions` returned
-HTTP 405 on 2026-10-10, so the interaction handler was not live then. The local release artifact at
-that time routed the path to the Worker but had not been deployed. Separate read-only Wrangler
-checks on 2026-10-10 returned “Worker does not exist” for `lvbt-staff`, `lvbt-staff-preview`,
-`lvbt-jobs`, and `lvbt-jobs-preview`. The GitHub `staff-preview` environment lookup returned 404, so
-the required protected environment and its reviewer/token setup were absent at that time. Current
-DNS requests on 2026-10-13 still cannot resolve either staff hostname. No Worker, route, DNS record,
-secret, Access policy or migration was created or changed during these checks.
+1. Sign in with the approved administrator's LVBT Google account. Complete membership confirmation
+   in that browser if requested. Confirm it links the intended active member record.
+2. For first-time setup, complete **Set up staff access** once. Confirm the designation is audited
+   and cannot replace an existing administrator. Remove the temporary setup secret after success.
+3. Open **Members**, search by name and email, and open the intended profile. Confirm membership,
+   contact information, committees, and accounts belong to that person.
+4. Sign in as a committee lead. Confirm the lead can work with assigned members and cannot read or
+   edit another committee's restricted records.
+5. Use a test member assigned to multiple committees. Confirm each assignment appears independently
+   and ending one assignment leaves the others intact.
+6. Try an unapproved account and an inactive test membership. Confirm access is refused without
+   creating a person, consent, or administrator permission.
+7. Expire a confirmation attempt and request a fresh code. Confirm recovery is understandable and
+   older unused codes cannot complete the new attempt.
 
-On 2026-10-13, `lvbt-staff-preview` and `lvbt-jobs-preview` were provisioned behind the existing
-LVBT staff Google Workspace policy. Both Workers' direct workers.dev and preview URLs are disabled;
-neither has a custom domain or database binding. No member data or application release was deployed.
-The restricted GitHub `staff-preview` environment now exists with its account variable and a 90-day
-deployment credential. Worker edit permission is limited to those two preview Workers; database,
-Access, zone and route permissions are read-only.
+Success means each account reaches only the records and actions authorized for it. A Google domain
+or staff Google-group membership alone does not establish a portal administrator designation.
 
-The authenticated preview preflight confirms both active placeholder deployments. It reports missing
-database and sign-in bindings, incomplete canonical migrations, disabled Discord, no jobs schedule
-and no Access application for the exact staff-preview hostname. Two account-wide domain inventory
-checks were denied with the restricted credential. The checker now requests domains for the selected
-Worker; live verification of that narrower query remains outstanding. The existing production-host
-Access application admits the `staff@lasvegasfortransit.org` Workspace group, while the portal
-specification requires the dedicated console-users group. That group's configuration, complete
-account-zone coverage, provider validity and real allow/deny outcomes remain unverified.
+## 3. Reconcile the actual member roster
 
-The source checks for preview and production on 2026-10-13 pass the shared database, staff-domain,
-protected-assets and jobs-exposure source checks, but fail `source.discord.enabled`; the repository
-keeps synchronization disabled until maintainers configure and verify both apps. Production Worker
-and database inventory has not been refreshed. All seven live acceptance gates remain unverified.
-The pull request's preview job builds and packages without deployment credentials; it does not
-upload or activate the staff or jobs Workers.
+1. Review the authoritative membership sources privately. Separate affirmative consent evidence from
+   form submissions, newsletter delivery status, and incomplete historical records.
+2. Run the read-only roster preview and compare totals, duplicate candidates, source identifiers,
+   and original consent times with the source records.
+3. Resolve ambiguous rows through the approved review process. Preserve staff corrections and later
+   withdrawals; do not substitute import time for missing evidence.
+4. Obtain authorization for the reviewed apply operation. Verify the resulting canonical records and
+   totals, then repeat the operation to confirm it creates no duplicates.
 
-## Required acceptance
+Success means the accepted roster is complete for the reviewed evidence and unresolved rows remain
+explicitly reviewable. Keep the source roster and row-level findings private.
 
-| Scenario                                                                 | Tester/date                        | Observed result | Remaining issue                                                                        | Evidence                                     |
-| ------------------------------------------------------------------------ | ---------------------------------- | --------------- | -------------------------------------------------------------------------------------- | -------------------------------------------- |
-| President sign-in, correct member link and administrator access          | Not run                            | Unverified      | Deploy preview and complete approved maintainer setup.                                 | None                                         |
-| Committee lead sees only assigned members; unapproved account is refused | Not run                            | Unverified      | Deploy preview and use approved test identities.                                       | None                                         |
-| Complete imported roster and consent provenance                          | Not run                            | Unverified      | Review the authoritative source roster and reconcile it after provider setup.          | None                                         |
-| Provider retry and revocation against live accounts                      | Not run                            | Unverified      | Configure preview integrations and test approved identities.                           | None                                         |
-| Three staff/volunteer sessions, including assistive technology           | Not run                            | Unverified      | Record real sessions and resolve blockers.                                             | None                                         |
-| Keyboard and screen-reader acceptance on specified devices               | Partial local keyboard search only | Unverified      | Review protected routes, VoiceOver and the specified phone.                            | Local keyboard flow in compiled Worker test. |
-| Protected preview release, rollback and one week of staff use            | Not run                            | Unverified      | Configure Access, DNS, migrations and reviewed releases; collect operational evidence. | None                                         |
+## 4. Verify each provider with approved live test accounts
+
+Use an isolated Discord server and separate preview Google groups. Newsletter tests require an
+approved isolated publication or a verified equivalent event source. Confirm the actual account
+supports the needed integration before enabling it.
+
+For each configured provider:
+
+1. Record a permitted membership or committee change in the portal.
+2. Inspect the provider independently and confirm the intended access or subscription changed.
+3. Change it back and confirm removal or withdrawal with a fresh provider read.
+4. Interrupt the provider or exercise its supported rate-limit test. Confirm the member's choice
+   remains saved and the next eligible retry completes it.
+5. Make a newer change while an older request is pending. Confirm the newer choice wins and stale
+   work cannot restore withdrawn access or consent.
+6. Repeat the job without changing anything. Confirm it adds no duplicate membership events or
+   provider changes.
+
+Discord additionally needs these checks: optional joining from member onboarding, server-rule
+acceptance, multiple committee roles, account disconnection, and a server member with LVBT roles but
+no linked member record. Disconnection must preserve server membership and unrelated roles. An
+unlinked account is flagged for staff review; its roles remain unchanged.
+
+For Google, verify direct and inherited group access separately. A failed removal or continuing
+inherited access must remain unresolved. Google sign-in does not prove group administration works.
+
+For newsletter consent, verify both directions, replay, ordering, and unsubscribe ties. Original
+subscription creation time and delivery-check time do not prove when a later choice happened.
+Delayed echoes of the platform's own writes must not manufacture fresh consent. Delivery pauses must
+not change membership.
+
+Success requires actual provider readback, recovery, and revocation for every enabled integration.
+Local fixtures establish code behavior and remain separate evidence.
+
+## 5. Observe staff completing real tasks
+
+Run at least three staff or volunteer sessions, including a phone session and assistive technology.
+Use [the usability-test guide](../guides/run-a-usability-test.md) to recruit, observe, and record
+findings. Have participants find a member, update an allowed detail, assign multiple committees,
+claim a welcome, and understand what needs attention without explaining the interface to them.
+
+Review the welcome queue, member search, and member profile with a keyboard and screen reader.
+Confirm clear focus, readable labels, useful errors, and no horizontal overflow at phone widths.
+Resolve blocking findings and repeat the affected task with its participant.
+
+## 6. Complete production acceptance
+
+Before production changes, verify the backup and migration plan, the approved release, provider
+configuration, and launch authorization. The setup preview workflow does not promote staff or jobs
+to production.
+
+For launch acceptance, confirm all of the following:
+
+- The required staff workflows and provider scenarios have passed.
+- At least three staff members have used production for a week, including once on a phone.
+- New-member follow-up has moved from Notion to the welcome queue; the old intake has its retirement
+  note and receives no new pages.
+- Every new member from the first production week has been welcomed or claimed.
+- The keyboard and screen-reader review is recorded with its actual devices and outcomes.
+- The console-users group has fewer than 45 members.
+- The president has explicitly approved launch in the private launch record.
+
+Keep these results in the acceptance record, with concise outstanding blockers. Update the relevant
+work states and acceptance checkboxes; keep setup instructions useful for the next operator.

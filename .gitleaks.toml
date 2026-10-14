@@ -13,6 +13,13 @@ paths = ['''^apps/staff/wrangler\.jsonc$''']
 regexTarget = "line"
 regexes = ['''^\s*"LVBT_ACCESS_AUD": "f89573338a947c9027f83748935d86f62041adba8672ab807c1634a85c85ef69",$''']
 
+[[rules.allowlists]]
+description = "Svix's public verification test vector, https://docs.svix.com/receiving/verifying-payloads/how-manual."
+condition = "AND"
+paths = ['''^packages/platform-integrations/tests/beehiiv-webhook\.test\.ts$''']
+regexTarget = "line"
+regexes = ['''^\s*secret: 'whsec_plJ3nmyCDGBKInavdOK15jsl',$''']
+
 [[allowlists]]
 description = "Paths that carry no secrets but trip generic entropy rules."
 paths = [

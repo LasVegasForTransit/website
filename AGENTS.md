@@ -158,6 +158,13 @@ no short-lived feature names, no `deps`, no vendor tags. See
 
 ## Workflow expectations
 
+Operator procedures are part of delivery. A change to setup, permissions, credentials, migrations,
+deployment, provider behavior, or recovery must update the relevant operator guide in the same
+change. Document prerequisites, exact steps, expected results, verification, and failure recovery so
+a new maintainer needs no chat history. Keep private planning, credentials, member data, and
+detailed execution receipts out of public docs. Follow
+[Writing docs](docs/standards/writing-docs.md).
+
 - Work on a branch and use a pull request for every change to `main`. Never force-push or delete the
   default branch.
 - **Don't `git add .` / `-A` / `*`.** Stage explicit paths.
