@@ -7,7 +7,7 @@ import { ORIGIN, type startRuntime } from '../../support/runtime';
 type Fixture = Awaited<ReturnType<typeof startRuntime>>;
 async function submit(page: Page, name: string) {
   const [reply] = await Promise.all([
-    page.waitForResponse((r) => r.request().method() === 'POST' && r.url().includes('/access/')),
+    page.waitForResponse((r) => r.request().method() === 'POST' && r.url().includes('/people/')),
     page.getByRole('button', { name, exact: true }).click(),
   ]);
   assert.equal(reply.status(), 303, reply.status() === 303 ? '' : await reply.text());
@@ -62,13 +62,15 @@ export async function exerciseAccountAccess(page: Page, fixture: Fixture) {
   );
   await markOperationFailed(fixture.db, 'recovery-grant', 'permission_denied');
   await page.goto(`${ORIGIN}/access/?person=${person.id}`);
+  assert.equal(new URL(page.url()).pathname, `/people/${person.id}/`);
   await page.getByRole('heading', { name: 'Recovery Member', exact: true }).waitFor();
+  const accounts = page.getByRole('region', { name: 'Accounts', exact: true });
   assert.equal(
     await page.getByText('Confirmed', { exact: true }).count(),
     0,
     'missing runtime configuration must not expose a stored granted confirmation',
   );
-  assert.equal(await page.getByText('Not set up yet', { exact: true }).count(), 1);
+  assert.equal(await accounts.getByText('Not set up yet', { exact: true }).count(), 1);
   await submit(page, 'Try again');
   assert.equal(
     (
@@ -87,8 +89,10 @@ export async function exerciseAccountAccess(page: Page, fixture: Fixture) {
     )?.ended_at,
     null,
   );
-  await page.locator('.staff-account-removal > summary').click();
-  await page.getByLabel('Reason', { exact: true }).selectOption('stepped_back');
+  await page.locator('.staff-assignment-actions > summary').click();
+  await page
+    .getByLabel('Reason for leaving Events Committee', { exact: true })
+    .selectOption('stepped_back');
   await submit(page, 'Remove from committee');
   const ended = await fixture.db
     .prepare('SELECT ended_at FROM committee_assignments WHERE id=?')
@@ -135,9 +139,9 @@ export async function exerciseAccountAccess(page: Page, fixture: Fixture) {
 }
 export async function exerciseLeadAccountAccess(page: Page, fixture: Fixture) {
   await page.goto(`${ORIGIN}/access/?person=${fixture.inside.id}`);
-  assert.equal(await page.locator('.staff-account-row').count(), 2);
-  assert.equal(await page.getByRole('button', { name: 'Try again', exact: true }).count(), 0);
-  assert.equal(await page.getByText('Remove from committee', { exact: true }).count(), 0);
-  await page.getByText('Access history', { exact: true }).click();
-  assert.equal((await page.content()).includes('Advocacy Team'), false);
+  const accounts = page.getByRole('region', { name: 'Accounts', exact: true });
+  assert.equal(await accounts.locator('.staff-account-row').count(), 2);
+  assert.equal(await accounts.getByRole('button', { name: 'Try again', exact: true }).count(), 0);
+  assert.equal(await accounts.getByText('Remove from committee', { exact: true }).count(), 0);
+  assert.equal((await accounts.innerText()).includes('Advocacy Team'), false);
 }

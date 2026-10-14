@@ -13,6 +13,8 @@ import AccessHistory from '../../../components/AccessHistory.astro';
 import PersonCommittees from '../../../components/PersonCommittees.astro';
 import PersonRecord from '../../../components/PersonRecord.astro';
 import PersonSummary from '../../../components/PersonSummary.astro';
+import MemberAccess from '../../../components/MemberAccess.astro';
+import { submitAccessAction, type AccessFeedback } from '../../../lib/account-access';
 import { submitCommittee, type CommitteeFeedback } from '../../../lib/committees';
 import { messageResponse } from '../../../lib/responses';
 import { can, PermissionDenied } from '@lasvegasfortransit/platform-core/permissions';
@@ -39,11 +41,20 @@ if (profile.person.id !== Astro.params.id) {
   return Astro.redirect(`/people/${profile.person.id}/?${context}`, 303);
 }
 let feedback: CommitteeFeedback | undefined;
+let accessFeedback: AccessFeedback | undefined;
 if (Astro.request.method === 'POST') {
-  const result = await submitCommittee(Astro.request, staff, profile);
-  if (result instanceof Response) return result;
-  feedback = result;
-  Astro.response.status = result.status;
+  const action = (await Astro.request.clone().formData()).get('action');
+  if (action === 'retry' || action === 'remove') {
+    const result = await submitAccessAction(Astro.request, staff);
+    if (result instanceof Response) return result;
+    accessFeedback = result;
+    Astro.response.status = result.status;
+  } else {
+    const result = await submitCommittee(Astro.request, staff, profile);
+    if (result instanceof Response) return result;
+    feedback = result;
+    Astro.response.status = result.status;
+  }
 }
 const { person } = profile;
 const roster = (
@@ -52,27 +63,37 @@ const roster = (
   })
 ).get(person.id);
 const discordConnected = roster?.discordConnected ?? false;
-const accountAccess = await listAccess(staff.db, staff.actor, {
-  personId: person.id,
-  configuration: staff.accessConfiguration ?? {},
-});
-const server = accountAccess.items.find((item) => item.targetId === 'person');
+let accountAccess, server;
+try {
+  accountAccess = await listAccess(staff.db, staff.actor, {
+    personId: person.id,
+    target: 'committee',
+    cursor: Astro.url.searchParams.get('access_cursor') ?? undefined,
+    configuration: staff.accessConfiguration ?? {},
+  });
+  server = (
+    await listAccess(staff.db, staff.actor, {
+      personId: person.id,
+      target: 'member',
+      limit: 1,
+      configuration: staff.accessConfiguration ?? {},
+    })
+  ).items[0];
+} catch (error) {
+  if (error instanceof InvalidCursor) return messageResponse(t('staff.people.invalidLink'), 400);
+  if (error instanceof PermissionDenied)
+    return messageResponse(t('staff.common.accessDenied'), 403);
+  throw error;
+}
+const nextAccess = new URL(Astro.url);
+if (accountAccess.nextCursor)
+  nextAccess.searchParams.set('access_cursor', accountAccess.nextCursor);
 const discordPresence =
   roster?.discordInServer === true
     ? t('staff.people.discordPresent')
     : roster?.discordInServer === false
       ? t('staff.people.discordAbsent')
       : t('staff.profile.serverNotChecked');
-const discordRole =
-  server?.discord.state === 'granted'
-    ? server.expectedAccess
-      ? t('staff.profile.accessConfirmed')
-      : t('staff.profile.accessStillPresent')
-    : server?.discord.state === 'absent'
-      ? server.expectedAccess
-        ? t('staff.profile.accessMissing')
-        : t('staff.profile.accessRemoved')
-      : t('staff.profile.accessUnconfirmed');
 const combinations = await personMerges(staff.db, staff.actor, person.id);
 let providerHistory;
 if (can(staff.actor, 'access.recover')) {
@@ -80,7 +101,6 @@ if (can(staff.actor, 'access.recover')) {
     providerHistory = await accessHistory(staff.db, staff.actor, {
       personId: person.id,
       administratorsOnly: true,
-      providersOnly: true,
       cursor: Astro.url.searchParams.get('history_cursor') ?? undefined,
     });
   } catch (error) {
@@ -119,7 +139,7 @@ if (can(staff.actor, 'access.recover')) {
   <PersonSummary
     profile={profile}
     discordConnected={discordConnected}
-    discordStatus={`${discordPresence} · ${discordRole}`}
+    discordStatus={discordPresence}
   />
   <div class="staff-profile">
     <section aria-labelledby="contact-heading">
@@ -181,17 +201,31 @@ if (can(staff.actor, 'access.recover')) {
     </section>
     <PersonCommittees profile={profile} feedback={feedback} />
   </div>
-  <PersonRecord profile={profile} />
   {
-    providerHistory &&
-      (providerHistory.items.length > 0 || Astro.url.searchParams.has('history_cursor')) && (
-        <AccessHistory
-          page={providerHistory}
-          personId={person.id}
-          title={t('staff.profile.accessHistory')}
-        />
-      )
+    server && (
+      <MemberAccess member={server} committees={accountAccess.items} feedback={accessFeedback} />
+    )
   }
+  {
+    accountAccess.nextCursor && (
+      <a href={nextAccess.pathname + nextAccess.search + '#accounts'} class="staff-next">
+        {t('staff.access.moreCommittees')}
+      </a>
+    )
+  }
+  <div class="staff-profile-history">
+    {
+      providerHistory &&
+        (providerHistory.items.length > 0 || Astro.url.searchParams.has('history_cursor')) && (
+          <AccessHistory
+            page={providerHistory}
+            personId={person.id}
+            title={t('staff.profile.accessHistory')}
+          />
+        )
+    }
+    <PersonRecord profile={profile} />
+  </div>
   {
     combinations.length > 0 && (
       <details class="mb-6 text-body-sm">

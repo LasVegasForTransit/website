@@ -38,13 +38,11 @@ export async function exerciseProviderHistory(
     const page = await context.newPage();
     await page.goto(`${ORIGIN}/access/?person=${personId}`);
     assert.equal(await page.getByRole('heading', { name: 'New Member', exact: true }).count(), 1);
-    const current = page.getByRole('region', { name: 'Current access', exact: true });
+    assert.equal(new URL(page.url()).pathname, `/people/${personId}/`);
+    const current = page.getByRole('region', { name: 'Accounts', exact: true });
     assert.equal(await current.getByRole('heading', { name: 'Discord', exact: true }).count(), 1);
-    assert.equal(await current.getByText('No member access', { exact: true }).isVisible(), true);
     assert.equal(
-      await current
-        .getByText('Member channels on Discord are for current LVBT members.', { exact: true })
-        .isVisible(),
+      await current.getByText('Can’t see member channels', { exact: true }).isVisible(),
       true,
     );
     assert.equal(await current.getByText('Discord access granted', { exact: true }).count(), 0);
@@ -74,7 +72,7 @@ export async function exerciseProviderHistory(
     });
     await page.emulateMedia({ colorScheme: 'light' });
     const disclosure = page.getByText('Access history', { exact: true });
-    for (let tab = 0; tab < 15; tab++) {
+    for (let tab = 0; tab < 35; tab++) {
       if (await disclosure.evaluate((element) => element === document.activeElement)) break;
       await page.keyboard.press('Tab');
     }

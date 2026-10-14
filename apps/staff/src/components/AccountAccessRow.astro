@@ -17,7 +17,7 @@ const memberChannels = row.targetId === 'person';
 const staff = Astro.locals.staff!;
 const admin = can(staff.actor, 'access.recover');
 const removeToken =
-  admin && row.assignmentId
+  admin && row.assignmentId && !personView
     ? await issueFormToken(staff.db, staff.actor, `access:remove:${row.assignmentId}`)
     : null;
 const providers =
@@ -115,8 +115,12 @@ const retryToken =
     }
   </dl>
   {
-    personView && memberChannels && !row.expectedAccess && (
-      <p class="staff-access-explanation">{t('staff.access.memberChannelsHint')}</p>
+    personView && memberChannels && !row.expectedAccess && row.discord.state !== 'absent' && (
+      <p class="staff-access-explanation">
+        {row.membershipStatus === 'former_member'
+          ? t('staff.access.memberChannelsHint')
+          : t('staff.access.memberChannelsNotMemberHint')}
+      </p>
     )
   }
   {
