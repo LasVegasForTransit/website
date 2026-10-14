@@ -25,6 +25,7 @@ const labels: Record<string, string> = {
 const sources: Record<string, string> = {
   discord_drift: t('staff.history.periodicCheck'),
   google_group_review: t('staff.history.groupReview'),
+  'access.group_update': t('staff.history.groupReview'),
   membership_change: t('staff.history.membershipChanged'),
   person_deleted: t('staff.history.accountDeleted'),
   discord_link: t('staff.history.discordConnected'),
@@ -70,7 +71,12 @@ function actorLabel(item: AccessHistoryRow): string {
                   : (item.personName ?? t('staff.common.member'))}
               </p>
             )}
-            {item.committeeName && <p class="staff-history-person">{item.committeeName}</p>}
+            {item.committeeName && (
+              <p class="staff-history-person">
+                {item.committeeName}
+                {item.mappingState === 'retained' && ` · ${t('staff.googleGroups.retired')}`}
+              </p>
+            )}
             <p class="staff-help">
               <time datetime={item.occurredAt}>
                 {formatFullDate(new Date(item.occurredAt))}, {formatTime(new Date(item.occurredAt))}

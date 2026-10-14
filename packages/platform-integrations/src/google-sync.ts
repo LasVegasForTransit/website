@@ -17,7 +17,12 @@ import {
 import { GoogleGroupsFailure, type GoogleGroups } from './google-groups';
 export type GoogleSyncResult =
   | { kind: 'confirmed' | 'partial' | 'stale' | 'busy' | 'not_ready' }
-  | { kind: 'retry'; failure: AccessFailure; retryAfterMs: number };
+  | {
+      kind: 'retry';
+      failure: AccessFailure;
+      retryAfterMs: number;
+      reviewReason?: 'inherited_access';
+    };
 interface Options {
   client: GoogleGroups;
   maxGroups?: number;
@@ -75,9 +80,15 @@ async function failed(
     kind: failure,
     retryAfterMs,
     resourceId,
+    ...(kind === 'inherited_access' ? { reviewReason: 'inherited_access' as const } : {}),
   });
   return saved && (await current(run))
-    ? { kind: 'retry', failure, retryAfterMs }
+    ? {
+        kind: 'retry',
+        failure,
+        retryAfterMs,
+        ...(kind === 'inherited_access' ? { reviewReason: 'inherited_access' as const } : {}),
+      }
     : { kind: 'stale' };
 }
 async function execute(run: Run): Promise<GoogleSyncResult> {

@@ -14,6 +14,8 @@ interface Props {
 }
 const { person, group } = Astro.props;
 const staff = Astro.locals.staff!;
+const reviewRequired =
+  person.requestState === 'retry' && person.requestReviewReason === 'inherited_access';
 const pending = person.requestState !== null && person.requestState !== 'retry';
 const input = {
   groupEmail: group.groupEmail,
@@ -24,7 +26,7 @@ const input = {
   committeeId: person.assignmentCommitteeId ?? '',
 };
 const token =
-  person.identityId && !pending
+  person.identityId && !pending && (!reviewRequired || person.assignmentCommitteeId)
     ? await issueFormToken(staff.db, staff.actor, await googleGroupFormAction(input))
     : null;
 ---
@@ -43,10 +45,22 @@ const token =
     )
   }
   {
-    person.requestState === 'retry' && (
+    person.requestState === 'retry' && !reviewRequired && (
       <p role="status" class="staff-help">
         {t('staff.googleGroups.retryFailed')}
       </p>
+    )
+  }
+  {
+    reviewRequired && (
+      <div>
+        <>
+          <p class="staff-help">{t('staff.googleGroups.inheritedAccess')}</p>
+          <a class="staff-google-admin-link" href="https://admin.google.com/ac/groups">
+            {t('staff.googleGroups.reviewGoogleGroups')}
+          </a>
+        </>
+      </div>
     )
   }
   {
@@ -73,15 +87,17 @@ const token =
                 {t('staff.googleGroups.assign')}
               </Button>
             )}
-            <details class="staff-google-remove">
-              <summary>{t('staff.googleGroups.remove')}</summary>
-              <p class="staff-help">
-                {t('staff.googleGroups.removePrompt', { name: person.name })}
-              </p>
-              <Button name="choice" value="remove" variant="destructive">
-                {t('staff.googleGroups.confirmRemove')}
-              </Button>
-            </details>
+            {!reviewRequired && (
+              <details class="staff-google-remove">
+                <summary>{t('staff.googleGroups.remove')}</summary>
+                <p class="staff-help">
+                  {t('staff.googleGroups.removePrompt', { name: person.name })}
+                </p>
+                <Button name="choice" value="remove" variant="destructive">
+                  {t('staff.googleGroups.confirmRemove')}
+                </Button>
+              </details>
+            )}
           </>
         )}
       </form>

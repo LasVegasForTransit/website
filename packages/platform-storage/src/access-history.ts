@@ -21,6 +21,7 @@ export interface AccessHistoryRow {
   provider: string | null;
   source: string | null;
   requestedByName: string | null;
+  mappingState?: 'current' | 'retained' | null;
 }
 export async function accessHistory(
   db: Db,
@@ -79,7 +80,7 @@ export async function accessHistory(
     CASE a.actor_id WHEN 'platform:discord' THEN 'discord' WHEN 'platform:google_workspace' THEN 'google_workspace' ELSE 'person' END AS actorKind,
     CASE WHEN a.actor_id NOT IN ('platform:discord','platform:google_workspace') THEN nullif(trim(coalesce(recorder.given_name,'')||' '||coalesce(recorder.family_name,'')),'') END AS actorName,
     c.id AS committeeId,c.name AS committeeName,json_extract(a.details,'$.role') AS role,json_extract(a.details,'$.reason') AS reason,
-    json_extract(a.details,'$.provider') AS provider,json_extract(a.details,'$.source') AS source,
+    json_extract(a.details,'$.provider') AS provider,json_extract(a.details,'$.source') AS source,json_extract(a.details,'$.mappingState') AS mappingState,
     nullif(trim(coalesce(requester.given_name,'')||' '||coalesce(requester.family_name,'')),'') AS requestedByName
     FROM staff_audits a LEFT JOIN staff_operations receipt ON receipt.operation_id=a.operation_id
     LEFT JOIN committees c ON c.id=CASE WHEN a.action='committee.settings' THEN a.target_id WHEN a.action IN ('access.retry','access.group_update','access.granted','access.revoked') THEN json_extract(a.details,'$.targetId') ELSE receipt.target_id END
