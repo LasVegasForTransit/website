@@ -43,10 +43,11 @@ export async function reconcileBeehiivPerson(
     return { kind: 'retry' };
   const lease = await claimNewsletterJob(db, personId, options.configuration.publicationId, now());
   if (!lease) return { kind: 'busy' };
+  let context: BeehiivReconciliation | undefined;
   try {
     const plan = await loadNewsletterPlan(db, personId);
     if (!plan) return { kind: 'stale' };
-    const context = new BeehiivReconciliation({ db, lease, plan, client, cipher, now });
+    context = new BeehiivReconciliation({ db, lease, plan, client, cipher, now });
     if (plan.desired === 'unknown')
       return await context.outcome('needs_review', 'consent_evidence_needed');
     for (let index = 0; index < limit; index++) {
@@ -60,6 +61,6 @@ export async function reconcileBeehiivPerson(
       (await newsletterTargets(context)).length ? 'progress' : 'confirmed',
     );
   } finally {
-    await releaseNewsletterLease(db, lease);
+    if (!context?.released) await releaseNewsletterLease(db, lease);
   }
 }

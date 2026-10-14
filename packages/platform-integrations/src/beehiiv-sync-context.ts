@@ -1,4 +1,5 @@
 import { ulid } from '@lasvegasfortransit/platform-core/ids';
+import { recordNewsletterAttempt } from '@lasvegasfortransit/platform-storage/newsletter-attempts';
 import type { Db } from '@lasvegasfortransit/platform-storage/db';
 import {
   loadNewsletterPlan,
@@ -45,6 +46,7 @@ export class BeehiivReconciliation {
   readonly cipher: NewsletterIntentCipher;
   readonly now: () => Date;
   plan: NewsletterPlan;
+  released = false;
   constructor(input: ContextInput) {
     this.db = input.db;
     this.lease = input.lease;
@@ -73,6 +75,7 @@ export class BeehiivReconciliation {
         ? { kind, now: this.now() }
         : { kind, failure, ...(retryAfterMs ? { retryAfterMs } : {}), now: this.now() };
     const saved = await saveNewsletterOutcome(this.db, this.plan, this.lease, result);
+    this.released = saved;
     return { kind: saved ? kind : 'stale' };
   }
   async failed(failure: BeehiivSubscriptionFailure): Promise<BeehiivSyncResult> {
@@ -133,7 +136,26 @@ export class BeehiivReconciliation {
       intent,
       now: this.now(),
     });
-    return marked && (await this.current());
+    return (
+      marked &&
+      (await this.current()) &&
+      (await recordNewsletterAttempt(this.db, this.plan, this.lease, {
+        accountKey: intent.accountKey,
+        desired: 'active',
+        now: this.now(),
+      }))
+    );
+  }
+  async authorizeRemoval(subscription: BeehiivSubscription): Promise<boolean> {
+    return (
+      (await this.current()) &&
+      (await recordNewsletterAttempt(this.db, this.plan, this.lease, {
+        accountKey: await newsletterEmailKey(subscription.email),
+        subscriptionId: subscription.id,
+        desired: 'inactive',
+        now: this.now(),
+      }))
+    );
   }
   async attach(subscription: BeehiivSubscription): Promise<BeehiivSyncResult | null> {
     const attached = await attachNewsletterSubscription(this.db, this.plan, this.lease, {

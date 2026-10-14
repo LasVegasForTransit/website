@@ -24,6 +24,11 @@ import {
 } from './imported-consent';
 import { normalizeEmail, ownedFields, type FieldName } from './field-ownership';
 import { writePersonConsent, type ConsentWriteInput } from './consent-write';
+import {
+  applyNewsletterSourceEvent,
+  type NewsletterSourceInput,
+  type NewsletterSourceResult,
+} from './newsletter-source';
 import { findPeople, type PeopleQuery } from './people-search';
 import {
   engagementCounts,
@@ -287,6 +292,10 @@ export class PersonService {
       });
     }
     return this.recomputeMembership(id);
+  }
+
+  applyNewsletterSourceEvent(input: NewsletterSourceInput): Promise<NewsletterSourceResult> {
+    return applyNewsletterSourceEvent(this.db, input);
   }
 
   /** Record historical newsletter evidence tied to its stable provider identity. */

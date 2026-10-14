@@ -62,6 +62,39 @@ plain-text disabled value. A missing deployed binding does not enable newsletter
 reject newsletter activation both before upload and before activating the saved release. Provider
 credentials and live newsletter acceptance belong to the separate launch configuration.
 
+When newsletter synchronization is enabled, a completed roster scan becomes due again 15 minutes
+after that scan started. An unfinished scan resumes its saved cursor. Inspect
+`beehiiv_poll_checkpoints` privately for `started_at`, `last_completed_at`, page/account counts, and
+retry timing; a due scan is not proof that all pages have completed. Delivery observations remain
+separate from consent evidence. An observed inactive or paused subscription alone must not supply an
+invented withdrawal time.
+
+Saved authenticated source events are applied through the person service in one guarded transaction.
+That transaction records the inbox outcome with consent, membership, and engagement changes. It
+rechecks current account ownership and prior choices, preserves original source time, and lets
+withdrawal win a timestamp tie. A completed outcome clears the saved encrypted address; a case that
+needs review retains it for that purpose. Ordinary subscription creation is insufficient evidence to
+manufacture consent. An independently confirmed subscription can match or create a person.
+
+Before sending either an activation or removal request, the runner saves minimal attempted-write
+evidence. Keep that evidence even if the response is lost or the recovery intent finishes: a later
+provider event can be an echo of that request. An event with unclear causation requires review and
+cannot reverse a newer member choice. Do not delete attempted-write evidence to make such an event
+apply. The provider's original subscription creation time is not a substitute for a change time.
+
+Inspect inbox counts without printing contact or authentication data:
+
+```sql
+SELECT state, count(*) AS events FROM newsletter_inbound_events GROUP BY state;
+SELECT outcome, reason, count(*) AS events
+FROM newsletter_source_operations GROUP BY outcome, reason;
+```
+
+These tables require the canonical newsletter migrations. The presence of saved events or passing
+local tests does not establish hosted processing. Keep synchronization disabled until the scheduled
+incoming dispatcher, staff resolution of review cases, and actual preview-provider acceptance have
+all been verified.
+
 ## Maintainer setup
 
 Use the existing values and approved applications in the

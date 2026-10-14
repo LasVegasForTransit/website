@@ -31,9 +31,7 @@ export async function claimBeehiivPoll(
     throw new Error('Invalid Beehiiv poll configuration');
   const token = randomToken(),
     stamp = now.toISOString();
-  const nextHour = new Date(
-    Math.floor(now.getTime() / 3_600_000) * 3_600_000 + 3_600_000,
-  ).toISOString();
+  const nextScan = new Date(now.getTime() + 15 * 60_000).toISOString();
   const result = await db
     .prepare(
       `INSERT INTO beehiiv_poll_checkpoints(publication_id,started_at,next_scan_at,next_attempt_at,in_progress,lease_token,lease_expires_at)
@@ -51,7 +49,7 @@ export async function claimBeehiivPoll(
     .bind(
       publicationId,
       stamp,
-      nextHour,
+      nextScan,
       stamp,
       token,
       new Date(now.getTime() + 30_000).toISOString(),
