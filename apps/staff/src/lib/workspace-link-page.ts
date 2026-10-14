@@ -7,7 +7,12 @@ import {
 } from '@lasvegasfortransit/platform-integrations/google-sign-in';
 import { WorkspaceLinkService } from '@lasvegasfortransit/platform-storage/workspace-link';
 import { normalizeEmail } from '@lasvegasfortransit/platform-storage/person-service';
-import { EMAIL_COOKIE, linkingEmail, requestLinkCode } from './workspace-email';
+import {
+  EMAIL_COOKIE,
+  linkingEmail,
+  requestLinkCode,
+  expiredWorkspaceConfirmation,
+} from './workspace-email';
 import type { StaffEnv } from './context';
 import { field } from './forms';
 interface SubmitContext {
@@ -38,7 +43,7 @@ async function submitCode(context: SubmitContext, form: FormData, email: string)
       workspaceCookie(EMAIL_COOKIE, '', 0),
       ...sessionCookies(result.session.token, result.session.expiresAt),
     ]);
-  if (result.kind === 'expired') return googleResponse('/sign-in/?google_error=1');
+  if (result.kind === 'expired') return expiredWorkspaceConfirmation();
   return {
     notice: result.kind === 'conflict' ? t('workspace.conflict') : t('signIn.codeError'),
     status: result.kind === 'conflict' ? 409 : 400,
@@ -52,7 +57,7 @@ export async function workspaceLinkPage(
 ) {
   const pending = readCookie(request, PENDING_COOKIE);
   const saved = pending ? await new WorkspaceLinkService(env).pending(pending) : null;
-  if (!pending || !saved) return googleResponse('/sign-in/?google_error=1');
+  if (!pending || !saved) return expiredWorkspaceConfirmation();
   const email = await linkingEmail(env, request, pending);
   const page = { saved, email, notice: null as string | null, enteredEmail: '', status: 200 };
   if (request.method !== 'POST') return page;

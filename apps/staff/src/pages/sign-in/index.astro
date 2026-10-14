@@ -16,6 +16,13 @@ const next = safeNext(
 <StaffLayout title="Sign in to LVBT staff" signIn>
   <div class="max-w-[30rem] space-y-6">
     {
+      Astro.url.searchParams.has('membership_confirmation_expired') && (
+        <p role="alert">
+          Your membership confirmation expired. Sign in again to request a new code.
+        </p>
+      )
+    }
+    {
       Astro.url.searchParams.has('google_error') && (
         <p role="alert">
           We couldn’t sign you in. Use your LVBT Google account and try again. If you need help, ask
@@ -24,8 +31,8 @@ const next = safeNext(
       )
     }
     <p>
-      Use your LVBT Google account. The first time you sign in, confirm the personal email for your
-      LVBT membership.
+      Use your LVBT Google account. The first time you sign in, confirm the email you used to join
+      LVBT.
     </p>
     <a
       class="press inline-flex border-2 border-on-surface bg-on-surface px-6 py-3 font-bold text-surface hover:bg-primary hover:border-primary hover:text-on-primary"

@@ -30,3 +30,32 @@ void test('staff linking rejects the removed creation action and never creates a
   assert.equal(db.raw.prepare('SELECT count(*) AS n FROM consent_records').get()?.n, 0);
   db.raw.close();
 });
+void test('expired membership confirmation explains recovery and clears both stale cookies', async () => {
+  const db = memoryDb();
+  try {
+    const env = { PLATFORM_DB: db, LVBT_SIGN_IN_SECRET: 'fixture-only-secret' };
+    const pending = await new WorkspaceLinkService(env).begin(
+      {
+        subject: 'fixture-google',
+        email: 'member@lasvegasfortransit.org',
+        givenName: null,
+        familyName: null,
+      },
+      { returnTo: '/people/', now: new Date('2020-01-01T00:00:00.000Z') },
+    );
+    const result = await workspaceLinkPage(
+      env,
+      new Request('https://staff.lasvegasfortransit.org/sign-in/link-account/', {
+        headers: { Cookie: `${PENDING_COOKIE}=${pending}` },
+      }),
+      () => assert.fail('an expired flow must not send email'),
+    );
+    assert.ok(result instanceof Response);
+    assert.equal(result.headers.get('Location'), '/sign-in/?membership_confirmation_expired=1');
+    const cookies = result.headers.get('Set-Cookie') ?? '';
+    assert.match(cookies, /__Host-lvbt_workspace_pending=; Max-Age=0/);
+    assert.match(cookies, /__Host-lvbt_workspace_email=; Max-Age=0/);
+  } finally {
+    db.raw.close();
+  }
+});
