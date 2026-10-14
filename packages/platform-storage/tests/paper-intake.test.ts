@@ -158,7 +158,7 @@ void test('paper audit failure rolls back people, consent, events and the batch 
 });
 void test('older paper consent cannot undo a later withdrawal and stale staff authority cannot create records', async () => {
   const { importPaperBatch } = await import('../src/paper-intake');
-  const f = await mergeFixture();
+  const f = await mergeFixture(undefined, '2026-01-01T00:00:00.000Z');
   await f.db
     .prepare('UPDATE people SET email_verified_at=? WHERE id=?')
     .bind(new Date().toISOString(), f.survivor.id)

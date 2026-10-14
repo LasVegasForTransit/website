@@ -14,6 +14,7 @@ import { deleteAccount, exportData, sendDeleteCode } from '../platform/account-d
 import { createSession, readSession } from '@lasvegasfortransit/platform-storage/auth';
 import type { GeocodeResult } from '@lasvegasfortransit/platform-integrations/census';
 import { PersonService } from '@lasvegasfortransit/platform-storage/person-service';
+import { loadNewsletterPlan } from '@lasvegasfortransit/platform-storage/newsletter-sync-store';
 import {
   everyStoredText,
   memoryDb,
@@ -150,6 +151,9 @@ void test('an email change waits for the code, then notifies the old address', a
   const db = memoryDb();
   const person = await member(db);
   const { fetcher, emails, calls } = fakeServices();
+  db.raw
+    .prepare('UPDATE newsletter_sync_jobs SET activation_consent_id=NULL WHERE person_id=?')
+    .run(person.id);
   const started = await startEmailChange(
     env(db),
     person,
@@ -168,9 +172,13 @@ void test('an email change waits for the code, then notifies the old address', a
   const notice = emails().at(-1);
   assert.deepEqual(notice?.to, ['ana@example.org']);
   assert.match(notice.text, /changed to ana\.new@example\.org/);
-  assert.ok(
-    calls.some((call) => call.method === 'POST' && call.body.includes('ana.new@example.org')),
+  assert.equal(
+    calls.some((call) => call.url.includes('beehiiv.com')),
+    false,
   );
+  const plan = await loadNewsletterPlan(db, person.id);
+  assert.equal(plan?.email, 'ana.new@example.org');
+  assert.equal(plan.allowActivation, true);
 });
 
 void test('an email already on another record is refused', async () => {
@@ -186,10 +194,12 @@ void test('an email already on another record is refused', async () => {
   assert.deepEqual(outcome, { kind: 'taken' });
 });
 
-void test('leaving makes a former member, and rejoining records a new consent', async () => {
+void test('leaving makes a former member, and rejoining records a new consent', async (t) => {
+  const upstream = t.mock.method(globalThis, 'fetch', () =>
+    Promise.resolve(new Response(null, { status: 503 })),
+  );
   const db = memoryDb();
   const person = await member(db);
-  const { fetcher } = fakeServices();
   assert.equal(await leaveMailingList(env(db), person.id), 'left');
   assert.equal(
     (await new PersonService(db).getPerson(person.id))?.membership_status,
@@ -201,7 +211,9 @@ void test('leaving makes a former member, and rejoining records a new consent', 
     'queued',
   );
 
-  assert.equal(await rejoinMailingList(env(db), person, fetcher), 'rejoined');
+  // Separate user actions have distinct timestamps; an exact tie favors withdrawal.
+  await new Promise((resolve) => setTimeout(resolve, 2));
+  assert.equal(await rejoinMailingList(env(db), person), 'rejoined');
   assert.equal((await new PersonService(db).getPerson(person.id))?.membership_status, 'member');
   const sources = db.raw
     .prepare('SELECT source FROM consent_records WHERE withdrawn_at IS NULL')
@@ -210,6 +222,7 @@ void test('leaving makes a former member, and rejoining records a new consent', 
     sources.map((row) => row.source),
     ['account'],
   );
+  assert.equal(upstream.mock.callCount(), 0);
 });
 
 void test('leaving records withdrawal and retry work even when the mailing provider fails', async () => {
@@ -248,6 +261,27 @@ void test('leaving records withdrawal and retry work even when the mailing provi
   }
 });
 
+void test('an explicit rejoin renews consent even if an older active preference is still recorded', async (t) => {
+  const db = memoryDb();
+  try {
+    const upstream = t.mock.method(globalThis, 'fetch', () =>
+      Promise.resolve(new Response(null, { status: 503 })),
+    );
+    const person = await member(db);
+    db.raw
+      .prepare(
+        "UPDATE newsletter_sync_jobs SET activation_consent_id=NULL,state='done' WHERE person_id=?",
+      )
+      .run(person.id);
+    assert.equal(await rejoinMailingList(env(db), person), 'rejoined');
+    assert.equal((await loadNewsletterPlan(db, person.id))?.allowActivation, true);
+    assert.equal(db.raw.prepare('SELECT count(*) AS n FROM consent_records').get()?.n, 2);
+    assert.equal(upstream.mock.callCount(), 0);
+  } finally {
+    db.raw.close();
+  }
+});
+
 void test('the download holds everything about this member and nothing about anyone else', async () => {
   const db = memoryDb();
   const person = await member(db);
@@ -262,16 +296,19 @@ void test('the download holds everything about this member and nothing about any
   assert.equal((data.connected_accounts as unknown[]).length, 1);
 });
 
-void test('deleting needs a fresh code, then clears details and signs out everywhere', async () => {
+void test('deleting needs a fresh code, then clears details and signs out everywhere', async (t) => {
+  const upstream = t.mock.method(globalThis, 'fetch', () =>
+    Promise.resolve(new Response(null, { status: 503 })),
+  );
   const db = memoryDb();
   const person = await member(db);
   const session = await createSession(env(db), person.id, 'member');
   const { fetcher, emails } = fakeServices();
 
-  assert.equal((await deleteAccount(env(db), person, '123456', fetcher)).kind, 'expired');
+  assert.equal((await deleteAccount(env(db), person, '123456')).kind, 'expired');
   assert.deepEqual(await sendDeleteCode(env(db), person, CALLER, fetcher), { kind: 'sent' });
   const code = codeFrom(emails()[0]?.subject);
-  assert.deepEqual(await deleteAccount(env(db), person, code, fetcher), { kind: 'ok' });
+  assert.deepEqual(await deleteAccount(env(db), person, code), { kind: 'ok' });
 
   const row = db.raw
     .prepare('SELECT email, given_name, phone, deleted_at FROM people WHERE id = ?')
@@ -286,4 +323,5 @@ void test('deleting needs a fresh code, then clears details and signs out everyw
   assert.equal(row.phone, null);
   assert.ok(row.deleted_at);
   assert.equal(await readSession(env(db), session.token), null);
+  assert.equal(upstream.mock.callCount(), 0);
 });

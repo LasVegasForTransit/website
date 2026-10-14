@@ -3,7 +3,7 @@ import test from 'node:test';
 import { applyMigrations } from './support/db';
 import { mergeFixture } from './support/merge-fixture';
 void test('the retention upgrade preserves every existing row, pending removal intent, receipt and reversible merge', async () => {
-  const f = await mergeFixture('0024_person_erasure.sql');
+  const f = await mergeFixture('0024_person_erasure.sql', '2026-01-01T00:00:00.000Z');
   assert.equal((await f.mergePeople(f.db, f.actor, f.input)).kind, 'ok');
   await f.people.linkIdentity(f.survivor.id, {
     platform: 'discord',

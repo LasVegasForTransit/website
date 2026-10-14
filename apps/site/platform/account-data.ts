@@ -1,13 +1,7 @@
 // A member's data: downloading everything LVBT holds about them, and
 // deleting their account. Rendering lives in the site.
 
-import {
-  accountView,
-  codeEmail,
-  unsubscribeEverywhere,
-  type AccountEnv,
-  type CodeCheck,
-} from './account';
+import { accountView, codeEmail, type AccountEnv, type CodeCheck } from './account';
 import { checkCode, endAllSessions, requestCode } from '@lasvegasfortransit/platform-storage/auth';
 import { nowIso } from '@lasvegasfortransit/platform-core/ids';
 import { regionName } from '@lasvegasfortransit/platform-core/regions';
@@ -119,7 +113,6 @@ export async function deleteAccount(
   env: AccountEnv,
   person: Pick<Person, 'id' | 'email'>,
   code: string,
-  fetcher: typeof fetch = fetch,
 ): Promise<CodeCheck> {
   const outcome = await checkCode(env, {
     email: '',
@@ -135,7 +128,6 @@ export async function deleteAccount(
     source: 'account_deleted',
     withdrawnAt: nowIso(),
   });
-  await unsubscribeEverywhere(env, person.id, fetcher);
   await people.deletePerson(person.id);
   await endAllSessions(env, person.id);
   return { kind: 'ok' };

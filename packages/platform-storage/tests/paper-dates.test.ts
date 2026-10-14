@@ -40,7 +40,7 @@ void test('sheet dates follow the Pacific calendar day through UTC midnight', as
 });
 void test('paper signup after a prior Pacific-day withdrawal can renew membership across UTC midnight', async () => {
   const { importPaperBatch } = await import('../src/paper-intake');
-  const f = await mergeFixture();
+  const f = await mergeFixture(undefined, '2026-01-01T00:00:00.000Z');
   await f.db
     .prepare('UPDATE people SET email_verified_at=? WHERE id=?')
     .bind(new Date().toISOString(), f.survivor.id)
@@ -61,7 +61,7 @@ void test('paper signup after a prior Pacific-day withdrawal can renew membershi
 });
 void test('an ambiguous same-day paper signup reports that a recorded withdrawal kept membership unchanged', async () => {
   const { importPaperBatch } = await import('../src/paper-intake');
-  const f = await mergeFixture();
+  const f = await mergeFixture(undefined, '2026-01-01T00:00:00.000Z');
   await f.db
     .prepare('UPDATE people SET email_verified_at=? WHERE id=?')
     .bind(new Date().toISOString(), f.survivor.id)

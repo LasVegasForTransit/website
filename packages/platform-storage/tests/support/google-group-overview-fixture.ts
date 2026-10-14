@@ -7,7 +7,7 @@ export const groupEmail = 'preview-events@lasvegasfortransit.org';
 export const consoleGroupEmail = 'console-users@lasvegasfortransit.org';
 export const now = new Date('2026-10-14T12:00:05.000Z');
 export async function googleOverviewFixture() {
-  const f = await mergeFixture();
+  const f = await mergeFixture(undefined, '2026-01-01T00:00:00.000Z');
   const link = async (personId: string, subject: string) => {
     const result = await linkWorkspaceIdentity(f.db, {
       workspace: {

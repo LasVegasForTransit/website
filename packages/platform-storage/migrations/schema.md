@@ -634,3 +634,22 @@ leases remain held when a newer request supersedes a running one. Completion req
 canonical consent, profile, identity ownership, generation and live lease. A stale worker cannot
 save success or release its successor's reservation. Erased profiles retain stable subscription IDs
 for provider cleanup without restoring personal details.
+
+A verified address change can carry an existing active mailing preference to the confirmed inbox.
+The request retains an exact consent reference, an address digest and the matching inbox
+verification time. An unrelated address edit or later withdrawal cannot reuse that permission.
+Original consent dates and methods remain intact.
+
+### Newsletter write recovery (0035)
+
+`newsletter_write_intents` retains a purpose-encrypted target address before a subscription creation
+request. Its authenticated encryption binds the intent, publication and original person. Once a
+separate provider read supplies the stable subscription ID, the address cipher is cleared. A stopped
+worker or erased profile can therefore leave recoverable cleanup work without retaining clear-text
+contact details. Unconfirmed creation cannot be dismissed merely because one lookup finds no result.
+
+`newsletter_target_receipts` records completed targets within the exact canonical generation and
+revision. Bounded cleanup can resume without repeatedly revisiting earlier addresses. These receipts
+are operation progress, not consent evidence or a continuously current delivery status. Canonical
+changes and provider drift must advance the generation before a new reconciliation pass.
+`newsletter_provider_backoffs` retains publication-wide retry deadlines across workers and restarts.
