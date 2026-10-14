@@ -4,7 +4,7 @@ import { handleNewsletterEventRequest } from './newsletter-event';
 import { handleDiscordDisconnectRequest } from './discord-disconnect';
 import { handleDiscordJoinRequest } from './discord-join';
 import { runScheduledMembership } from './scheduled';
-export { NewsletterAccount, NewsletterScan } from './newsletter';
+export { NewsletterAccount, NewsletterScan, NewsletterIncoming } from './newsletter';
 export { DiscordAccount, DiscordScan } from './scheduled-discord';
 export { StaffMaintenance, ProfileMaintenance, ProviderCompletion } from './scheduled-maintenance';
 export default {

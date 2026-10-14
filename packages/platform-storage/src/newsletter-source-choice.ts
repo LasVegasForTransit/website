@@ -4,6 +4,17 @@ export interface SourceDecision {
   kind: 'applied' | 'ignored' | 'needs_review';
   reason: string | null;
 }
+function platformCreation(context: SourceContext): boolean {
+  return (
+    context.event.type === 'subscription.created' &&
+    context.writes.some(
+      (write) =>
+        write.desired === 'active' &&
+        Date.parse(context.event.occurred_at) >=
+          Math.floor(Date.parse(write.started_at) / 1000) * 1000,
+    )
+  );
+}
 function erasureDecision(context: SourceContext): SourceDecision | null {
   if (!context.erasedAt) return null;
   const removed = Date.parse(context.erasedAt);
@@ -24,7 +35,7 @@ function ownershipDecision(context: SourceContext, address: string): SourceDecis
   const erased = erasureDecision(context);
   if (erased) return erased;
   if (context.review) return { kind: 'needs_review', reason: 'ownership_conflict' };
-  if (!owner && event.type !== 'subscription.confirmed')
+  if (!owner && event.type !== 'subscription.confirmed' && !platformCreation(context))
     return { kind: 'needs_review', reason: 'ownership_conflict' };
   if (owner && owner.email?.toLowerCase() !== address)
     return { kind: 'needs_review', reason: 'ownership_conflict' };
@@ -49,13 +60,30 @@ function superseded(context: SourceContext, times: { at: number; withdrawals: nu
       ))
   );
 }
+function impreciseWithdrawal(context: SourceContext, at: number): boolean {
+  // A whole-second provider time cannot order a signup inside that second.
+  // Keep both original dates and hold outgoing work rather than invent an order.
+  return (
+    context.event.type === 'subscription.deleted' &&
+    at % 1000 === 0 &&
+    context.consents.some(
+      (consent) =>
+        consent.withdrawn_at === null &&
+        Date.parse(consent.given_at) > at &&
+        Date.parse(consent.given_at) < at + 1000,
+    )
+  );
+}
 export function decideNewsletterSource(context: SourceContext, address: string): SourceDecision {
   const ownership = ownershipDecision(context, address);
   if (ownership) return ownership;
   if (context.event.type === 'subscription.created')
-    return { kind: 'needs_review', reason: 'consent_evidence_needed' };
+    return platformCreation(context)
+      ? { kind: 'ignored', reason: 'platform_creation_observed' }
+      : { kind: 'needs_review', reason: 'consent_evidence_needed' };
   const times = sourceTimes(context);
-  if (!times) return { kind: 'needs_review', reason: 'source_time_conflict' };
+  if (!times || impreciseWithdrawal(context, times.at))
+    return { kind: 'needs_review', reason: 'source_time_conflict' };
   if (superseded(context, times)) return { kind: 'ignored', reason: 'superseded_choice' };
   const desired = context.event.type === 'subscription.deleted' ? 'inactive' : 'active';
   if (

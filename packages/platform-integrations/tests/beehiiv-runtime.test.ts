@@ -16,6 +16,7 @@ void test('newsletter synchronization requires complete configuration and an exp
     LVBT_BEEHIIV_PRODUCTION_PUBLICATION_ID: 'pub_production',
     LVBT_BEEHIIV_API_KEY: 'fixture-only',
     LVBT_NEWSLETTER_INTENT_KEY: randomToken(),
+    LVBT_BEEHIIV_WEBHOOK_SECRET: `whsec_${btoa('fixture-event-key-only')}`,
   };
   assert.ok(read(base));
   for (const changed of [
@@ -25,6 +26,10 @@ void test('newsletter synchronization requires complete configuration and an exp
     { LVBT_BEEHIIV_PUBLICATION_ID: '' },
     { LVBT_BEEHIIV_PRODUCTION_PUBLICATION_ID: '' },
     { LVBT_BEEHIIV_API_KEY: '' },
+    { LVBT_BEEHIIV_WEBHOOK_SECRET: '' },
+    { LVBT_BEEHIIV_WEBHOOK_SECRET: 'invalid' },
+    { LVBT_BEEHIIV_WEBHOOK_SECRET: 'whsec_!' },
+    { LVBT_BEEHIIV_WEBHOOK_SECRET: 'whsec_' },
     { LVBT_NEWSLETTER_INTENT_KEY: '' },
     { LVBT_NEWSLETTER_INTENT_KEY: 'invalid' },
     { LVBT_BEEHIIV_API_KEY: base.LVBT_NEWSLETTER_INTENT_KEY },

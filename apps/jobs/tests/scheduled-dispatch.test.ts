@@ -2,7 +2,11 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { runScheduledMembership } from '../src/scheduled';
 
-function fixture(failedStep?: string, onStep?: (name: string) => void) {
+function fixture(
+  failedStep?: string,
+  onStep?: (name: string) => void,
+  options: { busyInbox?: boolean; scanComplete?: boolean; paused?: boolean } = {},
+) {
   const visits: string[] = [];
   const step = (name: string, result: object) => ({
     run: () => {
@@ -19,7 +23,14 @@ function fixture(failedStep?: string, onStep?: (name: string) => void) {
       ProfileMaintenance: step('profiles', {}),
       ProviderCompletion: step('completion', {}),
       DiscordScan: step('discord_scan', {}),
-      NewsletterScan: step('newsletter_scan', { kind: 'scanned' }),
+      NewsletterScan: step('newsletter_scan', {
+        kind: options.paused ? 'paused' : 'scanned',
+        complete: options.scanComplete ?? true,
+      }),
+      NewsletterIncoming: step('newsletter_incoming', {
+        kind: options.busyInbox ? 'progress' : 'idle',
+        more: options.busyInbox ?? false,
+      }),
       DiscordAccount: step('discord_account', { selected: 1, failed: false, paused: false }),
       NewsletterAccount: step('newsletter_account', { kind: 'progress', paused: false }),
     },
@@ -37,6 +48,7 @@ function fixture(failedStep?: string, onStep?: (name: string) => void) {
     LVBT_BEEHIIV_PRODUCTION_PUBLICATION_ID: 'pub_production',
     LVBT_BEEHIIV_API_KEY: 'fixture-only',
     LVBT_NEWSLETTER_INTENT_KEY: 'a'.repeat(43),
+    LVBT_BEEHIIV_WEBHOOK_SECRET: `whsec_${btoa('fixture-event-key-only')}`,
   } as unknown as Env;
   const controller = { scheduledTime: Date.now() } as ScheduledController;
   return { visits, run: () => runScheduledMembership(controller, env, context) };
@@ -45,9 +57,45 @@ function fixture(failedStep?: string, onStep?: (name: string) => void) {
 void test('both busy providers get work within the 32-invocation request limit', async () => {
   const f = fixture();
   await f.run();
-  assert.equal(f.visits.length + 1, 30, 'include the scheduled parent invocation');
-  assert.equal(f.visits.filter((name) => name === 'discord_account').length, 12);
-  assert.equal(f.visits.filter((name) => name === 'newsletter_account').length, 12);
+  assert.ok(f.visits.length + 1 <= 32, 'include the scheduled parent invocation');
+  const discord = f.visits.filter((name) => name === 'discord_account').length;
+  const newsletter = f.visits.filter((name) => name === 'newsletter_account').length;
+  assert.ok(discord > 0 && newsletter > 0);
+  assert.ok(Math.abs(discord - newsletter) <= 1);
+  assert.equal(f.visits.at(-1), 'completion');
+});
+void test('ready newsletter choices are processed before any outgoing provider work', async () => {
+  const f = fixture(undefined, undefined, { busyInbox: true });
+  await f.run();
+  assert.ok(f.visits.includes('newsletter_incoming'));
+  for (const provider of ['discord', 'newsletter'])
+    assert.ok(f.visits.indexOf('newsletter_incoming') < f.visits.indexOf(`${provider}_account`));
+  assert.equal(f.visits.at(-1), 'completion');
+});
+void test('a large roster advances five pages while a busy inbox and both providers keep moving within the request limit', async () => {
+  const f = fixture(undefined, undefined, { busyInbox: true, scanComplete: false });
+  await f.run();
+  assert.equal(f.visits.filter((name) => name === 'newsletter_scan').length, 5);
+  assert.equal(f.visits.filter((name) => name === 'newsletter_incoming').length, 6);
+  assert.ok(f.visits.length + 1 <= 32);
+  const discord = f.visits.filter((name) => name === 'discord_account').length;
+  const newsletter = f.visits.filter((name) => name === 'newsletter_account').length;
+  assert.ok(discord > 0 && newsletter > 0);
+  assert.ok(Math.abs(discord - newsletter) <= 1);
+});
+void test('a provider pause stops outgoing newsletter calls but still processes saved choices', async () => {
+  const f = fixture(undefined, undefined, { busyInbox: true, paused: true });
+  await f.run();
+  assert.ok(f.visits.includes('newsletter_incoming'));
+  assert.equal(f.visits.includes('newsletter_account'), false);
+  assert.ok(f.visits.includes('discord_account'));
+  assert.equal(f.visits.at(-1), 'completion');
+});
+void test('incoming storage failure still allows unrelated outgoing work and final completion', async () => {
+  const f = fixture('newsletter_incoming');
+  await assert.rejects(f.run(), /Scheduled membership work failed/);
+  assert.ok(f.visits.includes('discord_account'));
+  assert.ok(f.visits.includes('newsletter_account'));
   assert.equal(f.visits.at(-1), 'completion');
 });
 void test('slow account work stops new steps after the selection deadline and still completes', async (t) => {
