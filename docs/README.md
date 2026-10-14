@@ -31,6 +31,8 @@ just say guides.)
   the preview database, a saved deployment, and the first administrator
 - [Back up the membership database](./guides/back-up-membership-database.md) — export privately and
   verify an isolated restore before a migration
+- [Recover a linked preview test membership](./guides/recover-a-preview-test-membership.md) — repair
+  an invalid test identifier while preserving sign-in, consent, and administrator history
 - [Add a prototype](./guides/add-a-prototype.md) — publish a clickable test version of a new flow on
   a preview
 - [Add an account section](./guides/add-an-account-section.md) — extend the member's account page
