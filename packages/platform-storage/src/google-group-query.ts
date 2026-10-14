@@ -1,3 +1,6 @@
+import type { Actor } from '@lasvegasfortransit/platform-core/staff-types';
+import type { ProviderConfiguration } from '@lasvegasfortransit/platform-core/access';
+import type { SqlValue } from './db';
 import { STAFF_ADMIN_SCOPE } from './staff-scope';
 
 /** Shared canonical entitlement for the review and its conditional actions. */
@@ -77,3 +80,17 @@ export const GROUP_JSON = `json_object('groupEmail',group_email,'groupId',group_
   'needsSeatReview',CASE WHEN is_console AND state='current' AND user_count>=45 THEN 1 ELSE 0 END,
   'committees',json((SELECT json_group_array(json_object('id',committee_id,'name',name,'current',current)) FROM committee_links l WHERE l.group_email=summaries.group_email)))`;
 export const HAS_PROBLEM = `(state<>'current' OR missing_count+unexpected_count+unmatched_count+unconfirmed_count>0)`;
+
+export function googleGroupQueryParameters(
+  actor: Actor,
+  query: { configuration: ProviderConfiguration; consoleGroupEmail: string | null; now: Date },
+): SqlValue[] {
+  return [
+    Number(query.configuration.configured),
+    query.configuration.contextId,
+    JSON.stringify(query.configuration.resourceIds ?? []),
+    query.consoleGroupEmail,
+    query.now.toISOString(),
+    actor.personId,
+  ];
+}

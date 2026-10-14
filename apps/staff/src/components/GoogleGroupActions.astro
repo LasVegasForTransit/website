@@ -1,0 +1,90 @@
+---
+import type {
+  GoogleGroupPerson,
+  GoogleGroupSummary,
+} from '@lasvegasfortransit/platform-storage/google-group-overview';
+import { issueFormToken } from '@lasvegasfortransit/platform-storage/form-tokens';
+import { ulid } from '@lasvegasfortransit/platform-core/ids';
+import { t } from '@lasvegasfortransit/platform-core/messages';
+import Button from '../../../site/src/components/app/Button.astro';
+import { googleGroupFormAction } from '../lib/google-group-actions';
+interface Props {
+  person: GoogleGroupPerson;
+  group: GoogleGroupSummary;
+}
+const { person, group } = Astro.props;
+const staff = Astro.locals.staff!;
+const pending = person.requestState !== null && person.requestState !== 'retry';
+const input = {
+  groupEmail: group.groupEmail,
+  personId: person.personId,
+  identityId: person.identityId ?? '',
+  expectedSnapshot: JSON.stringify([group.groupId, group.contentHash, group.startedAt]),
+  expectedAccess: person.state === 'missing',
+  committeeId: person.assignmentCommitteeId ?? '',
+};
+const token =
+  person.identityId && !pending
+    ? await issueFormToken(staff.db, staff.actor, await googleGroupFormAction(input))
+    : null;
+---
+
+<div class="staff-google-actions">
+  {
+    person.state === 'unconfirmed' && (
+      <p class="staff-help">{t('staff.googleGroups.confirmAccount')}</p>
+    )
+  }
+  {
+    pending && (
+      <p role="status" class="staff-help">
+        {t('staff.googleGroups.pending')}
+      </p>
+    )
+  }
+  {
+    person.requestState === 'retry' && (
+      <p role="status" class="staff-help">
+        {t('staff.googleGroups.retryFailed')}
+      </p>
+    )
+  }
+  {
+    token && (
+      <form method="post" action={Astro.url.pathname + Astro.url.search}>
+        <input type="hidden" name="token" value={token} />
+        <input type="hidden" name="person_id" value={input.personId} />
+        <input type="hidden" name="identity_id" value={input.identityId} />
+        <input type="hidden" name="snapshot" value={input.expectedSnapshot} />
+        <input type="hidden" name="expected_access" value={String(input.expectedAccess)} />
+        <input type="hidden" name="committee_id" value={input.committeeId} />
+        <input type="hidden" name="operation_id" value={ulid()} />
+        {person.state === 'missing' && (
+          <Button name="choice" value="restore">
+            {person.requestState === 'retry'
+              ? t('staff.googleGroups.retry')
+              : t('staff.googleGroups.restore')}
+          </Button>
+        )}
+        {person.state === 'unexpected' && (
+          <>
+            {person.assignmentCommitteeId && (
+              <Button name="choice" value="assign" variant="secondary">
+                {t('staff.googleGroups.assign')}
+              </Button>
+            )}
+            <details class="staff-google-remove">
+              <summary>{t('staff.googleGroups.remove')}</summary>
+              <p class="staff-help">
+                {t('staff.googleGroups.removePrompt', { name: person.name })}
+              </p>
+              <Button name="choice" value="remove" variant="destructive">
+                {t('staff.googleGroups.confirmRemove')}
+              </Button>
+            </details>
+          </>
+        )}
+      </form>
+    )
+  }
+</div>

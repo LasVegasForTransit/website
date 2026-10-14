@@ -1,7 +1,7 @@
 import { can } from '@lasvegasfortransit/platform-core/permissions';
 import { ulid } from '@lasvegasfortransit/platform-core/ids';
 import type { MutationResult } from '@lasvegasfortransit/platform-core/staff-types';
-import type { Db } from './db';
+import type { Db, SqlValue } from './db';
 import { loadActor } from './staff-roles';
 import { auditDenied } from './audits';
 import { assignmentMutation } from './committee-mutations';
@@ -47,6 +47,8 @@ export class CommitteeService {
     actorId: string;
     operationId: string;
     fromWelcome?: true;
+    administratorsOnly?: true;
+    reviewGuard?: { sql: string; values: SqlValue[] };
   }): Promise<MutationResult<Assignment>> {
     const { personId, committeeId, role, actorId, operationId } = input;
     if (!(await this.allowed(actorId, committeeId))) return { kind: 'forbidden' };
@@ -60,6 +62,8 @@ export class CommitteeService {
       actorId,
       operationId,
       ...(input.fromWelcome ? { fromWelcome: true } : {}),
+      ...(input.administratorsOnly ? { administratorsOnly: true } : {}),
+      ...(input.reviewGuard ? { reviewGuard: input.reviewGuard } : {}),
     });
   }
   async changeRole(

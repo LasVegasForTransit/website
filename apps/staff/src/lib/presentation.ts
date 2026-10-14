@@ -40,6 +40,8 @@ const LABELS: Record<string, string> = {
   duplicate_reviewed: t('staff.labels.duplicate_reviewed'),
   lead: t('staff.labels.lead'),
   stepped_back: t('staff.labels.stepped_back'),
+  missing_access: t('staff.labels.missing_access'),
+  unexpected_access: t('staff.labels.unexpected_access'),
   given_name: t('staff.labels.given_name'),
   family_name: t('staff.labels.family_name'),
   email: t('staff.labels.email'),

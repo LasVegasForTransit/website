@@ -1,4 +1,5 @@
 ---
+import GoogleGroupActions from './GoogleGroupActions.astro';
 import type { getGoogleGroupReview } from '@lasvegasfortransit/platform-storage/google-group-overview';
 import { t } from '@lasvegasfortransit/platform-core/messages';
 import { googleGroupProblemCount } from '../lib/google-group-presentation';
@@ -43,10 +44,12 @@ const emptyLabel =
             </h3>
             {person.email && <p class="staff-help">{person.email}</p>}
           </div>
-          <p class="staff-google-person-state">{labels[person.state]}</p>
-          <a class="staff-secondary-button" href={`/people/${person.personId}/`}>
-            {t('staff.googleGroups.reviewMember')}
-          </a>
+          <p class="staff-google-person-state">
+            {person.state === 'unexpected' && person.assignmentCommitteeId
+              ? t('staff.googleGroups.notAssigned')
+              : labels[person.state]}
+          </p>
+          {!page.summary.isConsole && <GoogleGroupActions person={person} group={page.summary} />}
         </li>
       ))
     }
