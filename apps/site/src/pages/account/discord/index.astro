@@ -37,6 +37,12 @@ import { linkClass } from '../../../components/app/styles';
       <p class="mt-4" role="alert" data-slot="discord-error" hidden>
         {t('discord.error')}
       </p>
+      <p class="mt-4" role="alert" data-slot="discord-conflict" hidden>
+        {t('discord.alreadyConnected')}{' '}
+        <a href="mailto:hello@lasvegasfortransit.org" class={linkClass}
+          >{t('discord.contactIfWrong', { email: 'hello@lasvegasfortransit.org' })}</a
+        >
+      </p>
       <a
         href="/account/discord/disconnect/"
         class={`${linkClass} mt-4 inline-block`}

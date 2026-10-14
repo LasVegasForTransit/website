@@ -65,6 +65,14 @@ export const onRequestGet: PagesFunction<SignInPagesEnv> = async ({ env, request
       if (new URL(request.url).searchParams.get('result') === 'failed')
         filled = filled.on('[data-slot="discord-error"]', show());
       const result = new URL(request.url).searchParams.get('result');
+      if (result === 'already_connected')
+        filled = filled
+          .on('[data-slot="discord-conflict"]', show())
+          .on('[data-slot="discord-connect-label"]', showText(t('discord.tryAgain')));
+      if (result === 'unavailable')
+        filled = filled
+          .on('[data-slot="discord-error"]', showText(t('discord.providerUnavailable')))
+          .on('[data-slot="discord-connect-label"]', showText(t('discord.tryAgain')));
       if (result === 'screening_pending')
         filled = filled
           .on('[data-slot="discord-screening"]', show())

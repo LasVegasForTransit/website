@@ -77,7 +77,7 @@ void test('disconnect invalidates earlier access work, preserves membership and 
       claim,
       identity: { id: discordId, username: 'member', displayName: null, avatar: null },
     }),
-    false,
+    'failed',
   );
   const plan = await loadDiscordPlan(db, {
     personId: person.id,

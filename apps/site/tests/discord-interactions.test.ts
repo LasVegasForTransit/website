@@ -133,7 +133,7 @@ void test('a linked /link command gets a private button to the member account', 
       claim,
       identity: { id: USER_ID, username: 'lvbt-member', displayName: 'LVBT Member', avatar: null },
     }),
-    true,
+    'linked',
   );
 
   const signed = signedRequest({

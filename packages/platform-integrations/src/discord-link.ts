@@ -9,6 +9,12 @@ import {
 import { DiscordHttp } from './discord-http';
 import { requestDiscordJoin, type DiscordJoinResult } from './discord-join';
 import { object, parseDiscordUser, DiscordApiFailure, type DiscordOptions } from './discord-types';
+export { DiscordApiFailure };
+export type DiscordConnectionResult =
+  | DiscordJoinResult
+  | {
+      kind: 'already_connected' | 'cancelled' | 'unavailable';
+    };
 export interface DiscordLinkEnv extends AuthEnv {
   LVBT_DISCORD_APPLICATION_ID?: string | undefined;
   LVBT_DISCORD_CLIENT_SECRET?: string | undefined;
@@ -114,7 +120,7 @@ export class DiscordLink {
     origin: string;
     state: string;
     code: string;
-  }): Promise<DiscordJoinResult> {
+  }): Promise<DiscordConnectionResult> {
     const jobs = this.env.LVBT_DISCORD_JOBS;
     const environment = this.env.LVBT_DEPLOYMENT_ENV;
     if (
@@ -141,8 +147,8 @@ export class DiscordLink {
     const identity = parseDiscordUser(
       await this.http.request('/users/@me', { authorization: `Bearer ${token}` }),
     );
-    if (!(await this.service.complete({ claim, identity, now: new Date(this.now()) })))
-      return { kind: 'failed' };
+    const completed = await this.service.complete({ claim, identity, now: new Date(this.now()) });
+    if (completed !== 'linked') return { kind: completed };
     return await requestDiscordJoin(jobs, {
       personId: claim.personId,
       discordId: identity.id,
@@ -150,5 +156,9 @@ export class DiscordLink {
       operationId: claim.stateHash,
       environment,
     });
+  }
+  async cancel(input: { sessionToken: string; origin: string; state: string }): Promise<boolean> {
+    if (!discordLinkConfigured(this.env)) return false;
+    return Boolean(await this.service.claim({ ...input, now: new Date(this.now()) }));
   }
 }

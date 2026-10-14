@@ -111,16 +111,47 @@ try {
   assert.match(unavailablePage, /This connection is not available at this address\./);
   assert.doesNotMatch(unavailablePage, /Continue to Discord/);
   await page.getByRole('button', { name: 'Continue to Discord', exact: true }).click();
+  await page.getByRole('link', { name: 'Cancel authorization', exact: true }).click();
+  await page.waitForURL(`${ORIGIN}/account/#discord`);
+  await page.getByText("Discord wasn't connected.", { exact: true }).waitFor({ timeout: 5000 });
+  assert.equal(fixture.providerCalls.length, 0);
+  assert.equal(
+    (
+      await fixture.db
+        .prepare("SELECT count(*) AS n FROM identities WHERE platform='discord'")
+        .first()
+    )?.n,
+    0,
+  );
+  await page.getByRole('link', { name: 'Join LVBT on Discord', exact: true }).click();
+  fixture.scenario.failOAuth = true;
+  await page.getByRole('button', { name: 'Continue to Discord', exact: true }).click();
+  await page.getByRole('link', { name: 'Authorize fixture account', exact: true }).click();
+  await page
+    .getByText("We couldn't reach Discord. Try again in a few minutes.", { exact: true })
+    .waitFor();
+  assert.equal(fixture.providerCalls.length, 1);
+  assert.equal(
+    (
+      await fixture.db
+        .prepare("SELECT count(*) AS n FROM identities WHERE platform='discord'")
+        .first()
+    )?.n,
+    0,
+  );
+  fixture.scenario.failOAuth = false;
+  const callsBeforeSuccess = fixture.providerCalls.length;
+  await page.getByRole('button', { name: 'Try again', exact: true }).click();
   await page.getByRole('link', { name: 'Authorize fixture account', exact: true }).click();
   await page.waitForURL(`${ORIGIN}/account/#discord`);
   await page.getByText(`Connected as ${DISCORD_USER.username}.`, { exact: true }).waitFor();
   await page.getByText('You’re in LVBT’s Discord.', { exact: true }).waitFor();
-  assert.equal(fixture.authorization.authorizations.length, 1);
-  const authorized = fixture.authorization.authorizations[0];
+  assert.equal(fixture.authorization.authorizations.length, 3);
+  const authorized = fixture.authorization.authorizations[2];
   assert.ok(authorized);
   assert.equal(authorized.searchParams.get('scope'), 'identify guilds.join');
   assert.equal(authorized.searchParams.get('redirect_uri'), `${ORIGIN}/account/discord/callback`);
-  assert.deepEqual(fixture.providerCalls, [
+  assert.deepEqual(fixture.providerCalls.slice(callsBeforeSuccess), [
     'https://discord.com/api/v10/oauth2/token',
     'https://discord.com/api/v10/users/@me',
     'https://discord.com/api/v10/users/@me',
@@ -247,8 +278,57 @@ try {
     0,
   );
   assert.equal((await fixture.people.getPerson(fixture.person.id))?.membership_status, 'member');
+  const other = await fixture.people.upsertFromSource({
+    source: 'join_form',
+    fields: { email: 'other-discord-owner@example.invalid' },
+  });
+  await fixture.people.linkIdentity(other.person.id, {
+    platform: 'discord',
+    externalId: DISCORD_USER.id,
+    linkMethod: 'self_linked',
+  });
+  const callsBeforeConflict = fixture.providerCalls.length;
   await page.getByRole('link', { name: 'Join LVBT on Discord', exact: true }).click();
   await page.getByRole('button', { name: 'Continue to Discord', exact: true }).click();
+  await page.getByRole('link', { name: 'Authorize fixture account', exact: true }).click();
+  await page
+    .getByText('That Discord account is already connected to a different LVBT account.', {
+      exact: false,
+    })
+    .waitFor();
+  assert.equal(
+    await page
+      .getByRole('link', {
+        name: "Contact hello@lasvegasfortransit.org if that's wrong.",
+        exact: true,
+      })
+      .getAttribute('href'),
+    'mailto:hello@lasvegasfortransit.org',
+  );
+  assert.deepEqual(fixture.providerCalls.slice(callsBeforeConflict), [
+    'https://discord.com/api/v10/oauth2/token',
+    'https://discord.com/api/v10/users/@me',
+  ]);
+  assert.equal(
+    (
+      await fixture.db
+        .prepare("SELECT person_id FROM identities WHERE platform='discord' AND external_id=?")
+        .bind(DISCORD_USER.id)
+        .first()
+    )?.person_id,
+    other.person.id,
+  );
+  await page.screenshot({
+    path: join(shots, 'discord-conflict-mobile.png'),
+    fullPage: true,
+    animations: 'disabled',
+  });
+  // Remove only the disposable fixture link so this member can test a fresh authorization.
+  await fixture.db
+    .prepare("DELETE FROM identities WHERE platform='discord' AND external_id=? AND person_id=?")
+    .bind(DISCORD_USER.id, other.person.id)
+    .run();
+  await page.getByRole('button', { name: 'Try again', exact: true }).click();
   await page.getByRole('link', { name: 'Authorize fixture account', exact: true }).click();
   await page.waitForURL(`${ORIGIN}/account/#discord`);
   await fixture.people.withdrawConsent(fixture.person.id, {

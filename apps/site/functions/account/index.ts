@@ -19,6 +19,7 @@ const NOTICES: Record<string, () => string> = {
   signed_in: () => t('signIn.signedIn'),
   discord_connected: () => t('discord.connectedNotice'),
   discord_disconnected: () => t('discord.disconnected'),
+  discord_cancelled: () => t('discord.cancelled'),
   name: () => t('account.updated.name'),
   phone: () => t('account.updated.phone'),
   email: () => t('account.updated.email'),

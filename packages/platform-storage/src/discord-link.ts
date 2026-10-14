@@ -15,6 +15,7 @@ export interface DiscordLinkClaim {
   origin: string;
   callbackUrl: string;
 }
+export type DiscordLinkCompletion = 'linked' | 'already_connected' | 'failed';
 interface BrowserInput {
   sessionToken: string;
   origin: string;
@@ -131,7 +132,7 @@ export class DiscordLinkService {
     claim: DiscordLinkClaim;
     identity: DiscordIdentity;
     now?: Date;
-  }): Promise<boolean> {
+  }): Promise<DiscordLinkCompletion> {
     const now = input.now ?? new Date();
     if (
       !Number.isFinite(now.getTime()) ||
@@ -139,7 +140,7 @@ export class DiscordLinkService {
       input.claim.callbackUrl !== discordCallback(input.claim.origin) ||
       !isDiscordIdentity(input.identity)
     )
-      return false;
+      return 'failed';
     return await completeDiscordLink(this.env.PLATFORM_DB, { ...input, now });
   }
   private validBrowser(input: BrowserInput, now: Date): boolean {

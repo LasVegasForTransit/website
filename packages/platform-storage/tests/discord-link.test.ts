@@ -43,8 +43,8 @@ void test('an existing member links a verified stable account once, preserving t
   assert.ok(started);
   const claim = await service.claim({ state: started.state, sessionToken: session.token, origin });
   assert.ok(claim);
-  assert.equal(await service.complete({ claim, identity }), true);
-  assert.equal(await service.complete({ claim, identity }), false);
+  assert.equal(await service.complete({ claim, identity }), 'linked');
+  assert.equal(await service.complete({ claim, identity }), 'failed');
   assert.equal(
     await service.claim({ state: started.state, sessionToken: session.token, origin }),
     null,
@@ -130,7 +130,7 @@ void test('withdrawal or sign-out while Discord is verifying cannot create a lin
         withdrawnAt: new Date().toISOString(),
       });
     else await endSession(env, session.token);
-    assert.equal(await service.complete({ claim, identity }), false);
+    assert.equal(await service.complete({ claim, identity }), 'failed');
     assert.equal(
       (
         await db
@@ -161,7 +161,7 @@ void test('two members cannot link the same account, and a new authorization doe
   const result = await Promise.all(
     claims.map(async (claim) => await service.complete({ claim, identity })),
   );
-  assert.equal(result.filter(Boolean).length, 1);
+  assert.deepEqual(result.toSorted(), ['already_connected', 'linked']);
   const owner = await db
     .prepare("SELECT person_id FROM identities WHERE platform='discord'")
     .first<{ person_id: string }>();
@@ -173,7 +173,7 @@ void test('two members cannot link the same account, and a new authorization doe
   assert.ok(claim);
   assert.equal(
     await service.complete({ claim, identity: { ...identity, id: '333333333333333333' } }),
-    false,
+    'failed',
   );
   assert.equal(
     (
@@ -218,6 +218,51 @@ void test('unknown, nonmember, ambiguous and forbidden-origin sessions cannot be
   );
 });
 
+void test('an invalidated authorization cannot report another record as an account conflict', async (t) => {
+  for (const action of ['withdraw', 'sign_out', 'expire']) {
+    const { service, session, person, env, people, db, create } = await fixture();
+    t.after(() => db.raw.close());
+    const other = await create(`conflict-${action}@example.invalid`);
+    await people.linkIdentity(other.id, {
+      platform: 'discord',
+      externalId: identity.id,
+      linkMethod: 'self_linked',
+    });
+    const now = new Date();
+    const started = await service.begin({ sessionToken: session.token, origin, now });
+    assert.ok(started);
+    const claim = await service.claim({
+      state: started.state,
+      sessionToken: session.token,
+      origin,
+      now,
+    });
+    assert.ok(claim);
+    if (action === 'withdraw')
+      await people.withdrawConsent(person.id, {
+        scope: 'newsletter',
+        source: 'member',
+        withdrawnAt: now.toISOString(),
+      });
+    else if (action === 'sign_out') await endSession(env, session.token);
+    const completed = await service.complete({
+      claim,
+      identity,
+      now: action === 'expire' ? new Date(now.getTime() + 600_001) : now,
+    });
+    assert.equal(completed, 'failed');
+    assert.equal(
+      (
+        await db
+          .prepare("SELECT person_id FROM identities WHERE platform='discord' AND external_id=?")
+          .bind(identity.id)
+          .first()
+      )?.person_id,
+      other.id,
+    );
+  }
+});
+
 void test('audit failure rolls back the identity, profile and queued access together', async () => {
   const { db, service, session } = await fixture();
   const started = await service.begin({ sessionToken: session.token, origin });
@@ -239,7 +284,7 @@ void test('audit failure rolls back the identity, profile and queued access toge
     null,
   );
   db.raw.exec('DROP TRIGGER reject_discord_audit');
-  assert.equal(await service.complete({ claim, identity }), true);
+  assert.equal(await service.complete({ claim, identity }), 'linked');
 });
 void test('linking replaces outstanding person and committee work with the new account generation', async () => {
   const { db, service, session, person } = await fixture();
@@ -265,7 +310,7 @@ void test('linking replaces outstanding person and committee work with the new a
   assert.ok(started);
   const claim = await service.claim({ state: started.state, sessionToken: session.token, origin });
   assert.ok(claim);
-  assert.equal(await service.complete({ claim, identity }), true);
+  assert.equal(await service.complete({ claim, identity }), 'linked');
   const rows = (
     await db
       .prepare(

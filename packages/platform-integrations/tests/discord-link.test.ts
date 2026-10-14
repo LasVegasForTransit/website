@@ -1,70 +1,8 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { memoryDb, everyStoredText } from '@lasvegasfortransit/platform-storage/test-db';
-import { PersonService } from '@lasvegasfortransit/platform-storage/person-service';
+import { everyStoredText } from '@lasvegasfortransit/platform-storage/test-db';
 import { createSession } from '@lasvegasfortransit/platform-storage/auth';
-const origin = 'https://lasvegasfortransit.org';
-const user = {
-  id: '222222222222222222',
-  username: 'verified.member',
-  global_name: 'Verified Member',
-  avatar: null,
-};
-const bearer = 'fixture-access-token',
-  refresh = 'fixture-refresh-token';
-async function fixture(fetcher?: typeof fetch) {
-  const loaded = await import('../src/discord-link').catch(() => null);
-  assert.ok(
-    loaded,
-    'members must be able to verify their own Discord account using the actual OAuth flow',
-  );
-  const db = memoryDb();
-  const joins: Request[] = [];
-  const env = {
-    PLATFORM_DB: db,
-    LVBT_SIGN_IN_SECRET: 'fixture-session-secret',
-    LVBT_DISCORD_APPLICATION_ID: '111111111111111111',
-    LVBT_DISCORD_CLIENT_SECRET: 'fixture-client-secret',
-    LVBT_DEPLOYMENT_ENV: 'production',
-    LVBT_DISCORD_JOBS: {
-      fetch: (input: RequestInfo | URL, init?: RequestInit) => {
-        joins.push(new Request(input, init));
-        return Promise.resolve(Response.json({ kind: 'connected' }));
-      },
-    },
-  };
-  const people = new PersonService(db);
-  const { person } = await people.upsertFromSource({
-    source: 'join_form',
-    fields: { email: 'member@example.invalid' },
-    consent: {
-      scope: 'newsletter',
-      source: 'join_form',
-      method: 'checkbox',
-      wordingVersion: 'fixture',
-    },
-  });
-  const session = await createSession(env, person.id, 'member');
-  const calls: Request[] = [];
-  const provider: typeof fetch = async (input, init) => {
-    const request = new Request(input, init);
-    calls.push(request);
-    if (fetcher) return await fetcher(request);
-    return request.url.endsWith('/oauth2/token')
-      ? Response.json({
-          access_token: bearer,
-          refresh_token: refresh,
-          token_type: 'Bearer',
-          scope: 'identify guilds.join',
-          expires_in: 600,
-        })
-      : Response.json(user);
-  };
-  const client = new loaded.DiscordLink(env, { fetch: provider, timeoutMs: 20 });
-  const csrf = await client.formToken(session.token, origin);
-  assert.ok(csrf);
-  return { ...loaded, db, env, client, session, csrf, calls, joins, person, people };
-}
+import { origin, user, bearer, refresh, fixture } from './support/discord-link';
 void test('OAuth requests joining permission and hands a verified link to private jobs without storing tokens', async () => {
   const { client, session, csrf, db, calls, joins, env, person } = await fixture();
   const started = await client.start({ sessionToken: session.token, origin, csrfToken: csrf });
@@ -322,9 +260,35 @@ void test('an identity owned by someone else cannot trigger server joining', asy
       state: started.state,
       code: 'fixture-code',
     }),
-    { kind: 'failed' },
+    { kind: 'already_connected' },
   );
   assert.equal(f.joins.length, 0);
+});
+
+void test('cancelling consumes only the matching authorization and never calls Discord', async (t) => {
+  const f = await fixture();
+  t.after(() => f.db.raw.close());
+  const started = await f.client.start({
+    sessionToken: f.session.token,
+    origin,
+    csrfToken: f.csrf,
+  });
+  assert.ok(started);
+  const input = { sessionToken: f.session.token, origin, state: started.state };
+  assert.equal(
+    await f.client.cancel({ ...input, origin: 'https://preview.lasvegasfortransit.org' }),
+    false,
+  );
+  assert.equal(await f.client.cancel(input), true);
+  assert.equal(await f.client.cancel(input), false);
+  assert.deepEqual(await f.client.callback({ ...input, code: 'fixture-code' }), { kind: 'failed' });
+  assert.equal(f.calls.length, 0);
+  assert.equal(f.joins.length, 0);
+  assert.equal(
+    (await f.db.prepare("SELECT count(*) AS n FROM identities WHERE platform='discord'").first())
+      ?.n,
+    0,
+  );
 });
 
 void test('screening and private-service failures preserve the verified account link', async (t) => {

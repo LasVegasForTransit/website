@@ -42,7 +42,7 @@ void test('a member can download their verified Discord profile and deletion cle
         claim,
         identity: { id, username, displayName: username, avatar: null },
       }),
-      true,
+      'linked',
     );
   }
   const personId = ids[0];
