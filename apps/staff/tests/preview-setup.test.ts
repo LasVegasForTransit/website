@@ -9,7 +9,7 @@ import { object } from '../scripts/preflight-api';
 import { deploymentFixture } from './support/deployment';
 import { releaseIdentity } from './support/release';
 
-async function setupFixture(sourceEnabled = false) {
+async function setupFixture(sourceEnabled = false, newsletterSourceEnabled = false) {
   const f = await deploymentFixture();
   for (const app of ['staff', 'jobs']) {
     const filename = join(f.source, `apps/${app}/wrangler.jsonc`);
@@ -18,11 +18,18 @@ async function setupFixture(sourceEnabled = false) {
     );
     const vars = object(object(object(config.env).preview).vars);
     vars.LVBT_DISCORD_SYNC_ENABLED = sourceEnabled ? 'true' : 'false';
+    if (app === 'jobs') vars.LVBT_BEEHIIV_SYNC_ENABLED = newsletterSourceEnabled ? 'true' : 'false';
     await writeFile(filename, JSON.stringify(config));
   }
   await rm(f.destination, { recursive: true });
   await packageStaffRelease(f.source, f.destination, releaseIdentity);
-  const state = { enabled: false, scheduled: false, missingAuth: false, unavailable: false };
+  const state = {
+    enabled: false,
+    newsletterEnabled: false,
+    scheduled: false,
+    missingAuth: false,
+    unavailable: false,
+  };
   const fetcher: typeof fetch = async (input, init) => {
     const url = new URL(input instanceof Request ? input.url : input);
     if (state.unavailable && url.pathname.includes('/versions/')) throw new Error('unavailable');
@@ -36,6 +43,7 @@ async function setupFixture(sourceEnabled = false) {
         .filter(
           (binding) =>
             binding.name !== 'LVBT_DISCORD_BOT_TOKEN' &&
+            binding.name !== 'LVBT_BEEHIIV_SYNC_ENABLED' &&
             !(state.missingAuth && binding.name === 'LVBT_SIGN_IN_SECRET'),
         )
         .map((binding) =>
@@ -43,6 +51,11 @@ async function setupFixture(sourceEnabled = false) {
             ? { ...binding, text: state.enabled ? 'true' : 'false' }
             : binding,
         );
+      (resources.bindings as Record<string, unknown>[]).push({
+        type: 'plain_text',
+        name: 'LVBT_BEEHIIV_SYNC_ENABLED',
+        text: state.newsletterEnabled ? 'true' : 'false',
+      });
     }
     return Response.json(body);
   };
@@ -103,8 +116,20 @@ void test('setup refuses an artifact that would enable Discord even when deploye
   }
 });
 
+void test('setup refuses an artifact that would enable newsletter work even when deployed versions are disabled', async () => {
+  const f = await setupFixture(false, true);
+  try {
+    await assert.rejects(
+      uploadStaffRelease(f.destination, releaseIdentity, f.receiptFile, f.options),
+    );
+    assert.equal(f.state.commands.length, 0);
+  } finally {
+    await rm(f.root, { recursive: true, force: true });
+  }
+});
+
 void test('provider or cron activation after upload blocks setup activation before the first deployment', async () => {
-  for (const failure of ['enabled', 'scheduled'] as const) {
+  for (const failure of ['enabled', 'newsletterEnabled', 'scheduled'] as const) {
     const f = await setupFixture();
     try {
       await uploadStaffRelease(f.destination, releaseIdentity, f.receiptFile, f.options);
@@ -120,7 +145,14 @@ void test('provider or cron activation after upload blocks setup activation befo
 });
 
 void test('setup still refuses provider writes, any cron, missing authentication, denied metadata and unsafe Access', async () => {
-  for (const failure of ['enabled', 'scheduled', 'missingAuth', 'unavailable', 'unsafe'] as const) {
+  for (const failure of [
+    'enabled',
+    'newsletterEnabled',
+    'scheduled',
+    'missingAuth',
+    'unavailable',
+    'unsafe',
+  ] as const) {
     const f = await setupFixture();
     try {
       if (failure === 'unsafe') f.state.unsafe = true;

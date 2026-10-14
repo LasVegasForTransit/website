@@ -7,6 +7,10 @@ import {
   InvalidBeehiivPollPage,
 } from '@lasvegasfortransit/platform-storage/beehiiv-poll-store';
 import { listSubscriptions, type BeehiivConfig } from './beehiiv';
+import {
+  newsletterPause,
+  pauseNewsletter,
+} from '@lasvegasfortransit/platform-storage/newsletter-work';
 
 export interface BeehiivPollResult {
   kind: 'scanned' | 'idle' | 'busy' | 'stale' | 'retry';
@@ -21,6 +25,8 @@ export async function pollBeehiivRoster(
   options: { now?: () => Date; fetcher?: typeof fetch } = {},
 ): Promise<BeehiivPollResult> {
   const now = options.now ?? (() => new Date());
+  if (await newsletterPause(db, configuration.publicationId, now()))
+    return { kind: 'idle', records: 0, complete: false };
   const scan = await claimBeehiivPoll(db, configuration.publicationId, now());
   if (typeof scan === 'string') return { kind: scan, records: 0, complete: false };
   try {
@@ -30,6 +36,8 @@ export async function pollBeehiivRoster(
       options.fetcher,
     );
     if (!page.ok) {
+      if (page.status === 429)
+        await pauseNewsletter(db, configuration.publicationId, page.retryAfterMs ?? 60_000, now());
       const saved = await failBeehiivPoll(db, scan, {
         now: now(),
         kind: page.kind,

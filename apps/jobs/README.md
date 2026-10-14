@@ -1,9 +1,9 @@
 # Scheduled membership work
 
-This Worker performs bounded profile and audit retention and processes pending Discord membership
-and committee role changes once a minute. It has no public HTTP API. The production and preview
-configurations keep synchronization disabled until maintainer setup and live verification are
-complete.
+This Worker performs bounded profile and audit retention and processes pending newsletter requests
+and Discord membership and committee role changes once a minute. It has no public HTTP API. The
+production and preview configurations keep synchronization disabled until maintainer setup and live
+verification are complete.
 
 Shared reconciliation work is marked done only after every verified linked provider has a fresh
 success receipt. A missing provider link needs no receipt; an enabled identity with no current
@@ -29,6 +29,34 @@ still completes after the personal profile has been physically removed. The staf
 an actual adapter result appears as a confirmed Member role, becomes invalid immediately after
 withdrawal, and later shows confirmed removal. Neither test connects to Discord or proves live
 server operation.
+
+The newsletter fixture runs the same compiled scheduled Worker against an isolated Beehiiv API. It
+checks signup readback, repeated dispatch, withdrawal, interrupted creation followed by profile
+erasure, recovery of the resulting subscription and removal of its temporary encrypted address. It
+sends no member records to Beehiiv and does not prove hosted provider operation.
+
+## Scheduled newsletter requests
+
+Set `LVBT_BEEHIIV_SYNC_ENABLED=true` only after approved provider setup. Jobs requires
+`LVBT_BEEHIIV_PUBLICATION_ID`, `LVBT_BEEHIIV_PRODUCTION_PUBLICATION_ID`, the encrypted
+`LVBT_BEEHIIV_API_KEY` secret, and a dedicated `LVBT_NEWSLETTER_INTENT_KEY` secret. The intent key
+is a base64url-encoded 32-byte random value used only by jobs to recover interrupted creation; never
+reuse a sign-in or provider credential. Preview must use a different publication from production.
+Production must match its declared production publication. Missing or inconsistent configuration
+disables newsletter work. Both source environments default to disabled.
+
+Each account pass resumes one target from the current durable request. Account ownership, consent,
+generation and lease checks prevent older work from granting access after withdrawal. Roster polling
+reads one page of at most 100 subscriptions, saves its cursor and resumes after restarts. Polling
+stores provider observations without inventing consent timestamps. A publication-wide rate-limit
+pause applies to both polling and account changes, including after a new dispatcher starts.
+
+The scheduled coordinator uses separate in-process Worker entrypoints for retention, provider scans,
+account work and completion. Each entrypoint enforces the Free plan's 50-statement database budget;
+every statement in a batch counts. The coordinator attempts up to 24 account steps, sharing the
+allowance between enabled providers, within the 32-invocation request limit. A failed provider step
+does not suppress the other provider, and failures still make the scheduled invocation fail.
+Compiled fixtures and the local meter do not establish hosted CPU or quota acceptance.
 
 ## Configuration and release
 
@@ -61,10 +89,9 @@ generations. Lease and transaction guards prevent expired workers from advancing
 
 Storage tests cover 5,000 linked accounts across 50 bounded batches, rollback, concurrent workers,
 server isolation and membership changes during selection. This proves local queue coverage. The
-dispatcher separately attempts up to 25 accounts per minute within its time budget and honors
-persisted rate limits. Completing a scan does not prove that all accounts have been checked against
-Discord within that hour; live throughput remains a release gate. Unlinked server users are outside
-this scan.
+dispatcher shares up to 24 account steps per minute with newsletter work and honors persisted rate
+limits. Completing a scan does not prove that all accounts have been checked against Discord within
+that hour; live throughput remains a release gate. Unlinked server users are outside this scan.
 
 ## Deleted and combined records
 
@@ -116,6 +143,10 @@ keys for pending provider work and other records’ attribution after profile re
 verified account IDs and current generations allow access removal to finish; they cannot recreate a
 member profile. Existing provider receipts and pre-write intents survive the migration. Run
 `pnpm -C apps/jobs test:maintenance` after the repository build.
+
+Audit cleanup and profile cleanup run in separate entrypoints so unrelated maintenance cannot
+exhaust the profile-erasure database budget. Each category retains its own atomic selection, cleanup
+and scope removal. Profile erasure and physical removal are never split across transactions.
 
 Complete merge/provider orchestration, Google/mailing-list orchestration and the common access audit
 writer for Google, GitHub and onboarding remain unfinished. Hosted export acceptance, full

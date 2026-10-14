@@ -44,7 +44,7 @@ if (
     else {
       if (setup)
         console.log(
-          `PREVIEW SETUP ${ready ? 'READY' : 'NOT READY'}: Discord must remain disabled and jobs inactive. Launch checks follow.`,
+          `PREVIEW SETUP ${ready ? 'READY' : 'NOT READY'}: provider work must remain disabled and jobs inactive. Launch checks follow.`,
         );
       for (const check of [...report.checks, ...report.acceptance])
         console.log(`${check.status.toUpperCase()} ${check.id}: ${check.detail}`);

@@ -56,6 +56,12 @@ configuration, bot-token and minute-schedule requirements can remain incomplete.
 `stage: "setup"` and `setupReady`; it retains every launch check and unverified acceptance item.
 This mode is refused for production and does not establish launch readiness.
 
+Newsletter work must also remain disabled during setup. The jobs source configuration must set
+`LVBT_BEEHIIV_SYNC_ENABLED=false`; any deployed version with this binding must expose the same
+plain-text disabled value. A missing deployed binding does not enable newsletter work. Setup checks
+reject newsletter activation both before upload and before activating the saved release. Provider
+credentials and live newsletter acceptance belong to the separate launch configuration.
+
 ## Maintainer setup
 
 Use the existing values and approved applications in the

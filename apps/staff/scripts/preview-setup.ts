@@ -13,7 +13,10 @@ const deferred = new Set([
 export function setupBindings(bindings: Bindings) {
   return (
     value(bindings, 'LVBT_DEPLOYMENT_ENV') === 'preview' &&
-    value(bindings, 'LVBT_DISCORD_SYNC_ENABLED') === 'false'
+    value(bindings, 'LVBT_DISCORD_SYNC_ENABLED') === 'false' &&
+    bindings
+      .filter((binding) => binding.name === 'LVBT_BEEHIIV_SYNC_ENABLED')
+      .every((binding) => binding.type === 'plain_text' && binding.text === 'false')
   );
 }
 
@@ -50,6 +53,7 @@ export async function previewSetupReady(root: string, client: MetadataClient, ch
     const vars = object(config.vars);
     if (vars.LVBT_DEPLOYMENT_ENV !== 'preview' || vars.LVBT_DISCORD_SYNC_ENABLED !== 'false')
       return false;
+    if (app === 'jobs' && vars.LVBT_BEEHIIV_SYNC_ENABLED !== 'false') return false;
     const path = `/workers/scripts/${encodeURIComponent(String(config.name))}`;
     if (!(await activeSetup(client, path))) return false;
     if (app === 'jobs') {
