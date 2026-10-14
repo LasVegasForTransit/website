@@ -1,3 +1,4 @@
+import { t } from '@lasvegasfortransit/platform-core/messages';
 /// <reference types="@cloudflare/workers-types" />
 import type { DiscordLinkProfile } from '@lasvegasfortransit/platform-storage/discord-link';
 import { show, showText } from '../functions/join/_page';
@@ -12,10 +13,13 @@ export function fillDiscordProfile(
     .on(
       '[data-slot="discord-status"]',
       showText(
-        profile.username
-          ? `Connected as ${profile.username}.`
-          : 'Your Discord account is connected.',
+        profile.disconnecting
+          ? t('discord.disconnecting')
+          : profile.username
+            ? t('discord.connectedAs', { name: profile.username })
+            : t('discord.connected'),
       ),
     )
-    .on('[data-slot="discord"] a', showText('Manage Discord'));
+    .on('[data-slot="discord-manage"]', showText(t('discord.manage')))
+    .on('[data-slot="discord-disconnect"]', show());
 }

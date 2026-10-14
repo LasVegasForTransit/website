@@ -415,6 +415,11 @@ main {
   navigation: auto;
 }
 
+/* Animated snapshots must not intercept the destination page's controls. */
+::view-transition {
+  pointer-events: none;
+}
+
 /* Tune the default cross-fade to match the site's 200ms MD3 easing. The
    `root` group is the body content; named groups (site-header, footer-
    stripe) inherit this duration. Reduced-motion override below. */
@@ -485,6 +490,12 @@ html:active-view-transition-type(from-qr)::view-transition-old(root) {
 /* stylelint-enable declaration-no-important */
 
 @layer base {
+  /* Account controls stay interactive while shared page chrome animates. */
+  html[data-navigation='instant'] {
+    view-transition-name: none;
+    scroll-behavior: auto;
+  }
+
   :root {
     color-scheme: light;
     --external-link-icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M14 3v2h3.59l-9.83 9.83 1.41 1.41L19 6.41V10h2V3h-7ZM19 19H5V5h7V3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7h-2v7Z'/%3E%3C/svg%3E");

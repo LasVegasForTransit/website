@@ -1,3 +1,4 @@
+import { noticeCookie } from '../_account';
 import { readCookie, SESSION_COOKIE } from '@lasvegasfortransit/platform-core/web-auth';
 import {
   DiscordLink,
@@ -33,9 +34,12 @@ export async function completeDiscordConnection(
       /* A fresh authorization attempt is required after a consumed flow. */
     }
   }
-  return discordReply(null, 303, {
+  const response = discordReply(null, 303, {
     Location:
       result.kind === 'connected' ? '/account/#discord' : `/account/discord/?result=${result.kind}`,
     'Set-Cookie': discordStateCookie(''),
   });
+  if (result.kind === 'connected')
+    response.headers.append('Set-Cookie', noticeCookie('discord_connected'));
+  return response;
 }

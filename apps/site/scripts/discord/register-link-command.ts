@@ -1,10 +1,11 @@
+import { t } from '@lasvegasfortransit/platform-core/messages';
 import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { isDiscordId } from '@lasvegasfortransit/platform-core/discord-identity';
 
 const COMMAND = {
   name: 'link',
-  description: 'Confirm your LVBT membership on the website',
+  description: t('discord.commandDescription'),
 };
 
 export interface RegisterLinkCommandOptions {

@@ -19,7 +19,10 @@ export async function pendingDiscordOperations(
       AND o.next_attempt_at<=? AND ${PERSON_OPERATION_ELIGIBLE}
       AND (SELECT count(*) FROM identities WHERE person_id=p.id AND platform='discord')=1
       AND EXISTS(SELECT 1 FROM identities WHERE person_id=p.id AND platform='discord' AND link_method IN ('self_linked','staff_confirmed'))
-      AND NOT EXISTS(SELECT 1 FROM provider_operation_receipts r WHERE r.operation_id=o.id AND r.provider='discord' AND r.state='done' AND r.expires_at>?)
+      AND (
+        EXISTS(SELECT 1 FROM identities i JOIN discord_disconnects d ON d.identity_record_id=i.id WHERE i.person_id=p.id AND i.platform='discord')
+        OR NOT EXISTS(SELECT 1 FROM provider_operation_receipts r WHERE r.operation_id=o.id AND r.provider='discord' AND r.state='done' AND r.expires_at>?)
+      )
     ) WHERE position=1 ORDER BY last_observed,created_at,id LIMIT ?`,
     )
     .bind(now.toISOString(), now.toISOString(), limit)

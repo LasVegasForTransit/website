@@ -19,7 +19,7 @@ import {
 import { builtPage, finish, redirect } from '../join/_page';
 import { field, formOf, refused, type SignInPagesEnv } from '../sign-in/_shared';
 
-export { field, formOf };
+export { field, formOf, noticeCookie };
 
 export interface Signed {
   env: AccountEnv;

@@ -27,6 +27,7 @@ interface Scenario {
   joined: boolean;
   pending: boolean;
   failJoin: boolean;
+  failRoleWrites: boolean;
   roles: Set<string>;
 }
 export const DISCORD_USER = {
@@ -103,6 +104,7 @@ async function authorizationServer(tls: { httpsKey: string; httpsCert: string })
   };
 }
 function updateRoles(request: Parameters<V4FetchHandler>[0], scenario: Scenario): RuntimeResponse {
+  if (scenario.failRoleWrites) return json({ message: 'fixture unavailable' }, 503);
   const role = new URL(request.url).pathname.split('/').at(-1);
   assert.ok(role);
   assert.notEqual(role, DISCORD_ROLES.unmanaged, 'the integration never writes an unmanaged role');
@@ -248,6 +250,7 @@ export async function discordRuntime() {
     joined: false,
     pending: false,
     failJoin: false,
+    failRoleWrites: false,
     roles: new Set([DISCORD_ROLES.unmanaged]),
   };
   const simulator = await simulatorFor(root, data, tls, { providerCalls, scenario });

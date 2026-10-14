@@ -9,10 +9,13 @@ import { runMaintenance } from '@lasvegasfortransit/platform-storage/retention';
 import { queueDiscordDrift } from '@lasvegasfortransit/platform-storage/discord-drift';
 import { scanDiscordGuildRoster } from '@lasvegasfortransit/platform-integrations/discord-roster';
 import { completeProviderOperations } from '@lasvegasfortransit/platform-storage/provider-completion';
+import { handleDiscordDisconnectRequest } from './discord-disconnect';
 import { handleDiscordJoinRequest } from './discord-join';
 export default {
   async fetch(request, env) {
-    return await handleDiscordJoinRequest(request, env);
+    return request.url === 'https://jobs.internal/discord/disconnect'
+      ? await handleDiscordDisconnectRequest(request, env)
+      : await handleDiscordJoinRequest(request, env);
   },
   async scheduled(controller, env) {
     try {

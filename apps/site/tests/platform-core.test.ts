@@ -30,7 +30,7 @@ function catalogKeys(node: unknown, prefix = ''): string[] {
 }
 
 void test('every catalog key is used and every used key exists', () => {
-  const code = ['src/', 'platform/', 'functions/']
+  const code = ['src/', 'platform/', 'functions/', 'scripts/discord/']
     .flatMap((dir) => sourceFiles(new URL(dir, root)))
     .filter((file) => !file.includes('/platform/messages/'))
     .map((file) => readFileSync(file, 'utf8'))

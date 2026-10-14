@@ -23,6 +23,7 @@ interface BrowserInput {
 export interface DiscordLinkProfile {
   linked: boolean;
   ambiguous: boolean;
+  disconnecting: boolean;
   username: string | null;
 }
 export function discordLinkOrigin(origin: string): boolean {
@@ -37,6 +38,7 @@ export function discordSessionHash(env: AuthEnv, token: string): Promise<string>
   return hashWithSecret(env.LVBT_SIGN_IN_SECRET, `session:${token}`);
 }
 const LIVE_MEMBER = `s.expires_at>? AND p.deleted_at IS NULL AND p.membership_status='member'
+ AND NOT EXISTS(SELECT 1 FROM discord_disconnects d JOIN identities i ON i.id=d.identity_record_id WHERE i.person_id=p.id AND i.platform='discord')
  AND (SELECT count(*) FROM identities i WHERE i.person_id=p.id AND i.platform='discord')<=1`;
 
 export class DiscordLinkService {
@@ -45,18 +47,20 @@ export class DiscordLinkService {
     if (!/^[\w-]{43}$/.test(sessionToken)) return null;
     const row = await this.env.PLATFORM_DB.prepare(
       `SELECT
+      EXISTS(SELECT 1 FROM discord_disconnects d JOIN identities i ON i.id=d.identity_record_id WHERE i.person_id=p.id AND i.platform='discord') AS disconnecting,
       (SELECT count(*) FROM identities i WHERE i.person_id=p.id AND i.platform='discord') AS count,
       EXISTS(SELECT 1 FROM identities i WHERE i.person_id=p.id AND i.platform='discord' AND i.link_method IN ('self_linked','staff_confirmed')) AS linked,
       (SELECT profile.username FROM identities i JOIN discord_identity_profiles profile ON profile.identity_record_id=i.id
        WHERE i.person_id=p.id AND i.platform='discord' AND i.link_method IN ('self_linked','staff_confirmed') LIMIT 1) AS username
-      FROM sessions s JOIN people p ON p.id=s.person_id WHERE s.id_hash=? AND s.expires_at>? AND p.deleted_at IS NULL AND p.membership_status='member'`,
+      FROM sessions s JOIN people p ON p.id=s.person_id WHERE s.id_hash=? AND s.expires_at>? AND p.deleted_at IS NULL`,
     )
       .bind(await discordSessionHash(this.env, sessionToken), new Date().toISOString())
-      .first<{ count: number; linked: number; username: string | null }>();
+      .first<{ count: number; linked: number; username: string | null; disconnecting: number }>();
     return row
       ? {
           linked: row.count === 1 && Boolean(row.linked),
           ambiguous: row.count > 1,
+          disconnecting: Boolean(row.disconnecting),
           username: row.count === 1 ? row.username : null,
         }
       : null;
