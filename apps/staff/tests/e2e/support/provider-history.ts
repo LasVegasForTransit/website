@@ -38,8 +38,16 @@ export async function exerciseProviderHistory(
     const page = await context.newPage();
     await page.goto(`${ORIGIN}/access/?person=${personId}`);
     assert.equal(await page.getByRole('heading', { name: 'New Member', exact: true }).count(), 1);
-    assert.equal(await page.getByRole('heading', { name: 'Discord', exact: true }).count(), 1);
-    assert.equal(await page.getByText('No member access', { exact: true }).isVisible(), true);
+    const current = page.getByRole('region', { name: 'Current access', exact: true });
+    assert.equal(await current.getByRole('heading', { name: 'Discord', exact: true }).count(), 1);
+    assert.equal(await current.getByText('No member access', { exact: true }).isVisible(), true);
+    assert.equal(
+      await current
+        .getByText('Member channels on Discord are for current LVBT members.', { exact: true })
+        .isVisible(),
+      true,
+    );
+    assert.equal(await current.getByText('Discord access granted', { exact: true }).count(), 0);
     assert.equal(await page.locator('.staff-account-history').getAttribute('open'), null);
     const shots = join(fixture.root, 'test-results/staff');
     await mkdir(shots, { recursive: true });
@@ -65,7 +73,7 @@ export async function exerciseProviderHistory(
       path: join(shots, 'access-current-dark.png'),
     });
     await page.emulateMedia({ colorScheme: 'light' });
-    const disclosure = page.getByText('Recent changes', { exact: true });
+    const disclosure = page.getByText('Access history', { exact: true });
     for (let tab = 0; tab < 15; tab++) {
       if (await disclosure.evaluate((element) => element === document.activeElement)) break;
       await page.keyboard.press('Tab');
@@ -77,7 +85,7 @@ export async function exerciseProviderHistory(
     assert.equal(await page.getByText('Discord access removed', { exact: true }).isVisible(), true);
     assert.equal(await page.getByText('Membership changed', { exact: false }).isVisible(), true);
     const attribution = await page.locator('.staff-account-history-list').innerText();
-    assert.match(attribution, / · LVBT(?: ·|$)/m);
+    assert.match(attribution, /By LVBT/);
     assert.doesNotMatch(attribution, /Automatic Discord update|Automatic Google update/);
     for (const [name, width] of [
       ['desktop', 1440],

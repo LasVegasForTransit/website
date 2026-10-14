@@ -2,6 +2,7 @@
 import StaffLayout from '../../layouts/StaffLayout.astro';
 import Button from '../../../../site/src/components/app/Button.astro';
 import AccountAccessRow from '../../components/AccountAccessRow.astro';
+import MemberAccess from '../../components/MemberAccess.astro';
 import AccessHistory from '../../components/AccessHistory.astro';
 import GoogleGroupOverview from '../../components/GoogleGroupOverview.astro';
 import { can } from '@lasvegasfortransit/platform-core/permissions';
@@ -86,7 +87,6 @@ try {
 const selectedPerson = memberAccess;
 if (personId && !selectedPerson) return messageResponse(t('staff.common.accessDenied'), 404);
 const committees = personId ? [] : await visibleCommittees(staff.db, staff.actor);
-const visibleRows = memberAccess ? [memberAccess, ...page.items] : page.items;
 const next = new URL(Astro.url);
 if (page.nextCursor) next.searchParams.set('cursor', page.nextCursor);
 const reviewNext = new URL(Astro.url);
@@ -96,7 +96,7 @@ if (discordReviews?.nextCursor)
 
 <StaffLayout
   title={selectedPerson?.name ?? t('staff.access.title')}
-  description={selectedPerson ? t('staff.access.title') : t('staff.access.description')}
+  description={selectedPerson ? t('staff.access.accountTitle') : t('staff.access.description')}
 >
   <a slot="breadcrumb" href={personId ? `/people/${personId}/` : '/people/'} class="staff-back"
     >{personId ? t('staff.navigation.backProfile') : t('staff.navigation.backMembers')}</a
@@ -215,10 +215,12 @@ if (discordReviews?.nextCursor)
     )
   }
   {
-    visibleRows.length ? (
+    memberAccess ? (
+      <MemberAccess member={memberAccess} committees={page.items} />
+    ) : page.items.length ? (
       <ul class="staff-account-list" aria-label={t('staff.access.title')}>
-        {visibleRows.map((row) => (
-          <AccountAccessRow row={row} personView={Boolean(personId)} />
+        {page.items.map((row) => (
+          <AccountAccessRow row={row} />
         ))}
       </ul>
     ) : (
@@ -232,5 +234,9 @@ if (discordReviews?.nextCursor)
       </a>
     )
   }
-  <AccessHistory page={history} personId={personId} />
+  <AccessHistory
+    page={history}
+    personId={personId}
+    title={personId ? t('staff.access.history') : t('staff.history.recent')}
+  />
 </StaffLayout>

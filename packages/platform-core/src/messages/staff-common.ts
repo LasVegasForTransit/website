@@ -87,6 +87,7 @@ export const staffCommon = {
   },
   history: {
     automaticActor: 'LVBT',
+    by: 'By {name}',
     deletedRecord: 'Deleted record',
     recent: 'Recent changes',
     added: 'Added to committee',

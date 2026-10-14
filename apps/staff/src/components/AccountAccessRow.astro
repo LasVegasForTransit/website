@@ -33,6 +33,7 @@ const providers =
         { name: t('staff.common.discord'), access: row.discord },
       ];
 const needsRecovery = needsAccessRecovery(row);
+const Heading = personView ? 'h3' : 'h2';
 const retryToken =
   admin && needsRecovery && row.operationId
     ? await issueFormToken(staff.db, staff.actor, `access:retry:${row.operationId}`)
@@ -41,7 +42,7 @@ const retryToken =
 
 <li class="staff-account-row">
   <header class="staff-account-heading">
-    <h2>
+    <Heading>
       {
         personView ? (
           memberChannels ? (
@@ -55,7 +56,7 @@ const retryToken =
           </a>
         )
       }
-    </h2>
+    </Heading>
     {
       !personView && (
         <p class="staff-account-scope">
@@ -89,9 +90,7 @@ const retryToken =
               class:list={[
                 'staff-access-status',
                 {
-                  'staff-access-status-confirmed':
-                    access.state !== 'unknown' &&
-                    access.state === (row.expectedAccess ? 'granted' : 'absent'),
+                  'staff-access-status-confirmed': access.state === 'granted' && row.expectedAccess,
                   'staff-access-status-attention':
                     access.state !== 'unknown' &&
                     access.state !== (row.expectedAccess ? 'granted' : 'absent'),
@@ -115,6 +114,16 @@ const retryToken =
       ))
     }
   </dl>
+  {
+    personView && memberChannels && !row.expectedAccess && (
+      <p class="staff-access-explanation">{t('staff.access.memberChannelsHint')}</p>
+    )
+  }
+  {
+    personView && memberChannels && row.expectedAccess && row.discord.reason === 'not_linked' && (
+      <p class="staff-access-explanation">{t('staff.access.connectDiscordHint')}</p>
+    )
+  }
   {
     needsRecovery && (
       <div class="staff-access-recovery">

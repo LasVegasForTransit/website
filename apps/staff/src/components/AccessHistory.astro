@@ -52,47 +52,57 @@ function actorLabel(item: AccessHistoryRow): string {
     ? (item.actorName ?? t('staff.labels.staff'))
     : t('staff.history.automaticActor');
 }
+function reasonLabel(item: AccessHistoryRow): string {
+  return [
+    item.source && item.source !== 'account_update' && sources[item.source],
+    item.role && item.action !== 'committee.end' && displayLabel(item.role),
+    item.reason && displayLabel(item.reason),
+  ]
+    .filter(Boolean)
+    .join(' · ');
+}
 ---
 
 <details class="staff-account-history" open={Boolean(Astro.url.searchParams.get('history_cursor'))}>
   <summary>{title}</summary>
   {
     page.items.length ? (
-      <ul class="staff-account-history-list">
+      <ol class="staff-account-history-list">
         {page.items.map((item) => (
           <li>
-            <p class="staff-history-action">
-              <strong>{actionLabel(item)}</strong>
-            </p>
-            {((!personId && (item.personName || !item.committeeName)) || item.personDeleted) && (
-              <p class="staff-history-person">
-                {item.personDeleted
-                  ? t('staff.history.deletedRecord')
-                  : (item.personName ?? t('staff.common.member'))}
-              </p>
-            )}
-            {item.committeeName && (
-              <p class="staff-history-person">
-                {item.committeeName}
-                {item.mappingState === 'retained' && ` · ${t('staff.googleGroups.retired')}`}
-              </p>
-            )}
-            <p class="staff-help">
+            <p class="staff-history-date">
               <time datetime={item.occurredAt}>
-                {formatFullDate(new Date(item.occurredAt))}, {formatTime(new Date(item.occurredAt))}
-              </time>{' '}
-              · {actorLabel(item)}
-              {item.requestedByName &&
-                ` · ${t('staff.history.requestedBy', { name: item.requestedByName })}`}
+                <span>{formatFullDate(new Date(item.occurredAt))}</span>
+                <span>{formatTime(new Date(item.occurredAt))}</span>
+              </time>
             </p>
-            <p class="staff-history-reason">
-              {item.source && item.source !== 'account_update' && sources[item.source]}
-              {item.role && item.action !== 'committee.end' && ` · ${displayLabel(item.role)}`}
-              {item.reason && ` · ${displayLabel(item.reason)}`}
-            </p>
+            <div>
+              <p class="staff-history-action">
+                <strong>{actionLabel(item)}</strong>
+              </p>
+              {((!personId && (item.personName || !item.committeeName)) || item.personDeleted) && (
+                <p class="staff-history-person">
+                  {item.personDeleted
+                    ? t('staff.history.deletedRecord')
+                    : (item.personName ?? t('staff.common.member'))}
+                </p>
+              )}
+              {item.committeeName && (
+                <p class="staff-history-person">
+                  {item.committeeName}
+                  {item.mappingState === 'retained' && ` · ${t('staff.googleGroups.retired')}`}
+                </p>
+              )}
+              <p class="staff-help">
+                {t('staff.history.by', { name: actorLabel(item) })}
+                {item.requestedByName &&
+                  ` · ${t('staff.history.requestedBy', { name: item.requestedByName })}`}
+              </p>
+              {reasonLabel(item) && <p class="staff-history-reason">{reasonLabel(item)}</p>}
+            </div>
           </li>
         ))}
-      </ul>
+      </ol>
     ) : (
       <p class="staff-help">{t('staff.history.none')}</p>
     )

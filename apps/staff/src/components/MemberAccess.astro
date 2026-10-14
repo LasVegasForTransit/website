@@ -1,0 +1,29 @@
+---
+import type { AccessRow } from '@lasvegasfortransit/platform-storage/access-view';
+import { t } from '@lasvegasfortransit/platform-core/messages';
+import AccountAccessRow from './AccountAccessRow.astro';
+interface Props {
+  member: AccessRow;
+  committees: AccessRow[];
+}
+const { member, committees } = Astro.props;
+---
+
+<section class="staff-person-access" aria-labelledby="current-access-heading">
+  <h2 id="current-access-heading">{t('staff.access.current')}</h2>
+  <ul class="staff-account-list">
+    <AccountAccessRow row={member} personView />
+  </ul>
+</section>
+{
+  committees.length > 0 && (
+    <section class="staff-person-access" aria-labelledby="committee-access-heading">
+      <h2 id="committee-access-heading">{t('staff.access.committees')}</h2>
+      <ul class="staff-account-list">
+        {committees.map((row) => (
+          <AccountAccessRow row={row} personView />
+        ))}
+      </ul>
+    </section>
+  )
+}
