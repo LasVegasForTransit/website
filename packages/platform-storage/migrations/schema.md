@@ -619,3 +619,18 @@ creation time and the time each status was observed. It contains no addresses or
 Creation and observation times are distinct from consent-change evidence. Missing rows in a partial
 scan imply no withdrawal, and these observations alone neither create people nor grant or withdraw
 membership.
+
+### Durable newsletter requests (0034)
+
+`newsletter_sync_jobs` changes in the same transaction as newsletter consent, withdrawals, connected
+subscription ownership, or a relevant profile change. Each change advances the person's generation.
+An accepted withdrawal therefore retains retry work even when the mailing provider is unavailable.
+Historical imports and missing consent never authorize a new subscription. Permission from a fresh
+consent remains tied to that exact, still-active record and is cleared on successful completion.
+
+`newsletter_account_leases` serializes requests for a publication and subscription across people and
+generations. Email reservations use opaque digests; neither table stores contact details. Account
+leases remain held when a newer request supersedes a running one. Completion requires the same
+canonical consent, profile, identity ownership, generation and live lease. A stale worker cannot
+save success or release its successor's reservation. Erased profiles retain stable subscription IDs
+for provider cleanup without restoring personal details.
