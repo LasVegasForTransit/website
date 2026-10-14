@@ -105,6 +105,9 @@ export async function exerciseProviderHistory(
       1,
     );
     await page.goto(`${ORIGIN}/people/${personId}/`);
+    const facts = page.getByRole('region', { name: 'Member summary', exact: true });
+    assert.equal(await facts.getByText('Left mailing list', { exact: true }).isVisible(), true);
+    assert.equal(await facts.getByText(/^Left LVBT /).isVisible(), true);
     await page.getByText('Access history', { exact: true }).click();
     assert.equal(await page.getByText('Discord access granted', { exact: true }).isVisible(), true);
     assert.equal(await page.getByText('Discord access removed', { exact: true }).isVisible(), true);

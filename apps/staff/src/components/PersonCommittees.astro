@@ -2,7 +2,7 @@
 import Button from '../../../site/src/components/app/Button.astro';
 import { ulid } from '@lasvegasfortransit/platform-core/ids';
 import { can } from '@lasvegasfortransit/platform-core/permissions';
-import { t, formatDate } from '@lasvegasfortransit/platform-core/messages';
+import { t, formatFullDate } from '@lasvegasfortransit/platform-core/messages';
 import { issueFormToken } from '@lasvegasfortransit/platform-storage/form-tokens';
 import type { StaffPerson } from '@lasvegasfortransit/platform-storage/staff-people';
 import { visibleCommittees } from '../lib/people';
@@ -56,6 +56,11 @@ const endReasons = {
               <strong>{item.committee_name}</strong>
             )}{' '}
             · {displayLabel(item.role)}
+          </p>
+          <p class="staff-help">
+            <time datetime={item.started_at}>
+              {t('staff.assignments.since', { date: formatFullDate(new Date(item.started_at)) })}
+            </time>
           </p>
           {item.account_update_state === 'retry' && (
             <p class="staff-help">
@@ -158,7 +163,8 @@ const endReasons = {
             <li>
               <strong>{item.committee_name}</strong> · {displayLabel(item.role)}
               <p class="staff-help">
-                {formatDate(new Date(item.started_at))}–{formatDate(new Date(item.ended_at!))} ·{' '}
+                {formatFullDate(new Date(item.started_at))}–
+                {formatFullDate(new Date(item.ended_at!))} ·{' '}
                 {item.end_reason ? displayLabel(item.end_reason) : t('staff.assignments.ended')}
               </p>
             </li>

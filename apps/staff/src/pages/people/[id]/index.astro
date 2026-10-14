@@ -2,8 +2,8 @@
 import StaffLayout from '../../../layouts/StaffLayout.astro';
 import { getStaffPerson } from '@lasvegasfortransit/platform-storage/staff-people';
 import { InvalidCursor } from '@lasvegasfortransit/platform-storage/staff-history';
-import { t, formatDate } from '@lasvegasfortransit/platform-core/messages';
-import { MEMBERSHIP_LABELS, personName } from '../../../lib/people';
+import { t, formatFullDate } from '@lasvegasfortransit/platform-core/messages';
+import { personName } from '../../../lib/people';
 import { formatPhone } from '@lasvegasfortransit/platform-core/join-form';
 import { regionName } from '@lasvegasfortransit/platform-core/regions';
 import { languageLabel } from '../../../lib/presentation';
@@ -12,6 +12,7 @@ import { listAccess, accessHistory } from '@lasvegasfortransit/platform-storage/
 import AccessHistory from '../../../components/AccessHistory.astro';
 import PersonCommittees from '../../../components/PersonCommittees.astro';
 import PersonRecord from '../../../components/PersonRecord.astro';
+import PersonSummary from '../../../components/PersonSummary.astro';
 import { submitCommittee, type CommitteeFeedback } from '../../../lib/committees';
 import { messageResponse } from '../../../lib/responses';
 import { can, PermissionDenied } from '@lasvegasfortransit/platform-core/permissions';
@@ -102,28 +103,11 @@ if (can(staff.actor, 'access.recover')) {
       </a>
     )
   }
-  <div class="staff-profile-status">
-    <p>
-      <span>{t('staff.profile.membership')}</span>
-      <strong>{MEMBERSHIP_LABELS[person.membership_status]}</strong>
-    </p>
-    <p>
-      <span>{t('staff.common.discord')}</span>
-      <strong
-        >{
-          !discordConnected
-            ? t('staff.profile.notConnected')
-            : `${discordPresence} · ${discordRole}`
-        }</strong
-      >{
-        discordConnected && (
-          <small>
-            <a href={`/access/?person=${person.id}`}>{t('staff.profile.checkAccess')}</a>
-          </small>
-        )
-      }
-    </p>
-  </div>
+  <PersonSummary
+    profile={profile}
+    discordConnected={discordConnected}
+    discordStatus={`${discordPresence} · ${discordRole}`}
+  />
   <div class="staff-profile">
     <section aria-labelledby="contact-heading">
       <h2 id="contact-heading">{t('staff.profile.contact')}</h2>
@@ -198,7 +182,7 @@ if (can(staff.actor, 'access.recover')) {
           {combinations.map((item) => (
             <li>
               <a href={`/review/combined/${item.id}/`}>{item.mergedName}</a> ·{' '}
-              {formatDate(new Date(item.mergedAt))}
+              {formatFullDate(new Date(item.mergedAt))}
               {item.erasedAt
                 ? ` · ${t('staff.profile.detailsErased')}`
                 : item.undoneAt

@@ -12,6 +12,7 @@ import { exerciseCommittees, exerciseLeadCommittees } from './support/committees
 import { exerciseCommitteePages, exerciseLeadCommitteePages } from './support/committee-pages';
 import { exerciseMemberSearch } from './support/member-search';
 import { exerciseRosterUtility } from './support/roster-utility';
+import { exerciseMemberSummary } from './support/member-summary';
 const fixture = await startRuntime();
 const browser = await chromium
   .launch({
@@ -202,6 +203,7 @@ try {
   await exerciseWelcome(browser, fixture);
   await exerciseReviews(page, fixture);
   await exerciseMerges(page, fixture);
+  await exerciseMemberSummary(page, fixture);
   await context.setExtraHTTPHeaders({ 'Cf-Access-Jwt-Assertion': fixture.lead.assertion });
   await context.clearCookies();
   await context.addCookies([
