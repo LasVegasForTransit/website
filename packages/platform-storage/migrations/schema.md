@@ -605,3 +605,17 @@ deleting the last complete inventory or creating a partial count. A domain-wide 
 external membership makes the exact people count unavailable. Maintenance removes unused inventories
 and old failure records after 24 hours, with member rows following their parent inventory. These
 caches neither grant access nor change membership consent.
+
+### Newsletter provider observations (0033)
+
+`beehiiv_poll_checkpoints` keeps one publication's page position, retry deadline and temporary
+worker lease. A page and its position are saved atomically, so an interrupted scan retries the same
+page. An expired worker cannot overwrite its successor. Completed scans become due at the next UTC
+hour. `beehiiv_poll_cursors` detects repeated cursor tokens across invocations and retains only the
+current scan's tokens when a new page is saved.
+
+`beehiiv_subscription_observations` stores subscription IDs, delivery status, the provider's
+creation time and the time each status was observed. It contains no addresses or credentials.
+Creation and observation times are distinct from consent-change evidence. Missing rows in a partial
+scan imply no withdrawal, and these observations alone neither create people nor grant or withdraw
+membership.
