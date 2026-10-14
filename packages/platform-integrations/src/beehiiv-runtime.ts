@@ -1,4 +1,5 @@
 import type { BeehiivSyncOptions } from './beehiiv-sync';
+import { beehiivWebhookSecret } from './beehiiv-webhook';
 
 export interface BeehiivRuntimeEnv {
   LVBT_DEPLOYMENT_ENV?: string;
@@ -7,6 +8,7 @@ export interface BeehiivRuntimeEnv {
   LVBT_BEEHIIV_PRODUCTION_PUBLICATION_ID?: string;
   LVBT_BEEHIIV_API_KEY?: string;
   LVBT_NEWSLETTER_INTENT_KEY?: string;
+  LVBT_BEEHIIV_WEBHOOK_SECRET?: string;
 }
 function publication(value: string | undefined): value is string {
   return Boolean(value && /^pub_[A-Za-z0-9_-]{1,124}$/.test(value));
@@ -20,7 +22,8 @@ export function beehiivRuntime(env: BeehiivRuntimeEnv): BeehiivSyncOptions | nul
   if (
     env.LVBT_BEEHIIV_SYNC_ENABLED !== 'true' ||
     !publication(publicationId) ||
-    !publication(productionId)
+    !publication(productionId) ||
+    !beehiivWebhookSecret(env.LVBT_BEEHIIV_WEBHOOK_SECRET)
   )
     return null;
   if (environment !== 'preview' && environment !== 'production') return null;

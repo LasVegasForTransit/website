@@ -59,7 +59,7 @@ consumer aligned before accepting a rotation as complete.
 | Worker `lvbt-website`                 | Production site and candidate versions                    |
 | GitHub environment `worker-candidate` | Production Worker deployment and D1 migration credentials |
 | GitHub environment `worker-preview`   | Staging upload and protected-preview verification         |
-| Worker `lvbt-jobs`                    | Scheduled Discord role reconciliation                     |
+| Worker `lvbt-jobs`                    | Scheduled Discord and newsletter reconciliation           |
 
 Runtime integration credentials are forbidden in the GitHub release environments. Website
 credentials stay on `lvbt-website`; the Discord role bot token belongs only on `lvbt-jobs`. Version
@@ -204,6 +204,29 @@ These already exist for LVBT, so you copy values rather than create anything.
 - `LVBT_NOTION_API_KEY` is the token of the Notion integration connected to the Membership intake
   database, and `LVBT_NOTION_DATA_SOURCE_ID` is that database's data source ID (see
   [glossary](./glossary.md#data-source)).
+
+#### Scheduled newsletter credentials
+
+The jobs Worker needs its own approved Beehiiv configuration. Website bootstrap does not install
+these credentials on jobs. Preview uses `lvbt-jobs-preview` and a separate Beehiiv publication;
+production uses `lvbt-jobs`. Follow
+[Scheduled newsletter processing](./staff-portal-operations.md#scheduled-newsletter-processing) for
+setup, callback reachability, verification, and recovery before enabling synchronization.
+
+| Jobs setting                             | Storage         | Purpose                                                    |
+| ---------------------------------------- | --------------- | ---------------------------------------------------------- |
+| `LVBT_BEEHIIV_API_KEY`                   | Secret          | Read and update the selected publication's subscriptions.  |
+| `LVBT_BEEHIIV_WEBHOOK_SECRET`            | Secret          | Authenticate callbacks from that publication.              |
+| `LVBT_NEWSLETTER_INTENT_KEY`             | Secret          | Encrypt queued addresses and recover interrupted creation. |
+| `LVBT_BEEHIIV_PUBLICATION_ID`            | Source variable | Select this environment's publication.                     |
+| `LVBT_BEEHIIV_PRODUCTION_PUBLICATION_ID` | Source variable | Prevent preview from using production.                     |
+| `LVBT_BEEHIIV_SYNC_ENABLED`              | Source variable | Explicitly enable scheduled processing and signed intake.  |
+
+The webhook and intent keys belong only on jobs. The website forwards signed callback bytes through
+its environment's private jobs binding. Keep all credential values out of GitHub release
+environments, build logs, and task descriptions. Retain the intent key until pending encrypted work
+is consumed or explicitly resolved; changing it does not re-encrypt stored work. A missing or
+malformed webhook secret prevents both incoming and outgoing scheduled processing.
 
 ### Random signing keys
 

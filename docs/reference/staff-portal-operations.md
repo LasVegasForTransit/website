@@ -95,6 +95,90 @@ local tests does not establish hosted processing. Keep synchronization disabled 
 incoming dispatcher, staff resolution of review cases, and actual preview-provider acceptance have
 all been verified.
 
+## Scheduled newsletter processing
+
+This procedure is for a maintainer preparing newsletter synchronization in the isolated preview.
+Complete [staff preview setup](../guides/set-up-staff-preview.md) first. Use an approved test
+publication and synthetic members. Enabling synchronization sends real API requests to the selected
+publication; an isolated database alone does not protect production subscribers.
+
+1. In the LVBT Beehiiv account, select the intended publication and check its current API and
+   webhook entitlement. Consult
+   [Beehiiv's webhook reference](https://developers.beehiiv.com/webhooks/). A plan change, new
+   credential, or access-policy change needs maintainer authorization. If the account cannot deliver
+   signed subscription changes, leave synchronization disabled.
+2. Apply the canonical migrations using the preview guide, then verify that the selected database
+   contains the newsletter inbox, attempted writes, and erasure tables. All three applications must
+   use this same preview database. Do not run a newly built dispatcher against an older schema.
+3. Set the jobs preview's public publication variables in `apps/jobs/wrangler.jsonc` before
+   building: `LVBT_BEEHIIV_PUBLICATION_ID` identifies the test publication and
+   `LVBT_BEEHIIV_PRODUCTION_PUBLICATION_ID` identifies production. They must differ in preview. Keep
+   `LVBT_BEEHIIV_SYNC_ENABLED=false` during setup. Public variables are replaced by uploads; a
+   setting saved only in the dashboard does not survive the next release.
+4. Using the guide's **Settings → Variables and Secrets** procedure, install the approved API key
+   and dedicated `LVBT_NEWSLETTER_INTENT_KEY` on `lvbt-jobs-preview`. The intent key must be a
+   base64url-encoded random 32-byte value. Keep it separate from sign-in and provider credentials.
+   It protects saved incoming addresses and interrupted outgoing requests. Replacing it while work
+   remains encrypted makes those addresses unreadable; drain or explicitly resolve that work before
+   a planned rotation. Never print the key or copy production member addresses into preview.
+5. Prepare the callback at `https://preview.lasvegasfortransit.org/webhooks/beehiiv`. The website's
+   `LVBT_DISCORD_JOBS` service binding must target `lvbt-jobs-preview`. The callback accepts only
+   JSON POST requests and forwards the original bytes and Svix signature headers privately to jobs;
+   jobs has no public route. Beehiiv must reach this callback without an interactive Google login.
+   If the preview's Access policy intercepts it, obtain approval for a narrowly scoped callback
+   policy before proceeding. The release workflow does not create that exception. Preserve Access
+   protection for the rest of the preview and never send preview events to the production callback.
+6. In Beehiiv's **Settings → Integrations → Webhooks**, configure that callback for
+   `subscription.created`, `subscription.confirmed`, and `subscription.deleted`. Install its signing
+   secret as `LVBT_BEEHIIV_WEBHOOK_SECRET` on jobs preview only. Both incoming and outgoing work
+   remain disabled when this secret is missing or malformed. Presence alone does not prove the
+   callback is reachable or that the secret belongs to the selected publication.
+7. Before enabling the flag and minute schedule through a reviewed launch release, verify the staff
+   resolution workflow for ambiguous changes. The current duplicate-review screen does not resolve
+   newsletter source cases. Until that workflow and live preview acceptance are implemented and
+   verified, keep provider synchronization disabled; the setup release deliberately rejects it.
+8. During approved live acceptance, use one synthetic member to sign up, unsubscribe, and
+   independently confirm a new signup. Check delivery in Beehiiv, the member's resulting status and
+   original choice dates in staff, and actual Discord role readback for the linked test account.
+   Repeat after a failed request and restart. Do not count a successful webhook delivery or local
+   fixture as proof of the resulting membership or server permissions.
+
+Saved incoming choices run before outgoing changes, including while Beehiiv requests are paused by a
+rate limit. One incoming invocation handles at most three ready changes, and a scheduled tick runs
+at most six such batches. Each invocation enforces the 50-query limit. The parent and its loopback
+calls together stay within 32 invocations, with a call reserved for completion. Optional work stops
+after its 50-second dispatch deadline; unfinished work resumes on the next tick.
+
+The roster scan handles up to five pages of 100 accounts per tick. A 5,000-account roster therefore
+needs at least ten successful ticks, and longer during pauses or a slow provider. Check actual queue
+age and scan completion during hosted acceptance before relying on that capacity. A roster status
+observation does not establish when someone gave or withdrew consent.
+
+Inspect ready backlog privately without exposing addresses, encrypted content, or credentials:
+
+```sql
+SELECT count(*) AS ready_events, min(received_at) AS oldest_received
+FROM newsletter_inbound_events
+WHERE state='pending' AND publication_id='pub_APPROVED_PREVIEW'
+  AND julianday(occurred_at)<=julianday('now');
+```
+
+Replace the placeholder with the selected preview publication ID. A growing oldest-ready age means
+processing is not keeping up. Use the aggregate job outcomes and query counts to distinguish a
+storage failure from a provider pause. Storage failures leave events pending for retry. Future
+source dates wait without holding up other ready events. Unreadable or mismatched addresses and
+ambiguous source times require staff review, and hold outgoing changes for the affected account. Do
+not clear an error by editing consent, deleting attempted-write evidence, or bypassing ownership
+checks. A normal callback for the platform's own subscription creation clears without adding
+consent; a possible confirmation or removal echo requires independent evidence. Whole-second
+provider times cannot reliably order a competing signup inside the same second.
+
+Run the isolated compiled source-processing fixture with `pnpm -C apps/jobs test:e2e` after building
+jobs. It covers signed delivery, membership changes, Discord removal, a complete 5,000-account scan,
+rate-limit recovery, restart, and delayed delivery after erasure. It contacts neither live provider.
+Use the [deletion procedure](#verify-newsletter-cleanup-after-account-deletion) separately to verify
+retention, and keep detailed execution records private.
+
 ## Verify newsletter cleanup after account deletion
 
 This procedure is for a maintainer testing deletion in the isolated preview. It checks that queued

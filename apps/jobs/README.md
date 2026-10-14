@@ -1,9 +1,9 @@
 # Scheduled membership work
 
-This Worker performs bounded profile and audit retention and processes pending newsletter requests
-and Discord membership and committee role changes once a minute. It has no public HTTP API. The
-production and preview configurations keep synchronization disabled until maintainer setup and live
-verification are complete.
+This Worker performs bounded profile and audit retention and processes incoming newsletter choices,
+pending newsletter requests, and Discord membership and committee role changes once a minute. It has
+no public HTTP API. The production and preview configurations keep synchronization disabled until
+maintainer setup and live verification are complete.
 
 Shared reconciliation work is marked done only after every verified linked provider has a fresh
 success receipt. A missing provider link needs no receipt; an enabled identity with no current
@@ -35,30 +35,55 @@ checks signup readback, repeated dispatch, withdrawal, interrupted creation foll
 erasure, recovery of the resulting subscription and removal of its temporary encrypted address. It
 sends no member records to Beehiiv and does not prove hosted provider operation.
 
+The source-processing fixture sends signed newsletter changes through the compiled receiver and
+scheduler. It verifies canonical membership and Discord role removal, unreadable-address review,
+replay safety and rejection after erasure. Its 5,000-account roster advances in ten successful
+scheduled ticks, with a provider pause and Worker restart between pages. Incoming choices still
+apply during the pause. The fixture uses isolated Beehiiv and Discord responses, not live accounts.
+
 ## Scheduled newsletter requests
 
 Set `LVBT_BEEHIIV_SYNC_ENABLED=true` only after approved provider setup. Jobs requires
 `LVBT_BEEHIIV_PUBLICATION_ID`, `LVBT_BEEHIIV_PRODUCTION_PUBLICATION_ID`, the encrypted
 `LVBT_BEEHIIV_API_KEY` secret, and a dedicated `LVBT_NEWSLETTER_INTENT_KEY` secret. The intent key
-is a base64url-encoded 32-byte random value used only by jobs to recover interrupted creation; never
-reuse a sign-in or provider credential. Preview must use a different publication from production.
-Production must match its declared production publication. Missing or inconsistent configuration
-disables newsletter work. Both source environments default to disabled.
+is a base64url-encoded 32-byte random value used only by jobs to protect incoming addresses and
+recover interrupted creation; never reuse a sign-in or provider credential. Preview must use a
+different publication from production. Production must match its declared production publication.
+Missing or inconsistent configuration disables newsletter work. Both source environments default to
+disabled.
+
+Receiving provider changes also requires the selected publication's `LVBT_BEEHIIV_WEBHOOK_SECRET` on
+jobs. The website's `POST /webhooks/beehiiv` route forwards exact bytes and signature headers over
+its private jobs binding. Signing and address-encryption keys stay on jobs. Configure a reachable,
+approved callback route before enabling synchronization; do not remove protection from the preview
+site to make a callback work. See
+[newsletter operation checks](../../docs/reference/staff-portal-operations.md#scheduled-newsletter-processing).
 
 Each account pass resumes one target from the current durable request. Account ownership, consent,
 generation and lease checks prevent older work from granting access after withdrawal. Roster polling
 reads one page of at most 100 subscriptions, saves its cursor and resumes after restarts. Polling
 stores provider observations without inventing consent timestamps. A publication-wide rate-limit
-pause applies to both polling and account changes, including after a new dispatcher starts.
+pause applies to both polling and account changes, including after a new dispatcher starts. Incoming
+saved choices do not need a provider request and continue during that pause.
+
+Each incoming pass handles at most three ready events from the selected publication. Future source
+clocks wait without blocking other ready changes. Decryption or address mismatches require review;
+database failures leave the original work pending for retry. A whole-second unsubscribe that cannot
+be ordered against a signup inside that second also requires review and keeps outgoing work held.
+Original choice times are preserved. No failure manufactures consent or silently subscribes someone
+again.
 
 The scheduled coordinator uses separate in-process Worker entrypoints for retention, provider scans,
-account work and completion. Each entrypoint enforces the Free plan's 50-statement database budget;
-every statement in a batch counts. The coordinator attempts up to 24 account steps, sharing the
-allowance between enabled providers, within the 32-invocation request limit. A failed provider step
-does not suppress the other provider, and failures still make the scheduled invocation fail.
-Compiled fixtures and the local meter do not establish hosted CPU or quota acceptance.
+incoming processing, account work and completion. Each entrypoint enforces the Free plan's
+50-statement database budget; every statement in a batch counts. The coordinator processes up to six
+incoming batches before outgoing changes and advances up to five newsletter roster pages per tick.
+It shares the remaining account allowance between enabled providers and counts every call, including
+the scheduled parent, within the 32-invocation limit. Completion always has a reserved call. A
+failed provider step does not suppress the other provider, and failures still make the scheduled
+invocation fail. Compiled fixtures and the local meter do not establish hosted CPU or quota
+acceptance.
 
-The coordinator stops starting account steps after fifty seconds. An in-flight step can finish, and
+The coordinator stops starting optional work after fifty seconds. An in-flight step can finish, and
 remaining work stays queued for the next invocation. Discord account steps change at most one
 managed role, read it back, and record its confirmed change. Partial steps retain their account work
 without claiming completion. They refresh member access and the changed committee; the complete pass
@@ -101,7 +126,7 @@ generations. Lease and transaction guards prevent expired workers from advancing
 
 Storage tests cover 5,000 linked accounts across 50 bounded batches, rollback, concurrent workers,
 server isolation and membership changes during selection. This proves local queue coverage. The
-dispatcher shares up to 24 account steps per minute with newsletter work and honors persisted rate
+dispatcher shares the remaining account allowance with newsletter work and honors persisted rate
 limits. Completing a scan does not prove that all accounts have been checked against Discord within
 that hour; live throughput remains a release gate. Unlinked server users are outside this scan.
 
@@ -160,8 +185,9 @@ Audit cleanup and profile cleanup run in separate entrypoints so unrelated maint
 exhaust the profile-erasure database budget. Each category retains its own atomic selection, cleanup
 and scope removal. Profile erasure and physical removal are never split across transactions.
 
-Complete merge/provider orchestration, Google/mailing-list orchestration and the common access audit
-writer for Google, GitHub and onboarding remain unfinished. Hosted export acceptance, full
-retirement of detached keys and external IDs after every provider completes, old unconfirmed intent
-retention and live provider acceptance also remain open. Migrations 0019–0025 have not been applied
-to production.
+Launch acceptance also requires staff resolution of ambiguous newsletter changes, hosted export and
+erasure checks, and live provider readback. Full retirement of detached keys and external IDs needs
+every provider's cleanup to finish; unconfirmed intents must retain the minimum information needed
+for recovery. Google and other providers require their own orchestration and access auditing. Use
+the [operator reference](../../docs/reference/staff-portal-operations.md) for current configuration
+checks and deployment prerequisites.

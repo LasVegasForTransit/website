@@ -25,6 +25,11 @@ function decode(value: string): Uint8Array<ArrayBuffer> | null {
     return null;
   }
 }
+export function beehiivWebhookSecret(value: string | undefined): Uint8Array<ArrayBuffer> | null {
+  if (!value?.startsWith('whsec_') || value.length > 1024) return null;
+  const secret = decode(value.slice(6));
+  return secret?.length ? secret : null;
+}
 function signedHeaders(input: WebhookInput) {
   const id = input.headers.get('svix-id') ?? '';
   const timestamp = input.headers.get('svix-timestamp') ?? '';
@@ -45,9 +50,8 @@ function signedHeaders(input: WebhookInput) {
 }
 async function authenticated(input: WebhookInput): Promise<string | null> {
   const headers = signedHeaders(input);
-  if (!headers || !input.secret.startsWith('whsec_') || input.secret.length > 1024) return null;
-  const secret = decode(input.secret.slice(6));
-  if (!secret?.length) return null;
+  const secret = beehiivWebhookSecret(input.secret);
+  if (!headers || !secret) return null;
   const key = await crypto.subtle.importKey(
     'raw',
     secret,
