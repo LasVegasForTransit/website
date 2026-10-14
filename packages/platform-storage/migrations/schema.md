@@ -591,3 +591,17 @@ prepared under a current account lease and full canonical snapshot, then audited
 validated provider read. Access observations and receipts use the same conditional-write guard so a
 superseded request cannot overwrite newer membership or failure state. Hosted migration and provider
 acceptance remain separate requirements.
+
+### Complete Google group inventories (0032)
+
+`google_group_inventory` and `google_group_inventory_members` hold the latest complete check of a
+registered group. Each replacement is one transaction. An older collector cannot replace a newer
+check, and an identical replay cannot extend its freshness. Stored members contain only operational
+account IDs, membership types and group roles. Names and contact details come from current canonical
+records when an authorized staff page needs them.
+
+Checks expire after five minutes. `google_group_check_failures` records a failed attempt without
+deleting the last complete inventory or creating a partial count. A domain-wide or unresolved
+external membership makes the exact people count unavailable. Maintenance removes unused inventories
+and old failure records after 24 hours, with member rows following their parent inventory. These
+caches neither grant access nor change membership consent.
