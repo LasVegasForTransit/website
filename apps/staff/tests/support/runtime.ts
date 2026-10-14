@@ -52,9 +52,12 @@ function seedRoster(raw: DatabaseSync) {
     throw error;
   }
 }
-async function startRuntimeInternal(
-  options: { discord?: boolean; initialAdminSetup?: boolean } = {},
-) {
+interface RuntimeOptions {
+  discord?: boolean;
+  initialAdminSetup?: boolean;
+  googleOAuth?: { token: () => Promise<string>; key: Record<string, unknown> };
+}
+async function startRuntimeInternal(options: RuntimeOptions = {}) {
   const root = fileURLToPath(new URL('../../', import.meta.url));
   const data = await mkdtemp(join(tmpdir(), 'lvbt-staff-browser-'));
   const certificate = join(data, 'fixture-cert.pem'),
@@ -109,6 +112,12 @@ async function startRuntimeInternal(
         LVBT_SIGN_IN_SECRET: 'local-browser-fixture-only',
         LVBT_ACCESS_TEAM_DOMAIN: 'lvbt.cloudflareaccess.com',
         LVBT_ACCESS_AUD: 'browser-fixture-app',
+        ...(options.googleOAuth
+          ? {
+              LVBT_GOOGLE_OAUTH_CLIENT_ID: 'google-runtime-fixture',
+              LVBT_GOOGLE_OAUTH_CLIENT_SECRET: 'google-runtime-fixture-secret',
+            }
+          : {}),
         ...(options.initialAdminSetup
           ? { LVBT_INITIAL_STAFF_ADMIN_WORKSPACE_EMAIL: 'admin@lasvegasfortransit.org' }
           : {}),
@@ -130,7 +139,22 @@ async function startRuntimeInternal(
         run_worker_first: true,
         routerConfig: { has_user_worker: true },
       },
-      outboundService: (request) => {
+      outboundService: async (request) => {
+        if (options.googleOAuth && request.url === 'https://oauth2.googleapis.com/token') {
+          const form = new URLSearchParams(await request.text());
+          assert.equal(form.get('client_id'), 'google-runtime-fixture');
+          assert.equal(form.get('client_secret'), 'google-runtime-fixture-secret');
+          assert.equal(form.get('grant_type'), 'authorization_code');
+          assert.ok(form.get('code_verifier'));
+          return new RuntimeResponse(
+            JSON.stringify({ id_token: await options.googleOAuth.token() }),
+            { headers: { 'Content-Type': 'application/json' } },
+          );
+        }
+        if (options.googleOAuth && request.url === 'https://www.googleapis.com/oauth2/v3/certs')
+          return new RuntimeResponse(JSON.stringify({ keys: [options.googleOAuth.key] }), {
+            headers: { 'Content-Type': 'application/json' },
+          });
         assert.equal(request.url, 'https://lvbt.cloudflareaccess.com/cdn-cgi/access/certs');
         return new RuntimeResponse(JSON.stringify({ keys: [jwk] }), {
           headers: { 'Content-Type': 'application/json' },
@@ -296,16 +320,12 @@ type RuntimeResult = Awaited<ReturnType<typeof startRuntimeInternal>>;
 type InitialAdminRuntime = Extract<RuntimeResult, { lead?: never }>;
 type FullRuntime = Extract<RuntimeResult, { lead: unknown }>;
 
-export function startRuntime(options: {
-  discord?: boolean;
-  initialAdminSetup: true;
-}): Promise<InitialAdminRuntime>;
-export function startRuntime(options?: {
-  discord?: boolean;
-  initialAdminSetup?: false;
-}): Promise<FullRuntime>;
 export function startRuntime(
-  options: { discord?: boolean; initialAdminSetup?: boolean } = {},
-): Promise<RuntimeResult> {
+  options: RuntimeOptions & { initialAdminSetup: true },
+): Promise<InitialAdminRuntime>;
+export function startRuntime(
+  options?: RuntimeOptions & { initialAdminSetup?: false },
+): Promise<FullRuntime>;
+export function startRuntime(options: RuntimeOptions = {}): Promise<RuntimeResult> {
   return startRuntimeInternal(options);
 }

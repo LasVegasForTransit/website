@@ -88,3 +88,48 @@ void test('cancelled Google sign-in clears its cookie and a replay cannot create
   );
   db.raw.close();
 });
+
+void test('the fixed staff preview uses its own approved callback', async () => {
+  const db = memoryDb();
+  const env = environment({ PLATFORM_DB: db });
+  const response = await startGoogleSignIn(
+    env,
+    new Request('https://staff-preview.lasvegasfortransit.org/sign-in/google/?next=/people/'),
+  );
+  assert.equal(
+    new URL(response.headers.get('Location') ?? '').searchParams.get('redirect_uri'),
+    'https://staff-preview.lasvegasfortransit.org/sign-in/google/callback',
+  );
+  db.raw.close();
+});
+
+for (const stage of ['exchange', 'verification'] as const) {
+  void test(`a failed ${stage} reports its stage without credentials or personal data`, async (t) => {
+    const db = memoryDb();
+    const env = environment({ PLATFORM_DB: db });
+    const origin = 'https://staff.lasvegasfortransit.org';
+    const started = await startGoogleSignIn(env, new Request(`${origin}/sign-in/google/`));
+    const state = new URL(started.headers.get('Location') ?? '').searchParams.get('state');
+    assert.ok(state);
+    const warning = t.mock.method(console, 'warn', () => undefined);
+    const sensitive = 'fixture-code-secret-person@example.invalid';
+    const fetcher: typeof fetch = () => {
+      if (stage === 'exchange') throw new Error(sensitive);
+      return Promise.resolve(Response.json({ id_token: sensitive }));
+    };
+    const returned = await googleCallback(
+      env,
+      new Request(
+        `${origin}/sign-in/google/callback?${new URLSearchParams({ state, code: sensitive }).toString()}`,
+      ),
+      fetcher,
+    );
+    assert.equal(returned.headers.get('Location'), `${origin}/sign-in/?google_error=1`);
+    assert.deepEqual(
+      warning.mock.calls.map((call) => call.arguments),
+      [['google_sign_in_failed', { stage }]],
+    );
+    assert.equal(db.raw.prepare('SELECT count(*) AS n FROM sessions').get()?.n, 0);
+    db.raw.close();
+  });
+}

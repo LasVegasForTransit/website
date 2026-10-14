@@ -3,6 +3,8 @@ import {
   WORKSPACE_DOMAIN,
   type WorkspaceIdentity,
 } from '@lasvegasfortransit/platform-core/workspace-identity';
+import { googleTokenRejection } from './google-token-error';
+export { GoogleTokenExchangeError } from './google-token-error';
 
 const GOOGLE_KEYS = 'https://www.googleapis.com/oauth2/v3/certs';
 const resolvers = new WeakMap<typeof fetch, ReturnType<typeof createRemoteJWKSet>>();
@@ -81,7 +83,7 @@ export async function exchangeGoogleCode(
   }
   const response = await fetcher('https://oauth2.googleapis.com/token', {
     method: 'POST',
-    redirect: 'error',
+    redirect: 'manual',
     signal: AbortSignal.timeout(5000),
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
     body: new URLSearchParams({
@@ -93,7 +95,7 @@ export async function exchangeGoogleCode(
       client_secret: input.clientSecret,
     }),
   });
-  if (!response.ok) throw new Error('Google sign-in exchange failed');
+  if (!response.ok) throw await googleTokenRejection(response);
   const tokens: unknown = await response.json();
   if (
     !tokens ||
