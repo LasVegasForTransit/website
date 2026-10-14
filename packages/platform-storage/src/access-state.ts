@@ -51,6 +51,17 @@ function accessResource(
   if (provider === 'google_workspace') return row.workspaceGroupEmail;
   return row.targetId === 'person' ? config?.memberRoleId : row.discordRoleId;
 }
+function configuredResource(
+  config: ProviderConfiguration | undefined,
+  resource: string,
+  google: boolean,
+): config is ProviderConfiguration {
+  return (
+    !!config?.configured &&
+    !!config.contextId &&
+    (!google || !config.resourceIds || config.resourceIds.includes(resource))
+  );
+}
 export function observedAccess(
   row: ObservedRow,
   provider: AccessProvider,
@@ -70,7 +81,7 @@ export function observedAccess(
     return unknown('ambiguous_account');
   if (!identity) return unknown('not_linked');
   if (!resource) return unknown('not_mapped');
-  if (!config?.configured || !config.contextId) return unknown('not_configured');
+  if (!configuredResource(config, resource, google)) return unknown('not_configured');
   if (!saved) return unknown('not_checked');
   const observation = JSON.parse(saved) as AccessObservation;
   if (

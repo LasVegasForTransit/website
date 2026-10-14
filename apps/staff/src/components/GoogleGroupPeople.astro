@@ -1,0 +1,55 @@
+---
+import type { getGoogleGroupReview } from '@lasvegasfortransit/platform-storage/google-group-overview';
+import { t } from '@lasvegasfortransit/platform-core/messages';
+import { googleGroupProblemCount } from '../lib/google-group-presentation';
+interface Props {
+  page: NonNullable<Awaited<ReturnType<typeof getGoogleGroupReview>>>;
+}
+const { page } = Astro.props;
+const labels = {
+  missing: t('staff.googleGroups.missing'),
+  unexpected: page.summary.isConsole
+    ? t('staff.googleGroups.consoleUnexpected')
+    : t('staff.googleGroups.unexpected'),
+  unconfirmed: t('staff.googleGroups.unconfirmed'),
+};
+const emptyLabel =
+  googleGroupProblemCount(page.summary) === 0
+    ? t('staff.googleGroups.noDifferences')
+    : t('staff.googleGroups.endPeople');
+---
+
+<section class="staff-google-people" aria-labelledby="google-people-heading">
+  <h2 id="google-people-heading">{t('staff.googleGroups.peopleHeading')}</h2>
+  {
+    page.summary.unmatchedCount !== null && page.summary.unmatchedCount > 0 && (
+      <aside class="staff-google-unmatched">
+        <p>
+          <strong>
+            {t('staff.googleGroups.unmatched', { count: page.summary.unmatchedCount })}
+          </strong>
+        </p>
+        <p class="staff-help">{t('staff.googleGroups.unmatchedHint')}</p>
+      </aside>
+    )
+  }
+  <ul class="staff-google-people-list">
+    {
+      page.items.map((person) => (
+        <li>
+          <div>
+            <h3>
+              <a href={`/people/${person.personId}/`}>{person.name}</a>
+            </h3>
+            {person.email && <p class="staff-help">{person.email}</p>}
+          </div>
+          <p class="staff-google-person-state">{labels[person.state]}</p>
+          <a class="staff-secondary-button" href={`/people/${person.personId}/`}>
+            {t('staff.googleGroups.reviewMember')}
+          </a>
+        </li>
+      ))
+    }
+  </ul>
+  {!page.items.length && <p class="staff-help">{emptyLabel}</p>}
+</section>

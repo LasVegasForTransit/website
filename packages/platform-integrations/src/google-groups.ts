@@ -1,5 +1,6 @@
 import { GoogleGroupsHttp } from './google-groups-http';
 import { readGoogleGroupPage } from './google-group-members';
+import { validGoogleGroupConfiguration } from './google-group-configuration';
 import {
   GoogleGroupsFailure,
   record,
@@ -37,24 +38,20 @@ export class GoogleGroups {
       ...configuration,
       managedGroups: Object.freeze([...configuration.managedGroups]),
       productionGroups: Object.freeze([...configuration.productionGroups]),
+      ...(configuration.readOnlyGroups
+        ? { readOnlyGroups: Object.freeze([...configuration.readOnlyGroups]) }
+        : {}),
     });
     this.http = new GoogleGroupsHttp(tokens, options);
   }
-  private validateGroup(groupEmail: string): void {
+  private validateGroup(groupEmail: string, readable = false): void {
     const config = this.configuration;
     if (
-      !stableId(config.customerId) ||
-      config.customerId === 'my_customer' ||
-      ![config.managedGroups, config.productionGroups].every(
-        (groups) => groups.length > 0 && groups.length <= 10000 && groups.every(workspaceEmail),
+      !validGoogleGroupConfiguration(config) ||
+      !(
+        config.managedGroups.includes(groupEmail) ||
+        (readable && config.readOnlyGroups?.includes(groupEmail))
       ) ||
-      !['production', 'preview'].includes(config.environment) ||
-      config.managedGroups.some((email) =>
-        config.environment === 'production'
-          ? !config.productionGroups.includes(email)
-          : config.productionGroups.includes(email),
-      ) ||
-      !config.managedGroups.includes(groupEmail) ||
       !workspaceEmail(groupEmail)
     )
       throw new GoogleGroupsFailure('not_configured');
@@ -71,7 +68,7 @@ export class GoogleGroups {
   }
   async listMembers(input: GoogleGroupListInput) {
     const request = { ...input };
-    this.validateGroup(request.groupEmail);
+    this.validateGroup(request.groupEmail, true);
     return await readGoogleGroupPage(this.http, this.configuration.customerId, request);
   }
   private async current(input: GoogleGroupReconciliation): Promise<void> {

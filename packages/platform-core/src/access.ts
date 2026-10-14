@@ -7,6 +7,8 @@ export interface ProviderConfiguration {
   /** Non-secret account/domain or server ID; confirmations cannot cross contexts. */
   contextId: string;
   memberRoleId?: string | null;
+  /** Explicit resource registry when the runtime supplies one. */
+  resourceIds?: readonly string[];
 }
 export type AccessConfiguration = Partial<Record<AccessProvider, ProviderConfiguration>>;
 export interface ProviderAccess {
