@@ -54,7 +54,8 @@
     "./discord-change-audit": "./src/discord-change-audit.ts",
     "./retention": "./src/retention.ts",
     "./paper-intake": "./src/paper-intake.ts",
-    "./full-export": "./src/full-export.ts"
+    "./full-export": "./src/full-export.ts",
+    "./google-group-overview": "./src/google-group-overview.ts"
   },
   "scripts": {
     "lint": "eslint . --max-warnings 0",

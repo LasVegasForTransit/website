@@ -1,0 +1,106 @@
+---
+import type { listGoogleGroupOverview } from '@lasvegasfortransit/platform-storage/google-group-overview';
+import { t } from '@lasvegasfortransit/platform-core/messages';
+import { googleGroupName, googleGroupStatus } from '../lib/google-group-presentation';
+interface Props {
+  page: Awaited<ReturnType<typeof listGoogleGroupOverview>>;
+}
+const { page } = Astro.props;
+const problemsOnly = Astro.url.searchParams.get('groups') !== 'all';
+const emptyLabel =
+  page.totalProblems === 0 && problemsOnly
+    ? t('staff.googleGroups.noneToReview')
+    : t('staff.googleGroups.endPage');
+const next = new URL(Astro.url);
+if (page.nextCursor) next.searchParams.set('group_cursor', page.nextCursor);
+const all = new URL(Astro.url);
+all.searchParams.set('groups', 'all');
+all.searchParams.delete('group_cursor');
+const attention = new URL(Astro.url);
+attention.searchParams.delete('groups');
+attention.searchParams.delete('group_cursor');
+---
+
+<section class="staff-google-overview" aria-labelledby="google-groups-heading">
+  <h2 id="google-groups-heading">{t('staff.googleGroups.title')}</h2>
+  {
+    page.console && (
+      <aside class="staff-google-sign-in" aria-labelledby="staff-sign-in-heading">
+        <div>
+          <h3 id="staff-sign-in-heading">
+            <a href={`/access/groups/?group=${encodeURIComponent(page.console.groupEmail)}`}>
+              {t('staff.googleGroups.staffSignIn')}
+            </a>
+          </h3>
+          <p>
+            {page.console.userCount === null
+              ? googleGroupStatus(page.console)
+              : t('staff.googleGroups.signInCount', { count: page.console.userCount })}
+          </p>
+        </div>
+        {page.console.needsSeatReview && (
+          <p class="staff-google-warning">{t('staff.googleGroups.seatReview')}</p>
+        )}
+      </aside>
+    )
+  }
+  {
+    page.totalGroups ? (
+      <>
+        <nav class="staff-access-views" aria-label={t('staff.googleGroups.views')}>
+          <a
+            href={attention.pathname + attention.search}
+            aria-current={problemsOnly ? 'page' : undefined}
+          >
+            {t('staff.googleGroups.needsAttention')}
+          </a>
+          <a href={all.pathname + all.search} aria-current={!problemsOnly ? 'page' : undefined}>
+            {t('staff.googleGroups.all')}
+          </a>
+        </nav>
+        <ul class="staff-google-group-list">
+          {page.items.map((group) => (
+            <li>
+              <div>
+                <h3>
+                  <a href={`/access/groups/?group=${encodeURIComponent(group.groupEmail)}`}>
+                    {googleGroupName(group)}
+                  </a>
+                </h3>
+                {group.committees.every((c) => !c.current) && (
+                  <p class="staff-help">{t('staff.googleGroups.retired')}</p>
+                )}
+                <p
+                  class:list={[
+                    'staff-google-group-state',
+                    { 'staff-google-warning': group.state !== 'current' },
+                  ]}
+                >
+                  {googleGroupStatus(group)}
+                </p>
+              </div>
+              <dl class="staff-google-counts">
+                <div>
+                  <dt>{t('staff.googleGroups.googlePeople')}</dt>
+                  <dd>{group.userCount ?? t('staff.googleGroups.unknownCount')}</dd>
+                </div>
+                <div>
+                  <dt>{t('staff.googleGroups.expectedPeople')}</dt>
+                  <dd>{group.expectedCount}</dd>
+                </div>
+              </dl>
+            </li>
+          ))}
+        </ul>
+        {!page.items.length && <p class="staff-help">{emptyLabel}</p>}
+        {page.nextCursor && (
+          <a class="staff-next" href={next.pathname + next.search}>
+            {t('staff.googleGroups.next')}
+          </a>
+        )}
+      </>
+    ) : (
+      <p class="staff-help">{t('staff.googleGroups.noGroups')}</p>
+    )
+  }
+</section>

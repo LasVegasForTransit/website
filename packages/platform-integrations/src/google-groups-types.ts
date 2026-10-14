@@ -26,6 +26,8 @@ export interface GoogleGroupsConfiguration {
   managedGroups: readonly string[];
   /** Complete production registry, including retired groups; preview must be disjoint. */
   productionGroups: readonly string[];
+  /** Explicit inventory-only targets, such as the shared staff sign-in group. */
+  readOnlyGroups?: readonly string[];
 }
 export interface GoogleGroupsOptions {
   fetch?: typeof fetch;

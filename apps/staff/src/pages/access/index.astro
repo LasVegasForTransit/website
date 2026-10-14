@@ -3,6 +3,9 @@ import StaffLayout from '../../layouts/StaffLayout.astro';
 import Button from '../../../../site/src/components/app/Button.astro';
 import AccountAccessRow from '../../components/AccountAccessRow.astro';
 import AccessHistory from '../../components/AccessHistory.astro';
+import GoogleGroupOverview from '../../components/GoogleGroupOverview.astro';
+import { can } from '@lasvegasfortransit/platform-core/permissions';
+import { listGoogleGroupOverview } from '@lasvegasfortransit/platform-storage/google-group-overview';
 import { listAccess, accessHistory } from '@lasvegasfortransit/platform-storage/access-view';
 import {
   listDiscordRoleReviews,
@@ -28,8 +31,21 @@ const committeeId = Astro.url.searchParams.get('committee') ?? undefined;
 const text = Astro.url.searchParams.get('q') ?? '';
 const needsAttention =
   !personId && !committeeId && !text && Astro.url.searchParams.get('view') !== 'all';
-let page, history, discordReviews, memberAccess;
+let page, history, discordReviews, memberAccess, googleOverview;
 try {
+  if (!personId && !committeeId && !text && can(staff.actor, 'staff_admin.manage')) {
+    const configuration = staff.googleGroups ?? {
+      provider: { configured: false, contextId: '' },
+      consoleGroupEmail: null,
+    };
+    googleOverview = await listGoogleGroupOverview(staff.db, staff.actor, {
+      configuration: configuration.provider,
+      consoleGroupEmail: configuration.consoleGroupEmail,
+      now: new Date(),
+      problemsOnly: Astro.url.searchParams.get('groups') !== 'all',
+      cursor: Astro.url.searchParams.get('group_cursor') ?? undefined,
+    });
+  }
   page = await listAccess(staff.db, staff.actor, {
     personId,
     target: personId ? 'committee' : undefined,
@@ -99,6 +115,7 @@ if (discordReviews?.nextCursor)
       </p>
     )
   }
+  {googleOverview && <GoogleGroupOverview page={googleOverview} />}
   {
     discordReviews && (
       <section class="staff-discord-review" aria-labelledby="discord-review-heading">

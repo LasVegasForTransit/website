@@ -1412,3 +1412,124 @@ html {
     break-inside: avoid;
   }
 }
+
+@layer components {
+  .staff-google-overview,
+  .staff-google-group-summary,
+  .staff-google-people {
+    max-width: 64rem;
+    margin-block: 1.5rem;
+  }
+  .staff-google-overview h2,
+  .staff-google-people h2 {
+    font-size: 1.25rem;
+    font-weight: 700;
+  }
+  .staff-google-sign-in {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.75rem 2rem;
+    margin-top: 1rem;
+    padding: 1rem;
+    background: var(--color-primary-container);
+    color: var(--color-on-primary-container);
+    border-left: 4px solid var(--color-primary);
+  }
+  .staff-google-sign-in h3,
+  .staff-google-group-list h3,
+  .staff-google-people-list h3 {
+    font-weight: 700;
+    overflow-wrap: anywhere;
+  }
+  .staff-google-sign-in a,
+  .staff-google-group-list a,
+  .staff-google-people-list h3 a,
+  .staff-google-admin-link {
+    color: var(--color-link);
+    text-decoration: underline;
+    text-underline-offset: 0.2em;
+  }
+  .staff-google-group-list a:hover,
+  .staff-google-admin-link:hover,
+  .staff-google-people-list h3 a:hover,
+  .staff-google-sign-in a:hover {
+    text-decoration-thickness: 2px;
+  }
+  .staff-google-warning {
+    max-width: 50ch;
+    font-size: 0.875rem;
+    font-weight: 600;
+  }
+  .staff-google-group-list,
+  .staff-google-people-list {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  .staff-google-group-list li,
+  .staff-google-people-list li {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    align-items: center;
+    gap: 0.75rem 1.5rem;
+    padding-block: 1rem;
+    border-bottom: 1px solid var(--color-outline-variant);
+  }
+  .staff-google-group-state {
+    margin-top: 0.375rem;
+    font-size: 0.875rem;
+    color: var(--color-on-surface-variant);
+  }
+  .staff-google-counts {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1rem;
+  }
+  .staff-google-counts dt {
+    font-size: 0.8125rem;
+    color: var(--color-on-surface-variant);
+  }
+  .staff-google-counts dd {
+    margin-top: 0.25rem;
+    font-size: 1.125rem;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+  }
+  .staff-google-group-summary {
+    padding-block: 1rem;
+    border-block: 1px solid var(--color-outline-variant);
+  }
+  .staff-google-admin-link {
+    display: inline-flex;
+    align-items: center;
+    min-height: 2.75rem;
+    font-size: 0.875rem;
+  }
+  .staff-google-unmatched {
+    margin-block: 1rem;
+    padding: 0.75rem 1rem;
+    border-left: 3px solid var(--color-primary);
+    background: var(--color-primary-container);
+    color: var(--color-on-primary-container);
+  }
+  .staff-google-unmatched .staff-help {
+    color: inherit;
+  }
+  .staff-google-people-list li {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto;
+  }
+  .staff-google-person-state {
+    font-size: 0.875rem;
+    overflow-wrap: anywhere;
+  }
+  @media (max-width: 40rem) {
+    .staff-google-group-list li,
+    .staff-google-people-list li {
+      grid-template-columns: minmax(0, 1fr);
+    }
+    .staff-google-people-list .staff-secondary-button {
+      justify-self: start;
+    }
+  }
+}

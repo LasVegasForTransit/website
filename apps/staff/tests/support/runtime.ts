@@ -54,6 +54,7 @@ function seedRoster(raw: DatabaseSync) {
 }
 interface RuntimeOptions {
   discord?: boolean;
+  googleGroups?: boolean;
   initialAdminSetup?: boolean;
   googleOAuth?: { token: () => Promise<string>; key: Record<string, unknown> };
 }
@@ -120,6 +121,17 @@ async function startRuntimeInternal(options: RuntimeOptions = {}) {
           : {}),
         ...(options.initialAdminSetup
           ? { LVBT_INITIAL_STAFF_ADMIN_WORKSPACE_EMAIL: 'admin@lasvegasfortransit.org' }
+          : {}),
+        ...(options.googleGroups
+          ? {
+              LVBT_DEPLOYMENT_ENV: 'preview',
+              LVBT_GOOGLE_ACCESS_OBSERVATIONS_ENABLED: 'true',
+              LVBT_GOOGLE_CUSTOMER_ID: 'Cfixture',
+              LVBT_GOOGLE_PRODUCTION_CUSTOMER_ID: 'Cfixture',
+              LVBT_GOOGLE_MANAGED_GROUPS: '["preview-events@lasvegasfortransit.org"]',
+              LVBT_GOOGLE_PRODUCTION_GROUPS: '["events@lasvegasfortransit.org"]',
+              LVBT_GOOGLE_CONSOLE_GROUP_EMAIL: 'console-users@lasvegasfortransit.org',
+            }
           : {}),
         ...(options.discord
           ? {

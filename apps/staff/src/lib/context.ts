@@ -4,6 +4,8 @@ import {
 } from '@lasvegasfortransit/platform-integrations/discord-runtime';
 import {
   googleProviderConfiguration,
+  googleGroupInventoryConfiguration,
+  type GoogleGroupInventoryRuntime,
   type GoogleAccessRuntimeEnv,
 } from '@lasvegasfortransit/platform-integrations/google-runtime';
 import type { AccessConfiguration } from '@lasvegasfortransit/platform-core/access';
@@ -30,6 +32,7 @@ export interface StaffContext {
   db: Db;
   requestId: string;
   accessConfiguration?: AccessConfiguration;
+  googleGroups?: GoogleGroupInventoryRuntime;
 }
 export interface StaffLocals {
   staff?: StaffContext;
@@ -58,6 +61,7 @@ export async function resolveStaffContext(
     actor,
     db: env.PLATFORM_DB,
     requestId: crypto.randomUUID(),
+    googleGroups: googleGroupInventoryConfiguration(env),
     accessConfiguration: {
       google_workspace: googleProviderConfiguration(env),
       discord: discordProviderConfiguration(env),

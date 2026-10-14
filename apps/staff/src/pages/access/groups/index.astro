@@ -1,0 +1,109 @@
+---
+import StaffLayout from '../../../layouts/StaffLayout.astro';
+import GoogleGroupPeople from '../../../components/GoogleGroupPeople.astro';
+import { getGoogleGroupReview } from '@lasvegasfortransit/platform-storage/google-group-overview';
+import { InvalidCursor } from '@lasvegasfortransit/platform-storage/staff-history';
+import { PermissionDenied } from '@lasvegasfortransit/platform-core/permissions';
+import { t, formatFullDate, formatTime } from '@lasvegasfortransit/platform-core/messages';
+import { googleGroupName, googleGroupStatus } from '../../../lib/google-group-presentation';
+import { messageResponse } from '../../../lib/responses';
+const staff = Astro.locals.staff;
+if (!staff) return messageResponse(t('staff.common.accessDenied'), 403);
+const configuration = staff.googleGroups ?? {
+  provider: { configured: false, contextId: '' },
+  consoleGroupEmail: null,
+};
+let review;
+try {
+  review = await getGoogleGroupReview(staff.db, staff.actor, {
+    configuration: configuration.provider,
+    consoleGroupEmail: configuration.consoleGroupEmail,
+    now: new Date(),
+    groupEmail: Astro.url.searchParams.get('group') ?? '',
+    cursor: Astro.url.searchParams.get('cursor') ?? undefined,
+  });
+} catch (error) {
+  if (error instanceof PermissionDenied)
+    return messageResponse(t('staff.common.accessDenied'), 403);
+  if (error instanceof InvalidCursor) return messageResponse(t('staff.access.invalidLink'), 400);
+  throw error;
+}
+if (!review) return messageResponse(t('staff.access.invalidLink'), 404);
+const group = review.summary;
+const next = new URL(Astro.url);
+if (review.nextCursor) next.searchParams.set('cursor', review.nextCursor);
+---
+
+<StaffLayout title={googleGroupName(group)} description={t('staff.googleGroups.detail')}>
+  <a slot="breadcrumb" class="staff-back" href="/access/">{t('staff.googleGroups.back')}</a>
+  <section class="staff-google-group-summary" aria-label={t('staff.googleGroups.detail')}>
+    <dl class="staff-google-counts">
+      <div>
+        <dt>{t('staff.googleGroups.googlePeople')}</dt><dd>
+          {group.userCount ?? t('staff.googleGroups.unknownCount')}
+        </dd>
+      </div>
+      <div>
+        <dt>
+          {
+            group.isConsole
+              ? t('staff.googleGroups.expectedStaff')
+              : t('staff.googleGroups.expectedPeople')
+          }
+        </dt><dd>{group.expectedCount}</dd>
+      </div>
+    </dl>
+    {group.state !== 'current' && <p class="staff-google-warning">{googleGroupStatus(group)}</p>}
+    {
+      group.state !== 'current' && group.lastUserCount !== null && (
+        <p class="staff-help">
+          {t('staff.googleGroups.previousCount', { count: group.lastUserCount })}
+        </p>
+      )
+    }
+    {
+      group.checkedAt && (
+        <p class="staff-help">
+          <time datetime={group.checkedAt}>
+            {t('staff.access.checked', {
+              date: formatFullDate(new Date(group.checkedAt)),
+              time: formatTime(new Date(group.checkedAt)),
+            })}
+          </time>
+        </p>
+      )
+    }
+    {
+      group.needsSeatReview && (
+        <p class="staff-google-warning">{t('staff.googleGroups.seatReview')}</p>
+      )
+    }
+    {
+      group.committees.every((c) => !c.current) && !group.isConsole && (
+        <p class="staff-help">{t('staff.googleGroups.retired')}</p>
+      )
+    }
+    {
+      group.groupId && (
+        <a
+          class="staff-google-admin-link"
+          href={`https://admin.google.com/ac/groups/${encodeURIComponent(group.groupId)}`}
+        >
+          {t('staff.googleGroups.openGoogle')}
+        </a>
+      )
+    }
+  </section>
+  {
+    group.state === 'current' && (
+      <>
+        <GoogleGroupPeople page={review} />
+        {review.nextCursor && (
+          <a class="staff-next" href={next.pathname + next.search}>
+            {t('staff.googleGroups.morePeople')}
+          </a>
+        )}
+      </>
+    )
+  }
+</StaffLayout>

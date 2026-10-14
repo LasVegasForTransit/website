@@ -243,8 +243,14 @@ partial count. It preserves owners, managers and nested-group entries and counts
 Domain-wide or unresolved external entries make the exact user count unavailable. Pagination is
 limited to 50 pages of 200 entries within 30 seconds. A changed group ID, conflicting duplicate,
 repeated cursor, malformed response or lost authorization invalidates the read. The reader changes
-no memberships and stores no inventory itself. Hosted collection, stored overview results and the
-staff portal seat counter still need integration; rendering a staff page must never call Google.
+no memberships. Complete inventories can be saved atomically through the collection layer, retaining
+only account IDs, types and roles. Migration 0032 adds this cache and failure metadata. Checks stay
+current for five minutes; maintenance removes unused inventories after 24 hours. The administrator
+view reads stored counts and differences without calling Google. Names and contact details come from
+current authorized LVBT records, including after erasure. Failed, stale, incomplete and unconfigured
+checks cannot confirm a count or offer mismatch actions. Accounts without a unique verified member
+identity remain an aggregate review in Google Admin. Hosted collection still needs a verified Google
+runner.
 
 Supply complete, disjoint preview and production group registries, including retired mappings.
 Missing mappings or credentials must remain unconfigured. Group renames, inherited access and
@@ -266,11 +272,19 @@ delegation for these scopes:
 
 The staff Worker can display those saved observations without receiving Google credentials. Keep
 `LVBT_GOOGLE_ACCESS_OBSERVATIONS_ENABLED` false until the Workspace customer context is verified.
-When it is ready, set `LVBT_GOOGLE_CUSTOMER_ID` to the selected customer's ID and
-`LVBT_GOOGLE_PRODUCTION_CUSTOMER_ID` to the production customer's ID. Production must match that ID;
-preview must use a different customer. These public values only let the staff screens recognize the
-context attached to a saved observation. They do not enable the Google runner or prove access. If
-the setting is disabled, missing or points preview at production, observations stay unconfigured.
+Both environments use LVBT’s pinned Workspace customer: `LVBT_GOOGLE_CUSTOMER_ID` must match
+`LVBT_GOOGLE_PRODUCTION_CUSTOMER_ID`. Isolate preview writes using different committee groups, not
+another tenant for the same domain. Set `LVBT_GOOGLE_MANAGED_GROUPS` to a JSON array containing all
+current and retained groups this environment may reconcile. Set `LVBT_GOOGLE_PRODUCTION_GROUPS` to
+the complete production registry; preview managed groups must be disjoint from it, while production
+managed groups must belong to it. Missing or conflicting registries leave observations unconfigured.
+These values recognize saved observations; they do not enable the Google runner or prove access.
+
+`LVBT_GOOGLE_CONSOLE_GROUP_EMAIL` explicitly registers the existing staff sign-in group for
+read-only inventory. It must not overlap managed write groups. Its current user count appears
+separately from committee groups, with an access-review reminder at 45 people. This counts Google
+group members, not Cloudflare billable seats. The inventory view can be configured for this
+read-only group alone without enabling committee reconciliation.
 
 Verify the existing service account, immutable repository restrictions, delegated administrator and
 Workspace customer read-only before enabling execution. Keep tokens out of saved builds, artifacts,
