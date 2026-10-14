@@ -1,4 +1,5 @@
 ---
+import { t, LOCALE } from '@lasvegasfortransit/platform-core/messages';
 import '../styles/staff.css';
 import { issueFormToken } from '@lasvegasfortransit/platform-storage/form-tokens';
 import { welcomeVisible } from '../lib/welcome';
@@ -14,19 +15,19 @@ const signOutToken = staff ? await issueFormToken(staff.db, staff.actor, 'sign-o
 ---
 
 <!doctype html>
-<html lang="en">
+<html lang={LOCALE}>
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="robots" content="noindex, nofollow" />
-    <title>{title} · LVBT staff</title>
+    <title>{t('staff.navigation.pageTitle', { title })}</title>
   </head>
   <body class={printPage ? 'staff-print-sheet' : undefined}>
-    <a href="#main" class="skip-link">Skip to content</a>
+    <a href="#main" class="skip-link">{t('staff.navigation.skip')}</a>
     <div class="staff-shell">
       <header class="staff-header">
         <div class="container-page staff-header-inner">
-          <a href="/" class="staff-identity" aria-label="LVBT staff home">
+          <a href="/" class="staff-identity" aria-label={t('staff.navigation.home')}>
             <picture class="staff-identity-mark">
               <source
                 srcset="/brand/lvbt-logo-dark.svg"
@@ -35,30 +36,30 @@ const signOutToken = staff ? await issueFormToken(staff.db, staff.actor, 'sign-o
               />
               <img src="/brand/lvbt-logo.svg" width="32" height="32" alt="" />
             </picture>
-            <span>Staff</span>
+            <span>{t('staff.navigation.staff')}</span>
           </a>
           {
             !signIn && (
-              <nav aria-label="Staff navigation" class="staff-nav">
+              <nav aria-label={t('staff.navigation.label')} class="staff-nav">
                 <a
                   href="/people/"
                   aria-current={Astro.url.pathname.startsWith('/people') ? 'page' : undefined}
                 >
-                  Members
+                  {t('staff.navigation.members')}
                 </a>
                 {staff && welcomeVisible(staff) && (
                   <a
                     href="/welcome/"
                     aria-current={Astro.url.pathname.startsWith('/welcome') ? 'page' : undefined}
                   >
-                    Welcome
+                    {t('staff.navigation.welcome')}
                   </a>
                 )}
                 <a
                   href="/committees/"
                   aria-current={Astro.url.pathname.startsWith('/committees') ? 'page' : undefined}
                 >
-                  Committees
+                  {t('staff.navigation.committees')}
                 </a>
               </nav>
             )
@@ -68,7 +69,7 @@ const signOutToken = staff ? await issueFormToken(staff.db, staff.actor, 'sign-o
               <form method="post" action="/sign-out/" class="staff-sign-out">
                 <input type="hidden" name="token" value={signOutToken} />
                 <button type="submit" class="staff-secondary-button press">
-                  Sign out
+                  {t('staff.navigation.signOut')}
                 </button>
               </form>
             )
@@ -87,7 +88,9 @@ const signOutToken = staff ? await issueFormToken(staff.db, staff.actor, 'sign-o
     </div>
     {
       signIn && (
-        <footer class="container-page py-8 text-body-sm">Las Vegans for Better Transit</footer>
+        <footer class="container-page py-8 text-body-sm">
+          {t('staff.navigation.organization')}
+        </footer>
       )
     }
   </body>

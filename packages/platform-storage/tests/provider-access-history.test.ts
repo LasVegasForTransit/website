@@ -55,7 +55,9 @@ void test('confirmed provider history shows automatic attribution and the reques
   const scoped = (await accessHistory(f.db, actor, { personId: f.survivor.id })).items;
   const confirmed = scoped.find((row) => row.id === 'confirmed');
   assert.ok(confirmed, 'leads need their own committee’s confirmed access history');
-  assert.equal(confirmed.actorName, 'Automatic Discord update');
+  assert.equal(confirmed.actorKind, 'discord');
+  assert.equal(confirmed.actorName, null);
+  assert.equal(confirmed.personDeleted, false);
   assert.equal(confirmed.requestedByName, 'Administrator');
   assert.equal(confirmed.source, 'committee.assign');
   assert.equal(confirmed.provider, 'discord');
@@ -118,7 +120,38 @@ void test('administrators retain anonymized deletion cleanup evidence; leads can
   const history = await accessHistory(f.db, f.actor);
   const cleanup = history.items.find((row) => row.id === 'deleted-confirmation');
   assert.ok(cleanup, 'an administrator needs retained cleanup evidence after deletion');
-  assert.equal(cleanup.personName, 'Deleted record');
+  assert.equal(cleanup.personDeleted, true);
+  assert.equal(cleanup.personName, null);
   assert.deepEqual((await accessHistory(f.db, actor, { personId: f.survivor.id })).items, []);
   f.db.raw.close();
+});
+
+void test('real person names stay separate from generated history labels', async (t) => {
+  const f = await mergeFixture();
+  t.after(() => f.db.raw.close());
+  await f.people.updateFields(f.admin.id, {
+    source: 'staff',
+    fields: { given_name: 'Automatic Discord update' },
+  });
+  await f.people.updateFields(f.survivor.id, {
+    source: 'staff',
+    fields: { given_name: 'Deleted record' },
+  });
+  await f.db
+    .prepare(
+      "INSERT INTO staff_audits(id,actor_id,action,target_id,details,occurred_at) VALUES('human-name',?,'access.granted',?,?,?)",
+    )
+    .bind(
+      f.admin.id,
+      f.survivor.id,
+      JSON.stringify({ provider: 'discord', targetId: 'person' }),
+      new Date().toISOString(),
+    )
+    .run();
+  const row = (await accessHistory(f.db, f.actor)).items.find((item) => item.id === 'human-name');
+  assert.ok(row);
+  assert.equal(row.actorKind, 'person');
+  assert.equal(row.actorName, 'Automatic Discord update');
+  assert.equal(row.personDeleted, false);
+  assert.equal(row.personName, 'Deleted record');
 });

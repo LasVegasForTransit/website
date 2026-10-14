@@ -1,4 +1,5 @@
 ---
+import { t } from '@lasvegasfortransit/platform-core/messages';
 import StaffLayout from '../../layouts/StaffLayout.astro';
 import Button from '../../../../site/src/components/app/Button.astro';
 import { can } from '@lasvegasfortransit/platform-core/permissions';
@@ -10,7 +11,7 @@ import { messageResponse } from '../../lib/responses';
 const staff = Astro.locals.staff;
 if (!staff || !can(staff.actor, 'export.full')) {
   if (staff) await auditDenied(staff.db, staff.actor.personId, 'export.full');
-  return messageResponse("You don't have access to this", 403);
+  return messageResponse(t('staff.common.accessDenied'), 403);
 }
 if (Astro.request.method === 'POST') {
   const form = await Astro.request.formData();
@@ -20,29 +21,24 @@ if (Astro.request.method === 'POST') {
       token: field(form, 'token', 43),
     }))
   )
-    return messageResponse('Reload the download page and try again.', 409);
+    return messageResponse(t('staff.export.expired'), 409);
   return await exportPeople(staff.db, staff.actor);
 }
 const token = await issueFormToken(staff.db, staff.actor, 'export:download');
 ---
 
-<StaffLayout
-  title="Download member records"
-  description="Get LVBT’s records in a file you can keep."
->
-  <a slot="breadcrumb" href="/people/" class="staff-back">← Members</a>
+<StaffLayout title={t('staff.export.title')} description={t('staff.export.description')}>
+  <a slot="breadcrumb" href="/people/" class="staff-back">{t('staff.navigation.backMembers')}</a>
   <div class="staff-form">
     <p>
-      The download includes member details, mailing-list permissions, connected accounts and
-      activity. Deleted people are left out.
+      {t('staff.export.includes')}
     </p>
     <p class="staff-help">
-      The ZIP contains spreadsheets, the original records and a guide to reading them. It includes
-      personal contact information.
+      {t('staff.export.format')}
     </p>
     <form method="post" action="/export/">
       <input type="hidden" name="token" value={token} />
-      <Button>Download records</Button>
+      <Button>{t('staff.export.download')}</Button>
     </form>
   </div>
 </StaffLayout>

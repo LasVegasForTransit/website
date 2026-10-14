@@ -1,4 +1,5 @@
 ---
+import { t } from '@lasvegasfortransit/platform-core/messages';
 import type { Person } from '@lasvegasfortransit/platform-storage/person-service';
 import type { RosterDetails } from '@lasvegasfortransit/platform-storage/roster-details';
 import { can } from '@lasvegasfortransit/platform-core/permissions';
@@ -15,16 +16,16 @@ const { person, details, showMembership, showDiscord, canAddToAnotherCommittee }
 const name = personName(person);
 const discordPresence =
   details?.discordInServer === true
-    ? 'In LVBT Discord'
+    ? t('staff.people.discordPresent')
     : details?.discordInServer === false
-      ? 'Not in LVBT Discord'
-      : 'Discord not checked yet';
+      ? t('staff.people.discordAbsent')
+      : t('staff.people.discordNotChecked');
 const rosterStatus = [
   showMembership ? MEMBERSHIP_LABELS[person.membership_status] : null,
   showDiscord
     ? details?.discordConnected
       ? discordPresence
-      : 'Discord account not connected'
+      : t('staff.people.discordNotConnected')
     : null,
 ]
   .filter(Boolean)
@@ -45,7 +46,7 @@ const staff = Astro.locals.staff!;
     <div class="staff-roster-committee-content">
       {
         details?.committees.length ? (
-          <ul class="staff-committee-chips" aria-label={`${name}'s committees`}>
+          <ul class="staff-committee-chips" aria-label={t('staff.people.committeeList', { name })}>
             {details.committees.map((committee) => (
               <li>
                 {can(staff.actor, 'committee.view', {
@@ -59,7 +60,7 @@ const staff = Astro.locals.staff!;
             ))}
           </ul>
         ) : (
-          <p>{person.membership_status === 'member' ? 'No committee yet' : '—'}</p>
+          <p>{person.membership_status === 'member' ? t('staff.people.unassigned') : '—'}</p>
         )
       }
       {
@@ -69,11 +70,13 @@ const staff = Astro.locals.staff!;
             class="staff-roster-add-committee"
             aria-label={
               details?.committees.length
-                ? `Add another committee for ${name}`
-                : `Add ${name} to a committee`
+                ? t('staff.people.addAnotherFor', { name })
+                : t('staff.people.addFor', { name })
             }
           >
-            {details?.committees.length ? 'Add another committee' : 'Add to a committee'}
+            {details?.committees.length
+              ? t('staff.people.addAnother')
+              : t('staff.people.addToCommittee')}
           </a>
         )
       }

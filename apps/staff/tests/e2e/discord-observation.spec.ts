@@ -86,10 +86,10 @@ try {
     generation: 1,
     payload: {},
   });
-  assert.equal((await profile()).includes('Member role confirmed'), false);
+  assert.equal((await profile()).includes('Member access confirmed'), false);
   assert.equal((await reconcileDiscordPending(fixture.db, options)).confirmed, 1);
   const confirmedProfile = await profile();
-  assert.equal(confirmedProfile.includes('Member role confirmed'), true);
+  assert.equal(confirmedProfile.includes('Member access confirmed'), true);
   assert.equal(confirmedProfile.includes('In LVBT Discord'), true);
   assert.equal((await profile(welcomeSearch)).includes('In LVBT Discord'), true);
   assert.equal(
@@ -99,7 +99,7 @@ try {
   );
   const granted = await profile(`/access/?person=${personId}`);
   assert.equal(granted.includes('Discord access granted'), true);
-  assert.equal(granted.includes('Automatic Discord update'), true);
+  assert.equal(granted.includes('Automatic Discord update'), false);
   await people.withdrawConsent(personId, {
     scope: 'newsletter',
     source: 'account',
@@ -108,12 +108,12 @@ try {
   const changed = await profile();
   assert.equal(changed.includes('Former member'), true);
   assert.equal(
-    changed.includes('Member role confirmed'),
+    changed.includes('Member access confirmed'),
     false,
     'an old grant cannot prove access after withdrawal',
   );
   assert.equal((await reconcileDiscordPending(fixture.db, options)).confirmed, 1);
-  assert.equal((await profile()).includes('Member role removed'), true);
+  assert.equal((await profile()).includes('Member access removed'), true);
   const removed = await profile(`/access/?person=${personId}`);
   assert.equal(removed.includes('Discord access removed'), true);
   assert.equal(removed.includes('Membership changed'), true);
@@ -140,9 +140,9 @@ try {
     .run();
   assert.equal((await reconcileDiscordPending(fixture.db, options)).retry, 1);
   const unavailable = await profile();
-  assert.equal(unavailable.includes('Member role not confirmed'), true);
+  assert.equal(unavailable.includes('Member access not confirmed'), true);
   assert.equal(
-    unavailable.includes('Member role removed'),
+    unavailable.includes('Member access removed'),
     false,
     'a timed-out current read must not keep presenting an older removal as current proof',
   );

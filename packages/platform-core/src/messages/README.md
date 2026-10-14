@@ -1,18 +1,18 @@
 # Message catalog
 
-Every word on member-facing and staff screens comes from this catalog, so LVBT can add a language
-later without rebuilding screens. English (`en.ts`) is the only published language. Spanish isn't
-offered until a volunteer can write and review it; machine translation is never published.
+Use this catalog for copy on member and staff screens, so LVBT can add a language later without
+rebuilding screens. English (`en.ts`) is the only published language. Spanish isn't offered until a
+volunteer can write and review it; machine translation is never published.
 
 The catalog runs on the server and at build time only, so it adds no JavaScript to pages.
 
 ## Use a message
 
 ```ts
-import { t } from '../platform/messages';
+import { t } from '@lasvegasfortransit/platform-core/messages';
 
 t('join.heading'); // "Join LVBT"
-t('welcome.headingNamed', { name: 'Ana' }); // "You're in, Ana."
+t('welcome.headingNamed', { name: 'Ana' }); // "Welcome to LVBT, Ana!"
 ```
 
 Dates and times use `formatDate` and `formatTime`, which always read in Pacific Time
@@ -20,11 +20,13 @@ Dates and times use `formatDate` and `formatTime`, which always read in Pacific 
 
 ## Add a message
 
-1. Add the key to `en.ts`, under the screen it belongs to. Write the text to the
-   [copy standard for app screens](../../../../docs/explanation/app-copy.md).
+1. Add the key under the screen it belongs to. Member groups live in `en.ts`; shared staff copy
+   lives in `staff-common.ts` and member-record copy in `staff-people.ts`. Both staff groups appear
+   under `staff` in `en.ts`, so callers use keys such as `staff.people.search`. Write the text to
+   the [copy standard for app screens](../../../../docs/explanation/app-copy.md).
 2. Use it in code with `t('screen.key')`.
-3. Run `pnpm test:unit`. A test fails if a key used in code is missing from the catalog, or if a
-   catalog key is used nowhere, and names the key.
+3. Run `pnpm check`. A test fails if a key used in code is missing from the catalog, or if a catalog
+   key is used nowhere, and names the key.
 
 To fill in a value, write `{name}` in the text and pass `{ name: '…' }`.
 
@@ -54,6 +56,6 @@ fills in on request, such as an error after a wrong code, stay in English in thi
 
 ## Add a language later
 
-A translator copies `en.ts` to a new file with the same keys, such as `es.ts`, and translates each
+A translator prepares a catalog with the same keys, including the staff groups, and translates each
 value. A developer then adds the language to `index.ts` so the lookup can choose it from the
 person's preferred language.

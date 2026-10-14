@@ -1,5 +1,6 @@
 import { Zip, ZipPassThrough, strToU8 } from 'fflate/browser';
 import { paperToday } from '@lasvegasfortransit/platform-core/paper';
+import { ACCESS_DENIED } from '@lasvegasfortransit/platform-core/permissions';
 import type { Actor } from '@lasvegasfortransit/platform-core/staff-types';
 import type { Db } from '@lasvegasfortransit/platform-storage/db';
 import {
@@ -82,7 +83,7 @@ export async function exportPeople(
   const now = options.now ?? new Date();
   const data = await collectFullExport(db, actor, now);
   if (!data)
-    return new Response("You don't have access to this", {
+    return new Response(ACCESS_DENIED, {
       status: 403,
       headers: { 'Cache-Control': 'private, no-store' },
     });
