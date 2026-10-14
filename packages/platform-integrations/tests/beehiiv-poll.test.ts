@@ -21,6 +21,31 @@ async function poller() {
   return module.pollBeehiivRoster;
 }
 
+void test('a completed full roster scan becomes due again after fifteen minutes', async () => {
+  const db = memoryDb();
+  try {
+    const poll = await poller();
+    let calls = 0;
+    const fetcher: typeof fetch = () => {
+      calls++;
+      return Promise.resolve(Response.json({ data: [], has_more: false, next_cursor: null }));
+    };
+    assert.equal((await poll(db, config, { now: () => start, fetcher })).complete, true);
+    assert.equal(
+      (await poll(db, config, { now: () => new Date(start.getTime() + 899_999), fetcher })).kind,
+      'idle',
+    );
+    assert.equal(
+      (await poll(db, config, { now: () => new Date(start.getTime() + 900_000), fetcher }))
+        .complete,
+      true,
+    );
+    assert.equal(calls, 2);
+  } finally {
+    db.raw.close();
+  }
+});
+
 void test('poll requests cannot follow a redirect with publication credentials', async () => {
   const db = memoryDb();
   try {

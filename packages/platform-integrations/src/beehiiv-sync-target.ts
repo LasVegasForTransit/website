@@ -136,7 +136,7 @@ async function revoke(context: BeehiivReconciliation, step: Step): Promise<StepR
   if (!subscription && intent?.writeStartedAt && !intent.subscriptionId)
     return { done: false, result: await context.outcome('retry', 'unknown') };
   if (!subscription || subscription.status === 'inactive') return { done: true, step };
-  if (!(await context.current()) || (await context.conflict(subscription)))
+  if ((await context.conflict(subscription)) || !(await context.authorizeRemoval(subscription)))
     return { done: false, result: context.stale() };
   const removed = await context.client.deactivate(subscription.id);
   if (!removed.ok) return { done: false, result: await context.failed(removed) };
