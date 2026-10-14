@@ -25,7 +25,7 @@ function guard(
   lease: NewsletterLease,
   now: Date,
 ): { sql: string; values: SqlValue[] } {
-  const current = newsletterPlanGuard(plan),
+  const current = newsletterPlanGuard(plan, lease.publicationId),
     held = newsletterLeaseGuard(lease, now);
   return { sql: `${current.sql} AND ${held.sql}`, values: [...current.values, ...held.values] };
 }

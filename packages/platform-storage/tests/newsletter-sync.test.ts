@@ -86,7 +86,7 @@ void test('moving a subscription invalidates its old plan and serializes the new
     db.raw
       .prepare("UPDATE identities SET person_id=? WHERE person_id=? AND platform='beehiiv'")
       .run(second.id, first.id);
-    assert.equal(await sync.newsletterPlanIsCurrent(db, old), false);
+    assert.equal(await sync.newsletterPlanIsCurrent(db, old, 'pub_fixture'), false);
     assert.equal(await sync.claimNewsletterJob(db, second.id, 'pub_fixture', new Date()), null);
     await sync.releaseNewsletterLease(db, lease);
     assert.ok(await sync.claimNewsletterJob(db, second.id, 'pub_fixture', new Date()));
@@ -103,7 +103,7 @@ void test('erasure invalidates grants while retaining stable subscription cleanu
     const old = await sync.loadNewsletterPlan(db, person.id);
     assert.ok(old);
     await people.deletePerson(person.id);
-    assert.equal(await sync.newsletterPlanIsCurrent(db, old), false);
+    assert.equal(await sync.newsletterPlanIsCurrent(db, old, 'pub_fixture'), false);
     const cleanup = await sync.loadNewsletterPlan(db, person.id);
     assert.ok(cleanup);
     assert.equal(cleanup.desired, 'inactive');
@@ -250,7 +250,7 @@ void test('a withdrawal supersedes a delayed grant while retaining its active ac
       source: 'account',
       withdrawnAt: new Date().toISOString(),
     });
-    assert.equal(await sync.newsletterPlanIsCurrent(db, plan), false);
+    assert.equal(await sync.newsletterPlanIsCurrent(db, plan, 'pub_fixture'), false);
     assert.equal(
       await sync.saveNewsletterOutcome(db, plan, lease, { kind: 'confirmed', now: new Date() }),
       false,
