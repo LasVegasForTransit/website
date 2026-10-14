@@ -1,6 +1,7 @@
 import { WORKSPACE_DOMAIN } from '@lasvegasfortransit/platform-core/workspace-identity';
 import {
   exchangeGoogleCode,
+  GoogleTokenExchangeError,
   verifyGoogleIdToken,
 } from '@lasvegasfortransit/platform-integrations/google-identity';
 import {
@@ -73,8 +74,9 @@ export async function startGoogleSignIn(env: GoogleSignInEnv, request: Request):
   if (!googleOriginAllowed(env, url.origin)) return unavailable(403);
   if (!env.LVBT_GOOGLE_OAUTH_CLIENT_ID || !env.LVBT_GOOGLE_OAUTH_CLIENT_SECRET)
     return unavailable(503);
-  const callbackOrigin =
-    url.origin === PUBLIC_ORIGIN || url.origin === STAFF_ORIGIN ? url.origin : PREVIEW_ORIGIN;
+  const callbackOrigin = [PUBLIC_ORIGIN, STAFF_ORIGIN, STAFF_PREVIEW_ORIGIN].includes(url.origin)
+    ? url.origin
+    : PREVIEW_ORIGIN;
   const started = await beginWorkspaceSignIn(env.PLATFORM_DB, {
     returnTo: safeNext(url.searchParams.get('next')),
     callbackUrl: `${callbackOrigin}/sign-in/google/callback`,
@@ -149,6 +151,7 @@ export async function googleCallback(
     cancellation.searchParams.set('cancelled', '1');
     return googleResponse(cancellation.href);
   }
+  let stage: 'exchange' | 'verification' | 'ticket' = 'exchange';
   try {
     const token = await exchangeGoogleCode(
       {
@@ -160,11 +163,13 @@ export async function googleCallback(
       },
       fetcher,
     );
+    stage = 'verification';
     const workspace = await verifyGoogleIdToken(token, {
       clientId: env.LVBT_GOOGLE_OAUTH_CLIENT_ID,
       nonce: saved.nonce,
       fetch: fetcher,
     });
+    stage = 'ticket';
     const ticket = await issueWorkspaceTicket(env.PLATFORM_DB, {
       workspace,
       state,
@@ -174,8 +179,14 @@ export async function googleCallback(
     const destination = new URL('/sign-in/google/callback', saved.origin);
     destination.search = new URLSearchParams({ ticket, state }).toString();
     return googleResponse(destination.href);
-  } catch {
-    // Do not log authorization codes, provider responses, tokens or personal data.
+  } catch (error) {
+    // A closed set of stages/reasons keeps credentials and personal data out of logs.
+    console.warn('google_sign_in_failed', {
+      stage,
+      ...(error instanceof GoogleTokenExchangeError
+        ? { status: error.status, reason: error.reason }
+        : {}),
+    });
     return googleResponse(`${saved.origin}/sign-in/?google_error=1`);
   }
 }
