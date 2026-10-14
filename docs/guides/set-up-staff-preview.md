@@ -131,8 +131,9 @@ usable test membership.
 
 If an existing fixture uses a noncanonical identifier, stop using it for acceptance. Preserve its
 account links, consents, and administrator audit history. Do not rename its key, disable identifier
-validation, edit immutable history, or delete the record to restart setup. Prepare and review a
-preview-only recovery against a verified backup before changing linked test data.
+validation, edit immutable history, or delete the record to restart setup. Follow
+[linked preview membership recovery](./recover-a-preview-test-membership.md) to prepare, rehearse,
+review, and verify a repair against a verified backup before changing linked test data.
 
 ## 3. Protect the staff hostname
 
@@ -288,6 +289,16 @@ setup; it does not itself grant administrator access.
 5. Open **Members**, search for the test record, and open its profile.
 6. Confirm the one-time administrator designation was audited. Remove the temporary setup secret
    after this succeeds.
+
+To remove it in Cloudflare, open **lvbt-staff-preview → Settings → Variables and Secrets**. Find
+`LVBT_INITIAL_STAFF_ADMIN_WORKSPACE_EMAIL`, select its **Delete** action, and choose **Delete &
+Deploy** so the active preview stops receiving it. **Delete & Save** alone does not activate the
+change. The dashboard may call this Worker's deployed environment **Production**; verify the Worker
+name is still `lvbt-staff-preview` and its database is `lvbt-platform-preview` before saving. Do not
+remove the Google sign-in or session-signing credentials. Confirm the setup secret is absent, sign
+out, sign in again with the same Google account, and reopen the test profile. The administrator
+designation must remain usable without returning to setup. Retain the resulting configuration change
+in the private operational record, because it creates a new Worker version.
 
 Keep one confirmation attempt open at a time. A newly requested code invalidates earlier unused
 codes. Codes and linking attempts expire; if confirmation expires, sign in again and request a fresh
