@@ -1,15 +1,19 @@
 # Staff portal setup and release
 
+For the complete first-time procedure, use
+[Set up the protected staff preview](../guides/set-up-staff-preview.md). This reference explains the
+configuration and release contracts behind those steps.
+
 The staff application serves `staff.lasvegasfortransit.org`. Its protected preview serves
 `staff-preview.lasvegasfortransit.org`. The scheduled jobs Worker has no public route. All three
 applications, including the public website, use one canonical membership schema; preview uses a
 separate database and Discord server.
 
-The portal has not been released. The staff workflows save compiled applications and migrations,
-then upload and activate a selected saved build in preview after maintainer setup. Production
-promotion remains unfinished. The website's bootstrap and promotion workflows do not provision or
-promote staff and jobs. Keep production Discord synchronization disabled until the configuration and
-live preview acceptance below are verified.
+The staff workflows save compiled applications and migrations, then upload and activate a selected
+saved build in preview after maintainer setup. They do not promote staff or jobs to production. The
+website's bootstrap and promotion workflows do not provision or promote these applications. Use the
+build system and private acceptance record to determine what is deployed and verified. Keep
+production provider writes disabled until configuration and live preview acceptance pass.
 
 ## Read-only configuration check
 
@@ -94,13 +98,15 @@ credentials.
    before publishing these controls.
 7. Before the first administrator signs in, set the secret
    `LVBT_INITIAL_STAFF_ADMIN_WORKSPACE_EMAIL` on the selected staff Worker to the president's exact
-   `@lasvegasfortransit.org` account. Use a separate test member account on `lvbt-staff-preview`;
-   never put a production account on preview. Do not store this value in source control or use a
-   personal email. The one-time setup page checks that this exact Workspace account is linked to an
-   active LVBT member and that no administrator designation exists, then records the grant in the
-   staff audit log. Once deployed, the first sign-in goes to that page automatically; the president
-   completes the setup and verifies access. Remove the temporary secret after the audited
-   designation is confirmed. Do not infer admin access from a domain or group alone.
+   `@lasvegasfortransit.org` account. On `lvbt-staff-preview`, use an approved Google account linked
+   to a clearly marked test member in the isolated preview database. This may be an existing staff
+   Google account; do not copy production member records or permissions. Do not store this value in
+   source control or use a personal email. The one-time setup page checks that this exact Workspace
+   account is linked to an active LVBT member and that no administrator designation exists, then
+   records the grant in the staff audit log. Once deployed, the first sign-in goes to that page
+   automatically; the president completes the setup and verifies access. Remove the temporary secret
+   after the audited designation is confirmed. Do not infer admin access from a domain or group
+   alone.
 
 ## Release order and rollback
 
@@ -191,6 +197,40 @@ versions and other configuration failures still stop activation. The workflow re
 even on failure. Configuration checks do not prove sign-in, live provider behavior or staff
 acceptance. Production promotion remains unfinished and is not available through these commands.
 
+### Recover a failed preview activation
+
+Use this procedure if **Deploy staff preview** fails during upload or activation. An error does not
+establish whether Cloudflare changed traffic. Do not rerun the whole workflow to find out.
+
+1. Open the failed Actions run. Download its `staff-preview-deployment-<run ID>` artifact and keep
+   `staff-deployment.json` in an approved private location. If no receipt exists, inspect the upload
+   step and actual provider state; do not invent a receipt or assume no version was created.
+   Activation requires a complete receipt containing both staff and jobs uploaded versions. A
+   partial upload with only one recorded version cannot use the activation command. Preserve that
+   receipt and the actual provider state; completing a partial upload needs a separately reviewed
+   recovery path. Do not edit the receipt to supply a guessed version.
+2. In Cloudflare, select the LVBT account, then **Workers & Pages → lvbt-staff-preview →
+   Deployments**. Compare the currently served version and traffic percentage with the receipt's
+   selected version and recorded previous versions. Repeat for `lvbt-jobs-preview`. A version marked
+   **Ready** with no traffic is uploaded, not active.
+3. Read the failed step and run the read-only preflight for the receipt's stage. For setup, use
+   `pnpm staff:preflight --preview --setup --json`. Repair only the named configuration problem
+   through its authorized procedure. If the command supplies only a generic error and the failed
+   requirement remains unknown, keep the deployment unresolved; do not bypass its checks.
+4. Prepare the exact original successful build into a new directory using `staff:release prepare`.
+   Check out its verified source commit in a clean checkout. Preserve the original receipt outside
+   that artifact and retain a private copy before resuming.
+5. With both uploaded versions recorded and approved scoped Cloudflare credentials available to this
+   process, run only `staff:release activate` using that build, artifact, receipt, target, and
+   stage, as shown above. Do not run `upload` again. Activation reconciles already active versions
+   and refuses unexpected traffic.
+6. Check both active deployments again, run the matching preflight, and open the protected staff
+   hostname. Record activation and sign-in outcomes separately in the private acceptance record.
+
+The installed GitHub workflow has no retained-receipt resume input. If its credential is available
+only inside GitHub, do not extract the secret or substitute a browser session. A maintainer must
+provide an approved execution path for the same artifact and receipt before recovery can continue.
+
 ### Activate and verify
 
 A release must record the source commit, canonical migration names, staff and jobs version IDs,
@@ -198,7 +238,8 @@ Access hostnames and acceptance evidence. Build and review all applications from
 Do not rebuild a different artifact while promoting a reviewed release. Public website promotion
 remains separate.
 
-Before applying migrations, a maintainer takes and verifies a database backup and reviews the
+Before applying migrations, a maintainer
+[takes and verifies a database backup](../guides/back-up-membership-database.md) and reviews the
 canonical upgrade against the current deployed schema. Apply migrations before activating code that
 requires them. Keep scheduled jobs inactive while the applications and bindings are being updated.
 Verify the protected preview first, including refusal on alternate hosts and direct asset requests.
@@ -290,6 +331,32 @@ Verify the existing service account, immutable repository restrictions, delegate
 Workspace customer read-only before enabling execution. Keep tokens out of saved builds, artifacts,
 logs and source control. Do not create a key or relax organization policy when setup is unavailable.
 Real preview grant, readback, revocation and retry evidence remains required before production use.
+
+### Inspect Google setup without granting access
+
+Google sign-in and Google group automation use different permissions. Complete these checks before
+preparing any grant:
+
+1. In Google Cloud, select **LVBT Core** and open **IAM & Admin → Service Accounts**. Open the
+   existing `lvbt-website-admin@lvbt-core.iam.gserviceaccount.com`. Inspect **Keys** without
+   creating or downloading one. An empty key list is compatible with the intended keyless design.
+2. Open **IAM & Admin → Workload Identity Federation**. Inspect existing pools, providers, and
+   service-account permissions. The intended trust must restrict the immutable LVBT repository
+   identity and approved workflow context. A **Get started** page means no pool is configured; a
+   service account existing by itself does not establish this trust.
+3. In Google Admin, open **Security → Access and data control → API controls → Manage Domain Wide
+   Delegation**. Find the service account's numeric client ID and inspect its approved scopes. An
+   empty list or missing client means delegated Workspace access is unconfigured. Do not use **Add
+   new** as part of this read-only check.
+4. Verify the Workspace customer and intended delegated administrator against the approved design.
+   The organizing-platform decision specifies the GitHub Actions route; no hosted runner is wired in
+   this source. Resolve a proposed runner or administrator change in that design before granting
+   permissions. Do not invent a Worker identity source or install a long-lived key as a shortcut.
+5. Keep observations and writes disabled until the runner, token source, and actual provider tests
+   are implemented and verified. Continue approved manual group administration in Google Admin.
+
+If Google requests a passkey, the account owner completes it. Inspect Cloud and Admin separately;
+successful sign-in to either service does not prove the other's configuration.
 
 ## Historical roster preview
 

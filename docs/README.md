@@ -27,6 +27,10 @@ just say guides.)
 
 - [Connect a form tool](./guides/connect-a-form-tool.md) — send sign-ups from any outside form to
   LVBT's member list
+- [Set up the protected staff preview](./guides/set-up-staff-preview.md) — prepare access, sign-in,
+  the preview database, a saved deployment, and the first administrator
+- [Back up the membership database](./guides/back-up-membership-database.md) — export privately and
+  verify an isolated restore before a migration
 - [Add a prototype](./guides/add-a-prototype.md) — publish a clickable test version of a new flow on
   a preview
 - [Add an account section](./guides/add-an-account-section.md) — extend the member's account page
@@ -59,6 +63,10 @@ Information you look up, not read.
 - [Bootstrap and preflight](./reference/bootstrap.md) — local setup and production readiness
 - [Deployment pipeline](./reference/deployment-pipeline.md) — how code gets from `git push` to
   lasvegasfortransit.org
+- [Staff portal operations](./reference/staff-portal-operations.md) — configuration checks, saved
+  releases, provider boundaries, and recovery
+- [Staff portal acceptance](./reference/staff-portal-acceptance.md) — verify permissions, provider
+  behavior, accessibility, and readiness with real users
 - [Key facts](./reference/key-facts.md) — verified numbers used across copy
 - [Design tokens](./reference/design-tokens.md) — color + type tokens, canvas/band system
 - [Joining LVBT on the website](./reference/newsletter-signup.md) — the join form and newsletter

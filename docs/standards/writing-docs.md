@@ -56,6 +56,27 @@ Every doc should:
   the repository documentation and `check:docs` checks the site's Markdown and MDX.
 - New jargon → add it to the [glossary](../reference/glossary.md).
 
+## Operator procedures are part of the software
+
+When a change alters setup, access, credentials, data migrations, deployment, an outside
+integration, or recovery, update the operator procedure in the same change. A new operator must be
+able to follow it without the original implementer or this project's chat history.
+
+Each procedure must name its audience and prerequisites, then give the steps in execution order.
+Include the service and account to select, the exact setting or supported command, which environment
+it affects, the expected result, and the next action when it fails. Explain how to verify the actual
+outcome and how to recover from a partially completed operation. Link prerequisites instead of
+assuming a reader already knows them.
+
+Keep credential values, member data, private planning, and execution receipts out of these guides.
+Document credential names, destinations, required permissions, and renewal or rotation procedures.
+Retain detailed execution evidence in the appropriate private operational or build record.
+
+Verify instructions against the current implementation and provider documentation. Mark an
+unimplemented or unverified step explicitly; never write a future design as if an operator can run
+it today. When implementation changes a step, change the instructions and their verification
+together.
+
 ## Out of scope
 
 Internal design specs under `docs/superpowers/specs/` are historical records of how a feature was
