@@ -29,7 +29,7 @@ async function github(path: string, binary = false) {
     throw new Error('GitHub release metadata or archive could not be retrieved.');
   }
 }
-const provider: ReleaseProvider = {
+export const releaseProvider: ReleaseProvider = {
   run: (repository, runId) => github(`repos/${repository}/actions/runs/${runId}`),
   async artifacts(repository, runId) {
     const entries: unknown[] = [];
@@ -55,7 +55,7 @@ const provider: ReleaseProvider = {
   },
 };
 
-function validateRepository(run: Record<string, unknown>, repository: string) {
+export function validateRepository(run: Record<string, unknown>, repository: string) {
   const repo = object(run.repository);
   if (
     repo.full_name !== repository ||
@@ -123,7 +123,7 @@ function selectedRelease(
 
 export async function prepareStaffRelease(
   options: { repository: string; runId: string; directory: string },
-  client: ReleaseProvider = provider,
+  client: ReleaseProvider = releaseProvider,
 ) {
   if (
     !/^[a-zA-Z0-9_.-]+\/[a-zA-Z0-9_.-]+$/.test(options.repository) ||

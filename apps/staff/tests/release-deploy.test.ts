@@ -2,10 +2,133 @@ import assert from 'node:assert/strict';
 import { readFile, rm, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import test from 'node:test';
-import { uploadStaffRelease, activateStaffRelease } from '../scripts/release-deploy';
+import {
+  uploadStaffRelease,
+  activateStaffRelease,
+  inspectStaffRelease,
+} from '../scripts/release-deploy';
 import { verifyStaffRelease } from '../scripts/release-artifact';
 import { deploymentFixture, versions } from './support/deployment';
 import { releaseIdentity } from './support/release';
+
+void test('saved deployment inspection reports readiness without changing receipt or traffic', async () => {
+  const f = await deploymentFixture();
+  try {
+    await uploadStaffRelease(f.destination, releaseIdentity, f.receiptFile, f.options);
+    const before = await readFile(f.receiptFile, 'utf8');
+    const result = await inspectStaffRelease(
+      f.destination,
+      releaseIdentity,
+      f.receiptFile,
+      f.options,
+    );
+    assert.equal(Reflect.get(result, 'ready'), true);
+    assert.equal(await readFile(f.receiptFile, 'utf8'), before);
+    assert.equal(f.state.commands.length, 2);
+    f.state.wrongVersion = true;
+    const blocked = await inspectStaffRelease(
+      f.destination,
+      releaseIdentity,
+      f.receiptFile,
+      f.options,
+    );
+    assert.equal(Reflect.get(blocked, 'ready'), false);
+    assert.ok(JSON.stringify(blocked).includes('staff.version'));
+    assert.equal(JSON.stringify(blocked).includes('DO-NOT-PRINT'), false);
+    assert.equal(await readFile(f.receiptFile, 'utf8'), before);
+    assert.equal(f.state.commands.length, 2);
+  } finally {
+    await rm(f.root, { recursive: true, force: true });
+  }
+});
+
+void test('activation failure identifies the failed Worker stage without disclosing provider output', async () => {
+  const f = await deploymentFixture();
+  try {
+    await uploadStaffRelease(f.destination, releaseIdentity, f.receiptFile, f.options);
+    f.state.failActivateJobs = true;
+    await assert.rejects(
+      activateStaffRelease(f.destination, releaseIdentity, f.receiptFile, f.options),
+      (error: unknown) => {
+        assert.ok(error instanceof Error);
+        assert.equal(Reflect.get(error, 'stage'), 'jobs.activation');
+        assert.equal(String(error).includes('DO-NOT-PRINT'), false);
+        return true;
+      },
+    );
+    const receipt = JSON.parse(await readFile(f.receiptFile, 'utf8')) as {
+      workers: { active: boolean }[];
+    };
+    assert.equal(receipt.workers[0].active, true);
+    assert.equal(receipt.workers[1].active, false);
+  } finally {
+    await rm(f.root, { recursive: true, force: true });
+  }
+});
+
+void test('inspection refuses rollback to previous traffic after an acknowledged activation', async () => {
+  const f = await deploymentFixture();
+  try {
+    await uploadStaffRelease(f.destination, releaseIdentity, f.receiptFile, f.options);
+    f.state.failActivateJobs = true;
+    await assert.rejects(
+      activateStaffRelease(f.destination, releaseIdentity, f.receiptFile, f.options),
+    );
+    const before = await readFile(f.receiptFile, 'utf8');
+    const receipt = JSON.parse(before) as {
+      workers: { previousVersions: { versionId: string; percentage: number }[] }[];
+    };
+    const result = await inspectStaffRelease(f.destination, releaseIdentity, f.receiptFile, {
+      ...f.options,
+      fetch: (input, init) => {
+        const url = new URL(input instanceof Request ? input.url : input);
+        if (url.pathname.endsWith('/lvbt-staff-preview/deployments'))
+          return Promise.resolve(
+            Response.json({
+              success: true,
+              result: {
+                deployments: [
+                  {
+                    id: 'baseline-deployment',
+                    versions: receipt.workers[0].previousVersions.map((version) => ({
+                      version_id: version.versionId,
+                      percentage: version.percentage,
+                    })),
+                  },
+                ],
+              },
+            }),
+          );
+        return f.options.fetch(input, init);
+      },
+    });
+    assert.equal(result.ready, false);
+    assert.ok(result.checks.some((check) => check.stage === 'staff.readback' && !check.passed));
+    assert.equal(f.state.commands.length, 4);
+    assert.equal(await readFile(f.receiptFile, 'utf8'), before);
+  } finally {
+    await rm(f.root, { recursive: true, force: true });
+  }
+});
+
+void test('uploaded-version validation has a distinct failure stage before any activation', async () => {
+  const f = await deploymentFixture();
+  try {
+    await uploadStaffRelease(f.destination, releaseIdentity, f.receiptFile, f.options);
+    f.state.wrongVersion = true;
+    await assert.rejects(
+      activateStaffRelease(f.destination, releaseIdentity, f.receiptFile, f.options),
+      (error: unknown) => {
+        assert.ok(error instanceof Error);
+        assert.equal(Reflect.get(error, 'stage'), 'staff.version');
+        return true;
+      },
+    );
+    assert.equal(f.state.commands.length, 2);
+  } finally {
+    await rm(f.root, { recursive: true, force: true });
+  }
+});
 
 void test('an unexpected active version blocks a pending activation even when its configuration matches', async () => {
   const f = await deploymentFixture();

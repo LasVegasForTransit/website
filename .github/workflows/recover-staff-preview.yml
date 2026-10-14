@@ -1,0 +1,127 @@
+name: Recover staff preview
+
+on:
+  workflow_dispatch:
+    inputs:
+      release_run:
+        description: Original successful Build staff release run ID
+        required: true
+        type: string
+      deployment_run:
+        description: Completed preview deployment or recovery run holding the original receipt
+        required: true
+        type: string
+      stage:
+        description: Must match the original deployment receipt
+        required: true
+        type: choice
+        default: setup
+        options: [setup, launch]
+      operation:
+        description: Inspect reads configuration only; resume activates the recorded versions
+        required: true
+        type: choice
+        default: inspect
+        options: [inspect, resume]
+
+permissions:
+  contents: read
+  actions: read
+  packages: read
+
+concurrency:
+  group: staff-preview-deployment
+  cancel-in-progress: false
+
+jobs:
+  recover:
+    name: Inspect or resume recorded preview
+    if: github.ref == 'refs/heads/main'
+    environment: staff-preview
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout trusted verifier
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+      - name: Setup verifier
+        uses: ./.github/actions/setup-node-pnpm
+      - name: Retrieve original saved build
+        id: release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_RUN: ${{ inputs.release_run }}
+        run: >-
+          pnpm staff:release prepare --directory "$RUNNER_TEMP/staff-release" --repository
+          "$GITHUB_REPOSITORY" --run-id "$RELEASE_RUN"
+      - name: Checkout selected source separately
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          ref: ${{ steps.release.outputs.commit }}
+          path: selected-source
+          persist-credentials: false
+      - name: Check saved Workers
+        env:
+          RELEASE_COMMIT: ${{ steps.release.outputs.commit }}
+          RELEASE_ID: ${{ steps.release.outputs.release-id }}
+        run: >-
+          pnpm staff:release check --directory "$RUNNER_TEMP/staff-release" --commit
+          "$RELEASE_COMMIT" --release-id "$RELEASE_ID"
+      - name: Retrieve complete retained receipt
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_RUN: ${{ inputs.release_run }}
+          DEPLOYMENT_RUN: ${{ inputs.deployment_run }}
+          DEPLOYMENT_STAGE: ${{ inputs.stage }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+        run: >-
+          pnpm staff:release receipt --directory "$RUNNER_TEMP/staff-release" --repository
+          "$GITHUB_REPOSITORY" --run-id "$RELEASE_RUN" --deployment-run "$DEPLOYMENT_RUN" --target
+          preview --stage "$DEPLOYMENT_STAGE" --receipt "$RUNNER_TEMP/staff-deployment.json"
+      - name: Inspect original versions and activation gates
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_RUN: ${{ inputs.release_run }}
+          DEPLOYMENT_STAGE: ${{ inputs.stage }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_STAFF_PREVIEW_API_TOKEN }}
+        run: >-
+          pnpm staff:release inspect --directory "$RUNNER_TEMP/staff-release" --repository
+          "$GITHUB_REPOSITORY" --run-id "$RELEASE_RUN" --target preview --stage "$DEPLOYMENT_STAGE"
+          --source-directory "$GITHUB_WORKSPACE/selected-source" --receipt
+          "$RUNNER_TEMP/staff-deployment.json"
+      - name: Resume recorded activation
+        if: inputs.operation == 'resume'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_RUN: ${{ inputs.release_run }}
+          DEPLOYMENT_STAGE: ${{ inputs.stage }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_STAFF_PREVIEW_API_TOKEN }}
+        run: >-
+          pnpm staff:release activate --directory "$RUNNER_TEMP/staff-release" --repository
+          "$GITHUB_REPOSITORY" --run-id "$RELEASE_RUN" --target preview --stage "$DEPLOYMENT_STAGE"
+          --source-directory "$GITHUB_WORKSPACE/selected-source" --receipt
+          "$RUNNER_TEMP/staff-deployment.json"
+      - name: Verify resumed deployment
+        if: inputs.operation == 'resume'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_RUN: ${{ inputs.release_run }}
+          DEPLOYMENT_STAGE: ${{ inputs.stage }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_STAFF_PREVIEW_API_TOKEN }}
+        run: >-
+          pnpm staff:release inspect --directory "$RUNNER_TEMP/staff-release" --repository
+          "$GITHUB_REPOSITORY" --run-id "$RELEASE_RUN" --target preview --stage "$DEPLOYMENT_STAGE"
+          --source-directory "$GITHUB_WORKSPACE/selected-source" --receipt
+          "$RUNNER_TEMP/staff-deployment.json"
+      - name: Retain reconciled deployment receipt
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: staff-preview-deployment-${{ github.run_id }}
+          path: ${{ runner.temp }}/staff-deployment.json
+          if-no-files-found: warn
+          retention-days: 90

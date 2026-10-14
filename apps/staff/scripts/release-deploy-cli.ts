@@ -4,32 +4,44 @@ import { join, resolve } from 'node:path';
 import { prepareStaffRelease } from './release-download';
 import { verifyStaffRelease } from './release-artifact';
 import { assertReleaseSource } from './release-source';
-import { uploadStaffRelease, activateStaffRelease } from './release-deploy';
+import { uploadStaffRelease, activateStaffRelease, inspectStaffRelease } from './release-deploy';
 import { runWrangler } from './release-provider';
+import { deploymentStep, DeploymentFailure } from './release-failure';
+import { prepareStaffReceipt } from './release-recovery';
+import { withReceiptLock } from './release-receipt';
+
+type Action = 'upload' | 'activate' | 'inspect' | 'receipt';
+type Values = Partial<
+  Record<
+    | 'directory'
+    | 'repository'
+    | 'run-id'
+    | 'receipt'
+    | 'target'
+    | 'commit'
+    | 'release-id'
+    | 'stage'
+    | 'source-directory'
+    | 'deployment-run',
+    string
+  >
+>;
 
 function deploymentStage(value?: string) {
   if (value === undefined || value === 'launch') return 'launch' as const;
   if (value === 'setup') return 'setup' as const;
   throw new Error('Select --stage launch or --stage setup for the protected preview.');
 }
-
-export async function deployFromBuild(
-  action: 'upload' | 'activate',
-  values: Partial<
-    Record<
-      | 'directory'
-      | 'repository'
-      | 'run-id'
-      | 'receipt'
-      | 'target'
-      | 'commit'
-      | 'release-id'
-      | 'stage',
-      string
-    >
-  >,
-) {
-  const stage = deploymentStage(values.stage);
+function actionOptions(action: Action, values: Values) {
+  if (action === 'receipt') {
+    if (!values['deployment-run'] || values['source-directory'])
+      throw new Error('Receipt retrieval requires --deployment-run and no source override.');
+  } else if (values['deployment-run'] || (action === 'upload' && values['source-directory'])) {
+    throw new Error('Only inspection and activation accept a selected source directory.');
+  }
+}
+function selection(action: Action, values: Values) {
+  actionOptions(action, values);
   if (
     !values.directory ||
     !values.repository ||
@@ -40,47 +52,86 @@ export async function deployFromBuild(
     values['release-id']
   )
     throw new Error(
-      'Use upload or activate with --directory, --repository, --run-id, --receipt and --target preview. Production promotion requires separate acceptance.',
+      'Select a saved build, directory, receipt and preview target. Production promotion requires separate acceptance.',
     );
-  const root = resolve(import.meta.dirname, '../../..');
+  return {
+    directory: resolve(values.directory),
+    repository: values.repository,
+    runId: values['run-id'],
+    receiptFile: resolve(values.receipt),
+    stage: deploymentStage(values.stage),
+    sourceDirectory: values['source-directory'],
+    deploymentRun: values['deployment-run'],
+  };
+}
+type Selection = ReturnType<typeof selection>;
+function credentials(action: Action) {
   const accountId = process.env.CLOUDFLARE_ACCOUNT_ID;
   const token = process.env.CLOUDFLARE_API_TOKEN;
-  if (!accountId || !token)
+  if (!accountId || (action !== 'receipt' && !token))
     throw new Error('Set explicit scoped Cloudflare deployment credentials.');
+  return { accountId, token };
+}
+async function selectedBuild(choice: Selection, temporary: string) {
+  const selected = await deploymentStep('saved-build', () =>
+    prepareStaffRelease({
+      directory: join(temporary, 'release'),
+      repository: choice.repository,
+      runId: choice.runId,
+    }),
+  );
+  const saved = await deploymentStep('saved-artifact', () =>
+    verifyStaffRelease(choice.directory, selected),
+  );
+  if (saved.artifactHash !== selected.artifactHash) throw new DeploymentFailure('saved-artifact');
+  return { selected, saved };
+}
+export async function deployFromBuild(action: Action, values: Values) {
+  const choice = selection(action, values);
+  const { accountId, token } = credentials(action);
+  const verifierRoot = resolve(import.meta.dirname, '../../..');
+  const root = choice.sourceDirectory ? resolve(choice.sourceDirectory) : verifierRoot;
   const temporary = await mkdtemp(join(tmpdir(), 'lvbt-staff-build-'));
   try {
-    const selected = await prepareStaffRelease({
-      directory: join(temporary, 'release'),
-      repository: values.repository,
-      runId: values['run-id'],
-    });
-    const directory = resolve(values.directory);
-    const saved = await verifyStaffRelease(directory, selected);
-    if (saved.artifactHash !== selected.artifactHash) throw new Error('Selected artifact differs.');
-    await assertReleaseSource(root, selected.commit);
+    const { selected, saved } = await selectedBuild(choice, temporary);
+    if (action === 'receipt') {
+      const runId = choice.deploymentRun;
+      if (!runId) throw new DeploymentFailure('receipt');
+      return await withReceiptLock(choice.directory, choice.receiptFile, () =>
+        prepareStaffReceipt({
+          repository: choice.repository,
+          runId,
+          filename: choice.receiptFile,
+          release: saved,
+          accountId,
+          stage: choice.stage,
+        }),
+      );
+    }
+    if (!token) throw new DeploymentFailure('configuration');
+    await deploymentStep('source-checkout', () => assertReleaseSource(root, selected.commit));
     const options = {
       root,
       accountId,
       token,
       environment: 'preview' as const,
-      stage,
+      stage: choice.stage,
       run: async (args: string[], output: string) => {
-        await assertReleaseSource(root, selected.commit);
-        await runWrangler(args, output, { accountId, token }, root);
+        await deploymentStep('source-checkout', () => assertReleaseSource(root, selected.commit));
+        await runWrangler(args, output, { accountId, token }, verifierRoot);
       },
     };
-    const result = await (action === 'upload' ? uploadStaffRelease : activateStaffRelease)(
-      directory,
-      selected,
-      resolve(values.receipt),
-      options,
-    );
-    await assertReleaseSource(root, selected.commit);
+    const operation =
+      action === 'upload'
+        ? uploadStaffRelease
+        : action === 'inspect'
+          ? inspectStaffRelease
+          : activateStaffRelease;
+    const result = await operation(choice.directory, selected, choice.receiptFile, options);
+    await deploymentStep('source-checkout', () => assertReleaseSource(root, selected.commit));
     return result;
-  } catch {
-    throw new Error(
-      'Release deployment stopped. Inspect the retained receipt, source checkout and provider configuration before retrying.',
-    );
+  } catch (error) {
+    throw error instanceof DeploymentFailure ? error : new DeploymentFailure('deployment');
   } finally {
     await rm(temporary, { recursive: true, force: true });
   }
