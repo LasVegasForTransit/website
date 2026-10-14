@@ -261,6 +261,8 @@ For a failed upload or activation, follow
 [release recovery](../reference/staff-portal-operations.md#recover-a-failed-preview-activation).
 Inspect actual active versions first. Resume activation with the same saved artifact and receipt
 when its checks permit it; a new upload creates different versions and loses that recovery context.
+The **Recover staff preview** workflow defaults to read-only inspection and uses the existing
+protected environment. Choose **resume** only after the original receipt's inspection passes.
 
 ## 7. Complete first-administrator setup
 

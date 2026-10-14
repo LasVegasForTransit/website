@@ -85,7 +85,10 @@ export async function readReceipt(
   const stat = await lstat(file);
   if (!stat.isFile() || stat.isSymbolicLink() || stat.size > 64 * 1024)
     throw new Error('Invalid receipt.');
-  const receipt = object(JSON.parse(await readFile(file, 'utf8')));
+  return parseReceipt(JSON.parse(await readFile(file, 'utf8')), expected);
+}
+export function parseReceipt(value: unknown, expected: DeploymentReceipt): DeploymentReceipt {
+  const receipt = object(value);
   if (
     Object.keys(receipt).sort().join() !== Object.keys(expected).sort().join() ||
     [

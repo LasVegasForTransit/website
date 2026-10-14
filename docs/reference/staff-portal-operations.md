@@ -213,23 +213,61 @@ establish whether Cloudflare changed traffic. Do not rerun the whole workflow to
    Deployments**. Compare the currently served version and traffic percentage with the receipt's
    selected version and recorded previous versions. Repeat for `lvbt-jobs-preview`. A version marked
    **Ready** with no traffic is uploaded, not active.
-3. Read the failed step and run the read-only preflight for the receipt's stage. For setup, use
-   `pnpm staff:preflight --preview --setup --json`. Repair only the named configuration problem
-   through its authorized procedure. If the command supplies only a generic error and the failed
-   requirement remains unknown, keep the deployment unresolved; do not bypass its checks.
-4. Prepare the exact original successful build into a new directory using `staff:release prepare`.
-   Check out its verified source commit in a clean checkout. Preserve the original receipt outside
-   that artifact and retain a private copy before resuming.
-5. With both uploaded versions recorded and approved scoped Cloudflare credentials available to this
-   process, run only `staff:release activate` using that build, artifact, receipt, target, and
-   stage, as shown above. Do not run `upload` again. Activation reconciles already active versions
-   and refuses unexpected traffic.
+3. In GitHub **Actions → Recover staff preview → Run workflow**, choose `main`. Enter the original
+   successful build's run ID as **release_run**, the completed deployment run holding its receipt as
+   **deployment_run**, and the receipt's exact **stage**. Leave **operation** set to **inspect**.
+4. Review the selected release and approve the existing protected `staff-preview` environment.
+   Inspection verifies the archive, receipt, clean selected source, uploaded versions,
+   configuration, and actual traffic. It sends no upload or activation command and does not change
+   the receipt. Its report says `ready: true` only when the activation gates pass. A blocked
+   inspection exits with failure and identifies the failed stage or configuration checks. Repair the
+   specific cause through its authorized procedure; keep an unknown failure unresolved.
+5. Once inspection passes, run **Recover staff preview** with the same selections and **operation =
+   resume**. Review and approve that protected run. It rechecks the gates and activates only the
+   recorded versions, preserving completed activation and refusing unexpected traffic. It never
+   rebuilds or uploads. A completed recovery run retains its receipt under
+   `staff-preview-deployment-<recovery run ID>`; that run can be selected for a later inspection or
+   resumption if needed.
 6. Check both active deployments again, run the matching preflight, and open the protected staff
    hostname. Record activation and sign-in outcomes separately in the private acceptance record.
 
-The installed GitHub workflow has no retained-receipt resume input. If its credential is available
-only inside GitHub, do not extract the secret or substitute a browser session. A maintainer must
-provide an approved execution path for the same artifact and receipt before recovery can continue.
+Recovery uses the same scoped deployment credential and serialized deployment queue as the normal
+preview workflow. Do not extract GitHub secrets, copy browser sessions, or create a broader key to
+run recovery locally. Inspect and resume are separate choices; selecting inspect cannot activate a
+version. Neither choice can deploy production, apply migrations, or enable schedules.
+
+### Inspect with an approved local credential
+
+Use the GitHub procedure above when the credential is installed only there. A maintainer with an
+already authorized local credential can prepare the original build and retrieve its receipt:
+
+```sh
+pnpm staff:release receipt --directory /private/selected-staff-release --repository LasVegasForTransit/website --run-id <build-run-ID> --deployment-run <deployment-run-ID> --target preview --stage setup --receipt /private/staff-deployment.json
+pnpm staff:release inspect --directory /private/selected-staff-release --repository LasVegasForTransit/website --run-id <build-run-ID> --target preview --stage setup --receipt /private/staff-deployment.json --source-directory /private/selected-staff-source
+```
+
+Replace paths and IDs with the reviewed selections. Prepare the artifact with
+`staff:release prepare` first, and check out its exact source commit cleanly in
+`/private/selected-staff-source`. The current trusted verifier runs recovery; the separate source
+checkout pins the original configuration. Omit `--source-directory` only when the verifier checkout
+itself is the selected source. Receipt retrieval needs the explicit account ID and GitHub read
+access; it does not use a Cloudflare token. Inspection and activation also require the approved
+scoped Cloudflare token. For a launch-stage receipt, use `--stage launch` consistently.
+
+Receipt retrieval accepts only a completed main-branch deployment or recovery workflow in this
+repository, exactly one unexpired receipt artifact, its verified archive digest, and both uploaded
+versions matching the selected build, account, environment, and stage. It refuses existing output
+files. Malformed, missing, partial, foreign, or changed receipts cannot authorize activation.
+
+| Failure stage                              | Meaning and next action                                                                                           |
+| ------------------------------------------ | ----------------------------------------------------------------------------------------------------------------- |
+| `saved-build` or `saved-artifact`          | Verify the original successful build and retained artifact; do not substitute a newer build.                      |
+| `source-checkout` or `saved-configuration` | Restore a clean checkout of that build's source and compare its saved configuration.                              |
+| `receipt`                                  | Verify the selected deployment run, complete receipt, account, and stage. Do not edit or guess recorded versions. |
+| `staff.version` or `jobs.version`          | The uploaded version could not be verified against the saved release; inspect its metadata before any activation. |
+| `configuration` or `setup-boundary`        | Read the named configuration checks and confirm setup keeps Discord disabled and jobs unscheduled.                |
+| `recorded-traffic`                         | Actual traffic differs from an allowed recorded transition or cannot be verified; investigate the provider state. |
+| A Worker `activation` or `readback` stage  | A deployment may have changed traffic; inspect both actual deployments and the retained receipt before resuming.  |
 
 ### Activate and verify
 

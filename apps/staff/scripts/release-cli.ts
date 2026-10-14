@@ -20,7 +20,9 @@ type Arguments = Partial<
     | 'release-id'
     | 'receipt'
     | 'target'
-    | 'stage',
+    | 'stage'
+    | 'source-directory'
+    | 'deployment-run',
     string
   >
 >;
@@ -49,11 +51,23 @@ async function prepare(values: Arguments) {
   process.stdout.write(`${JSON.stringify(prepared)}\n`);
 }
 async function deployment(positionals: string[], values: Arguments) {
-  if (positionals.length === 1 && (positionals[0] === 'upload' || positionals[0] === 'activate')) {
-    process.stdout.write(`${JSON.stringify(await deployFromBuild(positionals[0], values))}\n`);
+  const action = positionals[0];
+  if (
+    positionals.length === 1 &&
+    (action === 'upload' || action === 'activate' || action === 'inspect' || action === 'receipt')
+  ) {
+    const result = await deployFromBuild(action, values);
+    process.stdout.write(`${JSON.stringify(result)}\n`);
+    if (action === 'inspect' && 'ready' in result && !result.ready) process.exitCode = 1;
     return true;
   }
-  if (values.receipt || values.target || values.stage)
+  if (
+    values.receipt ||
+    values.target ||
+    values.stage ||
+    values['source-directory'] ||
+    values['deployment-run']
+  )
     throw new Error('Receipt and target options require upload or activate.');
   return false;
 }
@@ -69,6 +83,8 @@ async function main() {
       receipt: { type: 'string' },
       target: { type: 'string' },
       stage: { type: 'string' },
+      'source-directory': { type: 'string' },
+      'deployment-run': { type: 'string' },
     },
   });
   if (await deployment(positionals, values)) return;

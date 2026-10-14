@@ -7,6 +7,7 @@ import { type Environment } from './preflight-config';
 import { preflightStaff } from './preflight';
 import { MetadataClient, object } from './preflight-api';
 import { previewSetupReady } from './preview-setup';
+import { deploymentStep, DeploymentFailure } from './release-failure';
 import {
   activeDeployment,
   providerOutput,
@@ -48,32 +49,33 @@ function assertDeploymentOptions(options: DeploymentOptions) {
 }
 async function ready(options: DeploymentOptions, receipt?: DeploymentReceipt) {
   assertDeploymentOptions(options);
-  const report = await preflightStaff(options.environment, options);
+  const report = await deploymentStep('configuration', () =>
+    preflightStaff(options.environment, options),
+  );
   const failures = report.checks.filter((check) => check.status !== 'passed');
   const transition = receipt
-    ? await recordedTransition(new MetadataClient(options), receipt)
+    ? await deploymentStep('recorded-traffic', () =>
+        recordedTransition(new MetadataClient(options), receipt),
+      )
     : null;
+  if (receipt && !transition?.valid) throw new DeploymentFailure('recorded-traffic');
   if (options.stage === 'setup') {
     if (
-      (receipt && !transition?.valid) ||
-      !(await previewSetupReady(options.root, new MetadataClient(options), report.checks))
+      !(await deploymentStep('setup-boundary', () =>
+        previewSetupReady(options.root, new MetadataClient(options), report.checks),
+      ))
     )
-      throw new Error(
-        'Preview setup requires protected authentication, isolated data, disabled Discord and no scheduled jobs.',
-      );
+      throw new DeploymentFailure('setup-boundary');
     return;
   }
   if (
-    (receipt && !transition?.valid) ||
-    (failures.length &&
-      !(
-        transition?.selectedActive &&
-        failures.every((check) => check.id === 'discord.configuration' && check.status === 'failed')
-      ))
+    failures.length &&
+    !(
+      transition?.selectedActive &&
+      failures.every((check) => check.id === 'discord.configuration' && check.status === 'failed')
+    )
   )
-    throw new Error(
-      'Deployment requires verified configuration, existing Workers and applied migrations. Run staff:preflight.',
-    );
+    throw new DeploymentFailure('configuration');
 }
 async function withRelease<T>(
   directory: string,
@@ -81,7 +83,9 @@ async function withRelease<T>(
   options: DeploymentOptions,
   run: (copy: string, receipt: DeploymentReceipt) => Promise<T>,
 ) {
-  const release = await verifyStaffRelease(directory, identity);
+  const release = await deploymentStep('saved-artifact', () =>
+    verifyStaffRelease(directory, identity),
+  );
   const temporary = await mkdtemp(join(tmpdir(), 'lvbt-staff-deploy-'));
   try {
     const copy = join(temporary, 'release');
@@ -96,7 +100,7 @@ async function withRelease<T>(
           JSON.stringify(await portableConfiguration(options.root, app, options.environment)) ||
         object(config).name !== workerName(app, options.environment)
       )
-        throw new Error('Saved configuration differs from the selected source.');
+        throw new DeploymentFailure('saved-configuration');
     }
     return await run(
       copy,
@@ -144,11 +148,8 @@ export async function uploadStaffRelease(
               client,
               workerName(app, options.environment),
             );
-            const { output, config } = await command(
-              { copy, receipt },
-              app,
-              ['upload', '--no-bundle'],
-              options,
+            const { output, config } = await deploymentStep(`${app}.upload`, () =>
+              command({ copy, receipt }, app, ['upload', '--no-bundle'], options),
             );
             const result = await providerOutput(
               output,
@@ -166,54 +167,120 @@ export async function uploadStaffRelease(
             };
             receipt.workers.push(worker);
             await saveReceipt(file, receipt);
-            await verifyVersion(client, worker, receipt, config);
+            await deploymentStep(`${app}.version`, () =>
+              verifyVersion(client, worker, receipt, config),
+            );
           }
           receipt.status = 'uploaded';
           await saveReceipt(file, receipt);
           return receipt;
-        } catch {
+        } catch (error) {
           receipt.status = 'failed';
           await saveReceipt(file, receipt);
-          throw new Error(
-            'Upload failed. Inspect the retained receipt and provider state before retrying.',
-          );
+          throw error instanceof DeploymentFailure ? error : new DeploymentFailure('deployment');
         }
       }),
   );
 }
+async function activationCheckpoint(client: MetadataClient, worker: WorkerReceipt) {
+  const current = await deploymentStep(`${worker.app}.readback`, () =>
+    activeDeployment(client, worker),
+  );
+  if (!current && (worker.active || worker.deploymentId))
+    throw new DeploymentFailure(`${worker.app}.readback`);
+  return current;
+}
+
 async function activateWorker(
   context: { copy: string; receipt: DeploymentReceipt; client: MetadataClient; file: string },
   worker: WorkerReceipt,
   options: DeploymentOptions,
 ) {
   const { copy, receipt, client, file } = context;
-  const current = await activeDeployment(client, worker);
+  const current = await activationCheckpoint(client, worker);
   if (current) {
     worker.active = true;
     worker.deploymentId = current;
     await saveReceipt(file, receipt);
     return;
   }
-  if (worker.active || worker.deploymentId)
-    throw new Error('Previously activated release has changed; inspect provider state.');
   await ready(options, receipt);
-  const { output } = await command(
-    { copy, receipt },
-    worker.app,
-    ['deploy', `${worker.versionId}@100%`, '--yes'],
-    options,
+  const { output } = await deploymentStep(`${worker.app}.activation`, () =>
+    command(
+      { copy, receipt },
+      worker.app,
+      ['deploy', `${worker.versionId}@100%`, '--yes'],
+      options,
+    ),
   );
-  const result = await providerOutput(output, 'version-deploy', worker.name);
+  const result = await deploymentStep(`${worker.app}.readback`, () =>
+    providerOutput(output, 'version-deploy', worker.name),
+  );
   // Wrangler currently serializes its traffic Map as {}; authoritative traffic comes from readback.
-  if (!uuid(result.deployment_id)) throw new Error('Actual deployment receipt unavailable.');
+  if (!uuid(result.deployment_id)) throw new DeploymentFailure(`${worker.app}.readback`);
   // Retain the acknowledged deployment even when the following readback is unavailable.
   worker.deploymentId = result.deployment_id;
   await saveReceipt(file, receipt);
-  if ((await activeDeployment(client, worker)) !== worker.deploymentId)
-    throw new Error('Deployment readback differs.');
+  if (
+    (await deploymentStep(`${worker.app}.readback`, () => activeDeployment(client, worker))) !==
+    worker.deploymentId
+  )
+    throw new DeploymentFailure(`${worker.app}.readback`);
   worker.active = true;
   await saveReceipt(file, receipt);
 }
+/** Reads the exact activation gates without writing a receipt or sending deployment commands. */
+export async function inspectStaffRelease(
+  directory: string,
+  identity: ReleaseIdentity,
+  file: string,
+  options: DeploymentOptions,
+) {
+  assertDeploymentOptions(options);
+  return await withRelease(directory, identity, options, async (copy, expected) => {
+    const receipt = await deploymentStep('receipt', () => readReceipt(file, expected));
+    const checks: { stage: string; passed: boolean }[] = [];
+    for (const worker of receipt.workers) {
+      try {
+        const config = object(
+          JSON.parse(
+            await readFile(join(copy, worker.app, `wrangler.${options.environment}.json`), 'utf8'),
+          ),
+        );
+        await deploymentStep(`${worker.app}.version`, () =>
+          verifyVersion(new MetadataClient(options), worker, receipt, config),
+        );
+        await activationCheckpoint(new MetadataClient(options), worker);
+        checks.push({ stage: `${worker.app}.version`, passed: true });
+      } catch (error) {
+        checks.push({
+          stage: error instanceof DeploymentFailure ? error.stage : 'saved-configuration',
+          passed: false,
+        });
+      }
+    }
+    const report = await deploymentStep('configuration', () =>
+      preflightStaff(options.environment, options),
+    );
+    try {
+      await ready(options, receipt);
+      checks.push({ stage: 'configuration', passed: true });
+    } catch (error) {
+      checks.push({
+        stage: error instanceof DeploymentFailure ? error.stage : 'configuration',
+        passed: false,
+      });
+    }
+    return {
+      environment: options.environment,
+      stage: receipt.stage,
+      ready: checks.every((check) => check.passed),
+      checks,
+      configuration: report.checks,
+    };
+  });
+}
+
 export async function activateStaffRelease(
   directory: string,
   identity: ReleaseIdentity,
@@ -225,7 +292,7 @@ export async function activateStaffRelease(
     file,
     async () =>
       await withRelease(directory, identity, options, async (copy, expected) => {
-        const receipt = await readReceipt(file, expected);
+        const receipt = await deploymentStep('receipt', () => readReceipt(file, expected));
         try {
           const client = new MetadataClient(options);
           for (const worker of receipt.workers) {
@@ -237,7 +304,9 @@ export async function activateStaffRelease(
                 ),
               ),
             );
-            await verifyVersion(client, worker, receipt, config);
+            await deploymentStep(`${worker.app}.version`, () =>
+              verifyVersion(client, worker, receipt, config),
+            );
           }
           await ready(options, receipt);
           receipt.status = 'activating';
@@ -247,12 +316,10 @@ export async function activateStaffRelease(
           receipt.status = 'active';
           await saveReceipt(file, receipt);
           return receipt;
-        } catch {
+        } catch (error) {
           receipt.status = 'failed';
           await saveReceipt(file, receipt);
-          throw new Error(
-            'Activation failed. Confirm provider state and resume with the same receipt.',
-          );
+          throw error instanceof DeploymentFailure ? error : new DeploymentFailure('deployment');
         }
       }),
   );
