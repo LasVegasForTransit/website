@@ -17,5 +17,5 @@ export function fillDiscordProfile(
           : 'Your Discord account is connected.',
       ),
     )
-    .on('[data-slot="discord"] a', showText('Confirm connection'));
+    .on('[data-slot="discord"] a', showText('Manage Discord'));
 }

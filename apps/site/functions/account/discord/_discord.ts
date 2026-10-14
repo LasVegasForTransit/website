@@ -23,6 +23,8 @@ export function discordPlatform(env: SignInPagesEnv): DiscordLinkEnv | null {
         ...base,
         LVBT_DISCORD_APPLICATION_ID: env.LVBT_DISCORD_APPLICATION_ID,
         LVBT_DISCORD_CLIENT_SECRET: env.LVBT_DISCORD_CLIENT_SECRET,
+        LVBT_DEPLOYMENT_ENV: env.LVBT_DEPLOYMENT_ENV,
+        LVBT_DISCORD_JOBS: env.LVBT_DISCORD_JOBS,
       }
     : null;
 }

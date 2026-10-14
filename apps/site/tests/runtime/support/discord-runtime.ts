@@ -7,11 +7,28 @@ import { fileURLToPath } from 'node:url';
 import { DatabaseSync } from 'node:sqlite';
 import { createServer } from 'node:https';
 import type { AddressInfo } from 'node:net';
-import { Miniflare, Response as RuntimeResponse, convertV4MiniflareOptions } from 'miniflare';
+import {
+  Miniflare,
+  Response as RuntimeResponse,
+  convertV4MiniflareOptions,
+  type V4FetchHandler,
+} from 'miniflare';
 import { applyMigrations } from '@lasvegasfortransit/platform-storage/test-db';
 import { PersonService } from '@lasvegasfortransit/platform-storage/person-service';
 import { createSession } from '@lasvegasfortransit/platform-storage/auth';
-export const ORIGIN = 'https://lasvegasfortransit.org';
+export const ORIGIN = 'https://preview.lasvegasfortransit.org';
+export const DISCORD_ROLES = {
+  member: '333333333333333333',
+  firstCommittee: '444444444444444444',
+  secondCommittee: '888888888888888888',
+  unmanaged: '666666666666666666',
+};
+interface Scenario {
+  joined: boolean;
+  pending: boolean;
+  failJoin: boolean;
+  roles: Set<string>;
+}
 export const DISCORD_USER = {
   id: '222222222222222222',
   username: 'fixture.member',
@@ -85,63 +102,139 @@ async function authorizationServer(tls: { httpsKey: string; httpsCert: string })
       ),
   };
 }
-function simulatorFor(
+function updateRoles(request: Parameters<V4FetchHandler>[0], scenario: Scenario): RuntimeResponse {
+  const role = new URL(request.url).pathname.split('/').at(-1);
+  assert.ok(role);
+  assert.notEqual(role, DISCORD_ROLES.unmanaged, 'the integration never writes an unmanaged role');
+  assert.equal(scenario.pending, false, 'screening must finish before a managed-role grant');
+  if (request.method === 'PUT') scenario.roles.add(role);
+  else {
+    assert.equal(request.method, 'DELETE');
+    scenario.roles.delete(role);
+  }
+  return new RuntimeResponse(null, { status: 204 });
+}
+function json(value: unknown, status = 200): RuntimeResponse {
+  return new RuntimeResponse(JSON.stringify(value), {
+    status,
+    headers: { 'Content-Type': 'application/json' },
+  });
+}
+async function joinResponse(
+  request: Parameters<V4FetchHandler>[0],
+  scenario: Scenario,
+  member: () => unknown,
+): Promise<RuntimeResponse> {
+  assert.deepEqual(await request.json(), { access_token: 'fixture-access-only' });
+  if (scenario.failJoin) return json({ message: 'fixture unavailable' }, 503);
+  if (scenario.joined) return new RuntimeResponse(null, { status: 204 });
+  scenario.joined = true;
+  return json(member(), 201);
+}
+async function simulatorFor(
   root: string,
   data: string,
   tls: { httpsKey: string; httpsCert: string },
-  providerCalls: string[],
+  fixture: { providerCalls: string[]; scenario: Scenario },
 ) {
+  const { providerCalls, scenario } = fixture;
+  const memberPath = `/api/v10/guilds/111111111111111111/members/${DISCORD_USER.id}`;
+  const member = () => ({
+    user: DISCORD_USER,
+    roles: [...scenario.roles],
+    pending: scenario.pending,
+    nick: null,
+  });
+  const provider: V4FetchHandler = async (request) => {
+    providerCalls.push(request.url);
+    const url = new URL(request.url);
+    assert.equal(url.origin, 'https://discord.com');
+    if (url.pathname === '/api/v10/oauth2/token') {
+      assert.equal(request.method, 'POST');
+      const form = new URLSearchParams(await request.text());
+      assert.equal(form.get('grant_type'), 'authorization_code');
+      assert.equal(form.get('redirect_uri'), `${ORIGIN}/account/discord/callback`);
+      return json({
+        access_token: 'fixture-access-only',
+        refresh_token: 'fixture-refresh-only',
+        token_type: 'Bearer',
+        scope: 'identify guilds.join',
+        expires_in: 600,
+      });
+    }
+    if (url.pathname === '/api/v10/users/@me') {
+      assert.equal(request.headers.get('Authorization'), 'Bearer fixture-access-only');
+      return json(DISCORD_USER);
+    }
+    assert.equal(request.headers.get('Authorization'), 'Bot fixture-bot-only');
+    if (url.pathname === '/api/v10/guilds/111111111111111111/members') {
+      assert.equal(request.method, 'GET');
+      assert.equal(url.searchParams.get('limit'), '1000');
+      return json(scenario.joined ? [member()] : []);
+    }
+    if (url.pathname === memberPath) {
+      if (request.method === 'PUT') {
+        return await joinResponse(request, scenario, member);
+      }
+      assert.equal(request.method, 'GET');
+      return scenario.joined ? json(member()) : json({ code: 10007 }, 404);
+    }
+    assert.ok(url.pathname.startsWith(`${memberPath}/roles/`));
+    return updateRoles(request, scenario);
+  };
   return new Miniflare(
     convertV4MiniflareOptions({
       host: '127.0.0.1',
       port: 0,
       https: true,
       ...tls,
-      name: 'lvbt-discord-browser-fixture',
-      modules: true,
-      scriptPath: join(root, '.wrangler/worker/index.js'),
-      compatibilityDate: '2026-09-04',
-      compatibilityFlags: ['nodejs_compat'],
       resourcePersistencePath: data,
-      cf: false,
       telemetry: { enabled: false },
-      bindings: {
-        LVBT_SIGN_IN_SECRET: 'fixture-session-only',
-        LVBT_LINK_SIGNING_SECRET: 'fixture-links-only',
-        LVBT_DISCORD_APPLICATION_ID: '111111111111111111',
-        LVBT_DISCORD_CLIENT_SECRET: 'fixture-client-only',
-      },
-      d1Databases: { PLATFORM_DB: 'discord-browser-fixture' },
-      assets: {
-        directory: join(root, 'dist'),
-        binding: 'ASSETS',
-        run_worker_first: true,
-        routerConfig: { has_user_worker: true },
-      },
-      outboundService: async (request) => {
-        providerCalls.push(request.url);
-        if (request.url === 'https://discord.com/api/v10/oauth2/token') {
-          assert.equal(request.method, 'POST');
-          const form = new URLSearchParams(await request.text());
-          assert.equal(form.get('grant_type'), 'authorization_code');
-          assert.equal(form.get('redirect_uri'), `${ORIGIN}/account/discord/callback`);
-          return new RuntimeResponse(
-            JSON.stringify({
-              access_token: 'fixture-access-only',
-              refresh_token: 'fixture-refresh-only',
-              token_type: 'Bearer',
-              scope: 'identify',
-              expires_in: 600,
-            }),
-            { headers: { 'Content-Type': 'application/json' } },
-          );
-        }
-        assert.equal(request.url, 'https://discord.com/api/v10/users/@me');
-        assert.equal(request.headers.get('Authorization'), 'Bearer fixture-access-only');
-        return new RuntimeResponse(JSON.stringify(DISCORD_USER), {
-          headers: { 'Content-Type': 'application/json' },
-        });
-      },
+      workers: [
+        {
+          name: 'lvbt-discord-browser-fixture',
+          modules: true,
+          script: await readFile(join(root, '.wrangler/worker/index.js'), 'utf8'),
+          compatibilityDate: '2026-09-04',
+          compatibilityFlags: ['nodejs_compat'],
+          cf: false,
+          bindings: {
+            LVBT_SIGN_IN_SECRET: 'fixture-session-only',
+            LVBT_LINK_SIGNING_SECRET: 'fixture-links-only',
+            LVBT_DISCORD_APPLICATION_ID: '555555555555555555',
+            LVBT_DISCORD_CLIENT_SECRET: 'fixture-client-only',
+            LVBT_DEPLOYMENT_ENV: 'preview',
+          },
+          serviceBindings: { LVBT_DISCORD_JOBS: 'lvbt-discord-jobs-fixture' },
+          d1Databases: { PLATFORM_DB: 'discord-browser-fixture' },
+          assets: {
+            directory: join(root, 'dist'),
+            binding: 'ASSETS',
+            run_worker_first: true,
+            routerConfig: { has_user_worker: true },
+          },
+          outboundService: provider,
+        },
+        {
+          name: 'lvbt-discord-jobs-fixture',
+          modules: true,
+          script: await readFile(join(root, '../jobs/dist/index.js'), 'utf8'),
+          compatibilityDate: '2026-09-04',
+          compatibilityFlags: ['nodejs_compat'],
+          cf: false,
+          bindings: {
+            LVBT_DEPLOYMENT_ENV: 'preview',
+            LVBT_DISCORD_SYNC_ENABLED: 'true',
+            LVBT_DISCORD_APPLICATION_ID: '555555555555555555',
+            LVBT_DISCORD_GUILD_ID: '111111111111111111',
+            LVBT_DISCORD_PRODUCTION_GUILD_ID: '999999999999999999',
+            LVBT_DISCORD_MEMBER_ROLE_ID: DISCORD_ROLES.member,
+            LVBT_DISCORD_BOT_TOKEN: 'fixture-bot-only',
+          },
+          d1Databases: { PLATFORM_DB: 'discord-browser-fixture' },
+          outboundService: provider,
+        },
+      ],
     }),
   );
 }
@@ -151,7 +244,13 @@ export async function discordRuntime() {
   const tls = await certificate(data);
   const authorization = await authorizationServer(tls);
   const providerCalls: string[] = [];
-  const simulator = simulatorFor(root, data, tls, providerCalls);
+  const scenario: Scenario = {
+    joined: false,
+    pending: false,
+    failJoin: false,
+    roles: new Set([DISCORD_ROLES.unmanaged]),
+  };
+  const simulator = await simulatorFor(root, data, tls, { providerCalls, scenario });
   try {
     const db = await migrate(simulator, data),
       people = new PersonService(db);
@@ -165,6 +264,28 @@ export async function discordRuntime() {
         wordingVersion: 'fixture',
       },
     });
+    const stamp = new Date().toISOString();
+    for (const [committee, role] of [
+      ['civic-tech', DISCORD_ROLES.firstCommittee],
+      ['events', DISCORD_ROLES.secondCommittee],
+    ]) {
+      assert.ok(committee && role);
+      await db
+        .prepare('UPDATE committees SET discord_role_id=?,updated_at=? WHERE id=?')
+        .bind(role, stamp, committee)
+        .run();
+      await db
+        .prepare(
+          "INSERT INTO committee_assignments(id,person_id,committee_id,role,started_at,assigned_by,updated_at) VALUES(?,?,?,'member',?,?,?)",
+        )
+        .bind(`fixture-${committee}`, person.id, committee, stamp, person.id, stamp)
+        .run();
+      await db
+        .prepare('INSERT INTO reconcile_generations(person_id,target_id,generation) VALUES(?,?,1)')
+        .bind(person.id, committee)
+        .run();
+    }
+    const jobs = await simulator.getWorker('lvbt-discord-jobs-fixture');
     const session = await createSession(
       { PLATFORM_DB: db, LVBT_SIGN_IN_SECRET: 'fixture-session-only' },
       person.id,
@@ -178,6 +299,8 @@ export async function discordRuntime() {
       person,
       session,
       providerCalls,
+      scenario,
+      jobs,
       authorization,
       port: (await simulator.ready).port,
       dispose: async () => {

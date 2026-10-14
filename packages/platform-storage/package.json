@@ -42,6 +42,7 @@
     "./google-drift": "./src/google-drift.ts",
     "./discord-sync-store": "./src/discord-sync-store.ts",
     "./discord-link": "./src/discord-link.ts",
+    "./discord-join": "./src/discord-join.ts",
     "./provider-backoff": "./src/provider-backoff.ts",
     "./provider-completion": "./src/provider-completion.ts",
     "./discord-pending": "./src/discord-pending.ts",

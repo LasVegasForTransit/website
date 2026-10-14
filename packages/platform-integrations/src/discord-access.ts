@@ -60,6 +60,32 @@ export class DiscordAccess {
     );
     return data === null ? null : parseDiscordMember(data, identityId);
   }
+  async joinMember(input: {
+    identityId: string;
+    accessToken: string;
+    isCurrent: () => Promise<boolean>;
+  }): Promise<DiscordMember> {
+    this.configured(input.identityId);
+    if (!/^[A-Za-z0-9._~+/-]{1,4096}={0,2}$/.test(input.accessToken))
+      throw new DiscordApiFailure('invalid_response');
+    if (!(await input.isCurrent())) throw new DiscordApiFailure('stale_operation');
+    const data = await this.http.request(
+      `/guilds/${this.configuration.guildId}/members/${input.identityId}`,
+      {
+        method: 'PUT',
+        authorization: `Bot ${this.configuration.botToken}`,
+        jsonBody: { access_token: input.accessToken },
+        memberJoin: true,
+      },
+    );
+    const member =
+      data === null
+        ? await this.readMember(input.identityId)
+        : parseDiscordMember(data, input.identityId);
+    if (!(await input.isCurrent())) throw new DiscordApiFailure('stale_operation');
+    if (!member) throw new DiscordApiFailure('provider_unavailable');
+    return member;
+  }
   async listGuildMembers(after?: string): Promise<DiscordGuildMember[]> {
     if (!discordConfigured(this.configuration) || (after !== undefined && !discordId(after)))
       throw new DiscordApiFailure('not_configured');
