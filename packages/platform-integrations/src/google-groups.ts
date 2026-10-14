@@ -1,4 +1,5 @@
 import { GoogleGroupsHttp } from './google-groups-http';
+import { readGoogleGroupPage } from './google-group-members';
 import {
   GoogleGroupsFailure,
   record,
@@ -10,6 +11,7 @@ import {
   type GoogleGroupObservation,
   type GoogleGroupReconciliation,
   type GoogleGroupRole,
+  type GoogleGroupListInput,
 } from './google-groups-types';
 export { GoogleGroupsFailure } from './google-groups-types';
 export type {
@@ -18,6 +20,9 @@ export type {
   GoogleTokenSource,
   GoogleGroupObservation,
   GoogleGroupReconciliation,
+  GoogleGroupListInput,
+  GoogleGroupMembersPage,
+  GoogleGroupInventoryMember,
 } from './google-groups-types';
 
 export class GoogleGroups {
@@ -35,7 +40,7 @@ export class GoogleGroups {
     });
     this.http = new GoogleGroupsHttp(tokens, options);
   }
-  private validate(input: GoogleGroupReconciliation): void {
+  private validateGroup(groupEmail: string): void {
     const config = this.configuration;
     if (
       !stableId(config.customerId) ||
@@ -49,14 +54,25 @@ export class GoogleGroups {
           ? !config.productionGroups.includes(email)
           : config.productionGroups.includes(email),
       ) ||
-      !config.managedGroups.includes(input.groupEmail) ||
-      !workspaceEmail(input.groupEmail) ||
+      !config.managedGroups.includes(groupEmail) ||
+      !workspaceEmail(groupEmail)
+    )
+      throw new GoogleGroupsFailure('not_configured');
+  }
+  private validate(input: GoogleGroupReconciliation): void {
+    this.validateGroup(input.groupEmail);
+    if (
       !stableId(input.identityId) ||
       (input.desired && !workspaceEmail(input.identityEmail)) ||
       typeof input.desired !== 'boolean' ||
       !/^[\x21-\x7e]{1,200}$/.test(input.operationId)
     )
       throw new GoogleGroupsFailure('not_configured');
+  }
+  async listMembers(input: GoogleGroupListInput) {
+    const request = { ...input };
+    this.validateGroup(request.groupEmail);
+    return await readGoogleGroupPage(this.http, this.configuration.customerId, request);
   }
   private async current(input: GoogleGroupReconciliation): Promise<void> {
     if (!(await input.isCurrent())) throw new GoogleGroupsFailure('stale_operation');
