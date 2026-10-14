@@ -267,6 +267,10 @@ export const en = {
     connectedAs: 'Connected as {name}.',
     connected: 'Your Discord account is connected.',
     connectedNotice: 'You’re in LVBT’s Discord.',
+    cancelled: "Discord wasn't connected.",
+    alreadyConnected: 'That Discord account is already connected to a different LVBT account.',
+    contactIfWrong: "Contact {email} if that's wrong.",
+    providerUnavailable: "We couldn't reach Discord. Try again in a few minutes.",
     manage: 'Manage Discord',
     disconnect: 'Disconnect Discord',
     disconnectBody:

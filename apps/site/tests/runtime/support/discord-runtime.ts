@@ -27,6 +27,7 @@ interface Scenario {
   joined: boolean;
   pending: boolean;
   failJoin: boolean;
+  failOAuth: boolean;
   failRoleWrites: boolean;
   roles: Set<string>;
 }
@@ -87,7 +88,7 @@ async function authorizationServer(tls: { httpsKey: string; httpsCert: string })
     const state = url.searchParams.get('state') ?? '';
     response.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
     response.end(
-      `<html><body><h1>Fixture Discord authorization</h1><a href="${ORIGIN}/account/discord/callback?state=${encodeURIComponent(state)}&amp;code=fixture-code">Authorize fixture account</a></body></html>`,
+      `<html><body><h1>Fixture Discord authorization</h1><a href="${ORIGIN}/account/discord/callback?state=${encodeURIComponent(state)}&amp;code=fixture-code">Authorize fixture account</a><a href="${ORIGIN}/account/discord/callback?state=${encodeURIComponent(state)}&amp;error=access_denied">Cancel authorization</a></body></html>`,
     );
   });
   await new Promise<void>((resolve, reject) => {
@@ -153,6 +154,7 @@ async function simulatorFor(
     assert.equal(url.origin, 'https://discord.com');
     if (url.pathname === '/api/v10/oauth2/token') {
       assert.equal(request.method, 'POST');
+      if (scenario.failOAuth) return json({ message: 'fixture unavailable' }, 503);
       const form = new URLSearchParams(await request.text());
       assert.equal(form.get('grant_type'), 'authorization_code');
       assert.equal(form.get('redirect_uri'), `${ORIGIN}/account/discord/callback`);
@@ -250,6 +252,7 @@ export async function discordRuntime() {
     joined: false,
     pending: false,
     failJoin: false,
+    failOAuth: false,
     failRoleWrites: false,
     roles: new Set([DISCORD_ROLES.unmanaged]),
   };

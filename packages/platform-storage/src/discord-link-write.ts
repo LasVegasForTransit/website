@@ -2,7 +2,7 @@ import { ulid } from '@lasvegasfortransit/platform-core/ids';
 import { randomToken } from '@lasvegasfortransit/platform-core/random-token';
 import type { DiscordIdentity } from '@lasvegasfortransit/platform-core/discord-identity';
 import type { Db, SqlValue, Statement } from './db';
-import type { DiscordLinkClaim } from './discord-link';
+import type { DiscordLinkClaim, DiscordLinkCompletion } from './discord-link';
 interface LinkInput {
   claim: DiscordLinkClaim;
   identity: DiscordIdentity;
@@ -12,7 +12,7 @@ interface Guard {
   sql: string;
   values: SqlValue[];
 }
-function guard(input: LinkInput): Guard {
+function flowGuard(input: LinkInput): Guard {
   const { claim, identity, now } = input;
   return {
     sql: `EXISTS(SELECT 1 FROM discord_link_states f JOIN sessions s ON s.id_hash=f.session_hash JOIN people p ON p.id=f.person_id
@@ -21,7 +21,6 @@ function guard(input: LinkInput): Guard {
       AND s.person_id=p.id AND p.deleted_at IS NULL AND p.membership_status='member')
       AND (SELECT count(*) FROM identities WHERE platform='discord' AND person_id=?)<=1
       AND NOT EXISTS(SELECT 1 FROM identities WHERE platform='discord' AND person_id=? AND external_id<>?)
-      AND NOT EXISTS(SELECT 1 FROM identities WHERE platform='discord' AND external_id=? AND person_id<>?)
       AND NOT EXISTS(SELECT 1 FROM discord_disconnects d JOIN identities i ON i.id=d.identity_record_id WHERE i.person_id=? AND i.platform='discord')`,
     values: [
       claim.stateHash,
@@ -34,10 +33,15 @@ function guard(input: LinkInput): Guard {
       claim.personId,
       claim.personId,
       identity.id,
-      identity.id,
-      claim.personId,
       claim.personId,
     ],
+  };
+}
+function guard(input: LinkInput): Guard {
+  const flow = flowGuard(input);
+  return {
+    sql: `${flow.sql} AND NOT EXISTS(SELECT 1 FROM identities WHERE platform='discord' AND external_id=? AND person_id<>?)`,
+    values: [...flow.values, input.identity.id, input.claim.personId],
   };
 }
 function writer(db: Db, input: LinkInput) {
@@ -104,7 +108,10 @@ function queuedWrites(db: Db, input: LinkInput): Statement[] {
     ),
   ];
 }
-export async function completeDiscordLink(db: Db, input: LinkInput): Promise<boolean> {
+export async function completeDiscordLink(
+  db: Db,
+  input: LinkInput,
+): Promise<DiscordLinkCompletion> {
   const write = writer(db, input),
     { claim, now } = input;
   const completionToken = randomToken(),
@@ -130,12 +137,19 @@ export async function completeDiscordLink(db: Db, input: LinkInput): Promise<boo
       claim.stateHash,
     ]),
   ]);
-  return Boolean(
-    await db
-      .prepare(
-        "SELECT 1 FROM staff_audits WHERE operation_id=? AND action='identity.discord_link' AND json_extract(details,'$.completionToken')=?",
-      )
-      .bind(operationId, completionToken)
-      .first(),
-  );
+  const saved = await db
+    .prepare(
+      "SELECT 1 FROM staff_audits WHERE operation_id=? AND action='identity.discord_link' AND json_extract(details,'$.completionToken')=?",
+    )
+    .bind(operationId, completionToken)
+    .first();
+  if (saved) return 'linked';
+  const eligible = flowGuard(input);
+  const conflict = await db
+    .prepare(
+      `SELECT 1 FROM identities WHERE platform='discord' AND external_id=? AND person_id<>? AND ${eligible.sql}`,
+    )
+    .bind(input.identity.id, claim.personId, ...eligible.values)
+    .first();
+  return conflict ? 'already_connected' : 'failed';
 }

@@ -23,10 +23,10 @@ const removeToken =
     : null;
 const providers =
   row.targetId === 'person'
-    ? [{ name: 'LVBT member role', access: row.discord }]
+    ? [{ name: 'Discord', access: row.discord }]
     : [
-        { name: 'Google Workspace group', access: row.googleWorkspace },
-        { name: 'Discord role', access: row.discord },
+        { name: 'Google group', access: row.googleWorkspace },
+        { name: 'Discord', access: row.discord },
       ];
 ---
 

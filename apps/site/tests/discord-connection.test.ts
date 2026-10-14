@@ -102,10 +102,140 @@ void test('the callback sends members to an honest connection result without exp
     const response = await loaded.completeDiscordConnection(env, request, options);
     assert.equal(response.status, 303);
     assert.equal(response.headers.get('Location'), location);
-    assert.match(response.headers.get('Set-Cookie') ?? '', /Max-Age=0/);
+    if (kind === 'failed')
+      assert.doesNotMatch(response.headers.get('Set-Cookie') ?? '', /__Host-lvbt_discord_state=/);
+    else assert.match(response.headers.get('Set-Cookie') ?? '', /Max-Age=0/);
     assert.equal(response.headers.get('Cache-Control'), 'private, no-store');
     assert.equal(everyStoredText(db).includes('fixture-access-token'), false);
     const replay = await loaded.completeDiscordConnection(env, request, options);
     assert.equal(replay.headers.get('Location'), '/account/discord/?result=failed');
   }
+});
+
+async function authorization(t: test.TestContext) {
+  const db = memoryDb();
+  t.after(() => db.raw.close());
+  const env = {
+    PLATFORM_DB: db,
+    LVBT_SIGN_IN_SECRET: 'fixture-session-secret',
+    LVBT_DISCORD_APPLICATION_ID: '111111111111111111',
+    LVBT_DISCORD_CLIENT_SECRET: 'fixture-client-secret',
+    LVBT_DEPLOYMENT_ENV: 'production',
+    LVBT_DISCORD_JOBS: { fetch: () => Promise.reject(new Error('unexpected join')) },
+  };
+  const { person } = await new PersonService(db).upsertFromSource({
+    source: 'join_form',
+    fields: { email: 'cancel@example.invalid' },
+    consent: {
+      scope: 'newsletter',
+      source: 'join_form',
+      method: 'checkbox',
+      wordingVersion: 'fixture',
+    },
+  });
+  const session = await createSession(env, person.id, 'member');
+  const origin = 'https://lasvegasfortransit.org';
+  const client = new DiscordLink(env);
+  const csrf = await client.formToken(session.token, origin);
+  assert.ok(csrf);
+  const started = await client.start({ sessionToken: session.token, origin, csrfToken: csrf });
+  assert.ok(started);
+  const cookie = `__Host-lvbt_session=${session.token}; __Host-lvbt_discord_state=${started.state}`;
+  return { db, env, person, origin, started, cookie };
+}
+
+void test('a valid Discord cancellation returns to the account and its callback cannot be replayed', async (t) => {
+  const f = await authorization(t);
+  const { completeDiscordConnection } = await import('../functions/account/discord/_callback');
+  let calls = 0;
+  const options = {
+    fetch: () => {
+      calls += 1;
+      return Promise.reject(new Error('unexpected OAuth'));
+    },
+  };
+  const cancelled = new Request(
+    `${f.origin}/account/discord/callback?state=${f.started.state}&error=access_denied&error_description=do-not-display-this`,
+    { headers: { Cookie: f.cookie } },
+  );
+  const response = await completeDiscordConnection(f.env, cancelled, options);
+  assert.equal(response.headers.get('Location'), '/account/#discord');
+  assert.match(response.headers.get('Set-Cookie') ?? '', /discord_cancelled/);
+  assert.doesNotMatch(JSON.stringify([...response.headers]), /do-not-display-this/);
+  const replay = await completeDiscordConnection(
+    f.env,
+    new Request(`${f.origin}/account/discord/callback?state=${f.started.state}&code=fixture-code`, {
+      headers: { Cookie: f.cookie },
+    }),
+    options,
+  );
+  assert.equal(replay.headers.get('Location'), '/account/discord/?result=failed');
+  assert.equal(calls, 0);
+  assert.equal(
+    (await f.db.prepare("SELECT count(*) AS n FROM identities WHERE platform='discord'").first())
+      ?.n,
+    0,
+  );
+});
+
+void test('a Discord outage has plain retry guidance without exposing the provider error', async (t) => {
+  const f = await authorization(t);
+  const { completeDiscordConnection } = await import('../functions/account/discord/_callback');
+  const response = await completeDiscordConnection(
+    f.env,
+    new Request(`${f.origin}/account/discord/callback?state=${f.started.state}&code=fixture-code`, {
+      headers: { Cookie: f.cookie },
+    }),
+    { fetch: () => Promise.resolve(new Response(null, { status: 503 })) },
+  );
+  assert.equal(response.headers.get('Location'), '/account/discord/?result=unavailable');
+  assert.equal(
+    (await f.db.prepare("SELECT count(*) AS n FROM identities WHERE platform='discord'").first())
+      ?.n,
+    0,
+  );
+});
+
+void test('an invalid cancellation cannot clear the current authorization cookie or consume its state', async (t) => {
+  const f = await authorization(t);
+  const { completeDiscordConnection } = await import('../functions/account/discord/_callback');
+  const invalid = await completeDiscordConnection(
+    f.env,
+    new Request(`${f.origin}/account/discord/callback?state=wrong-state&error=access_denied`, {
+      headers: { Cookie: f.cookie },
+    }),
+  );
+  assert.equal(invalid.headers.get('Location'), '/account/discord/?result=failed');
+  assert.doesNotMatch(invalid.headers.get('Set-Cookie') ?? '', /__Host-lvbt_discord_state=/);
+  const valid = await completeDiscordConnection(
+    f.env,
+    new Request(
+      `${f.origin}/account/discord/callback?state=${f.started.state}&error=access_denied`,
+      { headers: { Cookie: f.cookie } },
+    ),
+  );
+  assert.equal(valid.headers.get('Location'), '/account/#discord');
+});
+
+void test('a malformed callback leaves the matching unused authorization available', async (t) => {
+  const f = await authorization(t);
+  const { completeDiscordConnection } = await import('../functions/account/discord/_callback');
+  for (const code of ['', `&code=${'x'.repeat(2049)}`]) {
+    const invalid = await completeDiscordConnection(
+      f.env,
+      new Request(`${f.origin}/account/discord/callback?state=${f.started.state}${code}`, {
+        headers: { Cookie: f.cookie },
+      }),
+    );
+    assert.equal(invalid.headers.get('Location'), '/account/discord/?result=failed');
+    assert.doesNotMatch(invalid.headers.get('Set-Cookie') ?? '', /__Host-lvbt_discord_state=/);
+  }
+  const valid = await completeDiscordConnection(
+    f.env,
+    new Request(
+      `${f.origin}/account/discord/callback?state=${f.started.state}&error=access_denied`,
+      { headers: { Cookie: f.cookie } },
+    ),
+  );
+  assert.equal(valid.headers.get('Location'), '/account/#discord');
 });
