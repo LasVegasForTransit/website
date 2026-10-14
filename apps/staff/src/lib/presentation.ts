@@ -29,6 +29,7 @@ const LABELS: Record<string, string> = {
   subscribed: t('staff.labels.subscribed'),
   unsubscribed: t('staff.labels.unsubscribed'),
   joined: t('staff.labels.joined'),
+  form_response: t('staff.labels.form_response'),
   welcomed: t('staff.labels.welcomed'),
   rsvp: t('staff.labels.rsvp'),
   attended: t('staff.labels.attended'),

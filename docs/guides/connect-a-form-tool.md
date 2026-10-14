@@ -60,16 +60,20 @@ a census block and throws it away.
 
 ## What you get back
 
-| Status | Body                                                                        | Meaning                                                                                                                                    |
-| ------ | --------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
-| 200    | `{ "action": "created" }`                                                   | A new person was added.                                                                                                                    |
-| 200    | `{ "action": "linked" }`                                                    | The submission matched someone LVBT already knew, by email address, and was added to their record.                                         |
-| 400    | `{ "error": "invalid_fields", "fields": ["person.email"], "message": "…" }` | Some fields are missing or malformed. `fields` names them; the values you sent are never repeated back.                                    |
-| 401    | `{ "error": "unauthorized", "message": "…" }`                               | The token is missing or wrong. Nothing was saved.                                                                                          |
-| 503    | `{ "error": "not_configured" \| "unavailable", "message": "…" }`            | The site isn't set up, or the newsletter service didn't answer. Send the same submission again later; the idempotency key makes that safe. |
+| Status | Body                                                                        | Meaning                                                                                                                            |
+| ------ | --------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+| 200    | `{ "action": "created" }`                                                   | A new person was added.                                                                                                            |
+| 200    | `{ "action": "linked" }`                                                    | The submission matched someone LVBT already knew, by email address, and was added to their record.                                 |
+| 400    | `{ "error": "invalid_fields", "fields": ["person.email"], "message": "…" }` | Some fields are missing or malformed. `fields` names them; the values you sent are never repeated back.                            |
+| 401    | `{ "error": "unauthorized", "message": "…" }`                               | The token is missing or wrong. Nothing was saved.                                                                                  |
+| 503    | `{ "error": "not_configured" \| "unavailable", "message": "…" }`            | The site isn't set up, or the record couldn't be saved. Send the same submission again later; the idempotency key makes that safe. |
 
 The answer never says anything about any other person, so the interface can't be used to find out
 who is on LVBT's list.
+
+Newsletter consent is saved with the original `submittedAt` time. Delivery is queued separately, so
+a newsletter outage does not lose the signup, and replaying an older form cannot undo a newer
+withdrawal. A submission without consent records a form response rather than an LVBT join.
 
 ## Test it with curl
 
@@ -86,14 +90,15 @@ curl -sS https://lasvegasfortransit.org/api/intake/v1 \
 
 You should see `{"action":"created"}`. Sending a request with the same `idempotencyKey` again
 returns that same answer; the command above makes a new key each time, so running it again says
-`linked`. Unsubscribe from the welcome email afterwards if you don't want to stay on the list.
+`linked`. Leave the mailing list from your LVBT account afterwards if you don't want to stay on it.
 
 ## Worked example: the Google Form
 
 The LVBT Google Form uses an Apps Script that runs on every submission and posts to the older
-address, `/api/membership-intake`, in its own format. That address still works: it subscribes the
-person, adds a row to the Notion intake database for staff follow-up, and records them in the person
-record as a `google_form` submission with the consent wording `gform-2026-06`. The script is in
+address, `/api/membership-intake`, in its own format. That address records the submission first and
+adds a Notion intake page for staff follow-up. Newsletter consent requires a “Yes” answer to the
+form's newsletter question and its original submission time; missing answers or times do not create
+consent. The consent wording is `gform-2026-06`. The script is in
 `apps/site/scripts/google-apps/membership-intake.gs`, and
 [connect the membership form](./connect-the-membership-form.md) explains how to install it.
 

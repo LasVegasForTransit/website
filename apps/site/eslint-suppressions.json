@@ -4,11 +4,6 @@
       "count": 1
     }
   },
-  "functions/api/membership-intake.ts": {
-    "@typescript-eslint/require-await": {
-      "count": 1
-    }
-  },
   "functions/api/transit-news-intake.ts": {
     "@typescript-eslint/dot-notation": {
       "count": 32

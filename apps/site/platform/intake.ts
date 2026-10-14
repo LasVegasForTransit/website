@@ -6,9 +6,10 @@
 
 import { normalizePhone } from '@lasvegasfortransit/platform-core/join-form';
 import { nowIso } from '@lasvegasfortransit/platform-core/ids';
-import { subscribe } from '@lasvegasfortransit/platform-integrations/beehiiv';
+import { digestToken } from '@lasvegasfortransit/platform-core/random-token';
 import type { PlatformEnv } from './join';
 import type { Db } from '@lasvegasfortransit/platform-storage/db';
+import { queryBudget } from '@lasvegasfortransit/platform-storage/query-budget';
 import {
   PersonService,
   type PersonFields,
@@ -120,21 +121,45 @@ export function parseIntake(body: unknown): ParseResult {
   return invalid.length > 0 ? { ok: false, fields: invalid } : { ok: true, submission };
 }
 
-async function previousResponse(db: Db, key: string): Promise<IntakeResponse | null> {
+async function receiptKey(submission: IntakeSubmission): Promise<string> {
+  return `intake:${await digestToken(`${submission.source}\0${submission.idempotencyKey}`)}`;
+}
+async function previousResponse(
+  db: Db,
+  submission: IntakeSubmission,
+  key: string,
+): Promise<IntakeResponse | null> {
   const cutoff = new Date(Date.now() - IDEMPOTENCY_DAYS * 24 * 60 * 60 * 1000).toISOString();
   const row = await db
     .prepare(
-      'SELECT response FROM intake_submissions WHERE idempotency_key = ? AND created_at >= ?',
+      `SELECT idempotency_key,response,created_at FROM intake_submissions
+       WHERE ((idempotency_key=? AND json_extract(response,'$.receiptVersion')=1)
+         OR (idempotency_key=? AND json_type(response,'$.receiptVersion') IS NULL))
+         AND source=? AND created_at>=? ORDER BY (idempotency_key=?) DESC LIMIT 1`,
     )
-    .bind(key, cutoff)
-    .first<{ response: string }>();
-  return row ? (JSON.parse(row.response) as IntakeResponse) : null;
+    .bind(key, submission.idempotencyKey, submission.source, cutoff, key)
+    .first<{ idempotency_key: string; response: string; created_at: string }>();
+  if (!row) return null;
+  const stored = JSON.parse(row.response) as IntakeResponse & { receiptVersion?: number };
+  if (!['created', 'linked', 'created_and_queued'].includes(stored.action))
+    throw new Error('Invalid intake receipt');
+  const response = { action: stored.action };
+  if (stored.receiptVersion !== 1) {
+    await rememberResponse(db, submission, response, { key, createdAt: row.created_at });
+    if (row.idempotency_key !== key)
+      await db
+        .prepare('DELETE FROM intake_submissions WHERE idempotency_key=? AND source=?')
+        .bind(row.idempotency_key, submission.source)
+        .run();
+  }
+  return response;
 }
 
 async function rememberResponse(
   db: Db,
   submission: IntakeSubmission,
   response: IntakeResponse,
+  receipt: { key: string; createdAt?: string },
 ): Promise<void> {
   const now = nowIso();
   await db
@@ -144,7 +169,13 @@ async function rememberResponse(
        ON CONFLICT (idempotency_key) DO UPDATE SET response = excluded.response,
          created_at = excluded.created_at, updated_at = excluded.updated_at`,
     )
-    .bind(submission.idempotencyKey, submission.source, JSON.stringify(response), now, now)
+    .bind(
+      receipt.key,
+      submission.source,
+      JSON.stringify({ ...response, receiptVersion: 1 }),
+      receipt.createdAt ?? now,
+      now,
+    )
     .run();
 }
 
@@ -160,48 +191,18 @@ function fields(submission: IntakeSubmission): PersonFields {
 }
 
 /** What the intake needs from the platform environment. */
-export type IntakeEnv = Pick<
-  PlatformEnv,
-  'PLATFORM_DB' | 'LVBT_BEEHIIV_API_KEY' | 'LVBT_BEEHIIV_PUBLICATION_ID'
->;
-
-export interface IntakeOptions {
-  /** Subscribe in Beehiiv when consent is given. The legacy Google Form handler already has. */
-  subscribe: boolean;
-  fetcher?: typeof fetch;
-}
+export type IntakeEnv = Pick<PlatformEnv, 'PLATFORM_DB'>;
 
 export type IntakeOutcome =
   { kind: 'processed'; response: IntakeResponse } | { kind: 'unavailable' };
 
-async function subscribeIfConsented(
-  env: IntakeEnv,
-  submission: IntakeSubmission,
-  options: IntakeOptions,
-): Promise<boolean> {
-  if (!options.subscribe || !submission.consent?.newsletter) return true;
-  if (!env.LVBT_BEEHIIV_API_KEY || !env.LVBT_BEEHIIV_PUBLICATION_ID) return false;
-  const result = await subscribe(
-    { apiKey: env.LVBT_BEEHIIV_API_KEY, publicationId: env.LVBT_BEEHIIV_PUBLICATION_ID },
-    submission.person.email,
-    { sendWelcomeEmail: true, utmSource: submission.source },
-    options.fetcher,
-  );
-  return result.ok;
-}
-
-export async function processIntake(
-  env: IntakeEnv,
-  submission: IntakeSubmission,
-  options: IntakeOptions,
-): Promise<IntakeOutcome> {
-  const previous = await previousResponse(env.PLATFORM_DB, submission.idempotencyKey);
+async function recordIntake(env: IntakeEnv, submission: IntakeSubmission): Promise<IntakeOutcome> {
+  const key = await receiptKey(submission);
+  const previous = await previousResponse(env.PLATFORM_DB, submission, key);
   if (previous) return { kind: 'processed', response: previous };
 
-  // Subscribe first, as the join form does: if Beehiiv fails, nothing is
-  // recorded and the form tool can send the same submission again.
-  if (!(await subscribeIfConsented(env, submission, options))) return { kind: 'unavailable' };
-
+  const submittedAt = new Date(submission.submittedAt).toISOString();
+  if (Date.parse(submittedAt) > Date.now()) return { kind: 'unavailable' };
   const people = new PersonService(env.PLATFORM_DB);
   const { person, action } = await people.upsertFromSource({
     source: submission.source,
@@ -212,39 +213,54 @@ export async function processIntake(
           source: submission.source,
           method: 'checkbox',
           wordingVersion: submission.consent.wordingVersion ?? `${submission.source}-unversioned`,
+          givenAt: submittedAt,
         }
       : undefined,
   });
   await people.recordEngagement(person.id, {
-    type: 'joined',
-    occurredAt: submission.submittedAt,
+    type: submission.consent?.newsletter ? 'joined' : 'form_response',
+    occurredAt: submittedAt,
     source: submission.source,
     reference: submission.idempotencyKey,
     details: { interests: submission.interests ?? [], heardFrom: submission.heardFrom ?? null },
   });
   const response: IntakeResponse = { action };
-  await rememberResponse(env.PLATFORM_DB, submission, response);
+  await rememberResponse(env.PLATFORM_DB, submission, response, { key });
   return { kind: 'processed', response };
+}
+
+export async function processIntake(
+  env: IntakeEnv,
+  submission: IntakeSubmission,
+): Promise<IntakeOutcome> {
+  try {
+    return await recordIntake({ PLATFORM_DB: queryBudget(env.PLATFORM_DB, 50).db }, submission);
+  } catch {
+    return { kind: 'unavailable' };
+  }
 }
 
 // The Google Form's script posts its own shape to /api/membership-intake.
 // This turns that into a version 1 submission, so the form keeps working
-// unchanged. Submitting the form is joining, so it carries newsletter consent.
+// unchanged. Only its affirmative newsletter answer carries consent.
 export const GOOGLE_FORM_WORDING = 'gform-2026-06';
+export const GOOGLE_FORM_NEWSLETTER_QUESTION =
+  'Finishing this form will sign you up for our email newsletter. Is this okay?';
 
 export function googleFormSubmission(fields: {
   email: string;
   name?: string | undefined;
   submittedAt?: string | undefined;
   responseId?: string | undefined;
+  answers?: unknown;
 }): IntakeSubmission {
   const [givenName, ...rest] = (fields.name ?? '').split(/\s+/).filter(Boolean);
-  const submittedAt =
-    fields.submittedAt && !Number.isNaN(Date.parse(fields.submittedAt))
-      ? fields.submittedAt
-      : nowIso();
+  const time = Date.parse(fields.submittedAt ?? '');
+  const knownTime = Number.isFinite(time) && time <= Date.now();
+  const submittedAt = knownTime ? new Date(time).toISOString() : nowIso();
+  const agrees = record(fields.answers)[GOOGLE_FORM_NEWSLETTER_QUESTION] === 'Yes';
   return {
-    idempotencyKey: `gform-${fields.responseId ?? `${fields.email}-${submittedAt}`}`,
+    idempotencyKey: `gform-${fields.responseId ?? `${fields.email}-${fields.submittedAt ?? 'unknown'}`}`,
     source: 'google_form',
     submittedAt,
     person: {
@@ -252,6 +268,7 @@ export function googleFormSubmission(fields: {
       givenName,
       familyName: rest.length > 0 ? rest.join(' ') : undefined,
     },
-    consent: { newsletter: true, wordingVersion: GOOGLE_FORM_WORDING },
+    consent:
+      agrees && knownTime ? { newsletter: true, wordingVersion: GOOGLE_FORM_WORDING } : undefined,
   };
 }

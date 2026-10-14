@@ -62,6 +62,7 @@ export const staffCommon = {
     subscribed: 'Joined the mailing list',
     unsubscribed: 'Left the mailing list',
     joined: 'Joined LVBT',
+    form_response: 'Form received',
     welcomed: 'Welcomed to LVBT',
     rsvp: 'Signed up for an event',
     attended: 'Attended an event',
