@@ -19,8 +19,16 @@ export interface SourceContext {
     email: string | null;
     deleted_at: string | null;
     erased_at: string | null;
+    email_verified_at: string | null;
   } | null;
-  candidate: { id: string; email: string; deleted_at: null; erased_at: null } | null;
+  candidate: {
+    id: string;
+    email: string;
+    email_verified_at: string | null;
+    deleted_at: null;
+    erased_at: null;
+  } | null;
+  erasedAt: string | null;
   consents: { id: string; given_at: string; withdrawn_at: string | null }[];
   withdrawals: { withdrawn_at: string }[];
   sourceWithdrawals: { occurred_at: string }[];
@@ -30,12 +38,13 @@ export interface SourceContext {
 
 export const SOURCE_CONTEXT = `WITH source_event AS (SELECT * FROM newsletter_inbound_events WHERE publication_id=?1 AND id=?2),
   account_owner AS (SELECT i.person_id FROM identities i WHERE i.platform='beehiiv' AND i.external_id=(SELECT subscription_id FROM source_event)),
-  candidate AS (SELECT p.id,p.email FROM people p WHERE p.deleted_at IS NULL AND lower(p.email)=?3 AND NOT EXISTS(SELECT 1 FROM account_owner)),
+  candidate AS (SELECT p.id,p.email,p.email_verified_at FROM people p WHERE p.deleted_at IS NULL AND lower(p.email)=?3 AND NOT EXISTS(SELECT 1 FROM account_owner)),
   selected_person AS (SELECT person_id AS id FROM account_owner UNION SELECT id FROM candidate)
   SELECT json_object(
   'event',json((SELECT json_object('type',type,'occurred_at',occurred_at,'subscription_id',subscription_id,'email_key',email_key,'state',state,'encrypted_email',encrypted_email) FROM newsletter_inbound_events WHERE publication_id=?1 AND id=?2)),
-  'owner',json((SELECT json_object('id',i.person_id,'email',p.email,'deleted_at',k.deleted_at,'erased_at',k.erased_at) FROM identities i JOIN person_keys k ON k.id=i.person_id LEFT JOIN people p ON p.id=i.person_id WHERE i.platform='beehiiv' AND i.external_id=(SELECT subscription_id FROM newsletter_inbound_events WHERE publication_id=?1 AND id=?2))),
-  'candidate',json((SELECT json_object('id',id,'email',email,'deleted_at',NULL,'erased_at',NULL) FROM candidate)),
+  'owner',json((SELECT json_object('id',i.person_id,'email',p.email,'email_verified_at',p.email_verified_at,'deleted_at',k.deleted_at,'erased_at',k.erased_at) FROM identities i JOIN person_keys k ON k.id=i.person_id LEFT JOIN people p ON p.id=i.person_id WHERE i.platform='beehiiv' AND i.external_id=(SELECT subscription_id FROM newsletter_inbound_events WHERE publication_id=?1 AND id=?2))),
+  'candidate',json((SELECT json_object('id',id,'email',email,'email_verified_at',email_verified_at,'deleted_at',NULL,'erased_at',NULL) FROM candidate)),
+  'erasedAt',(SELECT erased_at FROM newsletter_address_tombstones WHERE email_key=(SELECT email_key FROM source_event)),
   'consents',json((SELECT json_group_array(json_object('id',id,'given_at',given_at,'withdrawn_at',withdrawn_at)) FROM (SELECT c.id,c.given_at,c.withdrawn_at FROM consent_records c WHERE c.person_id IN (SELECT id FROM selected_person) AND c.scope='newsletter' ORDER BY c.id))),
   'withdrawals',json((SELECT json_group_array(json_object('withdrawn_at',withdrawn_at)) FROM (SELECT w.withdrawn_at FROM consent_withdrawals w WHERE (w.person_id IN (SELECT id FROM selected_person) OR w.origin_person_id IN (SELECT id FROM selected_person)) AND w.scope='newsletter' ORDER BY w.id))),
   'sourceWithdrawals',json((SELECT json_group_array(json_object('occurred_at',occurred_at)) FROM (SELECT e.occurred_at FROM newsletter_inbound_events e WHERE e.publication_id=?1 AND e.type='subscription.deleted' AND e.state IN ('pending','needs_review','applied') AND e.id<>?2 AND (e.subscription_id=(SELECT subscription_id FROM source_event) OR e.email_key=(SELECT email_key FROM source_event)) ORDER BY e.id))),

@@ -1,5 +1,6 @@
 import { nowIso, ulid } from '@lasvegasfortransit/platform-core/ids';
 import type { Db } from './db';
+import { newsletterErasureWrites } from './newsletter-erasure';
 import {
   beginErasure,
   beginErasureCopies,
@@ -10,10 +11,24 @@ import {
 
 /** Erase this person's profiles and saved copies; retain IDs for access removal. */
 export async function deletePersonData(db: Db, id: string): Promise<void> {
+  for (let attempt = 0; ; attempt++) {
+    try {
+      await eraseCurrentPerson(db, id);
+      return;
+    } catch (error) {
+      if (attempt >= 2 || !(error instanceof Error) || !error.message.includes('valid_snapshot=1'))
+        throw error;
+    }
+  }
+}
+
+async function eraseCurrentPerson(db: Db, id: string): Promise<void> {
   const stamp = nowIso();
   const operationId = ulid();
+  const newsletter = await newsletterErasureWrites(db, id, operationId, stamp);
   await db.batch([
     beginErasure(db, id, operationId, stamp),
+    ...newsletter,
     eraseProfile(db, operationId, stamp),
     beginErasureCopies(db, operationId),
     ...eraseHistory(db, operationId, stamp),

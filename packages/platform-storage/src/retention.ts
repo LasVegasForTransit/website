@@ -21,7 +21,7 @@ function changed(result: unknown): number {
   return typeof meta.changes === 'number' ? meta.changes : 0;
 }
 /** D1 change counts include trigger writes; count scoped profiles explicitly. */
-function erasedCount(result: unknown): number {
+function profileCount(result: unknown, key: 'profiles_erased' | 'profiles_removed'): number {
   if (
     typeof result !== 'object' ||
     result === null ||
@@ -30,12 +30,9 @@ function erasedCount(result: unknown): number {
   )
     return 0;
   const row: unknown = result.results[0];
-  return typeof row === 'object' &&
-    row !== null &&
-    'profiles_erased' in row &&
-    typeof row.profiles_erased === 'number'
-    ? row.profiles_erased
-    : 0;
+  if (typeof row !== 'object' || row === null) return 0;
+  const count: unknown = Object.entries(row).find(([name]) => name === key)?.[1];
+  return typeof count === 'number' ? count : 0;
 }
 function recordMaintenanceWrites(db: Db, now: Date, limit: number): Statement[] {
   const stamp = now.toISOString();
@@ -79,7 +76,7 @@ export async function runMaintenance(
   const profiles =
     options.category === 'records'
       ? []
-      : personRetentionWrites(db, {
+      : await personRetentionWrites(db, {
           operationId: ulid(),
           stamp,
           limit,
@@ -94,7 +91,11 @@ export async function runMaintenance(
     viewsRemoved: records.length ? changed(result[1]) : 0,
     auditsRemoved: records.length ? changed(result[2]) : 0,
     claimsExpired: records.length ? changed(result[3]) : 0,
-    profilesErased: profiles.length ? erasedCount(result[records.length + 1]) : 0,
-    profilesRemoved: profiles.length ? changed(result[records.length + profiles.length - 2]) : 0,
+    profilesErased: profiles.length
+      ? profileCount(result[records.length + 1], 'profiles_erased')
+      : 0,
+    profilesRemoved: profiles.length
+      ? profileCount(result[records.length + profiles.length - 3], 'profiles_removed')
+      : 0,
   };
 }

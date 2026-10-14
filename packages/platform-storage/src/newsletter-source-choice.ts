@@ -4,9 +4,25 @@ export interface SourceDecision {
   kind: 'applied' | 'ignored' | 'needs_review';
   reason: string | null;
 }
+function erasureDecision(context: SourceContext): SourceDecision | null {
+  if (!context.erasedAt) return null;
+  const removed = Date.parse(context.erasedAt);
+  if (Date.parse(context.event.occurred_at) <= removed)
+    return { kind: 'ignored', reason: 'account_removed' };
+  const selected = context.owner ?? context.candidate;
+  if (
+    !selected?.email_verified_at ||
+    Date.parse(selected.email_verified_at) <= removed ||
+    !context.consents.some((consent) => Date.parse(consent.given_at) > removed)
+  )
+    return { kind: 'needs_review', reason: 'previously_removed_address' };
+  return null;
+}
 function ownershipDecision(context: SourceContext, address: string): SourceDecision | null {
   const { event, owner } = context;
   if (owner?.deleted_at || owner?.erased_at) return { kind: 'ignored', reason: 'account_removed' };
+  const erased = erasureDecision(context);
+  if (erased) return erased;
   if (context.review) return { kind: 'needs_review', reason: 'ownership_conflict' };
   if (!owner && event.type !== 'subscription.confirmed')
     return { kind: 'needs_review', reason: 'ownership_conflict' };
