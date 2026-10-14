@@ -57,7 +57,7 @@ void test('registering /link creates only an LVBT guild command', async () => {
   assert.equal(calls[0]?.authorization, `Bot ${BOT_TOKEN}`);
   assert.deepEqual(JSON.parse(calls[1]?.body ?? '{}'), {
     name: 'link',
-    description: 'Connect your Discord to your LVBT account to get your member role',
+    description: 'Confirm your LVBT membership on the website',
   });
 });
 
@@ -80,7 +80,7 @@ void test('registering /link updates the existing guild command without replacin
   assert.match(update.url, /\/commands\/444444444444444444$/);
   assert.deepEqual(JSON.parse(update.body ?? '{}'), {
     name: 'link',
-    description: 'Connect your Discord to your LVBT account to get your member role',
+    description: 'Confirm your LVBT membership on the website',
   });
 });
 

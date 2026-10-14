@@ -115,7 +115,7 @@ function linkReply(request: Request, linked: boolean): Response {
         url: `${origin}/account/`,
       }
     : {
-        label: 'Connect on lasvegasfortransit.org',
+        label: 'Continue on lasvegasfortransit.org',
         url: `${origin}/account/discord/`,
       };
   return jsonResponse({
@@ -123,7 +123,7 @@ function linkReply(request: Request, linked: boolean): Response {
     data: {
       content: linked
         ? 'Your Discord is already connected to your LVBT account.'
-        : "Connect your Discord to your LVBT account and you'll get the LVBT Member role, plus your committee roles if you volunteer. It takes a minute on the website.",
+        : 'Confirm your LVBT membership on the website to join the conversation in our member and committee channels.',
       flags: 64,
       components: [
         {
