@@ -58,6 +58,18 @@ allowance between enabled providers, within the 32-invocation request limit. A f
 does not suppress the other provider, and failures still make the scheduled invocation fail.
 Compiled fixtures and the local meter do not establish hosted CPU or quota acceptance.
 
+The coordinator stops starting account steps after fifty seconds. An in-flight step can finish, and
+remaining work stays queued for the next invocation. Discord account steps change at most one
+managed role, read it back, and record its confirmed change. Partial steps retain their account work
+without claiming completion. They refresh member access and the changed committee; the complete pass
+saves the full current snapshot in one guarded statement. Old interrupted confirmations also drain
+in bounded passes before completion, preserving unrelated roles.
+
+A member disconnect request uses the same bounded cleanup. While other managed roles remain, the
+website returns to the account with “Disconnecting Discord.” The verified account stays connected
+until every removal is confirmed; scheduled work completes cleanup without requiring the member to
+submit the request again. Server membership and the LVBT membership record stay as they are.
+
 ## Configuration and release
 
 Both jobs and staff read the public Discord configuration declared in the

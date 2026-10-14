@@ -22,6 +22,11 @@ export interface DiscordConfiguration {
   productionGuildId: string;
   botToken: string;
 }
+export function discordChangeLimit(value: number): number {
+  if (!Number.isInteger(value) || value < 1 || value > 1000)
+    throw new DiscordApiFailure('not_configured');
+  return value;
+}
 export interface DiscordRateLimit {
   current(): Promise<{ retryAfterMs: number; global: boolean } | null>;
   defer(pause: { retryAfterMs: number; global: boolean }): Promise<void>;

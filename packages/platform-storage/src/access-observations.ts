@@ -90,3 +90,69 @@ export async function recordAccessObservation(
   const result = await statement.run();
   return result.meta.changes === 1;
 }
+
+/** One guarded statement records a bounded provider snapshot without a query per committee. */
+export function accessObservationBatchWrite(
+  db: Db,
+  inputs: AccessObservation[],
+  now: Date,
+  guard: { sql: string; values: SqlValue[] },
+): Statement | null {
+  if (!inputs.length) return null;
+  if (inputs.length > 1000 || inputs.some((input) => !valid(input, now)))
+    throw new Error('Invalid access observation batch');
+  const columns = [
+    'id',
+    'person_id',
+    'target_id',
+    'provider',
+    'identity_id',
+    'identity_email',
+    'resource_id',
+    'context_id',
+    'generation',
+    'expected_access',
+    'state',
+    'failure',
+    'observed_at',
+    'expires_at',
+  ];
+  const rows = JSON.stringify(
+    inputs.map((input) => [
+      ulid(),
+      input.personId,
+      input.targetId,
+      input.provider,
+      input.identityId,
+      input.identityEmail,
+      input.resourceId,
+      input.contextId,
+      input.generation,
+      Number(input.expectedAccess),
+      input.state,
+      input.failure ?? null,
+      input.observedAt,
+      input.expiresAt,
+    ]),
+  );
+  if (new TextEncoder().encode(rows).byteLength > 1_048_576)
+    throw new Error('Access observation batch exceeds storage limit');
+  const fields = columns
+    .map((name, index) => `json_extract(value,'$[${index}]') AS ${name}`)
+    .join(',');
+  return db
+    .prepare(
+      `WITH incoming AS (SELECT ${fields} FROM json_each(?))
+    INSERT INTO access_observations (${columns.join(',')})
+    SELECT ${columns.map((name) => `incoming.${name}`).join(',')} FROM incoming JOIN people p ON p.id=incoming.person_id
+    WHERE p.deleted_at IS NULL
+      AND EXISTS(SELECT 1 FROM identities i WHERE i.person_id=p.id AND i.platform=incoming.provider AND i.external_id=incoming.identity_id AND i.external_email IS incoming.identity_email
+        AND (i.platform<>'discord' OR i.link_method IN ('self_linked','staff_confirmed')))
+      AND (SELECT count(*) FROM identities WHERE person_id=p.id AND platform=incoming.provider)=1
+      AND coalesce((SELECT generation FROM reconcile_generations WHERE person_id=p.id AND target_id=incoming.target_id),0)=incoming.generation
+      AND (incoming.target_id='person' OR EXISTS(SELECT 1 FROM committees c WHERE c.id=incoming.target_id AND CASE incoming.provider WHEN 'discord' THEN c.discord_role_id ELSE c.workspace_group_email END=incoming.resource_id))
+      AND (incoming.expected_access=CASE WHEN p.membership_status='member' AND (incoming.target_id='person' OR EXISTS(SELECT 1 FROM committee_assignments a WHERE a.person_id=p.id AND a.committee_id=incoming.target_id AND a.ended_at IS NULL)) THEN 1 ELSE 0 END)
+      AND (${guard.sql})`,
+    )
+    .bind(rows, ...guard.values);
+}

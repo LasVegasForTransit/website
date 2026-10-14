@@ -265,8 +265,11 @@ try {
     .bind(new Date().toISOString())
     .run();
   await page.getByRole('button', { name: 'Try again', exact: true }).click();
-  await page.waitForURL(`${ORIGIN}/account/#discord`);
-  await page.getByText('Discord disconnected.', { exact: true }).waitFor();
+  assert.equal(page.url(), `${ORIGIN}/account/#discord`);
+  await page.getByText('Disconnecting Discord.', { exact: true }).waitFor();
+  assert.equal((await fixture.jobs.scheduled({ cron: '* * * * *' })).outcome, 'ok');
+  await page.reload();
+  await page.getByRole('link', { name: 'Join LVBT on Discord', exact: true }).waitFor();
   assert.deepEqual([...fixture.scenario.roles], [DISCORD_ROLES.unmanaged]);
   assert.equal(fixture.scenario.joined, true, 'disconnect must not kick the member');
   assert.equal(

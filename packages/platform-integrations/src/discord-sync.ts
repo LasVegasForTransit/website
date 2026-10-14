@@ -23,9 +23,10 @@ interface SyncOptions {
   client: DiscordAccess;
   memberRoleId: string;
   now?: () => Date;
+  changeLimit?: number;
 }
 export type DiscordSyncResult =
-  | { kind: 'confirmed' | 'stale' | 'busy' | 'not_ready' }
+  | { kind: 'confirmed' | 'progress' | 'stale' | 'busy' | 'not_ready' }
   | { kind: 'retry'; failure: AccessFailure; retryAfterMs: number };
 interface Run {
   db: Db;
@@ -53,42 +54,56 @@ function failure(error: unknown): { failure: AccessFailure; retryAfterMs: number
 }
 async function execute(run: Run): Promise<DiscordSyncResult> {
   try {
-    const member = await run.options.client.reconcile({
-      identityId: run.plan.identityId,
-      managedRoleIds: run.plan.managedRoleIds,
-      desiredRoleIds: run.plan.desiredRoleIds,
-      operationId: run.operationId,
-      isCurrent: async () => await current(run),
-      journal: {
-        prepare: async (change) =>
-          await prepareDiscordChange(
-            run.db,
-            {
-              operationId: run.operationId,
-              plan: run.plan,
-              lease: run.lease,
-              now: run.now(),
-            },
-            change,
-          ),
-        observe: async (member) =>
-          await confirmDiscordChanges(run.db, {
-            operationId: run.operationId,
-            plan: run.plan,
-            lease: run.lease,
-            now: run.now(),
-            member,
-          }),
+    let auditComplete = true;
+    const result = await run.options.client.reconcileStep(
+      {
+        identityId: run.plan.identityId,
+        managedRoleIds: run.plan.managedRoleIds,
+        desiredRoleIds: run.plan.desiredRoleIds,
+        operationId: run.operationId,
+        isCurrent: async () => await current(run),
+        journal: {
+          prepare: async (change) =>
+            await prepareDiscordChange(
+              run.db,
+              {
+                operationId: run.operationId,
+                plan: run.plan,
+                lease: run.lease,
+                now: run.now(),
+              },
+              change,
+            ),
+          observe: async (member) => {
+            auditComplete = await confirmDiscordChanges(
+              run.db,
+              {
+                operationId: run.operationId,
+                plan: run.plan,
+                lease: run.lease,
+                now: run.now(),
+                member,
+              },
+              run.options.changeLimit ?? 1000,
+            );
+          },
+        },
       },
-    });
+      run.options.changeLimit ?? 1000,
+    );
+    const { member } = result;
+    const progress = !result.complete || !auditComplete;
     const saved = await saveDiscordSync(run.db, {
       operationId: run.operationId,
       plan: run.plan,
       lease: run.lease,
       now: run.now(),
       member,
+      progress,
+      ...(progress ? { observedResourceIds: result.changedRoleIds } : {}),
     });
     if (!saved || !(await current(run))) return { kind: 'stale' };
+    if (progress) return { kind: 'progress' };
     if (run.plan.disconnectOperationId) {
       const finished = await finishDiscordDisconnect(run.db, {
         operationId: run.operationId,

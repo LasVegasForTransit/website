@@ -59,6 +59,7 @@ export const onRequestPost: PagesFunction<SignInPagesEnv> = async ({ env, reques
       Location: '/account/#discord',
       'Set-Cookie': noticeCookie('discord_disconnected'),
     });
+  if (result.kind === 'pending') return discordReply(null, 303, { Location: '/account/#discord' });
   return await confirmationPage(
     env,
     request,

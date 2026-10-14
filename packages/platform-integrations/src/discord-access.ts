@@ -3,6 +3,7 @@ import {
   DiscordApiFailure,
   discordConfigured,
   discordId,
+  discordChangeLimit,
   parseDiscordGuildMembers,
   parseDiscordMember,
   type DiscordConfiguration,
@@ -27,6 +28,10 @@ export interface DiscordReconciliation {
     observe: (member: DiscordMember | null) => Promise<void>;
     prepare: (change: { resourceId: string; wasGranted: boolean }) => Promise<boolean>;
   };
+}
+interface RoleChange {
+  id: string;
+  add: boolean;
 }
 function validate(input: DiscordReconciliation, guildId: string): void {
   if (
@@ -112,15 +117,17 @@ export class DiscordAccess {
     input: DiscordReconciliation,
     current: DiscordMember,
     deadline: number,
-  ): Promise<boolean> {
+    limit: number,
+  ): Promise<RoleChange[]> {
     const remove = current.roles.filter(
       (id) => input.managedRoleIds.includes(id) && !input.desiredRoleIds.includes(id),
     );
     const add = [...new Set(input.desiredRoleIds)].filter((id) => !current.roles.includes(id));
-    for (const change of [
+    const changes = [
       ...remove.map((id) => ({ id, add: false })),
       ...add.map((id) => ({ id, add: true })),
-    ]) {
+    ].slice(0, limit);
+    for (const change of changes) {
       if (this.http.now() >= deadline) throw new DiscordApiFailure('provider_unavailable');
       if (change.add && current.pending) throw new DiscordApiFailure('screening_pending');
       if (
@@ -133,25 +140,38 @@ export class DiscordAccess {
         throw new DiscordApiFailure('stale_operation');
       await this.role(input, change.id, change.add);
     }
-    return Boolean(remove.length || add.length);
+    return changes;
   }
-  async reconcile(input: DiscordReconciliation): Promise<DiscordMember | null> {
+  async reconcileStep(
+    input: DiscordReconciliation,
+    limit = 1,
+  ): Promise<{ member: DiscordMember | null; complete: boolean; changedRoleIds: string[] }> {
     validate(input, this.configuration.guildId);
+    discordChangeLimit(limit);
     this.configured(input.identityId);
     if (!(await input.isCurrent())) throw new DiscordApiFailure('stale_operation');
     const deadline = this.http.now() + 30_000;
     const current = await this.readMember(input.identityId);
     if (!(await input.isCurrent())) throw new DiscordApiFailure('stale_operation');
     await input.journal?.observe(current);
-    if (current === null) return null;
-    const changed = await this.applyChanges(input, current, deadline);
-    const observed = changed ? await this.readMember(input.identityId) : current;
+    if (current === null) return { member: null, complete: true, changedRoleIds: [] };
+    const changes = await this.applyChanges(input, current, deadline, limit);
+    const observed = changes.length ? await this.readMember(input.identityId) : current;
     if (!(await input.isCurrent())) throw new DiscordApiFailure('stale_operation');
     if (observed !== current) await input.journal?.observe(observed);
+    if (changes.some((change) => Boolean(observed?.roles.includes(change.id)) !== change.add))
+      throw new DiscordApiFailure('provider_unavailable');
     const actual = observed?.roles.filter((id) => input.managedRoleIds.includes(id)).sort() ?? [];
     const desired = [...new Set(input.desiredRoleIds)].sort();
-    if (JSON.stringify(actual) !== JSON.stringify(desired))
-      throw new DiscordApiFailure('provider_unavailable');
-    return observed;
+    return {
+      member: observed,
+      complete: JSON.stringify(actual) === JSON.stringify(desired),
+      changedRoleIds: changes.map(({ id }) => id),
+    };
+  }
+  async reconcile(input: DiscordReconciliation): Promise<DiscordMember | null> {
+    const result = await this.reconcileStep(input, 1000);
+    if (!result.complete) throw new DiscordApiFailure('provider_unavailable');
+    return result.member;
   }
 }
