@@ -247,8 +247,9 @@ recreated.
 
 Active combination archives are reversible records, not ordinary deletion candidates. Explicit
 deletion erases the current profile and associated archived fields and snapshots. Undo refuses
-erased, deleted or modified archives. Physical removal after thirty days and legacy-deletion cleanup
-remain unfinished; provider cleanup IDs must stay available until managed access has been removed.
+erased, deleted or modified archives. Retention physically removes ordinary deleted profiles after
+thirty days and erases legacy-deletion copies before purging them. Provider cleanup IDs stay
+available until managed access has been removed.
 
 ## Committee settings and managed account mappings
 
@@ -610,9 +611,9 @@ caches neither grant access nor change membership consent.
 
 `beehiiv_poll_checkpoints` keeps one publication's page position, retry deadline and temporary
 worker lease. A page and its position are saved atomically, so an interrupted scan retries the same
-page. An expired worker cannot overwrite its successor. Completed scans become due at the next UTC
-hour. `beehiiv_poll_cursors` detects repeated cursor tokens across invocations and retains only the
-current scan's tokens when a new page is saved.
+page. An expired worker cannot overwrite its successor. Completed scans become due fifteen minutes
+after the scan started. `beehiiv_poll_cursors` detects repeated cursor tokens across invocations and
+retains only the current scan's tokens when a new page is saved.
 
 `beehiiv_subscription_observations` stores subscription IDs, delivery status, the provider's
 creation time and the time each status was observed. It contains no addresses or credentials.
@@ -653,3 +654,37 @@ revision. Bounded cleanup can resume without repeatedly revisiting earlier addre
 are operation progress, not consent evidence or a continuously current delivery status. Canonical
 changes and provider drift must advance the generation before a new reconciliation pass.
 `newsletter_provider_backoffs` retains publication-wide retry deadlines across workers and restarts.
+
+### Newsletter changes and deletion (0036–0038)
+
+`newsletter_inbound_events` stores an authenticated subscription change with its original time,
+publication, subscription and event IDs. Its address is purpose-encrypted while processing or review
+still needs it. `newsletter_inbound_deliveries` separates delivery retries from the original change.
+Conflicting event or delivery identifiers are rejected.
+
+`newsletter_source_operations` binds the final inbox outcome to the same transaction as consent,
+membership and engagement changes. A changed owner, prior choice or inbox row invalidates the whole
+planned write. `newsletter_write_attempts` retains minimal outgoing attempt information so a delayed
+confirmation cannot be mistaken for a new member choice. Completed processing clears the address;
+unclear choices require staff review.
+
+`newsletter_address_tombstones` stores only an address fingerprint and erasure time. Old messages
+for that address and messages for an erased connected account cannot retain an address or create a
+profile. A later unclear choice requires review; a fresh verified website signup can establish new
+membership without restoring the removed record.
+
+`newsletter_erasure_checks` holds temporary fingerprints and verifies the exact current addresses
+and active merge group inside deletion's transaction. Changed ownership rolls back before any
+profile is cleared. Ordinary deletion retries that preparation up to three times; continued changes
+leave the records intact for a later retry. Legacy retention uses the same address cleanup before
+purging. Temporary checks are empty after a successful transaction.
+
+The `person_retention_profile_copies` trigger removes linked profile and session copies as part of
+an authorized physical profile deletion. Its scope remains the existing retention permission. Counts
+come from the selected profiles rather than incidental trigger writes, and the complete maintenance
+pass retains its 50-query limit. Pending outgoing account cleanup and its stable IDs survive profile
+purging until the external account has been removed.
+
+See
+[staff portal operations](../../../docs/reference/staff-portal-operations.md#verify-newsletter-cleanup-after-account-deletion)
+for migration checks, isolated preview testing and failure recovery.

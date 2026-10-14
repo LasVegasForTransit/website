@@ -95,6 +95,70 @@ local tests does not establish hosted processing. Keep synchronization disabled 
 incoming dispatcher, staff resolution of review cases, and actual preview-provider acceptance have
 all been verified.
 
+## Verify newsletter cleanup after account deletion
+
+This procedure is for a maintainer testing deletion in the isolated preview. It checks that queued
+newsletter addresses are cleared and delayed newsletter messages cannot recreate a removed member.
+
+Before you start, you need an approved preview test member separate from the preview administrator,
+access to the selected preview database, and the database checks in
+[Set up the protected staff preview](../guides/set-up-staff-preview.md). Keep newsletter writes
+disabled while preparing the release and applying its canonical migrations.
+
+1. Check the selected database's migration list for `0038_newsletter_erasure.sql`. The following
+   read-only query must return one row. A missing row means the database needs the release's
+   migrations before you test or enable the new application.
+
+   ```sql
+   SELECT name FROM d1_migrations WHERE name='0038_newsletter_erasure.sql';
+   ```
+
+2. Sign in as the separate test member and use `/account/delete/` to request deletion. Complete the
+   confirmation in that test member's own inbox. The account must be signed out and its profile
+   cleared. Do not delete the preview administrator or another person's record for this test.
+
+3. Inspect these aggregate counts privately. Both must be zero. They check saved addresses for
+   removed connected accounts and temporary deletion checks without printing contact details.
+
+   ```sql
+   SELECT count(*) AS retained_addresses
+   FROM newsletter_inbound_events e
+   JOIN identities i ON i.platform='beehiiv' AND i.external_id=e.subscription_id
+   JOIN person_keys k ON k.id=i.person_id
+   WHERE k.erased_at IS NOT NULL AND e.encrypted_email IS NOT NULL;
+   SELECT count(*) AS unfinished_checks FROM newsletter_erasure_checks;
+   ```
+
+4. From a configured local checkout, run the regression checks for queued addresses, delayed
+   messages, merged accounts, fresh signups, rollback and the worker's query limit:
+
+   ```sh
+   pnpm --filter @lasvegasfortransit/platform-storage exec node --import tsx --test tests/newsletter-erasure.test.ts tests/newsletter-erasure-races.test.ts tests/maintenance-budget.test.ts
+   ```
+
+   All checks must pass. These checks exercise the canonical schema locally; they do not establish
+   that a hosted provider has deleted its subscriber. Verify that separate outcome during live
+   provider acceptance.
+
+Deletion covers the current combination of member records and their connected newsletter addresses.
+It clears queued or review addresses in the same transaction as the profile. If ownership changes
+during preparation, deletion retries from the current records up to three times. A later failure
+rolls back the entire change. Retry through the normal deletion flow after concurrent edits finish;
+do not bypass the checks or manually clear their tables.
+
+`newsletter_address_tombstones` keeps an address fingerprint and deletion time, without the address
+or member's name, so an older message cannot create another profile. Keep these fingerprints when
+purging the profile. A newer message with unclear ownership remains for review. A fresh verified
+website signup can create a new member record and honor later unsubscribes; it cannot restore the
+erased record. The staff workflow for resolving ambiguous newsletter changes must be verified before
+enabling synchronization.
+
+Pending outgoing cleanup can still need an encrypted address until Beehiiv's stable subscriber ID is
+known. Keep that recovery work until remote removal is confirmed. Clearing the local profile or
+incoming queue does not establish that Beehiiv has unsubscribed or deleted the subscriber. During
+physical retention, connected profile copies are removed with the authorized profile deletion; the
+entire maintenance transaction still fits the worker's 50-query limit.
+
 ## Maintainer setup
 
 Use the existing values and approved applications in the

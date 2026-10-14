@@ -270,7 +270,11 @@ void test('a late source choice cannot revive an erased linked person', async ()
   try {
     await f.people.deletePerson(f.person.id);
     await save(f.db, 'evt_after_erasure', 'subscription.confirmed', '2026-10-14T11:00:00.000Z');
-    assert.equal((await apply(f.people, 'evt_after_erasure')).kind, 'ignored');
+    assert.deepEqual(
+      { ...f.db.raw.prepare('SELECT state,encrypted_email FROM newsletter_inbound_events').get() },
+      { state: 'ignored', encrypted_email: null },
+    );
+    assert.equal((await apply(f.people, 'evt_after_erasure')).kind, 'already_processed');
     assert.equal(await f.people.getPerson(f.person.id), null);
     assert.equal(
       f.db.raw.prepare('SELECT count(*) AS n FROM people WHERE deleted_at IS NULL').get()?.n,
