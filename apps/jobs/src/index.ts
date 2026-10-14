@@ -9,9 +9,10 @@ import { runMaintenance } from '@lasvegasfortransit/platform-storage/retention';
 import { queueDiscordDrift } from '@lasvegasfortransit/platform-storage/discord-drift';
 import { scanDiscordGuildRoster } from '@lasvegasfortransit/platform-integrations/discord-roster';
 import { completeProviderOperations } from '@lasvegasfortransit/platform-storage/provider-completion';
+import { handleDiscordJoinRequest } from './discord-join';
 export default {
-  fetch() {
-    return new Response('Not found', { status: 404 });
+  async fetch(request, env) {
+    return await handleDiscordJoinRequest(request, env);
   },
   async scheduled(controller, env) {
     try {

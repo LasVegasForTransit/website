@@ -51,6 +51,7 @@
   "vars": {
     "LVBT_DEPLOYMENT_ENV": "production",
   },
+  "services": [{ "binding": "LVBT_DISCORD_JOBS", "service": "lvbt-jobs" }],
   "d1_databases": [
     {
       "binding": "PLATFORM_DB",
@@ -101,6 +102,7 @@
       "vars": {
         "LVBT_DEPLOYMENT_ENV": "preview",
       },
+      "services": [{ "binding": "LVBT_DISCORD_JOBS", "service": "lvbt-jobs-preview" }],
       "d1_databases": [
         {
           "binding": "PLATFORM_DB",

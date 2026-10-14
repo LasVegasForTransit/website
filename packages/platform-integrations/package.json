@@ -18,6 +18,7 @@
     "./discord-access": "./src/discord-access.ts",
     "./discord-sync": "./src/discord-sync.ts",
     "./discord-link": "./src/discord-link.ts",
+    "./discord-join": "./src/discord-join.ts",
     "./discord-rate-limit": "./src/discord-rate-limit.ts",
     "./discord-runner": "./src/discord-runner.ts",
     "./discord-runtime": "./src/discord-runtime.ts",

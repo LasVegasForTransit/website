@@ -47,7 +47,7 @@ export const en = {
     interestVolunteering: 'Volunteering on a team',
     interestNews: 'Transit news',
     discordUsernameLabel: 'Discord username (optional)',
-    discordUsernameHint: 'For assigning your roles in our Discord server.',
+    discordUsernameHint: 'If you already use Discord, this helps us recognize you there.',
     transportHeading: 'What do you own for getting around? (optional)',
     transportHint: 'Helps us understand how members get around.',
     transportCar: 'Car',
@@ -85,6 +85,8 @@ export const en = {
     sentTo: "We've sent a confirmation to {email}.",
     nextStepsHeading: 'More ways to get involved',
     nextDiscord: "Join LVBT's Discord",
+    discordDescription:
+      'Meet other members, ask questions, and plan LVBT projects together. Discord is optional; LVBT news and event invitations also come by email.',
     nextInstagram: 'Follow LVBT on Instagram',
     nextWays: 'Explore ways to help',
     addressNotPlaced:

@@ -10,8 +10,18 @@ interface RequestInput {
   authorization: string;
   reason?: string;
   body?: URLSearchParams;
+  jsonBody?: { access_token: string };
+  memberJoin?: true;
   unknownMember?: boolean;
   responseSize?: 'guild-members';
+}
+function checkedResult(response: Response, input: RequestInput, data: unknown): unknown {
+  if (response.status === 404 && input.unknownMember && object(data).code === 10007) return null;
+  if (response.status === 201 && input.memberJoin && input.method === 'PUT') return data;
+  if (response.status !== 200) throw new DiscordApiFailure('unknown');
+  if (input.method === 'PUT' || input.method === 'DELETE')
+    throw new DiscordApiFailure('invalid_response');
+  return data;
 }
 async function json(response: Response, signal: AbortSignal, maximum = 131072): Promise<unknown> {
   const reader = response.body?.getReader();
@@ -92,12 +102,14 @@ export class DiscordHttp {
     const headers = new Headers({ Authorization: input.authorization, Accept: 'application/json' });
     if (input.reason) headers.set('X-Audit-Log-Reason', encodeURIComponent(input.reason));
     if (input.body) headers.set('Content-Type', 'application/x-www-form-urlencoded');
+    if (input.jsonBody) headers.set('Content-Type', 'application/json');
     const response = await this.fetcher(`${ENDPOINT}${path}`, {
       method: input.method ?? 'GET',
       headers,
       redirect: 'manual',
       signal,
       ...(input.body ? { body: input.body } : {}),
+      ...(input.jsonBody ? { body: JSON.stringify(input.jsonBody) } : {}),
     });
     if (signal.aborted) throw new DiscordApiFailure('provider_unavailable');
     if (response.status >= 300 && response.status < 400)
@@ -131,10 +143,6 @@ export class DiscordHttp {
       signal,
       input.responseSize === 'guild-members' ? 2_097_152 : 131_072,
     );
-    if (response.status === 404 && input.unknownMember && object(data).code === 10007) return null;
-    if (response.status !== 200) throw new DiscordApiFailure('unknown');
-    if (input.method === 'PUT' || input.method === 'DELETE')
-      throw new DiscordApiFailure('invalid_response');
-    return data;
+    return checkedResult(response, input, data);
   }
 }

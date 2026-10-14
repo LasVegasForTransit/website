@@ -384,11 +384,21 @@ their next sign-in, at most 12 hours. To cut them off immediately, also go to Cl
 ### Discord
 
 Member account linking uses `LVBT_DISCORD_APPLICATION_ID` and `LVBT_DISCORD_CLIENT_SECRET`. Leaving
-either unset keeps Connect Discord disabled. The member authorizes only their Discord identity; no
-OAuth access or refresh tokens are stored, and this does not prove server roles. Register both
+either unset keeps Discord joining unavailable. The website also requires its `LVBT_DISCORD_JOBS`
+service binding (a private connection to the jobs Worker): `lvbt-jobs` in production and
+`lvbt-jobs-preview` in preview. Both apps must use the same database within their environment.
+Members authorize `identify guilds.join`, so the platform can verify their account and add them to
+LVBT's server. Access and refresh tokens are never stored or logged. Register both
 `https://lasvegasfortransit.org/account/discord/callback` and
 `https://preview.lasvegasfortransit.org/account/discord/callback` before testing the respective
 deployment. Production secrets are configured by a maintainer through bootstrap.
+
+Discord joining is optional. The member invitation explains the community benefits; role assignment
+runs automatically without member-facing setup instructions. If the server requires its rules to be
+accepted, the page asks the member to open Discord and accept them. A failed join offers another
+attempt and preserves the verified account link. Joining sends no role list to Discord; the jobs
+runner applies the member role and every current committee role afterward, leaving unrelated roles
+alone. A linked account alone does not prove those roles were granted.
 
 The bot token, server ID and public key remain separate setup for role synchronization and commands.
 The `/link` interaction endpoint and guild-only registration command now exist in the site code.
@@ -479,15 +489,16 @@ role status. Never point preview at the production server or membership database
    LVBT banner if the drive has one. Username: `LVBT Bot`.
 2. Under **Authorization Flow**, turn **Public Bot** off, so only the team can add the bot to a
    server. Leave **Requires OAuth2 Code Grant** and **Private Channel Obfuscation** off.
-3. The current REST runner reads individual linked members and needs no privileged Gateway intents.
-   Discord requires **Server Members Intent** for listing all server members, which this runner does
-   not do. Check other bot features before changing existing intents. See Discord's
-   [guild API reference](https://docs.discord.com/developers/resources/guild).
+3. Enable **Server Members Intent**. The roster scan lists server members to flag unlinked accounts
+   for staff review. It leaves their roles alone. This intent is required for Discord's List Guild
+   Members endpoint even when the bot has no persistent Gateway connection. See Discord's
+   [guild API reference](https://docs.discord.com/developers/resources/guild#list-guild-members).
 4. The **Bot Permissions** box further down is only a calculator; leave it. **App Verification** on
    the left only matters once a bot is in 100 or more servers; ignore it.
 5. Open **Installation**. Under installation contexts, keep only **Guild Install**. Under its
    default install settings, add the scopes `bot` and `applications.commands` and the permission
-   **Manage Roles**, and save.
+   **Manage Roles** and **Create Invite**, and save. Discord requires Create Invite to add a member
+   using their authorization; Manage Roles lets the jobs runner apply LVBT's managed roles.
 6. Copy the install link on that page and paste it into your browser's address bar, choose the LVBT
    server, and click **Authorize**. You need the "Manage Server" permission in that server.
 7. In Discord, open the LVBT server's **Server Settings → Roles** and drag the **LVBT Bot** role

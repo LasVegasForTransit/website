@@ -7,16 +7,21 @@ import {
   discordSessionHash,
 } from '@lasvegasfortransit/platform-storage/discord-link';
 import { DiscordHttp } from './discord-http';
+import { requestDiscordJoin, type DiscordJoinResult } from './discord-join';
 import { object, parseDiscordUser, DiscordApiFailure, type DiscordOptions } from './discord-types';
 export interface DiscordLinkEnv extends AuthEnv {
   LVBT_DISCORD_APPLICATION_ID?: string | undefined;
   LVBT_DISCORD_CLIENT_SECRET?: string | undefined;
+  LVBT_DEPLOYMENT_ENV?: string | undefined;
+  LVBT_DISCORD_JOBS?: Pick<Fetcher, 'fetch'> | undefined;
 }
 export function discordLinkConfigured(env: Partial<DiscordLinkEnv>): boolean {
   return (
     isDiscordId(env.LVBT_DISCORD_APPLICATION_ID) &&
     typeof env.LVBT_DISCORD_CLIENT_SECRET === 'string' &&
-    /^[\x21-\x7e]{1,2048}$/.test(env.LVBT_DISCORD_CLIENT_SECRET)
+    /^[\x21-\x7e]{1,2048}$/.test(env.LVBT_DISCORD_CLIENT_SECRET) &&
+    (env.LVBT_DEPLOYMENT_ENV === 'preview' || env.LVBT_DEPLOYMENT_ENV === 'production') &&
+    typeof env.LVBT_DISCORD_JOBS?.fetch === 'function'
   );
 }
 interface StartInput {
@@ -30,6 +35,7 @@ function bearerToken(value: unknown): string {
     token.token_type !== 'Bearer' ||
     typeof token.scope !== 'string' ||
     !token.scope.split(/\s+/).includes('identify') ||
+    !token.scope.split(/\s+/).includes('guilds.join') ||
     typeof token.expires_in !== 'number' ||
     !Number.isFinite(token.expires_in) ||
     token.expires_in <= 0 ||
@@ -96,7 +102,7 @@ export class DiscordLink {
     url.search = new URLSearchParams({
       client_id: this.env.LVBT_DISCORD_APPLICATION_ID ?? '',
       response_type: 'code',
-      scope: 'identify',
+      scope: 'identify guilds.join',
       prompt: 'consent',
       state: started.state,
       redirect_uri: started.callbackUrl,
@@ -108,10 +114,19 @@ export class DiscordLink {
     origin: string;
     state: string;
     code: string;
-  }): Promise<boolean> {
-    if (!discordLinkConfigured(this.env) || !input.code || input.code.length > 2048) return false;
+  }): Promise<DiscordJoinResult> {
+    const jobs = this.env.LVBT_DISCORD_JOBS;
+    const environment = this.env.LVBT_DEPLOYMENT_ENV;
+    if (
+      !discordLinkConfigured(this.env) ||
+      !jobs ||
+      (environment !== 'preview' && environment !== 'production') ||
+      !input.code ||
+      input.code.length > 2048
+    )
+      return { kind: 'failed' };
     const claim = await this.service.claim({ ...input, now: new Date(this.now()) });
-    if (!claim) return false;
+    if (!claim) return { kind: 'failed' };
     const token = bearerToken(
       await this.http.request('/oauth2/token', {
         method: 'POST',
@@ -126,6 +141,14 @@ export class DiscordLink {
     const identity = parseDiscordUser(
       await this.http.request('/users/@me', { authorization: `Bearer ${token}` }),
     );
-    return await this.service.complete({ claim, identity, now: new Date(this.now()) });
+    if (!(await this.service.complete({ claim, identity, now: new Date(this.now()) })))
+      return { kind: 'failed' };
+    return await requestDiscordJoin(jobs, {
+      personId: claim.personId,
+      discordId: identity.id,
+      accessToken: token,
+      operationId: claim.stateHash,
+      environment,
+    });
   }
 }

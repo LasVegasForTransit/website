@@ -29,13 +29,15 @@ custom domains and ordinary routes in every accessible account zone. Its only PO
 `SELECT name FROM d1_migrations ORDER BY id` metadata query. It never creates resources, changes
 secrets, applies migrations, deploys code or prints provider response bodies.
 
-Limit Worker edit access to the selected staff and jobs Workers. The checks also need Access
-applications and policies Read, D1 Read, and Zone Read and Workers Routes Read across the account's
-zones. D1 Read permits reading database records, including member data; the command itself only
-queries migration names. Custom-domain queries include the selected Worker name instead of asking
-for all Workers' domains. A denied or incomplete inventory is reported as **unverified**. The
-command does not load or transfer another tool's login. Never paste a token into a command argument
-or save it in a tracked file.
+Limit Worker edit access to the selected staff and jobs Workers. Custom-domain inventory requires
+account-wide **Workers Metadata Read-Only**; this includes settings, metrics and logs for production
+Workers, so obtain maintainer approval for that scope. The checks also need Access applications and
+policies Read, D1 Read, and Zone Read and Workers Routes Read across the account's zones. D1 Read
+permits reading database records, including member data; the command itself only queries migration
+names. Custom-domain queries include the selected Worker name instead of asking for all Workers'
+domains. A denied or incomplete inventory is reported as **unverified**. The command does not load
+or transfer another tool's login. Never paste a token into a command argument or save it in a
+tracked file.
 
 Exit status 0 means all inspected configuration requirements passed. It does **not** mean the portal
 is ready for staff: the report separately lists live acceptance as unverified. Exit status 1 means
@@ -79,7 +81,13 @@ credentials.
 6. Put the approved Discord bot token on jobs only. Staff needs the public Discord configuration,
    and the public site needs its existing OAuth client configuration for account linking. Use a
    separate preview server. Review the Member role and every committee's current and retired role
-   mappings; confirm the bot can manage them while leaving unrelated roles alone.
+   mappings; confirm the bot can manage them while leaving unrelated roles alone. Enable Server
+   Members Intent for roster review, and grant the bot Manage Roles and Create Invite. The public
+   website must bind `LVBT_DISCORD_JOBS` to `lvbt-jobs` in production or `lvbt-jobs-preview` in
+   preview. Joining passes the member's request-only Discord token over that private connection; the
+   jobs Worker checks the matching environment and current membership. Keep direct jobs URLs
+   disabled. Test joining, server-rule acceptance, retry, and multiple committee roles in the
+   isolated preview before enabling production.
 7. Before the first administrator signs in, set the secret
    `LVBT_INITIAL_STAFF_ADMIN_WORKSPACE_EMAIL` on the selected staff Worker to the president's exact
    `@lasvegasfortransit.org` account. Use a separate test member account on `lvbt-staff-preview`;

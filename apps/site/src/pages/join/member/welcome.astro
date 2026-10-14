@@ -9,7 +9,15 @@ import { t } from '@lasvegasfortransit/platform-core/messages';
 import { site } from '../../../lib/site';
 
 const nextSteps = [
-  ...(site.social.discord ? [{ href: site.social.discord, label: t('welcome.nextDiscord') }] : []),
+  ...(site.social.discord
+    ? [
+        {
+          href: site.social.discord,
+          label: t('welcome.nextDiscord'),
+          description: t('welcome.discordDescription'),
+        },
+      ]
+    : []),
   ...(site.social.instagram
     ? [{ href: site.social.instagram, label: t('welcome.nextInstagram') }]
     : []),

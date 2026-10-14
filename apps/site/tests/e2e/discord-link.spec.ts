@@ -2,12 +2,17 @@ import assert from 'node:assert/strict';
 import { mkdir } from 'node:fs/promises';
 import { join } from 'node:path';
 import { chromium } from '@playwright/test';
-import { discordRuntime, DISCORD_USER, ORIGIN } from '../runtime/support/discord-runtime';
+import {
+  discordRuntime,
+  DISCORD_USER,
+  ORIGIN,
+  DISCORD_ROLES,
+} from '../runtime/support/discord-runtime';
 const fixture = await discordRuntime();
 const browser = await chromium
   .launch({
     args: [
-      `--host-resolver-rules=MAP lasvegasfortransit.org 127.0.0.1:${fixture.port}, MAP discord.com 127.0.0.1:${fixture.authorization.port}, MAP * ~NOTFOUND`,
+      `--host-resolver-rules=MAP ${new URL(ORIGIN).hostname} 127.0.0.1:${fixture.port}, MAP discord.com 127.0.0.1:${fixture.authorization.port}, MAP * ~NOTFOUND`,
       '--no-proxy-server',
     ],
   })
@@ -42,8 +47,8 @@ try {
   });
   const page = await context.newPage();
   await page.goto(`${ORIGIN}/account/`);
-  await page.getByRole('link', { name: 'Connect Discord', exact: true }).click();
-  await page.getByRole('heading', { name: 'Connect Discord', exact: true }).waitFor();
+  await page.getByRole('link', { name: 'Join LVBT on Discord', exact: true }).click();
+  await page.getByRole('heading', { name: 'Join LVBT on Discord', exact: true }).waitFor();
   const shots = join(fixture.root, 'test-results/discord');
   await mkdir(shots, { recursive: true });
   await page.screenshot({
@@ -73,7 +78,7 @@ try {
   assert.match(unsupportedSiteOrigin.headers.get('Content-Type') ?? '', /text\/html/);
   const unavailablePage = await unsupportedSiteOrigin.text();
   assert.match(unavailablePage, /<html[^>]*lang="en"/);
-  assert.match(unavailablePage, /<title>Connect Discord/);
+  assert.match(unavailablePage, /<title>Join LVBT on Discord/);
   assert.match(unavailablePage, /This connection is not available at this address\./);
   assert.doesNotMatch(unavailablePage, /Continue to Discord/);
   await page.getByRole('button', { name: 'Continue to Discord', exact: true }).click();
@@ -83,12 +88,27 @@ try {
   assert.equal(fixture.authorization.authorizations.length, 1);
   const authorized = fixture.authorization.authorizations[0];
   assert.ok(authorized);
-  assert.equal(authorized.searchParams.get('scope'), 'identify');
+  assert.equal(authorized.searchParams.get('scope'), 'identify guilds.join');
   assert.equal(authorized.searchParams.get('redirect_uri'), `${ORIGIN}/account/discord/callback`);
   assert.deepEqual(fixture.providerCalls, [
     'https://discord.com/api/v10/oauth2/token',
     'https://discord.com/api/v10/users/@me',
+    'https://discord.com/api/v10/users/@me',
+    'https://discord.com/api/v10/guilds/111111111111111111/members/222222222222222222',
   ]);
+  assert.equal(fixture.scenario.joined, true);
+  assert.deepEqual([...fixture.scenario.roles], [DISCORD_ROLES.unmanaged]);
+  assert.equal((await fixture.jobs.scheduled({ cron: '* * * * *' })).outcome, 'ok');
+  assert.deepEqual([...fixture.scenario.roles].sort(), Object.values(DISCORD_ROLES).sort());
+  assert.equal(
+    (
+      await fixture.db
+        .prepare("SELECT count(*) AS n FROM staff_audits WHERE action='access.granted'")
+        .first()
+    )?.n,
+    3,
+  );
+  const providerCallCount = fixture.providerCalls.length;
   const identity = await fixture.db
     .prepare(
       "SELECT external_id,link_method FROM identities WHERE person_id=? AND platform='discord'",
@@ -103,9 +123,41 @@ try {
   await page.waitForURL(`${ORIGIN}/account/discord/?result=failed`);
   assert.equal(
     fixture.providerCalls.length,
-    2,
+    providerCallCount,
     'a repeated callback must not exchange another code',
   );
+  fixture.scenario.pending = true;
+  fixture.scenario.roles = new Set([DISCORD_ROLES.unmanaged]);
+  await page.goto(`${ORIGIN}/account/discord/`);
+  await page.getByRole('button', { name: 'Continue to Discord', exact: true }).click();
+  await page.getByRole('link', { name: 'Authorize fixture account', exact: true }).click();
+  await page.waitForURL(`${ORIGIN}/account/discord/?result=screening_pending`);
+  await page.getByRole('link', { name: 'Open Discord', exact: true }).waitFor();
+  assert.equal(await page.getByRole('button', { name: 'Continue', exact: true }).count(), 0);
+  assert.equal((await fixture.jobs.scheduled({ cron: '* * * * *' })).outcome, 'ok');
+  assert.deepEqual([...fixture.scenario.roles], [DISCORD_ROLES.unmanaged]);
+  await page.screenshot({
+    path: join(shots, 'screening-mobile.png'),
+    fullPage: true,
+    animations: 'disabled',
+  });
+
+  fixture.scenario.pending = false;
+  fixture.scenario.failJoin = true;
+  await page.goto(`${ORIGIN}/account/discord/`);
+  await page.getByRole('button', { name: 'Continue to Discord', exact: true }).click();
+  await page.getByRole('link', { name: 'Authorize fixture account', exact: true }).click();
+  await page.waitForURL(`${ORIGIN}/account/discord/?result=retry`);
+  await page.getByRole('button', { name: 'Try again', exact: true }).waitFor();
+  await page
+    .getByText('We couldn’t finish joining LVBT’s Discord. Please try again.', { exact: true })
+    .waitFor();
+  fixture.scenario.failJoin = false;
+  await page.getByRole('button', { name: 'Try again', exact: true }).click();
+  await page.getByRole('link', { name: 'Authorize fixture account', exact: true }).click();
+  await page.waitForURL(`${ORIGIN}/account/#discord`);
+  assert.equal((await fixture.jobs.scheduled({ cron: '* * * * *' })).outcome, 'ok');
+  assert.deepEqual([...fixture.scenario.roles].sort(), Object.values(DISCORD_ROLES).sort());
   await fixture.people.withdrawConsent(fixture.person.id, {
     scope: 'newsletter',
     source: 'member',

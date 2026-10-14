@@ -7,7 +7,7 @@ import { linkClass } from './styles';
 interface Props {
   heading: string;
   nextStepsHeading?: string;
-  nextSteps?: { href: string; label: string }[];
+  nextSteps?: { href: string; label: string; description?: string }[];
   clearDrafts?: string;
   /** 1 on a real confirmation page; 2 where the page already has an h1. */
   headingLevel?: 1 | 2;
@@ -31,6 +31,7 @@ const SubHeading = headingLevel === 1 ? 'h2' : 'h3';
               <a href={step.href} class={linkClass}>
                 {step.label}
               </a>
+              {step.description && <p class="mt-1 text-on-surface-variant">{step.description}</p>}
             </li>
           ))}
         </ul>

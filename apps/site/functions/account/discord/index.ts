@@ -64,6 +64,19 @@ export const onRequestGet: PagesFunction<SignInPagesEnv> = async ({ env, request
           });
       if (new URL(request.url).searchParams.get('result') === 'failed')
         filled = filled.on('[data-slot="discord-error"]', show());
+      const result = new URL(request.url).searchParams.get('result');
+      if (result === 'screening_pending')
+        filled = filled
+          .on('[data-slot="discord-screening"]', show())
+          .on('[data-slot="discord-connect"]', {
+            element(element) {
+              element.remove();
+            },
+          });
+      if (result === 'retry')
+        filled = filled
+          .on('[data-slot="discord-retry"]', show())
+          .on('[data-slot="discord-connect-label"]', showText('Try again'));
       return filled;
     },
   });
