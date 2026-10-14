@@ -4,6 +4,8 @@
   "private": true,
   "type": "module",
   "exports": {
+    "./newsletter-sync-store": "./src/newsletter-sync-store.ts",
+    "./newsletter-plan": "./src/newsletter-plan.ts",
     "./beehiiv-poll-store": "./src/beehiiv-poll-store.ts",
     "./auth": "./src/auth.ts",
     "./db": "./src/db.ts",

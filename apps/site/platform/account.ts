@@ -342,15 +342,13 @@ async function moveMailingListAddress(
 export async function leaveMailingList(
   env: AccountEnv,
   personId: string,
-  fetcher: typeof fetch = fetch,
 ): Promise<'left' | 'unavailable'> {
-  if (!(await unsubscribeEverywhere(env, personId, fetcher))) return 'unavailable';
-  await new PersonService(env.PLATFORM_DB).withdrawConsent(personId, {
+  const person = await new PersonService(env.PLATFORM_DB).withdrawConsent(personId, {
     scope: 'newsletter',
     source: 'account',
     withdrawnAt: nowIso(),
   });
-  return 'left';
+  return person ? 'left' : 'unavailable';
 }
 
 export async function rejoinMailingList(

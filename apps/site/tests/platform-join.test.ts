@@ -322,14 +322,54 @@ void test('the removal link withdraws consent and deletes someone with no other 
   const email = sentEmail(calls);
   const token = decodeURIComponent(/token=([^\s]+)/.exec(email.text)?.[1] ?? '');
 
-  assert.equal(await removeEmail(env(db), 'forged.token', fetcher), 'invalid');
-  assert.equal(await removeEmail(env(db), token, fetcher), 'removed');
-  const person = db.raw.prepare('SELECT email, deleted_at FROM people').get() as {
+  assert.equal(await removeEmail(env(db), 'forged.token'), 'invalid');
+  assert.equal(await removeEmail(env(db), token), 'removed');
+  const person = db.raw.prepare('SELECT id, email, deleted_at FROM people').get() as {
+    id: string;
     email: string | null;
     deleted_at: string | null;
   };
   assert.equal(person.email, null);
   assert.ok(person.deleted_at);
-  assert.ok(calls.some((call) => call.url.includes('/subscriptions/sub_')));
-  assert.equal(await removeEmail(env(db), token, fetcher), 'invalid');
+  assert.equal(
+    db.raw.prepare('SELECT state FROM newsletter_sync_jobs WHERE person_id=?').get(person.id)
+      ?.state,
+    'queued',
+  );
+  assert.equal(await removeEmail(env(db), token), 'removed');
+});
+
+void test('a valid removal request survives a mailing provider outage', async () => {
+  const db = memoryDb();
+  try {
+    const { calls, fetcher } = fakeServices();
+    const config = env(db);
+    await processJoin(
+      config,
+      form({ email: 'removal-outage@example.org', consent: 'yes' }),
+      '203.0.113.1',
+      { fetcher },
+    );
+    const token = decodeURIComponent(/token=([^\s]+)/.exec(sentEmail(calls).text)?.[1] ?? '');
+    delete config.LVBT_BEEHIIV_API_KEY;
+    assert.equal(await removeEmail(config, token), 'removed');
+    const person = db.raw.prepare('SELECT id,email,deleted_at FROM people').get();
+    assert.ok(person);
+    assert.ok(typeof person.id === 'string');
+    assert.equal(person.email, null);
+    assert.ok(person.deleted_at);
+    assert.equal(
+      db.raw.prepare('SELECT state FROM newsletter_sync_jobs WHERE person_id=?').get(person.id)
+        ?.state,
+      'queued',
+    );
+    assert.equal(
+      db.raw
+        .prepare("SELECT count(*) AS n FROM identities WHERE person_id=? AND platform='beehiiv'")
+        .get(person.id)?.n,
+      1,
+    );
+  } finally {
+    db.raw.close();
+  }
 });
