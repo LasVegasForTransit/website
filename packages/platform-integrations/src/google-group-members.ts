@@ -17,8 +17,10 @@ function member(value: unknown): GoogleGroupInventoryMember {
   const row = record(value);
   if (
     !stableId(row.id) ||
-    !['USER', 'GROUP', 'CUSTOMER', 'EXTERNAL'].includes(String(row.type)) ||
-    !['MEMBER', 'MANAGER', 'OWNER'].includes(String(row.role)) ||
+    typeof row.type !== 'string' ||
+    !['USER', 'GROUP', 'CUSTOMER', 'EXTERNAL'].includes(row.type) ||
+    typeof row.role !== 'string' ||
+    !['MEMBER', 'MANAGER', 'OWNER'].includes(row.role) ||
     (row.email !== undefined &&
       (typeof row.email !== 'string' ||
         row.email.length > 254 ||
@@ -97,6 +99,8 @@ export async function readGoogleGroupPage(
       deadline,
     ),
   );
+  await checkGoogleGroupCurrent(input, deadline, http.now);
+  await groupId(http, { ...input, expectedGroupId: id }, deadline);
   await checkGoogleGroupCurrent(input, deadline, http.now);
   return {
     customerId,

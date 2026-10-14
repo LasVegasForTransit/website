@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { GoogleGroups, GoogleGroupsFailure } from '../src/google-groups';
-import { configuration, groupEmail, groupId } from './support/google-directory';
+import { address, configuration, groupEmail, groupId } from './support/google-directory';
 import { groupList, listedUser } from './support/google-group-list';
 
 const current = { groupEmail, isCurrent: () => Promise.resolve(true) };
@@ -78,7 +78,11 @@ void test('malformed members and cursor responses are rejected instead of becomi
     { members: {} },
     { members: [listedUser('valid'), { ...listedUser('broken'), id: '' }] },
     { members: [{ ...listedUser('broken'), type: 'UNKNOWN' }] },
+    { members: [{ ...listedUser('broken'), type: ['CUSTOMER'] }] },
+    { members: [{ ...listedUser('broken'), type: ['USER'] }] },
+    { members: [{ ...listedUser('broken'), type: ['EXTERNAL'] }] },
     { members: [{ ...listedUser('broken'), role: 'ADMIN' }] },
+    { members: [{ ...listedUser('broken'), role: ['OWNER'] }] },
     { members: [{ ...listedUser('broken'), email: 'bad email' }] },
     { members: [], nextPageToken: '' },
     { members: [], nextPageToken: 42 },
@@ -146,6 +150,24 @@ void test('revoked authorization before or during reads never returns the group 
     );
     assert.ok(fixture.calls.length <= revokeAfter);
   }
+});
+
+void test('group replacement during the terminal members request invalidates the completed inventory', async () => {
+  const { readGoogleGroupInventory } = await api();
+  const fixture = groupList([
+    { members: [listedUser('retired-first')], nextPageToken: 'opaque+/=?1' },
+    { members: [listedUser('retired-last')] },
+  ]);
+  const replaced = new GoogleGroups(configuration, fixture.tokens, {
+    fetch: async (input, init) => {
+      const response = await fixture.fetch(input, init);
+      const url = new URL(address(input));
+      if (url.pathname.endsWith('/members') && url.searchParams.has('pageToken'))
+        fixture.state.groupId = 'replacement-group';
+      return response;
+    },
+  });
+  await assert.rejects(readGoogleGroupInventory(replaced, current), { kind: 'invalid_response' });
 });
 
 void test('preview cannot inventory production or unregistered groups before any provider read', async () => {
