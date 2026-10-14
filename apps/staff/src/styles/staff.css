@@ -1533,3 +1533,39 @@ html {
     }
   }
 }
+
+@layer components {
+  .staff-google-actions {
+    min-width: 0;
+  }
+  .staff-google-actions form {
+    display: grid;
+    gap: 0.5rem;
+    justify-items: start;
+  }
+  .staff-google-actions .staff-help {
+    max-width: 32ch;
+    margin-top: 0;
+  }
+  .staff-google-remove > summary {
+    display: list-item;
+    min-height: 2.75rem;
+    padding-block: 0.625rem;
+    cursor: pointer;
+    color: var(--color-link);
+    font-size: 0.875rem;
+    text-decoration: underline;
+    text-underline-offset: 0.2em;
+  }
+  .staff-google-remove .press {
+    margin-top: 0.75rem;
+  }
+  .staff-google-people-list li {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(10rem, 1fr);
+  }
+  @media (max-width: 40rem) {
+    .staff-google-people-list li {
+      grid-template-columns: minmax(0, 1fr);
+    }
+  }
+}

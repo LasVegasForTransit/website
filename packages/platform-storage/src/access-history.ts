@@ -49,7 +49,7 @@ export async function accessHistory(
   const where = [
     input.providersOnly
       ? "a.action IN ('access.granted','access.revoked')"
-      : "a.action IN ('committee.assign','committee.change','committee.end','committee.settings','access.retry','staff_admin.manage','access.granted','access.revoked')",
+      : "a.action IN ('committee.assign','committee.change','committee.end','committee.settings','access.retry','access.group_update','staff_admin.manage','access.granted','access.revoked')",
     'a.occurred_at>=?',
     `(${STAFF_ADMIN_SCOPE} OR (p.deleted_at IS NULL AND ${COMMITTEE_SCOPE} AND (a.action='committee.settings' OR ${STAFF_PERSON_SCOPE})))`,
     "(p.deleted_at IS NULL OR a.action IN ('committee.settings','access.granted','access.revoked'))",
@@ -82,7 +82,7 @@ export async function accessHistory(
     json_extract(a.details,'$.provider') AS provider,json_extract(a.details,'$.source') AS source,
     nullif(trim(coalesce(requester.given_name,'')||' '||coalesce(requester.family_name,'')),'') AS requestedByName
     FROM staff_audits a LEFT JOIN staff_operations receipt ON receipt.operation_id=a.operation_id
-    LEFT JOIN committees c ON c.id=CASE WHEN a.action='committee.settings' THEN a.target_id WHEN a.action IN ('access.retry','access.granted','access.revoked') THEN json_extract(a.details,'$.targetId') ELSE receipt.target_id END
+    LEFT JOIN committees c ON c.id=CASE WHEN a.action='committee.settings' THEN a.target_id WHEN a.action IN ('access.retry','access.group_update','access.granted','access.revoked') THEN json_extract(a.details,'$.targetId') ELSE receipt.target_id END
     LEFT JOIN people p ON p.id=CASE WHEN a.action='committee.settings' THEN NULL ELSE a.target_id END
     LEFT JOIN people recorder ON recorder.id=a.actor_id AND recorder.deleted_at IS NULL
     LEFT JOIN people requester ON requester.id=json_extract(a.details,'$.requestedBy') AND requester.deleted_at IS NULL

@@ -17,12 +17,14 @@ const labels: Record<string, string> = {
   'committee.end': t('staff.history.removed'),
   'committee.settings': t('staff.history.settingsUpdated'),
   'access.retry': t('staff.history.retried'),
+  'access.group_update': t('staff.history.googleAccessRequested'),
   'staff_admin.manage': t('staff.history.staffAccessChanged'),
   'access.granted': t('staff.history.granted'),
   'access.revoked': t('staff.history.revoked'),
 };
 const sources: Record<string, string> = {
   discord_drift: t('staff.history.periodicCheck'),
+  google_group_review: t('staff.history.groupReview'),
   membership_change: t('staff.history.membershipChanged'),
   person_deleted: t('staff.history.accountDeleted'),
   discord_link: t('staff.history.discordConnected'),

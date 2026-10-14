@@ -1,6 +1,6 @@
 import { ulid } from '@lasvegasfortransit/platform-core/ids';
 import type { MutationResult } from '@lasvegasfortransit/platform-core/staff-types';
-import type { Db, Statement } from './db';
+import type { Db, Statement, SqlValue } from './db';
 import { WELCOME_SCOPE } from './welcome-scope';
 import {
   assignment,
@@ -20,6 +20,8 @@ export interface AssignmentMutation {
   operationId: string;
   fromWelcome?: true;
   administratorsOnly?: true;
+  /** A trusted server-side condition for assignment from another protected workflow. */
+  reviewGuard?: { sql: string; values: SqlValue[] };
 }
 interface MutationContext extends AssignmentMutation {
   payload: string;
@@ -79,6 +81,7 @@ function insertReceipt(db: Db, input: MutationContext): Statement {
     .prepare(
       `INSERT INTO staff_operations (operation_id,actor_id,kind,target_id,payload,created_at,before_state)
     SELECT ?,?,?,?,?,?,(SELECT json_object('role',role) FROM committee_assignments WHERE person_id=? AND committee_id=? AND ended_at IS NULL) WHERE ${authority(input).sql} AND ${eligibility.sql}
+    ${input.reviewGuard ? ` AND (${input.reviewGuard.sql})` : ''}
     AND EXISTS(SELECT 1 FROM committees WHERE id=? ${input.kind === 'assign' ? 'AND accepting_members=1' : ''}) AND ${availability} ON CONFLICT(operation_id) DO NOTHING`,
     )
     .bind(
@@ -92,6 +95,7 @@ function insertReceipt(db: Db, input: MutationContext): Statement {
       input.committeeId,
       ...authority(input).values,
       ...eligibility.values,
+      ...(input.reviewGuard?.values ?? []),
       input.committeeId,
       ...values,
     );

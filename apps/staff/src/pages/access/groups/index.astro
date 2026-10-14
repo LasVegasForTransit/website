@@ -1,4 +1,5 @@
 ---
+import { submitGoogleGroupAction } from '../../../lib/google-group-actions';
 import StaffLayout from '../../../layouts/StaffLayout.astro';
 import GoogleGroupPeople from '../../../components/GoogleGroupPeople.astro';
 import { getGoogleGroupReview } from '@lasvegasfortransit/platform-storage/google-group-overview';
@@ -13,6 +14,13 @@ const configuration = staff.googleGroups ?? {
   provider: { configured: false, contextId: '' },
   consoleGroupEmail: null,
 };
+let feedback;
+if (Astro.request.method === 'POST') {
+  const result = await submitGoogleGroupAction(Astro.request, staff);
+  if (result instanceof Response) return result;
+  feedback = result;
+  Astro.response.status = result.status;
+}
 let review;
 try {
   review = await getGoogleGroupReview(staff.db, staff.actor, {
@@ -36,6 +44,13 @@ if (review.nextCursor) next.searchParams.set('cursor', review.nextCursor);
 
 <StaffLayout title={googleGroupName(group)} description={t('staff.googleGroups.detail')}>
   <a slot="breadcrumb" class="staff-back" href="/access/">{t('staff.googleGroups.back')}</a>
+  {
+    feedback && (
+      <p role="alert" class="staff-error">
+        {feedback.message}
+      </p>
+    )
+  }
   <section class="staff-google-group-summary" aria-label={t('staff.googleGroups.detail')}>
     <dl class="staff-google-counts">
       <div>

@@ -2,6 +2,9 @@ import assert from 'node:assert/strict';
 import { mkdir } from 'node:fs/promises';
 import { chromium } from '@playwright/test';
 import { saveGoogleGroupSnapshot } from '@lasvegasfortransit/platform-storage/google-group-snapshots';
+import { PersonService } from '@lasvegasfortransit/platform-storage/person-service';
+import { linkWorkspaceIdentity } from '@lasvegasfortransit/platform-storage/workspace-link';
+import { exerciseGoogleGroupActions } from './support/google-group-actions';
 import { ORIGIN, startRuntime } from '../support/runtime';
 
 const groupEmail = 'preview-events@lasvegasfortransit.org',
@@ -25,6 +28,32 @@ try {
     actorId: fixture.admin.person.id,
     operationId: 'group-review-welcome',
   });
+  const { person: removalPerson } = await new PersonService(fixture.db).upsertFromSource({
+    source: 'join_form',
+    fields: { given_name: 'Alex', family_name: 'Volunteer', email: 'alex@example.invalid' },
+    consent: {
+      scope: 'newsletter',
+      source: 'join_form',
+      method: 'checkbox',
+      wordingVersion: 'fixture',
+    },
+  });
+  assert.equal(
+    (
+      await linkWorkspaceIdentity(fixture.db, {
+        personId: removalPerson.id,
+        workspace: {
+          subject: 'google-alex',
+          email: 'alex@lasvegasfortransit.org',
+          givenName: null,
+          familyName: null,
+        },
+        method: 'self_linked',
+        operationId: 'link-alex',
+      })
+    ).kind,
+    'ok',
+  );
   const now = new Date(),
     stamp = now.toISOString();
   for (const [email, members] of [
@@ -32,6 +61,7 @@ try {
       groupEmail,
       [
         { id: 'fixture-google-admin', type: 'USER', role: 'MEMBER' },
+        { id: 'google-alex', type: 'USER', role: 'MEMBER' },
         { id: 'unknown-user', type: 'USER', role: 'MEMBER' },
       ],
     ],
@@ -101,13 +131,18 @@ try {
     1,
   );
   assert.equal(await page.getByText('Amina Staff', { exact: true }).isVisible(), true);
-  assert.equal(await page.getByText('Google access to remove', { exact: true }).isVisible(), true);
+  assert.equal(await page.getByText('Not on this committee', { exact: true }).count(), 2);
   assert.equal(await page.getByText('Leon Staff', { exact: true }).isVisible(), true);
   assert.equal(await page.getByText('Missing Google access', { exact: true }).isVisible(), true);
   assert.equal((await page.content()).includes('unknown-user'), false);
   assert.equal(
     await page.getByText('1 account needs to be matched to a member.', { exact: true }).isVisible(),
     true,
+  );
+  assert.equal(
+    await page.getByRole('button', { name: 'Restore Google access', exact: true }).count(),
+    1,
+    'missing access needs a direct correction',
   );
   const shots = `${fixture.root}/test-results/staff`;
   await mkdir(shots, { recursive: true });
@@ -147,6 +182,7 @@ try {
   assert.equal(await groupLink.evaluate((element) => element.matches(':focus-visible')), true);
   await page.keyboard.press('Enter');
   await page.waitForURL('**/access/groups/**');
+  await exerciseGoogleGroupActions(page, fixture, removalPerson.id);
   const denied = await fixture.simulator.dispatchFetch(
     `${ORIGIN}/access/groups/?group=${groupEmail}`,
     {

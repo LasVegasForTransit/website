@@ -1,12 +1,17 @@
 import type { Actor, Page } from '@lasvegasfortransit/platform-core/staff-types';
 import type { ProviderConfiguration } from '@lasvegasfortransit/platform-core/access';
 import { PermissionDenied } from '@lasvegasfortransit/platform-core/permissions';
-import type { Db, SqlValue } from './db';
+import type { Db } from './db';
 import { auditDenied } from './audits';
 import { accessCursor } from './access-cursors';
 import { readGoogleGroupCursor } from './google-group-cursor';
 import { InvalidCursor } from './staff-history';
-import { GOOGLE_GROUP_QUERY, GROUP_JSON, HAS_PROBLEM } from './google-group-query';
+import {
+  GOOGLE_GROUP_QUERY,
+  GROUP_JSON,
+  HAS_PROBLEM,
+  googleGroupQueryParameters as parameters,
+} from './google-group-query';
 
 export interface GoogleGroupSummary {
   groupEmail: string;
@@ -33,6 +38,8 @@ export interface GoogleGroupPerson {
   email: string | null;
   identityId: string | null;
   state: 'missing' | 'unexpected' | 'unconfirmed';
+  assignmentCommitteeId: string | null;
+  requestState: 'queued' | 'running' | 'retry' | 'done' | null;
 }
 export interface GoogleGroupQuery {
   configuration: ProviderConfiguration;
@@ -41,16 +48,6 @@ export interface GoogleGroupQuery {
   cursor?: string | undefined;
   limit?: number | undefined;
   problemsOnly?: boolean | undefined;
-}
-function parameters(actor: Actor, query: GoogleGroupQuery): SqlValue[] {
-  return [
-    Number(query.configuration.configured),
-    query.configuration.contextId,
-    JSON.stringify(query.configuration.resourceIds ?? []),
-    query.consoleGroupEmail,
-    query.now.toISOString(),
-    actor.personId,
-  ];
 }
 interface SummaryRow extends Omit<
   GoogleGroupSummary,
@@ -142,7 +139,14 @@ export async function getGoogleGroupReview(
       `${GOOGLE_GROUP_QUERY}, selected AS (SELECT * FROM summaries WHERE group_email=?)
     SELECT v.allowed,(SELECT ${GROUP_JSON} FROM summaries WHERE group_email=?) AS summary,
       (SELECT json_group_array(json(value)) FROM (SELECT json_object('personId',p.id,'name',coalesce(nullif(trim(coalesce(p.given_name,'')||' '||coalesce(p.family_name,'')),''),p.email,'Name not recorded'),
-        'email',p.email,'identityId',d.identity_id,'state',d.state) AS value FROM differences d JOIN people p ON p.id=d.person_id AND p.deleted_at IS NULL JOIN selected s ON s.group_email=d.group_email AND s.state='current'
+        'email',p.email,'identityId',d.identity_id,'state',d.state,
+        'assignmentCommitteeId',CASE WHEN d.state='unexpected' AND p.membership_status='member' THEN (SELECT c.id FROM committees c WHERE c.workspace_group_email=s.group_email AND c.accepting_members=1 LIMIT 1) END,
+        'requestState',(SELECT o.state FROM integration_outbox o JOIN reconcile_generations g ON g.person_id=o.person_id AND g.target_id='person' AND g.generation=o.generation
+          WHERE o.person_id=p.id AND o.target_id='person' AND o.kind='person_reconcile' AND o.state IN ('queued','running','retry','done')
+          AND json_extract(o.payload,'$.source')='google_group_review' AND json_extract(o.payload,'$.groupEmail')=s.group_email
+          AND json_extract(o.payload,'$.identityId')=d.identity_id AND json_extract(o.payload,'$.customerId')=(SELECT customer FROM settings)
+          AND json_extract(o.payload,'$.expectedAccess')=CASE WHEN d.state='missing' THEN 1 ELSE 0 END
+          AND (o.state<>'done' OR o.created_at>=s.started_at) ORDER BY o.created_at DESC,o.id DESC LIMIT 1)) AS value FROM differences d JOIN people p ON p.id=d.person_id AND p.deleted_at IS NULL JOIN selected s ON s.group_email=d.group_email AND s.state='current'
         WHERE v.allowed AND p.id>? ORDER BY p.id LIMIT ?)) AS items FROM viewer v`,
     )
     .bind(...parameters(actor, query), query.groupEmail, query.groupEmail, after, limit + 1)
