@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { PersonService } from '../src/person-service';
-import { bootstrapStaffAdmin, loadActor } from '../src/staff-roles';
+import { bootstrapStaffAdmin, loadActor, staffAdminManage } from '../src/staff-roles';
 import { CommitteeService } from '../src/committees';
 import { linkWorkspaceIdentity } from '../src/workspace-link';
 import { memoryDb } from './support/db';
@@ -237,22 +237,34 @@ void test('profiles include consent and assignment history, hide donation data f
       source: 'fixture',
       reference: `attendance-${i}`,
     });
+  await people.recordEngagement(person.id, {
+    type: 'donated',
+    occurredAt: '2999-12-01T12:00:00Z',
+    source: 'givebutter',
+    reference: 'later-private-donation',
+    details: { amount: 1234 },
+  });
   const first = await getStaffPerson(db, leadActor, person.id);
   assert.ok(first);
   assert.equal(first.events.items.length, 50);
   assert.ok(first.events.nextCursor);
   assert.equal(first.consents.length, 1);
   assert.equal(first.assignments.length, 2);
+  assert.ok('counts' in first, 'staff profiles need full-log relationship counts');
+  assert.equal(first.counts.attended_total, 55);
+  assert.notEqual(first.counts.last_engaged_at, '2999-12-01T12:00:00Z');
   const second = await getStaffPerson(db, leadActor, person.id, {
     cursor: first.events.nextCursor,
   });
   assert.ok(second);
+  assert.deepEqual(second.counts, first.counts);
   const visible = [...first.events.items, ...second.events.items];
   assert.equal(new Set(visible.map((e) => e.id)).size, visible.length);
   assert.equal(JSON.stringify([first, second]).includes('4321'), false);
   assert.equal(JSON.stringify([first, second]).includes('private-donor-id'), false);
   const full = await getStaffPerson(db, adminActor, person.id, { cursor: first.events.nextCursor });
   assert.ok(full);
+  assert.equal(full.counts.last_engaged_at, '2999-12-01T12:00:00Z');
   assert.equal(JSON.stringify(full).includes('4321'), true);
   const views = db.raw.prepare('SELECT actor_id,person_id FROM person_views').all();
   assert.ok(
@@ -297,4 +309,64 @@ void test('a designation revoked after actor loading is rechecked inside the sea
   assert.deepEqual((await searchStaffPeople(guarded, adminActor, {})).items, []);
   assert.equal(revoked, true);
   db.raw.close();
+});
+
+void test('summary donation timestamps disappear immediately when an administrator becomes a committee lead', async () => {
+  const f = await fixture();
+  try {
+    const person = await f.member('summary-privacy@example.invalid');
+    for (const [personId, role, operationId] of [
+      [person.id, 'member', 'summary-member'],
+      [f.admin.id, 'lead', 'summary-admin-lead'],
+    ] as const) {
+      assert.equal(
+        (
+          await f.committees.assign({
+            personId,
+            committeeId: 'events',
+            role,
+            actorId: f.admin.id,
+            operationId,
+          })
+        ).kind,
+        'ok',
+      );
+    }
+    await f.people.recordEngagement(person.id, {
+      type: 'donated',
+      occurredAt: '2999-12-01T12:00:00Z',
+      source: 'givebutter',
+    });
+    const before = await f.getStaffPerson(f.db, f.adminActor, person.id);
+    assert.equal(before?.counts.last_engaged_at, '2999-12-01T12:00:00Z');
+    assert.equal(
+      (
+        await staffAdminManage(f.db, f.adminActor, {
+          targetPersonId: f.lead.id,
+          enabled: true,
+          operationId: 'summary-backup-admin',
+        })
+      ).kind,
+      'ok',
+    );
+    assert.equal(
+      (
+        await staffAdminManage(f.db, f.adminActor, {
+          targetPersonId: f.admin.id,
+          enabled: false,
+          operationId: 'summary-step-down',
+        })
+      ).kind,
+      'ok',
+    );
+    const after = await f.getStaffPerson(f.db, f.adminActor, person.id);
+    assert.ok(after, 'current committee scope still permits the profile');
+    assert.notEqual(after.counts.last_engaged_at, '2999-12-01T12:00:00Z');
+    assert.equal(
+      after.events.items.some((event) => event.type === 'donated'),
+      false,
+    );
+  } finally {
+    f.db.raw.close();
+  }
 });

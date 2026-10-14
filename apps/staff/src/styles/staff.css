@@ -741,22 +741,41 @@ html {
     padding-block: 0.5rem;
   }
 
-  .staff-profile-status {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 1rem 3rem;
+  .staff-profile-summary {
     margin-bottom: 1.5rem;
+    padding-block: 1rem;
+    border-top: 1px solid var(--color-outline-variant);
     font-size: 0.875rem;
   }
 
-  .staff-profile-status span {
-    margin-right: 0.75rem;
-    color: var(--color-on-surface-variant);
+  .staff-profile-facts {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 8rem), 1fr));
+    gap: 1rem 1.5rem;
   }
 
-  .staff-profile-status small {
-    display: block;
+  .staff-profile-facts dt {
+    margin-bottom: 0.375rem;
     color: var(--color-on-surface-variant);
+    font-size: 0.8125rem;
+  }
+
+  .staff-profile-facts dd {
+    overflow-wrap: anywhere;
+  }
+
+  .staff-profile-fact-note {
+    margin-top: 0.375rem;
+    color: var(--color-on-surface-variant);
+    font-size: 0.8125rem;
+  }
+
+  .staff-profile-fact-note a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 2.75rem;
+    color: var(--color-primary-ink);
+    text-underline-offset: 0.2em;
   }
 
   .staff-current-assignments > li {

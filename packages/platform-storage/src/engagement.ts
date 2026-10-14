@@ -5,6 +5,7 @@
 
 import { nowIso, ulid } from '@lasvegasfortransit/platform-core/ids';
 import type { Db } from './db';
+import { STAFF_ADMIN_SCOPE, STAFF_PERSON_SCOPE } from './staff-scope';
 
 export const EVENT_TYPES = [
   'subscribed',
@@ -89,14 +90,19 @@ export async function engagementCounts(
   db: Db,
   personId: string,
   now: Date = new Date(),
+  visibility?: { staffActorId: string },
 ): Promise<EngagementCounts> {
   const since = new Date(now.getTime() - 90 * DAY_MS).toISOString();
+  const staffFilter = visibility
+    ? `AND p.deleted_at IS NULL AND ${STAFF_PERSON_SCOPE.replaceAll('?', '?3')}
+       AND (e.type <> 'donated' OR ${STAFF_ADMIN_SCOPE.replaceAll('?', '?3')})`
+    : '';
   const row = await db
     .prepare(
       `WITH counted AS (
-         SELECT type, occurred_at FROM engagement_events
-         WHERE person_id = ?1 AND type <> 'correction'
-           AND id NOT IN (
+         SELECT e.type, e.occurred_at FROM engagement_events e JOIN people p ON p.id=e.person_id
+         WHERE e.person_id = ?1 AND e.type <> 'correction' ${staffFilter}
+           AND e.id NOT IN (
              SELECT reference FROM engagement_events
              WHERE person_id = ?1 AND type = 'correction' AND reference IS NOT NULL
            )
@@ -113,14 +119,15 @@ export async function engagementCounts(
          ) AS member_since
        FROM counted`,
     )
-    .bind(personId, since)
+    .bind(personId, since, ...(visibility ? [visibility.staffActorId] : []))
     .first<EngagementCounts>();
   return {
-    first_attended_at: row?.first_attended_at ?? null,
-    last_attended_at: row?.last_attended_at ?? null,
-    attended_last_90_days: row?.attended_last_90_days ?? 0,
-    attended_total: row?.attended_total ?? 0,
-    last_engaged_at: row?.last_engaged_at ?? null,
-    member_since: row?.member_since ?? null,
+    first_attended_at: null,
+    last_attended_at: null,
+    attended_last_90_days: 0,
+    attended_total: 0,
+    last_engaged_at: null,
+    member_since: null,
+    ...row,
   };
 }

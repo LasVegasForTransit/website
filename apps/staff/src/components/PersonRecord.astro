@@ -1,5 +1,5 @@
 ---
-import { t, formatDate } from '@lasvegasfortransit/platform-core/messages';
+import { t, formatFullDate } from '@lasvegasfortransit/platform-core/messages';
 import type { StaffPerson } from '@lasvegasfortransit/platform-storage/staff-people';
 import { displayLabel } from '../lib/presentation';
 import { eventFacts } from '../lib/engagement';
@@ -27,7 +27,7 @@ const { consents, identities, events, fieldSources } = profile;
                   : t('staff.record.permissionGiven')}
                 <p class="text-body-sm">
                   {t('staff.record.given', {
-                    date: formatDate(new Date(consent.given_at)),
+                    date: formatFullDate(new Date(consent.given_at)),
                     source: displayLabel(consent.source),
                     method: displayLabel(consent.method),
                   })}
@@ -43,7 +43,7 @@ const { consents, identities, events, fieldSources } = profile;
                 {consent.withdrawn_at && (
                   <p class="text-body-sm">
                     {t('staff.record.withdrawn', {
-                      date: formatDate(new Date(consent.withdrawn_at)),
+                      date: formatFullDate(new Date(consent.withdrawn_at)),
                       source: displayLabel(consent.withdrawn_source ?? 'unknown'),
                     })}
                   </p>
@@ -71,7 +71,7 @@ const { consents, identities, events, fieldSources } = profile;
                 </details>
                 <p class="text-body-sm">
                   {t('staff.record.linked', {
-                    date: formatDate(new Date(identity.linked_at)),
+                    date: formatFullDate(new Date(identity.linked_at)),
                     method: displayLabel(identity.link_method),
                   })}
                 </p>
@@ -91,7 +91,9 @@ const { consents, identities, events, fieldSources } = profile;
             {events.items.map((event) => (
               <li>
                 <strong>{displayLabel(event.type)}</strong> ·{' '}
-                <time datetime={event.occurred_at}>{formatDate(new Date(event.occurred_at))}</time>
+                <time datetime={event.occurred_at}>
+                  {formatFullDate(new Date(event.occurred_at))}
+                </time>
                 <p class="text-body-sm">
                   {displayLabel(event.source)}
                   {event.recorded_by &&
@@ -135,7 +137,7 @@ const { consents, identities, events, fieldSources } = profile;
             fieldSources.map((source) => (
               <li>
                 {displayLabel(source.field)} · {displayLabel(source.source)} ·{' '}
-                {formatDate(new Date(source.confirmed_at))}
+                {formatFullDate(new Date(source.confirmed_at))}
               </li>
             ))
           }

@@ -9,6 +9,7 @@ import { loadActor } from './staff-roles';
 import { STAFF_ADMIN_SCOPE, STAFF_PERSON_SCOPE } from './staff-scope';
 import { staffHistory, validatePersonCursor, type EngagementEvent } from './staff-history';
 import { ROSTER_NAME, readRosterCursor, rosterCursor } from './staff-roster-cursor';
+import { engagementCounts, type EngagementCounts } from './engagement';
 export interface StaffPeopleQuery extends Omit<PeopleQuery, 'limit'> {
   committeeId?: string;
   limit?: number;
@@ -92,6 +93,7 @@ export interface ProfileFieldSource {
 }
 export interface StaffPerson {
   person: Person;
+  counts: EngagementCounts;
   consents: ConsentRecord[];
   identities: LinkedIdentity[];
   assignments: ProfileAssignment[];
@@ -172,9 +174,10 @@ export async function getStaffPerson(
     await auditDenied(db, actor.personId, 'person.view');
     return null;
   }
-  const [records, events] = await Promise.all([
+  const [records, events, counts] = await Promise.all([
     profileRecords(db, actor.personId, person.id),
     staffHistory(db, actor.personId, person.id, input.cursor),
+    engagementCounts(db, person.id, undefined, { staffActorId: actor.personId }),
   ]);
   const stillVisible = await db
     .prepare(
@@ -187,5 +190,5 @@ export async function getStaffPerson(
     return null;
   }
   await recordPersonView(db, actor.personId, person.id);
-  return { person, ...records, events };
+  return { person, ...records, events, counts };
 }
