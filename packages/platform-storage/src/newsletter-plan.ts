@@ -15,6 +15,7 @@ export interface NewsletterPlan {
   desired: 'active' | 'inactive' | 'unknown';
   allowActivation: boolean;
   identities: NewsletterIdentity[];
+  accountKeys: string[];
   snapshot: string;
 }
 interface Snapshot {
@@ -66,6 +67,17 @@ export async function loadNewsletterPlan(db: Db, personId: string): Promise<News
   if (!row) return null;
   const snapshot = JSON.parse(row.snapshot) as Snapshot;
   const allowActivation = await activationAllowed(snapshot);
+  const emails = [snapshot.email, ...snapshot.identities.map((value) => value.email)].filter(
+    (value): value is string => Boolean(value),
+  );
+  const accountKeys = [
+    ...new Set([
+      ...snapshot.identities.map((value) => `id:${value.externalId}`),
+      ...(await Promise.all(
+        emails.map(async (value) => `email:${await digestToken(value.trim().toLowerCase())}`),
+      )),
+    ]),
+  ].sort();
   const desired =
     snapshot.deletedAt !== null
       ? 'inactive'
@@ -82,12 +94,47 @@ export async function loadNewsletterPlan(db: Db, personId: string): Promise<News
     desired,
     allowActivation,
     identities: snapshot.identities,
+    accountKeys,
     snapshot: row.snapshot,
   };
 }
 
+const PENDING_SOURCE = `EXISTS(SELECT 1 FROM newsletter_inbound_events e WHERE e.state IN ('pending','needs_review') AND (e.email_key IN (SELECT value FROM json_each(?)) OR 'id:'||e.subscription_id IN (SELECT value FROM json_each(?)) OR e.email_key IN (SELECT account_key FROM newsletter_write_intents WHERE person_id=?)))`;
+function pendingValues(plan: NewsletterPlan): SqlValue[] {
+  const keys = JSON.stringify(plan.accountKeys);
+  return [keys, keys, plan.personId];
+}
 export function newsletterPlanGuard(plan: NewsletterPlan): { sql: string; values: SqlValue[] } {
-  return { sql: `(${SNAPSHOT})=?`, values: [plan.personId, plan.snapshot] };
+  const inbound = plan.deletedAt === null ? ` AND NOT ${PENDING_SOURCE}` : '';
+  return {
+    sql: `(${SNAPSHOT})=?${inbound}`,
+    values: [plan.personId, plan.snapshot, ...(inbound ? pendingValues(plan) : [])],
+  };
+}
+
+/** Pending evidence delays this held account without starving the next account or recording success. */
+export async function deferPendingNewsletterChoice(
+  db: Db,
+  plan: NewsletterPlan,
+  leaseToken: string,
+  now: Date,
+): Promise<boolean> {
+  if (plan.deletedAt !== null) return false;
+  const result = await db
+    .prepare(
+      `UPDATE newsletter_sync_jobs SET state='queued',next_attempt_at=? WHERE person_id=? AND (${SNAPSHOT})=? AND lease_token=? AND lease_expires_at>? AND ${PENDING_SOURCE}`,
+    )
+    .bind(
+      new Date(now.getTime() + 60_000).toISOString(),
+      plan.personId,
+      plan.personId,
+      plan.snapshot,
+      leaseToken,
+      now.toISOString(),
+      ...pendingValues(plan),
+    )
+    .run();
+  return result.meta.changes === 1;
 }
 
 export async function newsletterPlanIsCurrent(db: Db, plan: NewsletterPlan): Promise<boolean> {

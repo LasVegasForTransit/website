@@ -7,7 +7,10 @@ import {
   type NewsletterLease,
   type NewsletterFailure,
 } from '@lasvegasfortransit/platform-storage/newsletter-sync-store';
-import type { NewsletterPlan } from '@lasvegasfortransit/platform-storage/newsletter-plan';
+import {
+  deferPendingNewsletterChoice,
+  type NewsletterPlan,
+} from '@lasvegasfortransit/platform-storage/newsletter-plan';
 import {
   newsletterEmailKey,
   reserveNewsletterAccount,
@@ -54,10 +57,11 @@ export class BeehiivReconciliation {
     return { kind: 'stale' };
   }
   async current(): Promise<boolean> {
-    return (
-      (await newsletterPlanIsCurrent(this.db, this.plan)) &&
-      (await renewNewsletterLease(this.db, this.lease, this.now()))
-    );
+    if (!(await newsletterPlanIsCurrent(this.db, this.plan))) {
+      await deferPendingNewsletterChoice(this.db, this.plan, this.lease.token, this.now());
+      return false;
+    }
+    return await renewNewsletterLease(this.db, this.lease, this.now());
   }
   async outcome(
     kind: 'confirmed' | 'progress' | 'retry' | 'needs_review',
