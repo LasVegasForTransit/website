@@ -3,6 +3,7 @@ import test from 'node:test';
 import { readJoinForm, type JoinInput } from '@lasvegasfortransit/platform-core/join-form';
 import type { GeocodeResult } from '@lasvegasfortransit/platform-integrations/census';
 import { processJoin, type PlatformEnv } from '../platform/join';
+import { PersonService } from '@lasvegasfortransit/platform-storage/person-service';
 import { removeEmail } from '../platform/remove';
 import {
   everyStoredText,
@@ -77,7 +78,7 @@ const inSunriseManor: GeocodeResult = {
   places: ['Sunrise Manor CDP'],
 };
 
-void test('joining with basic details and consent makes a member everywhere', async () => {
+void test('joining saves membership and queues mailing-list delivery', async () => {
   const db = memoryDb();
   const { calls, fetcher } = fakeServices();
   const outcome = await processJoin(
@@ -93,7 +94,11 @@ void test('joining with basic details and consent makes a member everywhere', as
   assert.equal(person.membership_status, 'member');
   const consent = db.raw.prepare('SELECT method, wording_version FROM consent_records').get();
   assert.deepEqual({ ...consent }, { method: 'checkbox', wording_version: 'join-form-v1' });
-  assert.ok(calls.some((call) => call.url.includes('beehiiv.com')));
+  assert.equal(
+    calls.some((call) => call.url.includes('beehiiv.com')),
+    false,
+  );
+  assert.equal(db.raw.prepare('SELECT state FROM newsletter_sync_jobs').get()?.state, 'queued');
   assert.ok(calls.some((call) => call.url === 'https://api.resend.com/emails'));
   assert.ok(calls.some((call) => call.url.endsWith('/pages')));
   const email = sentEmail(calls);
@@ -217,8 +222,8 @@ void test('submitting the same form twice joins once and sends one email', async
   assert.equal(calls.filter((call) => call.url.includes('resend')).length, 1);
   assert.equal(
     calls.filter((call) => call.url.includes('beehiiv.com')).length,
-    1,
-    'Beehiiv is called once',
+    0,
+    'mailing delivery is handled by durable reconciliation',
   );
 });
 
@@ -283,7 +288,7 @@ void test('an address the Geocoder cannot place keeps only the ZIP code', async 
   assert.deepEqual({ ...person }, { zip: '89104', census_block: null });
 });
 
-void test('if Beehiiv fails, nothing is recorded so the person can try again', async () => {
+void test('a mailing provider outage cannot discard accepted membership consent', async () => {
   const db = memoryDb();
   const failing = (() =>
     Promise.resolve(new Response('down', { status: 500 }))) as unknown as typeof fetch;
@@ -293,8 +298,9 @@ void test('if Beehiiv fails, nothing is recorded so the person can try again', a
     '203.0.113.1',
     { fetcher: failing },
   );
-  assert.equal(outcome.kind, 'unavailable');
-  assert.equal(db.raw.prepare('SELECT count(*) AS n FROM people').get()?.n, 0);
+  assert.equal(outcome.kind, 'joined');
+  assert.equal(db.raw.prepare('SELECT count(*) AS n FROM people').get()?.n, 1);
+  assert.equal(db.raw.prepare('SELECT state FROM newsletter_sync_jobs').get()?.state, 'queued');
 });
 
 void test('the newsletter box joins the same way with its own consent wording', async () => {
@@ -350,6 +356,16 @@ void test('a valid removal request survives a mailing provider outage', async ()
       '203.0.113.1',
       { fetcher },
     );
+    const joined = db.raw
+      .prepare('SELECT id FROM people WHERE email=?')
+      .get('removal-outage@example.org');
+    assert.ok(typeof joined?.id === 'string');
+    await new PersonService(db).linkIdentity(joined.id, {
+      platform: 'beehiiv',
+      externalId: 'sub_removal_outage',
+      externalEmail: 'removal-outage@example.org',
+      linkMethod: 'created_by_platform',
+    });
     const token = decodeURIComponent(/token=([^\s]+)/.exec(sentEmail(calls).text)?.[1] ?? '');
     delete config.LVBT_BEEHIIV_API_KEY;
     assert.equal(await removeEmail(config, token), 'removed');

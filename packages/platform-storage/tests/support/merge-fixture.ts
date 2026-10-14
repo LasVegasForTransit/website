@@ -4,7 +4,7 @@ import { CommitteeService } from '../../src/committees';
 import { bootstrapStaffAdmin, loadActor } from '../../src/staff-roles';
 import { linkWorkspaceIdentity } from '../../src/workspace-link';
 import { memoryDb } from './db';
-export async function mergeFixture(through?: string) {
+export async function mergeFixture(through?: string, initialConsentAt?: string) {
   const loaded = await import('../../src/merges').catch(() => null);
   assert.ok(loaded, 'merge and undo must preserve exact movements and later work');
   const db = memoryDb(through);
@@ -19,6 +19,7 @@ export async function mergeFixture(through?: string) {
           source: 'join_form',
           method: 'checkbox',
           wordingVersion: 'fixture',
+          ...(initialConsentAt ? { givenAt: initialConsentAt } : {}),
         },
       })
     ).person;
@@ -33,6 +34,7 @@ export async function mergeFixture(through?: string) {
         source: 'paper',
         method: 'paper_signature',
         wordingVersion: 'fixture',
+        ...(initialConsentAt ? { givenAt: initialConsentAt } : {}),
       },
     })
   ).person;

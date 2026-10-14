@@ -340,6 +340,7 @@ void test('an older active roster snapshot cannot restore membership after a new
       source: 'join_form',
       method: 'checkbox',
       wordingVersion: 'join-form-v1',
+      givenAt: '2026-07-01T00:00:00.000Z',
     },
   });
   await people.withdrawConsent(person.id, {

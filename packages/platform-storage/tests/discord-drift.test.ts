@@ -19,6 +19,7 @@ async function fixture() {
         source: 'join_form',
         method: 'checkbox',
         wordingVersion: 'fixture',
+        givenAt: '2026-10-01T00:00:00.000Z',
       },
     });
     await people.linkIdentity(person.id, {

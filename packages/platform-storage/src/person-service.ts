@@ -23,6 +23,7 @@ import {
   type ImportedNewsletterEvidence,
 } from './imported-consent';
 import { normalizeEmail, ownedFields, type FieldName } from './field-ownership';
+import { writePersonConsent, type ConsentWriteInput } from './consent-write';
 import { findPeople, type PeopleQuery } from './people-search';
 import {
   engagementCounts,
@@ -157,6 +158,7 @@ export class PersonService {
             source: ConsentSource;
             method: ConsentMethod;
             wordingVersion: string;
+            givenAt?: string;
           }
         | undefined;
     },
@@ -193,7 +195,10 @@ export class PersonService {
       if (identity.kind !== 'ok') throw new Error('person service: identity link conflict');
     }
     if (input.consent) {
-      await this.recordConsent(personId, { ...input.consent, givenAt: now });
+      await this.recordConsent(personId, {
+        ...input.consent,
+        givenAt: input.consent.givenAt ?? now,
+      });
     }
     const person = await this.getPerson(personId);
     if (!person) throw new Error('person service: person vanished during upsert');
@@ -271,51 +276,15 @@ export class PersonService {
     return this.getPerson(id);
   }
 
-  async recordConsent(
-    id: string,
-    input: {
-      scope: ConsentScope;
-      source: ConsentSource;
-      method: ConsentMethod;
-      wordingVersion: string;
-      givenAt: string;
-    },
-  ): Promise<Person | null> {
-    const active = await this.db
-      .prepare(
-        'SELECT id FROM consent_records WHERE person_id = ? AND scope = ? AND withdrawn_at IS NULL',
-      )
-      .bind(id, input.scope)
-      .first();
-    // An active consent already covers this; a second row would add nothing.
-    if (!active) {
-      const now = nowIso();
-      const consentId = ulid();
-      await this.db
-        .prepare(
-          `INSERT INTO consent_records (id, person_id, scope, given_at, source, method, wording_version, created_at, updated_at)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-        )
-        .bind(
-          consentId,
-          id,
-          input.scope,
-          input.givenAt,
-          input.source,
-          input.method,
-          input.wordingVersion,
-          now,
-          now,
-        )
-        .run();
-      if (input.scope === 'newsletter') {
-        await recordEvent(this.db, id, {
-          type: 'subscribed',
-          occurredAt: input.givenAt,
-          source: input.source,
-          reference: consentId,
-        });
-      }
+  async recordConsent(id: string, input: ConsentWriteInput): Promise<Person | null> {
+    const consentId = await writePersonConsent(this.db, id, input);
+    if (consentId && input.scope === 'newsletter') {
+      await recordEvent(this.db, id, {
+        type: 'subscribed',
+        occurredAt: input.givenAt,
+        source: input.source,
+        reference: consentId,
+      });
     }
     return this.recomputeMembership(id);
   }
@@ -347,9 +316,10 @@ export class PersonService {
       this.db
         .prepare(
           `UPDATE consent_records SET withdrawn_at=?,withdrawn_source=?,updated_at=?
-        WHERE person_id=? AND scope=? AND withdrawn_at IS NULL`,
+        WHERE person_id=? AND scope=? AND withdrawn_at IS NULL
+          AND (julianday(given_at) IS NULL OR julianday(given_at)<=julianday(?))`,
         )
-        .bind(input.withdrawnAt, input.source, recordedAt, id, input.scope),
+        .bind(input.withdrawnAt, input.source, recordedAt, id, input.scope, input.withdrawnAt),
     ]);
     const { results } = await this.db
       .prepare(

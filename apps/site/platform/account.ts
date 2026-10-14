@@ -7,7 +7,7 @@ import { checkCode, requestCode } from '@lasvegasfortransit/platform-storage/aut
 import { nowIso } from '@lasvegasfortransit/platform-core/ids';
 import { normalizePhone } from '@lasvegasfortransit/platform-core/join-form';
 import { isRegionId, regionForPlaces, regionName } from '@lasvegasfortransit/platform-core/regions';
-import { subscribe, unsubscribe } from '@lasvegasfortransit/platform-integrations/beehiiv';
+import { confirmNewsletterAddress } from '@lasvegasfortransit/platform-storage/newsletter-address';
 import {
   geocodeToBlock,
   type GeocodeResult,
@@ -241,10 +241,11 @@ export async function confirmEmailChange(
 
   const now = nowIso();
   await people.updateFields(person.id, { source: 'member', fields: { email: newEmail } });
-  await env.PLATFORM_DB.prepare('UPDATE people SET email_verified_at = ? WHERE id = ?')
-    .bind(now, person.id)
-    .run();
-  await moveMailingListAddress(env, person.id, newEmail, fetcher);
+  await confirmNewsletterAddress(env.PLATFORM_DB, {
+    personId: person.id,
+    email: newEmail,
+    verifiedAt: now,
+  });
   if (person.email) {
     const body = t('email.emailChangedBody', { email: newEmail });
     await sendEmail(
@@ -264,81 +265,6 @@ export async function confirmEmailChange(
 
 // --- Mailing list --------------------------------------------------------
 
-function beehiiv(env: AccountEnv) {
-  return env.LVBT_BEEHIIV_API_KEY && env.LVBT_BEEHIIV_PUBLICATION_ID
-    ? { apiKey: env.LVBT_BEEHIIV_API_KEY, publicationId: env.LVBT_BEEHIIV_PUBLICATION_ID }
-    : null;
-}
-
-async function beehiivIds(db: Db, personId: string): Promise<string[]> {
-  const { results } = await db
-    .prepare(
-      "SELECT external_id AS externalId FROM identities WHERE person_id = ? AND platform = 'beehiiv'",
-    )
-    .bind(personId)
-    .all<{ externalId: string }>();
-  return results.map((row) => row.externalId);
-}
-
-/** Unsubscribe every Beehiiv subscription linked to the person. */
-export async function unsubscribeEverywhere(
-  env: AccountEnv,
-  personId: string,
-  fetcher: typeof fetch = fetch,
-): Promise<boolean> {
-  const ids = await beehiivIds(env.PLATFORM_DB, personId);
-  if (!ids.length) return true;
-  const config = beehiiv(env);
-  if (!config) {
-    console.error('account: Beehiiv secrets are missing, so the unsubscribe is not sent');
-    return false;
-  }
-  for (const id of ids) {
-    if (!(await unsubscribe(config, id, fetcher))) return false;
-  }
-  return true;
-}
-
-async function subscribeAddress(
-  env: AccountEnv,
-  personId: string,
-  email: string,
-  fetcher: typeof fetch,
-): Promise<boolean> {
-  const config = beehiiv(env);
-  if (!config) return false;
-  const result = await subscribe(
-    config,
-    email,
-    { sendWelcomeEmail: false, utmSource: 'account' },
-    fetcher,
-  );
-  if (!result.ok) return false;
-  if (result.subscriptionId) {
-    const linked = await new PersonService(env.PLATFORM_DB).linkIdentity(personId, {
-      platform: 'beehiiv',
-      externalId: result.subscriptionId,
-      externalEmail: email,
-      linkMethod: 'verified_email',
-    });
-    if (linked.kind !== 'ok') return false;
-  }
-  return true;
-}
-
-// After an email change, the mailing list follows the new address.
-async function moveMailingListAddress(
-  env: AccountEnv,
-  personId: string,
-  newEmail: string,
-  fetcher: typeof fetch,
-): Promise<void> {
-  const view = await accountView(env.PLATFORM_DB, personId);
-  if (!view?.onMailingList) return;
-  await unsubscribeEverywhere(env, personId, fetcher);
-  await subscribeAddress(env, personId, newEmail, fetcher);
-}
-
 export async function leaveMailingList(
   env: AccountEnv,
   personId: string,
@@ -354,18 +280,15 @@ export async function leaveMailingList(
 export async function rejoinMailingList(
   env: AccountEnv,
   person: Pick<Person, 'id' | 'email'>,
-  fetcher: typeof fetch = fetch,
 ): Promise<'rejoined' | 'unavailable'> {
   if (!person.email) return 'unavailable';
-  // As when joining: being on the mailing list is what makes someone a
-  // member, so nothing is recorded unless Beehiiv takes the address.
-  if (!(await subscribeAddress(env, person.id, person.email, fetcher))) return 'unavailable';
-  await new PersonService(env.PLATFORM_DB).recordConsent(person.id, {
+  const updated = await new PersonService(env.PLATFORM_DB).recordConsent(person.id, {
     scope: 'newsletter',
     source: 'account',
     method: 'checkbox',
     wordingVersion: REJOIN_WORDING,
     givenAt: nowIso(),
+    renew: true,
   });
-  return 'rejoined';
+  return updated?.membership_status === 'member' ? 'rejoined' : 'unavailable';
 }

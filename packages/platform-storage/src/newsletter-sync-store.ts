@@ -23,6 +23,7 @@ export type NewsletterFailure =
   | 'consent_evidence_needed';
 export type NewsletterOutcome =
   | { kind: 'confirmed'; now: Date }
+  | { kind: 'progress'; now: Date }
   | {
       kind: 'retry' | 'needs_review';
       failure: NewsletterFailure;
@@ -30,16 +31,31 @@ export type NewsletterOutcome =
       now: Date;
     };
 
-async function accountKeys(plan: NewsletterPlan): Promise<string[]> {
+async function accountKeys(db: Db, plan: NewsletterPlan, publicationId: string): Promise<string[]> {
   const emails = [plan.email, ...plan.identities.map((identity) => identity.email)].filter(
     (email): email is string => Boolean(email),
   );
-  return [
+  const keys = [
     ...new Set([
       ...plan.identities.map((identity) => `id:${identity.externalId}`),
       ...(await Promise.all(
         emails.map(async (email) => `email:${await digestToken(email.trim().toLowerCase())}`),
       )),
+    ]),
+  ].sort();
+  const { results } = await db
+    .prepare(
+      'SELECT account_key,subscription_id FROM newsletter_write_intents WHERE publication_id=? AND (person_id=? OR account_key IN (SELECT value FROM json_each(?)))',
+    )
+    .bind(publicationId, plan.personId, JSON.stringify(keys))
+    .all<{ account_key: string; subscription_id: string | null }>();
+  return [
+    ...new Set([
+      ...keys,
+      ...results.flatMap((value) => [
+        value.account_key,
+        ...(value.subscription_id ? [`id:${value.subscription_id}`] : []),
+      ]),
     ]),
   ].sort();
 }
@@ -80,7 +96,7 @@ export async function claimNewsletterJob(
     personId,
     publicationId,
     token,
-    accountKeys: plan ? await accountKeys(plan) : [],
+    accountKeys: plan ? await accountKeys(db, plan, publicationId) : [],
   };
   if (!plan) {
     await releaseNewsletterLease(db, lease);
@@ -108,7 +124,10 @@ export async function claimNewsletterJob(
   }
 }
 
-function leaseGuard(lease: NewsletterLease, now: Date): { sql: string; values: SqlValue[] } {
+export function newsletterLeaseGuard(
+  lease: NewsletterLease,
+  now: Date,
+): { sql: string; values: SqlValue[] } {
   return {
     sql: `EXISTS(SELECT 1 FROM newsletter_sync_jobs WHERE person_id=? AND lease_token=? AND lease_expires_at>? AND state IN ('queued','running','retry')) AND (SELECT count(*) FROM newsletter_account_leases WHERE publication_id=? AND token=? AND expires_at>? AND account_key IN (SELECT value FROM json_each(?)))=?`,
     values: [
@@ -129,7 +148,7 @@ export async function newsletterLeaseIsCurrent(
   lease: NewsletterLease,
   now: Date,
 ): Promise<boolean> {
-  const guard = leaseGuard(lease, now);
+  const guard = newsletterLeaseGuard(lease, now);
   return Boolean(
     await db
       .prepare(`SELECT 1 WHERE ${guard.sql}`)
@@ -146,23 +165,27 @@ export async function saveNewsletterOutcome(
 ): Promise<boolean> {
   if (plan.personId !== lease.personId || !Number.isFinite(outcome.now.getTime())) return false;
   const planGuard = newsletterPlanGuard(plan),
-    current = leaseGuard(lease, outcome.now);
+    current = newsletterLeaseGuard(lease, outcome.now);
   const confirmed = outcome.kind === 'confirmed';
-  const delay = confirmed
-    ? 0
-    : Math.max(1000, Math.min(86_400_000, outcome.retryAfterMs ?? 60_000));
+  const progress = outcome.kind === 'progress';
+  const delay =
+    confirmed || progress
+      ? 0
+      : Math.max(1000, Math.min(86_400_000, outcome.retryAfterMs ?? 60_000));
   const result = await db
     .prepare(
-      `UPDATE newsletter_sync_jobs SET state=?,last_failure=?,attempts=attempts+?,next_attempt_at=?,last_publication_id=?,last_completed_at=CASE WHEN ? THEN ? ELSE last_completed_at END,activation_consent_id=CASE WHEN ? THEN NULL ELSE activation_consent_id END WHERE person_id=? AND ${planGuard.sql} AND ${current.sql}`,
+      `UPDATE newsletter_sync_jobs SET state=?,last_failure=?,attempts=attempts+?,next_attempt_at=?,last_publication_id=?,last_completed_at=CASE WHEN ? THEN ? ELSE last_completed_at END,activation_consent_id=CASE WHEN ? THEN NULL ELSE activation_consent_id END,activation_email_key=CASE WHEN ? THEN NULL ELSE activation_email_key END,activation_email_verified_at=CASE WHEN ? THEN NULL ELSE activation_email_verified_at END WHERE person_id=? AND ${planGuard.sql} AND ${current.sql}`,
     )
     .bind(
-      confirmed ? 'done' : outcome.kind,
-      confirmed ? null : outcome.failure,
-      Number(!confirmed),
+      confirmed ? 'done' : progress ? 'queued' : outcome.kind,
+      'failure' in outcome ? outcome.failure : null,
+      Number(!confirmed && !progress),
       new Date(outcome.now.getTime() + delay).toISOString(),
       lease.publicationId,
       Number(confirmed),
       outcome.now.toISOString(),
+      Number(confirmed),
+      Number(confirmed),
       Number(confirmed),
       plan.personId,
       ...planGuard.values,

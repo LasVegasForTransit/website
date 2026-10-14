@@ -13,12 +13,11 @@ import {
 import { nowIso } from '@lasvegasfortransit/platform-core/ids';
 import { isRegionId, regionForPlaces } from '@lasvegasfortransit/platform-core/regions';
 import { hashWithSecret, signToken } from '@lasvegasfortransit/platform-core/signing';
-import { subscribe, type SubscribeResult } from '@lasvegasfortransit/platform-integrations/beehiiv';
 import {
   geocodeToBlock,
   type GeocodeResult,
 } from '@lasvegasfortransit/platform-integrations/census';
-import { emailConfigured, sendEmail } from '@lasvegasfortransit/platform-integrations/email';
+import { sendEmail } from '@lasvegasfortransit/platform-integrations/email';
 import { featuredWelcomeAction, memberWelcomeEmail, welcomeAction } from './member-welcome';
 import { t } from '@lasvegasfortransit/platform-core/messages';
 import type { Db } from '@lasvegasfortransit/platform-storage/db';
@@ -241,7 +240,7 @@ async function recordMember(
   people: PersonService,
   input: JoinInput,
   geocoded: GeocodeResult | null,
-  subscriptionId: string | null,
+  givenAt: string,
 ): Promise<string> {
   const { person } = await people.upsertFromSource({
     source: input.origin,
@@ -251,17 +250,10 @@ async function recordMember(
       source: input.origin,
       method: 'checkbox',
       wordingVersion: CONSENT_WORDING[input.origin],
+      givenAt,
     },
   });
-  if (subscriptionId) {
-    const linked = await people.linkIdentity(person.id, {
-      platform: 'beehiiv',
-      externalId: subscriptionId,
-      externalEmail: input.email,
-      linkMethod: 'created_by_platform',
-    });
-    if (linked.kind !== 'ok') throw new Error('join: subscription identity conflict');
-  }
+  if (person.membership_status !== 'member') return person.id;
   await people.recordEngagement(person.id, {
     type: 'joined',
     occurredAt: nowIso(),
@@ -282,34 +274,13 @@ function joinZip(input: JoinInput, geocoded: GeocodeResult | null): string | nul
   return geocoded?.kind === 'match' ? geocoded.zip : null;
 }
 
-async function subscribeMember(
-  env: PlatformEnv,
-  input: JoinInput,
-  fetcher: typeof fetch,
-): Promise<SubscribeResult> {
-  if (!env.LVBT_BEEHIIV_API_KEY || !env.LVBT_BEEHIIV_PUBLICATION_ID) {
-    console.error('join: Beehiiv secrets are missing, so nobody can join');
-    return { ok: false };
-  }
-  return subscribe(
-    { apiKey: env.LVBT_BEEHIIV_API_KEY, publicationId: env.LVBT_BEEHIIV_PUBLICATION_ID },
-    input.email,
-    {
-      // Until LVBT's own confirmation email can be sent, Beehiiv's welcome
-      // email confirms the subscription instead.
-      sendWelcomeEmail: !emailConfigured({ resendApiKey: env.LVBT_RESEND_API_KEY }),
-      utmSource: input.origin,
-    },
-    fetcher,
-  );
-}
-
 export async function processJoin(
   env: PlatformEnv,
   input: JoinInput,
   callerAddress: string,
   dependencies: JoinDependencies = {},
 ): Promise<JoinOutcome> {
+  const givenAt = nowIso();
   const fetcher = dependencies.fetcher ?? fetch;
   const stopped = await screen(env, input, callerAddress);
   if (stopped) return stopped;
@@ -321,17 +292,13 @@ export async function processJoin(
   const geocode = dependencies.geocode ?? ((address: string) => geocodeToBlock(address, fetcher));
   const geocoded = input.address ? await geocode(input.address) : null;
 
-  // Subscribe first: being on the mailing list is what makes someone a
-  // member, so if Beehiiv fails nothing is recorded and the person retries.
-  const subscription = await subscribeMember(env, input, fetcher);
-  if (!subscription.ok) return { kind: 'unavailable' };
-
-  const personId = await recordMember(people, input, geocoded, subscription.subscriptionId);
+  const personId = await recordMember(people, input, geocoded, givenAt);
+  if (input.formToken) await recordFormToken(env.PLATFORM_DB, input.formToken, personId);
   await assignRegion(people, env, personId, { geocoded, zip: joinZip(input, geocoded) });
   const person = await people.getPerson(personId);
-  const givenName = person?.given_name ?? '';
+  if (person?.membership_status !== 'member') return { kind: 'discarded' };
+  const givenName = person.given_name ?? '';
 
-  if (input.formToken) await recordFormToken(env.PLATFORM_DB, input.formToken, personId);
   await Promise.all([
     sendConfirmation(
       env,
@@ -352,7 +319,7 @@ export async function processJoin(
     personId,
     givenName,
     email: input.email,
-    needsRegion: input.origin === 'join_form' && !person?.region_id,
+    needsRegion: input.origin === 'join_form' && !person.region_id,
     address: addressOutcome(geocoded),
   };
 }
