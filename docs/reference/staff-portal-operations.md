@@ -87,7 +87,11 @@ credentials.
    preview. Joining passes the member's request-only Discord token over that private connection; the
    jobs Worker checks the matching environment and current membership. Keep direct jobs URLs
    disabled. Test joining, server-rule acceptance, retry, and multiple committee roles in the
-   isolated preview before enabling production.
+   isolated preview before enabling production. Account disconnection must also be tested: confirm
+   member and committee channel access ends while server membership and unrelated roles remain.
+   Disconnection retains its verified account target until the reconciler confirms removal; failed
+   requests recover through the same scheduled work. Apply the canonical disconnect-intent migration
+   before publishing these controls.
 7. Before the first administrator signs in, set the secret
    `LVBT_INITIAL_STAFF_ADMIN_WORKSPACE_EMAIL` on the selected staff Worker to the president's exact
    `@lasvegasfortransit.org` account. Use a separate test member account on `lvbt-staff-preview`;

@@ -1,3 +1,4 @@
+import { requestDiscordService } from './discord-service';
 import type { Db } from '@lasvegasfortransit/platform-storage/db';
 import {
   discordJoinIsCurrent,
@@ -35,66 +36,11 @@ function parsedResult(value: unknown): DiscordJoinResult {
     : { kind: 'retry' };
 }
 
-async function readResult(response: Response, signal: AbortSignal): Promise<DiscordJoinResult> {
-  if (response.status !== 200) return { kind: 'retry' };
-  const reader = response.body?.getReader();
-  if (!reader) return { kind: 'retry' };
-  const cancel = () => {
-    void reader.cancel().catch(() => undefined);
-  };
-  signal.addEventListener('abort', cancel, { once: true });
-  let bytes = 0;
-  let text = '';
-  const decoder = new TextDecoder('utf-8', { fatal: true, ignoreBOM: false });
-  try {
-    for (;;) {
-      const part = await reader.read();
-      if (part.done) break;
-      const chunk: unknown = part.value;
-      if (!(chunk instanceof Uint8Array)) return { kind: 'retry' };
-      bytes += chunk.byteLength;
-      if (bytes > 512) return { kind: 'retry' };
-      text += decoder.decode(chunk, { stream: true });
-    }
-    const value: unknown = JSON.parse(text + decoder.decode());
-    return signal.aborted ? { kind: 'retry' } : parsedResult(value);
-  } finally {
-    signal.removeEventListener('abort', cancel);
-    cancel();
-  }
-}
-
 export async function requestDiscordJoin(
   jobs: Pick<Fetcher, 'fetch'>,
   input: DiscordJoinInput,
 ): Promise<DiscordJoinResult> {
-  const controller = new AbortController();
-  let timer: ReturnType<typeof setTimeout> | undefined;
-  try {
-    return await Promise.race([
-      jobs
-        .fetch(
-          new Request('https://jobs.internal/discord/join', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(input),
-            redirect: 'manual',
-            signal: controller.signal,
-          }),
-        )
-        .then(async (response) => await readResult(response, controller.signal)),
-      new Promise<DiscordJoinResult>((resolve) => {
-        timer = setTimeout(() => {
-          controller.abort();
-          resolve({ kind: 'retry' });
-        }, 20_000);
-      }),
-    ]);
-  } catch {
-    return { kind: 'retry' };
-  } finally {
-    clearTimeout(timer);
-  }
+  return parsedResult(await requestDiscordService(jobs, '/discord/join', input));
 }
 
 export function parseDiscordJoinInput(value: unknown): DiscordJoinInput | null {

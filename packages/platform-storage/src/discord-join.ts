@@ -6,6 +6,7 @@ interface JoinTarget {
   discordId: string;
 }
 const CURRENT = `p.id=? AND p.deleted_at IS NULL AND p.membership_status='member'
+  AND NOT EXISTS(SELECT 1 FROM discord_disconnects d JOIN identities i ON i.id=d.identity_record_id WHERE i.person_id=p.id AND i.platform='discord')
   AND (SELECT count(*) FROM identities WHERE person_id=p.id AND platform='discord')=1
   AND EXISTS(SELECT 1 FROM identities WHERE person_id=p.id AND platform='discord'
     AND external_id=? AND link_method IN ('self_linked','staff_confirmed'))`;

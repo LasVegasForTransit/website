@@ -1,0 +1,32 @@
+---
+import BaseLayout from '../../../layouts/BaseLayout.astro';
+import Button from '../../../components/app/Button.astro';
+import { linkClass } from '../../../components/app/styles';
+import { t } from '@lasvegasfortransit/platform-core/messages';
+---
+
+<BaseLayout title={t('discord.disconnect')} noindex navigation="instant">
+  <section class="container-page py-12">
+    <div class="mx-auto max-w-xl">
+      <a href="/account/#discord" class={linkClass}>{t('account.back')}</a>
+      <h1 class="text-headline-md mt-6">{t('discord.disconnect')}</h1>
+      <p class="mt-4">{t('discord.disconnectBody')}</p>
+      <p class="mt-3">{t('discord.membershipUnchanged')}</p>
+      <p role="alert" class="mt-4" data-slot="discord-disconnect-error" hidden></p>
+      <form
+        method="post"
+        action="/account/discord/disconnect/"
+        class="mt-6 flex flex-wrap items-center gap-5"
+        data-slot="discord-disconnect-form"
+      >
+        <input type="hidden" name="token" value="" />
+        <Button variant="destructive"
+          ><span data-slot="discord-disconnect-label">{t('discord.disconnect')}</span></Button
+        >
+        <a href="/account/#discord" class={linkClass} data-slot="discord-disconnect-back"
+          >{t('discord.keepConnected')}</a
+        >
+      </form>
+    </div>
+  </section>
+</BaseLayout>

@@ -17,6 +17,8 @@ import { fillDiscordProfile } from '../../platform/discord-profile-page';
 // The notices a redirect can leave for this page, by the id in the cookie.
 const NOTICES: Record<string, () => string> = {
   signed_in: () => t('signIn.signedIn'),
+  discord_connected: () => t('discord.connectedNotice'),
+  discord_disconnected: () => t('discord.disconnected'),
   name: () => t('account.updated.name'),
   phone: () => t('account.updated.phone'),
   email: () => t('account.updated.email'),
@@ -35,13 +37,21 @@ export const onRequestGet: PagesFunction<SignInPagesEnv> = async ({ env, request
   const { person } = view;
   const notice = takeNotice(request);
   const name = [person.given_name, person.family_name].filter(Boolean).join(' ');
-  const discord = discordLinkConfigured(env)
+  const connectedDiscord = discordLinkConfigured(env)
     ? await new DiscordLinkService(signed.env).profile(readCookie(request, SESSION_COOKIE) ?? '')
     : null;
+  const discord =
+    person.membership_status === 'member' || connectedDiscord?.linked ? connectedDiscord : null;
 
   return accountPage(env, request, '/account/', {
     fill: (rewriter) => {
       let filled = fillDiscordProfile(rewriter, discord);
+      if (person.membership_status !== 'member')
+        filled = filled.on('[data-slot="discord-manage"]', {
+          element(element) {
+            element.remove();
+          },
+        });
       if (person.given_name) {
         filled = filled.on(
           '[data-slot="greeting"]',

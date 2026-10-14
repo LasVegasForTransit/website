@@ -22,6 +22,7 @@ export interface DiscordPlan extends DiscordPlanInput {
   targets: DiscordRoleTarget[];
   revision: string;
   deletedAt: string | null;
+  disconnectOperationId?: string | null;
 }
 interface IdentityRow {
   id: string;
@@ -38,6 +39,7 @@ interface RoleRow {
 }
 interface PlanRow {
   deletedAt: string | null;
+  disconnectOperationId?: string | null;
   membership: string;
   generation: number;
   identities: string;
@@ -54,9 +56,10 @@ export async function loadDiscordPlan(
     .prepare(
       `SELECT CASE WHEN p.deleted_at IS NOT NULL THEN 'not_member' ELSE p.membership_status END AS membership,p.deleted_at AS deletedAt,
     coalesce((SELECT generation FROM reconcile_generations WHERE person_id=p.id AND target_id='person'),0) AS generation,
+    (SELECT d.operation_id FROM discord_disconnects d JOIN identities i ON i.id=d.identity_record_id WHERE i.person_id=p.id AND i.platform='discord' LIMIT 1) AS disconnectOperationId,
     (SELECT json_group_array(json_object('id',id,'externalId',external_id,'email',external_email,'method',link_method)) FROM identities WHERE person_id=p.id AND platform='discord') AS identities,
     (SELECT json_group_array(json_object('targetId',r.committee_id,'resourceId',r.external_id,'generation',coalesce((SELECT generation FROM reconcile_generations WHERE person_id=p.id AND target_id=r.committee_id),0),
-      'expected',CASE WHEN p.deleted_at IS NULL AND p.membership_status='member' AND c.discord_role_id=r.external_id AND EXISTS(SELECT 1 FROM committee_assignments a WHERE a.person_id=p.id AND a.committee_id=c.id AND a.ended_at IS NULL) THEN 1 ELSE 0 END,
+      'expected',CASE WHEN p.deleted_at IS NULL AND p.membership_status='member' AND NOT EXISTS(SELECT 1 FROM discord_disconnects d JOIN identities i ON i.id=d.identity_record_id WHERE i.person_id=p.id AND i.platform='discord') AND c.discord_role_id=r.external_id AND EXISTS(SELECT 1 FROM committee_assignments a WHERE a.person_id=p.id AND a.committee_id=c.id AND a.ended_at IS NULL) THEN 1 ELSE 0 END,
       'current',CASE WHEN c.discord_role_id=r.external_id THEN 1 ELSE 0 END)) FROM (SELECT * FROM (${ROLE_MAPPINGS}) ORDER BY committee_id,external_id) r JOIN committees c ON c.id=r.committee_id) AS roles
     FROM reconciliation_people p WHERE p.id=? AND (p.deleted_at IS NULL OR EXISTS(
       SELECT 1 FROM integration_outbox o JOIN reconcile_generations g ON g.person_id=o.person_id AND g.target_id=o.target_id AND g.generation=o.generation
@@ -83,7 +86,8 @@ export async function loadDiscordPlan(
       targetId: 'person',
       resourceId: input.memberRoleId,
       generation: row.generation,
-      expectedAccess: row.deletedAt === null && row.membership === 'member',
+      expectedAccess:
+        row.deletedAt === null && row.membership === 'member' && !row.disconnectOperationId,
       current: true,
     },
     ...roles.map((role) => ({
@@ -97,6 +101,7 @@ export async function loadDiscordPlan(
   return {
     ...input,
     deletedAt: row.deletedAt,
+    disconnectOperationId: row.disconnectOperationId ?? null,
     identityId: identity.externalId,
     identityRecordId: identity.id,
     identityEmail: identity.email,

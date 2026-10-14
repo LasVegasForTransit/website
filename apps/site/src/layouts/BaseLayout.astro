@@ -19,6 +19,7 @@ interface Props {
   searchIndex?: boolean;
   chrome?: 'site' | 'none';
   mainClass?: string | undefined;
+  navigation?: 'animated' | 'instant';
   /**
    * Root canvas color. 'paper' (default) is the standard cream surface every
    * page uses. 'dark' paints the body ink and asks the header to render
@@ -46,6 +47,7 @@ const {
   searchIndex = !noindex,
   chrome = 'site',
   mainClass = '',
+  navigation = 'animated',
   canvas = 'paper',
   ogType = 'website',
   articlePublishedTime,
@@ -66,7 +68,7 @@ const canonical = canonicalUrl(Astro.url.pathname);
     below restores graceful degradation for visitors without JS: reveals
     snap to visible instead of getting stuck hidden. */
 }
-<html lang={LOCALE} class="reveal-ready">
+<html lang={LOCALE} class="reveal-ready" data-navigation={navigation}>
   <head>
     <meta charset="UTF-8" />
     <noscript>

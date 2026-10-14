@@ -17,7 +17,7 @@ function targetGuard(input: DiscordSyncWrite, target: DiscordRoleTarget) {
       AND coalesce((SELECT generation FROM reconcile_generations WHERE person_id=p.id AND target_id=?),0)=?
       AND (?='person' OR EXISTS(SELECT 1 FROM committee_account_mappings WHERE committee_id=? AND provider='discord' AND external_id=?)
         OR EXISTS(SELECT 1 FROM committees WHERE id=? AND discord_role_id=?))
-      AND ?=CASE WHEN p.deleted_at IS NULL AND p.membership_status='member' AND (?='person' OR EXISTS(
+      AND ?=CASE WHEN p.deleted_at IS NULL AND p.membership_status='member' AND NOT EXISTS(SELECT 1 FROM discord_disconnects d WHERE d.identity_record_id=?) AND (?='person' OR EXISTS(
         SELECT 1 FROM committees c JOIN committee_assignments a ON a.committee_id=c.id WHERE c.id=? AND c.discord_role_id=? AND a.person_id=p.id AND a.ended_at IS NULL)) THEN 1 ELSE 0 END)`,
     values: [
       ...base.values,
@@ -30,6 +30,7 @@ function targetGuard(input: DiscordSyncWrite, target: DiscordRoleTarget) {
       target.targetId,
       target.resourceId,
       Number(target.expectedAccess),
+      input.plan.identityRecordId,
       target.targetId,
       target.targetId,
       target.resourceId,
@@ -38,7 +39,7 @@ function targetGuard(input: DiscordSyncWrite, target: DiscordRoleTarget) {
 }
 const REQUESTER = `SELECT s.actor_id FROM staff_operations s WHERE s.applied_at IS NOT NULL
   AND (s.operation_id=o.id OR s.operation_id||':'||o.person_id=o.id) LIMIT 1`;
-const SOURCE = `coalesce(CASE json_extract(o.payload,'$.source') WHEN 'discord_drift' THEN 'discord_drift' WHEN 'membership_change' THEN 'membership_change' WHEN 'person_deleted' THEN 'person_deleted' WHEN 'discord_link' THEN 'discord_link' END,
+const SOURCE = `coalesce(CASE json_extract(o.payload,'$.source') WHEN 'discord_drift' THEN 'discord_drift' WHEN 'membership_change' THEN 'membership_change' WHEN 'person_deleted' THEN 'person_deleted' WHEN 'discord_link' THEN 'discord_link' WHEN 'discord_disconnect' THEN 'discord_disconnect' END,
   (SELECT s.kind FROM staff_operations s WHERE s.applied_at IS NOT NULL AND (s.operation_id=o.id OR s.operation_id||':'||o.person_id=o.id) LIMIT 1),
   CASE json_extract(o.payload,'$.action') WHEN 'settings_changed' THEN 'settings_changed' WHEN 'person.merge' THEN 'person.merge' WHEN 'person.unmerge' THEN 'person.unmerge' END,'account_update')`;
 /** Record the actual pre-write role state before allowing its remote mutation. */

@@ -1,3 +1,4 @@
+import { finishDiscordDisconnect } from '@lasvegasfortransit/platform-storage/discord-disconnect';
 import type { AccessFailure } from '@lasvegasfortransit/platform-core/access';
 import type { Db } from '@lasvegasfortransit/platform-storage/db';
 import { operationIsCurrent } from '@lasvegasfortransit/platform-storage/outbox';
@@ -87,7 +88,18 @@ async function execute(run: Run): Promise<DiscordSyncResult> {
       now: run.now(),
       member,
     });
-    return saved && (await current(run)) ? { kind: 'confirmed' } : { kind: 'stale' };
+    if (!saved || !(await current(run))) return { kind: 'stale' };
+    if (run.plan.disconnectOperationId) {
+      const finished = await finishDiscordDisconnect(run.db, {
+        operationId: run.operationId,
+        plan: run.plan,
+        lease: run.lease,
+        now: run.now(),
+        member,
+      });
+      return { kind: finished ? 'confirmed' : 'stale' };
+    }
+    return { kind: 'confirmed' };
   } catch (error) {
     if (!(await current(run))) return { kind: 'stale' };
     const retry = failure(error);

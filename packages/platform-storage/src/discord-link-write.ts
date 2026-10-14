@@ -21,7 +21,8 @@ function guard(input: LinkInput): Guard {
       AND s.person_id=p.id AND p.deleted_at IS NULL AND p.membership_status='member')
       AND (SELECT count(*) FROM identities WHERE platform='discord' AND person_id=?)<=1
       AND NOT EXISTS(SELECT 1 FROM identities WHERE platform='discord' AND person_id=? AND external_id<>?)
-      AND NOT EXISTS(SELECT 1 FROM identities WHERE platform='discord' AND external_id=? AND person_id<>?)`,
+      AND NOT EXISTS(SELECT 1 FROM identities WHERE platform='discord' AND external_id=? AND person_id<>?)
+      AND NOT EXISTS(SELECT 1 FROM discord_disconnects d JOIN identities i ON i.id=d.identity_record_id WHERE i.person_id=? AND i.platform='discord')`,
     values: [
       claim.stateHash,
       claim.claimToken,
@@ -34,6 +35,7 @@ function guard(input: LinkInput): Guard {
       claim.personId,
       identity.id,
       identity.id,
+      claim.personId,
       claim.personId,
     ],
   };

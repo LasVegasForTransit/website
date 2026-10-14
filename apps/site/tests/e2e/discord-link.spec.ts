@@ -85,6 +85,7 @@ try {
   await page.getByRole('link', { name: 'Authorize fixture account', exact: true }).click();
   await page.waitForURL(`${ORIGIN}/account/#discord`);
   await page.getByText(`Connected as ${DISCORD_USER.username}.`, { exact: true }).waitFor();
+  await page.getByText('You’re in LVBT’s Discord.', { exact: true }).waitFor();
   assert.equal(fixture.authorization.authorizations.length, 1);
   const authorized = fixture.authorization.authorizations[0];
   assert.ok(authorized);
@@ -158,11 +159,80 @@ try {
   await page.waitForURL(`${ORIGIN}/account/#discord`);
   assert.equal((await fixture.jobs.scheduled({ cron: '* * * * *' })).outcome, 'ok');
   assert.deepEqual([...fixture.scenario.roles].sort(), Object.values(DISCORD_ROLES).sort());
+  await page.goto(`${ORIGIN}/account/`);
+  await page.getByRole('link', { name: 'Disconnect Discord', exact: true }).click();
+  await page.getByRole('heading', { name: 'Disconnect Discord', exact: true }).first().waitFor();
+  await page.getByRole('link', { name: 'Keep connected', exact: true }).click();
+  await page.waitForURL(`${ORIGIN}/account/#discord`, { waitUntil: 'domcontentloaded' });
+  assert.deepEqual([...fixture.scenario.roles].sort(), Object.values(DISCORD_ROLES).sort());
+  await page.getByRole('link', { name: 'Disconnect Discord', exact: true }).click();
+  await page.waitForURL(`${ORIGIN}/account/discord/disconnect/`, { waitUntil: 'domcontentloaded' });
+  const confirmation = await page.locator('input[name="token"]').inputValue();
+  const refused = await fixture.simulator.dispatchFetch(`${ORIGIN}/account/discord/disconnect/`, {
+    method: 'POST',
+    headers: {
+      Origin: 'https://evil.example',
+      Cookie: `__Host-lvbt_session=${fixture.session.token}`,
+      'Content-Type': 'application/x-www-form-urlencoded',
+    },
+    body: new URLSearchParams({ token: confirmation }).toString(),
+    redirect: 'manual',
+  });
+  assert.equal(refused.status, 403);
+  await page.screenshot({
+    path: join(shots, 'disconnect-mobile.png'),
+    fullPage: true,
+    animations: 'disabled',
+  });
+  await page.getByRole('button', { name: 'Disconnect Discord', exact: true }).focus();
+  fixture.scenario.failRoleWrites = true;
+  await page.keyboard.press('Enter');
+  await page
+    .getByText('We couldn’t disconnect Discord just now. Please try again.', { exact: true })
+    .waitFor();
+  assert.equal(
+    await page.getByRole('link', { name: 'Keep connected', exact: true }).count(),
+    0,
+    'a confirmed disconnect cannot offer a false cancellation',
+  );
+  await page.reload();
+  await page.getByRole('button', { name: 'Try again', exact: true }).waitFor();
+  fixture.scenario.failRoleWrites = false;
+  await fixture.db
+    .prepare(
+      "UPDATE integration_outbox SET next_attempt_at=? WHERE json_extract(payload,'$.source')='discord_disconnect' AND state='retry'",
+    )
+    .bind(new Date().toISOString())
+    .run();
+  await page.getByRole('button', { name: 'Try again', exact: true }).click();
+  await page.waitForURL(`${ORIGIN}/account/#discord`);
+  await page.getByText('Discord disconnected.', { exact: true }).waitFor();
+  assert.deepEqual([...fixture.scenario.roles], [DISCORD_ROLES.unmanaged]);
+  assert.equal(fixture.scenario.joined, true, 'disconnect must not kick the member');
+  assert.equal(
+    (
+      await fixture.db
+        .prepare("SELECT count(*) AS n FROM identities WHERE platform='discord'")
+        .first()
+    )?.n,
+    0,
+  );
+  assert.equal((await fixture.people.getPerson(fixture.person.id))?.membership_status, 'member');
+  await page.getByRole('link', { name: 'Join LVBT on Discord', exact: true }).click();
+  await page.getByRole('button', { name: 'Continue to Discord', exact: true }).click();
+  await page.getByRole('link', { name: 'Authorize fixture account', exact: true }).click();
+  await page.waitForURL(`${ORIGIN}/account/#discord`);
   await fixture.people.withdrawConsent(fixture.person.id, {
     scope: 'newsletter',
     source: 'member',
     withdrawnAt: new Date().toISOString(),
   });
+  await page.goto(`${ORIGIN}/account/`);
+  assert.equal(
+    await page.getByRole('link', { name: 'Disconnect Discord', exact: true }).count(),
+    1,
+    'former members can still disconnect a personal account',
+  );
   const former = await page.goto(`${ORIGIN}/account/discord/`);
   assert.equal(former?.status(), 409);
   assert.equal(

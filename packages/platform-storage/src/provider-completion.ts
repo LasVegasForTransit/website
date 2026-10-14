@@ -31,6 +31,7 @@ export async function completeProviderOperations(
           SELECT 1 FROM identities i WHERE i.person_id=o.person_id
             AND i.platform='discord' AND (
               i.link_method NOT IN ('self_linked','staff_confirmed')
+              OR EXISTS (SELECT 1 FROM discord_disconnects d WHERE d.identity_record_id=i.id)
               OR (SELECT count(*) FROM identities linked
                 WHERE linked.person_id=i.person_id AND linked.platform=i.platform)<>1
               OR NOT EXISTS (

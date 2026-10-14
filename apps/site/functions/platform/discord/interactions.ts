@@ -1,3 +1,4 @@
+import { t } from '@lasvegasfortransit/platform-core/messages';
 /// <reference types="@cloudflare/workers-types" />
 
 import { isDiscordId } from '@lasvegasfortransit/platform-core/discord-identity';
@@ -111,19 +112,17 @@ function linkReply(request: Request, linked: boolean): Response {
   if (!discordLinkOrigin(origin)) return new Response(null, { status: 503 });
   const link = linked
     ? {
-        label: 'Open your LVBT account',
+        label: t('discord.commandAccount'),
         url: `${origin}/account/`,
       }
     : {
-        label: 'Continue on lasvegasfortransit.org',
+        label: t('discord.commandContinue'),
         url: `${origin}/account/discord/`,
       };
   return jsonResponse({
     type: 4,
     data: {
-      content: linked
-        ? 'Your Discord is already connected to your LVBT account.'
-        : 'Confirm your LVBT membership on the website to join the conversation in our member and committee channels.',
+      content: linked ? t('discord.commandConnected') : t('discord.commandInvitation'),
       flags: 64,
       components: [
         {

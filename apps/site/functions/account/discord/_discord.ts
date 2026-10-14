@@ -1,3 +1,4 @@
+import { t } from '@lasvegasfortransit/platform-core/messages';
 /// <reference types="@cloudflare/workers-types" />
 import {
   DiscordLink,
@@ -43,19 +44,15 @@ export function discordReply(
 }
 export async function discordMember(env: SignInPagesEnv, request: Request) {
   if (!discordLinkOrigin(new URL(request.url).origin))
-    return discordReply('This connection is not available at this address.', 403);
+    return discordReply(t('discord.wrongAddress'), 403);
   const platform = discordPlatform(env);
   const sessionToken = readCookie(request, SESSION_COOKIE);
   if (!platform || !sessionToken) return signInRedirect(request, false);
-  if (!discordLinkConfigured(platform))
-    return discordReply('Connecting Discord is unavailable. Please try again later.', 503);
+  if (!discordLinkConfigured(platform)) return discordReply(t('discord.unavailable'), 503);
   const signed = await requireMember(platform, request);
   if (signed instanceof Response) return signed;
+  if (signed.person.membershipStatus !== 'member') return discordReply(t('discord.notMember'), 409);
   const profile = await new DiscordLinkService(platform).profile(sessionToken);
-  if (!profile)
-    return discordReply(
-      'Only current LVBT members can connect Discord. Check your membership on your account page.',
-      409,
-    );
+  if (!profile) return discordReply(t('discord.notMember'), 409);
   return { platform, sessionToken, profile, client: new DiscordLink(platform) };
 }

@@ -27,7 +27,7 @@ export interface DiscordSyncWrite {
 const IDENTITY_CURRENT = `EXISTS(SELECT 1 FROM reconciliation_people p JOIN identities i ON i.person_id=p.id WHERE p.id=? AND p.deleted_at IS ? AND i.id=? AND i.platform='discord' AND i.external_id=? AND i.external_email IS ?
   AND i.link_method IN ('self_linked','staff_confirmed')
   AND (SELECT count(*) FROM identities WHERE person_id=p.id AND platform='discord')=1
-  AND (CASE WHEN p.deleted_at IS NULL AND p.membership_status='member' THEN 1 ELSE 0 END)=?
+  AND (CASE WHEN p.deleted_at IS NULL AND p.membership_status='member' AND NOT EXISTS(SELECT 1 FROM discord_disconnects d WHERE d.identity_record_id=i.id) THEN 1 ELSE 0 END)=?
   AND coalesce((SELECT generation FROM reconcile_generations WHERE person_id=p.id AND target_id='person'),0)=?)`;
 const LEASE_CURRENT = `EXISTS(SELECT 1 FROM provider_account_leases WHERE provider='discord' AND context_id=? AND identity_id=? AND token=? AND expires_at>?)`;
 const JOB_CURRENT = `EXISTS(SELECT 1 FROM integration_outbox o JOIN reconcile_generations g ON g.person_id=o.person_id AND g.target_id=o.target_id AND g.generation=o.generation

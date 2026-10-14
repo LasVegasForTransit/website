@@ -1,3 +1,4 @@
+import { t } from '@lasvegasfortransit/platform-core/messages';
 /// <reference types="@cloudflare/workers-types" />
 import { accountPage } from '../_account';
 import { show, showText, SECURITY_HEADERS } from '../../join/_page';
@@ -35,25 +36,24 @@ async function unavailablePage(
 export const onRequestGet: PagesFunction<SignInPagesEnv> = async ({ env, request }) => {
   const signed = await discordMember(env, request);
   if (signed instanceof Response) return unavailablePage(env, request, signed);
+  if (signed.profile.disconnecting)
+    return discordReply(null, 303, { Location: '/account/discord/disconnect/' });
   const csrf = await signed.client.formToken(signed.sessionToken, new URL(request.url).origin);
-  if (!csrf)
-    return unavailablePage(
-      env,
-      request,
-      discordReply('Connecting Discord is unavailable. Please try again later.', 503),
-    );
+  if (!csrf) return unavailablePage(env, request, discordReply(t('discord.unavailable'), 503));
   const response = await accountPage(env, request, '/account/discord/', {
     fill: (rewriter) => {
       let filled = rewriter.on('input[name="token"]', setValue(csrf));
       if (signed.profile.linked)
-        filled = filled.on(
-          '[data-slot="discord-status"]',
-          showText(
-            signed.profile.username
-              ? `Connected as ${signed.profile.username}.`
-              : 'Your Discord account is connected.',
-          ),
-        );
+        filled = filled
+          .on('[data-slot="discord-disconnect"]', show())
+          .on(
+            '[data-slot="discord-status"]',
+            showText(
+              signed.profile.username
+                ? t('discord.connectedAs', { name: signed.profile.username })
+                : t('discord.connected'),
+            ),
+          );
       if (signed.profile.ambiguous)
         return filled
           .on('[data-slot="discord-review"]', show())
@@ -76,7 +76,7 @@ export const onRequestGet: PagesFunction<SignInPagesEnv> = async ({ env, request
       if (result === 'retry')
         filled = filled
           .on('[data-slot="discord-retry"]', show())
-          .on('[data-slot="discord-connect-label"]', showText('Try again'));
+          .on('[data-slot="discord-connect-label"]', showText(t('discord.tryAgain')));
       return filled;
     },
   });
@@ -92,7 +92,7 @@ export const onRequestGet: PagesFunction<SignInPagesEnv> = async ({ env, request
 export const onRequestPost: PagesFunction<SignInPagesEnv> = async ({ env, request }) => {
   const origin = new URL(request.url).origin;
   if (request.headers.get('Origin') !== origin)
-    return unavailablePage(env, request, discordReply('Reload this page and try again.', 403));
+    return unavailablePage(env, request, discordReply(t('discord.reload'), 403));
   const signed = await discordMember(env, request);
   if (signed instanceof Response) return unavailablePage(env, request, signed);
   const form = await formOf(request);
@@ -106,9 +106,5 @@ export const onRequestPost: PagesFunction<SignInPagesEnv> = async ({ env, reques
         Location: started.url,
         'Set-Cookie': discordStateCookie(started.state),
       })
-    : unavailablePage(
-        env,
-        request,
-        discordReply('This form expired. Return to your account and connect Discord again.', 409),
-      );
+    : unavailablePage(env, request, discordReply(t('discord.formExpired'), 409));
 };
