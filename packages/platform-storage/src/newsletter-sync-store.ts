@@ -4,6 +4,7 @@ import {
   loadNewsletterPlan,
   newsletterPlanGuard,
   newsletterPlanIsCurrent,
+  deferPendingNewsletterChoice,
   type NewsletterPlan,
 } from './newsletter-plan';
 export { loadNewsletterPlan, newsletterPlanIsCurrent } from './newsletter-plan';
@@ -114,6 +115,7 @@ export async function claimNewsletterJob(
       !(await newsletterLeaseIsCurrent(db, lease, now)) ||
       !(await newsletterPlanIsCurrent(db, plan))
     ) {
+      await deferPendingNewsletterChoice(db, plan, lease.token, now);
       await releaseNewsletterLease(db, lease);
       return null;
     }

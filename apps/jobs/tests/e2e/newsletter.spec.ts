@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { createHmac } from 'node:crypto';
 import { mkdtemp, readdir, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -36,6 +37,7 @@ const simulator = new Miniflare(
       LVBT_BEEHIIV_PRODUCTION_PUBLICATION_ID: 'pub_production',
       LVBT_BEEHIIV_API_KEY: 'fixture-only',
       LVBT_NEWSLETTER_INTENT_KEY: randomToken(),
+      LVBT_BEEHIIV_WEBHOOK_SECRET: `whsec_${btoa('fixture-event-key-only')}`,
     },
     outboundService: async (request) => {
       const url = new URL(request.url);
@@ -165,6 +167,48 @@ try {
     (await db.prepare('SELECT count(*) AS n FROM newsletter_write_intents').first())?.n,
     0,
   );
+  ambiguous = false;
+  await add('pending-choice@example.invalid');
+  const eventTimestamp = String(Math.floor(Date.now() / 1000));
+  const eventBody = JSON.stringify({
+    uid: 'evt_incoming_fixture',
+    event_type: 'subscription.deleted',
+    event_timestamp: Number(eventTimestamp),
+    data: { id: 'sub_incoming_fixture', email: 'pending-choice@example.invalid', status: 'active' },
+  });
+  const eventSignature = createHmac('sha256', 'fixture-event-key-only')
+    .update(`msg_incoming_fixture.${eventTimestamp}.${eventBody}`)
+    .digest('base64');
+  const receive = (signature = eventSignature) =>
+    worker.fetch('https://jobs.internal/newsletter/event', {
+      method: 'POST',
+      body: eventBody,
+      headers: {
+        'Content-Type': 'application/json',
+        'svix-id': 'msg_incoming_fixture',
+        'svix-timestamp': eventTimestamp,
+        'svix-signature': `v1,${signature}`,
+      },
+    });
+  assert.equal((await receive('invalid')).status, 401);
+  assert.equal((await receive()).status, 200);
+  assert.equal((await receive()).status, 200);
+  const incoming = await db.prepare('SELECT count(*) AS n FROM newsletter_inbound_events').first();
+  assert.equal(incoming?.n, 1);
+  await add('unrelated-choice@example.invalid');
+  await tick();
+  assert.equal(
+    [...subscriptions.values()].some((value) => value.email === 'pending-choice@example.invalid'),
+    false,
+    'pending source withdrawal must prevent the older grant',
+  );
+  assert.equal(
+    [...subscriptions.values()].some(
+      (value) => value.email === 'unrelated-choice@example.invalid' && value.status === 'active',
+    ),
+    true,
+    'one pending source choice must not starve unrelated people',
+  );
   assert.equal(
     (await worker.fetch('https://jobs.example.invalid/newsletter/reconcile')).status,
     404,
@@ -178,6 +222,8 @@ try {
         'repeat-safe dispatch',
         'withdrawal',
         'ambiguous creation and erasure recovery',
+        'authenticated durable event replay',
+        'pending source choice blocks stale grants without starving unrelated people',
         'no public newsletter endpoint',
       ],
     }),
