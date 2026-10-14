@@ -1,3 +1,4 @@
+import { t } from '@lasvegasfortransit/platform-core/messages';
 import type { PersonFields } from '@lasvegasfortransit/platform-storage/person-service';
 import { correctPerson } from '@lasvegasfortransit/platform-storage/corrections';
 import { consumeFormToken } from '@lasvegasfortransit/platform-storage/form-tokens';
@@ -6,11 +7,11 @@ import { field } from './forms';
 import { messageResponse } from './responses';
 import { rosterReturn } from './roster-return';
 export const EDIT_FIELDS = [
-  { name: 'given_name', label: 'First name', limit: 128, type: 'text' },
-  { name: 'family_name', label: 'Last name', limit: 128, type: 'text' },
-  { name: 'email', label: 'Email', limit: 254, type: 'email' },
-  { name: 'phone', label: 'Phone', limit: 50, type: 'tel' },
-  { name: 'zip', label: 'ZIP code', limit: 5, type: 'text' },
+  { name: 'given_name', label: t('staff.labels.given_name'), limit: 128, type: 'text' },
+  { name: 'family_name', label: t('staff.labels.family_name'), limit: 128, type: 'text' },
+  { name: 'email', label: t('staff.common.email'), limit: 254, type: 'email' },
+  { name: 'phone', label: t('staff.common.phone'), limit: 50, type: 'tel' },
+  { name: 'zip', label: t('staff.common.zip'), limit: 5, type: 'text' },
 ] as const;
 export interface CorrectionFeedback {
   fields: PersonFields;
@@ -31,10 +32,7 @@ export async function submitCorrection(
       token: field(form, 'token', 43),
     }))
   )
-    return messageResponse(
-      'This form expired or was already submitted. Reload the profile and try again.',
-      409,
-    );
+    return messageResponse(t('staff.common.profileExpired'), 409);
   const fields: PersonFields = Object.fromEntries(
     EDIT_FIELDS.map((item) => [item.name, field(form, item.name, item.limit + 1)]),
   );
@@ -56,15 +54,13 @@ export async function submitCorrection(
     });
   }
   if (outcome.kind === 'forbidden' || outcome.kind === 'not_found')
-    return messageResponse("You don't have access to this", 403);
+    return messageResponse(t('staff.common.accessDenied'), 403);
   return {
     fields,
     reason,
     expectedUpdatedAt,
     status: outcome.kind === 'invalid' ? 400 : 409,
     message:
-      outcome.kind === 'invalid'
-        ? 'Change at least one field, enter a reason, and check the contact details.'
-        : 'These changes could not be saved. Reload the profile and check that the email belongs to this member.',
+      outcome.kind === 'invalid' ? t('staff.corrections.invalid') : t('staff.corrections.conflict'),
   };
 }

@@ -30,12 +30,19 @@ function catalogKeys(node: unknown, prefix = ''): string[] {
 }
 
 void test('every catalog key is used and every used key exists', () => {
-  const code = ['src/', 'platform/', 'functions/', 'scripts/discord/']
+  const code = [
+    'src/',
+    'platform/',
+    'functions/',
+    'scripts/discord/',
+    '../staff/src/',
+    '../../packages/platform-core/src/',
+  ]
     .flatMap((dir) => sourceFiles(new URL(dir, root)))
     .filter((file) => !file.includes('/platform/messages/'))
     .map((file) => readFileSync(file, 'utf8'))
     .join('\n');
-  const used = new Set([...code.matchAll(/\bt\(\s*'([a-zA-Z.]+)'/g)].map((match) => match[1]));
+  const used = new Set([...code.matchAll(/\bt\(\s*'([a-zA-Z_.]+)'/g)].map((match) => match[1]));
   const defined = new Set(catalogKeys(en));
   const missing = [...used].filter((key) => key && !defined.has(key));
   const unused = [...defined].filter((key) => !used.has(key));

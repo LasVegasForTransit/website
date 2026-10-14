@@ -1,4 +1,4 @@
-// The message catalog: every member-facing string, looked up by key. Runs on
+// The message catalog: member and staff screen text, looked up by key. Runs on
 // the server and at build time only, so it adds no JavaScript to pages.
 // `en` is the only published language. `en-XA` is a pseudo-language for
 // testing layouts with longer text; it is never served on production.

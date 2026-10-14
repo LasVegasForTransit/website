@@ -1,3 +1,4 @@
+import { t } from '@lasvegasfortransit/platform-core/messages';
 import { verifyAccessAssertion } from '@lasvegasfortransit/platform-integrations/access-identity';
 import { staffOriginAllowed } from './middleware';
 import type { StaffEnv } from './context';
@@ -12,9 +13,9 @@ export async function guardStaffGateway(
       !staffOriginAllowed(env, new URL(request.url).origin) ||
       !(await verifyAccessAssertion(request, env, { fetch: context.fetch }))
     )
-      return messageResponse("You don't have access to this", 403);
+      return messageResponse(t('staff.common.accessDenied'), 403);
     return privateResponse(await context.next());
   } catch {
-    return messageResponse('We couldn’t load this page. Please try again.', 503);
+    return messageResponse(t('staff.common.loadFailed'), 503);
   }
 }

@@ -2,7 +2,7 @@
 import StaffLayout from '../../../layouts/StaffLayout.astro';
 import { getStaffPerson } from '@lasvegasfortransit/platform-storage/staff-people';
 import { InvalidCursor } from '@lasvegasfortransit/platform-storage/staff-history';
-import { formatDate } from '@lasvegasfortransit/platform-core/messages';
+import { t, formatDate } from '@lasvegasfortransit/platform-core/messages';
 import { MEMBERSHIP_LABELS, personName } from '../../../lib/people';
 import { formatPhone } from '@lasvegasfortransit/platform-core/join-form';
 import { regionName } from '@lasvegasfortransit/platform-core/regions';
@@ -18,7 +18,7 @@ import { can, PermissionDenied } from '@lasvegasfortransit/platform-core/permiss
 import { rosterReturn } from '../../../lib/roster-return';
 import { rosterDetails } from '@lasvegasfortransit/platform-storage/roster-details';
 const staff = Astro.locals.staff;
-if (!staff) return messageResponse("You don't have access to this", 403);
+if (!staff) return messageResponse(t('staff.common.accessDenied'), 403);
 const returnTo = rosterReturn(Astro.url.searchParams.get('return_to'));
 const returnQuery = returnTo ? `?return_to=${encodeURIComponent(returnTo)}` : '';
 let profile;
@@ -27,10 +27,10 @@ try {
     cursor: Astro.url.searchParams.get('cursor') ?? undefined,
   });
 } catch (error) {
-  if (error instanceof InvalidCursor) return messageResponse(error.message, 400);
+  if (error instanceof InvalidCursor) return messageResponse(t('staff.people.invalidLink'), 400);
   throw error;
 }
-if (!profile) return messageResponse("You don't have access to this", 404);
+if (!profile) return messageResponse(t('staff.common.accessDenied'), 404);
 if (profile.person.id !== Astro.params.id)
   return Astro.redirect(`/people/${profile.person.id}/${returnQuery}`, 303);
 let feedback: CommitteeFeedback | undefined;
@@ -54,20 +54,20 @@ const accountAccess = await listAccess(staff.db, staff.actor, {
 const server = accountAccess.items.find((item) => item.targetId === 'person');
 const discordPresence =
   roster?.discordInServer === true
-    ? 'In LVBT Discord'
+    ? t('staff.people.discordPresent')
     : roster?.discordInServer === false
-      ? 'Not in LVBT Discord'
-      : 'Server status not checked';
+      ? t('staff.people.discordAbsent')
+      : t('staff.profile.serverNotChecked');
 const discordRole =
   server?.discord.state === 'granted'
     ? server.expectedAccess
-      ? 'Member role confirmed'
-      : 'Member role still present'
+      ? t('staff.profile.accessConfirmed')
+      : t('staff.profile.accessStillPresent')
     : server?.discord.state === 'absent'
       ? server.expectedAccess
-        ? 'Member role missing'
-        : 'Member role removed'
-      : 'Member role not confirmed';
+        ? t('staff.profile.accessMissing')
+        : t('staff.profile.accessRemoved')
+      : t('staff.profile.accessUnconfirmed');
 const combinations = await personMerges(staff.db, staff.actor, person.id);
 let providerHistory;
 if (can(staff.actor, 'access.recover')) {
@@ -79,15 +79,18 @@ if (can(staff.actor, 'access.recover')) {
       cursor: Astro.url.searchParams.get('history_cursor') ?? undefined,
     });
   } catch (error) {
-    if (error instanceof InvalidCursor) return messageResponse(error.message, 400);
-    if (error instanceof PermissionDenied) return messageResponse(error.message, 403);
+    if (error instanceof InvalidCursor) return messageResponse(t('staff.people.invalidLink'), 400);
+    if (error instanceof PermissionDenied)
+      return messageResponse(t('staff.common.accessDenied'), 403);
     throw error;
   }
 }
 ---
 
 <StaffLayout title={personName(person)}>
-  <a slot="breadcrumb" href={returnTo ?? '/people/'} class="staff-back">← Members</a>
+  <a slot="breadcrumb" href={returnTo ?? '/people/'} class="staff-back"
+    >{t('staff.navigation.backMembers')}</a
+  >
   {
     can(staff.actor, 'person.update') && (
       <a
@@ -95,22 +98,27 @@ if (can(staff.actor, 'access.recover')) {
         href={`/people/${person.id}/edit/${returnQuery}`}
         class="staff-edit-link"
       >
-        Edit details
+        {t('staff.profile.edit')}
       </a>
     )
   }
   <div class="staff-profile-status">
     <p>
-      <span>LVBT membership</span>
+      <span>{t('staff.profile.membership')}</span>
       <strong>{MEMBERSHIP_LABELS[person.membership_status]}</strong>
     </p>
     <p>
-      <span>Discord</span>
-      <strong>{!discordConnected ? 'Not connected' : `${discordPresence} · ${discordRole}`}</strong
+      <span>{t('staff.common.discord')}</span>
+      <strong
+        >{
+          !discordConnected
+            ? t('staff.profile.notConnected')
+            : `${discordPresence} · ${discordRole}`
+        }</strong
       >{
         discordConnected && (
           <small>
-            <a href={`/access/?person=${person.id}`}>Check account access</a>
+            <a href={`/access/?person=${person.id}`}>{t('staff.profile.checkAccess')}</a>
           </small>
         )
       }
@@ -118,15 +126,15 @@ if (can(staff.actor, 'access.recover')) {
   </div>
   <div class="staff-profile">
     <section aria-labelledby="contact-heading">
-      <h2 id="contact-heading">Contact</h2>
+      <h2 id="contact-heading">{t('staff.profile.contact')}</h2>
       <dl class="staff-contact-details">
         <div>
-          <dt>Email</dt><dd>
+          <dt>{t('staff.common.email')}</dt><dd>
             {
               person.email ? (
                 <a href={`mailto:${person.email}`}>{person.email}</a>
               ) : (
-                'No email recorded'
+                t('staff.profile.noEmail')
               )
             }
           </dd>
@@ -135,7 +143,7 @@ if (can(staff.actor, 'access.recover')) {
           person.phone && (
             <div>
               <>
-                <dt>Phone</dt>
+                <dt>{t('staff.common.phone')}</dt>
                 <dd>
                   <a href={`tel:${person.phone}`}>{formatPhone(person.phone)}</a>
                 </dd>
@@ -147,7 +155,7 @@ if (can(staff.actor, 'access.recover')) {
           person.zip && (
             <div>
               <>
-                <dt>Location</dt>
+                <dt>{t('staff.profile.location')}</dt>
                 <dd>
                   {person.zip}
                   {(regionName(person.region_id) ?? person.place_name) &&
@@ -161,7 +169,7 @@ if (can(staff.actor, 'access.recover')) {
           person.preferred_language !== 'en' && (
             <div>
               <>
-                <dt>Preferred language</dt>
+                <dt>{t('staff.profile.language')}</dt>
                 <dd>{languageLabel(person.preferred_language)}</dd>
               </>
             </div>
@@ -175,19 +183,23 @@ if (can(staff.actor, 'access.recover')) {
   {
     providerHistory &&
       (providerHistory.items.length > 0 || Astro.url.searchParams.has('history_cursor')) && (
-        <AccessHistory page={providerHistory} title="Access history" />
+        <AccessHistory page={providerHistory} title={t('staff.profile.accessHistory')} />
       )
   }
   {
     combinations.length > 0 && (
       <details class="mb-6 text-body-sm">
-        <summary>Combined entries ({combinations.length})</summary>
+        <summary>{t('staff.profile.combinedEntries', { count: combinations.length })}</summary>
         <ul class="mt-3 space-y-3">
           {combinations.map((item) => (
             <li>
               <a href={`/review/combined/${item.id}/`}>{item.mergedName}</a> ·{' '}
               {formatDate(new Date(item.mergedAt))}
-              {item.erasedAt ? ' · Details erased' : item.undoneAt ? ' · Undone' : ''}
+              {item.erasedAt
+                ? ` · ${t('staff.profile.detailsErased')}`
+                : item.undoneAt
+                  ? ` · ${t('staff.profile.undone')}`
+                  : ''}
             </li>
           ))}
         </ul>

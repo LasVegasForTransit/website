@@ -1,3 +1,4 @@
+import { t } from '@lasvegasfortransit/platform-core/messages';
 import {
   CommitteeService,
   type AssignmentRole,
@@ -42,16 +43,13 @@ export async function submitCommittee(
       token: field(form, 'token', 43),
     }))
   )
-    return messageResponse(
-      'This form expired or was already submitted. Reload the profile and try again.',
-      409,
-    );
+    return messageResponse(t('staff.common.profileExpired'), 409);
   const action = field(form, 'action', 20);
   const committeeId = field(form, 'committee_id', 50);
   const role = field(form, 'role', 20);
   const operationId = field(form, 'operation_id', 201);
   const feedback = {
-    message: 'Choose a committee and role from the list.',
+    message: t('staff.assignments.invalid'),
     committeeId,
     role,
     status: 400,
@@ -61,7 +59,7 @@ export async function submitCommittee(
   let result;
   if (action === 'assign') {
     if (profile.person.membership_status !== 'member')
-      return messageResponse('Only current members can be added to a committee.', 409);
+      return messageResponse(t('staff.assignments.onlyCurrent'), 409);
     result = await service.assign({
       personId: profile.person.id,
       committeeId,
@@ -73,8 +71,7 @@ export async function submitCommittee(
     const assignment = profile.assignments.find(
       (item) => item.id === field(form, 'assignment_id', 50) && !item.ended_at,
     );
-    if (!assignment)
-      return messageResponse('This assignment changed. Reload the profile and try again.', 409);
+    if (!assignment) return messageResponse(t('staff.assignments.changedReload'), 409);
     if (action === 'change')
       result = await service.changeRole(
         assignment.id,
@@ -93,12 +90,12 @@ export async function submitCommittee(
   }
   if (result.kind === 'ok') return assignmentSaved(request, profile.person.id, action);
   if (result.kind === 'forbidden' || result.kind === 'not_found')
-    return messageResponse("You don't have access to this", 403);
+    return messageResponse(t('staff.common.accessDenied'), 403);
   return result.kind === 'invalid'
     ? feedback
     : {
         ...feedback,
         status: 409,
-        message: 'This assignment changed. Check the current committees below before trying again.',
+        message: t('staff.assignments.changedCheck'),
       };
 }

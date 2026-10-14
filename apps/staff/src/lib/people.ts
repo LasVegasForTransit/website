@@ -1,3 +1,4 @@
+import { t } from '@lasvegasfortransit/platform-core/messages';
 import type { Actor } from '@lasvegasfortransit/platform-core/staff-types';
 import type { MembershipStatus } from '@lasvegasfortransit/platform-core/membership';
 import type { Person } from '@lasvegasfortransit/platform-storage/person-service';
@@ -5,9 +6,9 @@ import type { StaffPeopleQuery } from '@lasvegasfortransit/platform-storage/staf
 import type { Db } from '@lasvegasfortransit/platform-storage/db';
 import { STAFF_ADMIN_SCOPE } from '@lasvegasfortransit/platform-storage/staff-scope';
 export const MEMBERSHIP_LABELS: Record<MembershipStatus, string> = {
-  member: 'Member',
-  former_member: 'Former member',
-  not_member: 'Not a member',
+  member: t('staff.common.member'),
+  former_member: t('staff.people.formerMember'),
+  not_member: t('staff.people.notMember'),
 };
 export class PeopleQueryError extends Error {}
 function optionalText(value: string | null | undefined) {
@@ -17,7 +18,7 @@ function optionalText(value: string | null | undefined) {
 }
 export function personName(person: Person): string {
   const name = [person.given_name, person.family_name].filter(Boolean).join(' ');
-  return optionalText(name) ?? optionalText(person.email) ?? 'Name not recorded';
+  return optionalText(name) ?? optionalText(person.email) ?? t('staff.common.nameNotRecorded');
 }
 export function peopleQuery(url: URL): StaffPeopleQuery {
   const status = peopleStatus(url);
@@ -26,8 +27,8 @@ export function peopleQuery(url: URL): StaffPeopleQuery {
     : undefined;
   const zip = url.searchParams.get('zip')?.trim();
   if (status !== 'all' && !membershipStatus)
-    throw new PeopleQueryError('Choose a membership status from the list.');
-  if (zip && !/^\d{5}$/.test(zip)) throw new PeopleQueryError('Enter a five-digit ZIP code.');
+    throw new PeopleQueryError(t('staff.people.invalidStatus'));
+  if (zip && !/^\d{5}$/.test(zip)) throw new PeopleQueryError(t('staff.people.invalidZip'));
   return {
     text: optionalText(url.searchParams.get('q')?.slice(0, 254)),
     email: optionalText(url.searchParams.get('email')?.slice(0, 254)),

@@ -41,6 +41,9 @@ export async function exerciseProviderHistory(
     assert.equal(await page.getByText('Discord access granted', { exact: true }).isVisible(), true);
     assert.equal(await page.getByText('Discord access removed', { exact: true }).isVisible(), true);
     assert.equal(await page.getByText('Membership changed', { exact: false }).isVisible(), true);
+    const attribution = await page.locator('.staff-account-history-list').innerText();
+    assert.match(attribution, / · LVBT(?: ·|$)/m);
+    assert.doesNotMatch(attribution, /Automatic Discord update|Automatic Google update/);
     const shots = join(fixture.root, 'test-results/staff');
     await mkdir(shots, { recursive: true });
     for (const [name, width] of [

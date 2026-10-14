@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
+import { ACCESS_DENIED } from '@lasvegasfortransit/platform-core/permissions';
 import { strFromU8, unzipSync } from 'fflate/browser';
 import { readCsv } from './support/export-csv';
 import { mergeFixture } from '../../platform-storage/tests/support/merge-fixture';
@@ -123,7 +124,7 @@ void test('revoking administrator membership before the export transaction canno
   };
   const response = await f.exportPeople(db, f.actor);
   assert.equal(response.status, 403);
-  assert.equal((await response.text()).includes('survivor@example.invalid'), false);
+  assert.equal(await response.text(), ACCESS_DENIED);
   assert.equal(
     f.db.raw.prepare("SELECT count(*) AS n FROM staff_audits WHERE action='people.export'").get()
       ?.n,

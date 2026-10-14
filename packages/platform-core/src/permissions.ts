@@ -1,4 +1,5 @@
 import type { Actor, PermissionTarget } from './staff-types';
+import { t } from './messages';
 export type Permission =
   | 'self.view'
   | 'self.update'
@@ -55,7 +56,7 @@ export const PERMISSION_SCOPES: Record<Permission, Scope> = {
   'welcome.claim': 'welcome',
   'welcome.complete': 'welcome',
 };
-export const ACCESS_DENIED = "You don't have access to this";
+export const ACCESS_DENIED = t('staff.common.accessDenied');
 
 export function leadCommitteeIds(actor: Actor): string[] {
   return actor.committees

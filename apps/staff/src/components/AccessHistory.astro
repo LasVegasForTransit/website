@@ -1,61 +1,73 @@
 ---
 import type { AccessHistoryRow } from '@lasvegasfortransit/platform-storage/access-view';
 import type { Page } from '@lasvegasfortransit/platform-core/staff-types';
-import { formatFullDate, formatTime } from '@lasvegasfortransit/platform-core/messages';
+import { t, formatFullDate, formatTime } from '@lasvegasfortransit/platform-core/messages';
 import { displayLabel } from '../lib/presentation';
 interface Props {
   page: Page<AccessHistoryRow>;
   title?: string;
 }
-const { page, title = 'Recent changes' } = Astro.props;
+const { page, title = t('staff.history.recent') } = Astro.props;
 const next = new URL(Astro.url);
 if (page.nextCursor) next.searchParams.set('history_cursor', page.nextCursor);
 const labels: Record<string, string> = {
-  'committee.assign': 'Added to committee',
-  'committee.change': 'Committee role changed',
-  'committee.end': 'Removed from committee',
-  'committee.settings': 'Committee settings updated',
-  'access.retry': 'Account update retried',
-  'staff_admin.manage': 'Staff administrator access changed',
-  'access.granted': 'Access granted',
-  'access.revoked': 'Access removed',
+  'committee.assign': t('staff.history.added'),
+  'committee.change': t('staff.history.roleChanged'),
+  'committee.end': t('staff.history.removed'),
+  'committee.settings': t('staff.history.settingsUpdated'),
+  'access.retry': t('staff.history.retried'),
+  'staff_admin.manage': t('staff.history.staffAccessChanged'),
+  'access.granted': t('staff.history.granted'),
+  'access.revoked': t('staff.history.revoked'),
 };
 const sources: Record<string, string> = {
-  discord_drift: 'Periodic account check',
-  membership_change: 'Membership changed',
-  person_deleted: 'Account deleted',
-  discord_link: 'Discord account connected',
-  'committee.assign': 'Added to committee',
-  'committee.change': 'Committee role changed',
-  'committee.end': 'Removed from committee',
-  'committee.settings': 'Committee settings changed',
-  settings_changed: 'Committee settings changed',
-  'person.merge': 'Records combined',
-  'person.unmerge': 'Records separated',
-  account_update: 'Account update',
+  discord_drift: t('staff.history.periodicCheck'),
+  membership_change: t('staff.history.membershipChanged'),
+  person_deleted: t('staff.history.accountDeleted'),
+  discord_link: t('staff.history.discordConnected'),
+  'committee.assign': t('staff.history.added'),
+  'committee.change': t('staff.history.roleChanged'),
+  'committee.end': t('staff.history.removed'),
+  'committee.settings': t('staff.history.settingsChanged'),
+  settings_changed: t('staff.history.settingsChanged'),
+  'person.merge': t('staff.history.combined'),
+  'person.unmerge': t('staff.history.separated'),
+  account_update: t('staff.history.accountUpdate'),
 };
 function actionLabel(item: AccessHistoryRow): string {
-  if (item.provider && ['access.granted', 'access.revoked'].includes(item.action))
-    return `${displayLabel(item.provider)} access ${item.action === 'access.granted' ? 'granted' : 'removed'}`;
-  return labels[item.action] ?? 'Access changed';
+  if (item.provider && ['access.granted', 'access.revoked'].includes(item.action)) {
+    const values = { service: displayLabel(item.provider) };
+    return item.action === 'access.granted'
+      ? t('staff.history.serviceGranted', values)
+      : t('staff.history.serviceRemoved', values);
+  }
+  return labels[item.action] ?? t('staff.history.accessChanged');
+}
+function actorLabel(item: AccessHistoryRow): string {
+  return item.actorKind === 'person'
+    ? (item.actorName ?? t('staff.labels.staff'))
+    : t('staff.history.automaticActor');
 }
 ---
 
 <details class="staff-account-history" open={Boolean(Astro.url.searchParams.get('history_cursor'))}>
   <summary>{title}</summary>
-  <p class="staff-help">Changes from the last three years.</p>
+  <p class="staff-help">{t('staff.history.retention')}</p>
   {
     page.items.length ? (
       <ul class="staff-account-history-list">
         {page.items.map((item) => (
           <li>
             <strong>{actionLabel(item)}</strong> ·{' '}
-            {item.personName ?? item.committeeName ?? 'Member'}
+            {item.personDeleted
+              ? t('staff.history.deletedRecord')
+              : (item.personName ?? item.committeeName ?? t('staff.common.member'))}
             {item.personName && item.committeeName && ` · ${item.committeeName}`}
             <p class="staff-help">
               {formatFullDate(new Date(item.occurredAt))}, {formatTime(new Date(item.occurredAt))} ·{' '}
-              {item.actorName ?? 'LVBT staff'}
-              {item.requestedByName && ` · Requested by ${item.requestedByName}`}
+              {actorLabel(item)}
+              {item.requestedByName &&
+                ` · ${t('staff.history.requestedBy', { name: item.requestedByName })}`}
               {item.source && sources[item.source] && ` · ${sources[item.source]}`}
               {item.role && item.action !== 'committee.end' && ` · ${displayLabel(item.role)}`}
               {item.reason && ` · ${displayLabel(item.reason)}`}
@@ -64,13 +76,13 @@ function actionLabel(item: AccessHistoryRow): string {
         ))}
       </ul>
     ) : (
-      <p class="staff-help">No access changes to show.</p>
+      <p class="staff-help">{t('staff.history.none')}</p>
     )
   }
   {
     page.nextCursor && (
       <a class="staff-next" href={next.pathname + next.search}>
-        Earlier changes
+        {t('staff.history.earlier')}
       </a>
     )
   }

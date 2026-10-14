@@ -11,9 +11,11 @@ export interface AccessHistoryRow {
   occurredAt: string;
   action: string;
   personName: string | null;
+  personDeleted: boolean;
   committeeId: string | null;
   committeeName: string | null;
   actorName: string | null;
+  actorKind: 'person' | 'discord' | 'google_workspace';
   role: string | null;
   reason: string | null;
   provider: string | null;
@@ -72,8 +74,10 @@ export async function accessHistory(
   const { results } = await db
     .prepare(
       `SELECT a.id,a.occurred_at AS occurredAt,a.action,
-    CASE WHEN p.deleted_at IS NOT NULL THEN 'Deleted record' ELSE nullif(trim(coalesce(p.given_name,'')||' '||coalesce(p.family_name,'')),'') END AS personName,
-    CASE a.actor_id WHEN 'platform:discord' THEN 'Automatic Discord update' WHEN 'platform:google_workspace' THEN 'Automatic Google update' ELSE nullif(trim(coalesce(recorder.given_name,'')||' '||coalesce(recorder.family_name,'')),'') END AS actorName,
+    CASE WHEN p.deleted_at IS NULL THEN nullif(trim(coalesce(p.given_name,'')||' '||coalesce(p.family_name,'')),'') END AS personName,
+    p.deleted_at IS NOT NULL AS personDeleted,
+    CASE a.actor_id WHEN 'platform:discord' THEN 'discord' WHEN 'platform:google_workspace' THEN 'google_workspace' ELSE 'person' END AS actorKind,
+    CASE WHEN a.actor_id NOT IN ('platform:discord','platform:google_workspace') THEN nullif(trim(coalesce(recorder.given_name,'')||' '||coalesce(recorder.family_name,'')),'') END AS actorName,
     c.id AS committeeId,c.name AS committeeName,json_extract(a.details,'$.role') AS role,json_extract(a.details,'$.reason') AS reason,
     json_extract(a.details,'$.provider') AS provider,json_extract(a.details,'$.source') AS source,
     nullif(trim(coalesce(requester.given_name,'')||' '||coalesce(requester.family_name,'')),'') AS requestedByName
@@ -85,8 +89,11 @@ export async function accessHistory(
     WHERE ${where.join(' AND ')} ORDER BY a.occurred_at DESC,a.id DESC LIMIT ?`,
     )
     .bind(...values, limit + 1)
-    .all<AccessHistoryRow>();
-  const items = results.slice(0, limit),
+    .all<Omit<AccessHistoryRow, 'personDeleted'> & { personDeleted: number }>();
+  const items = results.slice(0, limit).map((row) => ({
+      ...row,
+      personDeleted: row.personDeleted === 1,
+    })),
     last = items.at(-1);
   return {
     items,

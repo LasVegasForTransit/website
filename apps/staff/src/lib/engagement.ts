@@ -1,26 +1,27 @@
+import { t } from '@lasvegasfortransit/platform-core/messages';
 import type { EngagementEvent } from '@lasvegasfortransit/platform-storage/staff-history';
 const LABELS: Record<string, string> = {
-  note: 'Note',
-  reason: 'Reason',
-  method: 'Contact method',
-  eventName: 'Event',
-  location: 'Location',
-  oldRole: 'Previous role',
-  newRole: 'New role',
-  endReason: 'Reason',
-  amount: 'Amount',
-  currency: 'Currency',
+  note: t('staff.record.note'),
+  reason: t('staff.record.reason'),
+  method: t('staff.record.method'),
+  eventName: t('staff.record.event'),
+  location: t('staff.record.location'),
+  oldRole: t('staff.record.previousRole'),
+  newRole: t('staff.record.newRole'),
+  endReason: t('staff.record.reason'),
+  amount: t('staff.record.amount'),
+  currency: t('staff.record.currency'),
 };
 const FIELD_LABELS: Record<string, string> = {
-  given_name: 'First name',
-  family_name: 'Last name',
-  email: 'Email',
-  phone: 'Phone',
-  zip: 'ZIP code',
-  census_block: 'Census block',
-  census_block_vintage: 'Census vintage',
-  place_name: 'Place',
-  preferred_language: 'Preferred language',
+  given_name: t('staff.labels.given_name'),
+  family_name: t('staff.labels.family_name'),
+  email: t('staff.common.email'),
+  phone: t('staff.common.phone'),
+  zip: t('staff.common.zip'),
+  census_block: t('staff.record.censusBlock'),
+  census_block_vintage: t('staff.record.censusVintage'),
+  place_name: t('staff.record.place'),
+  preferred_language: t('staff.profile.language'),
 };
 function correctionFacts(changes: unknown): { label: string; value: string }[] {
   if (!Array.isArray(changes)) return [];
@@ -36,7 +37,7 @@ function correctionFacts(changes: unknown): { label: string; value: string }[] {
     return [
       {
         label: FIELD_LABELS[item.field],
-        value: `${item.before ?? 'Not recorded'} → ${item.after ?? 'Not recorded'}`,
+        value: `${item.before ?? t('staff.common.notRecorded')} → ${item.after ?? t('staff.common.notRecorded')}`,
       },
     ];
   });

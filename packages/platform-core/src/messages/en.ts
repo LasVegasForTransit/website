@@ -1,9 +1,13 @@
-// English messages for member-facing screens. Keys are grouped by screen.
+import { staffCommon } from './staff-common';
+import { staffPeople } from './staff-people';
+
+// English messages for member and staff screens. Keys are grouped by screen.
 // `{name}` fills in a value. A message that depends on a count is an object
 // of plural forms chosen by Intl.PluralRules ("one", "other").
-// How to add a message: platform/messages/README.md.
+// How to add a message: README.md in this directory.
 
 export const en = {
+  staff: { ...staffCommon, ...staffPeople },
   workspace: {
     signIn: 'Sign in with Google',
     hint: 'For volunteers with an LVBT Google account.',

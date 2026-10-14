@@ -1,3 +1,4 @@
+import { t } from '@lasvegasfortransit/platform-core/messages';
 import { verifyAccessAssertion } from '@lasvegasfortransit/platform-integrations/access-identity';
 import { resolveStaffContext, type StaffEnv, type StaffLocals } from './context';
 import { messageResponse, privateResponse } from './responses';
@@ -27,16 +28,16 @@ export async function staffMiddleware(
 ): Promise<Response> {
   try {
     if (!staffOriginAllowed(env, new URL(request.url).origin))
-      return messageResponse("You don't have access to this", 403);
+      return messageResponse(t('staff.common.accessDenied'), 403);
     if (!env.PLATFORM_DB || !env.LVBT_SIGN_IN_SECRET)
-      return messageResponse('Staff sign-in is unavailable. Please try again later.', 503);
+      return messageResponse(t('staff.common.signInUnavailable'), 503);
     const platform = {
       ...env,
       PLATFORM_DB: env.PLATFORM_DB,
       LVBT_SIGN_IN_SECRET: env.LVBT_SIGN_IN_SECRET,
     };
     const access = await verifyAccessAssertion(request, env, { fetch: context.fetch });
-    if (!access) return messageResponse("You don't have access to this", 403);
+    if (!access) return messageResponse(t('staff.common.accessDenied'), 403);
     context.locals.access = access;
     if (!/^\/sign-in(?:\/|$)/.test(new URL(request.url).pathname)) {
       const staff = await resolveStaffContext(request, platform, access);
@@ -44,9 +45,9 @@ export async function staffMiddleware(
       context.locals.staff = staff;
     }
     if (request.method === 'POST' && request.headers.get('Origin') !== new URL(request.url).origin)
-      return messageResponse('Reload this page and try again.', 403);
+      return messageResponse(t('staff.common.reload'), 403);
     return privateResponse(await context.next());
   } catch {
-    return messageResponse('We couldn’t load this page. Please try again.', 503);
+    return messageResponse(t('staff.common.loadFailed'), 503);
   }
 }

@@ -1,4 +1,5 @@
 ---
+import { t } from '@lasvegasfortransit/platform-core/messages';
 import StaffLayout from '../../layouts/StaffLayout.astro';
 import Button from '../../../../site/src/components/app/Button.astro';
 import RosterMember from '../../components/RosterMember.astro';
@@ -20,7 +21,7 @@ import { messageResponse } from '../../lib/responses';
 import { rosterDetails } from '@lasvegasfortransit/platform-storage/roster-details';
 import { can } from '@lasvegasfortransit/platform-core/permissions';
 const staff = Astro.locals.staff;
-if (!staff) return messageResponse("You don't have access to this", 403);
+if (!staff) return messageResponse(t('staff.common.accessDenied'), 403);
 const committees = await visibleCommittees(staff.db, staff.actor);
 let page: Page<Person> = { items: [], nextCursor: null };
 let error: string | null = null;
@@ -29,7 +30,7 @@ try {
 } catch (cause) {
   if (cause instanceof PermissionDenied) return messageResponse(cause.message, 403);
   if (cause instanceof InvalidCursor || cause instanceof PeopleQueryError) {
-    error = cause.message;
+    error = cause instanceof InvalidCursor ? t('staff.people.invalidLink') : cause.message;
     Astro.response.status = 400;
   } else throw cause;
 }
@@ -55,17 +56,17 @@ const hasMemberTasks =
 ---
 
 <StaffLayout
-  title={unassigned ? 'Members without a committee' : 'Members'}
+  title={unassigned ? t('staff.people.unassignedTitle') : t('staff.people.title')}
   description={unassigned
-    ? 'Help members find a committee where they can contribute.'
+    ? t('staff.people.unassignedIntro')
     : staff.actor.staffAdmin
-      ? 'Find a member, update their details, or help them get involved.'
-      : 'Find someone on your committees or help a new member get started.'}
+      ? t('staff.people.adminIntro')
+      : t('staff.people.leadIntro')}
 >
   {
     error && (
       <p role="alert" class="staff-error">
-        {error} <a href="/people/">Clear filters</a>
+        {error} <a href="/people/">{t('staff.people.clearFilters')}</a>
       </p>
     )
   }
@@ -74,21 +75,21 @@ const hasMemberTasks =
     action="/people/"
     class="staff-search"
     role="search"
-    aria-label="Find a member"
+    aria-label={t('staff.people.find')}
   >
     <div class="staff-search-row">
       <div class="staff-search-query">
-        <label for="q">Name or email</label>
+        <label for="q">{t('staff.people.nameOrEmail')}</label>
         <input
           id="q"
           name="q"
           type="search"
-          placeholder="Search members…"
+          placeholder={t('staff.people.placeholder')}
           value={Astro.url.searchParams.get('q') ?? Astro.url.searchParams.get('email') ?? ''}
           maxlength="254"
         />
       </div>
-      <Button name="intent" value="search">Search</Button>
+      <Button name="intent" value="search">{t('staff.people.search')}</Button>
     </div>
     <details
       class="staff-search-filters"
@@ -99,10 +100,10 @@ const hasMemberTasks =
         (Astro.url.searchParams.has('status') && Astro.url.searchParams.get('intent') !== 'search'),
       )}
     >
-      <summary>Filters</summary>
+      <summary>{t('staff.people.filters')}</summary>
       <div class="staff-filter-row">
         <div>
-          <label for="status">Membership</label>
+          <label for="status">{t('staff.common.membership')}</label>
           <select id="status" name="status">
             {
               Object.entries(MEMBERSHIP_LABELS).map(([value, label]) => (
@@ -111,20 +112,22 @@ const hasMemberTasks =
                 </option>
               ))
             }
-            <option value="all" selected={searchStatus === 'all'}>Everyone</option>
+            <option value="all" selected={searchStatus === 'all'}
+              >{t('staff.people.everyone')}</option
+            >
           </select>
         </div>
         <div>
-          <label for="committee">Committee</label>
+          <label for="committee">{t('staff.common.committee')}</label>
           <select id="committee" name="committee">
-            <option value="">All</option>
+            <option value="">{t('staff.people.all')}</option>
             {
               staff.actor.staffAdmin && (
                 <option
                   value="unassigned"
                   selected={Astro.url.searchParams.get('committee') === 'unassigned'}
                 >
-                  No committee yet
+                  {t('staff.people.unassigned')}
                 </option>
               )
             }
@@ -141,24 +144,24 @@ const hasMemberTasks =
           </select>
         </div>
         <div class="staff-zip">
-          <label for="zip">ZIP code</label>
+          <label for="zip">{t('staff.common.zip')}</label>
           <input
             id="zip"
             name="zip"
             inputmode="numeric"
             maxlength="5"
             value={Astro.url.searchParams.get('zip') ?? ''}
-            aria-invalid={error === 'Enter a five-digit ZIP code.' ? 'true' : undefined}
+            aria-invalid={error === t('staff.people.invalidZip') ? 'true' : undefined}
           />
         </div>
       </div>
-      <Button name="intent" value="filters">Apply filters</Button>
+      <Button name="intent" value="filters">{t('staff.people.applyFilters')}</Button>
     </details>
     {
       Astro.url.search && (
         <div class="staff-search-options">
           <a href="/people/" class="staff-muted-link">
-            Clear filters
+            {t('staff.people.clearFilters')}
           </a>
         </div>
       )
@@ -167,27 +170,27 @@ const hasMemberTasks =
   {
     hasMemberTasks && (
       <details class="staff-member-tasks">
-        <summary>Member records</summary>
-        <nav aria-label="Member record tasks">
+        <summary>{t('staff.people.records')}</summary>
+        <nav aria-label={t('staff.people.recordTasks')}>
           <ul>
             {can(staff.actor, 'attendance.record') && (
               <li>
-                <a href="/paper/">Enter signups from a paper sheet</a>
+                <a href="/paper/">{t('staff.people.paperSignups')}</a>
               </li>
             )}
             {can(staff.actor, 'review_queue.resolve') && (
               <li>
-                <a href="/review/">Check for duplicate members</a>
+                <a href="/review/">{t('staff.people.duplicates')}</a>
               </li>
             )}
             {can(staff.actor, 'access.view') && (
               <li>
-                <a href="/access/">Check Google and Discord access</a>
+                <a href="/access/">{t('staff.people.checkAccess')}</a>
               </li>
             )}
             {can(staff.actor, 'export.full') && (
               <li>
-                <a href="/export/">Download member records</a>
+                <a href="/export/">{t('staff.people.downloadRecords')}</a>
               </li>
             )}
           </ul>
@@ -198,35 +201,35 @@ const hasMemberTasks =
   {
     !error &&
       (page.items.length ? (
-        <section aria-label="Search results" class="staff-roster-results">
+        <section aria-label={t('staff.people.results')} class="staff-roster-results">
           <div class="staff-results-meta">
             <p>
-              Showing {page.items.length}{' '}
               {status === 'member'
-                ? page.items.length === 1
-                  ? 'member'
-                  : 'members'
-                : page.items.length === 1
-                  ? 'person'
-                  : 'people'}
-              {page.nextCursor ? ' on this page' : ''}
+                ? page.nextCursor
+                  ? t('staff.people.showingMembersOnPage', { count: page.items.length })
+                  : t('staff.people.showingMembers', { count: page.items.length })
+                : page.nextCursor
+                  ? t('staff.people.showingPeopleOnPage', { count: page.items.length })
+                  : t('staff.people.showingPeople', { count: page.items.length })}
             </p>
           </div>
           <table class="staff-roster">
-            <caption class="sr-only">{status === 'member' ? 'Members' : 'People'}</caption>
+            <caption class="sr-only">
+              {status === 'member' ? t('staff.people.title') : t('staff.people.people')}
+            </caption>
             <thead>
               <tr>
-                <th scope="col">Member</th>
+                <th scope="col">{t('staff.common.member')}</th>
                 {(showMembership || showDiscord) && (
                   <th scope="col">
                     {showMembership && showDiscord
-                      ? 'Membership and Discord'
+                      ? t('staff.people.membershipDiscord')
                       : showDiscord
-                        ? 'Discord'
-                        : 'Membership'}
+                        ? t('staff.common.discord')
+                        : t('staff.common.membership')}
                   </th>
                 )}
-                <th scope="col">Committees</th>
+                <th scope="col">{t('staff.common.committees')}</th>
               </tr>
             </thead>
             <tbody>
@@ -249,17 +252,18 @@ const hasMemberTasks =
           </table>
           {page.nextCursor && (
             <a href={pageLink(Astro.url, page.nextCursor)} class="staff-next">
-              More {status === 'member' ? 'members' : 'people'} <span aria-hidden="true">→</span>
+              {status === 'member' ? t('staff.people.moreMembers') : t('staff.people.morePeople')}{' '}
+              <span aria-hidden="true">→</span>
             </a>
           )}
         </section>
       ) : (
         <div class="staff-empty">
           <>
-            <h2>No matches</h2>
-            <p>Try another name or email, or change the filters.</p>
+            <h2>{t('staff.people.noMatches')}</h2>
+            <p>{t('staff.people.noMatchesHelp')}</p>
             {status !== 'all' && (
-              <a href={allMembershipsLink(Astro.url)}>Include former members and other records</a>
+              <a href={allMembershipsLink(Astro.url)}>{t('staff.people.includeFormer')}</a>
             )}
           </>
         </div>
