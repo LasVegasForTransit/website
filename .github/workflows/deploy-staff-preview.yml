@@ -70,6 +70,17 @@ jobs:
         run: >-
           pnpm -C apps/staff test:release --directory "$RUNNER_TEMP/staff-release" --commit
           "$RELEASE_COMMIT" --release-id "$RELEASE_ID"
+      - name: Check configuration before upload
+        env:
+          CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_STAFF_PREVIEW_API_TOKEN }}
+          DEPLOYMENT_STAGE: ${{ inputs.stage }}
+        run: |
+          if [ "$DEPLOYMENT_STAGE" = setup ]; then
+            pnpm staff:preflight --preview --setup --json
+          else
+            pnpm staff:preflight --preview --json
+          fi
       - name: Upload saved Workers
         env:
           GH_TOKEN: ${{ github.token }}
