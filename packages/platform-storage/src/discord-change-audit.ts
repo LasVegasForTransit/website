@@ -121,19 +121,28 @@ function confirmationWrites(db: Db, input: DiscordSyncWrite, intent: Intent, rev
   ];
 }
 /** A later validated read can confirm a change whose write response was interrupted. */
-export async function confirmDiscordChanges(db: Db, input: DiscordSyncWrite): Promise<void> {
+export async function confirmDiscordChanges(
+  db: Db,
+  input: DiscordSyncWrite,
+  limit = 1000,
+): Promise<boolean> {
   if (
     input.member === undefined ||
     (input.member && input.member.user.id !== input.plan.identityId)
   )
-    return;
+    return false;
+  if (!Number.isInteger(limit) || limit < 1 || limit > 1000)
+    throw new Error('Invalid Discord confirmation limit');
   const revision = await digestToken(input.plan.revision);
+  const roles = JSON.stringify(input.member?.roles ?? []);
   const { results } = await db
     .prepare(
       `SELECT id,resource_id,target_id,generation,after_granted FROM provider_access_intents
-    WHERE provider='discord' AND context_id=? AND identity_id=? AND person_id=? AND revision_hash=?`,
+    WHERE provider='discord' AND context_id=? AND identity_id=? AND person_id=? AND revision_hash=?
+      AND after_granted=CASE WHEN EXISTS(SELECT 1 FROM json_each(?) WHERE value=resource_id) THEN 1 ELSE 0 END
+    ORDER BY prepared_at,id LIMIT ?`,
     )
-    .bind(input.plan.guildId, input.plan.identityId, input.plan.personId, revision)
+    .bind(input.plan.guildId, input.plan.identityId, input.plan.personId, revision, roles, limit)
     .all<Intent>();
   const writes = results
     .filter(
@@ -141,4 +150,11 @@ export async function confirmDiscordChanges(db: Db, input: DiscordSyncWrite): Pr
     )
     .flatMap((row) => confirmationWrites(db, input, row, revision));
   if (writes.length) await db.batch(writes);
+  return !(await db
+    .prepare(
+      `SELECT 1 FROM provider_access_intents WHERE provider='discord' AND context_id=? AND identity_id=? AND person_id=? AND revision_hash=?
+    AND after_granted=CASE WHEN EXISTS(SELECT 1 FROM json_each(?) WHERE value=resource_id) THEN 1 ELSE 0 END LIMIT 1`,
+    )
+    .bind(input.plan.guildId, input.plan.identityId, input.plan.personId, revision, roles)
+    .first());
 }

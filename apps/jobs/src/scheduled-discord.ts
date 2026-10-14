@@ -19,7 +19,11 @@ export class DiscordAccount extends WorkerEntrypoint<Env & DiscordRuntimeEnv> {
     if (!runtime) return { selected: 0, failed: false, paused: false, queries: 0 };
     const budget = queryBudget(this.env.PLATFORM_DB, 50);
     try {
-      const result = await reconcileDiscordPending(budget.db, { ...runtime, limit: 1 });
+      const result = await reconcileDiscordPending(budget.db, {
+        ...runtime,
+        limit: 1,
+        changeLimit: 1,
+      });
       return { ...result, failed: false, queries: budget.queries };
     } catch (error) {
       return {

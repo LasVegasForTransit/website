@@ -12,6 +12,7 @@ import {
 } from '@lasvegasfortransit/platform-storage/discord-sync-store';
 import { completeProviderOperations } from '@lasvegasfortransit/platform-storage/provider-completion';
 import { reconcileDiscordPending } from '../src/discord-runner';
+import { queryBudget } from '@lasvegasfortransit/platform-storage/query-budget';
 
 const memberRoleId = '333333333333333333';
 const committeeRoleId = '444444444444444444';
@@ -99,17 +100,40 @@ async function fixture(t: test.TestContext) {
   const client = new loaded.DiscordDisconnect({ ...env, LVBT_DISCORD_JOBS: jobs }, { now: time });
   const session = await createSession(env, person.id, 'member');
   const input = { sessionToken: session.token, origin };
-  return { ...loaded, db, env, person, state, roles, now, client, input, fetcher };
+  const recover = async () =>
+    await reconcileDiscordPending(queryBudget(db, 50).db, {
+      configuration: {
+        environment: 'preview',
+        guildId: env.LVBT_DISCORD_GUILD_ID,
+        productionGuildId: env.LVBT_DISCORD_PRODUCTION_GUILD_ID,
+        botToken: env.LVBT_DISCORD_BOT_TOKEN,
+      },
+      applicationId: env.LVBT_DISCORD_APPLICATION_ID,
+      memberRoleId,
+      fetch: fetcher,
+      now: () => new Date(time()),
+      limit: 1,
+      changeLimit: 1,
+    });
+  return { ...loaded, db, env, person, state, roles, now, client, input, fetcher, recover };
 }
 
-void test('confirmation removes managed access then unlinks, preserving membership and all other roles', async (t) => {
+void test('confirmation queues bounded removal and unlinks after all managed access ends', async (t) => {
   const f = await fixture(t);
   f.state.pending = true;
   const token = await f.client.formToken(f.input.sessionToken, origin);
   assert.ok(token);
   assert.deepEqual(await f.client.disconnect({ ...f.input, csrfToken: token }), {
-    kind: 'disconnected',
+    kind: 'pending',
   });
+  assert.equal(f.state.deletes, 1);
+  assert.equal(
+    (await f.db.prepare("SELECT count(*) AS n FROM identities WHERE platform='discord'").first())
+      ?.n,
+    1,
+  );
+  const result = await f.recover();
+  assert.equal(result.confirmed, 1);
   assert.deepEqual([...f.roles], [unmanaged]);
   assert.equal(f.state.deletes, 2);
   assert.equal(
@@ -218,7 +242,8 @@ void test('a former member can disconnect their own Discord without rejoining LV
   });
   const token = await f.client.formToken(f.input.sessionToken, origin);
   assert.ok(token, 'ending membership must not prevent disconnecting a personal account');
-  assert.equal((await f.client.disconnect({ ...f.input, csrfToken: token })).kind, 'disconnected');
+  assert.equal((await f.client.disconnect({ ...f.input, csrfToken: token })).kind, 'pending');
+  assert.equal((await f.recover()).confirmed, 1);
   assert.notEqual(
     (
       await f.db
@@ -277,7 +302,8 @@ void test('cleanup succeeds when time advances between provider confirmation and
   f.now.step = 1;
   const token = await f.client.formToken(f.input.sessionToken, origin);
   assert.ok(token);
-  assert.equal((await f.client.disconnect({ ...f.input, csrfToken: token })).kind, 'disconnected');
+  assert.equal((await f.client.disconnect({ ...f.input, csrfToken: token })).kind, 'pending');
+  assert.equal((await f.recover()).confirmed, 1);
   assert.equal(
     (await f.db.prepare("SELECT count(*) AS n FROM identities WHERE platform='discord'").first())
       ?.n,

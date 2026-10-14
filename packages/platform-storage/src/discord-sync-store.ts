@@ -1,8 +1,8 @@
-import type { AccessFailure } from '@lasvegasfortransit/platform-core/access';
+import type { AccessFailure, AccessObservation } from '@lasvegasfortransit/platform-core/access';
 import { randomToken, digestToken } from '@lasvegasfortransit/platform-core/random-token';
 import type { Db, Statement, SqlValue } from './db';
 import type { DiscordPlan } from './discord-plan';
-import { accessObservationWrite } from './access-observations';
+import { accessObservationBatchWrite } from './access-observations';
 import { PERSON_OPERATION_ELIGIBLE } from './outbox';
 export interface DiscordLease {
   guildId: string;
@@ -23,6 +23,8 @@ export interface DiscordSyncWrite {
   member?: DiscordObservedMember | null;
   failure?: AccessFailure;
   retryAfterMs?: number;
+  progress?: boolean;
+  observedResourceIds?: readonly string[];
 }
 const IDENTITY_CURRENT = `EXISTS(SELECT 1 FROM reconciliation_people p JOIN identities i ON i.person_id=p.id WHERE p.id=? AND p.deleted_at IS ? AND i.id=? AND i.platform='discord' AND i.external_id=? AND i.external_email IS ?
   AND i.link_method IN ('self_linked','staff_confirmed')
@@ -105,12 +107,17 @@ export async function releaseDiscordLease(db: Db, lease: DiscordLease): Promise<
 }
 function observationWrites(db: Db, input: DiscordSyncWrite): Statement[] {
   if (input.plan.deletedAt !== null) return [];
-  return input.plan.targets
-    .filter((target) => target.current)
-    .flatMap((target) => {
-      const statement = accessObservationWrite(
-        db,
-        {
+  const observations = input.plan.targets
+    .filter(
+      (target) =>
+        target.current &&
+        (!input.progress ||
+          target.targetId === 'person' ||
+          input.observedResourceIds?.includes(target.resourceId)),
+    )
+    .map(
+      (target) =>
+        ({
           personId: input.plan.personId,
           targetId: target.targetId,
           provider: 'discord',
@@ -128,12 +135,13 @@ function observationWrites(db: Db, input: DiscordSyncWrite): Statement[] {
           ...(input.failure ? { failure: input.failure } : {}),
           observedAt: input.now.toISOString(),
           expiresAt: new Date(input.now.getTime() + 300_000).toISOString(),
-        },
-        input.now,
-        { sql: CURRENT, values: guards(input) },
-      );
-      return statement ? [statement] : [];
-    });
+        }) satisfies AccessObservation,
+    );
+  const statement = accessObservationBatchWrite(db, observations, input.now, {
+    sql: CURRENT,
+    values: guards(input),
+  });
+  return statement ? [statement] : [];
 }
 function profileWrite(db: Db, input: DiscordSyncWrite): Statement {
   const member = input.member;
@@ -178,7 +186,7 @@ function receiptWrite(db: Db, input: DiscordSyncWrite, revision: string): Statem
     )
     .bind(
       input.operationId,
-      input.failure ? 'retry' : 'done',
+      input.failure || input.progress ? 'retry' : 'done',
       input.failure ?? null,
       revision,
       input.lease.token,
@@ -187,6 +195,10 @@ function receiptWrite(db: Db, input: DiscordSyncWrite, revision: string): Statem
       ...guards(input),
     );
 }
+function validResult(input: DiscordSyncWrite): boolean {
+  if (input.progress) return !input.failure && input.member !== undefined;
+  return Boolean(input.failure) || input.member !== undefined;
+}
 /** Only the background provider adapter calls this, never staff-submitted role/profile data. */
 export async function saveDiscordSync(db: Db, input: DiscordSyncWrite): Promise<boolean> {
   if (
@@ -194,7 +206,7 @@ export async function saveDiscordSync(db: Db, input: DiscordSyncWrite): Promise<
     input.lease.identityId !== input.plan.identityId
   )
     return false;
-  if (!input.failure && input.member === undefined) return false;
+  if (!validResult(input)) return false;
   if (
     !Number.isFinite(input.now.getTime()) ||
     (input.failure &&

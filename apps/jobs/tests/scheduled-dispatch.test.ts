@@ -2,11 +2,12 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { runScheduledMembership } from '../src/scheduled';
 
-function fixture(failedStep?: string) {
+function fixture(failedStep?: string, onStep?: (name: string) => void) {
   const visits: string[] = [];
   const step = (name: string, result: object) => ({
     run: () => {
       visits.push(name);
+      onStep?.(name);
       return name === failedStep
         ? Promise.reject(new Error('private provider error must not be logged'))
         : Promise.resolve(result);
@@ -47,6 +48,16 @@ void test('both busy providers get work within the 32-invocation request limit',
   assert.equal(f.visits.length + 1, 30, 'include the scheduled parent invocation');
   assert.equal(f.visits.filter((name) => name === 'discord_account').length, 12);
   assert.equal(f.visits.filter((name) => name === 'newsletter_account').length, 12);
+  assert.equal(f.visits.at(-1), 'completion');
+});
+void test('slow account work stops new steps after the selection deadline and still completes', async (t) => {
+  let clock = Date.now();
+  t.mock.method(Date, 'now', () => clock);
+  const f = fixture(undefined, (name) => {
+    if (name.endsWith('_account')) clock += 30_000;
+  });
+  await f.run();
+  assert.equal(f.visits.filter((name) => name.endsWith('_account')).length, 2);
   assert.equal(f.visits.at(-1), 'completion');
 });
 for (const provider of ['discord', 'newsletter']) {

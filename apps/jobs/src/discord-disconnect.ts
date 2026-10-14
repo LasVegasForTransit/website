@@ -1,4 +1,5 @@
 import type { Db } from '@lasvegasfortransit/platform-storage/db';
+import { queryBudget } from '@lasvegasfortransit/platform-storage/query-budget';
 import {
   disconnectDiscordMember,
   parseDiscordDisconnectInput,
@@ -17,6 +18,11 @@ export async function handleDiscordDisconnectRequest(
     return discordResponse('failed', 400);
   const input = parseDiscordDisconnectInput(await readDiscordInput(request));
   if (!input) return discordResponse('failed', 400);
-  const result = await disconnectDiscordMember(env.PLATFORM_DB, env, input, options);
+  const result = await disconnectDiscordMember(
+    queryBudget(env.PLATFORM_DB, 50).db,
+    env,
+    input,
+    options,
+  );
   return discordResponse(result.kind, 200);
 }

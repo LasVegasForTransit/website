@@ -63,6 +63,7 @@ export async function runScheduledMembership(
   env: Env & BeehiivRuntimeEnv & DiscordRuntimeEnv,
   context: ExecutionContext,
 ): Promise<void> {
+  const deadline = Date.now() + 50_000;
   const records = await scheduledStep('staff_maintenance', () =>
     context.exports.StaffMaintenance.run(controller.scheduledTime),
   );
@@ -76,7 +77,11 @@ export async function runScheduledMembership(
   let failed = await scanProviders(context, enabled);
   failed = failed || !records || !profiles;
   // Include the parent, two maintenance passes, two scans and completion in the 32-call limit.
-  for (let slot = 0; slot < 24 && (enabled.discord || enabled.newsletter); slot++) {
+  for (
+    let slot = 0;
+    slot < 24 && Date.now() < deadline && (enabled.discord || enabled.newsletter);
+    slot++
+  ) {
     const newsletter = enabled.newsletter && (!enabled.discord || slot % 2 === 1);
     const result = await runAccount(context, newsletter);
     if (result.stop) enabled[newsletter ? 'newsletter' : 'discord'] = false;

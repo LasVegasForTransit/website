@@ -20,7 +20,19 @@ export interface DiscordDisconnectInput {
   environment: 'preview' | 'production';
 }
 export interface DiscordDisconnectResult {
-  kind: 'disconnected' | 'retry' | 'failed';
+  kind: 'disconnected' | 'pending' | 'retry' | 'failed';
+}
+function serviceResult(result: unknown): DiscordDisconnectResult {
+  if (typeof result !== 'object' || result === null || !('kind' in result))
+    return { kind: 'retry' };
+  switch (result.kind) {
+    case 'disconnected':
+    case 'pending':
+    case 'failed':
+      return { kind: result.kind };
+    default:
+      return { kind: 'retry' };
+  }
 }
 
 export function parseDiscordDisconnectInput(value: unknown): DiscordDisconnectInput | null {
@@ -117,14 +129,7 @@ export class DiscordDisconnect {
       ...pending,
       environment,
     });
-    if (
-      typeof result === 'object' &&
-      result !== null &&
-      'kind' in result &&
-      (result.kind === 'disconnected' || result.kind === 'failed')
-    )
-      return { kind: result.kind };
-    return { kind: 'retry' };
+    return serviceResult(result);
   }
 }
 
@@ -155,8 +160,16 @@ export async function disconnectDiscordMember(
       client: new DiscordAccess(runtime.configuration, { ...options, rateLimit }),
       memberRoleId: runtime.memberRoleId,
       now: () => new Date(now()),
+      changeLimit: 1,
     });
-    return { kind: result.kind === 'confirmed' ? 'disconnected' : 'retry' };
+    return {
+      kind:
+        result.kind === 'confirmed'
+          ? 'disconnected'
+          : result.kind === 'progress'
+            ? 'pending'
+            : 'retry',
+    };
   } catch {
     return { kind: 'retry' };
   }
