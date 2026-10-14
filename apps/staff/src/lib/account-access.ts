@@ -73,7 +73,12 @@ export async function submitAccessAction(
   if (result.kind === 'ok')
     return new Response(null, {
       status: 303,
-      headers: { Location: new URL(request.url).pathname + new URL(request.url).search },
+      headers: {
+        Location:
+          new URL(request.url).pathname +
+          new URL(request.url).search +
+          (new URL(request.url).pathname.startsWith('/people/') ? '#accounts' : ''),
+      },
     });
   if (result.kind === 'forbidden') return messageResponse(t('staff.common.accessDenied'), 403);
   return {

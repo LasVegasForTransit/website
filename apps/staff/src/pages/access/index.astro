@@ -20,6 +20,18 @@ import { visibleCommittees, MEMBERSHIP_LABELS } from '../../lib/people';
 import { messageResponse } from '../../lib/responses';
 const staff = Astro.locals.staff;
 if (!staff) return messageResponse(t('staff.common.accessDenied'), 403);
+const personId = Astro.url.searchParams.get('person') ?? undefined;
+if (personId && Astro.request.method === 'GET') {
+  const query = new URLSearchParams();
+  const historyCursor = Astro.url.searchParams.get('history_cursor');
+  const accessCursor = Astro.url.searchParams.get('cursor');
+  if (historyCursor) query.set('history_cursor', historyCursor);
+  if (accessCursor) query.set('access_cursor', accessCursor);
+  return Astro.redirect(
+    `/people/${encodeURIComponent(personId)}/${query.size ? `?${query}` : ''}#accounts`,
+    303,
+  );
+}
 let feedback: AccessFeedback | undefined;
 if (Astro.request.method === 'POST') {
   const result = await submitAccessAction(Astro.request, staff);
@@ -27,7 +39,6 @@ if (Astro.request.method === 'POST') {
   feedback = result;
   Astro.response.status = result.status;
 }
-const personId = Astro.url.searchParams.get('person') ?? undefined;
 const committeeId = Astro.url.searchParams.get('committee') ?? undefined;
 const text = Astro.url.searchParams.get('q') ?? '';
 const needsAttention =

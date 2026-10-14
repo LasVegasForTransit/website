@@ -64,9 +64,7 @@ const endReasons = {
           </p>
           {item.account_update_state === 'retry' && (
             <p class="staff-help">
-              <a href={`/access/?person=${profile.person.id}`}>
-                {t('staff.assignments.attention')}
-              </a>
+              <a href="#accounts">{t('staff.assignments.attention')}</a>
             </p>
           )}
           {can(staff.actor, 'committee.assign', { committeeId: item.committee_id }) && (

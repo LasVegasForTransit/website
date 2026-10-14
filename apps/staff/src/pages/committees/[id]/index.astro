@@ -81,7 +81,7 @@ function moreLink(key: string, cursor: string) {
           </p>
           {person.accountUpdateState === 'retry' && (
             <p class="staff-help">
-              <a href={`/access/?person=${person.personId}`}>
+              <a href={`/people/${person.personId}/#accounts`}>
                 Google and Discord access needs attention
               </a>
             </p>

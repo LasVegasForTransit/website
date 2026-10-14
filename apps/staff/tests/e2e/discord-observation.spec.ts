@@ -59,6 +59,18 @@ async function profile(path = `/people/${personId}/`) {
   return await response.text();
 }
 try {
+  const legacyAccess = await fixture.simulator.dispatchFetch(
+    `${ORIGIN}/access/?person=${personId}`,
+    {
+      headers: {
+        'Cf-Access-Jwt-Assertion': fixture.admin.assertion,
+        Cookie: `__Host-lvbt_session=${fixture.admin.session.token}`,
+      },
+      redirect: 'manual',
+    },
+  );
+  assert.equal(legacyAccess.status, 303, 'individual access belongs on the member profile');
+  assert.equal(legacyAccess.headers.get('Location'), `/people/${personId}/#accounts`);
   const unlinkedRoster = await profile(
     `/people/?q=${encodeURIComponent('rider00001@example.invalid')}`,
   );
@@ -86,10 +98,10 @@ try {
     generation: 1,
     payload: {},
   });
-  assert.equal((await profile()).includes('Member access confirmed'), false);
+  assert.equal((await profile()).includes('Can see member channels'), false);
   assert.equal((await reconcileDiscordPending(fixture.db, options)).confirmed, 1);
   const confirmedProfile = await profile();
-  assert.equal(confirmedProfile.includes('Member access confirmed'), true);
+  assert.equal(confirmedProfile.includes('Can see member channels'), true);
   assert.equal(confirmedProfile.includes('In LVBT Discord'), true);
   assert.equal((await profile(welcomeSearch)).includes('In LVBT Discord'), true);
   assert.equal(
@@ -97,7 +109,7 @@ try {
     true,
     'administrators need the confirmed access history on the member profile',
   );
-  const granted = await profile(`/access/?person=${personId}`);
+  const granted = await profile();
   assert.equal(granted.includes('Discord access granted'), true);
   assert.equal(granted.includes('Automatic Discord update'), false);
   await people.withdrawConsent(personId, {
@@ -108,13 +120,13 @@ try {
   const changed = await profile();
   assert.equal(changed.includes('Former member'), true);
   assert.equal(
-    changed.includes('Member access confirmed'),
+    changed.includes('Can see member channels'),
     false,
     'an old grant cannot prove access after withdrawal',
   );
   assert.equal((await reconcileDiscordPending(fixture.db, options)).confirmed, 1);
-  assert.equal((await profile()).includes('Member access removed'), true);
-  const removed = await profile(`/access/?person=${personId}`);
+  assert.equal((await profile()).includes('Can’t see member channels'), true);
+  const removed = await profile();
   assert.equal(removed.includes('Discord access removed'), true);
   assert.equal(removed.includes('Membership changed'), true);
   assert.equal(
@@ -127,7 +139,7 @@ try {
     false,
     'a confirmed removal must not ask staff to interpret another background operation',
   );
-  assert.equal(removed.includes('No member access'), true);
+  assert.equal(removed.includes('Can’t see member channels'), true);
   assert.equal(removed.includes('Removal confirmed'), false);
   assert.deepEqual([...roles], ['777777777777777777']);
   const observedAt = new Date().toISOString();
@@ -146,9 +158,9 @@ try {
     .run();
   assert.equal((await reconcileDiscordPending(fixture.db, options)).retry, 1);
   const unavailable = await profile();
-  assert.equal(unavailable.includes('Member access not confirmed'), true);
+  assert.equal(unavailable.includes('Temporarily unavailable'), true);
   assert.equal(
-    unavailable.includes('Member access removed'),
+    unavailable.includes('Can’t see member channels'),
     false,
     'a timed-out current read must not keep presenting an older removal as current proof',
   );

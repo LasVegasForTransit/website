@@ -1174,13 +1174,15 @@ html {
 
   .staff-person-access {
     max-width: 48rem;
-    margin-bottom: 1.75rem;
+    margin-block: 2rem 1.75rem;
+    scroll-margin-top: 1rem;
   }
 
   .staff-person-access > h2 {
-    margin-bottom: 0.5rem;
-    font-size: 1rem;
-    font-weight: 700;
+    margin-bottom: 0.75rem;
+    font-size: 1.125rem;
+    font-weight: 800;
+    letter-spacing: -0.015em;
   }
 
   .staff-person-access .staff-account-heading h3 {
@@ -1247,6 +1249,17 @@ html {
 
   .staff-person-access ~ .staff-account-history {
     max-width: 48rem;
+  }
+
+  .staff-profile-history {
+    max-width: 48rem;
+  }
+
+  .staff-profile-history > details {
+    margin-block: 0;
+    padding-block: 0;
+    border-top: 1px solid var(--color-outline-variant);
+    font-size: 0.875rem;
   }
 
   .staff-history-date {
