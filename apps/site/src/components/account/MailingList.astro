@@ -1,0 +1,24 @@
+---
+import Button from '../app/Button.astro';
+import { hintClass, linkClass } from '../app/styles';
+import { t } from '@lasvegasfortransit/platform-core/messages';
+import { Icon } from 'astro-icon/components';
+---
+
+<h2 class="flex items-center gap-3 text-title-lg">
+  <Icon name="mdi:email-newsletter" class="size-6 text-primary" aria-hidden="true" />{
+    t('account.listHeading')
+  }
+</h2>
+<div data-slot="mailing-list" hidden>
+  <p class="mt-3">{t('account.onList')}</p>
+  <a href="/account/mailing-list/" class={`${linkClass} mt-5 inline-block`}>{t('account.leave')}</a>
+</div>
+<div data-slot="rejoin" hidden>
+  <p class="mt-3">{t('account.notOnList')}</p>
+  <form method="post" action="/account/mailing-list/" class="mt-4 space-y-4">
+    <input type="hidden" name="action" value="rejoin" />
+    <p class={hintClass}>{t('account.rejoinConsent')}</p>
+    <Button busyLabel={t('account.saving')}>{t('account.rejoin')}</Button>
+  </form>
+</div>

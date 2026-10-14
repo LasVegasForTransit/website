@@ -1,0 +1,97 @@
+---
+import { t } from '@lasvegasfortransit/platform-core/messages';
+import { orderAccountSections } from '../../../platform/account-sections';
+import Membership from './Membership.astro';
+import Details from './Details.astro';
+import MailingList from './MailingList.astro';
+import Discord from './Discord.astro';
+import Data from './Data.astro';
+
+const accountSections = orderAccountSections([
+  {
+    id: 'membership',
+    position: 10,
+    component: Membership,
+    navigationLabel: null,
+    slot: null,
+    className: '',
+  },
+  {
+    id: 'details',
+    position: 20,
+    component: Details,
+    navigationLabel: t('account.detailsNav'),
+    slot: null,
+    className: '',
+  },
+  {
+    id: 'mailing-list',
+    position: 30,
+    component: MailingList,
+    navigationLabel: t('account.emailNav'),
+    slot: null,
+    className: 'bg-surface-container p-7',
+  },
+  {
+    id: 'discord',
+    position: 60,
+    component: Discord,
+    navigationLabel: t('discord.heading'),
+    slot: 'discord',
+    className: '',
+  },
+  {
+    id: 'data',
+    position: 90,
+    component: Data,
+    navigationLabel: t('account.dataNav'),
+    slot: null,
+    className: 'bg-surface-container p-7',
+  },
+]);
+
+interface Props {
+  part: 'summary' | 'navigation' | 'content';
+}
+const { part } = Astro.props;
+const [membership, ...sections] = accountSections;
+if (!membership || membership.id !== 'membership') throw new Error('Missing membership summary');
+const MembershipSummary = membership.component;
+---
+
+{part === 'summary' && <MembershipSummary />}
+{
+  part === 'navigation' && (
+    <nav
+      aria-label={t('account.sectionsLabel')}
+      class="mt-8 flex max-w-full flex-nowrap gap-2 overflow-x-auto whitespace-nowrap pb-2"
+    >
+      {sections.map((section) => (
+        <a
+          href={`#${section.id}`}
+          class="press shrink-0 bg-surface-container px-4 py-2 font-bold no-underline hover:bg-primary-container"
+          data-slot={section.slot ? `${section.slot}-nav` : undefined}
+          hidden={Boolean(section.slot)}
+        >
+          {section.navigationLabel}
+        </a>
+      ))}
+    </nav>
+  )
+}
+{
+  part === 'content' && (
+    <div class="mt-8 max-w-4xl space-y-8">
+      {sections.map(({ id, component: Component, slot, className }) => (
+        <section
+          id={id}
+          class:list={['scroll-mt-24', className]}
+          data-slot={slot ?? undefined}
+          hidden={Boolean(slot)}
+        >
+          <Component />
+        </section>
+      ))}
+    </div>
+  )
+}

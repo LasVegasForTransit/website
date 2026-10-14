@@ -1,0 +1,15 @@
+---
+import { linkClass } from '../app/styles';
+import { t } from '@lasvegasfortransit/platform-core/messages';
+import { Icon } from 'astro-icon/components';
+---
+
+<h2 class="flex items-center gap-3 text-title-lg">
+  <Icon name="mdi:database-outline" class="size-6 text-primary" aria-hidden="true" />{
+    t('account.dataHeading')
+  }
+</h2>
+<ul class="mt-4 flex flex-wrap gap-x-8 gap-y-3">
+  <li><a href="/account/data/" class={linkClass}>{t('account.download')}</a></li>
+  <li><a href="/account/delete/" class={linkClass}>{t('account.delete')}</a></li>
+</ul>

@@ -29,6 +29,8 @@ just say guides.)
   LVBT's member list
 - [Add a prototype](./guides/add-a-prototype.md) — publish a clickable test version of a new flow on
   a preview
+- [Add an account section](./guides/add-an-account-section.md) — extend the member's account page
+  with matching navigation
 - [Run a usability test](./guides/run-a-usability-test.md) — recruit testers, run a session, and
   record findings for a prototype
 - [Add an event](./guides/add-an-event.md)

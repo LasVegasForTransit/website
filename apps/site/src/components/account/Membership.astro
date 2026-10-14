@@ -1,0 +1,16 @@
+---
+import { t } from '@lasvegasfortransit/platform-core/messages';
+import { Icon } from 'astro-icon/components';
+---
+
+<header>
+  <h1 class="text-headline-lg">{t('account.heading')}</h1>
+  <p class="lede mt-4" data-slot="greeting">{t('account.greeting')}</p>
+  <div class="mt-5 flex items-center gap-2 text-sm font-semibold text-on-surface-variant">
+    <span data-slot="member-check" hidden aria-hidden="true"
+      ><Icon name="mdi:check-circle" class="size-5 text-primary" /></span
+    >
+    <span data-slot="member-since" hidden></span>
+    <span data-slot="membership-inactive" hidden>{t('account.notOnList')}</span>
+  </div>
+</header>

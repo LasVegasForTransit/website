@@ -7,7 +7,9 @@ export function fillDiscordProfile(
   profile: DiscordLinkProfile | null,
 ): HTMLRewriter {
   if (!profile) return rewriter;
-  const shown = rewriter.on('[data-slot="discord"]', show());
+  const shown = rewriter
+    .on('[data-slot="discord"]', show())
+    .on('[data-slot="discord-nav"]', show());
   if (!profile.linked) return shown;
   return shown
     .on(
