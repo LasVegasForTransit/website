@@ -103,6 +103,45 @@ export async function exerciseGoogleGroupActions(
     )?.membership_status,
     'member',
   );
+  await fixture.db
+    .prepare(
+      "UPDATE integration_outbox SET state='retry',payload=json_set(payload,'$.googleReview',json(?)) WHERE id=?",
+    )
+    .bind(
+      JSON.stringify({
+        reason: 'inherited_access',
+        groupEmail: 'preview-events@lasvegasfortransit.org',
+      }),
+      removal.get('operation_id'),
+    )
+    .run();
+  await page.reload();
+  assert.equal(
+    await alice
+      .getByText(
+        'Google access comes through another group. Review their groups in Google Admin.',
+        { exact: true },
+      )
+      .isVisible(),
+    true,
+  );
+  assert.equal(await alice.getByText('Remove Google access', { exact: true }).count(), 0);
+  assert.equal(
+    await alice.getByText('The update couldn’t be completed. Try again.', { exact: true }).count(),
+    0,
+  );
+  assert.equal(
+    await alice
+      .getByRole('link', { name: 'Review groups in Google Admin', exact: true })
+      .getAttribute('href'),
+    'https://admin.google.com/ac/groups',
+  );
+  assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
+  await page.screenshot({
+    path: `${fixture.root}/test-results/staff/google-group-inherited-dark.png`,
+    fullPage: true,
+    animations: 'disabled',
+  });
   const amina = page
     .locator('.staff-google-people-list > li')
     .filter({ has: page.getByRole('link', { name: 'Amina Staff', exact: true }) });

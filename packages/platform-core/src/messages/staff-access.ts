@@ -49,6 +49,9 @@ export const staffAccess = {
     assign: 'Add to committee',
     pending: 'Update requested. Waiting for Google to confirm.',
     retryFailed: 'The update couldn’t be completed. Try again.',
+    inheritedAccess:
+      'Google access comes through another group. Review their groups in Google Admin.',
+    reviewGoogleGroups: 'Review groups in Google Admin',
     retry: 'Try Google again',
     confirmAccount: 'Ask this person to sign in with their LVBT Google account.',
     changed: 'These details changed. Review the current group before trying again.',

@@ -67,14 +67,15 @@ export function googleGroupRequestWrites(
       .prepare(
         `INSERT INTO staff_audits(id,actor_id,action,target_id,details,operation_id,occurred_at)
       SELECT ?,?,'access.group_update',?,json_object('provider','google_workspace','source','google_group_review','reason',?,
-        'resourceId',?,'targetId',(SELECT committee_id FROM committee_account_mappings WHERE provider='google_workspace' AND external_id=?
-          UNION SELECT id FROM committees WHERE workspace_group_email=? LIMIT 1)),?,? WHERE ${fresh}`,
+        'resourceId',?,'targetId',coalesce((SELECT id FROM committees WHERE workspace_group_email=? LIMIT 1),(SELECT committee_id FROM committee_account_mappings WHERE provider='google_workspace' AND external_id=? LIMIT 1)),
+        'mappingState',CASE WHEN EXISTS(SELECT 1 FROM committees WHERE workspace_group_email=?) THEN 'current' ELSE 'retained' END),?,? WHERE ${fresh}`,
       )
       .bind(
         ulid(),
         actor.personId,
         input.personId,
         input.expectedAccess ? 'missing_access' : 'unexpected_access',
+        input.groupEmail,
         input.groupEmail,
         input.groupEmail,
         input.groupEmail,

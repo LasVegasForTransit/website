@@ -336,3 +336,38 @@ void test('an existing outbox ID cannot swallow a new staff request', async () =
     0,
   );
 });
+
+void test('review history prefers the current committee and labels a historical owner honestly', async () => {
+  const { requestGoogleGroupAccessUpdate } = await api();
+  const f = await fixture();
+  const { accessHistory } = await import('../src/access-history');
+  f.db.raw
+    .prepare(
+      "INSERT INTO committee_account_mappings(committee_id,provider,external_id,recorded_at) VALUES('advocacy','google_workspace',?,?)",
+    )
+    .run(groupEmail, now.toISOString());
+  assert.equal((await requestGoogleGroupAccessUpdate(f.db, f.actor, f.input, now)).kind, 'ok');
+  const events = await accessHistory(f.db, f.actor, { committeeId: 'events', now });
+  const requested = events.items.find((item) => item.action === 'access.group_update');
+  assert.equal(requested?.committeeId, 'events');
+  assert.equal(requested.mappingState, 'current');
+  assert.equal(
+    (await accessHistory(f.db, f.actor, { committeeId: 'advocacy', now })).items.some(
+      (item) => item.action === 'access.group_update',
+    ),
+    false,
+  );
+  f.db.raw.prepare("UPDATE committees SET workspace_group_email=NULL WHERE id='events'").run();
+  const retired = {
+    ...f.input,
+    personId: f.extra.id,
+    identityId: 'extra-user',
+    expectedAccess: false,
+    operationId: 'retired-google-review',
+  };
+  assert.equal((await requestGoogleGroupAccessUpdate(f.db, f.actor, retired, now)).kind, 'ok');
+  const historical = (
+    await accessHistory(f.db, f.actor, { committeeId: 'advocacy', now })
+  ).items.find((item) => item.action === 'access.group_update');
+  assert.equal(historical?.mappingState, 'retained');
+});

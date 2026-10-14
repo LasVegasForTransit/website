@@ -40,6 +40,21 @@ export interface GoogleGroupPerson {
   state: 'missing' | 'unexpected' | 'unconfirmed';
   assignmentCommitteeId: string | null;
   requestState: 'queued' | 'running' | 'retry' | 'done' | null;
+  requestReviewReason: 'inherited_access' | null;
+}
+interface GroupPersonRow extends Omit<GoogleGroupPerson, 'requestState' | 'requestReviewReason'> {
+  request: {
+    state: GoogleGroupPerson['requestState'];
+    reviewReason: GoogleGroupPerson['requestReviewReason'];
+  } | null;
+}
+function groupPerson(row: GroupPersonRow): GoogleGroupPerson {
+  const { request, ...person } = row;
+  return {
+    ...person,
+    requestState: request?.state ?? null,
+    requestReviewReason: request?.reviewReason ?? null,
+  };
 }
 export interface GoogleGroupQuery {
   configuration: ProviderConfiguration;
@@ -141,19 +156,19 @@ export async function getGoogleGroupReview(
       (SELECT json_group_array(json(value)) FROM (SELECT json_object('personId',p.id,'name',coalesce(nullif(trim(coalesce(p.given_name,'')||' '||coalesce(p.family_name,'')),''),p.email,'Name not recorded'),
         'email',p.email,'identityId',d.identity_id,'state',d.state,
         'assignmentCommitteeId',CASE WHEN d.state='unexpected' AND p.membership_status='member' THEN (SELECT c.id FROM committees c WHERE c.workspace_group_email=s.group_email AND c.accepting_members=1 LIMIT 1) END,
-        'requestState',(SELECT o.state FROM integration_outbox o JOIN reconcile_generations g ON g.person_id=o.person_id AND g.target_id='person' AND g.generation=o.generation
+        'request',json((SELECT json_object('state',o.state,'reviewReason',json_extract(o.payload,'$.googleReview.reason')) FROM integration_outbox o JOIN reconcile_generations g ON g.person_id=o.person_id AND g.target_id='person' AND g.generation=o.generation
           WHERE o.person_id=p.id AND o.target_id='person' AND o.kind='person_reconcile' AND o.state IN ('queued','running','retry','done')
           AND json_extract(o.payload,'$.source')='google_group_review' AND json_extract(o.payload,'$.groupEmail')=s.group_email
           AND json_extract(o.payload,'$.identityId')=d.identity_id AND json_extract(o.payload,'$.customerId')=(SELECT customer FROM settings)
           AND json_extract(o.payload,'$.expectedAccess')=CASE WHEN d.state='missing' THEN 1 ELSE 0 END
-          AND (o.state<>'done' OR o.created_at>=s.started_at) ORDER BY o.created_at DESC,o.id DESC LIMIT 1)) AS value FROM differences d JOIN people p ON p.id=d.person_id AND p.deleted_at IS NULL JOIN selected s ON s.group_email=d.group_email AND s.state='current'
+          AND (o.state<>'done' OR o.created_at>=s.started_at) ORDER BY o.created_at DESC,o.id DESC LIMIT 1))) AS value FROM differences d JOIN people p ON p.id=d.person_id AND p.deleted_at IS NULL JOIN selected s ON s.group_email=d.group_email AND s.state='current'
         WHERE v.allowed AND p.id>? ORDER BY p.id LIMIT ?)) AS items FROM viewer v`,
     )
     .bind(...parameters(actor, query), query.groupEmail, query.groupEmail, after, limit + 1)
     .first<{ allowed: number; summary: string | null; items: string }>();
   const authorized = await requireAllowed(db, actor, row);
   if (!authorized.summary) return null;
-  const people = JSON.parse(authorized.items) as GoogleGroupPerson[],
+  const people = (JSON.parse(authorized.items) as GroupPersonRow[]).map(groupPerson),
     items = people.slice(0, limit),
     last = items.at(-1);
   return {
