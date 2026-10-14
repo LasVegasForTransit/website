@@ -46,11 +46,40 @@ try {
     await route.continue();
   });
   const page = await context.newPage();
-  await page.goto(`${ORIGIN}/account/`);
-  await page.getByRole('link', { name: 'Join LVBT on Discord', exact: true }).click();
-  await page.getByRole('heading', { name: 'Join LVBT on Discord', exact: true }).waitFor();
   const shots = join(fixture.root, 'test-results/discord');
   await mkdir(shots, { recursive: true });
+  await page.goto(`${ORIGIN}/account/`);
+  await page
+    .getByRole('navigation', { name: 'Account sections' })
+    .getByRole('link', { name: 'Discord', exact: true })
+    .waitFor({ timeout: 5000 });
+  assert.deepEqual(
+    await page
+      .getByRole('navigation', { name: 'Account sections' })
+      .getByRole('link')
+      .allTextContents(),
+    ['Details', 'Email', 'Discord', 'Data'],
+  );
+  await page.screenshot({
+    path: join(shots, 'account-sections-mobile.png'),
+    fullPage: true,
+    animations: 'disabled',
+  });
+  await page.setViewportSize({ width: 1280, height: 800 });
+  assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
+  await page.screenshot({
+    path: join(shots, 'account-sections-desktop.png'),
+    fullPage: true,
+    animations: 'disabled',
+  });
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page
+    .getByRole('navigation', { name: 'Account sections' })
+    .getByRole('link', { name: 'Discord', exact: true })
+    .click();
+  await page.getByRole('heading', { name: 'Discord', exact: true }).waitFor();
+  await page.getByRole('link', { name: 'Join LVBT on Discord', exact: true }).click();
+  await page.getByRole('heading', { name: 'Join LVBT on Discord', exact: true }).waitFor();
   await page.screenshot({
     path: join(shots, 'connect-mobile.png'),
     fullPage: true,
@@ -238,6 +267,18 @@ try {
   assert.equal(
     await page.getByRole('button', { name: 'Continue to Discord', exact: true }).count(),
     0,
+  );
+  await page.goto(`${ORIGIN}/account/`);
+  await page.getByRole('link', { name: 'Disconnect Discord', exact: true }).click();
+  await page.getByRole('button', { name: 'Disconnect Discord', exact: true }).click();
+  await page.waitForURL(`${ORIGIN}/account/#discord`);
+  assert.equal(
+    await page
+      .getByRole('navigation', { name: 'Account sections' })
+      .getByRole('link', { name: 'Discord', exact: true })
+      .count(),
+    0,
+    'an unavailable section leaves no visible navigation link',
   );
   const expired = await fixture.simulator.dispatchFetch(`${ORIGIN}/account/discord/`, {
     redirect: 'manual',

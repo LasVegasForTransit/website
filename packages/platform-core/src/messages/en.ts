@@ -163,6 +163,10 @@ export const en = {
   account: {
     title: 'Your account',
     heading: 'Your account',
+    sectionsLabel: 'Account sections',
+    detailsNav: 'Details',
+    emailNav: 'Email',
+    dataNav: 'Data',
     greetingNamed: 'Hi, {name}.',
     greeting: 'Hi.',
     memberSince: 'LVBT member since {date}',

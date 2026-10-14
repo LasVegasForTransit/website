@@ -1,0 +1,18 @@
+---
+import { linkClass } from '../app/styles';
+import { t } from '@lasvegasfortransit/platform-core/messages';
+---
+
+<h2 class="text-title-lg">{t('discord.heading')}</h2>
+<p class="mt-3" data-slot="discord-status">
+  {t('discord.invitation')}
+</p>
+<a href="/account/discord/" class={`${linkClass} mt-3 inline-block`} data-slot="discord-manage"
+  >{t('discord.join')}</a
+>
+<a
+  href="/account/discord/disconnect/"
+  class={`${linkClass} mt-3 ml-5 inline-block`}
+  data-slot="discord-disconnect"
+  hidden>{t('discord.disconnect')}</a
+>
