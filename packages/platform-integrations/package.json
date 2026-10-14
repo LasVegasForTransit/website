@@ -12,6 +12,7 @@
     "./google-sign-in": "./src/google-sign-in.ts",
     "./google-groups": "./src/google-groups.ts",
     "./google-group-inventory": "./src/google-group-inventory.ts",
+    "./google-group-collection": "./src/google-group-collection.ts",
     "./google-rate-limit": "./src/google-rate-limit.ts",
     "./google-runtime": "./src/google-runtime.ts",
     "./google-sync": "./src/google-sync.ts",

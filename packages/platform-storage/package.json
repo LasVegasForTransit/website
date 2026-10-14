@@ -40,6 +40,7 @@
     "./google-pending": "./src/google-pending.ts",
     "./google-change-audit": "./src/google-change-audit.ts",
     "./google-drift": "./src/google-drift.ts",
+    "./google-group-snapshots": "./src/google-group-snapshots.ts",
     "./discord-sync-store": "./src/discord-sync-store.ts",
     "./discord-link": "./src/discord-link.ts",
     "./discord-disconnect": "./src/discord-disconnect.ts",

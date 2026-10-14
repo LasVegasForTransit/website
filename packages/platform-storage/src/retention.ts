@@ -1,6 +1,7 @@
 import { ulid } from '@lasvegasfortransit/platform-core/ids';
 import type { Db } from './db';
 import { personRetentionWrites } from './person-retention';
+import { googleGroupPruneWrites } from './google-group-snapshots';
 export interface MaintenanceResult {
   viewsRemoved: number;
   auditsRemoved: number;
@@ -48,6 +49,7 @@ export async function runMaintenance(
   const limit = Number.isFinite(options.limit)
     ? Math.max(1, Math.min(1000, Math.floor(options.limit ?? 100)))
     : 100;
+  const groupPruning = googleGroupPruneWrites(db, now, limit);
   const result = await db.batch([
     db
       .prepare(
@@ -69,6 +71,7 @@ export async function runMaintenance(
         'DELETE FROM welcome_claims WHERE id IN (SELECT id FROM welcome_claims WHERE expires_at<=? ORDER BY expires_at,id LIMIT ?)',
       )
       .bind(stamp, limit),
+    ...groupPruning,
     ...personRetentionWrites(db, {
       operationId: ulid(),
       stamp,
@@ -81,7 +84,7 @@ export async function runMaintenance(
     viewsRemoved: changed(result[1]),
     auditsRemoved: changed(result[2]),
     claimsExpired: changed(result[3]),
-    profilesErased: erasedCount(result[5]),
+    profilesErased: erasedCount(result[5 + groupPruning.length]),
     profilesRemoved: changed(result.at(-3)),
   };
 }
