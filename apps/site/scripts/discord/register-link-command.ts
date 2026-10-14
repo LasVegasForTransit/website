@@ -4,7 +4,7 @@ import { isDiscordId } from '@lasvegasfortransit/platform-core/discord-identity'
 
 const COMMAND = {
   name: 'link',
-  description: 'Connect your Discord to your LVBT account to get your member role',
+  description: 'Confirm your LVBT membership on the website',
 };
 
 export interface RegisterLinkCommandOptions {

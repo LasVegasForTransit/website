@@ -81,7 +81,7 @@ void test('an unlinked /link command gets a private button to the member connect
     type: 4,
     data: {
       content:
-        "Connect your Discord to your LVBT account and you'll get the LVBT Member role, plus your committee roles if you volunteer. It takes a minute on the website.",
+        'Confirm your LVBT membership on the website to join the conversation in our member and committee channels.',
       flags: 64,
       components: [
         {
@@ -90,7 +90,7 @@ void test('an unlinked /link command gets a private button to the member connect
             {
               type: 2,
               style: 5,
-              label: 'Connect on lasvegasfortransit.org',
+              label: 'Continue on lasvegasfortransit.org',
               url: 'https://lasvegasfortransit.org/account/discord/',
             },
           ],
