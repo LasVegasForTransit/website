@@ -98,14 +98,14 @@ INSERT INTO people (
   id, given_name, email, membership_status, membership_rules_version,
   created_at, updated_at
 ) VALUES (
-  'preview-staff-admin', 'PREVIEW TEST', 'tester@example.invalid', 'member', 1,
+  '01J00000000000000000000001', 'PREVIEW TEST', 'tester@example.invalid', 'member', 1,
   strftime('%Y-%m-%dT%H:%M:%fZ', 'now'), strftime('%Y-%m-%dT%H:%M:%fZ', 'now')
 );
 INSERT INTO consent_records (
   id, person_id, scope, given_at, source, method, wording_version,
   created_at, updated_at
 ) VALUES (
-  'preview-staff-admin-newsletter', 'preview-staff-admin', 'newsletter',
+  '01J00000000000000000000002', '01J00000000000000000000001', 'newsletter',
   strftime('%Y-%m-%dT%H:%M:%fZ', 'now'), 'import', 'unknown', 'preview-test-only',
   strftime('%Y-%m-%dT%H:%M:%fZ', 'now'), strftime('%Y-%m-%dT%H:%M:%fZ', 'now')
 );
@@ -115,15 +115,24 @@ Apply it only to preview:
 
 ```sh
 pnpm -C apps/staff exec wrangler d1 execute lvbt-platform-preview --remote --env preview --file /private/approved-preview/staff-test-member.sql
-pnpm -C apps/staff exec wrangler d1 execute lvbt-platform-preview --remote --env preview --command "SELECT p.id, p.given_name, p.membership_status, c.wording_version, c.withdrawn_at FROM people p JOIN consent_records c ON c.person_id = p.id WHERE p.id = 'preview-staff-admin'"
+pnpm -C apps/staff exec wrangler d1 execute lvbt-platform-preview --remote --env preview --command "SELECT p.id, p.given_name, p.membership_status, c.wording_version, c.withdrawn_at FROM people p JOIN consent_records c ON c.person_id = p.id WHERE p.id = '01J00000000000000000000001'"
 ```
 
 The readback must show the intended test person, `member`, `preview-test-only`, and no withdrawal.
 The two inserts do not create a Google link, session, or administrator designation; the human
-sign-in steps below establish those. The fixed IDs make a repeat fail rather than silently overwrite
-an existing person. If either insert fails, inspect both rows privately before continuing; do not
-rerun or change an existing person's consent to make setup pass. Keep fixture records out of roster
-imports and production. Real membership imports require separate consent and duplicate review.
+sign-in steps below establish those. The fixed IDs are canonical ULIDs, the identifier format
+required by member profiles and roster pagination. Keep them unchanged; a repeat fails rather than
+silently overwriting an existing person. If either insert fails, inspect both rows privately before
+continuing; do not rerun or change an existing person's consent to make setup pass. Keep fixture
+records out of roster imports and production. Real membership imports require separate consent and
+duplicate review. After linking and administrator setup, search for this record, open its profile,
+and confirm its committees and accounts load; a successful SQL insert alone does not establish a
+usable test membership.
+
+If an existing fixture uses a noncanonical identifier, stop using it for acceptance. Preserve its
+account links, consents, and administrator audit history. Do not rename its key, disable identifier
+validation, edit immutable history, or delete the record to restart setup. Prepare and review a
+preview-only recovery against a verified backup before changing linked test data.
 
 ## 3. Protect the staff hostname
 
