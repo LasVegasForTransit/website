@@ -108,6 +108,7 @@
     }
   },
   "release": {
+    "previewOnly": true,
     "repository": "LasVegasForTransit/website",
     "appDirectory": "apps/deploy",
     "productionUrl": "https://lasvegasfortransit.org",

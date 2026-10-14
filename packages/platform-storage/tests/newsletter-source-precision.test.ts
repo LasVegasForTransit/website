@@ -57,7 +57,7 @@ void test('an unsubscribe in the signup second stays under review instead of all
     );
     const plan = await loadNewsletterPlan(db, person.id);
     assert.ok(plan);
-    assert.equal(await newsletterPlanIsCurrent(db, plan), false);
+    assert.equal(await newsletterPlanIsCurrent(db, plan, 'pub_rapid'), false);
   } finally {
     db.raw.close();
   }

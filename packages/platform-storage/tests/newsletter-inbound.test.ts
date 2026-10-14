@@ -94,12 +94,12 @@ void test('pending incoming choices fence current-address and retained-account w
     });
     const before = await loadNewsletterPlan(db, person.id);
     assert.ok(before);
-    assert.equal(await newsletterPlanIsCurrent(db, before), true);
+    assert.equal(await newsletterPlanIsCurrent(db, before, 'pub_fixture'), true);
     await saveNewsletterEvent(db, await input());
-    assert.equal(await newsletterPlanIsCurrent(db, before), false);
+    assert.equal(await newsletterPlanIsCurrent(db, before, 'pub_fixture'), false);
     const pending = await loadNewsletterPlan(db, person.id);
     assert.ok(pending);
-    assert.equal(await newsletterPlanIsCurrent(db, pending), false);
+    assert.equal(await newsletterPlanIsCurrent(db, pending, 'pub_fixture'), false);
     const { person: other } = await people.upsertFromSource({
       source: 'join_form',
       fields: { email: 'unrelated@example.invalid' },
@@ -112,7 +112,7 @@ void test('pending incoming choices fence current-address and retained-account w
     });
     const unrelated = await loadNewsletterPlan(db, other.id);
     assert.ok(unrelated);
-    assert.equal(await newsletterPlanIsCurrent(db, unrelated), true);
+    assert.equal(await newsletterPlanIsCurrent(db, unrelated, 'pub_fixture'), true);
     await people.linkIdentity(other.id, {
       platform: 'beehiiv',
       externalId: 'sub_fixture',
@@ -121,12 +121,12 @@ void test('pending incoming choices fence current-address and retained-account w
     });
     const retained = await loadNewsletterPlan(db, other.id);
     assert.ok(retained);
-    assert.equal(await newsletterPlanIsCurrent(db, retained), false);
+    assert.equal(await newsletterPlanIsCurrent(db, retained, 'pub_fixture'), false);
     await people.deletePerson(other.id);
     const erased = await loadNewsletterPlan(db, other.id);
     assert.ok(erased);
     assert.equal(erased.desired, 'inactive');
-    assert.equal(await newsletterPlanIsCurrent(db, erased), true);
+    assert.equal(await newsletterPlanIsCurrent(db, erased, 'pub_fixture'), true);
   } finally {
     db.raw.close();
   }
@@ -157,7 +157,7 @@ void test('pending choices defer only their held account job so unrelated work c
       'function',
       'pending source evidence needs account-scoped dispatch deferral',
     );
-    assert.equal(await module.deferPendingNewsletterChoice(db, plan, lease.token, time), true);
+    assert.equal(await module.deferPendingNewsletterChoice(db, plan, lease, time), true);
     assert.equal(
       db.raw
         .prepare('SELECT next_attempt_at FROM newsletter_sync_jobs WHERE person_id=?')
@@ -165,7 +165,7 @@ void test('pending choices defer only their held account job so unrelated work c
       new Date(time.getTime() + 60_000).toISOString(),
     );
     await releaseNewsletterLease(db, lease);
-    assert.equal(await module.deferPendingNewsletterChoice(db, plan, lease.token, time), false);
+    assert.equal(await module.deferPendingNewsletterChoice(db, plan, lease, time), false);
   } finally {
     db.raw.close();
   }

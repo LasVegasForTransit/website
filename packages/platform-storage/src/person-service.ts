@@ -4,11 +4,7 @@
 // recomputes membership after every consent change. See person-service.md.
 
 import { nowIso, ulid } from '@lasvegasfortransit/platform-core/ids';
-import {
-  membershipStatus,
-  type ConsentScope,
-  type MembershipStatus,
-} from '@lasvegasfortransit/platform-core/membership';
+import type { ConsentScope, MembershipStatus } from '@lasvegasfortransit/platform-core/membership';
 import type { RegionId, RegionSource } from '@lasvegasfortransit/platform-core/regions';
 import type { Db, SqlValue } from './db';
 import { deletePersonData } from './person-deletion';
@@ -379,15 +375,14 @@ export class PersonService {
   }
 
   private async recomputeMembership(id: string): Promise<Person | null> {
-    const { results } = await this.db
-      .prepare('SELECT scope, withdrawn_at AS withdrawnAt FROM consent_records WHERE person_id = ?')
-      .bind(id)
-      .all<{ scope: ConsentScope; withdrawnAt: string | null }>();
     await this.db
       .prepare(
-        'UPDATE people SET membership_status = ?, membership_rules_version = 1, updated_at = ? WHERE id = ?',
+        `UPDATE people SET membership_status=CASE
+        WHEN EXISTS(SELECT 1 FROM consent_records WHERE person_id=people.id AND scope='newsletter' AND withdrawn_at IS NULL) THEN 'member'
+        WHEN EXISTS(SELECT 1 FROM consent_records WHERE person_id=people.id AND scope='newsletter' AND withdrawn_at IS NOT NULL) THEN 'former_member'
+        ELSE 'not_member' END,membership_rules_version=1,updated_at=? WHERE id=? AND deleted_at IS NULL`,
       )
-      .bind(membershipStatus(results), nowIso(), id)
+      .bind(nowIso(), id)
       .run();
     return this.getPerson(id);
   }

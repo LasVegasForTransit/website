@@ -102,6 +102,15 @@ Complete [staff preview setup](../guides/set-up-staff-preview.md) first. Use an 
 publication and synthetic members. Enabling synchronization sends real API requests to the selected
 publication; an isolated database alone does not protect production subscribers.
 
+The website release configuration sets `release.previewOnly=true` in `.lvbt/tooling.json` while
+newsletter delivery depends on this unfinished consumer. The shared release commands refuse
+production promotion, upload, activation, and saved-release migrations. Preview packaging and
+verification remain available. This hold also blocks unrelated website production updates from this
+source revision; do not remove it merely to publish another change. Retain the last accepted
+production release until newsletter source review, data export/deletion, provider configuration, and
+actual preview acceptance are complete. Remove the hold only in a reviewed change that enables and
+verifies the consumer before the website begins relying on queued updates.
+
 1. In the LVBT Beehiiv account, select the intended publication and check its current API and
    webhook entitlement. Consult
    [Beehiiv's webhook reference](https://developers.beehiiv.com/webhooks/). A plan change, new

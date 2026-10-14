@@ -155,9 +155,11 @@ function finishOperation(db: Db, tx: SourceTransaction): Statement[] {
   return [
     ...(personId
       ? [
-          mutation(db, tx, 'UPDATE newsletter_source_operations SET person_id=? WHERE __HELD__', [
-            personId,
-          ]),
+          db
+            .prepare(
+              'UPDATE newsletter_source_operations SET person_id=? WHERE publication_id=? AND event_id=? AND nonce=?',
+            )
+            .bind(personId, tx.input.publicationId, tx.input.eventId, tx.nonce),
         ]
       : []),
     mutation(

@@ -113,9 +113,9 @@ export async function claimNewsletterJob(
         .run();
     if (
       !(await newsletterLeaseIsCurrent(db, lease, now)) ||
-      !(await newsletterPlanIsCurrent(db, plan))
+      !(await newsletterPlanIsCurrent(db, plan, publicationId))
     ) {
-      await deferPendingNewsletterChoice(db, plan, lease.token, now);
+      await deferPendingNewsletterChoice(db, plan, lease, now);
       await releaseNewsletterLease(db, lease);
       return null;
     }
@@ -166,7 +166,7 @@ export async function saveNewsletterOutcome(
   outcome: NewsletterOutcome,
 ): Promise<boolean> {
   if (plan.personId !== lease.personId || !Number.isFinite(outcome.now.getTime())) return false;
-  const planGuard = newsletterPlanGuard(plan),
+  const planGuard = newsletterPlanGuard(plan, lease.publicationId),
     current = newsletterLeaseGuard(lease, outcome.now);
   const confirmed = outcome.kind === 'confirmed';
   const progress = outcome.kind === 'progress';

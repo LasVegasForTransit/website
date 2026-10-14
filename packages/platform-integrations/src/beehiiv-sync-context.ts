@@ -59,8 +59,8 @@ export class BeehiivReconciliation {
     return { kind: 'stale' };
   }
   async current(): Promise<boolean> {
-    if (!(await newsletterPlanIsCurrent(this.db, this.plan))) {
-      await deferPendingNewsletterChoice(this.db, this.plan, this.lease.token, this.now());
+    if (!(await newsletterPlanIsCurrent(this.db, this.plan, this.lease.publicationId))) {
+      await deferPendingNewsletterChoice(this.db, this.plan, this.lease, this.now());
       return false;
     }
     return await renewNewsletterLease(this.db, this.lease, this.now());

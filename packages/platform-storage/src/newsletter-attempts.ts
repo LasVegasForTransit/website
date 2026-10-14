@@ -12,7 +12,7 @@ export async function recordNewsletterAttempt(
 ): Promise<boolean> {
   const key = input.subscriptionId ? `id:${input.subscriptionId}` : input.accountKey;
   if (!lease.accountKeys.includes(key)) return false;
-  const current = newsletterPlanGuard(plan),
+  const current = newsletterPlanGuard(plan, lease.publicationId),
     held = newsletterLeaseGuard(lease, input.now);
   const saved = await db
     .prepare(

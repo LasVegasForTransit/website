@@ -99,16 +99,19 @@ export async function loadNewsletterPlan(db: Db, personId: string): Promise<News
   };
 }
 
-const PENDING_SOURCE = `EXISTS(SELECT 1 FROM newsletter_inbound_events e WHERE e.state IN ('pending','needs_review') AND (e.email_key IN (SELECT value FROM json_each(?)) OR 'id:'||e.subscription_id IN (SELECT value FROM json_each(?)) OR e.email_key IN (SELECT account_key FROM newsletter_write_intents WHERE person_id=?)))`;
-function pendingValues(plan: NewsletterPlan): SqlValue[] {
+const PENDING_SOURCE = `EXISTS(SELECT 1 FROM newsletter_inbound_events e WHERE e.publication_id=? AND e.state IN ('pending','needs_review') AND (e.email_key IN (SELECT value FROM json_each(?)) OR 'id:'||e.subscription_id IN (SELECT value FROM json_each(?)) OR e.email_key IN (SELECT account_key FROM newsletter_write_intents WHERE person_id=? AND publication_id=e.publication_id)))`;
+function pendingValues(plan: NewsletterPlan, publicationId: string): SqlValue[] {
   const keys = JSON.stringify(plan.accountKeys);
-  return [keys, keys, plan.personId];
+  return [publicationId, keys, keys, plan.personId];
 }
-export function newsletterPlanGuard(plan: NewsletterPlan): { sql: string; values: SqlValue[] } {
+export function newsletterPlanGuard(
+  plan: NewsletterPlan,
+  publicationId: string,
+): { sql: string; values: SqlValue[] } {
   const inbound = plan.deletedAt === null ? ` AND NOT ${PENDING_SOURCE}` : '';
   return {
     sql: `(${SNAPSHOT})=?${inbound}`,
-    values: [plan.personId, plan.snapshot, ...(inbound ? pendingValues(plan) : [])],
+    values: [plan.personId, plan.snapshot, ...(inbound ? pendingValues(plan, publicationId) : [])],
   };
 }
 
@@ -116,7 +119,7 @@ export function newsletterPlanGuard(plan: NewsletterPlan): { sql: string; values
 export async function deferPendingNewsletterChoice(
   db: Db,
   plan: NewsletterPlan,
-  leaseToken: string,
+  lease: { token: string; publicationId: string },
   now: Date,
 ): Promise<boolean> {
   if (plan.deletedAt !== null) return false;
@@ -129,16 +132,20 @@ export async function deferPendingNewsletterChoice(
       plan.personId,
       plan.personId,
       plan.snapshot,
-      leaseToken,
+      lease.token,
       now.toISOString(),
-      ...pendingValues(plan),
+      ...pendingValues(plan, lease.publicationId),
     )
     .run();
   return result.meta.changes === 1;
 }
 
-export async function newsletterPlanIsCurrent(db: Db, plan: NewsletterPlan): Promise<boolean> {
-  const guard = newsletterPlanGuard(plan);
+export async function newsletterPlanIsCurrent(
+  db: Db,
+  plan: NewsletterPlan,
+  publicationId: string,
+): Promise<boolean> {
+  const guard = newsletterPlanGuard(plan, publicationId);
   return Boolean(
     await db
       .prepare(`SELECT 1 WHERE ${guard.sql}`)
