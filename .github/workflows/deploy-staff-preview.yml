@@ -47,11 +47,11 @@ jobs:
           pnpm staff:release prepare --directory "$RUNNER_TEMP/staff-release" --repository
           "$GITHUB_REPOSITORY" --run-id "$RELEASE_RUN"
       - name: Checkout verified source
+        # The saved release supplies assets; reinstalling LFS conflicts with verifier hooks.
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           ref: ${{ steps.release.outputs.commit }}
           persist-credentials: false
-          lfs: true
       - name: Setup selected source
         uses: ./.github/actions/setup-node-pnpm
       - name: Check saved Workers
