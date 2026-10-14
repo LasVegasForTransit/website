@@ -22,7 +22,12 @@ const removeToken =
     : null;
 const providers =
   row.targetId === 'person'
-    ? [{ name: t('staff.common.discord'), access: row.discord }]
+    ? [
+        {
+          name: t(personView ? 'staff.access.memberChannels' : 'staff.common.discord'),
+          access: row.discord,
+        },
+      ]
     : [
         { name: t('staff.access.googleGroup'), access: row.googleWorkspace },
         { name: t('staff.common.discord'), access: row.discord },
@@ -40,7 +45,7 @@ const retryToken =
       {
         personView ? (
           memberChannels ? (
-            t('staff.access.memberChannels')
+            t('staff.common.discord')
           ) : (
             row.committeeName
           )
@@ -58,19 +63,21 @@ const retryToken =
         </p>
       )
     }
-    <p class="staff-help">
-      {
-        memberChannels
-          ? personView
-            ? t('staff.access.memberChannelsHint')
-            : MEMBERSHIP_LABELS[row.membershipStatus]
-          : row.assignmentId
-            ? row.role === 'lead'
-              ? t('staff.access.committeeLead')
-              : t('staff.access.committeeMember')
-            : t('staff.access.noLongerAssigned')
-      }
-    </p>
+    {
+      !(personView && memberChannels) && (
+        <p class="staff-help">
+          {memberChannels
+            ? personView
+              ? t('staff.access.memberChannelsHint')
+              : MEMBERSHIP_LABELS[row.membershipStatus]
+            : row.assignmentId
+              ? row.role === 'lead'
+                ? t('staff.access.committeeLead')
+                : t('staff.access.committeeMember')
+              : t('staff.access.noLongerAssigned')}
+        </p>
+      )
+    }
   </header>
   <dl class="staff-account-status">
     {

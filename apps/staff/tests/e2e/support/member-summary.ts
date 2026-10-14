@@ -19,12 +19,31 @@ export async function exerciseMemberSummary(
   };
   await people.recordConsent(person.id, { ...consent, givenAt: '2024-03-15T12:00:00Z' });
   await page.goto(`${ORIGIN}/people/${person.id}/`);
+  assert.equal(await page.getByText('Email confirmed', { exact: true }).count(), 0);
+  await people.upsertFromSource({
+    source: 'member',
+    fields: { email: person.email },
+    emailVerified: true,
+  });
+  await people.recordEngagement(person.id, {
+    type: 'attended',
+    source: 'fixture',
+    occurredAt: '2025-01-12T12:00:00Z',
+  });
+  await page.reload();
+  assert.equal(await page.getByText('Email confirmed', { exact: true }).isVisible(), true);
   const summary = page.getByRole('region', { name: 'Member summary', exact: true });
   assert.equal(
     await summary.getByText('Member since Mar 15, 2024', { exact: true }).isVisible(),
     true,
   );
   assert.equal(await summary.getByText('Signed up for updates', { exact: true }).isVisible(), true);
+  assert.equal(await summary.getByText('1 event attended', { exact: true }).isVisible(), true);
+  await page.goto(`${ORIGIN}/people/?q=summary%40example.invalid`);
+  const activity = page.locator('.staff-roster-activity time');
+  assert.equal(await activity.count(), 1);
+  assert.match(await activity.innerText(), /^Last activity .+, \d{4}$/);
+  await page.getByRole('link', { name: 'Ana Reyes', exact: true }).click();
   await people.withdrawConsent(person.id, {
     scope: 'newsletter',
     source: 'account',
@@ -66,4 +85,10 @@ export async function exerciseMemberSummary(
   });
   await page.emulateMedia({ colorScheme: 'light' });
   await page.setViewportSize({ width: 1440, height: 1000 });
+  await page.getByRole('link', { name: 'Edit details', exact: true }).click();
+  await page.getByLabel('Email', { exact: true }).fill('summary-corrected@example.invalid');
+  await page.getByLabel('Reason for the change').fill('Member supplied a new email address.');
+  await page.getByRole('button', { name: 'Save changes', exact: true }).click();
+  await page.getByRole('heading', { name: 'Ana Reyes', exact: true }).waitFor();
+  assert.equal(await page.getByText('Email confirmed', { exact: true }).count(), 0);
 }

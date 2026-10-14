@@ -83,6 +83,11 @@ export interface EngagementCounts {
   member_since: string | null;
 }
 
+export const COUNTED_ENGAGEMENT = `e.type <> 'correction' AND NOT EXISTS (
+  SELECT 1 FROM engagement_events correction WHERE correction.person_id=e.person_id
+    AND correction.type='correction' AND correction.reference=e.id
+)`;
+
 const DAY_MS = 24 * 60 * 60 * 1000;
 
 /** The counts for one person, worked out from the log when asked. */
@@ -101,11 +106,7 @@ export async function engagementCounts(
     .prepare(
       `WITH counted AS (
          SELECT e.type, e.occurred_at FROM engagement_events e JOIN people p ON p.id=e.person_id
-         WHERE e.person_id = ?1 AND e.type <> 'correction' ${staffFilter}
-           AND e.id NOT IN (
-             SELECT reference FROM engagement_events
-             WHERE person_id = ?1 AND type = 'correction' AND reference IS NOT NULL
-           )
+         WHERE e.person_id = ?1 AND ${COUNTED_ENGAGEMENT} ${staffFilter}
        )
        SELECT
          min(CASE WHEN type = 'attended' THEN occurred_at END) AS first_attended_at,

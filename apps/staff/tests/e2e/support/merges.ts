@@ -49,6 +49,20 @@ export async function exerciseMerges(page: Page, fixture: Fixture) {
     animations: 'disabled',
     fullPage: true,
   });
+  const combinationUrl = page.url();
+  const returnTo = '/people/?q=Committee';
+  await page.goto(`${ORIGIN}/people/${person.id}/?return_to=${encodeURIComponent(returnTo)}`);
+  const redirectedProfile = page.url();
+  assert.notEqual(new URL(redirectedProfile).pathname, `/people/${person.id}/`);
+  assert.equal(new URL(redirectedProfile).searchParams.get('combined_from'), person.id);
+  assert.equal(new URL(redirectedProfile).searchParams.get('return_to'), returnTo);
+  assert.match(
+    await page.getByRole('status').innerText(),
+    /^This member’s records were combined on .+, \d{4}\.$/,
+  );
+  await page.getByRole('link', { name: '← Members', exact: true }).click();
+  assert.equal(new URL(page.url()).pathname + new URL(page.url()).search, returnTo);
+  await page.goto(combinationUrl);
   await page.getByLabel('Reason for undoing').fill('Staff confirmed these are different people.');
   const [undone] = await Promise.all([
     page.waitForResponse(
@@ -80,6 +94,12 @@ export async function exerciseMerges(page: Page, fixture: Fixture) {
         .first<{ n: number }>()
     )?.n,
     2,
+  );
+  await page.goto(redirectedProfile);
+  assert.equal(
+    await page.getByRole('status').count(),
+    0,
+    'an undone combination must not leave a misleading notice',
   );
   await verifyErasure(page, fixture, person.id, combinedPath);
 }

@@ -38,10 +38,7 @@ export async function exerciseProviderHistory(
     const page = await context.newPage();
     await page.goto(`${ORIGIN}/access/?person=${personId}`);
     assert.equal(await page.getByRole('heading', { name: 'New Member', exact: true }).count(), 1);
-    assert.equal(
-      await page.getByRole('heading', { name: 'Member channels', exact: true }).count(),
-      1,
-    );
+    assert.equal(await page.getByRole('heading', { name: 'Discord', exact: true }).count(), 1);
     assert.equal(await page.getByText('No member access', { exact: true }).isVisible(), true);
     assert.equal(await page.locator('.staff-account-history').getAttribute('open'), null);
     const shots = join(fixture.root, 'test-results/staff');
@@ -100,10 +97,7 @@ export async function exerciseProviderHistory(
     const pastEnd = Buffer.from(JSON.stringify(['zzzz', 'zzzz'])).toString('base64url');
     await page.goto(`${ORIGIN}/access/?person=${personId}&cursor=${pastEnd}`);
     assert.equal(await page.getByRole('heading', { name: 'New Member', exact: true }).count(), 1);
-    assert.equal(
-      await page.getByRole('heading', { name: 'Member channels', exact: true }).count(),
-      1,
-    );
+    assert.equal(await page.getByRole('heading', { name: 'Discord', exact: true }).count(), 1);
     await page.goto(`${ORIGIN}/people/${personId}/`);
     const facts = page.getByRole('region', { name: 'Member summary', exact: true });
     assert.equal(await facts.getByText('Left mailing list', { exact: true }).isVisible(), true);

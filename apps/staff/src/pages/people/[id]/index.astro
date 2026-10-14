@@ -26,14 +26,18 @@ let profile;
 try {
   profile = await getStaffPerson(staff.db, staff.actor, Astro.params.id ?? '', {
     cursor: Astro.url.searchParams.get('cursor') ?? undefined,
+    mergedFrom: Astro.url.searchParams.get('combined_from') ?? undefined,
   });
 } catch (error) {
   if (error instanceof InvalidCursor) return messageResponse(t('staff.people.invalidLink'), 400);
   throw error;
 }
 if (!profile) return messageResponse(t('staff.common.accessDenied'), 404);
-if (profile.person.id !== Astro.params.id)
-  return Astro.redirect(`/people/${profile.person.id}/${returnQuery}`, 303);
+if (profile.person.id !== Astro.params.id) {
+  const context = new URLSearchParams({ combined_from: Astro.params.id ?? '' });
+  if (returnTo) context.set('return_to', returnTo);
+  return Astro.redirect(`/people/${profile.person.id}/?${context}`, 303);
+}
 let feedback: CommitteeFeedback | undefined;
 if (Astro.request.method === 'POST') {
   const result = await submitCommittee(Astro.request, staff, profile);
@@ -103,6 +107,15 @@ if (can(staff.actor, 'access.recover')) {
       </a>
     )
   }
+  {
+    profile.mergeNotice && (
+      <p role="status" class="staff-record-notice">
+        {t('staff.profile.combinedNotice', {
+          date: formatFullDate(new Date(profile.mergeNotice.mergedAt)),
+        })}
+      </p>
+    )
+  }
   <PersonSummary
     profile={profile}
     discordConnected={discordConnected}
@@ -116,7 +129,12 @@ if (can(staff.actor, 'access.recover')) {
           <dt>{t('staff.common.email')}</dt><dd>
             {
               person.email ? (
-                <a href={`mailto:${person.email}`}>{person.email}</a>
+                <>
+                  <a href={`mailto:${person.email}`}>{person.email}</a>
+                  {profile.emailVerified && (
+                    <span class="staff-email-confirmed">{t('staff.profile.emailConfirmed')}</span>
+                  )}
+                </>
               ) : (
                 t('staff.profile.noEmail')
               )

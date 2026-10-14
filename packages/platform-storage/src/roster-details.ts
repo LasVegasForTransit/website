@@ -1,9 +1,11 @@
 import type { Actor } from '@lasvegasfortransit/platform-core/staff-types';
 import type { AccessConfiguration } from '@lasvegasfortransit/platform-core/access';
 import type { Db } from './db';
-import { STAFF_PERSON_SCOPE } from './staff-scope';
+import { COUNTED_ENGAGEMENT } from './engagement';
+import { STAFF_ADMIN_SCOPE, STAFF_PERSON_SCOPE } from './staff-scope';
 import { MEMBER_SINCE, UNWELCOMED, WELCOME_SCOPE } from './welcome-scope';
 export interface RosterDetails {
+  lastEngagedAt: string | null;
   committees: { id: string; name: string }[];
   discordConnected: boolean;
   discordInServer: boolean | null;
@@ -12,6 +14,7 @@ export interface RosterDetails {
 export interface RosterDetailsOptions {
   configuration?: AccessConfiguration;
   now?: Date;
+  includeActivity?: boolean;
 }
 export async function rosterDetails(
   db: Db,
@@ -24,9 +27,13 @@ export async function rosterDetails(
   const ids = [...new Set(personIds)].slice(0, 200);
   if (!ids.length) return new Map<string, RosterDetails>();
   const oldest = new Date(now.getTime() - 60 * 86_400_000).toISOString();
+  const activity = options.includeActivity
+    ? `(SELECT max(e.occurred_at) FROM engagement_events e WHERE e.person_id=p.id
+       AND ${COUNTED_ENGAGEMENT} AND (e.type<>'donated' OR ${STAFF_ADMIN_SCOPE}))`
+    : 'NULL';
   const { results } = await db
     .prepare(
-      `SELECT p.id,
+      `SELECT p.id, ${activity} AS last_engaged_at,
     (SELECT json_group_array(json_object('id', id, 'name', name)) FROM (SELECT c.id, c.name FROM committee_assignments a JOIN committees c ON c.id=a.committee_id WHERE a.person_id=p.id AND a.ended_at IS NULL ORDER BY c.name)) AS committees,
     EXISTS(SELECT 1 FROM identities i WHERE i.person_id=p.id AND i.platform='discord' AND i.link_method IN ('self_linked','staff_confirmed')) AS discord_connected,
     (SELECT CASE WHEN d.expires_at>? AND d.observed_at<=? THEN d.in_guild ELSE NULL END
@@ -44,6 +51,7 @@ export async function rosterDetails(
     WHERE p.id IN (${ids.map(() => '?').join(',')}) AND p.deleted_at IS NULL AND ${STAFF_PERSON_SCOPE}`,
     )
     .bind(
+      ...(options.includeActivity ? [actor.personId] : []),
       now.toISOString(),
       now.toISOString(),
       configuration.discord?.configured ? configuration.discord.contextId : '',
@@ -58,6 +66,7 @@ export async function rosterDetails(
     )
     .all<{
       id: string;
+      last_engaged_at: string | null;
       committees: string;
       discord_connected: number;
       discord_in_server: number | null;
@@ -69,6 +78,7 @@ export async function rosterDetails(
     results.map((row) => [
       row.id,
       {
+        lastEngagedAt: row.last_engaged_at,
         committees: JSON.parse(row.committees) as { id: string; name: string }[],
         discordConnected: Boolean(row.discord_connected),
         discordInServer: row.discord_in_server === null ? null : Boolean(row.discord_in_server),
