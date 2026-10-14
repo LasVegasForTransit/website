@@ -46,6 +46,28 @@ export interface GoogleGroupObservation {
   granted: boolean;
   role: GoogleGroupRole | null;
 }
+export interface GoogleGroupListInput {
+  groupEmail: string;
+  pageToken?: string;
+  expectedGroupId?: string;
+  deadline?: number;
+  isCurrent(): Promise<boolean>;
+}
+export interface GoogleGroupInventoryMember {
+  id: string;
+  type: 'USER' | 'GROUP' | 'CUSTOMER' | 'EXTERNAL';
+  role: GoogleGroupRole;
+  email: string | null;
+  status: string | null;
+}
+export interface GoogleGroupMembersPage {
+  customerId: string;
+  groupId: string;
+  groupEmail: string;
+  members: GoogleGroupInventoryMember[];
+  nextPageToken: string | null;
+  observedAt: string;
+}
 export interface GoogleGroupReconciliation {
   identityId: string;
   identityEmail: string | null;

@@ -236,6 +236,16 @@ Google quota deadlines are saved per Workspace customer so a new Worker instance
 response and stops selecting accounts until the deadline. Migration 0028 preserves existing Discord
 pauses and must be reviewed and applied before hosted Google execution.
 
+The group inventory reader lists registered groups independently of linked member records, using
+[Directory membership pages](https://developers.google.com/workspace/admin/directory/reference/rest/v1/members/list)
+with indirect membership included. It returns a complete in-memory inventory or fails without a
+partial count. It preserves owners, managers and nested-group entries and counts each user once.
+Domain-wide or unresolved external entries make the exact user count unavailable. Pagination is
+limited to 50 pages of 200 entries within 30 seconds. A changed group ID, conflicting duplicate,
+repeated cursor, malformed response or lost authorization invalidates the read. The reader changes
+no memberships and stores no inventory itself. Hosted collection, stored overview results and the
+staff portal seat counter still need integration; rendering a staff page must never call Google.
+
 Supply complete, disjoint preview and production group registries, including retired mappings.
 Missing mappings or credentials must remain unconfigured. Group renames, inherited access and
 linked-account changes need review; do not broaden the registry or bypass identity checks to clear a
