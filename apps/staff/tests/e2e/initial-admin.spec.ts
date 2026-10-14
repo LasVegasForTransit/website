@@ -14,6 +14,26 @@ try {
   assert.equal(signIn.status, 200);
   assert.ok(signInHtml.includes('next=%2Fsign-in%2Finitial-admin%2F'));
 
+  const expired = await fixture.simulator.dispatchFetch(`${ORIGIN}/sign-in/link-account/`, {
+    headers: { 'Cf-Access-Jwt-Assertion': fixture.admin.assertion },
+    redirect: 'manual',
+  });
+  assert.equal(expired.status, 303);
+  assert.equal(expired.headers.get('Location'), '/sign-in/?membership_confirmation_expired=1');
+  assert.match(
+    expired.headers.get('Set-Cookie') ?? '',
+    /__Host-lvbt_workspace_pending=; Max-Age=0/,
+  );
+  const recovery = await fixture.simulator.dispatchFetch(
+    `${ORIGIN}${expired.headers.get('Location') ?? ''}`,
+    { headers: { 'Cf-Access-Jwt-Assertion': fixture.admin.assertion } },
+  );
+  assert.equal(recovery.status, 200);
+  const recoveryHtml = await recovery.text();
+  assert.match(recoveryHtml, /Your membership confirmation expired/);
+  assert.match(recoveryHtml, /Sign in again to request a new code/);
+  assert.ok(!recoveryHtml.includes('We couldn’t sign you in.'));
+
   const setup = await fixture.simulator.dispatchFetch(`${ORIGIN}/sign-in/initial-admin/`, {
     headers,
   });

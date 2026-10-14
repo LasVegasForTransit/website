@@ -5,11 +5,18 @@ import { readCookie } from '@lasvegasfortransit/platform-core/web-auth';
 import { sendEmail, escapeHtml } from '@lasvegasfortransit/platform-integrations/email';
 import {
   googleResponse,
+  PENDING_COOKIE,
   workspaceCookie,
 } from '@lasvegasfortransit/platform-integrations/google-sign-in';
 import { WorkspaceLinkService } from '@lasvegasfortransit/platform-storage/workspace-link';
 import type { StaffEnv } from './context';
 export const EMAIL_COOKIE = '__Host-lvbt_workspace_email';
+export function expiredWorkspaceConfirmation(): Response {
+  return googleResponse('/sign-in/?membership_confirmation_expired=1', [
+    workspaceCookie(PENDING_COOKIE, '', 0),
+    workspaceCookie(EMAIL_COOKIE, '', 0),
+  ]);
+}
 export async function linkingEmail(env: StaffEnv, request: Request, pending: string) {
   if (new URL(request.url).searchParams.has('change_email')) return null;
   const cookie = readCookie(request, EMAIL_COOKIE);
@@ -31,7 +38,7 @@ export async function requestLinkCode(
     email: input.email,
     callerAddress: input.callerAddress,
   });
-  if (result.kind === 'expired') return googleResponse('/sign-in/?google_error=1');
+  if (result.kind === 'expired') return expiredWorkspaceConfirmation();
   if (result.kind === 'rate_limited')
     return new Response('Too many attempts. Please try again later.', { status: 429 });
   if (result.kind === 'issued') {
