@@ -23,9 +23,14 @@ New Pages PR deployments are disabled so they cannot expose an unprotected copy 
 ## Build and artifact contract
 
 `pnpm check` covers the repository standard, formatting, lint, types, tests, documentation links,
-production build, generated Worker types, Wrangler dry run, and local Worker parity. `pnpm build`
-writes static assets and Pagefind to `apps/site/dist/` and compiled Pages Functions to
-`apps/site/.wrangler/worker/`.
+production build, generated Worker types, Wrangler dry run, local Worker parity, and the exhaustive
+`ui-contracts` browser project against the local compiled Worker. Install Chromium with
+`pnpm -C apps/site test:install` before checking locally. Required validation always starts its own
+local Worker, overriding any remote browser URL. The root `pnpm build` command also requires those
+local contracts before packaging. Both commands share a Turbo task keyed to source, built assets and
+compiled Worker contents, so identical checked bytes can reuse the local result. Changed build
+outputs require another pass. `pnpm build` writes static assets and Pagefind to `apps/site/dist/`
+and compiled Pages Functions to `apps/site/.wrangler/worker/`.
 
 `Deploy staging` calls the shared build workflow with required analytics and the site's existing
 browser acceptance checks. New artifacts use `apps/deploy/cloudflare.config.ts` as their canonical
@@ -86,7 +91,7 @@ new staging run when a rebuild is needed.
 
 Main pushes and scheduled calendar rebuilds run `Deploy staging`. The workflow validates, saves and
 signs the artifact, uploads a preview version, checks anonymous denial and authenticated browser
-rendering, runs browser contract checks, activates that exact preview version, and checks the
+rendering, runs bounded hosted acceptance, activates that exact preview version, and checks the
 permanent staging hostname. Its summary records the release, commit, version, and originating run.
 
 Same-repository PRs use `Deploy Worker preview` when `CLOUDFLARE_WORKERS_PREVIEW_ENABLED=true`. This
@@ -99,6 +104,32 @@ It uploads those bytes with configuration and preview bindings from `main`, then
 smoke and browser checks and updates the PR comment. It never imports PR code, runs PR migrations,
 or uses PR deployment configuration on the credentialed runner. File and computed module imports are
 rejected before upload. The build payload cannot be promoted to production.
+
+Staging, PR publication and production promotion select the `hosted-acceptance` browser project. Its
+single test checks the marker, rendered assets, mobile navigation, a nested route and the
+missing-page response. Publication verification reserves 20 requests for candidate smoke, 64 for
+hosted acceptance, and 32 for activated-origin smoke: at most 116 requests across all three stages.
+PR publication uses only the first two stages, for at most 84. The production workflow also performs
+four fixed precondition reads outside those stages, so its maximum is 120. Using `pnpm promote` adds
+one completion-marker read outside the workflow. Provider administration API calls do not invoke the
+website Worker and are outside these counts.
+
+Each stage counts direct marker/access/navigation checks and every browser resource before sending
+it, and aborts excess requests. Test and network retries are zero. Candidate identity is read once;
+activation can read identity at most five times over 20 seconds, within its 32-request allowance.
+Unexpected browser redirects fail without following them. Public smoke renders the actual root in a
+browser and checks the nested route and canonical `www` redirect with non-following HTTP requests;
+hosted acceptance also verifies real browser navigation to a nested page. Every publication still
+fails when any required check fails. Access denial, private cache and indexing headers, analytics
+isolation and selected-release identity remain required.
+
+After the shared build packages and retains one artifact, a required local job downloads that exact
+run artifact and verifies its commit, release ID, manifest and file hashes. It runs exhaustive
+`ui-contracts` against a byte-identical disposable copy of the packaged Worker with its retained
+preview configuration and sitemap/HTML, using local bindings and no rebundling. It verifies the
+input and runtime copy remain unchanged afterward. Main attestation depends on this job, and the
+entire PR build workflow must pass before the trusted publisher accepts its payload. The validated
+bytes are the bytes retained for publication; this gate performs no build or repackaging.
 
 Both `worker-preview` and `worker-candidate` accept only the selected branch `main`. The preview
 publisher receives the preview Worker's deployment token and supplies Access credentials only to
@@ -145,9 +176,10 @@ publication receipt records the provider-version baseline.
 The workflow verifies the selected artifact and every file, uploads without rebuilding, verifies its
 production candidate marker and browser contracts, and activates its exact Worker version. Candidate
 checks require the expected marker immediately. After activation, the permanent domain may propagate
-for up to 180 seconds, polling every five seconds with bounded requests. Authentication failures
-stop immediately. Public verification checks the selected marker, browser rendering, a nested route,
-and the `www` redirect. Staging and main may advance without changing selection.
+for up to 20 seconds, with at most five marker reads included in activated smoke's fixed allowance.
+Authentication failures stop immediately. Public verification checks the selected marker, browser
+rendering, a nested route, and the `www` redirect. Staging and main may advance without changing
+selection.
 
 The existing `worker-candidate` environment supplies the production Workers token. Its historical
 name is retained. It supplies a per-Worker production deployment token and a separate D1 migration

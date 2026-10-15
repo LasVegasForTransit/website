@@ -1,13 +1,12 @@
-import { readFileSync } from 'node:fs';
 import { expect, test } from '../../scripts/deploy/access-browser';
 import { eventSchema } from '../../src/lib/structured-data';
+import { builtSitemapPaths } from '../support/sitemap-paths';
 
 type JsonLd = Record<string, unknown>;
 
-const sitemap = readFileSync(new URL('../../dist/sitemap-0.xml', import.meta.url), 'utf8');
-const eventPaths = [...sitemap.matchAll(/<loc>([^<]+)<\/loc>/g)]
-  .map((match) => new URL(match[1] ?? '').pathname)
-  .filter((path) => /^\/events\/[^/.]+\/?$/.test(path));
+const eventPaths = builtSitemapPaths(import.meta.url).filter((path) =>
+  /^\/events\/[^/.]+\/?$/.test(path),
+);
 if (eventPaths.length === 0) throw new Error('The built sitemap contains no event pages.');
 
 async function jsonLdBlocks(page: import('@playwright/test').Page): Promise<JsonLd[]> {

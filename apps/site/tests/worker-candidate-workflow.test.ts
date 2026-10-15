@@ -34,6 +34,11 @@ void test('required Turbo validation includes uncached dependency and secret gat
   ) as { scripts: Record<string, string> };
   assert.equal(rootPackage.scripts['security:secrets'], 'lvbt check secrets');
   assert.equal(
+    rootPackage.scripts.build,
+    'turbo run build && turbo run test:ui-contracts',
+    'Rebuilt release bytes must pass exhaustive local contracts before packaging.',
+  );
+  assert.equal(
     rootPackage.scripts['security:dependencies'],
     'pnpm audit --prod --audit-level=high',
   );
@@ -42,10 +47,18 @@ void test('required Turbo validation includes uncached dependency and secret gat
   ) as { tasks: Record<string, { cache: boolean }> };
   const siteTurbo = JSON.parse(
     await readFile(new URL('../turbo.json', import.meta.url), 'utf8'),
-  ) as { tasks: { validate: { dependsOn: string[] } } };
+  ) as { tasks: Record<string, { dependsOn: string[]; inputs?: string[] }> };
+  assert.match(rootPackage.scripts.check ?? '', /&& turbo run test:ui-contracts$/);
+  assert.ok(!siteTurbo.tasks.validate?.dependsOn.includes('test:ui-contracts'));
+  const localContracts = siteTurbo.tasks['test:ui-contracts'];
+  assert.ok(localContracts);
+  assert.deepEqual(localContracts.dependsOn, ['build']);
+  assert.ok(localContracts.inputs);
+  assert.ok(localContracts.inputs.includes('dist/**'));
+  assert.ok(localContracts.inputs.includes('.wrangler/worker/**'));
   for (const name of ['security:secrets', 'security:dependencies']) {
     assert.equal(rootTurbo.tasks[`//#${name}`]?.cache, false);
-    assert.ok(siteTurbo.tasks.validate.dependsOn.includes(`//#${name}`));
+    assert.ok(siteTurbo.tasks.validate?.dependsOn.includes(`//#${name}`));
   }
 });
 
@@ -86,7 +99,7 @@ void test('production promotion uses shared selected-release verification and ne
   assert.match(workflow, /target: production/);
   assert.match(workflow, /legacy-artifact: \$\{\{ needs.source.outputs.legacy == 'true' \}\}/);
   assert.match(workflow, /browser-script: worker:test:browser/);
-  assert.match(workflow, /browser-project: ui-contracts/);
+  assert.match(workflow, /browser-project: hosted-acceptance/);
   assert.doesNotMatch(workflow, /pnpm build|pnpm check\s|wrangler deploy|worker:deploy/);
 });
 void test('production promotion uses the shared protected named-staging mode', async () => {
@@ -120,7 +133,7 @@ void test('PR builds preserve analytics without deployment credentials or write 
   assert.match(workflow, /preview-pages: true/);
   assert.match(workflow, /validation-browser-directory: apps\/site/);
   assert.match(workflow, /contents: read/);
-  assert.doesNotMatch(workflow, /secrets:|environment:|: write|steps:|wrangler/);
+  assert.doesNotMatch(workflow, /secrets:|environment:|: write|wrangler/);
 });
 void test('PR publication runs through the trusted main publisher and preview acceptance', async () => {
   const workflow = await readFile(previewPublisherUrl, 'utf8');
@@ -133,7 +146,7 @@ void test('PR publication runs through the trusted main publisher and preview ac
   assert.match(workflow, /acceptance-directory: apps\/site/);
   assert.match(workflow, /smoke-script: worker:smoke/);
   assert.match(workflow, /browser-script: worker:test:browser/);
-  assert.match(workflow, /browser-project: ui-contracts/);
+  assert.match(workflow, /browser-project: hosted-acceptance/);
   assert.doesNotMatch(workflow, /steps:|wrangler|upload-artifact|attestations: write/);
 });
 void test('main updates staging through shared publication and never activates production', async () => {
@@ -146,7 +159,7 @@ void test('main updates staging through shared publication and never activates p
     /repository-tooling\/\.github\/workflows\/release-publish\.yml@[a-f0-9]{40}/,
   );
   assert.match(workflow, /browser-script: worker:test:browser/);
-  assert.match(workflow, /browser-project: ui-contracts/);
+  assert.match(workflow, /browser-project: hosted-acceptance/);
   assert.doesNotMatch(workflow, /target: production|deploy-cloudflare-pages/);
 });
 

@@ -1,5 +1,6 @@
 import { spawn, type ChildProcess } from 'node:child_process';
 import net from 'node:net';
+import path from 'node:path';
 
 const HOST = '127.0.0.1';
 function fail(message: string): never {
@@ -41,15 +42,52 @@ async function stop(process: ChildProcess): Promise<void> {
   });
 }
 
-export async function withLocalWorker(verify: (origin: string) => Promise<void>): Promise<void> {
+export async function withLocalWorker(
+  verify: (origin: string) => Promise<void>,
+  artifact?: { directory: string; stateDirectory: string },
+): Promise<void> {
   const root = process.cwd();
   const port = await availablePort();
   const baseUrl = `http://${HOST}:${port}`;
-  const wrangler = spawn('pnpm', ['exec', 'wrangler', 'dev', '--local', '--port', String(port)], {
-    cwd: root,
-    env: { ...process.env, WRANGLER_LOG: 'error' },
-    stdio: ['ignore', 'pipe', 'pipe'],
-  });
+  const wrangler = spawn(
+    'pnpm',
+    [
+      'exec',
+      'wrangler',
+      'dev',
+      '--local',
+      '--ip',
+      HOST,
+      '--port',
+      String(port),
+      ...(artifact
+        ? [
+            '--config',
+            path.join(artifact.directory, 'wrangler.jsonc'),
+            '--env',
+            'preview',
+            '--no-bundle',
+            '--persist-to',
+            artifact.stateDirectory,
+          ]
+        : []),
+    ],
+    {
+      cwd: root,
+      env: {
+        ...process.env,
+        WRANGLER_LOG: 'error',
+        ...(artifact
+          ? {
+              CLOUDFLARE_LOAD_DEV_VARS_FROM_DOT_ENV: 'false',
+              WRANGLER_SEND_METRICS: 'false',
+              WRANGLER_LOG_PATH: path.join(artifact.stateDirectory, 'wrangler.log'),
+            }
+          : {}),
+      },
+      stdio: ['ignore', 'pipe', 'pipe'],
+    },
+  );
   let output = '';
   wrangler.stdout.on('data', (chunk: Buffer) => {
     output += chunk.toString();

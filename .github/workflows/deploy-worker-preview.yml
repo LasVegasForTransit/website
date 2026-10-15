@@ -17,3 +17,29 @@ jobs:
       validation-browser-directory: apps/site
       require-analytics: true
       preview-pages: true
+
+  artifact-validation:
+    name: Validate retained PR preview
+    needs: preview
+    if: >-
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      vars.CLOUDFLARE_WORKERS_PREVIEW_ENABLED == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      actions: read
+      packages: read
+    steps:
+      - name: Checkout PR head without deployment credentials
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          persist-credentials: false
+          lfs: true
+      - name: Validate retained interface
+        uses: ./.github/actions/validate-retained-ui
+        with:
+          artifact-name: website-release-pr-${{ github.run_id }}
+          commit: ${{ github.event.pull_request.head.sha }}
+          release-id: ${{ github.run_id }}

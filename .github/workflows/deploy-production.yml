@@ -27,9 +27,32 @@ jobs:
       artifact-prefix: website-release
     secrets: inherit
 
+  artifact-validation:
+    name: Validate retained release
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      actions: read
+      packages: read
+    steps:
+      - name: Checkout selected source without deployment credentials
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+          lfs: true
+      - name: Validate retained interface
+        uses: ./.github/actions/validate-retained-ui
+        with:
+          artifact-name: website-release-${{ github.run_id }}
+          commit: ${{ github.sha }}
+          release-id: ${{ github.run_id }}
+
   attest:
     name: Sign retained release
-    needs: build
+    needs: [build, artifact-validation]
     permissions:
       contents: read
       actions: read
@@ -55,5 +78,5 @@ jobs:
       url: https://preview.lasvegasfortransit.org
       smoke-script: worker:smoke
       browser-script: worker:test:browser
-      browser-project: ui-contracts
+      browser-project: hosted-acceptance
     secrets: inherit

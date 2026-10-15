@@ -55,5 +55,5 @@ jobs:
       url: https://lasvegasfortransit.org
       smoke-script: worker:smoke
       browser-script: worker:test:browser
-      browser-project: ui-contracts
+      browser-project: hosted-acceptance
     secrets: inherit
