@@ -685,6 +685,19 @@ come from the selected profiles rather than incidental trigger writes, and the c
 pass retains its 50-query limit. Pending outgoing account cleanup and its stable IDs survive profile
 purging until the external account has been removed.
 
+### Complete newsletter provider erasure (0039)
+
+Permanent account erasure is distinguished by `person_keys.erased_at`; a reversible archive has no
+such marker. An erased account's runner unsubscribes its owned Beehiiv targets, deletes each
+subscriber, and independently confirms absence before recording completion. Normal withdrawal and
+archive cleanup only unsubscribe.
+
+Migration `0039_newsletter_erasure_cleanup.sql` advances and requeues every erased account's job,
+including older completed unsubscribes, and invalidates its old leases. Historical target receipts
+preserve stable subscriber IDs when an interrupted creation finished without attaching an identity.
+Recovery selects only that erased person and publication, rechecks ownership, and retains retry work
+until absence is confirmed. Receipts from earlier generations do not count as confirmed erasure.
+
 See
 [staff portal operations](../../../docs/reference/staff-portal-operations.md#verify-newsletter-cleanup-after-account-deletion)
 for migration checks, isolated preview testing and failure recovery.

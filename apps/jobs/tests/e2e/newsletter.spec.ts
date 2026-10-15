@@ -68,6 +68,10 @@ const simulator = new Miniflare(
         ? [...subscriptions.values()].find((value) => value.email === decodeURIComponent(part))
         : subscriptions.get(part);
       if (!subscription) return new RuntimeResponse(null, { status: 404 });
+      if (request.method === 'DELETE') {
+        subscriptions.delete(subscription.id);
+        return new RuntimeResponse(null, { status: 204 });
+      }
       if (request.method === 'PATCH') subscription.status = 'inactive';
       return json({ data: subscription });
     },
@@ -148,11 +152,22 @@ try {
     'retry',
   );
   await people.deletePerson(erased.id);
+  const cleanupStart = calls.length;
   await tick();
   assert.equal(
-    [...subscriptions.values()].find((value) => value.email === 'erased-scheduled@example.invalid')
-      ?.status,
-    'inactive',
+    [...subscriptions.values()].some((value) => value.email === 'erased-scheduled@example.invalid'),
+    false,
+  );
+  const deletion = calls.slice(cleanupStart).findIndex((call) => call.method === 'DELETE');
+  assert.ok(deletion >= 0, 'account erasure must permanently remove its provider subscriber');
+  const cleanupCalls = calls.slice(cleanupStart);
+  assert.deepEqual(
+    cleanupCalls[deletion + 1],
+    {
+      method: 'GET',
+      path: cleanupCalls[deletion]?.path,
+    },
+    'the compiled Worker must independently confirm subscriber absence',
   );
   assert.equal(
     (

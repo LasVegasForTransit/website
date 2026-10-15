@@ -32,8 +32,9 @@ server operation.
 
 The newsletter fixture runs the same compiled scheduled Worker against an isolated Beehiiv API. It
 checks signup readback, repeated dispatch, withdrawal, interrupted creation followed by profile
-erasure, recovery of the resulting subscription and removal of its temporary encrypted address. It
-sends no member records to Beehiiv and does not prove hosted provider operation.
+erasure, recovery and permanent deletion of the resulting subscription, a separate absence lookup,
+and removal of its temporary encrypted address. It sends no member records to Beehiiv and does not
+prove hosted provider operation.
 
 The source-processing fixture sends signed newsletter changes through the compiled receiver and
 scheduler. It verifies canonical membership and Discord role removal, unreadable-address review,
@@ -65,6 +66,15 @@ reads one page of at most 100 subscriptions, saves its cursor and resumes after 
 stores provider observations without inventing consent timestamps. A publication-wide rate-limit
 pause applies to both polling and account changes, including after a new dispatcher starts. Incoming
 saved choices do not need a provider request and continue during that pause.
+
+Account erasure unsubscribes each owned subscriber, permanently deletes it, and requires a separate
+not-found lookup before confirming cleanup. Ordinary withdrawal and reversible archives only
+unsubscribe. Migration `0039_newsletter_erasure_cleanup.sql` requeues previously completed erasures
+so an earlier unsubscribe does not count as permanent deletion. Recovery includes stable subscriber
+IDs retained in receipts for that person and publication, even after the personal profile is
+physically removed. Provider failures retain the job and minimum recovery data. Follow the
+[deletion procedure](../../docs/reference/staff-portal-operations.md#verify-newsletter-cleanup-after-account-deletion)
+for isolated acceptance and failure recovery.
 
 Each incoming pass handles at most three ready events from the selected publication. Future source
 clocks wait without blocking other ready changes. Decryption or address mismatches require review;

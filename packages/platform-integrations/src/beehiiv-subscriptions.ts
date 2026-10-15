@@ -173,4 +173,16 @@ export class BeehiivSubscriptions {
       ? observed
       : { ok: false, kind: 'not_confirmed', status: 200, retryAfterMs: 60_000 };
   }
+
+  /** Permanently remove only an authorized erased account, then verify its absence. */
+  async remove(id: string): Promise<BeehiivSubscriptionResult> {
+    if (!SUBSCRIPTION_ID.test(id)) throw new Error('Invalid Beehiiv subscription ID');
+    const result = await this.request(`/${id}`, 'DELETE');
+    if (!result.ok && result.status !== 404) return result;
+    if (result.ok) await result.response.body?.cancel().catch(() => undefined);
+    const observed = await this.getById(id);
+    return !observed.ok || observed.subscription === null
+      ? observed
+      : { ok: false, kind: 'not_confirmed', status: 200, retryAfterMs: 60_000 };
+  }
 }

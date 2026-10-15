@@ -23,6 +23,7 @@ const subscriptions = Array.from({ length: 5000 }, (_, index) => ({
   created: sourceTime - 3600,
 }));
 const calls: { method: string; list: boolean }[] = [];
+const deletedSubscriptions = new Set<string>();
 let pauseNextList = false;
 const guildId = '111111111111111111';
 const discordUserId = '222222222222222222';
@@ -102,6 +103,12 @@ function createRuntime() {
         assert.equal(request.headers.get('Authorization'), 'Bearer fixture-only');
         const list = url.pathname.endsWith('/subscriptions');
         calls.push({ method: request.method, list });
+        const id = url.pathname.split('/').at(-1);
+        if (request.method === 'DELETE') {
+          assert.equal(id, 'sub_roster_0', 'erasure must target only the removed member');
+          deletedSubscriptions.add(id);
+          return Promise.resolve(new RuntimeResponse(null, { status: 204 }));
+        }
         assert.equal(
           request.method,
           'GET',
@@ -119,16 +126,17 @@ function createRuntime() {
           const offset = cursor ? Number(cursor.replace('cursor_', '')) : 0;
           const end = offset + 100;
           return json({
-            data: subscriptions.slice(offset, end),
+            data: subscriptions
+              .slice(offset, end)
+              .filter((row) => !deletedSubscriptions.has(row.id)),
             has_more: end < subscriptions.length,
             ...(end < subscriptions.length ? { next_cursor: `cursor_${end}` } : {}),
           });
         }
-        const id = url.pathname.split('/').at(-1);
         const row = url.pathname.includes('/by_email/')
           ? subscriptions.find((value) => value.email === decodeURIComponent(id ?? ''))
           : subscriptions.find((value) => value.id === id);
-        return row
+        return row && !deletedSubscriptions.has(row.id)
           ? json({ data: row })
           : Promise.resolve(new RuntimeResponse(null, { status: 404 }));
       },
@@ -333,9 +341,11 @@ try {
   await tick();
   assert.equal(await new PersonService(db).findByEmail(known.email), null);
   assert.equal(
-    calls.every((call) => call.method === 'GET'),
+    calls.every((call) => call.method === 'GET' || call.method === 'DELETE'),
     true,
   );
+  assert.equal(calls.filter((call) => call.method === 'DELETE').length, 1);
+  assert.equal(deletedSubscriptions.has(known.id), true);
   console.log(
     JSON.stringify({
       runtime: 'compiled scheduled jobs Worker',

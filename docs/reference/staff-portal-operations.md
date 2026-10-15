@@ -102,6 +102,14 @@ Complete [staff preview setup](../guides/set-up-staff-preview.md) first. Use an 
 publication and synthetic members. Enabling synchronization sends real API requests to the selected
 publication; an isolated database alone does not protect production subscribers.
 
+LVBT must remain on Beehiiv's Free plan. It supports API access but excludes webhooks and a second
+publication in the same workspace. The signed-event configuration below therefore cannot enable
+newsletter jobs on that plan: the current runtime requires a valid webhook secret. Keep processing
+disabled until the API polling and staff review path works without that requirement and passes
+isolated acceptance. Use a separate free test account for provider tests. Do not upgrade the LVBT
+plan or use its production publication to work around this prerequisite. A list observation shows
+delivery status, not when someone last changed their consent.
+
 The website release configuration sets `release.previewOnly=true` in `.lvbt/tooling.json` while
 newsletter delivery depends on this unfinished consumer. The shared release commands refuse
 production promotion, upload, activation, and saved-release migrations. Preview packaging and
@@ -112,7 +120,7 @@ actual preview acceptance are complete. Remove the hold only in a reviewed chang
 verifies the consumer before the website begins relying on queued updates.
 
 1. In the LVBT Beehiiv account, select the intended publication and check its current API and
-   webhook entitlement. Consult
+   webhook entitlement without changing the plan. Consult
    [Beehiiv's webhook reference](https://developers.beehiiv.com/webhooks/). A plan change, new
    credential, or access-policy change needs maintainer authorization. If the account cannot deliver
    signed subscription changes, leave synchronization disabled.
@@ -191,26 +199,41 @@ retention, and keep detailed execution records private.
 ## Verify newsletter cleanup after account deletion
 
 This procedure is for a maintainer testing deletion in the isolated preview. It checks that queued
-newsletter addresses are cleared and delayed newsletter messages cannot recreate a removed member.
+newsletter addresses are cleared, the subscriber is removed from Beehiiv, and delayed newsletter
+messages cannot recreate a removed member. An ordinary newsletter unsubscribe keeps the Beehiiv
+subscriber inactive. Permanent account deletion also deletes that subscriber and its associated
+provider data; a reversible duplicate archive does not authorize this permanent deletion.
 
 Before you start, you need an approved preview test member separate from the preview administrator,
 access to the selected preview database, and the database checks in
-[Set up the protected staff preview](../guides/set-up-staff-preview.md). Keep newsletter writes
-disabled while preparing the release and applying its canonical migrations.
+[Set up the protected staff preview](../guides/set-up-staff-preview.md). Use the separate test
+publication with approved credentials and working signed callbacks. Keep newsletter writes disabled
+while preparing the release and applying its canonical migrations.
 
-1. Check the selected database's migration list for `0038_newsletter_erasure.sql`. The following
-   read-only query must return one row. A missing row means the database needs the release's
-   migrations before you test or enable the new application.
+1. Check the selected database's migration list for both erasure migrations. The following read-only
+   query must return two rows. A missing row means the database needs the release's migrations
+   before you test or enable the new application.
 
    ```sql
-   SELECT name FROM d1_migrations WHERE name='0038_newsletter_erasure.sql';
+   SELECT name FROM d1_migrations
+   WHERE name IN ('0038_newsletter_erasure.sql','0039_newsletter_erasure_cleanup.sql');
    ```
 
-2. Sign in as the separate test member and use `/account/delete/` to request deletion. Complete the
-   confirmation in that test member's own inbox. The account must be signed out and its profile
-   cleared. Do not delete the preview administrator or another person's record for this test.
+2. Complete the scheduled newsletter setup above. Confirm that the separate test member is
+   subscribed in the test publication, then sign in as that member and use `/account/delete/` to
+   request deletion. Complete the confirmation in that test member's own inbox. The account must be
+   signed out and its profile cleared. Do not delete the preview administrator or another person's
+   record for this test.
 
-3. Inspect these aggregate counts privately. Both must be zero. They check saved addresses for
+3. Allow the scheduled job to finish. Privately inspect that test person's `newsletter_sync_jobs`
+   row: `state='done'` means its current targets were confirmed. In the test publication, the
+   subscriber must be absent, rather than merely unsubscribed. The adapter sends an unsubscribe
+   first, then the
+   [permanent deletion request](https://developers.beehiiv.com/api-reference/subscriptions/delete),
+   and requires a separate subscriber lookup to return not found. An accepted deletion response
+   alone is insufficient. Do not use another subscriber or the production publication to test this.
+
+4. Inspect these aggregate counts privately. Both must be zero. They check saved addresses for
    removed connected accounts and temporary deletion checks without printing contact details.
 
    ```sql
@@ -222,11 +245,14 @@ disabled while preparing the release and applying its canonical migrations.
    SELECT count(*) AS unfinished_checks FROM newsletter_erasure_checks;
    ```
 
-4. From a configured local checkout, run the regression checks for queued addresses, delayed
+5. From a configured local checkout, run the regression checks for queued addresses, delayed
    messages, merged accounts, fresh signups, rollback and the worker's query limit:
 
    ```sh
    pnpm --filter @lasvegasfortransit/platform-storage exec node --import tsx --test tests/newsletter-erasure.test.ts tests/newsletter-erasure-races.test.ts tests/maintenance-budget.test.ts
+   pnpm --filter @lasvegasfortransit/platform-integrations exec node --import tsx --test tests/beehiiv-erasure.test.ts
+   pnpm -C apps/jobs build
+   pnpm -C apps/jobs test:e2e
    ```
 
    All checks must pass. These checks exercise the canonical schema locally; they do not establish
@@ -247,10 +273,20 @@ erased record. The staff workflow for resolving ambiguous newsletter changes mus
 enabling synchronization.
 
 Pending outgoing cleanup can still need an encrypted address until Beehiiv's stable subscriber ID is
-known. Keep that recovery work until remote removal is confirmed. Clearing the local profile or
-incoming queue does not establish that Beehiiv has unsubscribed or deleted the subscriber. During
-physical retention, connected profile copies are removed with the authorized profile deletion; the
-entire maintenance transaction still fits the worker's 50-query limit.
+known. Keep that recovery work until remote removal is confirmed. Migration
+`0039_newsletter_erasure_cleanup.sql` requeues erased accounts whose earlier job confirmed only an
+unsubscribe. Historical receipts retain the subscriber ID needed to finish that cleanup, including
+when an interrupted signup never attached an identity. Only receipts from the selected publication
+are considered, and current ownership is checked before changing the subscriber.
+
+If deletion fails, leave the job pending. A rate limit pauses provider calls until its retry time;
+an unavailable provider or an unconfirmed deletion retries. Denied permissions require maintainer
+review of the approved key and publication before retrying through the normal runner. If the
+provider removed a subscriber but its response was lost, the next lookup can confirm absence. Do not
+mark the job done manually or delete recovery intents, historical receipts, or connected IDs to
+clear an error. Clearing the local profile or incoming queue does not establish provider removal.
+During physical retention, connected profile copies are removed with the authorized profile
+deletion; the entire maintenance transaction still fits the worker's 50-query limit.
 
 ## Maintainer setup
 
