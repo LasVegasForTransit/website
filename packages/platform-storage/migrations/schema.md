@@ -726,9 +726,11 @@ erased account.
 ### Member privacy maintenance (0041)
 
 `person_deletion_log` retains immutable, opaque receipts for local erasure. The requester is
-`member`, a trusted staff identifier, or `retention`; no name or email is retained. Its completion
-means local irreversible erasure, not a successful remote provider deletion. Legacy backfill is
-identified explicitly and cannot recover an unknown original requester. Erasure clears remaining
+`member`, a trusted staff identifier, or `retention`; no name or email is retained. `requested_at`
+preserves the erasure scope's actual request timestamp. `completed_at` means local irreversible
+erasure, not a successful remote provider deletion. Legacy backfill is identified explicitly, keeps
+the stored erasure time as its completion, and leaves `requested_at` null because the original
+request time is unknown. It cannot recover an unknown original requester. Erasure clears remaining
 local consent, form, link-operation, and committee histories while preserving provider retry work.
 
 `member_privacy_runs` records a Pacific calendar day and fixed18-month cutoff. The separate bounded

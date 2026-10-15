@@ -30,6 +30,14 @@ export async function exerciseMemberSummary(
     source: 'fixture',
     occurredAt: '2025-01-12T12:00:00Z',
   });
+  for (let i = 0; i < 50; i++) {
+    await people.recordEngagement(person.id, {
+      type: 'attended',
+      source: 'fixture',
+      reference: `history-summary-${i}`,
+      occurredAt: '2025-01-11T12:00:00Z',
+    });
+  }
   await page.reload();
   assert.equal(await page.getByText('Email confirmed', { exact: true }).isVisible(), true);
   const summary = page.getByRole('region', { name: 'Member summary', exact: true });
@@ -101,11 +109,16 @@ export async function exerciseMemberSummary(
   assert.equal(await summary.getByText(/^Left LVBT /).count(), 0);
   await page.getByText('Record history', { exact: true }).click();
   assert.equal(
+    await page.getByText('51 events attended', { exact: true }).count(),
+    1,
+    'activity totals cover older history beyond the current page',
+  );
+  assert.equal(
     await page.getByRole('heading', { name: 'Activity', exact: true }).isVisible(),
     true,
   );
   assert.equal(
-    await page.getByText('Attended an event', { exact: true }).isVisible(),
+    await page.getByText('Attended an event', { exact: true }).first().isVisible(),
     true,
     'meaningful engagement stays in the record history',
   );

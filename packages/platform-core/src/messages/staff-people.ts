@@ -139,6 +139,7 @@ export const staffPeople = {
     linked: 'Linked {date} · {method}',
     noAccounts: 'No accounts connected yet.',
     activity: 'Activity',
+    attendedTotal: { one: '{count} event attended', other: '{count} events attended' },
     recordedBy: 'Recorded by {name}',
     details: 'Details',
     noActivity: 'No activity recorded yet.',

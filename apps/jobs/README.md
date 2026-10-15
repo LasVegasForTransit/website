@@ -77,13 +77,15 @@ signed intake; do not remove protection from the preview site to make a callback
 [newsletter operation checks](../../docs/reference/staff-portal-operations.md#scheduled-newsletter-processing).
 Missing or malformed signing credentials close intake without disabling API work or already saved
 authenticated events. Free-plan status differences still require their own consent handling, staff
-resolution and live acceptance before synchronization is enabled. Set `LVBT_BEEHIIV_CONFLICT_POLICY`
-to a maintainer-approved `keep_unsubscribed` or `staff_review` before processing observed
-differences. Blank leaves that processing disabled. The first policy closes consent at observation
-time for an unclear unsubscribe interval; the second holds outgoing grants and leaves membership for
-staff confirmation. Both retain review and preserve a newer explicit signup. Known earlier consent
-can be withdrawn under either policy. An active API status never creates consent, and paused or
-undeliverable statuses do not end membership.
+resolution and live acceptance before synchronization is enabled. LVBT uses
+`LVBT_BEEHIIV_CONFLICT_POLICY=staff_review` for unclear changes: hold conflicting outgoing
+subscription changes for staff review. Changing this policy requires a maintainer decision. A blank
+value leaves that processing disabled. The supported values are `keep_unsubscribed` and
+`staff_review`. The first policy closes consent at observation time for an unclear unsubscribe
+interval; the second holds outgoing grants and leaves membership for staff confirmation. Both retain
+review and preserve a newer explicit signup. Known earlier consent can be withdrawn under either
+policy. An active API status never creates consent, and paused or undeliverable statuses do not end
+membership.
 
 Staff accesses newsletter follow-up through `LVBT_NEWSLETTER_JOBS`, bound to the jobs service in the
 same environment. The fixed private review endpoint rechecks administrator membership for reads and

@@ -53,7 +53,7 @@ function bindings(path: string, mode: Mode) {
           LVBT_BEEHIIV_SYNC_ENABLED: 'false',
           LVBT_BEEHIIV_PUBLICATION_ID: '',
           LVBT_BEEHIIV_PRODUCTION_PUBLICATION_ID: '',
-          LVBT_BEEHIIV_CONFLICT_POLICY: '',
+          LVBT_BEEHIIV_CONFLICT_POLICY: 'staff_review',
         }
       : {}),
   };

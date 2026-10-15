@@ -64,18 +64,33 @@ Confirm that the command selects the preview database. Review the pending number
 the selected release. Before changing an existing database, follow
 [Back up and verify the membership database](./back-up-membership-database.md). It includes export,
 isolated restore, comparison, and private retention. A Time Travel bookmark identifies a provider
-recovery point; retain an independent verified backup too.
+recovery point; retain an independent verified backup too. Rehearse the reviewed pending migrations
+on a disposable copy of that verified backup and check existing records and relationships before
+changing the hosted database.
 
-After the maintainer authorizes the migration, apply that reviewed sequence:
+For the normal reviewed-main rollout, complete this backup and rehearsal before merging the approved
+source. The website's **Deploy staging** workflow applies its saved release's pending migrations to
+the shared preview database using the existing preview migration credential, before activating the
+website preview. It uses the SQL retained with that exact release, not a newer checkout. See the
+[deployment pipeline](../reference/deployment-pipeline.md#main-and-pr-deployment).
+
+Inspect the staging run for the exact reviewed commit. Its **Apply retained preview schema** step
+must succeed, and the database must contain every migration required by the selected staff build.
+Use a successful **Build staff release** from that same commit for the later **Deploy staff
+preview** setup deployment. The staff deployment checks the database but does not apply migrations;
+it is separate from the website's staging deployment. Neither step authorizes production changes.
+
+If the normal staging path is unavailable, an authorized maintainer can apply the reviewed sequence
+manually from the selected source:
 
 ```sh
 pnpm -C apps/staff exec wrangler d1 migrations apply lvbt-platform-preview --remote --env preview
 ```
 
 List migrations again. Every migration required by the selected application build must be applied. A
-failed migration can leave earlier migrations applied; inspect the actual database before
-continuing. The deployment workflow does not apply migrations for you. Cloudflare documents these
-commands in its [D1 command reference](https://developers.cloudflare.com/d1/wrangler-commands/).
+failed migration can leave earlier migrations applied; inspect the actual database before continuing
+or retrying either path. Cloudflare documents the manual commands in its
+[D1 command reference](https://developers.cloudflare.com/d1/wrangler-commands/).
 
 ### Prepare the first test membership
 
