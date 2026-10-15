@@ -42,9 +42,21 @@ replay safety and rejection after erasure. Its 5,000-account roster advances in 
 scheduled ticks, with a provider pause and Worker restart between pages. Incoming choices still
 apply during the pause. The fixture uses isolated Beehiiv and Discord responses, not live accounts.
 
-The Free-plan fixture omits webhook credentials. It verifies that the compiled scheduler polls the
-API and delivers canonical signup and withdrawal requests with separate readback, while signed
-intake remains closed. It uses isolated responses and does not establish live provider acceptance.
+The Free-plan fixture omits webhook credentials. It verifies roster polling, canonical signup and
+withdrawal readback, an external unsubscribe changing membership without inventing a choice time,
+and a later explicit signup rejoining. Signed intake remains closed. The staff newsletter-review
+fixture runs both compiled Workers through their real private service binding. Both fixtures use
+isolated responses and do not establish live provider acceptance.
+
+## Daily member privacy maintenance
+
+After03:00 Pacific, the scheduler starts a separate bounded inactivity pass. It resumes unfinished
+batches using the same calendar day's cutoff and stops repeating completed days. Each call is
+counted within the shared32-invocation allowance and has its own50-query limit. Records with any
+consent, including a withdrawal, any non-check-in identity, or recent activity remain protected.
+Ordinary30-day profile purge and provider cleanup still run independently. The compiled maintenance
+fixture covers daylight-saving boundaries, exclusions, multi-batch completion, and deletion
+receipts. See [Operate member data retention](../../docs/guides/operate-member-data-retention.md).
 
 ## Scheduled newsletter requests
 
@@ -65,7 +77,20 @@ signed intake; do not remove protection from the preview site to make a callback
 [newsletter operation checks](../../docs/reference/staff-portal-operations.md#scheduled-newsletter-processing).
 Missing or malformed signing credentials close intake without disabling API work or already saved
 authenticated events. Free-plan status differences still require their own consent handling, staff
-resolution and live acceptance before synchronization is enabled.
+resolution and live acceptance before synchronization is enabled. Set `LVBT_BEEHIIV_CONFLICT_POLICY`
+to a maintainer-approved `keep_unsubscribed` or `staff_review` before processing observed
+differences. Blank leaves that processing disabled. The first policy closes consent at observation
+time for an unclear unsubscribe interval; the second holds outgoing grants and leaves membership for
+staff confirmation. Both retain review and preserve a newer explicit signup. Known earlier consent
+can be withdrawn under either policy. An active API status never creates consent, and paused or
+undeliverable statuses do not end membership.
+
+Staff accesses newsletter follow-up through `LVBT_NEWSLETTER_JOBS`, bound to the jobs service in the
+same environment. The fixed private review endpoint rechecks administrator membership for reads and
+inside decision transactions. It selects the publication from jobs configuration and never accepts a
+browser-supplied publication or actor. Staff receives neither provider credentials nor address
+encryption keys. Review remains available while sending is disabled. A changed record, ownership or
+administrator designation invalidates the submitted version without partial writes.
 
 Each account pass resumes one target from the current durable request. Account ownership, consent,
 generation and lease checks prevent older work from granting access after withdrawal. Roster polling

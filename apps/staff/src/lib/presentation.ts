@@ -1,5 +1,6 @@
 import { t } from '@lasvegasfortransit/platform-core/messages';
 const LABELS: Record<string, string> = {
+  beehiiv_observed: 'Newsletter',
   newsletter: t('staff.labels.newsletter'),
   event_reminders: t('staff.labels.event_reminders'),
   volunteer_contact: t('staff.labels.volunteer_contact'),

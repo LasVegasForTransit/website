@@ -37,8 +37,33 @@ export async function exerciseMemberSummary(
     await summary.getByText('Member since Mar 15, 2024', { exact: true }).isVisible(),
     true,
   );
-  assert.equal(await summary.getByText('Signed up for updates', { exact: true }).isVisible(), true);
-  assert.equal(await summary.getByText('1 event attended', { exact: true }).isVisible(), true);
+  assert.equal(await summary.getByText('Member', { exact: true }).isVisible(), true);
+  assert.equal(await summary.getByText('Mailing list', { exact: true }).count(), 0);
+  assert.equal(await summary.getByText('Last recorded activity', { exact: true }).count(), 0);
+  assert.equal(await summary.getByText('1 event attended', { exact: true }).count(), 0);
+  assert.equal(
+    await page.locator('#accounts').count(),
+    0,
+    'optional Discord should not add an empty support section',
+  );
+  assert.equal(
+    await page
+      .getByRole('link', { name: 'Download member record', exact: true })
+      .getAttribute('href'),
+    `/people/${person.id}/data/`,
+  );
+  assert.equal(
+    await page
+      .getByRole('link', { name: 'Download member record', exact: true })
+      .evaluate((link) => getComputedStyle(link).textDecorationLine.includes('underline')),
+    true,
+    'profile links must retain visible link affordances under the staff content security policy',
+  );
+  assert.equal(
+    await summary.evaluate((element) => getComputedStyle(element).display),
+    'grid',
+    'the membership layout stylesheet must be applied in the compiled staff Worker',
+  );
   await page.goto(`${ORIGIN}/people/?q=summary%40example.invalid`);
   const activity = page.locator('.staff-roster-activity time');
   assert.equal(await activity.count(), 1);
@@ -51,10 +76,39 @@ export async function exerciseMemberSummary(
   });
   await page.reload();
   assert.equal(
-    await summary.getByText('Left LVBT Feb 10, 2025', { exact: true }).isVisible(),
+    await summary
+      .getByText('Unsubscribed from LVBT updates Feb 10, 2025.', { exact: true })
+      .isVisible(),
     true,
   );
-  assert.equal(await summary.getByText('Left mailing list', { exact: true }).isVisible(), true);
+  assert.equal(await summary.getByText('Former member', { exact: true }).isVisible(), true);
+  assert.equal(await summary.getByText('Left mailing list', { exact: true }).count(), 0);
+  await fixture.db
+    .prepare(
+      "UPDATE consent_records SET withdrawn_time_basis='observed' WHERE person_id=? AND withdrawn_at IS NOT NULL",
+    )
+    .bind(person.id)
+    .run();
+  await page.reload();
+  assert.equal(
+    await summary
+      .getByText('Unsubscribe recorded Feb 10, 2025. The original change date wasn’t provided.', {
+        exact: true,
+      })
+      .isVisible(),
+    true,
+  );
+  assert.equal(await summary.getByText(/^Left LVBT /).count(), 0);
+  await page.getByText('Record history', { exact: true }).click();
+  assert.equal(
+    await page.getByRole('heading', { name: 'Activity', exact: true }).isVisible(),
+    true,
+  );
+  assert.equal(
+    await page.getByText('Attended an event', { exact: true }).isVisible(),
+    true,
+    'meaningful engagement stays in the record history',
+  );
   await people.recordConsent(person.id, { ...consent, givenAt: '2026-01-20T12:00:00Z' });
   await page.reload();
   assert.equal(
@@ -62,6 +116,23 @@ export async function exerciseMemberSummary(
     true,
   );
   assert.equal(await summary.getByText('Member since Mar 15, 2024', { exact: true }).count(), 0);
+  for (const committeeId of ['events', 'advocacy']) {
+    const assigned = await fixture.committees.assign({
+      personId: person.id,
+      committeeId,
+      role: 'member',
+      actorId: fixture.admin.person.id,
+      operationId: `profile-summary-${committeeId}`,
+    });
+    assert.equal(assigned.kind, 'ok');
+  }
+  await page.reload();
+  assert.equal(await page.locator('.staff-current-assignments > li').count(), 2);
+  assert.equal(
+    await page.locator('#accounts details').first().getAttribute('open'),
+    null,
+    'account support starts folded when no action is needed',
+  );
   for (const [name, width] of [
     ['desktop', 1440],
     ['mobile', 320],
@@ -76,6 +147,24 @@ export async function exerciseMemberSummary(
       fullPage: true,
       path: `${fixture.root}/test-results/staff/member-summary-${name}.png`,
     });
+    const contact = await page.getByRole('region', { name: 'Contact', exact: true }).boundingBox();
+    const committees = await page
+      .getByRole('region', { name: 'Committees', exact: true })
+      .boundingBox();
+    assert.ok(contact && committees);
+    if (width === 320) {
+      assert.equal(Math.round(contact.x), Math.round(committees.x));
+      assert.ok(
+        committees.y >= contact.y + contact.height,
+        'phone layout places contact before committee work',
+      );
+    } else {
+      assert.ok(
+        committees.x > contact.x + contact.width,
+        'desktop layout gives committee work its own wider column',
+      );
+      assert.ok(committees.width > contact.width);
+    }
   }
   await page.emulateMedia({ colorScheme: 'dark' });
   await page.screenshot({
@@ -84,6 +173,22 @@ export async function exerciseMemberSummary(
     path: `${fixture.root}/test-results/staff/member-summary-dark.png`,
   });
   await page.emulateMedia({ colorScheme: 'light' });
+  await page
+    .getByRole('region', { name: 'Accounts', exact: true })
+    .locator('summary')
+    .first()
+    .click();
+  const status = page.locator('.staff-profile-account-state').first();
+  assert.equal(await status.isVisible(), true);
+  assert.deepEqual(
+    await status.evaluate((element) => ({
+      tag: element.tagName,
+      border: getComputedStyle(element).borderWidth,
+      background: getComputedStyle(element).backgroundColor,
+    })),
+    { tag: 'STRONG', border: '0px', background: 'rgba(0, 0, 0, 0)' },
+    'account status must read as text, not an outlined control',
+  );
   await page.setViewportSize({ width: 1440, height: 1000 });
   await page.getByRole('link', { name: 'Edit details', exact: true }).click();
   await page.getByLabel('Email', { exact: true }).fill('summary-corrected@example.invalid');

@@ -1,80 +1,17 @@
 // A member's data: downloading everything LVBT holds about them, and
 // deleting their account. Rendering lives in the site.
 
-import { accountView, codeEmail, type AccountEnv, type CodeCheck } from './account';
+import { codeEmail, type AccountEnv, type CodeCheck } from './account';
 import { checkCode, endAllSessions, requestCode } from '@lasvegasfortransit/platform-storage/auth';
 import { nowIso } from '@lasvegasfortransit/platform-core/ids';
-import { regionName } from '@lasvegasfortransit/platform-core/regions';
-import { formatFullDate, formatTime, t } from '@lasvegasfortransit/platform-core/messages';
+import { formatTime } from '@lasvegasfortransit/platform-core/messages';
 import { sendCodeEmail } from './sign-in';
-import type { Db } from '@lasvegasfortransit/platform-storage/db';
+import { collectPersonExport } from '@lasvegasfortransit/platform-storage/person-export';
 import { PersonService, type Person } from '@lasvegasfortransit/platform-storage/person-service';
 
 // --- Your data -----------------------------------------------------------
 
-/** Everything LVBT holds about one person, with a plain summary first. */
-export async function exportData(
-  db: Db,
-  personId: string,
-): Promise<Record<string, unknown> | null> {
-  const view = await accountView(db, personId);
-  if (!view) return null;
-  const rows = async (sql: string) => (await db.prepare(sql).bind(personId).all()).results;
-  const [consents, identities, events, fieldSources, discordProfiles, discordServerProfiles] =
-    await Promise.all([
-      rows(
-        'SELECT scope, given_at, source, method, wording_version, withdrawn_at, withdrawn_source, import_run_id FROM consent_records WHERE person_id = ? ORDER BY given_at',
-      ),
-      rows(
-        'SELECT platform, external_id, external_email, linked_at, link_method FROM identities WHERE person_id = ? ORDER BY linked_at',
-      ),
-      rows(
-        'SELECT type, occurred_at, source, reference, details FROM engagement_events WHERE person_id = ? ORDER BY occurred_at',
-      ),
-      rows(
-        'SELECT field, source, confirmed_at FROM field_sources WHERE person_id = ? ORDER BY field',
-      ),
-      rows(
-        'SELECT i.external_id,p.username,p.display_name,p.avatar,p.verified_at FROM identities i JOIN discord_identity_profiles p ON p.identity_record_id=i.id WHERE i.person_id=? ORDER BY i.id',
-      ),
-      rows(
-        'SELECT i.external_id,p.guild_id,p.username,p.display_name,p.avatar,p.nickname,p.in_guild,p.pending,p.observed_at,p.expires_at FROM identities i JOIN discord_profiles p ON p.identity_record_id=i.id WHERE i.person_id=? ORDER BY i.id,p.guild_id',
-      ),
-    ]);
-  const { person } = view;
-  return {
-    summary: t('data.summary', {
-      name: [person.given_name, person.family_name].filter(Boolean).join(' ') || '—',
-      date: formatFullDate(new Date()),
-    }),
-    exported_at: nowIso(),
-    details: {
-      given_name: person.given_name,
-      family_name: person.family_name,
-      email: person.email,
-      phone: person.phone,
-      zip: person.zip,
-      census_block: person.census_block,
-      place_name: person.place_name,
-      region: regionName(person.region_id),
-      preferred_language: person.preferred_language,
-      membership_status: person.membership_status,
-      member_since: view.memberSince,
-      created_at: person.created_at,
-      updated_at: person.updated_at,
-    },
-    where_each_detail_came_from: fieldSources,
-    consent_records: consents,
-    connected_accounts: identities,
-    discord_account_profiles: discordProfiles,
-    discord_server_profiles: discordServerProfiles,
-    activity: events.map((event) => ({
-      ...event,
-      details:
-        typeof event.details === 'string' ? (JSON.parse(event.details) as unknown) : event.details,
-    })),
-  };
-}
+export const exportData = collectPersonExport;
 
 // --- Deleting the account ------------------------------------------------
 

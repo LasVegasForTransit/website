@@ -144,7 +144,7 @@ void test('purge keeps another person’s withdrawal evidence and actor attribut
   const f = await mergeFixture();
   f.db.raw
     .prepare(
-      "INSERT INTO consent_withdrawals VALUES('retained-evidence',?,?,'newsletter','account','2026-09-01','2026-09-01')",
+      "INSERT INTO consent_withdrawals(id,person_id,origin_person_id,scope,source,withdrawn_at,recorded_at) VALUES('retained-evidence',?,?,'newsletter','account','2026-09-01','2026-09-01')",
     )
     .run(f.survivor.id, f.merged.id);
   f.db.raw

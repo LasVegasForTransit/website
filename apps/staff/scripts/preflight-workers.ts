@@ -16,6 +16,7 @@ const VERSION_VARIABLES = [
   'LVBT_BEEHIIV_SYNC_ENABLED',
   'LVBT_BEEHIIV_PUBLICATION_ID',
   'LVBT_BEEHIIV_PRODUCTION_PUBLICATION_ID',
+  'LVBT_BEEHIIV_CONFLICT_POLICY',
 ];
 export type Bindings = Record<string, unknown>[];
 export function value(bindings: Bindings, name: string): unknown {
@@ -40,6 +41,39 @@ async function activeBindings(client: MetadataClient, path: string): Promise<Bin
       return array(object(data.resources).bindings);
     }),
   );
+}
+function staffBindingChecks(versions: Bindings[], name: string): Check[] {
+  return [
+    check(
+      'staff.newsletter_service',
+      versions.every((bindings) =>
+        bindings.some(
+          (binding) =>
+            binding.name === 'LVBT_NEWSLETTER_JOBS' &&
+            binding.type === 'service' &&
+            binding.service === (name === 'lvbt-staff-preview' ? 'lvbt-jobs-preview' : 'lvbt-jobs'),
+        ),
+      ),
+      'Staff newsletter follow-up must use jobs in the same environment.',
+    ),
+    check(
+      'staff.no_newsletter_secrets',
+      versions.every(
+        (bindings) =>
+          !bindings.some((binding) =>
+            ['LVBT_BEEHIIV_API_KEY', 'LVBT_NEWSLETTER_INTENT_KEY'].includes(String(binding.name)),
+          ),
+      ),
+      'Newsletter API and encryption keys belong only on jobs.',
+    ),
+    check(
+      'staff.no_bot_token',
+      versions.every(
+        (bindings) => !bindings.some((binding) => binding.name === 'LVBT_DISCORD_BOT_TOKEN'),
+      ),
+      'Bot credentials belong only on jobs.',
+    ),
+  ];
 }
 export async function inspectWorker(
   client: MetadataClient,
@@ -96,18 +130,7 @@ export async function inspectWorker(
           `Configure ${name}; presence does not prove provider validity.`,
         ),
       ),
-      ...(kind === 'staff'
-        ? [
-            check(
-              'staff.no_bot_token',
-              versions.every(
-                (bindings) =>
-                  !bindings.some((binding) => binding.name === 'LVBT_DISCORD_BOT_TOKEN'),
-              ),
-              'Bot credentials belong only on jobs.',
-            ),
-          ]
-        : []),
+      ...(kind === 'staff' ? staffBindingChecks(versions, name) : []),
     ],
   };
 }

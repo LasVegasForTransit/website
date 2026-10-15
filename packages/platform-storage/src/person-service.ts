@@ -20,6 +20,7 @@ import {
 } from './imported-consent';
 import { normalizeEmail, ownedFields, type FieldName } from './field-ownership';
 import { writePersonConsent, type ConsentWriteInput } from './consent-write';
+import { processNewsletterPollChoices } from './newsletter-poll-choices';
 import {
   applyNewsletterSourceEvent,
   type NewsletterSourceInput,
@@ -294,6 +295,10 @@ export class PersonService {
     return applyNewsletterSourceEvent(this.db, input);
   }
 
+  processNewsletterPollChoices(input: Parameters<typeof processNewsletterPollChoices>[1]) {
+    return processNewsletterPollChoices(this.db, input);
+  }
+
   /** Record historical newsletter evidence tied to its stable provider identity. */
   async recordImportedNewsletterConsent(
     id: string,
@@ -370,8 +375,8 @@ export class PersonService {
    * Erase the profile and saved copies across current combinations.
    * Stable account IDs remain available for managed-access removal.
    */
-  async deletePerson(id: string): Promise<void> {
-    await deletePersonData(this.db, id);
+  async deletePerson(id: string, options: { requesterId?: string } = {}): Promise<void> {
+    await deletePersonData(this.db, id, options);
   }
 
   private async recomputeMembership(id: string): Promise<Person | null> {

@@ -123,13 +123,19 @@ verifies the consumer before the website begins relying on queued updates.
    belong to that test publication. A new account or credential needs maintainer authorization.
    Never use a production subscriber to test write or deletion permissions.
 2. Apply the canonical migrations using the preview guide, then verify that the selected database
-   contains the newsletter inbox, attempted writes, and erasure tables. All three applications must
-   use this same preview database. Do not run a newly built dispatcher against an older schema.
+   contains the newsletter inbox, attempted writes, erasure tables, and
+   `0040_newsletter_poll_choices.sql`. All three applications must use this same preview database.
+   Do not run a newly built dispatcher against an older schema.
 3. Set the jobs preview's public publication variables in `apps/jobs/wrangler.jsonc` before
    building: `LVBT_BEEHIIV_PUBLICATION_ID` identifies the test publication and
    `LVBT_BEEHIIV_PRODUCTION_PUBLICATION_ID` identifies production. They must differ in preview. Keep
-   `LVBT_BEEHIIV_SYNC_ENABLED=false` during setup. Public variables are replaced by uploads; a
-   setting saved only in the dashboard does not survive the next release.
+   `LVBT_BEEHIIV_SYNC_ENABLED=false` during setup. Set `LVBT_BEEHIIV_CONFLICT_POLICY` only after the
+   maintainer chooses how to handle an unsubscribe whose date cannot be ordered against a recent
+   signup. `keep_unsubscribed` ends membership at the observation time and retains a staff review;
+   `staff_review` preserves membership while holding outgoing subscription grants for staff
+   confirmation. The source default is blank, which disables observation processing. Both policies
+   preserve a verified signup made after the observation. Public variables are replaced by uploads;
+   a setting saved only in the dashboard does not survive the next release.
 4. Using the guide's **Settings → Variables and Secrets** procedure, install the approved API key
    and dedicated `LVBT_NEWSLETTER_INTENT_KEY` on `lvbt-jobs-preview`. The intent key must be a
    base64url-encoded random 32-byte value. Keep it separate from sign-in and provider credentials.
@@ -151,10 +157,12 @@ verifies the consumer before the website begins relying on queued updates.
    already authenticated and saved. Presence alone does not prove callback reachability or
    publication ownership. See
    [Beehiiv's webhook reference](https://developers.beehiiv.com/webhooks/).
-7. Before enabling the flag and minute schedule through a reviewed launch release, verify the staff
-   resolution workflow for ambiguous changes. The current duplicate-review screen does not resolve
-   newsletter source cases. Until that workflow and live preview acceptance are implemented and
-   verified, keep provider synchronization disabled; the setup release deliberately rejects it.
+7. Verify that the staff preview's `LVBT_NEWSLETTER_JOBS` service binding points to
+   `lvbt-jobs-preview`, and that both use the same isolated database. Production binds to
+   `lvbt-jobs`. This binding is separate from the website callback binding. No newsletter API or
+   encryption key belongs on staff. Follow the newsletter review procedure below before enabling the
+   flag and minute schedule through a reviewed launch release. Keep synchronization disabled until
+   actual preview acceptance passes; the setup release deliberately rejects it.
 8. During approved live acceptance, use one synthetic member to sign up, unsubscribe, and
    independently confirm a new signup. Check delivery in Beehiiv, the member's resulting status and
    original choice dates in staff, and actual Discord role readback for the linked test account.
@@ -162,16 +170,25 @@ verifies the consumer before the website begins relying on queued updates.
    it remains unknown and the agreed conflict rule is followed. Do not count a provider response or
    local fixture as proof of the resulting membership or server permissions.
 
-Saved incoming choices run before outgoing changes, including while Beehiiv requests are paused by a
-rate limit. One incoming invocation handles at most three ready changes, and a scheduled tick runs
-at most six such batches. Each invocation enforces the 50-query limit. The parent and its loopback
-calls together stay within 32 invocations, with a call reserved for completion. Optional work stops
-after its 50-second dispatch deadline; unfinished work resumes on the next tick.
+Saved incoming choices run before outgoing changes. After the roster scan, saved status differences
+are processed before outgoing changes, including while Beehiiv requests are paused by a rate limit.
+One incoming invocation handles at most three ready changes, and a scheduled tick runs at most six
+such batches, followed by at most six observation batches. Each invocation enforces the 50-query
+limit. The parent and its loopback calls together stay within 32 invocations, with a call reserved
+for completion. Optional work stops after its 50-second dispatch deadline; unfinished work resumes
+on the next tick.
 
 The roster scan handles up to five pages of 100 accounts per tick. A 5,000-account roster therefore
 needs at least ten successful ticks, and longer during pauses or a slow provider. Check actual queue
 age and scan completion during hosted acceptance before relying on that capacity. A roster status
 observation does not establish when someone gave or withdrew consent.
+
+A linked inactive status withdraws consent automatically only when a prior active observation or
+confirmed active delivery establishes that the signup preceded the unsubscribe interval. Its
+effective date is the observation, with the original choice date explicitly unknown. An uncertain
+interval follows the configured conflict policy and remains available for staff review. Paused and
+undeliverable email statuses do not withdraw membership. Observing an active subscription never
+creates or renews permission to email someone.
 
 Inspect ready backlog privately without exposing addresses, encrypted content, or credentials:
 
@@ -198,6 +215,47 @@ rate-limit recovery, restart, and delayed delivery after erasure. It contacts ne
 Use the [deletion procedure](#verify-newsletter-cleanup-after-account-deletion) separately to verify
 retention, and keep detailed execution records private.
 
+For individual privacy requests, follow
+[Export a member record](../guides/export-a-member-record.md). For deletion logs, daily eligibility
+checks, and Google account review, follow
+[Operate member data retention](../guides/operate-member-data-retention.md).
+
+## Resolve newsletter follow-up
+
+This procedure is for an LVBT staff administrator checking a difference between the mailing list and
+a member record. It works while automatic sending is disabled, once the jobs publication,
+credentials, private service binding, and database are configured. Committee leads cannot open these
+records or submit decisions.
+
+1. Open **Members → Member records → Newsletter follow-up**. Select **Review preference** beside the
+   person. Compare **Mailing list** with **Member record**, then open the member profile if you need
+   to check their identity. The noticed date records when the difference was found; it is not a
+   claim about when the person changed their mind.
+2. If the mailing list says **Unsubscribed**, select **Use mailing list status** to apply that
+   status to the member record. This ends membership using the noticed date as an effective date; it
+   preserves that the original change date is unknown. There is no extra confirmation form or
+   requirement to contact the person again about an unsubscribe already recorded by the list.
+3. If the screen offers **Keep newer signup**, a later signup and verified email are already
+   recorded. Select it to clear the older difference and queue that preference. This action never
+   creates consent. A known newer signup cannot be overridden by an older list observation. If the
+   person wants to rejoin and no new signup is recorded, open **If they want to rejoin** and share
+   the linked LVBT signup form. Reload **Check for a new signup** afterward.
+4. If there is **No matching record**, check the displayed email and use **Find member record**. An
+   API observation alone cannot create membership. Complete the normal signup or approved
+   roster-import procedure, then reload the follow-up. Do not attach an account by editing database
+   IDs, fabricate an old signup, or remove an unresolved review merely to unblock sending.
+5. Confirm **Preference recorded** and that the item leaves the list. A record that changes while
+   the form is open requires a reload. Duplicate submissions cannot apply another choice. A storage
+   or audit failure leaves the choice unapplied; retry from a freshly loaded form. An unavailable
+   screen requires checking the jobs binding, publication configuration, and API access before
+   retrying. Keep technical diagnostics in private operator records.
+
+After building both staff and jobs, run
+`pnpm -C apps/staff exec node --import tsx tests/e2e/newsletter-review.spec.ts` for isolated browser
+acceptance. It exercises the real private service binding, administrator permissions, an actual form
+submission with JavaScript disabled, an unmatched address lookup, and mobile/dark layouts. It does
+not establish hosted acceptance or permission to run tests against real subscribers.
+
 ## Verify newsletter cleanup after account deletion
 
 This procedure is for a maintainer testing deletion in the isolated preview. It checks that queued
@@ -209,8 +267,9 @@ provider data; a reversible duplicate archive does not authorize this permanent 
 Before you start, you need an approved preview test member separate from the preview administrator,
 access to the selected preview database, and the database checks in
 [Set up the protected staff preview](../guides/set-up-staff-preview.md). Use the separate test
-publication with approved credentials and working signed callbacks. Keep newsletter writes disabled
-while preparing the release and applying its canonical migrations.
+publication with approved API credentials. Signed callback checks apply only when that optional
+capability is configured; API polling works on Free. Keep newsletter writes disabled while preparing
+the release and applying its canonical migrations.
 
 1. Check the selected database's migration list for both erasure migrations. The following read-only
    query must return two rows. A missing row means the database needs the release's migrations

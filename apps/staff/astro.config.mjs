@@ -6,6 +6,7 @@ import { normalizeBuildPaths } from './scripts/portable-build.ts';
 export default defineConfig({
   site: 'https://staff.lasvegasfortransit.org',
   output: 'server',
+  build: { inlineStylesheets: 'never' },
   session: false,
   integrations: [
     {

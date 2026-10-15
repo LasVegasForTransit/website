@@ -23,6 +23,16 @@ export class ProfileMaintenance extends WorkerEntrypoint<Env> {
     return { ...result, queries: budget.queries };
   }
 }
+export class InactiveProfileMaintenance extends WorkerEntrypoint<Env> {
+  async run(scheduledTime: number) {
+    const budget = queryBudget(this.env.PLATFORM_DB, 50);
+    const result = await runMaintenance(budget.db, {
+      now: new Date(scheduledTime),
+      category: 'inactive',
+    });
+    return { ...result, queries: budget.queries };
+  }
+}
 export class ProviderCompletion extends WorkerEntrypoint<Env> {
   async run(scheduledTime: number) {
     const budget = queryBudget(this.env.PLATFORM_DB, 50);

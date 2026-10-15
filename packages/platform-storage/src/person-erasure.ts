@@ -6,18 +6,24 @@ const MERGES = `(SELECT id FROM merges WHERE surviving_person_id IN ${PEOPLE} OR
       WHERE h.id=merges.id AND h.first_order BETWEEN c.first_order AND c.last_order)))`;
 const CORRECTIONS = `(SELECT operation_id FROM person_corrections WHERE person_id IN ${PEOPLE})`;
 /** Resolve the current combination inside the deletion transaction, including chains. */
-export function beginErasure(db: Db, id: string, operationId: string, stamp: string): Statement {
+export function beginErasure(
+  db: Db,
+  id: string,
+  operationId: string,
+  options: { stamp: string; requesterId?: string },
+): Statement {
+  const { stamp, requesterId = 'member' } = options;
   return db
     .prepare(
-      `INSERT INTO person_erasure_scope(operation_id,person_id,requested_at)
+      `INSERT INTO person_erasure_scope(operation_id,person_id,requested_at,requested_by,reason)
     WITH RECURSIVE affected(id) AS (
       SELECT id FROM people WHERE id=? AND erased_at IS NULL
       UNION SELECT CASE WHEN m.surviving_person_id=a.id THEN m.merged_person_id ELSE m.surviving_person_id END
       FROM merges m JOIN affected a ON a.id IN (m.surviving_person_id,m.merged_person_id)
       WHERE m.unmerged_at IS NULL AND m.erased_at IS NULL)
-    SELECT ?,id,? FROM affected`,
+    SELECT ?,id,?,?,'requested' FROM affected`,
     )
-    .bind(id, operationId, stamp);
+    .bind(id, operationId, stamp, requesterId);
 }
 /** Follow only overlapping historical combinations that could carry a saved copy. */
 export function beginErasureCopies(db: Db, operationId: string): Statement {

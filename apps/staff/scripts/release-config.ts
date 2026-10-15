@@ -16,6 +16,7 @@ const PUBLIC_VARIABLES = new Set([
   'LVBT_BEEHIIV_SYNC_ENABLED',
   'LVBT_BEEHIIV_PUBLICATION_ID',
   'LVBT_BEEHIIV_PRODUCTION_PUBLICATION_ID',
+  'LVBT_BEEHIIV_CONFLICT_POLICY',
 ]);
 
 export async function portableConfiguration(
@@ -31,6 +32,17 @@ export async function portableConfiguration(
     environment === 'production' ? source : { ...source, ...object(object(source.env).preview) };
   if (Object.keys(object(selected.vars)).some((name) => !PUBLIC_VARIABLES.has(name)))
     throw new Error('Release configuration permits only approved public variables.');
+  const services =
+    app === 'staff'
+      ? [
+          {
+            binding: 'LVBT_NEWSLETTER_JOBS',
+            service: environment === 'preview' ? 'lvbt-jobs-preview' : 'lvbt-jobs',
+          },
+        ]
+      : [];
+  if (JSON.stringify(array(selected.services ?? [])) !== JSON.stringify(services))
+    throw new Error('Release requires the newsletter service in the same environment.');
   return {
     name: selected.name,
     main: app === 'staff' ? 'worker/entry.mjs' : 'worker/index.js',
@@ -45,6 +57,7 @@ export async function portableConfiguration(
     ...(app === 'staff'
       ? {
           routes: selected.routes,
+          services,
           assets: { ...object(selected.assets), directory: 'assets' },
         }
       : { triggers: selected.triggers }),

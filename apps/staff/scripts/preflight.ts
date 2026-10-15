@@ -29,6 +29,8 @@ function unverifiedRequirements(): Check[] {
     ...[
       'staff.domain',
       'staff.no_bot_token',
+      'staff.newsletter_service',
+      'staff.no_newsletter_secrets',
       'jobs.exposure',
       'jobs.schedule',
       'access.application',

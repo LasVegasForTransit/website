@@ -127,6 +127,106 @@ try {
   const metrics = await runMaintenance(db, { limit: 1 });
   assert.equal(metrics.profilesErased, 1, 'D1 trigger writes must not inflate the profile count');
   assert.equal(metrics.profilesRemoved, 1);
+  await db.batch([
+    db.prepare(`WITH RECURSIVE seq(n) AS (SELECT 1 UNION ALL SELECT n+1 FROM seq WHERE n<105)
+      INSERT INTO people(id,given_name,email,created_at,updated_at)
+      SELECT 'inactive-'||n,'Private inactive','inactive-'||n||'@example.invalid','2000-01-01','2000-01-01' FROM seq`),
+    db.prepare(`INSERT INTO people(id,created_at,updated_at) VALUES
+      ('consent-excluded','2000-01-01','2000-01-01'),('withdrawn-excluded','2000-01-01','2000-01-01'),
+      ('identity-excluded','2000-01-01','2000-01-01'),('recent-excluded','2000-01-01','2000-01-01')`),
+    db.prepare(`INSERT INTO consent_records(id,person_id,scope,given_at,source,method,wording_version,withdrawn_at,created_at,updated_at) VALUES
+      ('active-consent','consent-excluded','event_reminders','2000-01-01','paper','checkbox','fixture',NULL,'2000-01-01','2000-01-01'),
+      ('withdrawn-consent','withdrawn-excluded','volunteer_contact','2000-01-01','paper','checkbox','fixture','2001-01-01','2000-01-01','2001-01-01')`),
+    db.prepare(`INSERT INTO identities(id,person_id,platform,external_id,linked_at,link_method,created_at,updated_at)
+      VALUES('preserved-identity','identity-excluded','luma','account','2000-01-01','self_linked','2000-01-01','2000-01-01')`),
+    db.prepare(`INSERT INTO engagement_events(id,person_id,type,occurred_at,source,created_at)
+      VALUES('recent-event','recent-excluded','attended','2024-09-08T10:00:00.000Z','check_in','2024-09-08T10:00:00.000Z')`),
+  ]);
+  assert.equal(
+    (await worker.scheduled({ cron: '* * * * *', scheduledTime: new Date('2026-03-08T09:59:00Z') }))
+      .outcome,
+    'ok',
+  );
+  assert.equal(
+    (
+      await db
+        .prepare(
+          "SELECT count(*) AS n FROM people WHERE id LIKE 'inactive-%' AND erased_at IS NOT NULL",
+        )
+        .first()
+    )?.n,
+    0,
+  );
+  assert.equal(
+    (await worker.scheduled({ cron: '* * * * *', scheduledTime: new Date('2026-03-08T10:00:00Z') }))
+      .outcome,
+    'ok',
+  );
+  assert.equal(
+    (
+      await db
+        .prepare(
+          "SELECT count(*) AS n FROM people WHERE id LIKE 'inactive-%' AND erased_at IS NOT NULL",
+        )
+        .first()
+    )?.n,
+    100,
+  );
+  assert.equal(
+    (
+      await db
+        .prepare("SELECT completed_at FROM member_privacy_runs WHERE local_day='2026-03-08'")
+        .first()
+    )?.completed_at,
+    null,
+  );
+  for (const minute of ['01', '02'])
+    assert.equal(
+      (
+        await worker.scheduled({
+          cron: '* * * * *',
+          scheduledTime: new Date(`2026-03-08T10:${minute}:00Z`),
+        })
+      ).outcome,
+      'ok',
+    );
+  assert.equal(
+    (
+      await db
+        .prepare(
+          "SELECT count(*) AS n FROM people WHERE id LIKE 'inactive-%' AND erased_at IS NOT NULL",
+        )
+        .first()
+    )?.n,
+    105,
+  );
+  assert.equal(
+    (
+      await db
+        .prepare(
+          "SELECT count(*) AS n FROM people WHERE id LIKE '%-excluded' AND erased_at IS NULL",
+        )
+        .first()
+    )?.n,
+    4,
+  );
+  assert.equal(
+    (
+      await db
+        .prepare(
+          "SELECT count(*) AS n FROM person_deletion_log WHERE reason='inactive' AND requested_by='retention' AND completed_at IS NOT NULL",
+        )
+        .first()
+    )?.n,
+    105,
+  );
+  assert.ok(
+    (
+      await db
+        .prepare("SELECT completed_at FROM member_privacy_runs WHERE local_day='2026-03-08'")
+        .first()
+    )?.completed_at,
+  );
   console.log(
     JSON.stringify({
       runtime: 'compiled scheduled jobs Worker',
@@ -140,6 +240,10 @@ try {
         'direct audit deletion rejected',
         'no persistent deletion permission',
         'no external provider request',
+        'Pacific03:00 inactivity selection across the spring daylight-saving transition',
+        'bounded daily queue resumes and completes without replaying erasure',
+        'other-scope consent, withdrawal, identity and exact-cutoff engagement exclusions',
+        'opaque deletion requester and actual completion timestamp',
       ],
     }),
   );

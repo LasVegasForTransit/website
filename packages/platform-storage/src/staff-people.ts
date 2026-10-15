@@ -68,6 +68,7 @@ export interface ConsentRecord {
   wording_version: string | null;
   withdrawn_at: string | null;
   withdrawn_source: string | null;
+  withdrawn_time_basis: 'choice' | 'observed';
 }
 export interface LinkedIdentity {
   platform: string;
@@ -127,7 +128,7 @@ async function profileRecords(db: Db, actorId: string, personId: string) {
   const results = await Promise.all([
     db
       .prepare(
-        `SELECT c.id,c.scope,c.given_at,c.source,c.method,c.wording_version,c.withdrawn_at,c.withdrawn_source FROM people p JOIN consent_records c ON c.person_id=p.id WHERE ${scoped} ORDER BY c.given_at DESC,c.id DESC`,
+        `SELECT c.id,c.scope,c.given_at,c.source,c.method,c.wording_version,c.withdrawn_at,c.withdrawn_source,c.withdrawn_time_basis FROM people p JOIN consent_records c ON c.person_id=p.id WHERE ${scoped} ORDER BY c.given_at DESC,c.id DESC`,
       )
       .bind(personId, actorId)
       .all<ConsentRecord>(),

@@ -39,9 +39,21 @@ void test('the retention upgrade preserves every existing row, pending removal i
   applyMigrations(f.db.raw);
   const after = tables.map((table) => f.db.raw.prepare(`SELECT * FROM "${table}"`).all());
   const comparable = after.map((rows, index) =>
-    tables[index] === 'consent_records'
-      ? rows.map(({ origin_identity_id: _identity, import_run_id: _run, ...row }) => row)
-      : rows,
+    rows.map((row) =>
+      Object.fromEntries(
+        Object.entries(row).filter(
+          ([key]) =>
+            !(
+              tables[index] === 'consent_records' &&
+              ['origin_identity_id', 'import_run_id', 'withdrawn_time_basis'].includes(key)
+            ) &&
+            !(
+              tables[index] === 'consent_withdrawals' &&
+              ['time_basis', 'source_occurred_at'].includes(key)
+            ),
+        ),
+      ),
+    ),
   );
   assert.equal(JSON.stringify(comparable), JSON.stringify(before));
   assert.equal(

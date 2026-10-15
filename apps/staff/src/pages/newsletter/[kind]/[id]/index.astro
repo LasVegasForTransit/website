@@ -1,0 +1,146 @@
+---
+import type { NewsletterReviewRef } from '@lasvegasfortransit/platform-storage/newsletter-reviews';
+import StaffLayout from '../../../../layouts/StaffLayout.astro';
+import Button from '../../../../../../site/src/components/app/Button.astro';
+import { formatDate } from '@lasvegasfortransit/platform-core/messages';
+import { ulid } from '@lasvegasfortransit/platform-core/ids';
+import { issueFormToken } from '@lasvegasfortransit/platform-storage/form-tokens';
+import {
+  newsletterDetail,
+  newsletterDecision,
+  newsletterPath,
+  newsletterReason,
+  NewsletterReviewUnavailable,
+} from '../../../../lib/newsletter';
+import { messageResponse } from '../../../../lib/responses';
+const staff = Astro.locals.staff;
+if (!staff?.actor.staffAdmin) return messageResponse('You don’t have access to this', 403);
+const kind = Astro.params.kind;
+if (kind !== 'poll' && kind !== 'event')
+  return messageResponse('This follow-up could not be found.', 404);
+const ref: NewsletterReviewRef = {
+  kind,
+  id: Astro.params.id ?? '',
+  revision: Number(Astro.url.searchParams.get('revision')),
+};
+if (Astro.request.method === 'POST') return newsletterDecision(Astro.request, staff, ref);
+let item;
+try {
+  item = await newsletterDetail(staff, ref);
+} catch (error) {
+  if (!(error instanceof NewsletterReviewUnavailable)) throw error;
+  return messageResponse(
+    error.status === 404
+      ? 'This follow-up was resolved or changed. Return to newsletter follow-up.'
+      : error.message,
+    error.status,
+  );
+}
+const token = await issueFormToken(
+  staff.db,
+  staff.actor,
+  `newsletter:${ref.kind}:${ref.id}:${ref.revision}`,
+);
+---
+
+<StaffLayout title={item.name ?? 'Confirm newsletter preference'}>
+  <a slot="breadcrumb" href="/newsletter/" class="staff-back">← Newsletter follow-up</a>
+  <div class="staff-newsletter-details">
+    {item.email && <p class="staff-newsletter-email">{item.email}</p>}
+    <p class="staff-help">{newsletterReason(item.reason)}</p>
+    <dl class="staff-newsletter-comparison">
+      <div>
+        <dt>Mailing list</dt><dd>{item.status === 'inactive' ? 'Unsubscribed' : 'Subscribed'}</dd>
+      </div>
+      <div>
+        <dt>Member record</dt><dd>
+          {
+            !item.personId
+              ? 'No matching record'
+              : item.membership === 'member'
+                ? 'Member'
+                : 'Former member'
+          }
+        </dd>
+      </div>
+    </dl>
+    <p class="staff-help">Difference noticed {formatDate(new Date(item.noticedAt))}.</p>
+    {
+      item.personId && (
+        <a href={`/people/${item.personId}/`} class="staff-next">
+          Open member profile
+        </a>
+      )
+    }
+    {
+      item.personId && (
+        <section class="staff-review-decision" aria-labelledby="newsletter-decision">
+          <h2 id="newsletter-decision">Update the member record</h2>
+          <form method="post" action={newsletterPath(ref)} class="staff-form max-w-2xl">
+            <>
+              <input type="hidden" name="token" value={token} />
+              <input type="hidden" name="version" value={item.version} />
+              <input type="hidden" name="operation_id" value={ulid()} />
+            </>
+            {item.canUseRecordedChoice ? (
+              <>
+                <p>
+                  They confirmed a new signup after this difference appeared. Use that signup to
+                  keep their membership current.
+                </p>
+                <Button name="decision" value="recorded_choice">
+                  Keep newer signup
+                </Button>
+              </>
+            ) : (
+              <>
+                {item.canUseMailingStatus ? (
+                  <p>
+                    They’ve left the mailing list. Use that status to end their LVBT membership.
+                  </p>
+                ) : (
+                  <p>
+                    Ask them to confirm with a new signup so we can keep the right membership
+                    record.
+                  </p>
+                )}
+                {item.canUseMailingStatus && (
+                  <Button name="decision" value="unsubscribe">
+                    Use mailing list status
+                  </Button>
+                )}
+              </>
+            )}
+          </form>
+        </section>
+      )
+    }
+    {
+      !item.canUseRecordedChoice && (
+        <details class="staff-review-decision staff-newsletter-rejoin">
+          <summary>If they want to rejoin</summary>
+          <p>Send them the LVBT signup form to confirm they want to be a member.</p>
+          <div class="staff-newsletter-links">
+            <a href="https://lasvegasfortransit.org/join/">Open the LVBT signup form</a>
+            {!item.personId && (
+              <p class="staff-help">
+                Search the member list if you need to check their details first.
+              </p>
+            )}
+            {!item.personId && (
+              <a
+                class="staff-next"
+                href={`/people/?q=${encodeURIComponent(item.email ?? '')}&status=all`}
+              >
+                Find member record
+              </a>
+            )}
+            <a class="staff-next" href={newsletterPath(ref)}>
+              Check for a new signup
+            </a>
+          </div>
+        </details>
+      )
+    }
+  </div>
+</StaffLayout>

@@ -7,6 +7,10 @@ void test('launch check inventories isolated deployments without confusing confi
   const fixture = cloudflareFixture();
   const report = await preflightStaff('preview', fixture.options);
   assert.equal(report.checks.find((check) => check.id === 'staff.database')?.status, 'passed');
+  assert.equal(
+    report.checks.find((check) => check.id === 'staff.newsletter_service')?.status,
+    'passed',
+  );
   assert.equal(report.checks.find((check) => check.id === 'access.policy')?.status, 'passed');
   assert.equal(report.checks.find((check) => check.id === 'database.migrations')?.status, 'passed');
   assert.equal(

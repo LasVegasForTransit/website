@@ -1,6 +1,7 @@
 import { ulid } from '@lasvegasfortransit/platform-core/ids';
 import type { Db, Statement } from './db';
-import { personRetentionWrites } from './person-retention';
+import { personRetentionWrites, inactivePersonRetentionWrites } from './person-retention';
+import { memberPrivacySchedule } from './member-privacy-schedule';
 import { googleGroupPruneWrites } from './google-group-snapshots';
 export interface MaintenanceResult {
   viewsRemoved: number;
@@ -62,16 +63,52 @@ function recordMaintenanceWrites(db: Db, now: Date, limit: number): Statement[] 
     ...googleGroupPruneWrites(db, now, limit),
   ];
 }
+async function runInactiveMaintenance(
+  db: Db,
+  now: Date,
+  limit: number,
+): Promise<MaintenanceResult> {
+  const schedule = memberPrivacySchedule(now);
+  const complete =
+    schedule &&
+    (await db
+      .prepare('SELECT 1 FROM member_privacy_runs WHERE local_day=? AND completed_at IS NOT NULL')
+      .bind(schedule.day)
+      .first());
+  const result =
+    schedule && !complete
+      ? await db.batch(
+          await inactivePersonRetentionWrites(db, {
+            ...schedule,
+            operationId: ulid(),
+            stamp: now.toISOString(),
+            limit,
+          }),
+        )
+      : [];
+  return {
+    viewsRemoved: 0,
+    auditsRemoved: 0,
+    claimsExpired: 0,
+    profilesRemoved: 0,
+    profilesErased: profileCount(result[2], 'profiles_erased'),
+  };
+}
 /** Each selected category commits its scope, cleanup and scope removal atomically. */
 export async function runMaintenance(
   db: Db,
-  options: { now?: Date; limit?: number; category?: 'all' | 'records' | 'profiles' } = {},
+  options: {
+    now?: Date;
+    limit?: number;
+    category?: 'all' | 'records' | 'profiles' | 'inactive';
+  } = {},
 ): Promise<MaintenanceResult> {
   const now = options.now ?? new Date();
   const stamp = now.toISOString();
   const limit = Number.isFinite(options.limit)
     ? Math.max(1, Math.min(1000, Math.floor(options.limit ?? 100)))
     : 100;
+  if (options.category === 'inactive') return await runInactiveMaintenance(db, now, limit);
   const records = options.category === 'profiles' ? [] : recordMaintenanceWrites(db, now, limit);
   const profiles =
     options.category === 'records'

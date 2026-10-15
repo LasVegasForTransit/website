@@ -4,6 +4,7 @@ import { memoryDb } from './support/db';
 import { PersonService } from '../src/person-service';
 import { recordEvent } from '../src/engagement';
 import { runMaintenance } from '../src/retention';
+import { eraseLegacyFixturePerson } from './support/legacy-erasure';
 void test('an erased internal ID cannot accept late personal records before or after profile retention', async () => {
   for (const purge of [false, true]) {
     const db = memoryDb();
@@ -44,7 +45,7 @@ void test('retention clears late copies left by an earlier deployment before era
   db.raw.exec(
     "INSERT INTO people(id,created_at,updated_at) VALUES('old-erased','2026-01-01','2026-01-01')",
   );
-  await new PersonService(db).deletePerson('old-erased');
+  await eraseLegacyFixturePerson(db, 'old-erased');
   await recordEvent(db, 'old-erased', {
     type: 'attended',
     occurredAt: '2026-10-09',

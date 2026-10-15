@@ -8,6 +8,7 @@ export interface BeehiivRuntimeEnv {
   LVBT_BEEHIIV_API_KEY?: string;
   LVBT_NEWSLETTER_INTENT_KEY?: string;
   LVBT_BEEHIIV_WEBHOOK_SECRET?: string;
+  LVBT_BEEHIIV_CONFLICT_POLICY?: string;
 }
 function publication(value: string | undefined): value is string {
   return Boolean(value && /^pub_[A-Za-z0-9_-]{1,124}$/.test(value));

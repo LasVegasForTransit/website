@@ -4,6 +4,11 @@
   "private": true,
   "type": "module",
   "exports": {
+    "./person-export": "./src/person-export.ts",
+    "./workspace-offboarding": "./src/workspace-offboarding.ts",
+    "./member-privacy-schedule": "./src/member-privacy-schedule.ts",
+    "./newsletter-reviews": "./src/newsletter-reviews.ts",
+    "./newsletter-poll-choices": "./src/newsletter-poll-choices.ts",
     "./newsletter-source-queue": "./src/newsletter-source-queue.ts",
     "./newsletter-attempts": "./src/newsletter-attempts.ts",
     "./newsletter-inbound": "./src/newsletter-inbound.ts",

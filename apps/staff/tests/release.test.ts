@@ -38,6 +38,12 @@ void test('staff and jobs retain the same reviewed bytes, isolated configs and c
         );
       }
       const staff = configs[`staff.${environment}`];
+      assert.deepEqual(staff.services, [
+        {
+          binding: 'LVBT_NEWSLETTER_JOBS',
+          service: environment === 'preview' ? 'lvbt-jobs-preview' : 'lvbt-jobs',
+        },
+      ]);
       assert.equal((staff.assets as Record<string, unknown>).run_worker_first, true);
       assert.deepEqual(staff.routes, [
         {

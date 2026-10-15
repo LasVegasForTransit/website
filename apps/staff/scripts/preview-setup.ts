@@ -4,6 +4,7 @@ import { portableConfiguration } from './release-config';
 import { value, type Bindings } from './preflight-workers';
 
 const deferred = new Set([
+  'staff.newsletter_service',
   'source.discord.enabled',
   'discord.configuration',
   'jobs.binding.LVBT_DISCORD_BOT_TOKEN',

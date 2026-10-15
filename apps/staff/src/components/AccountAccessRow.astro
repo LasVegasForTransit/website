@@ -86,19 +86,25 @@ const retryToken =
         <div>
           <dt>{name}</dt>
           <dd>
-            <span
+            <strong
               class:list={[
-                'staff-access-status',
+                personView ? 'staff-profile-account-state' : 'staff-access-status',
                 {
-                  'staff-access-status-confirmed': access.state === 'granted' && row.expectedAccess,
+                  'staff-access-status-confirmed':
+                    !personView && access.state === 'granted' && row.expectedAccess,
                   'staff-access-status-attention':
+                    !personView &&
+                    access.state !== 'unknown' &&
+                    access.state !== (row.expectedAccess ? 'granted' : 'absent'),
+                  'staff-profile-account-attention':
+                    personView &&
                     access.state !== 'unknown' &&
                     access.state !== (row.expectedAccess ? 'granted' : 'absent'),
                 },
               ]}
             >
               {accessLabel(access, row.expectedAccess, memberChannels)}
-            </span>
+            </strong>
           </dd>
           {access.observedAt && (
             <dd class="staff-access-checked">

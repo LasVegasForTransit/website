@@ -40,11 +40,10 @@ export async function exerciseProviderHistory(
     assert.equal(await page.getByRole('heading', { name: 'New Member', exact: true }).count(), 1);
     assert.equal(new URL(page.url()).pathname, `/people/${personId}/`);
     const current = page.getByRole('region', { name: 'Accounts', exact: true });
+    if ((await current.locator('details').first().getAttribute('open')) === null)
+      await current.locator('summary').first().click();
     assert.equal(await current.getByRole('heading', { name: 'Discord', exact: true }).count(), 1);
-    assert.equal(
-      await current.getByText('Can’t see member channels', { exact: true }).isVisible(),
-      true,
-    );
+    assert.equal(await current.getByText('No access', { exact: true }).isVisible(), true);
     assert.equal(await current.getByText('Discord access granted', { exact: true }).count(), 0);
     assert.equal(await page.locator('.staff-account-history').getAttribute('open'), null);
     const shots = join(fixture.root, 'test-results/staff');
@@ -103,11 +102,14 @@ export async function exerciseProviderHistory(
     const pastEnd = Buffer.from(JSON.stringify(['zzzz', 'zzzz'])).toString('base64url');
     await page.goto(`${ORIGIN}/access/?person=${personId}&cursor=${pastEnd}`);
     assert.equal(await page.getByRole('heading', { name: 'New Member', exact: true }).count(), 1);
+    const pagedAccounts = page.getByRole('region', { name: 'Accounts', exact: true });
+    if ((await pagedAccounts.locator('details').first().getAttribute('open')) === null)
+      await pagedAccounts.locator('summary').first().click();
     assert.equal(await page.getByRole('heading', { name: 'Discord', exact: true }).count(), 1);
     await page.goto(`${ORIGIN}/people/${personId}/`);
     const facts = page.getByRole('region', { name: 'Member summary', exact: true });
-    assert.equal(await facts.getByText('Left mailing list', { exact: true }).isVisible(), true);
-    assert.equal(await facts.getByText(/^Left LVBT /).isVisible(), true);
+    assert.equal(await facts.getByText('Former member', { exact: true }).isVisible(), true);
+    assert.equal(await facts.getByText(/^Unsubscribed from LVBT updates /).isVisible(), true);
     await page.getByText('Access history', { exact: true }).click();
     assert.equal(await page.getByText('Discord access granted', { exact: true }).isVisible(), true);
     assert.equal(await page.getByText('Discord access removed', { exact: true }).isVisible(), true);

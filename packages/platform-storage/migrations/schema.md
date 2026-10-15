@@ -701,3 +701,44 @@ until absence is confirmed. Receipts from earlier generations do not count as co
 See
 [staff portal operations](../../../docs/reference/staff-portal-operations.md#verify-newsletter-cleanup-after-account-deletion)
 for migration checks, isolated preview testing and failure recovery.
+
+### Newsletter status differences (0040)
+
+`newsletter_poll_choices` records a meaningful change to a subscription's active/inactive status,
+with its publication, stable subscription ID, revision, first observation, latest sighting, and the
+prior active baseline. Repeated reads of the same status do not change that first observation.
+Paused and undeliverable statuses cannot manufacture withdrawals. Unknown active subscriptions
+remain available for staff follow-up without creating a person or consent.
+
+`newsletter_poll_operations` binds one processing outcome per revision to the same transaction as
+consent, history, and membership changes. A changed owner, consent, or observation invalidates the
+whole write. A prior active observation or verified outgoing delivery can bound an unsubscribe
+interval; otherwise the configured policy retains a staff review. A signup after the observation
+wins. Pending inactive differences fence older outgoing grants in their own publication.
+
+`consent_records.withdrawn_time_basis` and `consent_withdrawals.time_basis` distinguish an original
+choice date from the effective date of a status observation. An observed withdrawal leaves
+`source_occurred_at` null. Staff decisions apply the reviewed observation without inventing a
+confirmation date, using an exact, replay-safe `staff_operations` record; the audit and all
+resulting membership changes share its transaction. Review cannot create permission or revive an
+erased account.
+
+### Member privacy maintenance (0041)
+
+`person_deletion_log` retains immutable, opaque receipts for local erasure. The requester is
+`member`, a trusted staff identifier, or `retention`; no name or email is retained. Its completion
+means local irreversible erasure, not a successful remote provider deletion. Legacy backfill is
+identified explicitly and cannot recover an unknown original requester. Erasure clears remaining
+local consent, form, link-operation, and committee histories while preserving provider retry work.
+
+`member_privacy_runs` records a Pacific calendar day and fixed18-month cutoff. The separate bounded
+maintenance invocation starts at03:00 Pacific and resumes incomplete batches during the day. Any
+consent, including withdrawn consent of any scope, a non-check-in identity, or recent engagement
+excludes a profile. Completed days do not repeat erasure; ordinary30-day purge remains a separate
+bounded pass.
+
+`workspace_offboarding_queue` flags a connected Google account when membership ends or the person is
+erased. Only a current administrator can mark a particular revision reviewed. A later erasure or
+membership change reopens review. No Google account or file is deleted by this flag. Follow
+[Operate member data retention](../../../docs/guides/operate-member-data-retention.md) for setup,
+verification, receipt interpretation, and recovery.

@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { hashWithSecret } from '@lasvegasfortransit/platform-core/signing';
 import test from 'node:test';
 import { memoryDb, everyStoredText } from '@lasvegasfortransit/platform-storage/test-db';
 import { PersonService } from '@lasvegasfortransit/platform-storage/person-service';
@@ -47,7 +48,12 @@ void test('a member can download their verified Discord profile and deletion cle
   }
   const personId = ids[0];
   assert.ok(personId);
-  const data = await exportData(db, personId);
+  const session = await createSession(env, personId, 'member');
+  const data = await exportData(db, personId, {
+    kind: 'member',
+    personId,
+    sessionHash: await hashWithSecret(env.LVBT_SIGN_IN_SECRET, `session:${session.token}`),
+  });
   assert.ok(data);
   assert.equal(JSON.stringify(data).includes('member-owned-profile'), true);
   assert.equal(JSON.stringify(data).includes('other-owned-profile'), false);

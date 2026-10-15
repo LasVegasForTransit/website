@@ -98,11 +98,15 @@ try {
     generation: 1,
     payload: {},
   });
-  assert.equal((await profile()).includes('Can see member channels'), false);
+  assert.equal((await profile()).includes('Has access'), false);
   assert.equal((await reconcileDiscordPending(fixture.db, options)).confirmed, 1);
   const confirmedProfile = await profile();
-  assert.equal(confirmedProfile.includes('Can see member channels'), true);
-  assert.equal(confirmedProfile.includes('In LVBT Discord'), true);
+  assert.equal(confirmedProfile.includes('Has access'), true);
+  assert.equal(
+    confirmedProfile.includes('In LVBT Discord'),
+    false,
+    'the profile does not repeat Discord presence alongside account access',
+  );
   assert.equal((await profile(welcomeSearch)).includes('In LVBT Discord'), true);
   assert.equal(
     confirmedProfile.includes('Discord access granted'),
@@ -120,12 +124,12 @@ try {
   const changed = await profile();
   assert.equal(changed.includes('Former member'), true);
   assert.equal(
-    changed.includes('Can see member channels'),
+    changed.includes('Has access'),
     false,
     'an old grant cannot prove access after withdrawal',
   );
   assert.equal((await reconcileDiscordPending(fixture.db, options)).confirmed, 1);
-  assert.equal((await profile()).includes('Can’t see member channels'), true);
+  assert.equal((await profile()).includes('No access'), true);
   const removed = await profile();
   assert.equal(removed.includes('Discord access removed'), true);
   assert.equal(removed.includes('Membership changed'), true);
@@ -139,7 +143,7 @@ try {
     false,
     'a confirmed removal must not ask staff to interpret another background operation',
   );
-  assert.equal(removed.includes('Can’t see member channels'), true);
+  assert.equal(removed.includes('No access'), true);
   assert.equal(removed.includes('Removal confirmed'), false);
   assert.deepEqual([...roles], ['777777777777777777']);
   const observedAt = new Date().toISOString();
@@ -147,7 +151,11 @@ try {
     .prepare('UPDATE discord_profiles SET in_guild=0,observed_at=?,expires_at=? WHERE guild_id=?')
     .bind(observedAt, new Date(Date.now() + 300_000).toISOString(), guildId)
     .run();
-  assert.equal((await profile()).includes('Not in LVBT Discord'), true);
+  assert.equal(
+    (await profile()).includes('Not in LVBT Discord'),
+    false,
+    'the profile keeps account support together without a separate presence metric',
+  );
   assert.equal((await profile(welcomeSearch)).includes('Not in LVBT Discord'), true);
   await exerciseProviderHistory(fixture, personId);
   unreachable = true;
@@ -160,7 +168,7 @@ try {
   const unavailable = await profile();
   assert.equal(unavailable.includes('Temporarily unavailable'), true);
   assert.equal(
-    unavailable.includes('Can’t see member channels'),
+    unavailable.includes('No access'),
     false,
     'a timed-out current read must not keep presenting an older removal as current proof',
   );
@@ -169,7 +177,7 @@ try {
       runtime: 'compiled staff Worker',
       checks: [
         'actual adapter read renders confirmed Member role',
-        'verified member profile and roster show server presence separately from role state',
+        'roster shows verified server presence while the profile keeps account access in support details',
         'withdrawal hides stale confirmation immediately',
         'confirmed removal preserves unrelated role',
         'actual confirmed access changes render with automatic attribution and plain reasons',

@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { hashWithSecret } from '@lasvegasfortransit/platform-core/signing';
 import test from 'node:test';
 import {
   accountView,
@@ -286,7 +287,12 @@ void test('the download holds everything about this member and nothing about any
   const db = memoryDb();
   const person = await member(db);
   await member(db, 'someone@example.org');
-  const data = await exportData(db, person.id);
+  const session = await createSession(env(db), person.id, 'member');
+  const data = await exportData(db, person.id, {
+    kind: 'member',
+    personId: person.id,
+    sessionHash: await hashWithSecret(env(db).LVBT_SIGN_IN_SECRET, `session:${session.token}`),
+  });
   assert.ok(data);
   const text = JSON.stringify(data);
   assert.match(String(data.summary), /^Everything LVBT holds about Ana, downloaded /);

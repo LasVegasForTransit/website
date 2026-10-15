@@ -52,6 +52,19 @@ export async function providerOutput(
 export function workerPath(worker: WorkerReceipt) {
   return `/workers/scripts/${encodeURIComponent(worker.name)}`;
 }
+function serviceBindingsMatch(
+  bindings: Record<string, unknown>[],
+  config: Record<string, unknown>,
+): boolean {
+  return array(config.services ?? []).every((service) =>
+    bindings.some(
+      (binding) =>
+        binding.type === 'service' &&
+        binding.name === service.binding &&
+        binding.service === service.service,
+    ),
+  );
+}
 export async function verifyVersion(
   client: MetadataClient,
   worker: WorkerReceipt,
@@ -65,6 +78,7 @@ export async function verifyVersion(
   if (
     version.id !== worker.versionId ||
     object(version.annotations)['workers/message'] !== releaseMessage(receipt) ||
+    !serviceBindingsMatch(bindings, config) ||
     !bindings.some(
       (binding) =>
         binding.type === 'd1' &&

@@ -12,6 +12,7 @@ export type Permission =
   | 'person.search'
   | 'person.update'
   | 'review_queue.resolve'
+  | 'newsletter.review'
   | 'person.merge'
   | 'person.unmerge'
   | 'committee.assign'
@@ -41,6 +42,7 @@ export const PERMISSION_SCOPES: Record<Permission, Scope> = {
   'person.search': 'person',
   'person.update': 'admin',
   'review_queue.resolve': 'admin',
+  'newsletter.review': 'admin',
   'person.merge': 'admin',
   'person.unmerge': 'admin',
   'committee.assign': 'committee',

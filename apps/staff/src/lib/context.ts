@@ -24,6 +24,7 @@ import type { Db } from '@lasvegasfortransit/platform-storage/db';
 export interface StaffEnv
   extends GoogleSignInEnv, AccessEnv, DiscordRuntimeEnv, GoogleAccessRuntimeEnv {
   LVBT_RESEND_API_KEY?: string;
+  LVBT_NEWSLETTER_JOBS?: { fetch(request: Request): Promise<Response> };
   /** Set only for the one-time, maintainer-approved first administrator bootstrap. */
   LVBT_INITIAL_STAFF_ADMIN_WORKSPACE_EMAIL?: string;
 }
@@ -31,6 +32,7 @@ export interface StaffContext {
   actor: Actor;
   db: Db;
   requestId: string;
+  newsletterJobs?: { fetch(request: Request): Promise<Response> };
   accessConfiguration?: AccessConfiguration;
   googleGroups?: GoogleGroupInventoryRuntime;
 }
@@ -61,6 +63,7 @@ export async function resolveStaffContext(
     actor,
     db: env.PLATFORM_DB,
     requestId: crypto.randomUUID(),
+    ...(env.LVBT_NEWSLETTER_JOBS ? { newsletterJobs: env.LVBT_NEWSLETTER_JOBS } : {}),
     googleGroups: googleGroupInventoryConfiguration(env),
     accessConfiguration: {
       google_workspace: googleProviderConfiguration(env),

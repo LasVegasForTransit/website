@@ -1,0 +1,88 @@
+---
+import StaffLayout from '../../layouts/StaffLayout.astro';
+import { formatDate } from '@lasvegasfortransit/platform-core/messages';
+import type { Page } from '@lasvegasfortransit/platform-core/staff-types';
+import type { NewsletterReviewRow } from '@lasvegasfortransit/platform-storage/newsletter-reviews';
+import {
+  newsletterReviews,
+  newsletterPath,
+  NewsletterReviewUnavailable,
+} from '../../lib/newsletter';
+import { messageResponse } from '../../lib/responses';
+const staff = Astro.locals.staff;
+if (!staff?.actor.staffAdmin) return messageResponse('You don’t have access to this', 403);
+let page: Page<NewsletterReviewRow> = { items: [], nextCursor: null },
+  error: string | null = null;
+try {
+  page = await newsletterReviews(staff, Astro.url.searchParams.get('cursor') ?? undefined);
+} catch (cause) {
+  if (!(cause instanceof NewsletterReviewUnavailable)) throw cause;
+  error = cause.message;
+  Astro.response.status = cause.status;
+}
+---
+
+<StaffLayout
+  title="Newsletter follow-up"
+  description="Check email preferences that need a person’s confirmation."
+>
+  <a slot="breadcrumb" href="/people/" class="staff-back">← Members</a>
+  {
+    Astro.url.searchParams.get('saved') === '1' && (
+      <p role="status" class="staff-notice">
+        Preference recorded.
+      </p>
+    )
+  }
+  {
+    error ? (
+      <p role="alert" class="staff-error">
+        {error} <a href="/newsletter/">Try again</a>
+      </p>
+    ) : page.items.length ? (
+      <ul class="staff-newsletter-list" aria-label="Newsletter follow-up">
+        {page.items.map((item) => (
+          <li>
+            <div>
+              <h2>
+                <a href={newsletterPath(item)} class="staff-person-link">
+                  {item.name ?? 'Person not matched'}
+                </a>
+              </h2>
+              {item.email && <p class="staff-help">{item.email}</p>}
+            </div>
+            <div>
+              <p>
+                {item.status === 'inactive'
+                  ? 'Unsubscribed from emails'
+                  : 'Email signup needs checking'}
+              </p>
+              <p class="staff-help">Noticed {formatDate(new Date(item.noticedAt))}</p>
+            </div>
+            <a
+              href={newsletterPath(item)}
+              class="staff-secondary-button"
+              aria-label={`Review ${item.name ?? 'unmatched subscription'}`}
+            >
+              Review preference
+            </a>
+          </li>
+        ))}
+      </ul>
+    ) : (
+      <div class="staff-empty">
+        <>
+          <h2>No newsletter follow-up needed</h2>
+          <p>Unclear email preferences will appear here when they need your help.</p>
+        </>
+      </div>
+    )
+  }
+  {
+    page.nextCursor && (
+      <a class="staff-next" href={`/newsletter/?cursor=${encodeURIComponent(page.nextCursor)}`}>
+        Next page
+      </a>
+    )
+  }
+</StaffLayout>
