@@ -70,11 +70,22 @@ try {
     headers: { ...access, Cookie: stateCookie },
     redirect: 'manual',
   });
-  assert.equal(finished.headers.get('Location'), '/sign-in/initial-admin/');
+  assert.equal(
+    finished.headers.get('Location'),
+    '/sign-in/return/?next=%2Fsign-in%2Finitial-admin%2F',
+  );
   const sessionCookie = /__Host-lvbt_session=[^;]+/.exec(
     finished.headers.get('Set-Cookie') ?? '',
   )?.[0];
   assert.ok(sessionCookie);
+  const returned = await fixture.simulator.dispatchFetch(
+    `${origin}${finished.headers.get('Location')}`,
+    {
+      headers: { ...access, Cookie: sessionCookie },
+      redirect: 'manual',
+    },
+  );
+  assert.equal(returned.headers.get('Location'), '/sign-in/initial-admin/');
   const replay = await fixture.simulator.dispatchFetch(destination.href, {
     headers: { ...access, Cookie: stateCookie },
     redirect: 'manual',

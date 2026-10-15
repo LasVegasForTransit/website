@@ -12,6 +12,7 @@ import {
   linkWorkspaceIdentity,
 } from '@lasvegasfortransit/platform-storage/workspace-link';
 import type { StaffLocals } from '../src/lib/context';
+import { staffSignInReturn, throughStaffReturn } from '../src/lib/sign-in-return';
 const keys = await generateKeyPair('RS256');
 const jwk = { ...(await exportJWK(keys.publicKey)), kid: 'staff-fixture', alg: 'RS256' };
 const fetcher: typeof fetch = () => Promise.resolve(Response.json({ keys: [jwk] }));
@@ -209,7 +210,7 @@ void test('the Worker gateway rejects invalid Access even for assets and unknown
   db.raw.close();
 });
 
-void test('every file-based route requires Access and every non-sign-in route requires console access', async () => {
+void test('every route requires Access and volunteers can reach only the paper tools and sign-out', async () => {
   const routes = (await pageRoutes()).sort();
   assert.ok(routes.length > 0);
   const middleware = await readFile(new URL('../src/middleware.ts', import.meta.url), 'utf8');
@@ -240,13 +241,19 @@ void test('every file-based route requires Access and every non-sign-in route re
           next: () => Promise.resolve(new Response('route')),
         },
       );
-      if (/^\/sign-in(?:\/|$)/.test(path))
+      if (
+        /^\/sign-in(?:\/|$)/.test(path) ||
+        ['/paper/', '/paper/sheet/', '/sign-out/'].includes(path)
+      )
         assert.equal(
           authenticated.status,
           200,
           `${method} ${path} stays available to link members`,
         );
-      else
+      else if (path === '/' && method === 'GET') {
+        assert.equal(authenticated.status, 303);
+        assert.equal(authenticated.headers.get('Location'), '/paper/');
+      } else
         assert.equal(
           authenticated.status,
           403,
@@ -254,5 +261,103 @@ void test('every file-based route requires Access and every non-sign-in route re
         );
     }
   }
+  db.raw.close();
+});
+
+void test('paper-only admission still checks membership and linked session on each request', async () => {
+  const { db, env, person, headers, staffMiddleware } = await fixture({ staffAdmin: false });
+  for (const path of ['/paper/', '/paper/sheet/']) {
+    const response = await staffMiddleware(new Request(`${origin}${path}`, { headers }), env, {
+      locals: {},
+      fetch: fetcher,
+      next: () => Promise.resolve(new Response('paper')),
+    });
+    assert.equal(response.status, 200);
+    privateHeaders(response);
+  }
+  db.raw.prepare("UPDATE people SET membership_status='former_member' WHERE id=?").run(person.id);
+  for (const path of ['/paper/', '/paper/sheet/']) {
+    const response = await staffMiddleware(new Request(`${origin}${path}`, { headers }), env, {
+      locals: {},
+      fetch: fetcher,
+      next: () => assert.fail('former member must not reach paper tools'),
+    });
+    assert.equal(response.status, 303);
+    assert.match(response.headers.get('Location') ?? '', /^\/sign-in\//);
+  }
+  db.raw.close();
+});
+
+void test('revoked sessions or removed Workspace links immediately deny paper access', async () => {
+  for (const revoke of ['session', 'identity'] as const) {
+    const { db, env, person, headers, staffMiddleware } = await fixture({ staffAdmin: false });
+    if (revoke === 'session')
+      db.raw.prepare('DELETE FROM sessions WHERE person_id=?').run(person.id);
+    else
+      db.raw
+        .prepare("DELETE FROM identities WHERE platform='google_workspace' AND person_id=?")
+        .run(person.id);
+    for (const path of ['/paper/', '/paper/sheet/']) {
+      const response = await staffMiddleware(new Request(`${origin}${path}`, { headers }), env, {
+        locals: {},
+        fetch: fetcher,
+        next: () => assert.fail('revoked identity must not reach paper tools'),
+      });
+      assert.equal(response.status, 303);
+    }
+    db.raw.close();
+  }
+});
+
+void test('staff sign-in returns a verified volunteer only to paper destinations', async () => {
+  const { db, env, headers } = await fixture({ staffAdmin: false });
+  const access = { email: 'member@lasvegasfortransit.org', subject: 'access-fixture' };
+  for (const next of [
+    '/people/?q=private',
+    '/people/other/',
+    '/export/',
+    '/staff-admin/',
+    '/',
+    'https://attacker.invalid/',
+    '//attacker.invalid/',
+    '/sign-in/return/',
+  ]) {
+    const response = await staffSignInReturn(
+      env,
+      new Request(`${origin}/sign-in/return/?next=${encodeURIComponent(next)}`, { headers }),
+      access,
+    );
+    assert.equal(response.headers.get('Location'), '/paper/');
+  }
+  const sheet = await staffSignInReturn(
+    env,
+    new Request(`${origin}/sign-in/return/?next=${encodeURIComponent('/paper/sheet/')}`, {
+      headers,
+    }),
+    access,
+  );
+  assert.equal(sheet.headers.get('Location'), '/paper/sheet/');
+  const mismatch = await staffSignInReturn(
+    env,
+    new Request(`${origin}/sign-in/return/`, { headers }),
+    { ...access, email: 'other@lasvegasfortransit.org' },
+  );
+  assert.equal(mismatch.headers.get('Location'), '/sign-in/');
+  const response = new Response(null, {
+    status: 303,
+    headers: {
+      Location: '/people/',
+      'Set-Cookie': '__Host-lvbt_session=fixture; HttpOnly; Secure; Path=/',
+    },
+  });
+  const returned = throughStaffReturn(response);
+  assert.equal(returned.headers.get('Location'), '/sign-in/return/?next=%2Fpeople%2F');
+  assert.equal(returned.headers.get('Set-Cookie'), response.headers.get('Set-Cookie'));
+  assert.equal(
+    throughStaffReturn(
+      new Response(null, { status: 303, headers: { Location: '/sign-in/?google_error=1' } }),
+    ).headers.get('Location'),
+    '/sign-in/?google_error=1',
+  );
   db.raw.close();
 });

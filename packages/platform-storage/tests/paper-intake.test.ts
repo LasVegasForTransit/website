@@ -10,7 +10,7 @@ const base = {
   eventId: 'citynerd-fixture',
   eventName: 'CityNerd meetup',
   eventDate: '2026-10-01',
-  wordingVersion: 'paper-signup-v1',
+  wordingVersion: 'paper-v1',
 };
 const row = {
   givenName: 'New',
@@ -32,6 +32,8 @@ void test('paper batches record explicit consent and attributed attendance atomi
   });
   assert.equal(result.kind, 'ok');
   assert.equal(result.value.personIds.length, 2);
+  assert.equal('createdCount' in result.value ? result.value.createdCount : undefined, 2);
+  assert.equal('existingCount' in result.value ? result.value.existingCount : undefined, 0);
   const [memberId, attendeeId] = result.value.personIds;
   assert.ok(memberId && attendeeId);
   assert.equal((await f.people.getPerson(memberId))?.membership_status, 'member');
@@ -43,7 +45,7 @@ void test('paper batches record explicit consent and attributed attendance atomi
     .first();
   assert.deepEqual(
     { ...evidence },
-    { source: 'paper', method: 'checkbox', wording_version: base.wordingVersion },
+    { source: 'paper', method: 'paper_signature', wording_version: base.wordingVersion },
   );
   const attended = await f.db
     .prepare(
@@ -126,6 +128,8 @@ void test('paper matching keeps known contact fields and queues unverified dupli
   assert.equal(result.kind, 'ok');
   assert.notEqual(result.value.personIds[0], f.survivor.id);
   assert.equal(result.value.reviewIds.length, 1);
+  assert.equal(result.value.createdCount, 1);
+  assert.equal(result.value.existingCount, 0);
   assert.equal((await f.people.getPerson(result.value.personIds[0] ?? ''))?.email, null);
   await f.db
     .prepare('UPDATE people SET email_verified_at=? WHERE id=?')
@@ -295,6 +299,8 @@ void test('lookalikes within one paper batch use the existing phone review rule'
   assert.equal(result.kind, 'ok');
   assert.equal(result.value.personIds.length, 2);
   assert.equal(result.value.reviewIds.length, 1);
+  assert.equal(result.value.createdCount, 2);
+  assert.equal(result.value.existingCount, 0);
   assert.equal(
     (
       await f.db
@@ -337,4 +343,34 @@ void test('two sheets for the same verified person and event preserve one attend
   );
   assert.equal(f.db.raw.prepare('SELECT count(*) AS n FROM paper_batches').get()?.n, 2);
   f.db.raw.close();
+});
+
+void test('paper receipts distinguish a verified existing person from a new review candidate', async () => {
+  const { importPaperBatch, paperBatchSummary } = await import('../src/paper-intake');
+  const f = await mergeFixture();
+  try {
+    await f.db
+      .prepare('UPDATE people SET email_verified_at=? WHERE id=?')
+      .bind(new Date().toISOString(), f.survivor.id)
+      .run();
+    const result = await importPaperBatch(f.db, f.actor, {
+      ...base,
+      batchId: 'mixed-results',
+      rows: [
+        { ...row, email: f.survivor.email ?? '' },
+        { ...row, email: 'new-review@example.invalid', phone: '+17025550100' },
+      ],
+    });
+    assert.equal(result.kind, 'ok');
+    assert.equal(result.value.createdCount, 1);
+    assert.equal(result.value.existingCount, 1);
+    assert.ok(result.value.reviewIds.length > 0);
+    const summary = await paperBatchSummary(f.db, f.actor, 'mixed-results');
+    assert.ok(summary);
+    assert.equal(summary.created, 1);
+    assert.equal(summary.existing, 1);
+    assert.equal(summary.reviews, result.value.reviewIds.length);
+  } finally {
+    f.db.raw.close();
+  }
 });

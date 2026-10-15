@@ -3,6 +3,7 @@ import { t, LOCALE } from '@lasvegasfortransit/platform-core/messages';
 import '../styles/staff.css';
 import { issueFormToken } from '@lasvegasfortransit/platform-storage/form-tokens';
 import { welcomeVisible } from '../lib/welcome';
+import { can } from '@lasvegasfortransit/platform-core/permissions';
 interface Props {
   title: string;
   signIn?: boolean;
@@ -11,6 +12,8 @@ interface Props {
 }
 const { title, signIn = false, printPage = false, description } = Astro.props;
 const staff = Astro.locals.staff;
+const consoleVisible = staff && can(staff.actor, 'console.enter');
+const home = staff && !consoleVisible ? '/paper/' : '/';
 const signOutToken = staff ? await issueFormToken(staff.db, staff.actor, 'sign-out') : null;
 ---
 
@@ -27,7 +30,7 @@ const signOutToken = staff ? await issueFormToken(staff.db, staff.actor, 'sign-o
     <div class="staff-shell">
       <header class="staff-header">
         <div class="container-page staff-header-inner">
-          <a href="/" class="staff-identity" aria-label={t('staff.navigation.home')}>
+          <a href={home} class="staff-identity" aria-label={t('staff.navigation.home')}>
             <picture class="staff-identity-mark">
               <source
                 srcset="/brand/lvbt-logo-dark.svg"
@@ -39,7 +42,7 @@ const signOutToken = staff ? await issueFormToken(staff.db, staff.actor, 'sign-o
             <span>{t('staff.navigation.staff')}</span>
           </a>
           {
-            !signIn && (
+            !signIn && consoleVisible && (
               <nav aria-label={t('staff.navigation.label')} class="staff-nav">
                 <a
                   href="/people/"

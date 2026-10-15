@@ -1,3 +1,4 @@
+import { t } from '@lasvegasfortransit/platform-core/messages';
 import { can } from '@lasvegasfortransit/platform-core/permissions';
 import { ulid } from '@lasvegasfortransit/platform-core/ids';
 import { WELCOME_METHODS } from '@lasvegasfortransit/platform-core/welcome';
@@ -11,6 +12,7 @@ import { privateResponse } from './responses';
 export const METHOD_LABELS = {
   email: 'Email',
   phone: 'Phone',
+  text: t('staff.welcome.textMethod'),
   discord: 'Discord',
   in_person: 'In person',
 };
@@ -88,4 +90,31 @@ export async function welcomeAction(
     status: 303,
     headers: { Location: kind === 'claim' ? `/welcome/${personId}/` : '/welcome/' },
   });
+}
+
+export function welcomeSource(source: string): string {
+  const labels: Record<string, string> = {
+    join_form: t('staff.labels.join_form'),
+    newsletter_box: t('staff.labels.newsletter_box'),
+    google_form: t('staff.labels.google_form'),
+    external_form: t('staff.labels.external_form'),
+    paper: t('staff.labels.paper'),
+    import: t('staff.labels.import'),
+    beehiiv: t('staff.labels.beehiiv'),
+    check_in: t('staff.labels.check_in'),
+    account: t('staff.labels.account'),
+  };
+  return labels[source] ?? t('staff.welcome.otherSource');
+}
+export function welcomeInterestLabels(interests: readonly string[]): string {
+  const labels: Record<string, string> = {
+    events: t('join.interestEvents'),
+    meetings: t('join.interestMeetings'),
+    volunteering: t('join.interestVolunteering'),
+    news: t('join.interestNews'),
+  };
+  return interests
+    .map((interest) => labels[interest])
+    .filter(Boolean)
+    .join(', ');
 }

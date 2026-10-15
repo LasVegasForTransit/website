@@ -67,6 +67,25 @@ export async function exerciseWelcome(browser: Browser, fixture: Fixture) {
   const admin = await welcomeBrowser(browser, fixture, 'admin');
   const lead = await welcomeBrowser(browser, fixture, 'lead');
   try {
+    await lead.page.goto(`${ORIGIN}/welcome/`);
+    await lead.page.getByRole('link', { name: 'New Member', exact: true }).waitFor();
+    const queueRow = lead.page
+      .locator('li')
+      .filter({ has: lead.page.getByRole('link', { name: 'New Member', exact: true }) });
+    await queueRow
+      .getByText('Joined through LVBT signup form · Joined today', { exact: true })
+      .waitFor();
+    await queueRow.getByText('Interested in: Coming to events', { exact: true }).waitFor();
+    assert.equal((await lead.page.content()).includes('welcome-fixture@example.invalid'), false);
+    assert.equal(
+      await lead.page.evaluate(() => document.documentElement.scrollWidth <= innerWidth),
+      true,
+    );
+    await lead.page.screenshot({
+      animations: 'disabled',
+      path: `${fixture.root}/test-results/staff/welcome-queue-mobile.png`,
+      fullPage: true,
+    });
     const path = `${ORIGIN}/welcome/${fixture.welcomePerson.id}/`;
     await Promise.all([admin.page.goto(path), lead.page.goto(path)]);
     for (const page of [admin.page, lead.page]) {
@@ -85,6 +104,12 @@ export async function exerciseWelcome(browser: Browser, fixture: Fixture) {
     const winner = claimant.actor_id === fixture.admin.person.id ? admin : lead;
     const loser = winner === admin ? lead : admin;
     await winner.page.getByRole('heading', { name: 'Contact details' }).waitFor();
+    assert.match(
+      (await winner.page
+        .getByRole('link', { name: 'Send text message', exact: true })
+        .getAttribute('href')) ?? '',
+      /^sms:/,
+    );
     await loser.page.getByRole('link', { name: 'Back to welcome members', exact: true }).waitFor();
     assert.equal((await loser.page.content()).includes('welcome-fixture@example.invalid'), false);
     assert.equal(
@@ -96,7 +121,7 @@ export async function exerciseWelcome(browser: Browser, fixture: Fixture) {
       true,
     );
     await releaseAndReclaim(winner.page, fixture, path);
-    await winner.page.getByLabel('Contact method').selectOption('email');
+    await winner.page.getByLabel('Contact method').selectOption('text');
     await winner.page
       .getByLabel('Notes (optional)', { exact: true })
       .fill('Sent a personal hello and asked which committee they want to join.');
@@ -147,7 +172,7 @@ export async function exerciseWelcome(browser: Browser, fixture: Fixture) {
     const details: unknown = JSON.parse(event.details);
     assert.deepEqual(details, {
       actorId: claimant.actor_id,
-      method: 'email',
+      method: 'text',
       note: 'Sent a personal hello and asked which committee they want to join.',
     });
     assert.equal((await winner.page.content()).includes('welcome-fixture@example.invalid'), false);

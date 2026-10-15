@@ -56,6 +56,7 @@ function seedRoster(raw: DatabaseSync) {
 }
 interface RuntimeOptions {
   newsletter?: boolean;
+  consentAt?: string;
   discord?: boolean;
   discordRoles?: DiscordRoleRuntimeOptions;
   googleGroups?: boolean;
@@ -207,7 +208,7 @@ async function startRuntimeInternal(options: RuntimeOptions = {}) {
           given_name: kind === 'admin' ? 'Amina' : 'Leon',
           family_name: 'Staff',
         },
-        consent,
+        consent: { ...consent, ...(options.consentAt ? { givenAt: options.consentAt } : {}) },
       });
       const workspace = {
         subject: `fixture-google-${kind}`,
@@ -271,7 +272,7 @@ async function startRuntimeInternal(options: RuntimeOptions = {}) {
         family_name: 'Member',
         phone: '7025550100',
       },
-      consent,
+      consent: { ...consent, ...(options.consentAt ? { givenAt: options.consentAt } : {}) },
     });
     await people.recordEngagement(welcomePerson.id, {
       type: 'joined',
@@ -287,7 +288,7 @@ async function startRuntimeInternal(options: RuntimeOptions = {}) {
         family_name: 'Rider',
         zip: '89104',
       },
-      consent,
+      consent: { ...consent, ...(options.consentAt ? { givenAt: options.consentAt } : {}) },
     });
     await committees.assign({
       personId: inside.id,
@@ -312,7 +313,7 @@ async function startRuntimeInternal(options: RuntimeOptions = {}) {
         phone: '+17025550200',
         zip: '89104',
       },
-      consent,
+      consent: { ...consent, ...(options.consentAt ? { givenAt: options.consentAt } : {}) },
     });
     return {
       simulator,

@@ -1,3 +1,4 @@
+import { t } from '@lasvegasfortransit/platform-core/messages';
 import {
   MAX_PAPER_ROWS,
   emptyPaperRow,
@@ -17,10 +18,10 @@ export interface PaperFeedback {
   message?: string;
 }
 export const PAPER_FIELDS = [
-  { name: 'givenName', label: 'First name', limit: 128, type: 'text' },
-  { name: 'familyName', label: 'Last name', limit: 128, type: 'text' },
-  { name: 'email', label: 'Email', limit: 254, type: 'email' },
-  { name: 'phone', label: 'Phone', limit: 50, type: 'tel' },
+  { name: 'givenName', label: t('staff.paper.firstName'), limit: 128, type: 'text' },
+  { name: 'familyName', label: t('staff.paper.lastName'), limit: 128, type: 'text' },
+  { name: 'email', label: t('staff.paper.email'), limit: 254, type: 'email' },
+  { name: 'phone', label: t('staff.paper.phone'), limit: 50, type: 'tel' },
 ] as const;
 export function initialPaper(batchId: string): PaperInput {
   return {
@@ -32,7 +33,12 @@ export function initialPaper(batchId: string): PaperInput {
     rows: Array.from({ length: 5 }, emptyPaperRow),
   };
 }
-async function readPaper(form: FormData): Promise<PaperInput> {
+export interface PublicPaperEvent {
+  id: string;
+  title: string;
+  date: Date;
+}
+async function readPaper(form: FormData, events: readonly PublicPaperEvent[]): Promise<PaperInput> {
   const eventName = field(form, 'event_name', 161),
     eventDate = field(form, 'event_date', 30);
   const raw = Number(field(form, 'row_count', 4)),
@@ -44,7 +50,10 @@ async function readPaper(form: FormData): Promise<PaperInput> {
     phone: field(form, `rows.${index}.phone`, 51),
     newsletterConsent: form.get(`rows.${index}.newsletterConsent`) === 'on',
   }));
-  const eventId = `paper:${await digestToken(JSON.stringify({ name: eventName.trim().toLowerCase(), date: eventDate }))}`;
+  const selected = field(form, 'public_event', 513);
+  const eventId = selected
+    ? (events.find((event) => event.id === selected)?.id ?? '')
+    : `paper:${await digestToken(JSON.stringify({ name: eventName.trim().toLowerCase(), date: eventDate }))}`;
   return {
     batchId: field(form, 'batch_id', 101),
     eventId,
@@ -57,9 +66,10 @@ async function readPaper(form: FormData): Promise<PaperInput> {
 export async function submitPaper(
   request: Request,
   staff: StaffContext,
+  events: readonly PublicPaperEvent[] = [],
 ): Promise<PaperFeedback | Response> {
   const form = await request.formData(),
-    input = await readPaper(form);
+    input = await readPaper(form, events);
   if (
     !(await consumeFormToken(staff.db, staff.actor, {
       action: 'paper:submit',
@@ -70,11 +80,12 @@ export async function submitPaper(
       input,
       errors: {},
       status: 409,
-      message:
-        'This form expired or was already submitted. Your entries are still here; check them and try again.',
+      message: t('staff.paper.expired'),
     };
   if (form.get('intent') === 'add') {
-    if (input.rows.length < MAX_PAPER_ROWS) input.rows.push(emptyPaperRow());
+    input.rows.push(
+      ...Array.from({ length: Math.min(5, MAX_PAPER_ROWS - input.rows.length) }, emptyPaperRow),
+    );
     return { input, errors: {}, status: 200 };
   }
   try {
@@ -84,27 +95,26 @@ export async function submitPaper(
         status: 303,
         headers: { Location: `/paper/?saved=${encodeURIComponent(input.batchId)}` },
       });
-    if (result.kind === 'forbidden') return messageResponse("You don't have access to this", 403);
+    if (result.kind === 'forbidden') return messageResponse(t('staff.common.accessDenied'), 403);
     if (result.kind === 'invalid')
       return {
         input,
         errors: result.errors,
         status: 400,
-        message: 'Check the marked entries. Nothing has been saved yet.',
+        message: t('staff.paper.invalid'),
       };
     return {
       input,
       errors: {},
       status: 409,
-      message:
-        'This sheet may already have been recorded, or a matching record changed. Your entries are still here. Check before trying again.',
+      message: t('staff.paper.conflict'),
     };
   } catch {
     return {
       input,
       errors: {},
       status: 503,
-      message: 'We couldn’t save this sheet. Your entries are still here; please try again.',
+      message: t('staff.paper.unavailable'),
     };
   }
 }

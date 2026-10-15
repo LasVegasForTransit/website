@@ -65,7 +65,7 @@ function consent(db: Db, c: PaperWrite, r: PaperRecord): Statement[] {
       .prepare(
         `WITH withdrawal AS (SELECT withdrawn_at,source FROM consent_withdrawals WHERE (person_id=? OR origin_person_id=?) AND scope='newsletter' AND julianday(withdrawn_at)>=julianday(?) UNION ALL SELECT withdrawn_at,withdrawn_source FROM consent_records WHERE person_id=? AND scope='newsletter' AND withdrawn_at IS NOT NULL AND julianday(withdrawn_at)>=julianday(?))
  INSERT INTO consent_records(id,person_id,scope,given_at,source,method,wording_version,withdrawn_at,withdrawn_source,created_at,updated_at)
- SELECT ?,?,'newsletter',?,'paper','checkbox',?,(SELECT withdrawn_at FROM withdrawal ORDER BY withdrawn_at DESC LIMIT 1),(SELECT source FROM withdrawal ORDER BY withdrawn_at DESC LIMIT 1),?,? WHERE ${PAPER_FRESH} AND NOT EXISTS(SELECT 1 FROM consent_records WHERE person_id=? AND scope='newsletter' AND withdrawn_at IS NULL)`,
+ SELECT ?,?,'newsletter',?,'paper','paper_signature',?,(SELECT withdrawn_at FROM withdrawal ORDER BY withdrawn_at DESC LIMIT 1),(SELECT source FROM withdrawal ORDER BY withdrawn_at DESC LIMIT 1),?,? WHERE ${PAPER_FRESH} AND NOT EXISTS(SELECT 1 FROM consent_records WHERE person_id=? AND scope='newsletter' AND withdrawn_at IS NULL)`,
       )
       .bind(
         r.personId,
@@ -190,8 +190,18 @@ export function paperWrites(db: Db, c: PaperWrite): Statement[] {
       ),
     db
       .prepare(
-        `UPDATE paper_batches SET applied_at=?,result=json_object('personIds',json(?),'reviewIds',json((SELECT coalesce(json_group_array(id),'[]') FROM review_queue WHERE candidate_person_id IN (SELECT value FROM json_each(?)) AND created_at=?)),'withdrawalHeldIds',json((SELECT coalesce(json_group_array(c.person_id),'[]') FROM consent_records c JOIN people p ON p.id=c.person_id WHERE c.id IN (SELECT value FROM json_each(?)) AND c.withdrawn_at IS NOT NULL AND p.membership_status='former_member'))) WHERE id=? AND ${PAPER_FRESH}`,
+        `UPDATE paper_batches SET applied_at=?,result=json_object('createdCount',?,'existingCount',?,'personIds',json(?),'reviewIds',json((SELECT coalesce(json_group_array(id),'[]') FROM review_queue WHERE candidate_person_id IN (SELECT value FROM json_each(?)) AND created_at=?)),'withdrawalHeldIds',json((SELECT coalesce(json_group_array(c.person_id),'[]') FROM consent_records c JOIN people p ON p.id=c.person_id WHERE c.id IN (SELECT value FROM json_each(?)) AND c.withdrawn_at IS NOT NULL AND p.membership_status='former_member'))) WHERE id=? AND ${PAPER_FRESH}`,
       )
-      .bind(c.stamp, personIds, personIds, c.stamp, consentIds, c.input.batchId, ...paperFresh(c)),
+      .bind(
+        c.stamp,
+        c.records.filter((r) => r.create).length,
+        c.records.filter((r) => !r.create).length,
+        personIds,
+        personIds,
+        c.stamp,
+        consentIds,
+        c.input.batchId,
+        ...paperFresh(c),
+      ),
   ];
 }

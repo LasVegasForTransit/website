@@ -40,6 +40,13 @@ export interface StaffLocals {
   staff?: StaffContext;
   access?: AccessIdentity;
 }
+function staffRoute(actor: Actor, request: Request): 'allowed' | 'paper_home' | 'denied' {
+  if (can(actor, 'console.enter')) return 'allowed';
+  if (!actor.workspaceLinked || !can(actor, 'attendance.record')) return 'denied';
+  const path = new URL(request.url).pathname.replace(/\/$/, '');
+  if (path === '' && request.method === 'GET') return 'paper_home';
+  return ['/paper', '/paper/sheet', '/sign-out'].includes(path) ? 'allowed' : 'denied';
+}
 export async function resolveStaffContext(
   request: Request,
   env: StaffEnv,
@@ -55,7 +62,10 @@ export async function resolveStaffContext(
       },
     });
   const actor = await loadActor(env.PLATFORM_DB, session.personId);
-  if (!actor || !can(actor, 'console.enter')) {
+  const route = actor ? staffRoute(actor, request) : 'denied';
+  if (route === 'paper_home')
+    return new Response(null, { status: 303, headers: { Location: '/paper/' } });
+  if (!actor || route === 'denied') {
     if (actor) await auditDenied(env.PLATFORM_DB, actor.personId, 'console.enter');
     return new Response("You don't have access to this", { status: 403 });
   }

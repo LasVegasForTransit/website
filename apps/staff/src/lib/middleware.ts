@@ -46,7 +46,7 @@ export async function staffMiddleware(
     }
     if (request.method === 'POST' && request.headers.get('Origin') !== new URL(request.url).origin)
       return messageResponse(t('staff.common.reload'), 403);
-    return privateResponse(await context.next());
+    return privateResponse(await context.next(), new URL(request.url).pathname);
   } catch {
     return messageResponse(t('staff.common.loadFailed'), 503);
   }

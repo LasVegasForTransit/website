@@ -1,4 +1,5 @@
 ---
+import { t } from '@lasvegasfortransit/platform-core/messages';
 import type { PaperRow, PaperErrors } from '@lasvegasfortransit/platform-core/paper';
 import { PAPER_FIELDS } from '../lib/paper';
 interface Props {
@@ -11,7 +12,7 @@ const prefix = `rows.${index}.`;
 ---
 
 <fieldset class="staff-paper-row">
-  <legend>Row {index + 1}</legend>
+  <legend>{t('staff.paper.row', { number: index + 1 })}</legend>
   <div class="staff-paper-fields">
     {
       PAPER_FIELDS.map((item) => (
@@ -43,7 +44,8 @@ const prefix = `rows.${index}.`;
           name={prefix + 'newsletterConsent'}
           type="checkbox"
           checked={row.newsletterConsent}
-        /> Mailing-list signup</label
+        />
+        {t('staff.paper.signup')}</label
       >{
         errors[prefix + 'newsletterConsent'] && (
           <p class="staff-error">{errors[prefix + 'newsletterConsent']}</p>

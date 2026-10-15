@@ -15,6 +15,7 @@ import {
 } from './workspace-email';
 import type { StaffEnv } from './context';
 import { field } from './forms';
+import { staffReturnPath } from './sign-in-return';
 interface SubmitContext {
   env: StaffEnv;
   request: Request;
@@ -38,7 +39,7 @@ async function submitCode(context: SubmitContext, form: FormData, email: string)
     code: field(form, 'code', 32),
   });
   if (result.kind === 'ok')
-    return googleResponse(result.returnTo, [
+    return googleResponse(staffReturnPath(result.returnTo), [
       workspaceCookie(PENDING_COOKIE, '', 0),
       workspaceCookie(EMAIL_COOKIE, '', 0),
       ...sessionCookies(result.session.token, result.session.expiresAt),
