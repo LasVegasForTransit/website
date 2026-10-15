@@ -1,0 +1,96 @@
+name: Member database backups
+
+on:
+  schedule:
+    - cron: '17 10 * * *'
+    - cron: '43 12 * * *'
+    - cron: '17 14 1 1,4,7,10 *'
+  workflow_dispatch:
+    inputs:
+      operation:
+        description: Backup operation
+        type: choice
+        options: [backup, check, restore-test]
+        default: backup
+        required: true
+
+permissions:
+  contents: read
+
+concurrency:
+  group: member-backups-${{ github.event.schedule || inputs.operation }}
+  cancel-in-progress: false
+
+jobs:
+  backup:
+    if:
+      github.ref == 'refs/heads/main' && (github.event.schedule == '17 10 * * *' || inputs.operation
+      == 'backup')
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment: member-backups
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Install backup tools
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install --no-install-recommends -y age
+          python3 -m venv "$RUNNER_TEMP/backup-tools"
+          "$RUNNER_TEMP/backup-tools/bin/pip" install --require-hashes --only-binary=:all: -r packages/member-backups/requirements.txt
+      - name: Validate snapshot and store encrypted backup
+        env:
+          D1_READ_TOKEN: ${{ secrets.D1_READ_TOKEN }}
+          R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          AGE_RECIPIENT: ${{ vars.AGE_RECIPIENT }}
+        run:
+          '"$RUNNER_TEMP/backup-tools/bin/python" -B packages/member-backups/src/backup.py backup'
+
+  check:
+    if:
+      github.ref == 'refs/heads/main' && (github.event.schedule == '43 12 * * *' || inputs.operation
+      == 'check')
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment: member-backup-read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Install backup reader
+        run: |
+          python3 -m venv "$RUNNER_TEMP/backup-tools"
+          "$RUNNER_TEMP/backup-tools/bin/pip" install --require-hashes --only-binary=:all: -r packages/member-backups/requirements.txt
+      - name: Check for an overdue or damaged backup
+        env:
+          R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+        run: '"$RUNNER_TEMP/backup-tools/bin/python" -B packages/member-backups/src/backup.py check'
+
+  restore:
+    if:
+      github.ref == 'refs/heads/main' && (github.event.schedule == '17 14 1 1,4,7,10 *' ||
+      inputs.operation == 'restore-test')
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment: member-backup-restore
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Install recovery tools
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install --no-install-recommends -y age
+          python3 -m venv "$RUNNER_TEMP/backup-tools"
+          "$RUNNER_TEMP/backup-tools/bin/pip" install --require-hashes --only-binary=:all: -r packages/member-backups/requirements.txt
+      - name: Restore retained production data into an isolated database
+        env:
+          R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          AGE_IDENTITY: ${{ secrets.AGE_IDENTITY }}
+        run:
+          '"$RUNNER_TEMP/backup-tools/bin/python" -B packages/member-backups/src/backup.py
+          restore-test'
