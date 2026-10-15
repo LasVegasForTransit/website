@@ -14,7 +14,7 @@ if (!staff || !can(staff.actor, 'attendance.record'))
   <p class="staff-print-instructions">
     {t('staff.paper.printHelp')}
   </p>
-  <section class="staff-signup-sheet" aria-label={t('staff.paper.sheetLabel')}>
+  <section class="staff-signup-sheet" aria-label={t('staff.paper.sheetLabel')} tabindex="0">
     <h2>{t('staff.navigation.organization')}</h2>
     <p class="staff-signup-event">
       {t('staff.paper.eventCaption')}
@@ -47,7 +47,7 @@ if (!staff || !can(staff.actor, 'attendance.record'))
                 <td />
                 <td />
                 <td>
-                  <span class="staff-signup-checkbox" aria-label={t('staff.paper.checkYes')} />
+                  <span class="staff-signup-checkbox" aria-hidden="true" />
                 </td>
               </>
             </tr>

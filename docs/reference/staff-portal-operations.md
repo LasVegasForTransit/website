@@ -789,6 +789,7 @@ Run `pnpm check`, then the compiled runtime suites sequentially after the build 
 pnpm -C apps/jobs test:maintenance
 pnpm -C apps/jobs test:e2e
 pnpm -C apps/staff test:e2e
+pnpm -C apps/staff test:audit
 pnpm -C apps/staff test:release
 pnpm -C apps/site test:account-data:lighthouse
 ```
@@ -796,11 +797,26 @@ pnpm -C apps/site test:account-data:lighthouse
 The account-data fixture covers authenticated download and deletion, including JavaScript-disabled
 forms; its accessibility and Lighthouse checks use local fixtures only.
 
-On GitHub's Linux runners, this fixture launches bundled Chromium with `--no-sandbox` because the
-runner disallows its sandbox. That exception applies only when `CI=true` on Linux, and the audit
-browser is restricted to the isolated local fixture. Local runs retain Chromium's sandbox. A Chrome
-launch failure is an incomplete audit; inspect the runner log and repair its configuration before
-rerunning the same checks. Do not lower accessibility or performance thresholds to clear it.
+The staff audit uses an isolated compiled Worker with synthetic Workspace sessions and Access
+assertions. It checks administrator and committee-lead pages, paper entry and its printable sheet,
+welcome pages, and the signed-out, membership-confirmation and initial-administrator screens with
+axe at phone and desktop widths. It also checks the dark member roster, native keyboard search with
+JavaScript disabled, and a 35 KB gzip JavaScript limit per audited route, including imported modules
+and scripts blocked by CSP. Lighthouse audits the authenticated Members page with the existing
+mobile limits: accessibility at least 0.95, performance at least 0.85, best practices at least 0.90,
+largest contentful paint (LCP) at most 4 seconds, total blocking time (TBT) at most 300 ms, and
+cumulative layout shift (CLS) at most 0.1. An authentication redirect, HTTP refusal or audit runtime
+error fails the gate. `Build staff release` requires this audit before saving a release. Local
+reports are saved under `apps/staff/test-results/staff-audit/`; CI saves the synthetic reports as a
+separate artifact. Inspect the named route and report when a check fails, fix the defect, then rerun
+the same command after the compiled build is stable. Keep thresholds and authorization checks
+intact.
+
+On GitHub's Linux runners, the Lighthouse fixtures launch bundled Chromium with `--no-sandbox`
+because the runner disallows its sandbox. That exception applies only when `CI=true` on Linux, and
+the audit browser is restricted to the isolated local fixture. Local runs retain Chromium's sandbox.
+A Chrome launch failure is an incomplete audit; inspect the runner log and repair its configuration
+before rerunning the same checks. Do not lower accessibility or performance thresholds to clear it.
 
 These use synthetic data and isolated providers. They cannot prove real Google sign-in, a complete
 imported roster, Discord server operation, Google Group or mailing-list synchronization, production

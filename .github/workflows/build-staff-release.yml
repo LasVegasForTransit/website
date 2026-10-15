@@ -44,6 +44,16 @@ jobs:
           pnpm -C apps/jobs test:e2e
       - name: Verify compiled staff workflows
         run: pnpm -C apps/staff test:e2e
+      - name: Audit authenticated staff accessibility and performance
+        run: pnpm -C apps/staff test:audit
+      - name: Save synthetic staff audit reports
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: staff-audit-${{ github.run_id }}
+          path: apps/staff/test-results/staff-audit/
+          if-no-files-found: warn
+          retention-days: 14
       - name: Verify saved artifact runtime
         env:
           RELEASE_ID: ${{ github.run_id }}
