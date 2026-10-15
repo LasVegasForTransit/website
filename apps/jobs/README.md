@@ -42,6 +42,10 @@ replay safety and rejection after erasure. Its 5,000-account roster advances in 
 scheduled ticks, with a provider pause and Worker restart between pages. Incoming choices still
 apply during the pause. The fixture uses isolated Beehiiv and Discord responses, not live accounts.
 
+The Free-plan fixture omits webhook credentials. It verifies that the compiled scheduler polls the
+API and delivers canonical signup and withdrawal requests with separate readback, while signed
+intake remains closed. It uses isolated responses and does not establish live provider acceptance.
+
 ## Scheduled newsletter requests
 
 Set `LVBT_BEEHIIV_SYNC_ENABLED=true` only after approved provider setup. Jobs requires
@@ -53,12 +57,15 @@ different publication from production. Production must match its declared produc
 Missing or inconsistent configuration disables newsletter work. Both source environments default to
 disabled.
 
-Receiving provider changes also requires the selected publication's `LVBT_BEEHIIV_WEBHOOK_SECRET` on
-jobs. The website's `POST /webhooks/beehiiv` route forwards exact bytes and signature headers over
-its private jobs binding. Signing and address-encryption keys stay on jobs. Configure a reachable,
-approved callback route before enabling synchronization; do not remove protection from the preview
-site to make a callback work. See
+Free-plan API work does not require a webhook key. Optional signed intake requires the selected
+publication's valid `LVBT_BEEHIIV_WEBHOOK_SECRET` on jobs. The website's `POST /webhooks/beehiiv`
+route forwards exact bytes and signature headers over its private jobs binding. Signing and
+address-encryption keys stay on jobs. Configure a reachable, approved callback route before enabling
+signed intake; do not remove protection from the preview site to make a callback work. See
 [newsletter operation checks](../../docs/reference/staff-portal-operations.md#scheduled-newsletter-processing).
+Missing or malformed signing credentials close intake without disabling API work or already saved
+authenticated events. Free-plan status differences still require their own consent handling, staff
+resolution and live acceptance before synchronization is enabled.
 
 Each account pass resumes one target from the current durable request. Account ownership, consent,
 generation and lease checks prevent older work from granting access after withdrawal. Roster polling

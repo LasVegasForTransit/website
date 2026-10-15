@@ -103,12 +103,11 @@ publication and synthetic members. Enabling synchronization sends real API reque
 publication; an isolated database alone does not protect production subscribers.
 
 LVBT must remain on Beehiiv's Free plan. It supports API access but excludes webhooks and a second
-publication in the same workspace. The signed-event configuration below therefore cannot enable
-newsletter jobs on that plan: the current runtime requires a valid webhook secret. Keep processing
-disabled until the API polling and staff review path works without that requirement and passes
-isolated acceptance. Use a separate free test account for provider tests. Do not upgrade the LVBT
-plan or use its production publication to work around this prerequisite. A list observation shows
-delivery status, not when someone last changed their consent.
+publication in the same workspace. API polling and outgoing account changes do not require a webhook
+secret. Use a separate free test account for provider tests; do not upgrade the LVBT plan or use its
+production publication to work around this prerequisite. A list observation shows delivery status,
+not when someone last changed their consent. Keep processing disabled until status differences,
+staff resolution, and actual preview-provider acceptance have been verified.
 
 The website release configuration sets `release.previewOnly=true` in `.lvbt/tooling.json` while
 newsletter delivery depends on this unfinished consumer. The shared release commands refuse
@@ -119,11 +118,10 @@ production release until newsletter source review, data export/deletion, provide
 actual preview acceptance are complete. Remove the hold only in a reviewed change that enables and
 verifies the consumer before the website begins relying on queued updates.
 
-1. In the LVBT Beehiiv account, select the intended publication and check its current API and
-   webhook entitlement without changing the plan. Consult
-   [Beehiiv's webhook reference](https://developers.beehiiv.com/webhooks/). A plan change, new
-   credential, or access-policy change needs maintainer authorization. If the account cannot deliver
-   signed subscription changes, leave synchronization disabled.
+1. In the separate free test account, select the intended publication and verify API access without
+   changing the plan. With the approved key, the subscriptions list must return successfully and
+   belong to that test publication. A new account or credential needs maintainer authorization.
+   Never use a production subscriber to test write or deletion permissions.
 2. Apply the canonical migrations using the preview guide, then verify that the selected database
    contains the newsletter inbox, attempted writes, and erasure tables. All three applications must
    use this same preview database. Do not run a newly built dispatcher against an older schema.
@@ -138,18 +136,21 @@ verifies the consumer before the website begins relying on queued updates.
    It protects saved incoming addresses and interrupted outgoing requests. Replacing it while work
    remains encrypted makes those addresses unreadable; drain or explicitly resolve that work before
    a planned rotation. Never print the key or copy production member addresses into preview.
-5. Prepare the callback at `https://preview.lasvegasfortransit.org/webhooks/beehiiv`. The website's
+5. Skip callback setup on Free. If signed callbacks become available under a separately approved
+   setup, prepare `https://preview.lasvegasfortransit.org/webhooks/beehiiv`. The website's
    `LVBT_DISCORD_JOBS` service binding must target `lvbt-jobs-preview`. The callback accepts only
    JSON POST requests and forwards the original bytes and Svix signature headers privately to jobs;
    jobs has no public route. Beehiiv must reach this callback without an interactive Google login.
    If the preview's Access policy intercepts it, obtain approval for a narrowly scoped callback
    policy before proceeding. The release workflow does not create that exception. Preserve Access
    protection for the rest of the preview and never send preview events to the production callback.
-6. In Beehiiv's **Settings → Integrations → Webhooks**, configure that callback for
+6. For that optional signed setup only, configure the callback in Beehiiv's webhook settings for
    `subscription.created`, `subscription.confirmed`, and `subscription.deleted`. Install its signing
-   secret as `LVBT_BEEHIIV_WEBHOOK_SECRET` on jobs preview only. Both incoming and outgoing work
-   remain disabled when this secret is missing or malformed. Presence alone does not prove the
-   callback is reachable or that the secret belongs to the selected publication.
+   secret as `LVBT_BEEHIIV_WEBHOOK_SECRET` on jobs preview only. Missing or malformed credentials
+   close signed intake without disabling API polling, outgoing changes, or processing of events
+   already authenticated and saved. Presence alone does not prove callback reachability or
+   publication ownership. See
+   [Beehiiv's webhook reference](https://developers.beehiiv.com/webhooks/).
 7. Before enabling the flag and minute schedule through a reviewed launch release, verify the staff
    resolution workflow for ambiguous changes. The current duplicate-review screen does not resolve
    newsletter source cases. Until that workflow and live preview acceptance are implemented and
@@ -157,8 +158,9 @@ verifies the consumer before the website begins relying on queued updates.
 8. During approved live acceptance, use one synthetic member to sign up, unsubscribe, and
    independently confirm a new signup. Check delivery in Beehiiv, the member's resulting status and
    original choice dates in staff, and actual Discord role readback for the linked test account.
-   Repeat after a failed request and restart. Do not count a successful webhook delivery or local
-   fixture as proof of the resulting membership or server permissions.
+   Repeat after a failed request and restart. Where the original choice time is unknown, verify that
+   it remains unknown and the agreed conflict rule is followed. Do not count a provider response or
+   local fixture as proof of the resulting membership or server permissions.
 
 Saved incoming choices run before outgoing changes, including while Beehiiv requests are paused by a
 rate limit. One incoming invocation handles at most three ready changes, and a scheduled tick runs
