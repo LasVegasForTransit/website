@@ -111,6 +111,9 @@ void test('ended merge chains erase transitive snapshots while preserving separa
   const third = (
     await f.people.upsertFromSource({ source: 'paper', fields: { given_name: 'Third member' } })
   ).person;
+  f.db.raw
+    .prepare('UPDATE people SET created_at=? WHERE id=?')
+    .run(new Date(Date.parse(f.survivor.created_at) - 1).toISOString(), third.id);
   const outer = await f.mergePeople(f.db, f.actor, {
     ...f.input,
     survivorId: third.id,
@@ -181,6 +184,9 @@ void test('historical paths stop at a completed separation and preserve a later 
   const third = (
     await f.people.upsertFromSource({ source: 'paper', fields: { given_name: 'Later member' } })
   ).person;
+  f.db.raw
+    .prepare('UPDATE people SET created_at=? WHERE id=?')
+    .run(new Date(Date.parse(f.survivor.created_at) - 1).toISOString(), third.id);
   const outer = await f.mergePeople(f.db, f.actor, {
     ...f.input,
     survivorId: third.id,
@@ -237,6 +243,9 @@ for (const nested of [false, true])
         fields: { given_name: 'Equal clock member' },
       })
     ).person;
+    f.db.raw
+      .prepare('UPDATE people SET created_at=? WHERE id=?')
+      .run(new Date(Date.parse(f.survivor.created_at) - 1).toISOString(), third.id);
     const undoInner = () =>
       f.undoMerge(f.db, f.actor, {
         mergeId: inner.value.mergeId,

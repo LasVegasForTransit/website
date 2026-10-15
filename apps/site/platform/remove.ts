@@ -11,9 +11,9 @@ export type RemovalCheck = { kind: 'valid'; personId: string; email: string } | 
 export async function checkRemovalToken(env: PlatformEnv, token: string): Promise<RemovalCheck> {
   const payload = await verifyToken(env.LVBT_LINK_SIGNING_SECRET, token, 'remove_email');
   if (!payload) return { kind: 'invalid' };
-  const person = await new PersonService(env.PLATFORM_DB).getPerson(payload.subject);
+  const person = await new PersonService(env.PLATFORM_DB).getExactPerson(payload.subject);
   if (!person?.email) return { kind: 'invalid' };
-  return { kind: 'valid', personId: person.id, email: person.email };
+  return { kind: 'valid', personId: payload.subject, email: person.email };
 }
 
 export async function removeEmail(
@@ -39,9 +39,16 @@ export async function removeEmail(
     source: 'removal_link',
     withdrawnAt: nowIso(),
   });
+  if (!(await people.getExactPerson(check.personId))) return 'invalid';
 
   if (!(await people.hasOtherHistory(check.personId))) {
-    await people.deletePerson(check.personId);
+    await people.deletePerson(check.personId, { requireActiveSubject: true });
+    const erased = await env.PLATFORM_DB.prepare(
+      'SELECT 1 FROM person_keys WHERE id=? AND erased_at IS NOT NULL',
+    )
+      .bind(check.personId)
+      .first();
+    if (!erased) return 'invalid';
   }
   return 'removed';
 }

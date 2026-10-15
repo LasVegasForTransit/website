@@ -11,7 +11,7 @@ import { accountPage, backToAccount, field, formOf, signedIn } from '../_account
 export const onRequestGet: PagesFunction<SignInPagesEnv> = async ({ env, request }) => {
   const signed = await signedIn(env, request);
   if (signed instanceof Response) return signed;
-  const person = await new PersonService(signed.env.PLATFORM_DB).getPerson(signed.person.id);
+  const person = await new PersonService(signed.env.PLATFORM_DB).getExactPerson(signed.person.id);
   return accountPage(env, request, '/account/phone/', {
     fill: (rewriter) =>
       rewriter.on('input[name="phone"]', setValue(person?.phone ? formatPhone(person.phone) : '')),

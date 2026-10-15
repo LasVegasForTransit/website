@@ -45,7 +45,7 @@ export interface AccountView {
 }
 
 export async function accountView(db: Db, personId: string): Promise<AccountView | null> {
-  const person = await new PersonService(db).getPerson(personId);
+  const person = await new PersonService(db).getExactPerson(personId);
   if (!person) return null;
   const consent = await db
     .prepare(

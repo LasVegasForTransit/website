@@ -207,7 +207,7 @@ async function repeatOutcome(
   if (!input.formToken) return null;
   const personId = await personForFormToken(env.PLATFORM_DB, input.formToken);
   if (!personId) return null;
-  const person = await people.getPerson(personId);
+  const person = await people.getExactPerson(personId);
   return {
     kind: 'joined',
     personId,
@@ -295,7 +295,7 @@ export async function processJoin(
   const personId = await recordMember(people, input, geocoded, givenAt);
   if (input.formToken) await recordFormToken(env.PLATFORM_DB, input.formToken, personId);
   await assignRegion(people, env, personId, { geocoded, zip: joinZip(input, geocoded) });
-  const person = await people.getPerson(personId);
+  const person = await people.getExactPerson(personId);
   if (person?.membership_status !== 'member') return { kind: 'discarded' };
   const givenName = person.given_name ?? '';
 

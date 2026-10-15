@@ -1,4 +1,5 @@
 import type { Db, Statement } from './db';
+import { PERSON_MERGE_TERMINAL } from './person-resolution';
 const PEOPLE = '(SELECT person_id FROM person_erasure_scope WHERE operation_id=?)';
 const MERGES = `(SELECT id FROM merges WHERE surviving_person_id IN ${PEOPLE} OR merged_person_id IN ${PEOPLE}
   OR EXISTS(SELECT 1 FROM person_erasure_copies c WHERE c.operation_id=?
@@ -10,14 +11,14 @@ export function beginErasure(
   db: Db,
   id: string,
   operationId: string,
-  options: { stamp: string; requesterId?: string },
+  options: { stamp: string; requesterId?: string; requireActiveSubject?: boolean | undefined },
 ): Statement {
   const { stamp, requesterId = 'member' } = options;
   return db
     .prepare(
       `INSERT INTO person_erasure_scope(operation_id,person_id,requested_at,requested_by,reason)
     WITH RECURSIVE affected(id) AS (
-      SELECT id FROM people WHERE id=? AND erased_at IS NULL
+      SELECT id FROM people WHERE id=? AND erased_at IS NULL ${options.requireActiveSubject ? `AND deleted_at IS NULL AND ${PERSON_MERGE_TERMINAL}` : ''}
       UNION SELECT CASE WHEN m.surviving_person_id=a.id THEN m.merged_person_id ELSE m.surviving_person_id END
       FROM merges m JOIN affected a ON a.id IN (m.surviving_person_id,m.merged_person_id)
       WHERE m.unmerged_at IS NULL AND m.erased_at IS NULL)

@@ -1,6 +1,7 @@
 import { nowIso, ulid } from '@lasvegasfortransit/platform-core/ids';
 import type { Db } from './db';
 import { newsletterErasureWrites } from './newsletter-erasure';
+import { PERSON_MERGE_TERMINAL } from './person-resolution';
 import {
   beginErasure,
   beginErasureCopies,
@@ -13,11 +14,11 @@ import {
 export async function deletePersonData(
   db: Db,
   id: string,
-  options: { requesterId?: string } = {},
+  options: { requesterId?: string; requireActiveSubject?: boolean } = {},
 ): Promise<void> {
   for (let attempt = 0; ; attempt++) {
     try {
-      await eraseCurrentPerson(db, id, options.requesterId ?? 'member');
+      await eraseCurrentPerson(db, id, options);
       return;
     } catch (error) {
       if (attempt >= 2 || !(error instanceof Error) || !error.message.includes('valid_snapshot=1'))
@@ -26,12 +27,30 @@ export async function deletePersonData(
   }
 }
 
-async function eraseCurrentPerson(db: Db, id: string, requesterId: string): Promise<void> {
+async function eraseCurrentPerson(
+  db: Db,
+  id: string,
+  options: { requesterId?: string; requireActiveSubject?: boolean },
+): Promise<void> {
   const stamp = nowIso();
   const operationId = ulid();
-  const newsletter = await newsletterErasureWrites(db, id, operationId, stamp);
+  const newsletter = await newsletterErasureWrites(
+    db,
+    options.requireActiveSubject
+      ? {
+          sql: `SELECT id FROM people WHERE id=? AND deleted_at IS NULL AND erased_at IS NULL AND ${PERSON_MERGE_TERMINAL}`,
+          values: [id],
+        }
+      : id,
+    operationId,
+    stamp,
+  );
   await db.batch([
-    beginErasure(db, id, operationId, { stamp, requesterId }),
+    beginErasure(db, id, operationId, {
+      stamp,
+      requesterId: options.requesterId ?? 'member',
+      requireActiveSubject: options.requireActiveSubject,
+    }),
     ...newsletter,
     eraseProfile(db, operationId, stamp),
     beginErasureCopies(db, operationId),

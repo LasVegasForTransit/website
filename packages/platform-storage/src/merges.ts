@@ -2,6 +2,7 @@ import { ulid } from '@lasvegasfortransit/platform-core/ids';
 import type { Actor, MutationResult } from '@lasvegasfortransit/platform-core/staff-types';
 import type { Db, Statement } from './db';
 import { auditDenied } from './audits';
+import { resolvePersonId } from './person-resolution';
 import {
   captureMergeState,
   stateRows,
@@ -29,6 +30,12 @@ export interface UndoMergeInput {
   reason: string;
   operationId: string;
 }
+export type MergeResult =
+  | MutationResult<{ mergeId: string }>
+  | {
+      kind: 'conflict';
+      reason: 'already_combined' | 'undo_newer_merge_first';
+    };
 function validMetadata(input: { reason: string; operationId: string }): boolean {
   return (
     typeof input.reason === 'string' &&
@@ -57,11 +64,7 @@ async function runMerge(
   const applied = await mergeReplay(db, input);
   return applied ?? { kind: (await mergeAuthorized(db, input.actorId)) ? 'conflict' : 'forbidden' };
 }
-export async function mergePeople(
-  db: Db,
-  actor: Actor,
-  input: MergeInput,
-): Promise<MutationResult<{ mergeId: string }>> {
+export async function mergePeople(db: Db, actor: Actor, input: MergeInput): Promise<MergeResult> {
   if (!(await mergeAuthorized(db, actor.personId))) {
     await auditDenied(db, actor.personId, 'person.merge');
     return { kind: 'forbidden' };
@@ -73,6 +76,13 @@ export async function mergePeople(
     input.survivorId === input.mergedId
   )
     return { kind: 'invalid' };
+  const dates = await db
+    .prepare('SELECT id,created_at FROM people WHERE id IN (?,?) ORDER BY julianday(created_at),id')
+    .bind(input.survivorId, input.mergedId)
+    .all<{ id: string; created_at: string }>();
+  const [older, newer] = dates.results;
+  if (!older || !newer) return { kind: 'not_found' };
+  input = { ...input, survivorId: older.id, mergedId: newer.id };
   const payload = JSON.stringify({
     survivorId: input.survivorId,
     mergedId: input.mergedId,
@@ -91,6 +101,12 @@ export async function mergePeople(
   };
   const prior = await mergeReplay(db, operation);
   if (prior) return prior;
+  const resolved = await Promise.all([
+    resolvePersonId(db, input.survivorId),
+    resolvePersonId(db, input.mergedId),
+  ]);
+  if (resolved[0] && resolved[0] === resolved[1])
+    return { kind: 'conflict', reason: 'already_combined' };
   const state = await captureMergeState(db, [input.survivorId, input.mergedId]);
   const people = stateRows(state, 'people');
   const survivor = people.find((row) => row.id === input.survivorId && row.deleted_at === null);
@@ -104,11 +120,7 @@ export async function mergePeople(
     ...mergeWrites(db, operation, book),
   ]);
 }
-export async function undoMerge(
-  db: Db,
-  actor: Actor,
-  input: UndoMergeInput,
-): Promise<MutationResult<{ mergeId: string }>> {
+export async function undoMerge(db: Db, actor: Actor, input: UndoMergeInput): Promise<MergeResult> {
   if (!(await mergeAuthorized(db, actor.personId))) {
     await auditDenied(db, actor.personId, 'person.unmerge');
     return { kind: 'forbidden' };
@@ -128,6 +140,15 @@ export async function undoMerge(
     .first<MergeRecord>();
   if (!record) return { kind: 'not_found' };
   if (record.unmerged_at || record.erased_at) return { kind: 'conflict' };
+  if (
+    await db
+      .prepare(
+        'SELECT 1 FROM merges WHERE merged_person_id=? AND unmerged_at IS NULL AND erased_at IS NULL',
+      )
+      .bind(record.surviving_person_id)
+      .first()
+  )
+    return { kind: 'conflict', reason: 'undo_newer_merge_first' };
   const operation: MergeOperation = {
     id: record.id,
     actorId: actor.personId,
