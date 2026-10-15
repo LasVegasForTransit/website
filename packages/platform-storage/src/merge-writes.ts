@@ -1,5 +1,11 @@
 import type { Db, Statement } from './db';
-import { rowValue, RELATED_TABLES, type MergeBookkeeping, type MergeRow } from './merge-state';
+import {
+  rowValue,
+  RELATED_TABLES,
+  MERGED_PROFILE_EMPTY,
+  type MergeBookkeeping,
+  type MergeRow,
+} from './merge-state';
 import {
   FRESH_MERGE,
   freshMerge,
@@ -124,7 +130,11 @@ export function mergeWrites(db: Db, input: MergeOperation, book: MergeBookkeepin
         ]
       : []),
     db
-      .prepare(`UPDATE people SET deleted_at=?,updated_at=? WHERE id=? AND ${FRESH_MERGE}`)
+      .prepare(
+        `UPDATE people SET ${Object.entries(MERGED_PROFILE_EMPTY)
+          .map(([field, value]) => `${field}=${value === null ? 'NULL' : "'en'"}`)
+          .join(',')},deleted_at=?,updated_at=? WHERE id=? AND ${FRESH_MERGE}`,
+      )
       .bind(input.stamp, input.stamp, input.mergedId, ...freshMerge(input)),
     ...ownershipWrites(db, input, book),
     ...book.suppressed.map((row) =>
@@ -141,6 +151,9 @@ export function mergeWrites(db: Db, input: MergeOperation, book: MergeBookkeepin
         ),
     ),
     ...fillPerson(db, input, book),
+    db
+      .prepare(`DELETE FROM field_sources WHERE person_id=? AND ${FRESH_MERGE}`)
+      .bind(input.mergedId, ...freshMerge(input)),
     ...invalidateMergedAccess(db, input),
     ...resolveMergeReviews(db, input, book),
     recomputeMergeMembership(db, input, input.survivorId),

@@ -8,6 +8,7 @@ import {
   type MergeRow,
   type MergeSnapshot,
   type SuppressedConsent,
+  MERGED_PROFILE_EMPTY,
 } from './merge-state';
 export interface Withdrawal {
   scope: string;
@@ -129,7 +130,7 @@ export function mergeBookkeeping(
     rows,
     fields: copiedFields(state, survivor, merged, stamp),
     archivedBefore: merged,
-    archivedAfter: { ...merged, deleted_at: stamp, updated_at: stamp },
+    archivedAfter: { ...merged, ...MERGED_PROFILE_EMPTY, deleted_at: stamp, updated_at: stamp },
     suppressed,
     copiedAdmin:
       mergedAdmin && !admins.some((row) => row.person_id === survivor.id)
@@ -137,6 +138,7 @@ export function mergeBookkeeping(
         : null,
     reviews: stateRows(state, 'review_queue').filter((row) => row.resolved_at === null),
     withdrawalIds: stateRows(state, 'consent_withdrawals').map((row) => String(row.id)),
+    fieldSources: stateRows(state, 'field_sources').filter((row) => row.person_id === merged.id),
   };
 }
 export function mergeConflicts(

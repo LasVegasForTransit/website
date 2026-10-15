@@ -108,6 +108,14 @@ void test('erasure follows chained active combinations while keeping a separated
   const fourth = (
     await f.people.upsertFromSource({ source: 'paper', fields: { given_name: 'Fourth entry' } })
   ).person;
+  f.db.raw
+    .prepare('UPDATE people SET created_at=? WHERE id=?')
+    .run(
+      new Date(
+        Math.max(Date.parse(fourth.created_at), Date.parse(third.created_at) + 1),
+      ).toISOString(),
+      fourth.id,
+    );
   assert.equal(
     (
       await f.mergePeople(f.db, f.actor, {

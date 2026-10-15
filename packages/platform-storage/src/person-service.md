@@ -2,8 +2,8 @@
 
 The person service is the only way platform code reads and writes people. It lives in
 `person-service.ts` beside this page, with the field ownership rules in `field-ownership.ts`. It is
-ordinary shared code, not a web API: the website and, later, the staff console call it directly.
-Every write goes through it so the same rules apply everywhere:
+ordinary shared code, not a web API: the website and staff console call it directly. Every write
+goes through it so the same rules apply everywhere:
 
 - A source may only change the fields it owns (table below). A write that tries to change another
   field ignores that field and logs a warning.
@@ -12,12 +12,28 @@ Every write goes through it so the same rules apply everywhere:
   recomputed after every consent change.
 - Reads never return deleted people.
 
+`getPerson` follows an active merge from an old identifier to its current surviving person,
+including merge chains. It returns no archived profile or erased record. Counts belong to the
+resolved person, and a lookup without counts uses one database statement. Mutations do not follow
+these links: they require the current active person's identifier, so an obsolete form cannot change
+a different record. `findPeople` lists only current active people.
+
+Session, signed-link, and mutation callers use `getExactPerson(id)` instead. It returns only that
+active record and never follows a merge. A read of an old identifier is useful navigation; it does
+not transfer the authority of an old session, confirmation code or removal link to the survivor.
+Signed email removal also requires the exact subject to remain active inside its erasure
+transaction.
+
+For combining and splitting records, see
+[Combine duplicate member records](../../../docs/guides/combine-member-records.md).
+
 ## Functions (version 1)
 
 | Function                                                                       | What it does                                                                                                                                                                                                                                                                                                                  |
 | ------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `getPerson(id, { withCounts })`                                                | Returns a person who hasn't been deleted. With `withCounts`, also returns their engagement counts, worked out from the log.                                                                                                                                                                                                   |
 | `findByEmail(email)`                                                           | The person with that email address, compared lowercased.                                                                                                                                                                                                                                                                      |
+| `getExactPerson(id)`                                                           | Returns only the requested active person, without following merges. Use for session, token and mutation authority.                                                                                                                                                                                                            |
 | `findPeople({ text, email, membershipStatus, zip, regionId, limit, cursor })`  | A page of people matching every filter given, with a cursor for the next page.                                                                                                                                                                                                                                                |
 | `upsertFromSource({ source, fields, emailVerified, identity, consent })`       | Finds the person the record belongs to using the matching rules below, or creates them. Then applies the fields the source owns and records the consent. Returns the person and whether they were `linked`, `created`, or `created_and_queued` for staff review. An existing person's filled-in fields are never overwritten. |
 | `updateFields(id, { source, fields, allowClear })`                             | Changes the fields the source owns. Empty values are skipped unless `allowClear` is set, as when a member removes their phone number.                                                                                                                                                                                         |
@@ -31,14 +47,14 @@ Every write goes through it so the same rules apply everywhere:
 
 ## Field ownership
 
-| Field                                                | Sources that may change it                                                                 |
-| ---------------------------------------------------- | ------------------------------------------------------------------------------------------ |
-| `given_name`, `family_name`                          | `join_form`, `google_form`, `external_form`, `member`, `staff`, `paper`, `import`          |
-| `email`                                              | `join_form`, `newsletter_box`, `google_form`, `external_form`, `member`, `staff`, `import` |
-| `phone`                                              | `join_form`, `google_form`, `external_form`, `member`, `staff`, `paper`, `import`          |
-| `zip`                                                | `join_form`, `google_form`, `external_form`, `member`, `staff`                             |
-| `census_block`, `census_block_vintage`, `place_name` | `join_form`, `member`, `staff`                                                             |
-| `preferred_language`                                 | `member`, `staff`                                                                          |
+| Field                                                | Sources that may change it                                                                          |
+| ---------------------------------------------------- | --------------------------------------------------------------------------------------------------- |
+| `given_name`, `family_name`                          | `join_form`, `google_form`, `external_form`, `member`, `staff`, `paper`, `import`                   |
+| `email`                                              | `join_form`, `newsletter_box`, `google_form`, `external_form`, `member`, `staff`, `paper`, `import` |
+| `phone`                                              | `join_form`, `google_form`, `external_form`, `member`, `staff`, `paper`, `import`                   |
+| `zip`                                                | `join_form`, `google_form`, `external_form`, `member`, `staff`                                      |
+| `census_block`, `census_block_vintage`, `place_name` | `join_form`, `member`, `staff`                                                                      |
+| `preferred_language`                                 | `member`, `staff`                                                                                   |
 
 ## Matching
 

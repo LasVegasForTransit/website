@@ -18,7 +18,10 @@ export interface MergeSummary {
 const COLUMNS = `m.id,m.surviving_person_id AS survivorId,m.merged_person_id AS mergedId,m.merged_at AS mergedAt,m.reason,
   nullif(trim(coalesce(actor.given_name,'')||' '||coalesce(actor.family_name,'')),'') AS actorName,m.unmerged_at AS undoneAt,m.erased_at AS erasedAt,
   coalesce(nullif(trim(coalesce(p.given_name,'')||' '||coalesce(p.family_name,'')),''),p.email,'Member') AS survivorName,
-  CASE WHEN original.deleted_at IS NULL OR original.deleted_at=m.merged_at THEN coalesce(nullif(trim(coalesce(original.given_name,'')||' '||coalesce(original.family_name,'')),''),original.email,'Previous entry') ELSE 'Previous entry' END AS mergedName`;
+  CASE WHEN original.deleted_at IS NULL THEN coalesce(nullif(trim(coalesce(original.given_name,'')||' '||coalesce(original.family_name,'')),''),original.email,'Previous entry')
+    WHEN original.deleted_at=m.merged_at AND original.erased_at IS NULL AND m.erased_at IS NULL
+      THEN coalesce(nullif(trim(coalesce(json_extract(m.moved_rows,'$.archivedBefore.given_name'),'')||' '||coalesce(json_extract(m.moved_rows,'$.archivedBefore.family_name'),'')),''),json_extract(m.moved_rows,'$.archivedBefore.email'),'Previous entry')
+    ELSE 'Previous entry' END AS mergedName`;
 const JOINS = `merges m JOIN people p ON p.id=m.surviving_person_id AND p.deleted_at IS NULL
   JOIN people original ON original.id=m.merged_person_id LEFT JOIN people actor ON actor.id=m.merged_by`;
 export async function mergeView(db: Db, actor: Actor, id: string): Promise<MergeSummary | null> {

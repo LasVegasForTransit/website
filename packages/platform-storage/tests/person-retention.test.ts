@@ -125,7 +125,7 @@ void test('legacy ordinary deletions are erased before purge while active merge 
   assert.equal(f.db.raw.prepare("SELECT id FROM people WHERE id='legacy'").get(), undefined);
   assert.equal(
     f.db.raw.prepare('SELECT phone FROM people WHERE id=?').get(f.merged.id)?.phone,
-    '+17025550100',
+    null,
   );
   assert.equal(
     (

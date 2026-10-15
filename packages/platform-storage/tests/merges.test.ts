@@ -54,7 +54,8 @@ void test('merge moves every related row by ID, preserves immutable history, inv
     .all(merged.id);
   const first = await mergePeople(db, actor, input);
   assert.equal(first.kind, 'ok');
-  assert.equal(await people.getPerson(merged.id), null);
+  assert.equal((await people.getPerson(merged.id))?.id, survivor.id);
+  assert.ok(db.raw.prepare('SELECT deleted_at FROM people WHERE id=?').get(merged.id)?.deleted_at);
   assert.equal((await people.getPerson(survivor.id))?.phone, '+17025550100');
   for (const table of [
     'consent_records',

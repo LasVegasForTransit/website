@@ -5,6 +5,7 @@ import type { ReviewItem } from '@lasvegasfortransit/platform-storage/reviews';
 import type { StaffContext } from './context';
 import { field } from './forms';
 import { messageResponse } from './responses';
+import { t } from '@lasvegasfortransit/platform-core/messages';
 export interface MergeFailure {
   error: string;
   reason: string;
@@ -17,7 +18,7 @@ export async function combineAction(
 ): Promise<Response | MergeFailure> {
   const form = await request.formData();
   const reason = field(form, 'reason', 2001);
-  const survivorId = field(form, 'keep_person', 100);
+  const survivorId = item.existingId;
   if (
     !(await consumeFormToken(staff.db, staff.actor, {
       action: `review:combine:${item.id}`,
@@ -25,7 +26,7 @@ export async function combineAction(
     }))
   )
     return messageResponse('This page is out of date. Open the duplicate check again.', 409);
-  if (item.resolvedAt || ![item.candidateId, item.existingId].includes(survivorId)) {
+  if (item.resolvedAt) {
     return {
       error: 'This check has changed. Open the list of possible duplicates again.',
       reason,
@@ -49,7 +50,9 @@ export async function combineAction(
     error:
       result.kind === 'invalid'
         ? 'Enter a reason for combining these entries.'
-        : 'These entries can’t be combined yet. Check their email addresses, accounts and current committees, then try again.',
+        : 'reason' in result && result.reason === 'already_combined'
+          ? t('staff.merge.alreadyCombined')
+          : 'These entries can’t be combined yet. Check their email addresses, accounts and current committees, then try again.',
     reason,
     survivorId,
   };
@@ -83,7 +86,9 @@ export async function uncombineAction(
     error:
       result.kind === 'invalid'
         ? 'Enter a reason for undoing this combination.'
-        : 'This combination can’t be undone automatically because details, accounts or access have changed. Ask an administrator to check both entries.',
+        : 'reason' in result && result.reason === 'undo_newer_merge_first'
+          ? t('staff.merge.undoNewerFirst')
+          : 'This combination can’t be undone automatically because details, accounts or access have changed. Ask an administrator to check both entries.',
     reason,
   };
 }

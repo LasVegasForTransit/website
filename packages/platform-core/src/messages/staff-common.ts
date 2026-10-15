@@ -1,4 +1,10 @@
 export const staffCommon = {
+  merge: {
+    keepsOlder:
+      'We’ll keep the earlier record, add any missing details and combine both histories. You can review their details afterward.',
+    alreadyCombined: 'These entries are already combined. Open the current member profile.',
+    undoNewerFirst: 'Undo the later combination first, then return to this one.',
+  },
   common: {
     accessDenied: "You don't have access to this",
     signInUnavailable: 'Staff sign-in is unavailable. Please try again later.',
