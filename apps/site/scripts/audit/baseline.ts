@@ -7,6 +7,7 @@
  * Sub-tools (each can also be invoked standalone):
  *   - lighthouse:       lhci autorun (uses lighthouserc.cjs, static dist)
  *   - axe:              playwright test --project=a11y (json reporter)
+ *   - account-data:     authenticated account routes, axe and Lighthouse
  *   - html-validate:    pnpm exec html-validate dist/**\/*.html
  *   - structured-data:  tsx scripts/audit/structured-data.ts --json
  *   - third-party-scan: tsx scripts/audit/third-party-scan.ts --json
@@ -47,7 +48,7 @@ interface ToolResult {
 
 // CSI escape sequences (colors, cursor positioning, screen erase) — clean
 // captured tool output so the markdown report stays human-readable.
-// eslint-disable-next-line no-control-regex
+// eslint-disable-next-line no-control-regex -- strip terminal control characters from captured audit output
 const ANSI_RE = /\x1b\[[\d;]*[a-zA-Z]/g;
 
 function clean(s: string, name: string): string {
@@ -127,7 +128,11 @@ if (!existsSync(DIST)) {
 
 // Wave A: four read-only tools, all touch dist/ or the lockfile only —
 // no port contention, no shared state. Parallelize for ~3 s wall-clock win.
-type Job = { name: string; cmd: string; args: string[] };
+interface Job {
+  name: string;
+  cmd: string;
+  args: string[];
+}
 const waveA: Job[] = [
   { name: 'html-validate', cmd: 'pnpm', args: ['exec', 'html-validate', 'dist/**/*.html'] },
   {
@@ -172,6 +177,10 @@ if (!skip.has('lighthouse-mobile')) {
       LIGHTHOUSE_PRESET: 'mobile',
     }),
   );
+}
+if (!skip.has('account-data')) {
+  auditLog('running authenticated account data accessibility and Lighthouse checks...');
+  waveBResults.push(await runTool('account-data', 'pnpm', ['test:account-data:lighthouse']));
 }
 if (!skip.has('axe')) {
   auditLog('running axe via Playwright (project=a11y)...');

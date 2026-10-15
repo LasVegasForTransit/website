@@ -134,7 +134,7 @@ function memberSince(events: Row[]): string | null {
   );
 }
 
-/** One transaction reads one person's records under current, server-derived authority. */
+/** Read one person's snapshot, then authorize and receipt its export in one guarded write. */
 export async function collectPersonExport(
   db: Db,
   personId: string,

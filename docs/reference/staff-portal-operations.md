@@ -630,13 +630,15 @@ linked-account changes need review; do not broaden the registry or bypass identi
 failure.
 
 The adapter accepts an injected token source and has no service-account-key fallback. Hosted
-execution and the token source still need wiring. Preserve the approved GitHub Actions Workload
-Identity Federation and domain-wide delegation route described in
-[the organizing-platform decision](../explanation/decisions/organizing-platform.md). The Google
-[authentication action](https://github.com/google-github-actions/auth#inputs-generating-oauth-20-access-tokens)
-supports a delegated subject and explicit scopes. That route requires both Workload Identity User
-and Service Account Token Creator permissions on the approved external principal, plus Workspace
-delegation for these scopes:
+dispatch and the token source are not wired. The GitHub Actions route in
+[the organizing-platform decision](../explanation/decisions/organizing-platform.md) is historical;
+it does not establish an identity for the private jobs Worker. Before setup, separately authorize
+the exact matching private jobs identity, environment, audience, Google-managed signing permission
+and dedicated delegated Workspace administrator. Do not grant broad impersonation roles as a
+substitute for that decision.
+
+The adapter's data operations require these Directory scopes. This list describes its API needs; it
+is not an approved domain-wide delegation grant:
 
 - `https://www.googleapis.com/auth/admin.directory.user.readonly`
 - `https://www.googleapis.com/auth/admin.directory.group.readonly`
@@ -658,31 +660,37 @@ separately from committee groups, with an access-review reminder at 45 people. T
 group members, not Cloudflare billable seats. The inventory view can be configured for this
 read-only group alone without enabling committee reconciliation.
 
-Verify the existing service account, immutable repository restrictions, delegated administrator and
-Workspace customer read-only before enabling execution. Keep tokens out of saved builds, artifacts,
-logs and source control. Do not create a key or relax organization policy when setup is unavailable.
-Real preview grant, readback, revocation and retry evidence remains required before production use.
+Inspect the approved service account, current principal and audience restrictions, dedicated
+delegated administrator and Workspace customer read-only before enabling execution. An existing
+service account alone does not prove that runtime trust or delegation exists. Keep tokens out of
+saved builds, artifacts, logs and source control. Do not create a key or relax organization policy
+when setup is unavailable. Real preview grant, readback, revocation and retry evidence remains
+required before production use.
 
 ### Inspect Google setup without granting access
 
 Google sign-in and Google group automation use different permissions. Complete these checks before
 preparing any grant:
 
-1. In Google Cloud, select **LVBT Core** and open **IAM & Admin → Service Accounts**. Open the
-   existing `lvbt-website-admin@lvbt-core.iam.gserviceaccount.com`. Inspect **Keys** without
-   creating or downloading one. An empty key list is compatible with the intended keyless design.
+1. In Google Cloud, select project **LVBT Core** (`lvbt-core`) and open **IAM & Admin → Service
+   Accounts**. Inspect the service account named in the current approved setup, if one exists,
+   including **Keys**, without creating or downloading one. The existing
+   `lvbt-website-admin@lvbt-core.iam.gserviceaccount.com` is not automatically the approved jobs
+   signer. An empty key list is compatible with a keyless design, not proof of automation.
 2. Open **IAM & Admin → Workload Identity Federation**. Inspect existing pools, providers, and
-   service-account permissions. The intended trust must restrict the immutable LVBT repository
-   identity and approved workflow context. A **Get started** page means no pool is configured; a
-   service account existing by itself does not establish this trust.
+   service-account permissions. Compare exact issuer, principal, environment, allowed audience and
+   signing permissions with the approved private jobs setup. A **Get started** page shows no
+   configured pool in that view; it does not prove all IAM is empty. A service account existing by
+   itself does not establish this trust.
 3. In Google Admin, open **Security → Access and data control → API controls → Manage Domain Wide
-   Delegation**. Find the service account's numeric client ID and inspect its approved scopes. An
-   empty list or missing client means delegated Workspace access is unconfigured. Do not use **Add
-   new** as part of this read-only check.
-4. Verify the Workspace customer and intended delegated administrator against the approved design.
-   The organizing-platform decision specifies the GitHub Actions route; no hosted runner is wired in
-   this source. Resolve a proposed runner or administrator change in that design before granting
-   permissions. Do not invent a Worker identity source or install a long-lived key as a shortcut.
+   Delegation**. If a signer is approved, find its numeric client ID and inspect its approved
+   scopes. An empty list or missing client means delegated Workspace access is unconfigured. Do not
+   use **Add new** as part of this read-only check.
+4. Verify the Workspace customer, dedicated delegated administrator and scope set against the
+   current approved private jobs design. Historical Actions and delegated-account choices are not a
+   deployable hosted identity. Resolve the exact runtime authentication and authorization before
+   granting permissions. Do not invent a Worker identity source or install a long-lived key as a
+   shortcut.
 5. Keep observations and writes disabled until the runner, token source, and actual provider tests
    are implemented and verified. Continue approved manual group administration in Google Admin.
 
@@ -717,7 +725,11 @@ pnpm -C apps/jobs test:maintenance
 pnpm -C apps/jobs test:e2e
 pnpm -C apps/staff test:e2e
 pnpm -C apps/staff test:release
+pnpm -C apps/site test:account-data:lighthouse
 ```
+
+The account-data fixture covers authenticated download and deletion, including JavaScript-disabled
+forms; its accessibility and Lighthouse checks use local fixtures only.
 
 These use synthetic data and isolated providers. They cannot prove real Google sign-in, a complete
 imported roster, Discord server operation, Google Group or mailing-list synchronization, production

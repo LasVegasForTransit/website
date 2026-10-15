@@ -1,4 +1,5 @@
 import type { Db, SqlValue, Statement } from './db';
+import { ulid } from '@lasvegasfortransit/platform-core/ids';
 
 export type PersonExportAuthority = {
   personId: string;
@@ -68,12 +69,18 @@ export function exportStatement(
   const { personId, authority, at } = input;
   const values: SqlValue[] = [personId, authority.personId, authority.sessionHash, at];
   if (authority.kind === 'administrator') values.push(authority.workspaceEmail);
+  // The final scope check writes its receipt atomically, so stale authority
+  // cannot leave an audit entry for a refused export.
+  const receipt = `INSERT INTO staff_audits(id,actor_id,action,permission,target_id,details,occurred_at)
+    SELECT ?${values.length + 1},?2,'person.export',${authority.kind === 'administrator' ? "'export.full'" : 'NULL'},
+    p.id,json_object('requested_by',${authority.kind === 'administrator' ? '?2' : "'member'"}),?4 FROM people p`;
+  if (!section) values.push(ulid());
   return db
     .prepare(
-      `${section ? QUERIES[section] : 'SELECT 1 AS allowed FROM people p'}
+      `${section ? QUERIES[section] : receipt}
     WHERE p.id=?1 AND p.deleted_at IS NULL AND ${scope(authority)}
     ${section === 'newsletter_source_events' ? 'AND (op.person_id IS NULL OR op.person_id=p.id)' : ''}
-    ${section ? 'ORDER BY 1,2' : ''}`,
+    ${section ? 'ORDER BY 1,2' : 'RETURNING id'}`,
     )
     .bind(...values);
 }
