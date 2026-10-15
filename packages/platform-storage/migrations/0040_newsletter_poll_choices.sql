@@ -43,8 +43,8 @@ BEGIN
   SELECT NEW.publication_id,NEW.subscription_id,1,NEW.status,NEW.observed_at,NEW.observed_at,
     (SELECT max(observed_at) FROM newsletter_target_receipts WHERE publication_id=NEW.publication_id AND target_key='id:'||NEW.subscription_id AND desired='active' AND observed_at<=NEW.observed_at),
     (SELECT person_id FROM identities WHERE platform='beehiiv' AND external_id=NEW.subscription_id),
-    CASE WHEN EXISTS(SELECT 1 FROM identities WHERE platform='beehiiv' AND external_id=NEW.subscription_id) THEN 'pending' ELSE 'needs_review' END,
-    CASE WHEN EXISTS(SELECT 1 FROM identities WHERE platform='beehiiv' AND external_id=NEW.subscription_id) THEN NULL ELSE 'unlinked_account' END
+    (CASE WHEN EXISTS(SELECT 1 FROM identities WHERE platform='beehiiv' AND external_id=NEW.subscription_id) THEN 'pending' ELSE 'needs_review' END),
+    (CASE WHEN EXISTS(SELECT 1 FROM identities WHERE platform='beehiiv' AND external_id=NEW.subscription_id) THEN NULL ELSE 'unlinked_account' END)
   WHERE NEW.status='active' OR EXISTS(SELECT 1 FROM identities WHERE platform='beehiiv' AND external_id=NEW.subscription_id);
 END;
 
@@ -64,8 +64,8 @@ BEGIN
       UNION ALL SELECT max(observed_at) FROM newsletter_target_receipts WHERE publication_id=NEW.publication_id
         AND target_key='id:'||NEW.subscription_id AND desired='active' AND observed_at<=NEW.observed_at)),
     (SELECT person_id FROM identities WHERE platform='beehiiv' AND external_id=NEW.subscription_id),
-    CASE WHEN EXISTS(SELECT 1 FROM identities WHERE platform='beehiiv' AND external_id=NEW.subscription_id) THEN 'pending' ELSE 'needs_review' END,
-    CASE WHEN EXISTS(SELECT 1 FROM identities WHERE platform='beehiiv' AND external_id=NEW.subscription_id) THEN NULL ELSE 'unlinked_account' END
+    (CASE WHEN EXISTS(SELECT 1 FROM identities WHERE platform='beehiiv' AND external_id=NEW.subscription_id) THEN 'pending' ELSE 'needs_review' END),
+    (CASE WHEN EXISTS(SELECT 1 FROM identities WHERE platform='beehiiv' AND external_id=NEW.subscription_id) THEN NULL ELSE 'unlinked_account' END)
   WHERE NEW.status='active' OR EXISTS(SELECT 1 FROM identities WHERE platform='beehiiv' AND external_id=NEW.subscription_id)
   ON CONFLICT(publication_id,subscription_id) DO UPDATE SET revision=revision+1,status=excluded.status,
     observed_at=excluded.observed_at,last_seen_at=excluded.last_seen_at,baseline_active_at=excluded.baseline_active_at,

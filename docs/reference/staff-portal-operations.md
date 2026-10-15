@@ -577,6 +577,23 @@ Verify the protected preview first, including refusal on alternate hosts and dir
 Enable schedules and provider writes only after real preview grant, readback, retry and revocation
 evidence exists.
 
+Rehearse pending migrations from the retained schema, including the migration-tracking inserts:
+
+```sh
+pnpm -C apps/site exec node --import tsx --test tests/d1-migration-compatibility.test.ts
+```
+
+Wrangler sends each remote migration and its tracking insert as one SQL string to D1's query API.
+Its local splitter and ordinary SQLite can accept SQL that the remote parser rejects. Keep
+`CASE … END` expressions inside trigger bodies parenthesized; a bare expression can be mistaken for
+the end of the trigger. The compatibility regression checks every migration after 33 and exercises
+its upgrade from schema 33 with retained administrators and newsletter activity. A local rehearsal
+is not proof of a remote apply. If an apply fails, stop and read the migration tracker and expected
+schema objects before retrying; earlier successful migrations remain applied. Correct only pending
+migrations, and preserve data and SQL behavior. See
+[Cloudflare's trigger parser issue](https://github.com/cloudflare/workers-sdk/issues/4727) and
+[migration rollback behavior](https://developers.cloudflare.com/d1/wrangler-commands/#d1-migrations-apply).
+
 Rollback changes application versions; it must preserve accepted consents, assignments, welcome
 claims, events and provider cleanup work. Do not reverse migrations or restore an old database over
 new staff activity. Validate any rollback version against the current schema before activation.
