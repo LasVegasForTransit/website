@@ -5,6 +5,7 @@ export interface CommitteeSettingsInput {
   acceptingMembers: boolean;
   workspaceGroupEmail: string | null;
   discordRoleId: string | null;
+  discordLeadRoleId?: string | null;
   interestIds: Interest[];
   expectedVersion: number;
   operationId: string;
@@ -17,6 +18,9 @@ function hasSettingsShape(input: CommitteeSettingsInput): boolean {
     [input.workspaceGroupEmail, input.discordRoleId].every(
       (value) => value === null || typeof value === 'string',
     ) &&
+    (input.discordLeadRoleId === undefined ||
+      input.discordLeadRoleId === null ||
+      typeof input.discordLeadRoleId === 'string') &&
     typeof input.acceptingMembers === 'boolean' &&
     Array.isArray(input.interestIds)
   );
@@ -39,13 +43,25 @@ function validGroup(email: string | null): boolean {
 function validRole(id: string | null): boolean {
   return !id || (/^[1-9][0-9]{0,19}$/.test(id) && BigInt(id) <= 18_446_744_073_709_551_615n);
 }
+function nullableText(value: string | null | undefined): string | null {
+  const text = value?.trim() ?? '';
+  return text === '' ? null : text;
+}
+function validConnections(input: CommitteeSettingsInput): boolean {
+  return (
+    validGroup(input.workspaceGroupEmail) &&
+    validRole(input.discordRoleId) &&
+    validRole(input.discordLeadRoleId ?? null) &&
+    (input.discordRoleId === null || input.discordRoleId !== input.discordLeadRoleId)
+  );
+}
 export function normalizeSettings(input: CommitteeSettingsInput): CommitteeSettingsInput | null {
   if (!hasSettingsShape(input) || !withinLimits(input)) return null;
-  const group = input.workspaceGroupEmail?.trim().toLowerCase() ?? '';
-  const role = input.discordRoleId?.trim() ?? '';
-  const workspaceGroupEmail = group === '' ? null : group;
-  const discordRoleId = role === '' ? null : role;
-  if (!validGroup(workspaceGroupEmail) || !validRole(discordRoleId)) return null;
+  const workspaceGroupEmail = nullableText(input.workspaceGroupEmail)?.toLowerCase() ?? null;
+  const discordRoleId = nullableText(input.discordRoleId);
+  const discordLeadRoleId = nullableText(input.discordLeadRoleId);
+  if (!validConnections({ ...input, workspaceGroupEmail, discordRoleId, discordLeadRoleId }))
+    return null;
   if (input.interestIds.some((id) => !INTERESTS.some((interest) => interest === id))) return null;
   return {
     ...input,
@@ -53,6 +69,7 @@ export function normalizeSettings(input: CommitteeSettingsInput): CommitteeSetti
     timeCommitment: input.timeCommitment.trim(),
     workspaceGroupEmail,
     discordRoleId,
+    discordLeadRoleId,
     interestIds: [...new Set(input.interestIds)].sort(),
   };
 }

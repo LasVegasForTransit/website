@@ -4,6 +4,7 @@ import { handleNewsletterEventRequest } from './newsletter-event';
 import { handleNewsletterReviewRequest } from './newsletter-review';
 import { handleDiscordDisconnectRequest } from './discord-disconnect';
 import { handleDiscordJoinRequest } from './discord-join';
+import { handleDiscordCommitteeRolesRequest } from './discord-committee-roles';
 import { runScheduledMembership } from './scheduled';
 export {
   NewsletterAccount,
@@ -20,6 +21,8 @@ export {
 } from './scheduled-maintenance';
 export default {
   async fetch(request, env) {
+    if (request.url === 'https://jobs.internal/discord/committee-roles')
+      return await handleDiscordCommitteeRolesRequest(request, env);
     if (request.url === 'https://jobs.internal/newsletter/review')
       return await handleNewsletterReviewRequest(request, env);
     if (request.url === 'https://jobs.internal/newsletter/event')

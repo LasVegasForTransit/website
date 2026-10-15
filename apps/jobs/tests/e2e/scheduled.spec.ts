@@ -7,6 +7,7 @@ import { DatabaseSync } from 'node:sqlite';
 import { Miniflare, Response as RuntimeResponse, convertV4MiniflareOptions } from 'miniflare';
 import { applyMigrations } from '@lasvegasfortransit/platform-storage/test-db';
 import { PersonService } from '@lasvegasfortransit/platform-storage/person-service';
+import { CommitteeService } from '@lasvegasfortransit/platform-storage/committees';
 import { enqueueOperation } from '@lasvegasfortransit/platform-storage/outbox';
 const root = fileURLToPath(new URL('../../', import.meta.url));
 const data = await mkdtemp(join(tmpdir(), 'lvbt-jobs-fixture-'));
@@ -14,6 +15,7 @@ const identityId = '222222222222222222';
 const reviewUserId = '777777777777777777';
 const memberRoleId = '333333333333333333';
 const committeeRoleId = '444444444444444444';
+const leadRoleId = '888888888888888888';
 const unrelatedRoleId = '666666666666666666';
 const guildId = '111111111111111111';
 const roles = new Set([unrelatedRoleId]);
@@ -125,8 +127,10 @@ try {
   });
   const stamp = new Date().toISOString();
   await db
-    .prepare("UPDATE committees SET discord_role_id=?,updated_at=? WHERE id='civic-tech'")
-    .bind(committeeRoleId, stamp)
+    .prepare(
+      "UPDATE committees SET discord_role_id=?,discord_lead_role_id=?,updated_at=? WHERE id='civic-tech'",
+    )
+    .bind(committeeRoleId, leadRoleId, stamp)
     .run();
   await db
     .prepare(
@@ -199,7 +203,79 @@ try {
     2,
     'fresh confirmations must not duplicate access-change history',
   );
-  await db.prepare("UPDATE integration_outbox SET state='done' WHERE id='fixture-job'").run();
+  const { person: administrator } = await people.upsertFromSource({
+    source: 'join_form',
+    fields: { email: 'role-admin@example.invalid' },
+    consent: {
+      scope: 'newsletter',
+      source: 'join_form',
+      method: 'checkbox',
+      wordingVersion: 'fixture',
+    },
+  });
+  await db
+    .prepare(
+      'INSERT INTO staff_administrators(person_id,designated_by,designated_at) VALUES(?,?,?)',
+    )
+    .bind(administrator.id, 'fixture', stamp)
+    .run();
+  const committees = new CommitteeService(db);
+  assert.equal(
+    (await committees.changeRole('fixture-assignment', 'lead', administrator.id, 'fixture-promote'))
+      .kind,
+    'ok',
+  );
+  await worker.scheduled({ cron: '* * * * *' });
+  assert.deepEqual(
+    [...roles].sort(),
+    [memberRoleId, committeeRoleId, leadRoleId, unrelatedRoleId].sort(),
+    'promoting a committee member grants the extra lead role',
+  );
+  assert.equal(
+    (
+      await db
+        .prepare(
+          "SELECT state FROM access_observations WHERE target_id='committee_lead:civic-tech' ORDER BY observed_at DESC LIMIT 1",
+        )
+        .first()
+    )?.state,
+    'granted',
+  );
+  assert.equal(
+    (
+      await committees.changeRole(
+        'fixture-assignment',
+        'member',
+        administrator.id,
+        'fixture-step-back',
+      )
+    ).kind,
+    'ok',
+  );
+  await worker.scheduled({ cron: '* * * * *' });
+  assert.deepEqual(
+    [...roles].sort(),
+    [memberRoleId, committeeRoleId, unrelatedRoleId].sort(),
+    'stepping back removes only lead access',
+  );
+  assert.equal(
+    (
+      await committees.changeRole(
+        'fixture-assignment',
+        'lead',
+        administrator.id,
+        'fixture-return-lead',
+      )
+    ).kind,
+    'ok',
+  );
+  await worker.scheduled({ cron: '* * * * *' });
+  await db
+    .prepare(
+      "UPDATE integration_outbox SET state='done' WHERE person_id=? AND state IN ('queued','retry','running')",
+    )
+    .bind(person.id)
+    .run();
   roles.delete(memberRoleId);
   await db
     .prepare("UPDATE provider_scan_checkpoints SET next_scan_at='2000-01-01T00:00:00.000Z'")
@@ -256,7 +332,10 @@ try {
     givenAt: new Date().toISOString(),
   });
   await worker.scheduled({ cron: '* * * * *' });
-  assert.deepEqual([...roles].sort(), [memberRoleId, committeeRoleId, unrelatedRoleId].sort());
+  assert.deepEqual(
+    [...roles].sort(),
+    [memberRoleId, committeeRoleId, leadRoleId, unrelatedRoleId].sort(),
+  );
   assert.equal((await db.prepare('SELECT count(*) AS n FROM discord_profiles').first())?.n, 1);
   await people.deletePerson(person.id);
   await worker.scheduled({
@@ -287,7 +366,7 @@ try {
         )
         .first()
     )?.n,
-    2,
+    3,
     'deletion needs confirmed cleanup evidence for each removed role',
   );
   console.log(
@@ -296,6 +375,7 @@ try {
       provider: 'isolated Discord REST fixture',
       checks: [
         'member and committee grants',
+        'lead promotion grants extra access and stepping back preserves committee and unrelated roles',
         'actual role confirmation and separate profile',
         'fresh receipt skipped',
         'completed account revisited and manual role drift corrected',

@@ -24,6 +24,7 @@
     "./google-runtime": "./src/google-runtime.ts",
     "./google-sync": "./src/google-sync.ts",
     "./google-runner": "./src/google-runner.ts",
+    "./discord-role-catalog": "./src/discord-role-catalog.ts",
     "./discord-access": "./src/discord-access.ts",
     "./discord-sync": "./src/discord-sync.ts",
     "./discord-link": "./src/discord-link.ts",

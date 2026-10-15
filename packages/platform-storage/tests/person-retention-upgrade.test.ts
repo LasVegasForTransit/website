@@ -35,27 +35,25 @@ void test('the retention upgrade preserves every existing row, pending removal i
     .prepare("SELECT name FROM sqlite_master WHERE type='table' AND name<>'d1_migrations'")
     .all()
     .map((r) => String(r.name));
-  const before = tables.map((table) => f.db.raw.prepare(`SELECT * FROM "${table}"`).all());
+  const columns = tables.map((table) =>
+    f.db.raw
+      .prepare(`PRAGMA table_info("${table}")`)
+      .all()
+      .map((row) => String(row.name)),
+  );
+  const snapshot = () => tables.map((table) => f.db.raw.prepare(`SELECT * FROM "${table}"`).all());
+  const before = snapshot();
   applyMigrations(f.db.raw);
-  const after = tables.map((table) => f.db.raw.prepare(`SELECT * FROM "${table}"`).all());
-  const comparable = after.map((rows, index) =>
+  const comparable = snapshot().map((rows, index) =>
     rows.map((row) =>
-      Object.fromEntries(
-        Object.entries(row).filter(
-          ([key]) =>
-            !(
-              tables[index] === 'consent_records' &&
-              ['origin_identity_id', 'import_run_id', 'withdrawn_time_basis'].includes(key)
-            ) &&
-            !(
-              tables[index] === 'consent_withdrawals' &&
-              ['time_basis', 'source_occurred_at'].includes(key)
-            ),
-        ),
-      ),
+      Object.fromEntries(Object.entries(row).filter(([key]) => columns[index]?.includes(key))),
     ),
   );
-  assert.equal(JSON.stringify(comparable), JSON.stringify(before));
+  assert.equal(
+    JSON.stringify(comparable),
+    JSON.stringify(before),
+    'every original column must survive later schema additions unchanged',
+  );
   assert.equal(
     f.db.raw
       .prepare(

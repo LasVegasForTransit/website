@@ -598,6 +598,54 @@ Rollback changes application versions; it must preserve accepted consents, assig
 claims, events and provider cleanup work. Do not reverse migrations or restore an old database over
 new staff activity. Validate any rollback version against the current schema before activation.
 
+## Committee Discord channels
+
+Use an isolated Discord server for the preview. An administrator chooses the server's existing roles
+in **Committees → the committee → Edit committee → Account connections**. Staff never need to copy
+Discord role IDs. A lead receives the committee role plus its optional lead role; each committee
+assignment remains independent.
+
+Before using these controls:
+
+1. Back up the selected membership database and rehearse its pending migrations using the
+   [backup guide](../guides/back-up-membership-database.md). Apply the reviewed canonical
+   migrations, including `0042_committee_discord_leads.sql`, through the approved release path
+   before activating the corresponding staff and jobs build.
+2. In Discord, create or identify the committee's channel roles. Place the bot's role above every
+   role it must assign or remove, including previously used committee roles. Give the bot the
+   approved Manage Roles and Create Invite permissions. Do not grant Administrator to make these
+   controls work.
+3. Keep the bot token on the jobs Worker only. Staff uses the existing `LVBT_NEWSLETTER_JOBS`
+   private service binding to the matching jobs environment for read-only role choices and validated
+   saves. Both Workers need matching public Discord configuration, and synchronization must be
+   enabled for that environment. Keep direct jobs URLs disabled. A setup preview with
+   synchronization disabled intentionally cannot change Discord connections; staff can still save
+   other committee details.
+
+To configure a committee:
+
+1. Sign in as a staff administrator and open **Edit committee → Account connections**.
+2. Choose **Committee Discord role** from the list. Choose **No committee role** to stop assigning a
+   committee-specific role. The general LVBT Member role is configured separately and does not
+   appear among these choices.
+3. If leads need additional channels, choose **Lead Discord role (optional)**. Otherwise leave **No
+   extra lead role** selected. Use a different role from the committee role.
+4. Select **Save committee**. The server reads the current Discord hierarchy again before saving. If
+   a choice became unavailable, choose from the refreshed list. Unavailable connections are kept
+   when staff only changes committee details; they cannot be used for a new connection.
+5. With an approved linked test member, confirm the committee's channels work. Promote the member to
+   lead and confirm the extra channels work. Change them back to member and verify only lead access
+   ends. Repeat with a second committee to confirm its access remains independent. Verify actual
+   roles in Discord as well as the member's **Accounts** section in staff.
+
+The list excludes the Member role, integration-managed roles, roles at or above the bot, and roles
+reserved for another committee or assignment kind. Empty or unavailable choices require an operator
+to check the server configuration; do not paste a role ID or grant wider permissions as a
+workaround. Changing or clearing a connection retains its previous role for cleanup. Never repurpose
+a retired managed role for another committee or assignment kind. Confirm its removal from the
+approved test account while unrelated server roles remain. Accounts without a connected member
+record are flagged for staff review; this configuration does not authorize removing their roles.
+
 ## Google committee access
 
 The Google Directory adapter reconciles verified linked accounts against current and retained

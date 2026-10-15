@@ -1,4 +1,6 @@
 ---
+import DiscordRoleSelect from '../../../components/DiscordRoleSelect.astro';
+import { discordCommitteeChoices } from '../../../lib/discord-role-settings';
 import StaffLayout from '../../../layouts/StaffLayout.astro';
 import Button from '../../../../../site/src/components/app/Button.astro';
 import { getCommitteeView } from '@lasvegasfortransit/platform-storage/committee-views';
@@ -26,6 +28,7 @@ if (Astro.request.method === 'POST') {
 }
 const committee = view.committee;
 const values = feedback?.input ?? committee;
+const roles = await discordCommitteeChoices(staff, id);
 const token = await issueFormToken(staff.db, staff.actor, `committee:settings:${id}`);
 ---
 
@@ -96,8 +99,7 @@ const token = await issueFormToken(staff.db, staff.actor, `committee:settings:${
     <details class="staff-assignment-actions" open={feedback?.status === 400}>
       <summary>Account connections</summary>
       <p class="staff-help mb-3">
-        Ask Civic Tech for these details. Members added to this committee will use its Google group
-        and Discord channels.
+        Members added to this committee will use its Google group and Discord channels.
       </p>
       <div class="space-y-3">
         <div>
@@ -109,15 +111,37 @@ const token = await issueFormToken(staff.db, staff.actor, `committee:settings:${
             value={values.workspaceGroupEmail ?? ''}
           />
         </div>
-        <div>
-          <label for="discord_role_id">Discord role ID</label><input
+        <fieldset class="space-y-3">
+          <legend class="font-bold text-body-sm">Discord channels</legend>
+          <p class="staff-help">
+            Choose the server roles for this committee. Leads also receive the committee role.
+          </p>
+          {
+            !roles && (
+              <p class="staff-help" role="status">
+                Discord connections are unavailable. You can still edit the committee details.
+              </p>
+            )
+          }
+          <DiscordRoleSelect
             id="discord_role_id"
-            name="discord_role_id"
-            inputmode="numeric"
-            maxlength="20"
-            value={values.discordRoleId ?? ''}
+            label="Committee Discord role"
+            empty="No committee role"
+            choices={roles?.memberRoles}
+            current={roles?.currentMemberRole}
+            selected={values.discordRoleId}
+            connected={!!roles}
           />
-        </div>
+          <DiscordRoleSelect
+            id="discord_lead_role_id"
+            label="Lead Discord role (optional)"
+            empty="No extra lead role"
+            choices={roles?.leadRoles}
+            current={roles?.currentLeadRole}
+            selected={values.discordLeadRoleId}
+            connected={!!roles}
+          />
+        </fieldset>
       </div>
     </details>
     <div class="flex flex-wrap items-center gap-5">

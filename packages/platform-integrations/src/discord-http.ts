@@ -13,7 +13,7 @@ interface RequestInput {
   jsonBody?: { access_token: string };
   memberJoin?: true;
   unknownMember?: boolean;
-  responseSize?: 'guild-members';
+  responseSize?: 'guild-members' | 'guild-roles';
 }
 function checkedResult(response: Response, input: RequestInput, data: unknown): unknown {
   if (response.status === 404 && input.unknownMember && object(data).code === 10007) return null;
@@ -138,11 +138,7 @@ export class DiscordHttp {
       throw new DiscordApiFailure('permission_denied');
     if (response.status >= 500) throw new DiscordApiFailure('provider_unavailable');
     if (response.status === 429) return await this.limited(response, signal);
-    const data = await json(
-      response,
-      signal,
-      input.responseSize === 'guild-members' ? 2_097_152 : 131_072,
-    );
+    const data = await json(response, signal, input.responseSize ? 2_097_152 : 131_072);
     return checkedResult(response, input, data);
   }
 }

@@ -1,5 +1,6 @@
 import type { Db } from './db';
 import { PERSON_OPERATION_ELIGIBLE } from './outbox';
+import { discordLeadTarget } from './discord-target';
 export interface DiscordPlanInput {
   personId: string;
   guildId: string;
@@ -31,6 +32,7 @@ interface IdentityRow {
   method: string;
 }
 interface RoleRow {
+  kind: 'member' | 'lead';
   targetId: string;
   resourceId: string;
   generation: number;
@@ -45,8 +47,9 @@ interface PlanRow {
   identities: string;
   roles: string;
 }
-const ROLE_MAPPINGS = `SELECT committee_id,external_id FROM committee_account_mappings WHERE provider='discord'
-  UNION SELECT id AS committee_id,discord_role_id AS external_id FROM committees WHERE discord_role_id IS NOT NULL`;
+const ROLE_MAPPINGS = `SELECT committee_id,external_id,role_kind FROM committee_account_mappings WHERE provider='discord'
+  UNION SELECT id,discord_role_id,'member' FROM committees WHERE discord_role_id IS NOT NULL
+  UNION SELECT id,discord_lead_role_id,'lead' FROM committees WHERE discord_lead_role_id IS NOT NULL`;
 /** One statement gives a consistent identity, membership, assignment and registry snapshot. */
 export async function loadDiscordPlan(
   db: Db,
@@ -58,9 +61,9 @@ export async function loadDiscordPlan(
     coalesce((SELECT generation FROM reconcile_generations WHERE person_id=p.id AND target_id='person'),0) AS generation,
     (SELECT d.operation_id FROM discord_disconnects d JOIN identities i ON i.id=d.identity_record_id WHERE i.person_id=p.id AND i.platform='discord' LIMIT 1) AS disconnectOperationId,
     (SELECT json_group_array(json_object('id',id,'externalId',external_id,'email',external_email,'method',link_method)) FROM identities WHERE person_id=p.id AND platform='discord') AS identities,
-    (SELECT json_group_array(json_object('targetId',r.committee_id,'resourceId',r.external_id,'generation',coalesce((SELECT generation FROM reconcile_generations WHERE person_id=p.id AND target_id=r.committee_id),0),
-      'expected',CASE WHEN p.deleted_at IS NULL AND p.membership_status='member' AND NOT EXISTS(SELECT 1 FROM discord_disconnects d JOIN identities i ON i.id=d.identity_record_id WHERE i.person_id=p.id AND i.platform='discord') AND c.discord_role_id=r.external_id AND EXISTS(SELECT 1 FROM committee_assignments a WHERE a.person_id=p.id AND a.committee_id=c.id AND a.ended_at IS NULL) THEN 1 ELSE 0 END,
-      'current',CASE WHEN c.discord_role_id=r.external_id THEN 1 ELSE 0 END)) FROM (SELECT * FROM (${ROLE_MAPPINGS}) ORDER BY committee_id,external_id) r JOIN committees c ON c.id=r.committee_id) AS roles
+    (SELECT json_group_array(json_object('targetId',r.committee_id,'kind',r.role_kind,'resourceId',r.external_id,'generation',coalesce((SELECT generation FROM reconcile_generations WHERE person_id=p.id AND target_id=r.committee_id),0),
+      'expected',CASE WHEN p.deleted_at IS NULL AND p.membership_status='member' AND NOT EXISTS(SELECT 1 FROM discord_disconnects d JOIN identities i ON i.id=d.identity_record_id WHERE i.person_id=p.id AND i.platform='discord') AND (CASE r.role_kind WHEN 'lead' THEN c.discord_lead_role_id ELSE c.discord_role_id END)=r.external_id AND EXISTS(SELECT 1 FROM committee_assignments a WHERE a.person_id=p.id AND a.committee_id=c.id AND a.ended_at IS NULL AND (r.role_kind='member' OR a.role='lead')) THEN 1 ELSE 0 END,
+      'current',CASE WHEN (CASE r.role_kind WHEN 'lead' THEN c.discord_lead_role_id ELSE c.discord_role_id END)=r.external_id THEN 1 ELSE 0 END)) FROM (SELECT * FROM (${ROLE_MAPPINGS}) ORDER BY committee_id,external_id) r JOIN committees c ON c.id=r.committee_id) AS roles
     FROM reconciliation_people p WHERE p.id=? AND (p.deleted_at IS NULL OR EXISTS(
       SELECT 1 FROM integration_outbox o JOIN reconcile_generations g ON g.person_id=o.person_id AND g.target_id=o.target_id AND g.generation=o.generation
       WHERE o.id=? AND o.person_id=p.id AND o.state IN ('queued','running','retry') AND ${PERSON_OPERATION_ELIGIBLE}))`,
@@ -91,7 +94,7 @@ export async function loadDiscordPlan(
       current: true,
     },
     ...roles.map((role) => ({
-      targetId: role.targetId,
+      targetId: role.kind === 'lead' ? discordLeadTarget(role.targetId) : role.targetId,
       resourceId: role.resourceId,
       generation: role.generation,
       expectedAccess: Boolean(role.expected),

@@ -1,5 +1,5 @@
 ---
-import type { AccessRow } from '@lasvegasfortransit/platform-storage/access-view';
+import { discordTarget, type AccessRow } from '@lasvegasfortransit/platform-storage/access-view';
 import { t } from '@lasvegasfortransit/platform-core/messages';
 import AccountAccessRow from './AccountAccessRow.astro';
 import type { AccessFeedback } from '../lib/account-access';
@@ -22,7 +22,10 @@ const committeeAccounts = committees.filter(
     row.googleWorkspace.state === 'granted',
 );
 const needsHelp = [...(showMember ? [member] : []), ...committeeAccounts].some((row) => {
-  const providers = row.targetId === 'person' ? [row.discord] : [row.discord, row.googleWorkspace];
+  const providers =
+    row.targetId === 'person' || discordTarget(row.targetId).lead
+      ? [row.discord]
+      : [row.discord, row.googleWorkspace];
   const expected = row.expectedAccess ? 'granted' : 'absent';
   return (
     needsAccessRecovery(row) ||
