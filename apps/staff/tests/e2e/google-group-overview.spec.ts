@@ -125,7 +125,10 @@ try {
     true,
   );
   const group = page.getByRole('link', { name: 'Events Committee', exact: true });
-  await group.click();
+  await Promise.all([
+    page.waitForURL(`${ORIGIN}/access/groups/?group=${encodeURIComponent(groupEmail)}`),
+    group.click(),
+  ]);
   assert.equal(
     await page.getByRole('heading', { name: 'Events Committee', exact: true }).count(),
     1,
