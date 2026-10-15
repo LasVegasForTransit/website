@@ -34,7 +34,9 @@ export async function auditAccountData(fixture: Awaited<ReturnType<typeof accoun
           settings: {
             onlyCategories: ['performance', 'accessibility', 'best-practices'],
             extraHeaders: { Cookie: `${SESSION_COOKIE}=${fixture.session.token}` },
-            chromeFlags: `--ignore-certificate-errors --no-proxy-server --host-resolver-rules="MAP ${new URL(ACCOUNT_ORIGIN).hostname} 127.0.0.1:${fixture.port}, MAP * ~NOTFOUND"`,
+            // GitHub's Linux runner cannot sandbox Playwright's bundled Chromium.
+            // This browser visits only the isolated compiled fixture above.
+            chromeFlags: `${process.platform === 'linux' && process.env.CI === 'true' ? '--no-sandbox ' : ''}--ignore-certificate-errors --no-proxy-server --host-resolver-rules="MAP ${new URL(ACCOUNT_ORIGIN).hostname} 127.0.0.1:${fixture.port}, MAP * ~NOTFOUND"`,
           },
         },
         assert: {

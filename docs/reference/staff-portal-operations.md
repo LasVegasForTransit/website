@@ -796,6 +796,12 @@ pnpm -C apps/site test:account-data:lighthouse
 The account-data fixture covers authenticated download and deletion, including JavaScript-disabled
 forms; its accessibility and Lighthouse checks use local fixtures only.
 
+On GitHub's Linux runners, this fixture launches bundled Chromium with `--no-sandbox` because the
+runner disallows its sandbox. That exception applies only when `CI=true` on Linux, and the audit
+browser is restricted to the isolated local fixture. Local runs retain Chromium's sandbox. A Chrome
+launch failure is an incomplete audit; inspect the runner log and repair its configuration before
+rerunning the same checks. Do not lower accessibility or performance thresholds to clear it.
+
 These use synthetic data and isolated providers. They cannot prove real Google sign-in, a complete
 imported roster, Discord server operation, Google Group or mailing-list synchronization, production
 deployment, or staff usability. Record real administrator, committee-lead and refused-account
