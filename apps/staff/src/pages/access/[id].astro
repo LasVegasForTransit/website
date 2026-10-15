@@ -1,0 +1,170 @@
+---
+import StaffLayout from '../../layouts/StaffLayout.astro';
+import CommitteeAccessStatus from '../../components/CommitteeAccessStatus.astro';
+import GoogleGroupPeople from '../../components/GoogleGroupPeople.astro';
+import {
+  listCommitteeAccessOverview,
+  listCommitteeDiscordReview,
+} from '@lasvegasfortransit/platform-storage/committee-access';
+import { getGoogleGroupReview } from '@lasvegasfortransit/platform-storage/google-group-overview';
+import { can, PermissionDenied } from '@lasvegasfortransit/platform-core/permissions';
+import { InvalidCursor } from '@lasvegasfortransit/platform-storage/staff-history';
+import { t, formatFullDate } from '@lasvegasfortransit/platform-core/messages';
+import { messageResponse } from '../../lib/responses';
+const staff = Astro.locals.staff;
+if (!staff || !can(staff.actor, 'staff_admin.manage'))
+  return messageResponse(t('staff.common.accessDenied'), 403);
+const committeeId = Astro.params.id ?? '',
+  now = new Date();
+let committee, discord, google;
+try {
+  const query = {
+    committeeId,
+    configuration: staff.accessConfiguration ?? {},
+    consoleGroupEmail: staff.googleGroups?.consoleGroupEmail ?? null,
+    now,
+  };
+  committee = (await listCommitteeAccessOverview(staff.db, staff.actor, query)).items[0];
+  if (!committee) return messageResponse(t('staff.access.invalidLink'), 404);
+  discord = await listCommitteeDiscordReview(staff.db, staff.actor, {
+    ...query,
+    cursor: Astro.url.searchParams.get('discord_cursor') ?? undefined,
+  });
+  if (committee.google.resourceId)
+    google = await getGoogleGroupReview(staff.db, staff.actor, {
+      configuration: staff.googleGroups?.provider ?? { configured: false, contextId: '' },
+      consoleGroupEmail: query.consoleGroupEmail,
+      now,
+      groupEmail: committee.google.resourceId,
+      cursor: Astro.url.searchParams.get('google_cursor') ?? undefined,
+    });
+} catch (error) {
+  if (error instanceof PermissionDenied)
+    return messageResponse(t('staff.common.accessDenied'), 403);
+  if (error instanceof InvalidCursor) return messageResponse(t('staff.access.invalidLink'), 400);
+  throw error;
+}
+const nextDiscord = new URL(Astro.url);
+if (discord.nextCursor) nextDiscord.searchParams.set('discord_cursor', discord.nextCursor);
+const nextGoogle = new URL(Astro.url);
+if (google?.nextCursor) nextGoogle.searchParams.set('google_cursor', google.nextCursor);
+---
+
+<StaffLayout title={committee.name} description={t('staff.accessOverview.detail')}>
+  <a slot="breadcrumb" href="/access/" class="staff-back">{t('staff.googleGroups.back')}</a>
+  <section aria-labelledby="committee-google-heading" class="staff-committee-detail">
+    <h2 id="committee-google-heading">{t('staff.accessOverview.google')}</h2>
+    <CommitteeAccessStatus summary={committee.google} />
+    {
+      committee.google.resourceId && (
+        <a
+          class="staff-action-link"
+          href={`/access/groups/?group=${encodeURIComponent(committee.google.resourceId)}`}
+        >
+          {t('staff.accessOverview.googleReview')}
+        </a>
+      )
+    }
+    {
+      google?.summary.state === 'current' && (
+        <>
+          <GoogleGroupPeople page={google} />
+          {google.nextCursor && (
+            <a class="staff-next" href={nextGoogle.pathname + nextGoogle.search}>
+              {t('staff.googleGroups.morePeople')}
+            </a>
+          )}
+        </>
+      )
+    }
+  </section>
+  <section aria-labelledby="committee-discord-heading" class="staff-committee-detail">
+    <h2 id="committee-discord-heading">{t('staff.accessOverview.discord')}</h2>
+    <CommitteeAccessStatus summary={committee.discord} />
+    {
+      committee.discord.unmatched > 0 && (
+        <p>
+          <a href="/access/#discord-review-heading">
+            {t('staff.accessOverview.unlinked', { count: committee.discord.unmatched })}
+          </a>
+        </p>
+      )
+    }
+    {
+      committee.discordLeads.resourceId && (
+        <>
+          <>
+            <h3>{t('staff.accessOverview.leads')}</h3>
+            <CommitteeAccessStatus summary={committee.discordLeads} />
+          </>
+        </>
+      )
+    }
+    <ul class="staff-google-people-list">
+      {
+        discord.items.map((person) => (
+          <li>
+            <div>
+              <h3>
+                <a href={`/people/${encodeURIComponent(person.personId)}/#accounts`}>
+                  {person.name}
+                </a>
+              </h3>
+              {person.email && <p class="staff-help">{person.email}</p>}
+              <p class="staff-help">
+                {person.lead ? t('staff.access.committeeLead') : t('staff.access.committeeMember')}
+              </p>
+              {person.firstSeenAt && (
+                <p class="staff-help">
+                  <time datetime={person.firstSeenAt}>
+                    {t('staff.accessOverview.firstSeen', {
+                      date: formatFullDate(new Date(person.firstSeenAt)),
+                    })}
+                  </time>
+                </p>
+              )}
+            </div>
+            <dl>
+              <>
+                <div>
+                  <>
+                    <dt>{t('staff.accessOverview.expectedAccess')}</dt>
+                    <dd>
+                      {person.expected
+                        ? t('staff.accessOverview.hasAccess')
+                        : t('staff.accessOverview.noAccess')}
+                    </dd>
+                  </>
+                </div>
+                <div>
+                  <>
+                    <dt>{t('staff.accessOverview.actual')}</dt>
+                    <dd>
+                      {person.actual.state === 'granted'
+                        ? t('staff.accessOverview.hasAccess')
+                        : t('staff.accessOverview.noAccess')}
+                    </dd>
+                  </>
+                </div>
+              </>
+            </dl>
+            <a
+              class="staff-action-link"
+              href={`/people/${encodeURIComponent(person.personId)}/#accounts`}
+            >
+              {t('staff.accessOverview.knownMember')}
+            </a>
+          </li>
+        ))
+      }
+    </ul>
+    {!discord.items.length && <p class="staff-help">{t('staff.accessOverview.noDifferences')}</p>}
+    {
+      discord.nextCursor && (
+        <a class="staff-next" href={nextDiscord.pathname + nextDiscord.search}>
+          {t('staff.accessOverview.nextPeople')}
+        </a>
+      )
+    }
+  </section>
+</StaffLayout>

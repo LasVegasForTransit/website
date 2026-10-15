@@ -21,8 +21,13 @@ const labels: Record<string, string> = {
   'staff_admin.manage': t('staff.history.staffAccessChanged'),
   'access.granted': t('staff.history.granted'),
   'access.revoked': t('staff.history.revoked'),
+  'access.suspended': t('staff.accessOverview.suspended'),
+  'access.unsuspended': t('staff.accessOverview.unsuspended'),
+  'access.transferred': t('staff.accessOverview.transferred'),
+  'access.deleted': t('staff.accessOverview.deleted'),
 };
 const sources: Record<string, string> = {
+  access_page: t('staff.accessOverview.removedReason'),
   discord_drift: t('staff.history.periodicCheck'),
   google_group_review: t('staff.history.groupReview'),
   'access.group_update': t('staff.history.groupReview'),
@@ -45,7 +50,13 @@ function actionLabel(item: AccessHistoryRow): string {
       ? t('staff.history.serviceGranted', values)
       : t('staff.history.serviceRemoved', values);
   }
-  return labels[item.action] ?? t('staff.history.accessChanged');
+  const label = labels[item.action] ?? t('staff.history.accessChanged');
+  return item.provider &&
+    ['access.suspended', 'access.unsuspended', 'access.transferred', 'access.deleted'].includes(
+      item.action,
+    )
+    ? `${displayLabel(item.provider)} · ${label}`
+    : label;
 }
 function actorLabel(item: AccessHistoryRow): string {
   return item.actorKind === 'person'
@@ -56,7 +67,9 @@ function reasonLabel(item: AccessHistoryRow): string {
   return [
     item.source && item.source !== 'account_update' && sources[item.source],
     item.role && item.action !== 'committee.end' && displayLabel(item.role),
-    item.reason && displayLabel(item.reason),
+    item.reason &&
+      item.reason !== item.source &&
+      (sources[item.reason] ?? displayLabel(item.reason)),
   ]
     .filter(Boolean)
     .join(' · ');

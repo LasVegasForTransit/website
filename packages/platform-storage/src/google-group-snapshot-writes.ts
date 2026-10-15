@@ -1,5 +1,6 @@
 import type { Db, Statement, SqlValue } from './db';
 import type { GoogleSnapshot } from './google-group-snapshot-input';
+import { googleGroupMismatchWrites } from './google-group-mismatches';
 
 export const GOOGLE_GROUP_REGISTERED = `EXISTS(SELECT 1 FROM (
   SELECT workspace_group_email AS email FROM committees WHERE workspace_group_email IS NOT NULL
@@ -83,5 +84,6 @@ export function googleSnapshotWrites(
       )
       .bind(input.customerId, input.groupEmail, input.startedAt, ...guard.values),
   );
+  writes.push(...googleGroupMismatchWrites(db, input, consoleGroupEmail, guard));
   return writes;
 }

@@ -47,7 +47,8 @@ export async function recordAccessObservation(
   const statement = accessObservationWrite(db, input, now);
   if (!statement) return false;
   const result = await statement.run();
-  return result.meta.changes === 1;
+  // D1 includes writes made by the mismatch trigger in this metadata.
+  return result.meta.changes > 0;
 }
 
 /** One guarded statement records a bounded provider snapshot without a query per committee. */

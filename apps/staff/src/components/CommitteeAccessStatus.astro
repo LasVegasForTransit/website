@@ -1,0 +1,59 @@
+---
+import type { CommitteeProviderSummary } from '@lasvegasfortransit/platform-storage/committee-access';
+import { t, formatFullDate, formatTime } from '@lasvegasfortransit/platform-core/messages';
+interface Props {
+  summary: CommitteeProviderSummary;
+}
+const { summary } = Astro.props;
+---
+
+{
+  summary.holders === null ? (
+    <p class="staff-help">
+      {t(
+        summary.state === 'not_mapped'
+          ? 'staff.access.notMapped'
+          : summary.state === 'not_configured'
+            ? 'staff.access.notConfigured'
+            : 'staff.access.notChecked',
+      )}
+    </p>
+  ) : (
+    <>
+      <p>{t('staff.accessOverview.holders', { count: summary.holders })}</p>
+      {Boolean(summary.missing) && (
+        <p class="staff-access-status-attention">
+          {t('staff.accessOverview.missing', { count: summary.missing! })}
+        </p>
+      )}
+      {Boolean(summary.unexpected) && (
+        <p class="staff-access-status-attention">
+          {t('staff.accessOverview.unexpected', { count: summary.unexpected! })}
+        </p>
+      )}
+      {summary.unconfirmed + summary.unmatched > 0 && (
+        <p class="staff-help">
+          {t('staff.accessOverview.unconfirmed', {
+            count: summary.unconfirmed + summary.unmatched,
+          })}
+        </p>
+      )}
+      {summary.missing === 0 &&
+        summary.unexpected === 0 &&
+        summary.unconfirmed === 0 &&
+        summary.unmatched === 0 && <p class="staff-help">{t('staff.accessOverview.matches')}</p>}
+    </>
+  )
+}
+{
+  summary.checkedAt && (
+    <p class="staff-help">
+      <time datetime={summary.checkedAt}>
+        {t('staff.access.checked', {
+          date: formatFullDate(new Date(summary.checkedAt)),
+          time: formatTime(new Date(summary.checkedAt)),
+        })}
+      </time>
+    </p>
+  )
+}

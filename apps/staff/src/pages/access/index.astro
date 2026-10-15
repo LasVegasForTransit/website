@@ -4,6 +4,10 @@ import Button from '../../../../site/src/components/app/Button.astro';
 import AccountAccessRow from '../../components/AccountAccessRow.astro';
 import MemberAccess from '../../components/MemberAccess.astro';
 import AccessHistory from '../../components/AccessHistory.astro';
+import CommitteeAccessOverview from '../../components/CommitteeAccessOverview.astro';
+import DiscordAccessChanges from '../../components/DiscordAccessChanges.astro';
+import { listCommitteeAccessOverview } from '@lasvegasfortransit/platform-storage/committee-access';
+import { listAccessChanges } from '@lasvegasfortransit/platform-storage/access-audit';
 import GoogleGroupOverview from '../../components/GoogleGroupOverview.astro';
 import { can } from '@lasvegasfortransit/platform-core/permissions';
 import { listGoogleGroupOverview } from '@lasvegasfortransit/platform-storage/google-group-overview';
@@ -45,13 +49,27 @@ const committeeId = Astro.url.searchParams.get('committee') ?? undefined;
 const text = Astro.url.searchParams.get('q') ?? '';
 const needsAttention =
   !personId && !committeeId && !text && Astro.url.searchParams.get('view') !== 'all';
-let page, history, discordReviews, memberAccess, googleOverview;
+let page, history, discordReviews, memberAccess, googleOverview, committeeOverview, corrections;
 try {
   if (!personId && !committeeId && !text && can(staff.actor, 'staff_admin.manage')) {
     const configuration = staff.googleGroups ?? {
       provider: { configured: false, contextId: '' },
       consoleGroupEmail: null,
     };
+    const now = new Date();
+    committeeOverview = await listCommitteeAccessOverview(staff.db, staff.actor, {
+      configuration: staff.accessConfiguration ?? {},
+      consoleGroupEmail: configuration.consoleGroupEmail,
+      now,
+      cursor: Astro.url.searchParams.get('committee_cursor') ?? undefined,
+      includeUnmapped: Astro.url.searchParams.get('committees') === 'all',
+    });
+    corrections = await listAccessChanges(staff.db, staff.actor, {
+      system: 'discord',
+      since: new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000),
+      now,
+      cursor: Astro.url.searchParams.get('correction_cursor') ?? undefined,
+    });
     googleOverview = await listGoogleGroupOverview(staff.db, staff.actor, {
       configuration: configuration.provider,
       consoleGroupEmail: configuration.consoleGroupEmail,
@@ -128,7 +146,8 @@ if (discordReviews?.nextCursor)
       </p>
     )
   }
-  {googleOverview && <GoogleGroupOverview page={googleOverview} />}
+  {committeeOverview && <CommitteeAccessOverview page={committeeOverview} />}
+  {googleOverview && <GoogleGroupOverview page={googleOverview} showGroups={false} />}
   {
     discordReviews && (
       <section class="staff-discord-review" aria-labelledby="discord-review-heading">
@@ -247,6 +266,7 @@ if (discordReviews?.nextCursor)
       </a>
     )
   }
+  {corrections && <DiscordAccessChanges page={corrections} />}
   <AccessHistory
     page={history}
     personId={personId}

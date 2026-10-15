@@ -762,6 +762,57 @@ preparing any grant:
 If Google requests a passkey, the account owner completes it. Inspect Cloud and Admin separately;
 successful sign-in to either service does not prove the other's configuration.
 
+## Review committee account access
+
+Administrators open **Members → Google and Discord access**. The committee table compares current
+LVBT assignments with the last stored Google and Discord checks. It starts with committees that have
+accounts set up; select **All committees** to include the rest. It never contacts a provider when
+someone opens the page. Counts describe confirmed access; unconnected, ambiguous and stale accounts
+remain separate. Discord is optional, so an unconnected account is not a reason to remove someone
+from a committee.
+
+1. Open a committee to review its Google and Discord differences. Confirm the checked date before
+   acting. A missing or stale check cannot confirm that someone has access or that access was
+   removed.
+2. Compare **Expected access** with **Confirmed access**. Discord roles shared by committees use all
+   current committee entitlements. A person entitled through another committee is not an unexpected
+   holder. Member and committee-lead access remain separate.
+3. For Google, select **Review Google access** for the current group and its existing correction
+   actions. **Add to committee** changes the canonical assignment. Removing an unexpected Google
+   holder leaves their LVBT membership intact and records **Removed from access page**. Inherited
+   access must be reviewed in Google Admin; a direct group removal cannot establish that inherited
+   access ended.
+4. Open a member for committee changes or an access retry. A retry records who requested it and the
+   reason. Requests are not completed access changes; only a confirmed provider change appears in
+   the corrections list. Unmatched Discord accounts stay unchanged while staff reviews them.
+5. Review **Discord corrections in the last seven days** for completed changes. The member profile's
+   **Access history** retains the longer administrator-only history, including automatic changes and
+   the staff requester when available.
+
+Migration `0043_access_mismatch_observations.sql` adds operational first-noticed dates for known
+Google direct membership and Discord role differences. Apply all canonical migrations in order
+before uploading this version, following
+[the preview upgrade procedure](../guides/set-up-staff-preview.md). A complete Google inventory and
+a current known Discord read can establish a date. Unknown, incomplete or superseded checks cannot
+create a false first-noticed date. A confirmed correction clears the old date; a later recurrence
+starts a new one. Older stored checks without this evidence do not invent a date. Archived or erased
+member rows clear these observations; undoing a combination requires a fresh provider check rather
+than restoring old access evidence.
+
+All access systems write through `accessChangeWrite` in `platform-storage/access-audit`. Callers
+must first confirm a real grant, revocation, suspension, restoration, transfer or deletion and
+retain their transaction's ownership guard. Set `changed` false for an unchanged operation. Use a
+stable operation ID, a supported system and reason, the affected person, resource and actual actor.
+The writer accepts no free-form details or message bodies. Google and Discord confirmation paths use
+this same writer with their existing provider fences. Workspace-account, GitHub and checklist
+callers can use it without claiming that those integrations are deployed.
+
+`listAccessChanges` reads the same immutable history for all systems. Its filters, current
+administrator check and newest-first pagination run against stored records. Privacy erasure redacts
+personal details while retaining the permitted action, actor and time; the reader never reconstructs
+redacted targets. Ordinary updates cannot edit the log. The existing three-year maintenance policy
+applies to every supported action.
+
 ## Historical roster preview
 
 Give the read-only import command a reviewed JSON array normalized to the roster evidence fields. It

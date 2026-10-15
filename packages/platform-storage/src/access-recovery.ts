@@ -31,7 +31,7 @@ export async function requestAccessRetry(
     db
       .prepare(
         `INSERT INTO staff_audits(id,actor_id,action,target_id,details,occurred_at)
-      SELECT ?,?,'access.retry',person_id,json_object('targetId',target_id),? FROM integration_outbox WHERE id=? AND changes()>0`,
+      SELECT ?,?,'access.retry',person_id,json_object('targetId',target_id,'reason','staff_retry'),? FROM integration_outbox WHERE id=? AND changes()>0`,
       )
       .bind(auditId, actor.personId, stamp, operationId),
   ]);

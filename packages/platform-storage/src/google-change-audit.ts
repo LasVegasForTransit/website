@@ -1,4 +1,5 @@
 import { ulid } from '@lasvegasfortransit/platform-core/ids';
+import { accessChangeWrite } from './access-audit';
 import { digestToken } from '@lasvegasfortransit/platform-core/random-token';
 import type { Db } from './db';
 import { googleSyncGuard, type GoogleSyncWrite } from './google-sync-store';
@@ -86,12 +87,7 @@ export async function confirmGoogleChange(
     .all<{ id: string }>();
   for (const intent of results)
     await db.batch([
-      db
-        .prepare(
-          `INSERT INTO staff_audits(id,actor_id,action,target_id,details,operation_id,occurred_at)
-      SELECT id,'platform:google_workspace',CASE after_granted WHEN 1 THEN 'access.granted' ELSE 'access.revoked' END,person_id,json_object('provider',provider,'identityId',identity_id,'contextId',context_id,'resourceId',resource_id,'targetId',target_id,'generation',generation,'source',source,'requestedBy',requested_by,'operationId',operation_id,'preparedAt',prepared_at,'proof','provider_read'),'provider-change:'||id,? FROM provider_access_intents WHERE id=? AND ${guard.sql} ON CONFLICT(id) DO NOTHING`,
-        )
-        .bind(input.now.toISOString(), intent.id, ...guard.values),
+      accessChangeWrite(db, { intentId: intent.id, guard }, input.now),
       db
         .prepare(
           `DELETE FROM provider_access_intents WHERE id=? AND ${guard.sql} AND EXISTS(SELECT 1 FROM staff_audits WHERE id=?)`,

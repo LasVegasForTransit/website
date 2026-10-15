@@ -74,7 +74,7 @@ export function googleGroupRequestWrites(
         ulid(),
         actor.personId,
         input.personId,
-        input.expectedAccess ? 'missing_access' : 'unexpected_access',
+        input.expectedAccess ? 'missing_access' : 'access_page',
         input.groupEmail,
         input.groupEmail,
         input.groupEmail,

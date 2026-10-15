@@ -65,7 +65,7 @@ const token =
   }
   {
     token && (
-      <form method="post" action={Astro.url.pathname + Astro.url.search}>
+      <form method="post" action={`/access/groups/?group=${encodeURIComponent(group.groupEmail)}`}>
         <input type="hidden" name="token" value={token} />
         <input type="hidden" name="person_id" value={input.personId} />
         <input type="hidden" name="identity_id" value={input.identityId} />

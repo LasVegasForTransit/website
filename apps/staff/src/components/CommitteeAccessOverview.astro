@@ -1,0 +1,91 @@
+---
+import type { Page } from '@lasvegasfortransit/platform-core/staff-types';
+import type { CommitteeAccessSummary } from '@lasvegasfortransit/platform-storage/committee-access';
+import { t } from '@lasvegasfortransit/platform-core/messages';
+import CommitteeAccessStatus from './CommitteeAccessStatus.astro';
+interface Props {
+  page: Page<CommitteeAccessSummary>;
+}
+const { page } = Astro.props;
+const all = new URL(Astro.url);
+all.searchParams.set('committees', 'all');
+all.searchParams.delete('committee_cursor');
+const mapped = new URL(Astro.url);
+mapped.searchParams.delete('committees');
+mapped.searchParams.delete('committee_cursor');
+const showAll = Astro.url.searchParams.get('committees') === 'all';
+const next = new URL(Astro.url);
+if (page.nextCursor) next.searchParams.set('committee_cursor', page.nextCursor);
+---
+
+<section class="staff-committee-access" aria-labelledby="committee-access-heading">
+  <h2 id="committee-access-heading">{t('staff.accessOverview.title')}</h2>
+  <p class="staff-help">{t('staff.accessOverview.hint')}</p>
+  <nav class="staff-access-views" aria-label={t('staff.accessOverview.views')}>
+    <a href={mapped.pathname + mapped.search} aria-current={!showAll ? 'page' : undefined}
+      >{t('staff.accessOverview.mapped')}</a
+    ><a href={all.pathname + all.search} aria-current={showAll ? 'page' : undefined}
+      >{t('staff.access.allCommittees')}</a
+    >
+  </nav>
+  {
+    page.items.length ? (
+      <table class="staff-committee-access-table" role="table">
+        <thead role="rowgroup">
+          <tr role="row">
+            <>
+              <th scope="col" role="columnheader">
+                {t('staff.accessOverview.committee')}
+              </th>
+              <th scope="col" role="columnheader">
+                {t('staff.accessOverview.google')}
+              </th>
+              <th scope="col" role="columnheader">
+                {t('staff.accessOverview.discord')}
+              </th>
+            </>
+          </tr>
+        </thead>
+        <tbody role="rowgroup">
+          {page.items.map((committee) => (
+            <tr role="row">
+              <th scope="row" role="rowheader">
+                <a href={`/access/${encodeURIComponent(committee.id)}/`}>{committee.name}</a>
+                <p class="staff-help">
+                  {t('staff.accessOverview.expected', { count: committee.expectedPeople })}
+                </p>
+              </th>
+              <td role="cell">
+                <span class="staff-committee-access-label" aria-hidden="true">
+                  {t('staff.accessOverview.google')}
+                </span>
+                <CommitteeAccessStatus summary={committee.google} />
+              </td>
+              <td role="cell">
+                <span class="staff-committee-access-label" aria-hidden="true">
+                  {t('staff.accessOverview.discord')}
+                </span>
+                <CommitteeAccessStatus summary={committee.discord} />
+                {committee.discordLeads.resourceId && (
+                  <div class="staff-committee-lead-access">
+                    <strong>{t('staff.accessOverview.leads')}</strong>
+                    <CommitteeAccessStatus summary={committee.discordLeads} />
+                  </div>
+                )}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    ) : (
+      <p>{t('staff.accessOverview.noCommittees')}</p>
+    )
+  }
+  {
+    page.nextCursor && (
+      <a class="staff-next" href={next.pathname + next.search}>
+        {t('staff.accessOverview.more')}
+      </a>
+    )
+  }
+</section>
