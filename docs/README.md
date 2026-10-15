@@ -31,6 +31,8 @@ just say guides.)
   the preview database, a saved deployment, and the first administrator
 - [Export a member record](./guides/export-a-member-record.md) — download one person's complete
   record for a privacy request.
+- [Combine duplicate member records](./guides/combine-member-records.md) — confirm a match, combine
+  safely, and undo a mistaken combination without losing history
 - [Operate member data retention](./guides/operate-member-data-retention.md) — review deletion,
   daily retention, and Google accounts that need attention.
 - [Back up the membership database](./guides/back-up-membership-database.md) — export privately and

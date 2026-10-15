@@ -144,7 +144,23 @@ export interface MergeBookkeeping {
   copiedAdmin: MergeRow | null;
   reviews: MergeRow[];
   withdrawalIds: string[];
+  fieldSources?: MergeRow[];
 }
+export const MERGED_PROFILE_EMPTY = {
+  given_name: null,
+  family_name: null,
+  email: null,
+  email_verified_at: null,
+  phone: null,
+  zip: null,
+  census_block: null,
+  census_block_vintage: null,
+  place_name: null,
+  region_id: null,
+  region_source: null,
+  region_set_at: null,
+  preferred_language: 'en',
+} satisfies Record<string, SqlValue>;
 export interface MergeRecord {
   id: string;
   surviving_person_id: string;

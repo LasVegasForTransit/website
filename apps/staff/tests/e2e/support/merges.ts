@@ -23,6 +23,7 @@ export async function exerciseMerges(page: Page, fixture: Fixture) {
     .first()
     .click();
   await page.getByText('Combine if they are the same person', { exact: true }).click();
+  assert.equal(await page.getByRole('radio').count(), 0, 'the older record is kept automatically');
   await page
     .getByLabel('Reason for combining')
     .fill('Member confirmed this paper signup was theirs.');
@@ -36,7 +37,9 @@ export async function exerciseMerges(page: Page, fixture: Fixture) {
   assert.equal(reply.status(), 303);
   await page.getByRole('heading', { name: 'Entries combined', exact: true }).waitFor();
   assert.ok((await page.content()).includes('Member confirmed this paper signup was theirs.'));
-  assert.equal(await people.getPerson(person.id), null);
+  const current = await people.getPerson(person.id);
+  assert.ok(current);
+  assert.notEqual(current.id, person.id);
   await page.screenshot({
     path: `${fixture.root}/test-results/staff/combined-desktop.png`,
     animations: 'disabled',

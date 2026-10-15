@@ -38,6 +38,14 @@ export async function mergeFixture(through?: string, initialConsentAt?: string) 
       },
     })
   ).person;
+  db.raw
+    .prepare('UPDATE people SET created_at=? WHERE id=?')
+    .run(
+      new Date(
+        Math.max(Date.parse(merged.created_at), Date.parse(survivor.created_at) + 1),
+      ).toISOString(),
+      merged.id,
+    );
   await linkWorkspaceIdentity(db, {
     workspace: {
       subject: 'fixture-admin',

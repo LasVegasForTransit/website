@@ -8,6 +8,7 @@ import type { ConsentScope, MembershipStatus } from '@lasvegasfortransit/platfor
 import type { RegionId, RegionSource } from '@lasvegasfortransit/platform-core/regions';
 import type { Db, SqlValue } from './db';
 import { deletePersonData } from './person-deletion';
+import { PERSON_MERGE_CHAIN, PERSON_MERGE_TERMINAL } from './person-resolution';
 import {
   linkPersonIdentity,
   personHasOtherHistory,
@@ -127,11 +128,23 @@ export class PersonService {
     options?: { withCounts?: boolean; now?: Date },
   ): Promise<Person | (Person & { counts: EngagementCounts }) | null> {
     const person = await this.db
-      .prepare(`SELECT ${PERSON_COLUMNS} FROM people WHERE id = ? AND deleted_at IS NULL`)
+      .prepare(
+        `${PERSON_MERGE_CHAIN} SELECT ${PERSON_COLUMNS} FROM people
+      WHERE id IN (SELECT id FROM chain) AND deleted_at IS NULL AND erased_at IS NULL
+      AND ${PERSON_MERGE_TERMINAL} LIMIT 1`,
+      )
       .bind(id)
       .first<Person>();
     if (!person || !options?.withCounts) return person;
-    return { ...person, counts: await engagementCounts(this.db, id, options.now) };
+    return { ...person, counts: await engagementCounts(this.db, person.id, options.now) };
+  }
+
+  /** Session, token and mutation authority requires this exact active identifier. */
+  getExactPerson(id: string): Promise<Person | null> {
+    return this.db
+      .prepare(`SELECT ${PERSON_COLUMNS} FROM people WHERE id = ? AND deleted_at IS NULL`)
+      .bind(id)
+      .first<Person>();
   }
 
   async findByEmail(email: string): Promise<Person | null> {
@@ -184,7 +197,7 @@ export class PersonService {
     if (input.emailVerified === true && emailStored) {
       await this.db
         .prepare(
-          'UPDATE people SET email_verified_at = coalesce(email_verified_at, ?) WHERE id = ?',
+          'UPDATE people SET email_verified_at = coalesce(email_verified_at, ?) WHERE id = ? AND deleted_at IS NULL AND erased_at IS NULL',
         )
         .bind(now, personId)
         .run();
@@ -202,7 +215,7 @@ export class PersonService {
         givenAt: input.consent.givenAt ?? now,
       });
     }
-    const person = await this.getPerson(personId);
+    const person = await this.getExactPerson(personId);
     if (!person) throw new Error('person service: person vanished during upsert');
     return { person, action };
   }
@@ -242,11 +255,11 @@ export class PersonService {
       .map(([name, value]): [FieldName, SqlValue] => [name, value === '' ? null : value])
       .filter(([, value]) => input.allowClear === true || value !== null);
     if (input.onlyEmpty) {
-      const current = await this.getPerson(id);
+      const current = await this.getExactPerson(id);
       if (!current) return null;
       fields = fields.filter(([name]) => current[name] === null);
     }
-    if (fields.length === 0) return this.getPerson(id);
+    if (fields.length === 0) return this.getExactPerson(id);
     const now = nowIso();
     const assignments = fields
       .map(([name]) =>
@@ -275,7 +288,7 @@ export class PersonService {
         .bind(...fields.map(([, value]) => value), now, id),
     ];
     await this.db.batch(statements);
-    return this.getPerson(id);
+    return this.getExactPerson(id);
   }
 
   async recordConsent(id: string, input: ConsentWriteInput): Promise<Person | null> {
@@ -306,7 +319,7 @@ export class PersonService {
   ): Promise<ImportedNewsletterResult> {
     const kind = await applyImportedNewsletterConsent(this.db, id, input);
     if (kind === 'applied' || kind === 'already_applied')
-      return { kind, person: await this.getPerson(id) };
+      return { kind, person: await this.getExactPerson(id) };
     return { kind };
   }
 
@@ -375,7 +388,10 @@ export class PersonService {
    * Erase the profile and saved copies across current combinations.
    * Stable account IDs remain available for managed-access removal.
    */
-  async deletePerson(id: string, options: { requesterId?: string } = {}): Promise<void> {
+  async deletePerson(
+    id: string,
+    options: { requesterId?: string; requireActiveSubject?: boolean } = {},
+  ): Promise<void> {
     await deletePersonData(this.db, id, options);
   }
 
@@ -389,6 +405,6 @@ export class PersonService {
       )
       .bind(nowIso(), id)
       .run();
-    return this.getPerson(id);
+    return this.getExactPerson(id);
   }
 }

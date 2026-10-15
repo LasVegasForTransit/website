@@ -166,7 +166,10 @@ void test('merge and undo roll back the complete operation on a history write fa
     }),
     /fixture_failure/,
   );
-  assert.equal(await f.people.getPerson(f.merged.id), null);
+  assert.equal((await f.people.getPerson(f.merged.id))?.id, f.survivor.id);
+  assert.ok(
+    f.db.raw.prepare('SELECT deleted_at FROM people WHERE id=?').get(f.merged.id)?.deleted_at,
+  );
   assert.equal((await f.people.getPerson(f.survivor.id))?.phone, '+17025550100');
 });
 
@@ -321,5 +324,8 @@ void test('undo rechecks current permission and later changes inside the transac
     ).kind,
     'conflict',
   );
-  assert.equal(await f.people.getPerson(f.merged.id), null);
+  assert.equal((await f.people.getPerson(f.merged.id))?.id, f.survivor.id);
+  assert.ok(
+    f.db.raw.prepare('SELECT deleted_at FROM people WHERE id=?').get(f.merged.id)?.deleted_at,
+  );
 });

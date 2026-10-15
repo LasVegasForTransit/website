@@ -8,6 +8,7 @@ import {
   type MergeRecord,
   type MergeRow,
   type MergeSnapshot,
+  MERGED_PROFILE_EMPTY,
 } from './merge-state';
 import {
   FRESH_MERGE,
@@ -178,12 +179,36 @@ export function unmergeWrites(
         ]
       : []),
     db
-      .prepare(`UPDATE people SET deleted_at=NULL,updated_at=? WHERE id=? AND ${FRESH_MERGE}`)
-      .bind(input.stamp, input.mergedId, ...freshMerge(input)),
+      .prepare(
+        `UPDATE people SET ${Object.keys(MERGED_PROFILE_EMPTY)
+          .map((field) => `${field}=?`)
+          .join(',')},deleted_at=NULL,updated_at=? WHERE id=? AND ${FRESH_MERGE}`,
+      )
+      .bind(
+        ...Object.keys(MERGED_PROFILE_EMPTY).map((field) => rowValue(book.archivedBefore, field)),
+        input.stamp,
+        input.mergedId,
+        ...freshMerge(input),
+      ),
     ...ownershipWrites(db, input, book),
     ...book.fields
       .filter((field) => field.afterSource)
       .map((field) => sourceRestore(db, input, field.field, field.beforeSource)),
+    ...(book.fieldSources ?? []).map((row) =>
+      db
+        .prepare(
+          `INSERT INTO field_sources(person_id,field,source,confirmed_at,created_at,updated_at) SELECT ?,?,?,?,?,? WHERE ${FRESH_MERGE} ON CONFLICT(person_id,field) DO NOTHING`,
+        )
+        .bind(
+          rowValue(row, 'person_id'),
+          rowValue(row, 'field'),
+          rowValue(row, 'source'),
+          rowValue(row, 'confirmed_at'),
+          rowValue(row, 'created_at'),
+          rowValue(row, 'updated_at'),
+          ...freshMerge(input),
+        ),
+    ),
     ...(book.copiedAdmin
       ? [
           db

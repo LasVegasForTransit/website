@@ -198,6 +198,9 @@ void test('combination notices follow the complete chain and reject corrupted cy
     const final = (
       await f.people.upsertFromSource({ source: 'paper', fields: { given_name: 'Final record' } })
     ).person;
+    f.db.raw
+      .prepare('UPDATE people SET created_at=? WHERE id=?')
+      .run(new Date(Date.parse(f.survivor.created_at) - 1).toISOString(), final.id);
     const second = await f.mergePeople(f.db, f.actor, {
       ...f.input,
       survivorId: final.id,
