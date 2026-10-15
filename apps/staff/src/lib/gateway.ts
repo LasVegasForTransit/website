@@ -14,7 +14,7 @@ export async function guardStaffGateway(
       !(await verifyAccessAssertion(request, env, { fetch: context.fetch }))
     )
       return messageResponse(t('staff.common.accessDenied'), 403);
-    return privateResponse(await context.next());
+    return privateResponse(await context.next(), new URL(request.url).pathname);
   } catch {
     return messageResponse(t('staff.common.loadFailed'), 503);
   }

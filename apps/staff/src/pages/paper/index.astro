@@ -1,12 +1,16 @@
 ---
+import { getCollection } from 'astro:content';
 import StaffLayout from '../../layouts/StaffLayout.astro';
 import Button from '../../../../site/src/components/app/Button.astro';
 import PaperRow from '../../components/PaperRow.astro';
 import {
   MAX_PAPER_ROWS,
   PAPER_WORDING_VERSION,
+  LEGACY_PAPER_WORDING_VERSION,
   PAPER_CONSENT_TEXT,
+  emptyPaperRow,
 } from '@lasvegasfortransit/platform-core/paper';
+import { t, formatFullDate } from '@lasvegasfortransit/platform-core/messages';
 import { ulid } from '@lasvegasfortransit/platform-core/ids';
 import { can } from '@lasvegasfortransit/platform-core/permissions';
 import { issueFormToken } from '@lasvegasfortransit/platform-storage/form-tokens';
@@ -15,48 +19,62 @@ import { initialPaper, submitPaper, type PaperFeedback } from '../../lib/paper';
 import { messageResponse } from '../../lib/responses';
 const staff = Astro.locals.staff;
 if (!staff || !can(staff.actor, 'attendance.record'))
-  return messageResponse("You don't have access to this", 403);
+  return messageResponse(t('staff.common.accessDenied'), 403);
+const events = (await getCollection('paperEvents'))
+  .map((event) => ({
+    id: event.data.calendarOccurrenceId,
+    title: event.data.title,
+    date: event.data.date,
+  }))
+  .sort((a, b) => b.date.getTime() - a.date.getTime());
 let feedback: PaperFeedback | undefined;
 if (Astro.request.method === 'POST') {
-  const result = await submitPaper(Astro.request, staff);
+  const result = await submitPaper(Astro.request, staff, events);
   if (result instanceof Response) return result;
   feedback = result;
   Astro.response.status = result.status;
 }
-const input = feedback?.input ?? initialPaper(ulid());
-const errors = feedback?.errors ?? {};
+const input = feedback?.input ?? initialPaper(ulid()),
+  errors = feedback?.errors ?? {};
 const saved = Astro.url.searchParams.get('saved');
 const summary = saved ? await paperBatchSummary(staff.db, staff.actor, saved.slice(0, 100)) : null;
 const token = await issueFormToken(staff.db, staff.actor, 'paper:submit');
 ---
 
-<StaffLayout
-  title="Paper signups"
-  description="Enter what’s on the sheet. Check mailing-list signup only when Yes is marked."
->
-  <a slot="breadcrumb" href="/people/" class="staff-back">← Members</a>
-  <a slot="heading-meta" href="/paper/sheet/" class="staff-edit-link">Print blank signup sheet</a>
+<StaffLayout title={t('staff.paper.title')} description={t('staff.paper.help')}>
+  {
+    can(staff.actor, 'console.enter') && (
+      <a slot="breadcrumb" href="/people/" class="staff-back">
+        {t('staff.paper.back')}
+      </a>
+    )
+  }
+  <a slot="heading-meta" href="/paper/sheet/" class="staff-edit-link"
+    >{t('staff.paper.printLink')}</a
+  >
   {
     summary && (
       <p role="status" class="staff-paper-saved">
-        Saved {summary.rows} {summary.rows === 1 ? 'entry' : 'entries'}.
-        {summary.heldSignups > 0 && (
+        {t('staff.paper.saved', { count: summary.rows })}
+        {summary.created !== null && summary.existing !== null && (
           <>
             {' '}
-            {summary.heldSignups} mailing-list{' '}
-            {summary.heldSignups === 1 ? 'signup did' : 'signups did'} not renew membership. A
-            withdrawal was recorded on or after the sheet’s date.
+            {t('staff.paper.newCount', { count: summary.created })} ·{' '}
+            {t('staff.paper.existingCount', { count: summary.existing })}.
           </>
         )}
-        {summary.reviews > 0 &&
-          (can(staff.actor, 'review_queue.resolve') ? (
-            <>
-              {' '}
-              <a href="/review/">Check possible duplicates</a>.
-            </>
-          ) : (
-            <> An administrator will check possible duplicates.</>
-          ))}
+        {summary.heldSignups > 0 && <> {t('staff.paper.held', { count: summary.heldSignups })}</>}
+        {summary.reviews > 0 && (
+          <>
+            {' '}
+            {t('staff.paper.reviewCount', { count: summary.reviews })}.{' '}
+            {can(staff.actor, 'review_queue.resolve') ? (
+              <a href="/review/">{t('staff.paper.reviewLink')}</a>
+            ) : (
+              t('staff.paper.reviewAdmin')
+            )}
+          </>
+        )}
       </p>
     )
   }
@@ -67,7 +85,15 @@ const token = await issueFormToken(staff.db, staff.actor, 'paper:submit');
       </p>
     )
   }
-  <form method="post" action="/paper/" class="staff-form staff-paper-form" novalidate>
+  <form
+    method="post"
+    action="/paper/"
+    class="staff-form staff-paper-form"
+    novalidate
+    data-paper-form
+    data-max-rows={MAX_PAPER_ROWS}
+    data-row-label={t('staff.paper.row', { number: '{number}' })}
+  >
     <input type="hidden" name="token" value={token} /><input
       type="hidden"
       name="batch_id"
@@ -75,7 +101,7 @@ const token = await issueFormToken(staff.db, staff.actor, 'paper:submit');
     /><input type="hidden" name="row_count" value={input.rows.length} />
     <div class="staff-paper-event">
       <div>
-        <label for="event_name">Event name on the sheet</label><input
+        <label for="event_name">{t('staff.paper.eventName')}</label><input
           id="event_name"
           name="event_name"
           value={input.eventName}
@@ -91,7 +117,7 @@ const token = await issueFormToken(staff.db, staff.actor, 'paper:submit');
         }
       </div>
       <div>
-        <label for="event_date">Date on the sheet</label><input
+        <label for="event_date">{t('staff.paper.eventDate')}</label><input
           id="event_date"
           name="event_date"
           type="date"
@@ -107,17 +133,23 @@ const token = await issueFormToken(staff.db, staff.actor, 'paper:submit');
         }
       </div>
       <div>
-        <label for="wording_version">Wording on the sheet</label><select
+        <label for="wording_version">{t('staff.paper.wording')}</label><select
           id="wording_version"
           name="wording_version"
           aria-invalid={errors.wordingVersion ? 'true' : undefined}
           aria-describedby={errors.wordingVersion ? 'wording_error' : 'consent_wording'}
-          ><option value="" selected={!input.wordingVersion}>Choose wording</option><option
+        >
+          <option value="" selected={!input.wordingVersion}>{t('staff.paper.chooseWording')}</option
+          ><option
             value={PAPER_WORDING_VERSION}
             selected={input.wordingVersion === PAPER_WORDING_VERSION}
-            >Current LVBT signup sheet</option
-          ></select
-        >{
+            >{t('staff.paper.currentWording')}</option
+          ><option
+            value={LEGACY_PAPER_WORDING_VERSION}
+            selected={input.wordingVersion === LEGACY_PAPER_WORDING_VERSION}
+            >{t('staff.paper.legacyWording')}</option
+          >
+        </select>{
           errors.wordingVersion && (
             <p id="wording_error" class="staff-error">
               {errors.wordingVersion}
@@ -125,13 +157,35 @@ const token = await issueFormToken(staff.db, staff.actor, 'paper:submit');
           )
         }
       </div>
+      <div class="staff-paper-calendar">
+        <label for="public_event">{t('staff.paper.publicEvent')}</label><select
+          id="public_event"
+          name="public_event"
+          aria-invalid={errors.eventId ? 'true' : undefined}
+          aria-describedby={errors.eventId ? 'public_event_error' : 'public_event_help'}
+        >
+          <option value="">{t('staff.paper.noPublicEvent')}</option>{
+            events.map((event) => (
+              <option value={event.id} selected={input.eventId === event.id}>
+                {event.title} · {formatFullDate(event.date)}
+              </option>
+            ))
+          }
+        </select><p id="public_event_help" class="staff-help">
+          {t('staff.paper.publicEventHelp')}
+        </p>{
+          errors.eventId && (
+            <p id="public_event_error" class="staff-error">
+              {errors.eventId}
+            </p>
+          )
+        }
+      </div>
     </div>
     <details class="staff-paper-wording">
-      <summary>Check the signup wording</summary><p id="consent_wording">{PAPER_CONSENT_TEXT}</p><p
-        class="staff-help"
-      >
-        If the sheet uses different wording, have an administrator check it before entering signups.
-      </p>
+      <summary>{t('staff.paper.wordingCheck')}</summary><p id="consent_wording">
+        {PAPER_CONSENT_TEXT}
+      </p><p class="staff-help">{t('staff.paper.wordingHelp')}</p>
     </details>
     {
       errors.rows && (
@@ -140,11 +194,14 @@ const token = await issueFormToken(staff.db, staff.actor, 'paper:submit');
         </p>
       )
     }
-    <div>
+    <div data-paper-rows>
       {input.rows.map((row, index) => <PaperRow row={row} index={index} errors={errors} />)}
     </div>
+    <template id="paper-row-template"
+      ><PaperRow row={emptyPaperRow()} index={MAX_PAPER_ROWS} errors={{}} /></template
+    >
     <div class="staff-paper-actions">
-      <Button name="intent" value="save">Save sheet</Button>{
+      <Button name="intent" value="save">{t('staff.paper.save')}</Button>{
         input.rows.length < MAX_PAPER_ROWS && (
           <button
             type="submit"
@@ -152,14 +209,17 @@ const token = await issueFormToken(staff.db, staff.actor, 'paper:submit');
             value="add"
             class="staff-secondary-button press"
             formnovalidate
+            data-add-paper-row
           >
-            Add row
+            {t('staff.paper.add')}
           </button>
         )
       }
     </div>
-    <p class="staff-help">
-      Blank rows are skipped. Attendance without signup does not create membership.
-    </p>
+    <p class="staff-help">{t('staff.paper.blankHelp')}</p>
   </form>
 </StaffLayout>
+
+<script>
+  import '../../scripts/paper-entry';
+</script>

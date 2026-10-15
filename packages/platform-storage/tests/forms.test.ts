@@ -79,3 +79,72 @@ void test('expired tokens and stale roles cannot mutate with a previously issued
   );
   db.raw.close();
 });
+
+void test('current Workspace volunteers receive only paper and sign-out tokens', async () => {
+  const { db, actor, issueFormToken, consumeFormToken } = await fixture();
+  try {
+    const oldExport = await issueFormToken(db, actor, 'export', now);
+    db.raw.exec('DROP TRIGGER staff_admin_keep_last; DELETE FROM staff_administrators;');
+    for (const action of ['paper:submit', 'sign-out']) {
+      const token = await issueFormToken(db, actor, action, now);
+      assert.equal(await consumeFormToken(db, actor, { action, token, now }), true);
+      assert.equal(await consumeFormToken(db, actor, { action, token, now }), false);
+    }
+    for (const action of [
+      'export',
+      'paper:submit:other',
+      'sign-out:other',
+      'welcome:claim:other',
+      'person:update',
+    ]) {
+      const token = await issueFormToken(db, actor, action, now);
+      assert.equal(await consumeFormToken(db, actor, { action, token, now }), false);
+    }
+    assert.equal(
+      await consumeFormToken(db, actor, { action: 'export', token: oldExport, now }),
+      false,
+    );
+    assert.equal(
+      db.raw.prepare("SELECT count(*) AS n FROM staff_form_tokens WHERE action!='export'").get()?.n,
+      0,
+    );
+  } finally {
+    db.raw.close();
+  }
+});
+
+void test('paper token eligibility rechecks membership and Workspace identity at issue and consumption', async () => {
+  for (const revoke of ['membership', 'workspace'] as const) {
+    const { db, actor, issueFormToken, consumeFormToken } = await fixture();
+    try {
+      db.raw.exec('DROP TRIGGER staff_admin_keep_last; DELETE FROM staff_administrators;');
+      const paper = await issueFormToken(db, actor, 'paper:submit', now);
+      const signOut = await issueFormToken(db, actor, 'sign-out', now);
+      assert.equal(db.raw.prepare('SELECT count(*) AS n FROM staff_form_tokens').get()?.n, 2);
+      if (revoke === 'membership')
+        db.raw
+          .prepare("UPDATE people SET membership_status='former_member' WHERE id=?")
+          .run(actor.personId);
+      else
+        db.raw
+          .prepare("DELETE FROM identities WHERE person_id=? AND platform='google_workspace'")
+          .run(actor.personId);
+      assert.equal(
+        await consumeFormToken(db, actor, { action: 'paper:submit', token: paper, now }),
+        false,
+      );
+      assert.equal(
+        await consumeFormToken(db, actor, { action: 'sign-out', token: signOut, now }),
+        false,
+      );
+      const denied = await issueFormToken(db, actor, 'paper:submit', now);
+      assert.equal(
+        await consumeFormToken(db, actor, { action: 'paper:submit', token: denied, now }),
+        false,
+      );
+      assert.equal(db.raw.prepare('SELECT count(*) AS n FROM staff_form_tokens').get()?.n, 2);
+    } finally {
+      db.raw.close();
+    }
+  }
+});

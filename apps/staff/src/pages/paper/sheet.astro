@@ -1,32 +1,40 @@
 ---
+import { t } from '@lasvegasfortransit/platform-core/messages';
 import StaffLayout from '../../layouts/StaffLayout.astro';
 import { PAPER_WORDING_VERSION, PAPER_CONSENT_TEXT } from '@lasvegasfortransit/platform-core/paper';
 import { can } from '@lasvegasfortransit/platform-core/permissions';
 import { messageResponse } from '../../lib/responses';
 const staff = Astro.locals.staff;
 if (!staff || !can(staff.actor, 'attendance.record'))
-  return messageResponse("You don't have access to this", 403);
+  return messageResponse(t('staff.common.accessDenied'), 403);
 ---
 
-<StaffLayout title="Signup sheet" printPage>
-  <a slot="breadcrumb" href="/paper/" class="staff-back">← Paper signups</a>
+<StaffLayout title={t('staff.paper.sheetTitle')} printPage>
+  <a slot="breadcrumb" href="/paper/" class="staff-back">{t('staff.paper.sheetBack')}</a>
   <p class="staff-print-instructions">
-    Use your browser’s Print command. This sheet fits US letter paper.
+    {t('staff.paper.printHelp')}
   </p>
-  <section class="staff-signup-sheet" aria-label="Printable signup sheet">
-    <h2>Las Vegans for Better Transit</h2>
-    <p class="staff-signup-event">Event: <span></span> Date: <span></span></p>
-    <p class="staff-signup-wording"><strong>Check Yes to sign up:</strong> {PAPER_CONSENT_TEXT}</p>
+  <section class="staff-signup-sheet" aria-label={t('staff.paper.sheetLabel')}>
+    <h2>{t('staff.navigation.organization')}</h2>
+    <p class="staff-signup-event">
+      {t('staff.paper.eventCaption')}
+      <span></span>
+      {t('staff.paper.dateCaption')}
+      <span></span>
+    </p>
+    <p class="staff-signup-wording">
+      <strong>{t('staff.paper.signupCaption')}</strong>
+      {PAPER_CONSENT_TEXT}
+    </p>
     <table>
-      <caption class="sr-only"
-        >12 rows for names, email addresses, optional phone numbers and mailing-list signup</caption
-      ><thead
+      <caption class="sr-only">{t('staff.paper.tableCaption')}</caption><thead
         ><tr
-          ><th scope="col" class="staff-signup-number">#</th><th scope="col">Name</th><th
-            scope="col">Email</th
-          ><th scope="col">Phone <small>(optional)</small></th><th
-            scope="col"
-            class="staff-signup-yes">Signup<br />Yes</th
+          ><th scope="col" class="staff-signup-number">{t('staff.paper.number')}</th><th scope="col"
+            >{t('staff.paper.name')}</th
+          ><th scope="col">{t('staff.paper.email')}</th><th scope="col"
+            >{t('staff.paper.phone')} <small>{t('staff.paper.optional')}</small></th
+          ><th scope="col" class="staff-signup-yes"
+            >{t('staff.paper.signup')}<br />{t('staff.paper.yes')}</th
           ></tr
         ></thead
       ><tbody
@@ -39,7 +47,7 @@ if (!staff || !can(staff.actor, 'attendance.record'))
                 <td />
                 <td />
                 <td>
-                  <span class="staff-signup-checkbox" aria-label="Check Yes" />
+                  <span class="staff-signup-checkbox" aria-label={t('staff.paper.checkYes')} />
                 </td>
               </>
             </tr>
@@ -48,7 +56,7 @@ if (!staff || !can(staff.actor, 'attendance.record'))
       >
     </table>
     <p class="staff-signup-footer">
-      lasvegasfortransit.org · Signup wording: {PAPER_WORDING_VERSION}
+      {t('staff.paper.footer', { version: PAPER_WORDING_VERSION })}
     </p>
   </section>
 </StaffLayout>

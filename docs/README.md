@@ -33,6 +33,10 @@ just say guides.)
   record for a privacy request.
 - [Combine duplicate member records](./guides/combine-member-records.md) — confirm a match, combine
   safely, and undo a mistaken combination without losing history
+- [Enter paper signups](./guides/enter-paper-signups.md) — print a sheet, record attendance and
+  membership choices, and check the saved result.
+- [Welcome a new member](./guides/welcome-a-new-member.md) — claim an introduction, contact the
+  person, and record their welcome.
 - [Operate member data retention](./guides/operate-member-data-retention.md) — review deletion,
   daily retention, and Google accounts that need attention.
 - [Back up the membership database](./guides/back-up-membership-database.md) — export privately and

@@ -1,3 +1,4 @@
+import { INTERESTS } from '@lasvegasfortransit/platform-core/join-form';
 import type { Page } from '@lasvegasfortransit/platform-core/staff-types';
 import type { WelcomeQueueRow } from '@lasvegasfortransit/platform-core/welcome';
 import type { Db, SqlValue } from './db';
@@ -22,8 +23,9 @@ function decode(cursor: string): [string, string] {
     throw new InvalidCursor();
   }
 }
-interface QueueRow extends Omit<WelcomeQueueRow, 'overdue'> {
+interface QueueRow extends Omit<WelcomeQueueRow, 'overdue' | 'interests' | 'waitingDays'> {
   overdue: number;
+  interests: string | null;
 }
 export async function welcomeQueue(
   db: Db,
@@ -59,8 +61,10 @@ export async function welcomeQueue(
     .prepare(
       `WITH queue AS (
     SELECT p.id AS personId,p.given_name AS givenName,p.family_name AS familyName,${MEMBER_SINCE} AS joinedAt,
+    (SELECT source FROM consent_records WHERE person_id=p.id AND scope='newsletter' AND withdrawn_at IS NULL ORDER BY given_at,id LIMIT 1) AS source,
+    (SELECT CASE WHEN json_type(e.details,'$.interests')='array' THEN json_extract(e.details,'$.interests') ELSE '[]' END FROM engagement_events e WHERE e.person_id=p.id AND e.type='joined' AND NOT EXISTS(SELECT 1 FROM engagement_events correction WHERE correction.person_id=p.id AND correction.type='correction' AND correction.reference=e.id) ORDER BY e.occurred_at DESC,e.id DESC LIMIT 1) AS interests,
     c.actor_id AS claimedBy,NULLIF(trim(coalesce(claimant.given_name,'') || ' ' || coalesce(claimant.family_name,'')),'') AS claimedByName,c.expires_at AS claimExpiresAt,
-    julianday(${MEMBER_SINCE})<=julianday(?) AS overdue FROM people p
+    julianday(${MEMBER_SINCE})<julianday(?) AS overdue FROM people p
     LEFT JOIN welcome_claims c ON c.person_id=p.id AND c.expires_at>?
     LEFT JOIN people claimant ON claimant.id=c.actor_id AND claimant.deleted_at IS NULL
     WHERE p.deleted_at IS NULL AND p.membership_status='member' AND ${WELCOME_SCOPE} AND ${UNWELCOMED})
@@ -68,7 +72,17 @@ export async function welcomeQueue(
     )
     .bind(...values, limit + 1)
     .all<QueueRow>();
-  const items = results.slice(0, limit).map((row) => ({ ...row, overdue: Boolean(row.overdue) }));
+  const items = results.slice(0, limit).map((row) => {
+    const interests: unknown = JSON.parse(row.interests ?? '[]');
+    return {
+      ...row,
+      overdue: Boolean(row.overdue),
+      waitingDays: Math.max(0, Math.floor((now.getTime() - Date.parse(row.joinedAt)) / DAY)),
+      interests: Array.isArray(interests)
+        ? INTERESTS.filter((interest) => interests.includes(interest))
+        : [],
+    };
+  });
   const last = items.at(-1);
   return {
     items,

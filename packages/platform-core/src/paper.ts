@@ -1,8 +1,9 @@
+import { t } from './messages';
 import { normalizePhone } from './join-form';
-export const PAPER_WORDING_VERSION = 'paper-signup-v1';
+export const PAPER_WORDING_VERSION = 'paper-v1';
+export const LEGACY_PAPER_WORDING_VERSION = 'paper-signup-v1';
 // Fixed evidence text: changing it requires a new wording version.
-export const PAPER_CONSENT_TEXT =
-  "Add me to LVBT's mailing list. This makes me an LVBT member. I can unsubscribe at any time.";
+export const PAPER_CONSENT_TEXT = t('staff.paper.wordingOriginal');
 export const MAX_PAPER_ROWS = 12;
 export interface PaperRow {
   givenName: string;
@@ -41,16 +42,16 @@ function rowErrors(row: PaperRow, index: number, errors: PaperErrors) {
     ['phone', 50],
   ] as const) {
     if (typeof row[name] !== 'string' || row[name].length > limit || /\p{Cc}/u.test(row[name]))
-      errors[prefix + name] = 'Check this entry.';
+      errors[prefix + name] = t('staff.paper.entryError');
   }
   if (row.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(row.email.trim()))
-    errors[prefix + 'email'] = 'Enter a complete email address.';
+    errors[prefix + 'email'] = t('staff.paper.emailError');
   if (row.phone && !normalizePhone(row.phone))
-    errors[prefix + 'phone'] = 'Enter a US phone number.';
+    errors[prefix + 'phone'] = t('staff.paper.phoneError');
   if (row.newsletterConsent && !row.email.trim())
-    errors[prefix + 'email'] = 'An email address is needed for mailing-list signup.';
+    errors[prefix + 'email'] = t('staff.paper.signupEmailError');
   if (typeof row.newsletterConsent !== 'boolean')
-    errors[prefix + 'newsletterConsent'] = 'Check the Yes box only if it was marked on the sheet.';
+    errors[prefix + 'newsletterConsent'] = t('staff.paper.signupError');
 }
 export function paperToday(now: Date = new Date()): string {
   const parts = new Intl.DateTimeFormat('en-US', {
@@ -92,29 +93,30 @@ function sheetDateError(value: string, now: Date): string | null {
     !Number.isFinite(date.getTime()) ||
     date.toISOString().slice(0, 10) !== value
   )
-    return 'Enter the date from the sheet.';
-  return value > paperToday(now) ? 'The sheet’s date cannot be in the future.' : null;
+    return t('staff.paper.dateError');
+  return value > paperToday(now) ? t('staff.paper.futureError') : null;
 }
 export function validatePaper(input: PaperInput, now: Date = new Date()): PaperErrors {
   const errors: PaperErrors = {};
-  for (const key of ['batchId', 'eventId'] as const)
-    if (!/^[\w:-]{1,100}$/.test(input[key])) errors[key] = 'Reload this form and try again.';
+  if (!/^[\w:-]{1,100}$/.test(input.batchId)) errors.batchId = t('staff.paper.reloadError');
+  if (!input.eventId.trim() || input.eventId.length > 512 || /\p{Cc}/u.test(input.eventId))
+    errors.eventId = t('staff.paper.publicEventError');
   if (!input.eventName.trim() || input.eventName.length > 160 || /\p{Cc}/u.test(input.eventName))
-    errors.eventName = 'Enter the event name from the sheet.';
+    errors.eventName = t('staff.paper.eventError');
   const dateError = sheetDateError(input.eventDate, now);
   if (dateError) errors.eventDate = dateError;
-  if (input.wordingVersion !== PAPER_WORDING_VERSION)
-    errors.wordingVersion = 'Choose the wording printed on the sheet.';
+  if (![PAPER_WORDING_VERSION, LEGACY_PAPER_WORDING_VERSION].includes(input.wordingVersion))
+    errors.wordingVersion = t('staff.paper.wordingError');
   if (!input.rows.length || input.rows.length > MAX_PAPER_ROWS)
-    errors.rows = 'Enter up to 12 rows from one sheet.';
+    errors.rows = t('staff.paper.rowsError');
   const emails = new Set<string>();
   input.rows.forEach((row, index) => {
     rowErrors(row, index, errors);
     const email = row.email.trim().toLowerCase();
     if (email && emails.has(email))
-      errors[`rows.${index}.email`] = 'This email appears twice. Check the sheet.';
+      errors[`rows.${index}.email`] = t('staff.paper.duplicateEmailError');
     if (email) emails.add(email);
   });
-  if (input.rows.every(blankPaperRow)) errors.rows = 'Enter at least one signup.';
+  if (input.rows.every(blankPaperRow)) errors.rows = t('staff.paper.emptyError');
   return errors;
 }

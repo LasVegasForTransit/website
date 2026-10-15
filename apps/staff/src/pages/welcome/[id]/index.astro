@@ -1,5 +1,6 @@
 ---
 import { formatPhone } from '@lasvegasfortransit/platform-core/join-form';
+import { t } from '@lasvegasfortransit/platform-core/messages';
 import StaffLayout from '../../../layouts/StaffLayout.astro';
 import Button from '../../../../../site/src/components/app/Button.astro';
 import { WelcomeService } from '@lasvegasfortransit/platform-storage/welcome';
@@ -48,7 +49,7 @@ const releaseToken = contact
         })
       }</span
     >
-    {person.overdue && <span class="text-primary-ink">Waiting 7+ days</span>}
+    {person.overdue && <span class="text-primary-ink">{t('staff.welcome.overdue')}</span>}
     {profileAllowed && <a href={`/people/${personId}/`}>View member profile</a>}
   </div>
   {
@@ -75,9 +76,17 @@ const releaseToken = contact
                 <dt>Phone</dt>
                 <dd>
                   {contact.phone ? (
-                    <a href={`tel:${encodeURIComponent(contact.phone)}`}>
-                      {formatPhone(contact.phone)}
-                    </a>
+                    <>
+                      <a href={`tel:${encodeURIComponent(contact.phone)}`}>
+                        {formatPhone(contact.phone)}
+                      </a>
+                      <a
+                        href={`sms:${encodeURIComponent(contact.phone)}`}
+                        class="staff-action-link"
+                      >
+                        {t('staff.welcome.textAction')}
+                      </a>
+                    </>
                   ) : (
                     'Not provided'
                   )}

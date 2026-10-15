@@ -1,5 +1,7 @@
 import { staffCommon } from './staff-common';
 import { staffPeople } from './staff-people';
+import { staffWelcome } from './staff-welcome';
+import { staffPaper } from './staff-paper';
 import { staffAccess } from './staff-access';
 
 // English messages for member and staff screens. Keys are grouped by screen.
@@ -8,7 +10,7 @@ import { staffAccess } from './staff-access';
 // How to add a message: README.md in this directory.
 
 export const en = {
-  staff: { ...staffCommon, ...staffPeople, ...staffAccess },
+  staff: { ...staffCommon, ...staffPeople, ...staffAccess, ...staffPaper, ...staffWelcome },
   workspace: {
     signIn: 'Sign in with Google',
     hint: 'For volunteers with an LVBT Google account.',
@@ -60,8 +62,7 @@ export const en = {
     micromobilityEbike: 'E-bike',
     micromobilityScooter: 'Scooter',
     micromobilitySkateboard: 'Skateboard',
-    consentLabel:
-      "Add me to LVBT's mailing list. This makes me an LVBT member. I can unsubscribe at any time.",
+    consentLabel: staffPaper.paper.wordingOriginal,
     submit: 'Join LVBT',
     sending: 'Joining…',
     offlineHeading: "You're offline",

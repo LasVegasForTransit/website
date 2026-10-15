@@ -82,18 +82,24 @@ void test('welcome queue includes the exact 60-day boundary, orders overdue firs
   const f = await fixture();
   const boundary = await f.member('boundary', daysAgo(60));
   await f.member('older', new Date(Date.parse(daysAgo(60)) - 1).toISOString());
-  const overdue = await f.member('overdue', daysAgo(7));
+  const overdue = await f.member('overdue', daysAgo(8));
+  const week = await f.member('one-week', daysAgo(7));
   const recent = await f.member('recent', daysAgo(1));
   const future = await f.member('future', new Date(NOW.getTime() + 1).toISOString());
   const queue = await f.service.list(f.adminActor, { now: NOW });
   assert.deepEqual(
     queue.items.map((row) => row.personId),
-    [boundary.id, overdue.id, recent.id],
+    [boundary.id, overdue.id, week.id, recent.id],
   );
   assert.deepEqual(
     queue.items.map((row) => row.overdue),
-    [true, true, false],
+    [true, true, false, false],
   );
+  const recentRow = queue.items.find((row) => row.personId === recent.id);
+  assert.ok(recentRow);
+  assert.deepEqual('interests' in recentRow ? recentRow.interests : undefined, ['events']);
+  assert.equal('source' in recentRow ? recentRow.source : undefined, 'join_form');
+  assert.equal('waitingDays' in recentRow ? recentRow.waitingDays : undefined, 1);
   assert.equal(JSON.stringify(queue).includes('@example.invalid'), false);
   assert.equal(JSON.stringify(queue).includes('7025550100'), false);
   assert.equal(
@@ -303,4 +309,60 @@ void test('welcome contact tolerates older signup records with interests in the 
   assert.equal(contact?.email, person.email);
   assert.deepEqual(contact.interests, []);
   f.db.raw.close();
+});
+
+void test('a claimed member can receive a recorded text-message welcome', async () => {
+  const f = await fixture();
+  const person = await f.member('text-welcome');
+  assert.equal(
+    (await f.service.claim(f.adminActor, person.id, { operationId: 'claim-text', now: NOW })).kind,
+    'ok',
+  );
+  const { WELCOME_METHODS } = await import('@lasvegasfortransit/platform-core/welcome');
+  assert.ok(WELCOME_METHODS.includes('text'));
+  assert.equal(
+    (
+      await f.service.complete(f.adminActor, person.id, {
+        operationId: 'welcome-text',
+        now: NOW,
+        method: 'text',
+        note: 'Sent a personal text.',
+      })
+    ).kind,
+    'ok',
+  );
+  const event = f.db.raw
+    .prepare(
+      "SELECT json_extract(details,'$.method') AS method FROM engagement_events WHERE person_id=? AND type='welcomed'",
+    )
+    .get(person.id);
+  assert.equal(event?.method, 'text');
+  f.db.raw.close();
+});
+
+void test('lead queue context remains limited to the committee’s selected interests', async () => {
+  const f = await fixture();
+  try {
+    const inside = await f.member('inside-queue');
+    const outside = await f.member('outside-queue');
+    await f.people.recordEngagement(outside.id, {
+      type: 'joined',
+      occurredAt: NOW.toISOString(),
+      source: 'join_form',
+      details: { interests: ['news', 'private@example.invalid'] },
+    });
+    const page = await f.service.list(f.leadActor, { now: NOW });
+    assert.equal(
+      page.items.some((row) => row.personId === inside.id),
+      true,
+    );
+    assert.equal(
+      page.items.some((row) => row.personId === outside.id),
+      false,
+    );
+    assert.equal(JSON.stringify(page).includes('@example.invalid'), false);
+    assert.deepEqual(page.items.find((row) => row.personId === inside.id)?.interests, ['events']);
+  } finally {
+    f.db.raw.close();
+  }
 });

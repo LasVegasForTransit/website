@@ -4,7 +4,8 @@ import { join } from 'node:path';
 import { chromium } from '@playwright/test';
 import { PersonService } from '@lasvegasfortransit/platform-storage/person-service';
 import { ORIGIN, startRuntime } from '../support/runtime';
-const fixture = await startRuntime();
+import { exercisePaperVolunteer } from './support/paper-volunteer';
+const fixture = await startRuntime({ consentAt: '2026-01-01T00:00:00.000Z' });
 const browser = await chromium
   .launch({
     args: [
@@ -47,9 +48,9 @@ try {
   const initial = await page.goto(`${ORIGIN}/paper/`);
   assert.equal(initial?.status(), 200);
   assert.equal(await page.locator('fieldset.staff-paper-row').count(), 5);
-  await page.getByLabel('Event name on the sheet').fill('CityNerd test signup');
+  await page.getByLabel('Event or place on the sheet').fill('CityNerd test signup');
   await page.getByLabel('Date on the sheet').fill('2026-10-01');
-  await page.getByLabel('Wording on the sheet').selectOption('paper-signup-v1');
+  await page.getByLabel('Wording on the sheet').selectOption('paper-v1');
   const first = page.getByRole('group', { name: 'Row 1', exact: true }),
     second = page.getByRole('group', { name: 'Row 2', exact: true });
   await first.getByLabel('First name').fill('Paper');
@@ -59,19 +60,23 @@ try {
   await second.getByLabel('First name').fill('Event');
   await second.getByLabel('Last name').fill('Guest');
   await second.getByLabel('Email', { exact: true }).fill('bad-address');
+  const calendar = page.getByLabel('Public calendar event (optional)');
+  const publicEventId = await calendar.locator('option').nth(1).getAttribute('value');
+  assert.ok(publicEventId, 'the build includes the public calendar snapshot');
+  await calendar.selectOption(publicEventId);
   const batchId = await page.locator('input[name=batch_id]').inputValue();
-  await page.getByRole('button', { name: 'Add row', exact: true }).click();
-  assert.equal(await page.locator('fieldset.staff-paper-row').count(), 6);
+  await page.getByRole('button', { name: 'Add another person', exact: true }).click();
+  assert.equal(await page.locator('fieldset.staff-paper-row').count(), 10);
   assert.equal(
     await first.getByLabel('Email', { exact: true }).inputValue(),
     'paper-member@example.invalid',
   );
   assert.equal(await first.getByLabel('Mailing-list signup').isChecked(), true);
   assert.equal(
-    await page.getByLabel('Event name on the sheet').inputValue(),
+    await page.getByLabel('Event or place on the sheet').inputValue(),
     'CityNerd test signup',
   );
-  assert.equal(await page.getByLabel('Wording on the sheet').inputValue(), 'paper-signup-v1');
+  assert.equal(await page.getByLabel('Wording on the sheet').inputValue(), 'paper-v1');
   assert.equal(await page.locator('input[name=batch_id]').inputValue(), batchId);
   assert.equal(
     (await fixture.db.prepare('SELECT count(*) AS n FROM paper_batches').first())?.n,
@@ -96,7 +101,20 @@ try {
   const staleToken = await page.locator('form.staff-paper-form input[name=token]').inputValue();
   await page.getByRole('button', { name: 'Save sheet', exact: true }).click();
   await page.waitForURL((url) => url.searchParams.get('saved') === batchId);
-  assert.equal((await page.getByRole('status').textContent())?.trim(), 'Saved 2 entries.');
+  assert.match(
+    (await page.getByRole('status').textContent())?.trim() ?? '',
+    /^Saved 2 entries\.\s+2 new people · 0 existing people\./,
+  );
+  assert.equal(
+    (
+      await fixture.db
+        .prepare(
+          "SELECT reference FROM engagement_events WHERE type='attended' AND source='paper' LIMIT 1",
+        )
+        .first()
+    )?.reference,
+    publicEventId,
+  );
   const member = await fixture.db
     .prepare('SELECT id,membership_status FROM people WHERE email=?')
     .bind('paper-member@example.invalid')
@@ -122,8 +140,9 @@ try {
     batch_id: batchId,
     event_name: 'CityNerd test signup',
     event_date: '2026-10-01',
-    wording_version: 'paper-signup-v1',
-    row_count: '6',
+    wording_version: 'paper-v1',
+    row_count: '10',
+    public_event: publicEventId,
     'rows.0.givenName': 'Paper',
     'rows.0.familyName': 'Member',
     'rows.0.email': 'paper-member@example.invalid',
@@ -192,9 +211,9 @@ try {
     withdrawnAt: '2026-10-03T13:00:00.000Z',
   });
   await page.goto(`${ORIGIN}/paper/`);
-  await page.getByLabel('Event name on the sheet').fill('Earlier paper signup');
+  await page.getByLabel('Event or place on the sheet').fill('Earlier paper signup');
   await page.getByLabel('Date on the sheet').fill('2026-10-03');
-  await page.getByLabel('Wording on the sheet').selectOption('paper-signup-v1');
+  await page.getByLabel('Wording on the sheet').selectOption('paper-v1');
   await first.getByLabel('Email', { exact: true }).fill('inside@example.invalid');
   await first.getByLabel('Mailing-list signup').check();
   const heldBatch = await page.locator('input[name=batch_id]').inputValue();
@@ -231,14 +250,75 @@ try {
     preferCSSPageSize: true,
     printBackground: true,
   });
+  const enhanced = await browser.newContext({
+    javaScriptEnabled: true,
+    ignoreHTTPSErrors: true,
+    extraHTTPHeaders: { 'Cf-Access-Jwt-Assertion': fixture.admin.assertion },
+    viewport: { width: 320, height: 950 },
+    serviceWorkers: 'block',
+  });
+  await enhanced.addCookies([
+    {
+      name: '__Host-lvbt_session',
+      value: fixture.admin.session.token,
+      url: ORIGIN,
+      httpOnly: true,
+      secure: true,
+      sameSite: 'Lax',
+    },
+  ]);
+  await enhanced.route('**/*', async (route) => {
+    assert.equal(new URL(route.request().url()).origin, ORIGIN);
+    await route.continue();
+  });
+  const enhancedPage = await enhanced.newPage();
+  let enhancedPosts = 0;
+  enhancedPage.on('request', (request) => {
+    if (request.method() === 'POST') enhancedPosts++;
+  });
+  await enhancedPage.goto(`${ORIGIN}/paper/`);
+  await enhancedPage
+    .getByRole('group', { name: 'Row 1', exact: true })
+    .getByLabel('First name')
+    .fill('Ana');
+  await enhancedPage.getByRole('button', { name: 'Add another person', exact: true }).click();
+  assert.equal(await enhancedPage.locator('fieldset.staff-paper-row').count(), 6);
+  assert.equal(
+    await enhancedPage
+      .getByRole('group', { name: 'Row 6', exact: true })
+      .getByLabel('First name')
+      .evaluate((element) => element === document.activeElement),
+    true,
+  );
+  assert.equal(enhancedPosts, 0, 'the enhancement must not submit or call any provider');
+  assert.equal(
+    await enhancedPage
+      .getByRole('group', { name: 'Row 1', exact: true })
+      .getByLabel('First name')
+      .inputValue(),
+    'Ana',
+  );
+  assert.equal(
+    await enhancedPage
+      .getByRole('group', { name: 'Row 6', exact: true })
+      .getByLabel('First name')
+      .inputValue(),
+    '',
+  );
+  await enhanced.close();
+  await exercisePaperVolunteer(browser, fixture);
   await context.close();
   console.log(
     JSON.stringify({
       runtime: 'compiled HTTPS staff Worker',
-      javaScript: false,
+      javaScript: 'native forms and optional local enhancement',
       checks: [
         'five initial paper rows',
         'native add-row preserves values and checked consent without writes',
+        'local add-one focuses the first new field without submitting',
+        'paper-only volunteer navigation and denied roster/admin routes',
+        'native volunteer add, save, rejected non-paper actions and sign-out',
+        'current session revocation prevents paper access',
         'row-specific validation preserves all entries',
         'explicit paper consent and attendance-only membership',
         'batch replay and expired-form preservation',

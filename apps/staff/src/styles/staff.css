@@ -1385,6 +1385,9 @@ html {
   grid-template-columns: 2fr 1fr 1.4fr;
   gap: 1rem;
 }
+.staff-paper-calendar {
+  grid-column: 1/-1;
+}
 .staff-paper-wording {
   margin-block: 1rem;
   font-size: 0.875rem;

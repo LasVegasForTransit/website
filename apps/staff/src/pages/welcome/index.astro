@@ -5,7 +5,8 @@ import { PermissionDenied } from '@lasvegasfortransit/platform-core/permissions'
 import { InvalidCursor } from '@lasvegasfortransit/platform-storage/staff-history';
 import type { Page } from '@lasvegasfortransit/platform-core/staff-types';
 import type { WelcomeQueueRow } from '@lasvegasfortransit/platform-core/welcome';
-import { welcomeName } from '../../lib/welcome';
+import { t } from '@lasvegasfortransit/platform-core/messages';
+import { welcomeName, welcomeSource, welcomeInterestLabels } from '../../lib/welcome';
 import { messageResponse } from '../../lib/responses';
 const staff = Astro.locals.staff;
 if (!staff) return messageResponse("You don't have access to this", 403);
@@ -53,8 +54,23 @@ try {
                       day: 'numeric',
                       timeZone: 'America/Los_Angeles',
                     })}
-                    {person.overdue && <span class="staff-welcome-overdue">Waiting 7+ days</span>}
+                    {person.overdue && (
+                      <span class="staff-welcome-overdue">{t('staff.welcome.overdue')}</span>
+                    )}
                   </p>
+                  <p class="mt-1 text-body-sm text-on-surface-variant">
+                    {t('staff.welcome.source', { source: welcomeSource(person.source) })} ·{' '}
+                    {person.waitingDays === 0
+                      ? t('staff.welcome.today')
+                      : t('staff.welcome.waitingDays', { count: person.waitingDays })}
+                  </p>
+                  {person.interests.length > 0 && (
+                    <p class="mt-1 text-body-sm">
+                      {t('staff.welcome.interests', {
+                        interests: welcomeInterestLabels(person.interests),
+                      })}
+                    </p>
+                  )}
                 </div>
                 <p>
                   {person.claimedBy

@@ -11,6 +11,8 @@ import { paperAllowed, planPaperRows } from './paper-plan';
 import { paperWrites } from './paper-writes';
 export interface PaperResult {
   personIds: string[];
+  createdCount?: number;
+  existingCount?: number;
   reviewIds: string[];
   withdrawalHeldIds?: string[];
 }
@@ -80,7 +82,13 @@ export async function paperBatchSummary(
   db: Db,
   actor: Actor,
   batchId: string,
-): Promise<{ rows: number; reviews: number; heldSignups: number } | null> {
+): Promise<{
+  rows: number;
+  created: number | null;
+  existing: number | null;
+  reviews: number;
+  heldSignups: number;
+} | null> {
   if (!(await paperAllowed(db, actor.personId))) return null;
   const row = await db
     .prepare(
@@ -92,6 +100,8 @@ export async function paperBatchSummary(
   const result = JSON.parse(row.result) as PaperResult;
   return {
     rows: result.personIds.length,
+    created: result.createdCount ?? null,
+    existing: result.existingCount ?? null,
     reviews: result.reviewIds.length,
     heldSignups: (result.withdrawalHeldIds ?? []).length,
   };
