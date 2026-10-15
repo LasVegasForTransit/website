@@ -13,7 +13,7 @@ The staff workflows save compiled applications and migrations, then upload and a
 saved build in preview after maintainer setup. They do not promote staff or jobs to production. The
 website's bootstrap and promotion workflows do not provision or promote these applications. Use the
 build system and private acceptance record to determine what is deployed and verified. Keep
-production provider writes disabled until configuration and live preview acceptance pass.
+automatic production provider writes disabled until configuration and live acceptance pass.
 
 ## Read-only configuration check
 
@@ -92,22 +92,21 @@ FROM newsletter_source_operations GROUP BY outcome, reason;
 
 These tables require the canonical newsletter migrations. The presence of saved events or passing
 local tests does not establish hosted processing. Keep synchronization disabled until the scheduled
-incoming dispatcher, staff resolution of review cases, and actual preview-provider acceptance have
+incoming dispatcher, staff resolution of review cases, and approved live provider acceptance have
 all been verified.
 
 ## Scheduled newsletter processing
 
-This procedure is for a maintainer preparing newsletter synchronization in the isolated preview.
-Complete [staff preview setup](../guides/set-up-staff-preview.md) first. Use an approved test
-publication and synthetic members. Enabling synchronization sends real API requests to the selected
-publication; an isolated database alone does not protect production subscribers.
+This procedure is for a maintainer preparing newsletter synchronization. Keep Beehiiv on Free and
+use **LVBT Updates** as the only publication. Free supports API access; scheduled polling and
+outgoing subscription changes do not require webhooks or another account. A list observation shows
+delivery status, not when someone last changed their consent.
 
-LVBT must remain on Beehiiv's Free plan. It supports API access but excludes webhooks and a second
-publication in the same workspace. API polling and outgoing account changes do not require a webhook
-secret. Use a separate free test account for provider tests; do not upgrade the LVBT plan or use its
-production publication to work around this prerequisite. A list observation shows delivery status,
-not when someone last changed their consent. Keep processing disabled until status differences,
-staff resolution, and actual preview-provider acceptance have been verified.
+Before you start, complete [staff preview setup](../guides/set-up-staff-preview.md) and use local
+fixtures for ordinary preview testing. Keep `LVBT_BEEHIIV_SYNC_ENABLED=false` on both hosted
+previews and production during setup. The preview runtime rejects the production publication;
+preserve that guard and keep live Beehiiv credentials out of preview. An isolated database alone
+cannot protect the real mailing list.
 
 The website release configuration sets `release.previewOnly=true` in `.lvbt/tooling.json` while
 newsletter delivery depends on this unfinished consumer. The shared release commands refuse
@@ -115,60 +114,121 @@ production promotion, upload, activation, and saved-release migrations. Preview 
 verification remain available. This hold also blocks unrelated website production updates from this
 source revision; do not remove it merely to publish another change. Retain the last accepted
 production release until newsletter source review, data export/deletion, provider configuration, and
-actual preview acceptance are complete. Remove the hold only in a reviewed change that enables and
-verifies the consumer before the website begins relying on queued updates.
+actual workflow and provider acceptance are complete. Remove the hold only in a reviewed change that
+enables and verifies the consumer before the website begins relying on queued updates.
 
-1. In the separate free test account, select the intended publication and verify API access without
-   changing the plan. With the approved key, the subscriptions list must return successfully and
-   belong to that test publication. A new account or credential needs maintainer authorization.
-   Never use a production subscriber to test write or deletion permissions.
-2. Apply the canonical migrations using the preview guide, then verify that the selected database
+1. Apply the canonical migrations using the preview guide, then verify that the selected database
    contains the newsletter inbox, attempted writes, erasure tables, and
    `0040_newsletter_poll_choices.sql`. All three applications must use this same preview database.
    Do not run a newly built dispatcher against an older schema.
-3. Set the jobs preview's public publication variables in `apps/jobs/wrangler.jsonc` before
-   building: `LVBT_BEEHIIV_PUBLICATION_ID` identifies the test publication and
-   `LVBT_BEEHIIV_PRODUCTION_PUBLICATION_ID` identifies production. They must differ in preview. Keep
-   `LVBT_BEEHIIV_SYNC_ENABLED=false` during setup. LVBT uses
-   `LVBT_BEEHIIV_CONFLICT_POLICY=staff_review`: when an unsubscribe cannot be ordered against a
-   recent signup, preserve membership, hold conflicting outgoing subscription changes, and send the
-   difference to staff review. Do not change that policy without a new maintainer decision. The
-   source default is blank, which disables observation processing. Both policies preserve a verified
-   signup made after the observation. Public variables are replaced by uploads; a setting saved only
-   in the dashboard does not survive the next release.
-4. Using the guide's **Settings → Variables and Secrets** procedure, install the approved API key
-   and dedicated `LVBT_NEWSLETTER_INTENT_KEY` on `lvbt-jobs-preview`. The intent key must be a
-   base64url-encoded random 32-byte value. Keep it separate from sign-in and provider credentials.
-   It protects saved incoming addresses and interrupted outgoing requests. Replacing it while work
-   remains encrypted makes those addresses unreadable; drain or explicitly resolve that work before
-   a planned rotation. Never print the key or copy production member addresses into preview.
-5. Skip callback setup on Free. If signed callbacks become available under a separately approved
-   setup, prepare `https://preview.lasvegasfortransit.org/webhooks/beehiiv`. The website's
-   `LVBT_DISCORD_JOBS` service binding must target `lvbt-jobs-preview`. The callback accepts only
-   JSON POST requests and forwards the original bytes and Svix signature headers privately to jobs;
-   jobs has no public route. Beehiiv must reach this callback without an interactive Google login.
-   If the preview's Access policy intercepts it, obtain approval for a narrowly scoped callback
-   policy before proceeding. The release workflow does not create that exception. Preserve Access
-   protection for the rest of the preview and never send preview events to the production callback.
-6. For that optional signed setup only, configure the callback in Beehiiv's webhook settings for
-   `subscription.created`, `subscription.confirmed`, and `subscription.deleted`. Install its signing
-   secret as `LVBT_BEEHIIV_WEBHOOK_SECRET` on jobs preview only. Missing or malformed credentials
-   close signed intake without disabling API polling, outgoing changes, or processing of events
-   already authenticated and saved. Presence alone does not prove callback reachability or
-   publication ownership. See
-   [Beehiiv's webhook reference](https://developers.beehiiv.com/webhooks/).
-7. Verify that the staff preview's `LVBT_NEWSLETTER_JOBS` service binding points to
-   `lvbt-jobs-preview`, and that both use the same isolated database. Production binds to
-   `lvbt-jobs`. This binding is separate from the website callback binding. No newsletter API or
-   encryption key belongs on staff. Follow the newsletter review procedure below before enabling the
-   flag and minute schedule through a reviewed launch release. Keep synchronization disabled until
-   actual preview acceptance passes; the setup release deliberately rejects it.
-8. During approved live acceptance, use one synthetic member to sign up, unsubscribe, and
-   independently confirm a new signup. Check delivery in Beehiiv, the member's resulting status and
-   original choice dates in staff, and actual Discord role readback for the linked test account.
-   Repeat after a failed request and restart. Where the original choice time is unknown, verify that
-   it remains unknown and the agreed conflict rule is followed. Do not count a provider response or
-   local fixture as proof of the resulting membership or server permissions.
+2. Build jobs, then run `pnpm -C apps/jobs test:e2e`. These isolated fixtures use synthetic
+   publication IDs, fake credentials and a local provider substitute. They exercise scheduled
+   processing without contacting Beehiiv or Discord. Follow the newsletter review and deletion
+   procedures below for the remaining local workflow checks. Do not replace fixture IDs or keys with
+   live values.
+3. Preserve `LVBT_BEEHIIV_CONFLICT_POLICY=staff_review` in the reviewed launch configuration: when
+   an unsubscribe cannot be ordered against a recent signup, preserve membership, hold conflicting
+   outgoing subscription changes, and send the difference to staff review. Do not change that policy
+   without a new maintainer decision. The source default is blank, which disables observation
+   processing. Always preserve a verified signup made after the observation.
+4. Obtain separate approval before creating a production platform API key or installing it as
+   `LVBT_BEEHIIV_API_KEY` on **`lvbt-jobs` only**. Do not rotate or reuse an unrelated integration's
+   key. In Beehiiv's new-key form, select **LVBT Updates** under **Publications**; do not leave
+   **All publications** selected. The key permits API access across the selected publication, rather
+   than restricting writes to the test address. The
+   [one-address provider rehearsal](#rehearse-beehiiv-with-one-approved-address) below needs its own
+   explicit approval for test writes and permanent cleanup; key approval does not grant those
+   actions or enable synchronization.
+5. Prepare the production public variables in `apps/jobs/wrangler.jsonc` through a reviewed release.
+   `LVBT_BEEHIIV_PUBLICATION_ID` and `LVBT_BEEHIIV_PRODUCTION_PUBLICATION_ID` must both identify
+   **LVBT Updates** in production. Preview must never select that publication. Public variables are
+   replaced by uploads; a setting saved only in the dashboard does not survive the next release.
+6. Install a dedicated `LVBT_NEWSLETTER_INTENT_KEY` on the selected jobs Worker using the guide's
+   **Settings → Variables and Secrets** procedure. It must be a base64url-encoded random 32-byte
+   value, separate from sign-in and provider credentials. It protects saved incoming addresses and
+   interrupted outgoing requests. Replacing it while work remains encrypted makes those addresses
+   unreadable; drain or explicitly resolve that work before a planned rotation. Never print the key
+   or copy production member addresses into preview. No newsletter API or encryption key belongs on
+   staff.
+7. Verify the staff preview's `LVBT_NEWSLETTER_JOBS` service binding targets `lvbt-jobs-preview` and
+   the same isolated database. Production staff targets `lvbt-jobs`. This differs from the website's
+   `LVBT_DISCORD_JOBS` binding used to forward optional callbacks. Keep the flag and minute schedule
+   disabled until a reviewed launch release passes the required workflow and live acceptance.
+
+Skip webhook configuration on Free. If signed callbacks become available under a separately approved
+setup, configure `subscription.created`, `subscription.confirmed`, and `subscription.deleted`, with
+`LVBT_BEEHIIV_WEBHOOK_SECRET` on the matching jobs Worker. The existing website `/webhooks/beehiiv`
+route forwards the original JSON bytes and Svix signature headers through its private jobs binding;
+jobs has no public route. Verify publication ownership and reachability. An Access exception, if
+required, needs separate approval and must preserve protection elsewhere. Do not route production
+events to preview or bypass the preview publication guard. Missing or malformed signing credentials
+close signed intake without disabling API polling, outgoing changes, or events already authenticated
+and saved. See [Beehiiv's webhook reference](https://developers.beehiiv.com/webhooks/).
+
+### Rehearse Beehiiv with one approved address
+
+This is a bounded, one-use operator API procedure against **LVBT Updates**, separate from the
+ordinary preview runtime. The application has no live test mode or single-address test endpoint.
+Keep hosted synchronization disabled throughout. API readback proves only these provider operations;
+it does not prove the scheduled consumer, member signup, staff review, deletion flow or Discord
+permissions work end to end. Those remain launch acceptance requirements.
+
+Before you start, obtain explicit authorization for the new production platform key, its `lvbt-jobs`
+destination, and the exact test address and create/unsubscribe/delete operations. Use a new
+plus-address whose inbox the approving operator controls, represented here as
+`operator+APPROVED-TEST@example.invalid`. Replace this placeholder only in private execution inputs.
+Do not use an existing subscriber, even if it belongs to the operator. Approval for an API key alone
+does not authorize test writes or deletion.
+
+Use an approved local API client with the key loaded privately, an eight-second request timeout,
+redirects disabled, and automatic retries disabled. Never place the key in command arguments, public
+logs or tracked files. Set the request base to
+`https://api.beehiiv.com/v2/publications/pub_APPROVED_LVBT_UPDATES`; confirm the publication ID in
+Beehiiv and replace `pub_APPROVED_LVBT_UPDATES` before sending anything. Review the client's exact
+requests and enforce a fixed publication, one exact address, at most one create, one unsubscribe and
+one delete. The current application adapter is not a one-address operator harness; do not run the
+general synchronizer for this check.
+
+1. Read `GET /subscriptions?limit=1` and `GET /custom_fields`. Both must return HTTP 200 with the
+   expected publication's subscription and custom-field data. An empty custom-field list is valid.
+   Do not create or change fields. A 401 or 403 means the key lacks access; stop and review
+   authorization. A failure is not a reason to upgrade the plan. See the
+   [subscriptions](https://developers.beehiiv.com/api-reference/subscriptions/index) and
+   [custom fields](https://developers.beehiiv.com/api-reference/custom-fields/index) references.
+2. Look up the exact approved address with
+   `GET /subscriptions/by_email/{URL-encoded-approved-address}`. Encode the plus sign as `%2B` and
+   `@` as `%40`; do not strip the plus suffix. Require HTTP 404 before any create. If a record is
+   returned, stop without writing and choose a different address through the same approval process.
+   An error, timeout or invalid response does not prove absence. See
+   [Get subscription by email](https://developers.beehiiv.com/api-reference/subscriptions/get-by-email).
+3. Privately record the approved address and attempt time before writing. Immediately repeat the
+   absence check, then send one `POST /subscriptions` with the approved address,
+   `reactivate_existing:false`, `send_welcome_email:false`, `double_opt_override:"off"`, and
+   `utm_source:"lvbt_operator_acceptance"`. Add no automations or custom fields. Privately save the
+   returned subscriber ID. Read by both ID and exact address; require matching ID/address and
+   `status:"active"`. Stop on a mismatched identity, unexpected status or uncertain create outcome.
+   See [Create subscription](https://developers.beehiiv.com/api-reference/subscriptions/create).
+4. Before unsubscribing, read the saved ID and the address again. Both must identify the same newly
+   created test subscription with `status:"active"`. Send one `PATCH /subscriptions/{saved-id}` with
+   `{"unsubscribe":true}`. Read it again and require `status:"inactive"` with the same ID/address.
+   Do not update an email, reactivate an account, or select a replacement ID. See
+   [Update subscription](https://developers.beehiiv.com/api-reference/subscriptions/patch).
+5. Before permanent cleanup, repeat both identity checks against the saved ID/address and require
+   `status:"inactive"`. Send one `DELETE /subscriptions/{saved-id}` under the explicit deletion
+   approval, then require HTTP 404 from separate ID and address lookups. A successful write response
+   alone does not prove cleanup. See
+   [Delete subscription](https://developers.beehiiv.com/api-reference/subscriptions/delete).
+6. Keep only the needed outcome and recovery details in a private operational record, with an owner
+   and deletion date. Remove temporary credential material and revoke an approved temporary key. A
+   retained production key belongs only on `lvbt-jobs`. Leave synchronization disabled; completing
+   this rehearsal does not authorize a production release or remove the deployment hold.
+
+After a timeout, lost response, rate limit or server error, stop writes and resolve the outcome with
+read-only lookups. Respect `Retry-After` before another read; limit recovery to three lookups per
+failed step. Never retry a create automatically. If its ID was lost, recover it only from the exact
+approved address and compare it with the private attempt record before requesting further action. If
+identity or cleanup cannot be confirmed, record the unresolved test subscription privately and
+escalate for authorization; do not guess, delete another record or repeat the write blindly.
 
 Saved incoming choices run before outgoing changes. After the roster scan, saved status differences
 are processed before outgoing changes, including while Beehiiv requests are paused by a rate limit.
@@ -195,19 +255,20 @@ Inspect ready backlog privately without exposing addresses, encrypted content, o
 ```sql
 SELECT count(*) AS ready_events, min(received_at) AS oldest_received
 FROM newsletter_inbound_events
-WHERE state='pending' AND publication_id='pub_APPROVED_PREVIEW'
+WHERE state='pending' AND publication_id='pub_SELECTED_PUBLICATION'
   AND julianday(occurred_at)<=julianday('now');
 ```
 
-Replace the placeholder with the selected preview publication ID. A growing oldest-ready age means
-processing is not keeping up. Use the aggregate job outcomes and query counts to distinguish a
-storage failure from a provider pause. Storage failures leave events pending for retry. Future
-source dates wait without holding up other ready events. Unreadable or mismatched addresses and
-ambiguous source times require staff review, and hold outgoing changes for the affected account. Do
-not clear an error by editing consent, deleting attempted-write evidence, or bypassing ownership
-checks. A normal callback for the platform's own subscription creation clears without adding
-consent; a possible confirmation or removal echo requires independent evidence. Whole-second
-provider times cannot reliably order a competing signup inside the same second.
+Replace the placeholder with the selected environment's publication ID; local fixtures use their
+synthetic ID, and accepted production uses LVBT Updates. A growing oldest-ready age means processing
+is not keeping up. Use the aggregate job outcomes and query counts to distinguish a storage failure
+from a provider pause. Storage failures leave events pending for retry. Future source dates wait
+without holding up other ready events. Unreadable or mismatched addresses and ambiguous source times
+require staff review, and hold outgoing changes for the affected account. Do not clear an error by
+editing consent, deleting attempted-write evidence, or bypassing ownership checks. A normal callback
+for the platform's own subscription creation clears without adding consent; a possible confirmation
+or removal echo requires independent evidence. Whole-second provider times cannot reliably order a
+competing signup inside the same second.
 
 Run the isolated compiled source-processing fixture with `pnpm -C apps/jobs test:e2e` after building
 jobs. It covers signed delivery, membership changes, Discord removal, a complete 5,000-account scan,
@@ -258,18 +319,21 @@ not establish hosted acceptance or permission to run tests against real subscrib
 
 ## Verify newsletter cleanup after account deletion
 
-This procedure is for a maintainer testing deletion in the isolated preview. It checks that queued
-newsletter addresses are cleared, the subscriber is removed from Beehiiv, and delayed newsletter
-messages cannot recreate a removed member. An ordinary newsletter unsubscribe keeps the Beehiiv
-subscriber inactive. Permanent account deletion also deletes that subscriber and its associated
-provider data; a reversible duplicate archive does not authorize this permanent deletion.
+This procedure is for a maintainer verifying account-deletion cleanup. Local fixtures check that
+queued newsletter addresses are cleared, the subscriber is removed from Beehiiv, and delayed
+newsletter messages cannot recreate a removed member. An ordinary newsletter unsubscribe keeps the
+Beehiiv subscriber inactive. Permanent account deletion also deletes that subscriber and its
+associated provider data; a reversible duplicate archive does not authorize this permanent deletion.
 
-Before you start, you need an approved preview test member separate from the preview administrator,
-access to the selected preview database, and the database checks in
-[Set up the protected staff preview](../guides/set-up-staff-preview.md). Use the separate test
-publication with approved API credentials. Signed callback checks apply only when that optional
-capability is configured; API polling works on Free. Keep newsletter writes disabled while preparing
-the release and applying its canonical migrations.
+Before you start, complete the database checks in
+[Set up the protected staff preview](../guides/set-up-staff-preview.md). Use isolated local fixtures
+with synthetic members and provider responses for ordinary acceptance. Keep hosted newsletter writes
+disabled while preparing the release and applying migrations. Do not put a live key into preview or
+change its publication guard. The
+[one-address provider rehearsal](#rehearse-beehiiv-with-one-approved-address) separately verifies
+Beehiiv removal; it does not verify the application's account-deletion flow against a live provider.
+Signed callback checks apply only when that optional capability is configured; API polling works on
+Free.
 
 1. Check the selected database's migration list for both erasure migrations. The following read-only
    query must return two rows. A missing row means the database needs the release's migrations
@@ -280,22 +344,35 @@ the release and applying its canonical migrations.
    WHERE name IN ('0038_newsletter_erasure.sql','0039_newsletter_erasure_cleanup.sql');
    ```
 
-2. Complete the scheduled newsletter setup above. Confirm that the separate test member is
-   subscribed in the test publication, then sign in as that member and use `/account/delete/` to
-   request deletion. Complete the confirmation in that test member's own inbox. The account must be
-   signed out and its profile cleared. Do not delete the preview administrator or another person's
-   record for this test.
+2. From a configured local checkout, run the regression checks for queued addresses, delayed
+   messages, merged accounts, fresh signups, rollback and the worker's query limit:
 
-3. Allow the scheduled job to finish. Privately inspect that test person's `newsletter_sync_jobs`
-   row: `state='done'` means its current targets were confirmed. In the test publication, the
-   subscriber must be absent, rather than merely unsubscribed. The adapter sends an unsubscribe
-   first, then the
+   ```sh
+   pnpm --filter @lasvegasfortransit/platform-storage exec node --import tsx --test tests/newsletter-erasure.test.ts tests/newsletter-erasure-races.test.ts tests/maintenance-budget.test.ts
+   pnpm --filter @lasvegasfortransit/platform-integrations exec node --import tsx --test tests/beehiiv-erasure.test.ts
+   pnpm -C apps/jobs build
+   pnpm -C apps/jobs test:e2e
+   ```
+
+   All checks must pass. The compiled jobs fixture substitutes Beehiiv responses and verifies
+   deletion of synthetic accounts, including saved newsletter addresses and delayed events. The
+   separate account workflow must verify `/account/delete/`, inbox confirmation, sign-out and
+   profile clearing with an approved synthetic member. Never delete the preview administrator or
+   another person's record for a test.
+
+3. In the isolated fixture, a completed test person's `newsletter_sync_jobs` row has `state='done'`;
+   its current cleanup targets were confirmed. The provider substitute must report the subscriber
+   absent, rather than merely unsubscribed. The adapter sends an unsubscribe first, then the
    [permanent deletion request](https://developers.beehiiv.com/api-reference/subscriptions/delete),
    and requires a separate subscriber lookup to return not found. An accepted deletion response
-   alone is insufficient. Do not use another subscriber or the production publication to test this.
+   alone is insufficient. Hosted end-to-end deletion remains unverified until a separately approved
+   launch acceptance plan uses a new, explicitly approved test identity and confirms all these
+   outcomes. Do not run the unrestricted production consumer as a single-address rehearsal.
 
-4. Inspect these aggregate counts privately. Both must be zero. They check saved addresses for
-   removed connected accounts and temporary deletion checks without printing contact details.
+4. When inspecting a retained acceptance database after an authorized deletion, run these aggregate
+   counts privately. Both must be zero. They check saved addresses for removed connected accounts
+   and temporary deletion checks without printing contact details. Local fixtures use temporary
+   databases and perform their own assertions before cleanup.
 
    ```sql
    SELECT count(*) AS retained_addresses
@@ -306,19 +383,8 @@ the release and applying its canonical migrations.
    SELECT count(*) AS unfinished_checks FROM newsletter_erasure_checks;
    ```
 
-5. From a configured local checkout, run the regression checks for queued addresses, delayed
-   messages, merged accounts, fresh signups, rollback and the worker's query limit:
-
-   ```sh
-   pnpm --filter @lasvegasfortransit/platform-storage exec node --import tsx --test tests/newsletter-erasure.test.ts tests/newsletter-erasure-races.test.ts tests/maintenance-budget.test.ts
-   pnpm --filter @lasvegasfortransit/platform-integrations exec node --import tsx --test tests/beehiiv-erasure.test.ts
-   pnpm -C apps/jobs build
-   pnpm -C apps/jobs test:e2e
-   ```
-
-   All checks must pass. These checks exercise the canonical schema locally; they do not establish
-   that a hosted provider has deleted its subscriber. Verify that separate outcome during live
-   provider acceptance.
+These checks exercise the canonical schema locally; they do not establish that a hosted provider has
+deleted its subscriber. Verify that separate outcome during approved live provider acceptance.
 
 Deletion covers the current combination of member records and their connected newsletter addresses.
 It clears queued or review addresses in the same transaction as the profile. If ownership changes
