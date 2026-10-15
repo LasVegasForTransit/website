@@ -164,7 +164,7 @@ export const staffPeople = {
     includes:
       'The download includes member details, mailing-list permissions, connected accounts and activity. Deleted people are left out.',
     format:
-      'The ZIP contains spreadsheets, the original records and a guide to reading them. It includes personal contact information.',
+      'The ZIP contains spreadsheets, original records and a reading guide. It includes personal information; keep it somewhere only authorized LVBT staff can open.',
     download: 'Download records',
     expired: 'Reload the download page and try again.',
   },

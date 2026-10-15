@@ -31,6 +31,8 @@ just say guides.)
   the preview database, a saved deployment, and the first administrator
 - [Export a member record](./guides/export-a-member-record.md) — download one person's complete
   record for a privacy request.
+- [Export all member records](./guides/export-member-records.md) — move LVBT's records to a
+  spreadsheet or contact-management system while preserving permission evidence.
 - [Combine duplicate member records](./guides/combine-member-records.md) — confirm a match, combine
   safely, and undo a mistaken combination without losing history
 - [Enter paper signups](./guides/enter-paper-signups.md) — print a sheet, record attendance and
