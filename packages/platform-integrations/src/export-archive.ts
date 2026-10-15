@@ -3,6 +3,8 @@ import { paperToday } from '@lasvegasfortransit/platform-core/paper';
 import { ACCESS_DENIED } from '@lasvegasfortransit/platform-core/permissions';
 import type { Actor } from '@lasvegasfortransit/platform-core/staff-types';
 import type { Db } from '@lasvegasfortransit/platform-storage/db';
+import { nestedExport } from './export-json';
+import { exportReadme } from './export-readme';
 import {
   collectFullExport,
   EXPORT_COLUMNS,
@@ -22,19 +24,10 @@ function* csv(columns: string[], rows: ExportRow[]): Generator<string> {
 function* files(data: FullExport): Generator<{ name: string; contents: Iterable<string> }> {
   for (const [table, columns] of Object.entries(EXPORT_COLUMNS))
     yield { name: table + '.csv', contents: csv(columns.split(','), data[table as ExportTable]) };
-  yield { name: 'export.json', contents: [JSON.stringify(data)] };
+  yield { name: 'export.json', contents: [JSON.stringify(nestedExport(data))] };
   yield {
     name: 'README.txt',
-    contents: [
-      'LVBT member records\nExported: ' +
-        data.exportedAt +
-        '\nFormat: 1\n\n' +
-        'The four CSV files contain people, consent evidence, connected accounts and activity. Match records by id and person_id. Deleted people are excluded.\n' +
-        'export.json contains the same records with original values, plus field sources, committee assignments, withdrawal requests, staff corrections and recorded Discord profiles. Empty CSV cells can be null or empty text; JSON preserves the distinction.\n' +
-        'Import identifier, external_id, zip and census_block columns as Text before viewing or saving in a spreadsheet. Opening CSV files directly can remove leading zeros or round long account IDs. Original values remain in JSON.\n' +
-        'CSV text that could run as a spreadsheet formula begins with an added apostrophe. Original values remain in JSON.\n' +
-        'Sign-in codes, sessions, OAuth state and credentials are excluded. This download records a snapshot of LVBT records; connected-account entries do not prove current access on an external service.\n',
-    ],
+    contents: [exportReadme(data.exportedAt)],
   };
 }
 function archive(data: FullExport): ReadableStream<Uint8Array> {
@@ -90,7 +83,7 @@ export async function exportPeople(
   return new Response(archive(data), {
     headers: {
       'Content-Type': 'application/zip',
-      'Content-Disposition': `attachment; filename="lvbt-members-${paperToday(now)}.zip"`,
+      'Content-Disposition': `attachment; filename="lvbt-people-export-${paperToday(now)}.zip"`,
       'Cache-Control': 'private, no-store',
       'X-Content-Type-Options': 'nosniff',
     },

@@ -4,19 +4,24 @@ import type { Actor } from '@lasvegasfortransit/platform-core/staff-types';
 import type { Db, Statement } from './db';
 import { auditDenied } from './audits';
 import { STAFF_ADMIN_SCOPE } from './staff-scope';
+import { COUNTED_ENGAGEMENT } from './engagement';
 export type ExportRow = Record<string, string | number | null>;
 export const EXPORT_COLUMNS = {
   people:
-    'id,given_name,family_name,email,email_verified_at,phone,zip,census_block,census_block_vintage,place_name,preferred_language,membership_status,membership_rules_version,region_id,region_source,region_set_at,created_at,updated_at',
+    'id,given_name,family_name,email,email_verified_at,phone,zip,census_block,census_block_vintage,place_name,preferred_language,membership_status,membership_rules_version,region_id,region_source,region_set_at,member_since,created_at,updated_at',
   consent_records:
-    'id,person_id,scope,given_at,source,method,wording_version,withdrawn_at,withdrawn_source,created_at,updated_at,origin_identity_id,import_run_id',
+    'id,person_id,scope,given_at,source,method,wording_version,withdrawn_at,withdrawn_source,withdrawn_time_basis,created_at,updated_at,origin_identity_id,import_run_id',
   identities:
     'id,person_id,platform,external_id,external_email,linked_at,link_method,created_at,updated_at',
   engagement_events: 'id,person_id,type,occurred_at,source,reference,details,created_at',
 } as const;
 export type ExportTable = keyof typeof EXPORT_COLUMNS;
+const MEMBER_SINCE_SQL = `(SELECT min(e.occurred_at) FROM engagement_events e
+  WHERE e.person_id=p.id AND e.type='subscribed' AND ${COUNTED_ENGAGEMENT}
+    AND e.occurred_at > coalesce((SELECT max(e.occurred_at) FROM engagement_events e
+      WHERE e.person_id=p.id AND e.type='unsubscribed' AND ${COUNTED_ENGAGEMENT}), ''))`;
 export interface FullExport {
-  formatVersion: 1;
+  formatVersion: 2;
   exportedAt: string;
   people: ExportRow[];
   consent_records: ExportRow[];
@@ -68,7 +73,13 @@ export async function collectFullExport(
     db
       .prepare(
         table === 'people'
-          ? `SELECT ${columns} FROM people WHERE deleted_at IS NULL AND ${STAFF_ADMIN_SCOPE} ORDER BY id`
+          ? `SELECT ${columns
+              .split(',')
+              .map((column) =>
+                column === 'member_since' ? `${MEMBER_SINCE_SQL} AS member_since` : `p.${column}`,
+              )
+              .join(',')}
+              FROM people p WHERE p.deleted_at IS NULL AND ${STAFF_ADMIN_SCOPE} ORDER BY p.id`
           : `SELECT ${columns
               .split(',')
               .map((column) => `r.${column}`)
@@ -96,7 +107,7 @@ export async function collectFullExport(
     ...profileQueries(db, actor.personId),
     db
       .prepare(
-        `INSERT INTO staff_audits(id,actor_id,action,permission,details,occurred_at) SELECT ?,?,'people.export','export.full',json_object('people',(SELECT count(*) FROM people WHERE deleted_at IS NULL),'formatVersion',1),? WHERE ${STAFF_ADMIN_SCOPE}`,
+        `INSERT INTO staff_audits(id,actor_id,action,permission,details,occurred_at) SELECT ?,?,'people.export','export.full',json_object('people',(SELECT count(*) FROM people WHERE deleted_at IS NULL),'formatVersion',2),? WHERE ${STAFF_ADMIN_SCOPE}`,
       )
       .bind(ulid(), actor.personId, exportedAt, actor.personId),
   ]);
@@ -108,7 +119,7 @@ export async function collectFullExport(
   )
     return null;
   return {
-    formatVersion: 1,
+    formatVersion: 2,
     exportedAt,
     people: rows(result[0]),
     consent_records: rows(result[1]),

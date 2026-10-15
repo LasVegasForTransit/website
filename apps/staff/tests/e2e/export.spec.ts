@@ -61,11 +61,12 @@ try {
   assert.ok(elapsed < 30000, 'the local 5000-person export must finish in 30 seconds');
   const files = unzipSync(await readFile(artifact));
   const data = JSON.parse(strFromU8(files['export.json'] ?? new Uint8Array())) as {
-    people: { id: string }[];
-    consent_records: unknown[];
+    people: { id: string; consent_records: unknown[] }[];
   };
   assert.ok(data.people.length >= 5000);
-  assert.ok(data.consent_records.length >= 5000);
+  assert.ok(
+    data.people.reduce((count, person) => count + person.consent_records.length, 0) >= 5000,
+  );
   assert.deepEqual(Object.keys(files).sort(), [
     'README.txt',
     'consent_records.csv',
