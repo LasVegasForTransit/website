@@ -244,9 +244,9 @@ export const en = {
       "Download a file with everything LVBT holds about you: your details, what you agreed to and when, your connected accounts, and the events and activities we've recorded.",
     deleteTitle: 'Delete your account',
     deleteBody:
-      "Deleting your account takes you off LVBT's mailing list, disconnects accounts like Discord, and erases your details from our records within 30 days. This can't be undone. You might want to download your data first.",
+      "Deleting your account ends your LVBT membership and removes your personal details from LVBT. We'll also take you off our mailing list and disconnect linked accounts like Discord. This can't be undone. You can download your data first.",
     volunteerNote:
-      "Your LVBT Google account will be handed to your committee lead to close, so shared files aren't lost.",
+      'An LVBT administrator will review your LVBT Google account and any shared files.',
     deleteSendCode: 'Send me a code to delete my account',
     deleteCodeBody: "To make sure it's you, we've sent a 6-digit code to {email}.",
     deleteSubmit: 'Delete my account',

@@ -15,7 +15,7 @@ import { t } from '@lasvegasfortransit/platform-core/messages';
     <div class="max-w-2xl">
       <p><a href="/account/" class={linkClass}>{t('account.back')}</a></p>
       <h1 class="text-headline-lg mt-6">{t('account.deleteTitle')}</h1>
-      <p class="lede mt-4 [overflow-wrap:anywhere]" data-slot="sent-to" hidden></p>
+      <p class="lede text-on-surface mt-4 [overflow-wrap:anywhere]" data-slot="sent-to" hidden></p>
       <div class="mt-8"><Notice kind="error" hidden dataSlot="notice" /></div>
       <ErrorSummary
         heading={t('account.errorSummaryHeading')}

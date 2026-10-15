@@ -571,20 +571,22 @@ creation" organization policy (`iam.disableServiceAccountKeyCreation`) to make o
 that policy on by default for new organizations, because a key file works like a password that never
 expires: anyone who gets a copy could manage all of LVBT's Workspace users and groups.
 
-Google Group reconciliation will sign in to Google with no key file at all, using Workload Identity
-Federation from a GitHub Actions job; the
+The historical GitHub Actions federation route in the
 [platform decision record](../explanation/decisions/organizing-platform.md#8-secrets-live-in-cloudflare-and-are-never-committed)
-explains how. The service account it will use already exists:
-`lvbt-website-admin@lvbt-core.iam.gserviceaccount.com` ("LVBT Website Admin") in the LVBT Core
-project. Until then, a Workspace admin adds and removes volunteer accounts and group members by hand
-at <https://admin.google.com>.
+does not establish a deployable identity for the private jobs Worker. Hosted dispatch and the token
+source remain unwired. The existing `lvbt-website-admin@lvbt-core.iam.gserviceaccount.com` ("LVBT
+Website Admin") in project `lvbt-core` does not by itself establish jobs signing authority or
+Workspace delegation. Continue approved manual account and group administration at
+<https://admin.google.com> until the runtime and provider checks are complete.
 
-The decision record names `root@lasvegasfortransit.org` as the intended delegated administrator.
 `LVBT_GOOGLE_ADMIN_SUBJECT` is a deprecated configuration placeholder, not a functioning runner
-setting; leave it empty. Verify the approved administrator and scopes before enabling a future
-runner. A dedicated organization account can avoid depending on a volunteer's continued admin access
-and make automated changes easier to identify in audits. It does not itself restrict access to mail
-or files: the granted scopes and administrator privileges define that boundary.
+setting; leave it empty. Any setup must separately authorize the exact matching private jobs
+principal, environment and audience, Google-managed signing permission, dedicated delegated
+Workspace administrator and scope set. Historical delegated-account choices are not that approval.
+The adapter needs Directory user-read, group-read and group-membership scopes for its data
+operations; those API requirements are not an approved delegation grant. A dedicated organization
+account does not itself restrict access to mail or files: the granted scopes and administrator
+privileges define that boundary.
 
 Follow
 [the read-only Google setup inspection](./staff-portal-operations.md#inspect-google-setup-without-granting-access)

@@ -175,6 +175,18 @@ jobs:
           AUDIT_SKIP_BUILD: '1'
         run: pnpm check:a11y
 
+      - name: Check authenticated account data routes
+        run: pnpm test:account-data:lighthouse
+
+      - name: Upload account data Lighthouse reports
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: account-data-lighthouse-${{ github.sha }}
+          path: apps/site/test-results/account-data/lighthouse/
+          if-no-files-found: ignore
+          retention-days: 14
+
   long-text:
     name: Long text (en-XA)
     runs-on: ubuntu-latest

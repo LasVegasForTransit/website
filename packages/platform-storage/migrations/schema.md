@@ -173,6 +173,13 @@ prevent removing the last administrator. `staff_operations` records actor, opera
 payload, result and application time so retries do not apply a mutation twice. `staff_audits`
 attributes staff changes without retaining contact details in denial receipts.
 
+Per-person download receipts use `staff_audits.action='person.export'`: `actor_id` is the
+authenticated requester, `target_id` is the exported person, and `details.requested_by` is `member`
+or the administrator's person ID. Administrator receipts carry permission `export.full`;
+self-downloads have no staff permission. The receipt is inserted only when the same statement
+confirms current session, ownership or administrator authority. No profile contents or credentials
+are stored.
+
 `reconcile_generations` and `integration_outbox` separate accepted assignments from provider work. A
 newer assignment generation supersedes an older queued operation; a failed provider call leaves the
 assignment in place for retry.

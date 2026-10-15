@@ -16,7 +16,7 @@ administrator help.
 
 ## Download the record
 
-1. Open **People** in the staff portal and find the person. Check their name and email against the
+1. Open **Members** in the staff portal and find the person. Check their name and email against the
    request before opening their profile.
 2. Select **Download member record**. Your browser saves a file named
    `lvbt-member-data-YYYY-MM-DD.json`. JSON is a text format you can open in a text editor.
@@ -48,15 +48,22 @@ links, committee assignments, or provider access.
 - **Access is denied:** confirm that your membership and administrator designation are current. Ask
   an existing administrator to review the designation; do not grant yourself access as a workaround.
 - **The old profile no longer opens:** a deletion or record combination may have changed which
-  profile is current. Return to **People** and locate the current record before trying again.
+  profile is current. Return to **Members** and locate the current record before trying again.
 - **A section is empty or a value is `null`:** LVBT has no corresponding recorded value in the
   export snapshot. Newsletter observations are stored observations, not a fresh provider lookup.
 - **The file names someone else:** do not send it. Delete the mistaken local download, return to
-  **People**, and verify the correct profile against the request.
+  **Members**, and verify the correct profile against the request.
 
 The server checks current ownership or administrator access while collecting the record and again
 before returning it. If access or account ownership changes during collection, start a new download
 after resolving the change. Download responses are private and instruct browsers and intermediaries
 not to cache them.
+
+Per-person export receipts live in the existing append-only `staff_audits` table under action
+`person.export`. Each records the authenticated requester ID, exported person ID and time, with
+`details.requested_by` set to `member` for a self-download or the administrator's person ID for an
+on-behalf download. Administrator receipts also identify permission `export.full`. Receipts contain
+no contact details, export contents or session secrets. The final authorization check and receipt
+insert are one guarded statement; a refused or revoked request creates no export receipt.
 
 For staff access setup, see [staff portal operations](../reference/staff-portal-operations.md).
