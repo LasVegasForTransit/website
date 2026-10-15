@@ -43,6 +43,8 @@ just say guides.)
   person, and record their welcome.
 - [Operate member data retention](./guides/operate-member-data-retention.md) — review deletion,
   daily retention, and Google accounts that need attention.
+- [Automate member database backups](./guides/member-database-backups.md) — operate daily private
+  backups and quarterly restore tests
 - [Back up the membership database](./guides/back-up-membership-database.md) — export privately and
   verify an isolated restore before a migration
 - [Recover a linked preview test membership](./guides/recover-a-preview-test-membership.md) — repair

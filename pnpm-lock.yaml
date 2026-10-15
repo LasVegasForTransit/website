@@ -470,6 +470,8 @@ importers:
         specifier: 'catalog:'
         version: 4.141.0(@cloudflare/workers-types@5.20260901.1)(@types/node@24.13.3)
 
+  packages/member-backups: {}
+
   packages/platform-core:
     devDependencies:
       '@cloudflare/workers-types':

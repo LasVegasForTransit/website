@@ -1,5 +1,8 @@
 # Back up and verify the membership database
 
+For daily production backups to private R2 and quarterly restore tests, use the
+[automated backup guide](./member-database-backups.md).
+
 Use this procedure before a membership database migration or recovery operation. It creates a
 private SQL backup and checks that it restores into an isolated local database before you depend on
 it.
