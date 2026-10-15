@@ -61,6 +61,69 @@ Cloudflare documents the export and import options in its
 [D1 command reference](https://developers.cloudflare.com/d1/wrangler-commands/) and
 [import and export guide](https://developers.cloudflare.com/d1/best-practices/import-export-data/).
 
+### Alternative: export through the signed-in dashboard
+
+Use Wrangler when its approved credential can access the selected account. If only the existing
+Cloudflare browser session has access, a database maintainer can prepare a backup through **Explore
+Data** without creating a credential or copying the browser's sign-in information. This is a manual
+fallback for a small database, not an automatic repository command. It requires a reviewed, private
+export and restoration program before you start. Keep that program with the backup so another
+maintainer can repeat the verification.
+
+1. Recheck the LVBT account, **lvbt-platform-preview**, and its database ID. In **Console**, run the
+   schema inventory from step 1. Select **Explore Data** to open D1 Studio, then use its **Query**
+   editor to run the same read-only query. Select **Export query results → CSV**. CSV means
+   comma-separated values; this download is the complete result, not just the rows currently visible
+   in the table. Move it out of Downloads into the protected backup directory immediately.
+2. Have the private program read the exported table definitions and prepare one read-only `SELECT`
+   that returns a single JSON snapshot. JSON is a structured text format. The snapshot must include
+   the current schema, every application table and column, table row totals, the `d1_migrations`
+   records, row identifiers, and `sqlite_sequence` values used by automatically numbered records.
+   Include indexes and triggers in the schema. Record provider-owned tables separately; do not
+   describe their omission as a complete copy of Cloudflare's internal storage.
+3. Preserve each value's SQLite storage type as well as its contents. An ordinary CSV export of
+   individual tables can confuse an empty string with a missing value, lose binary data, or round a
+   large number. A typed JSON value can use this expression, replacing `"column_name"` with each
+   reviewed column identifier:
+
+   ```sql
+   json_array(
+     typeof("column_name"),
+     CASE WHEN typeof("column_name") = 'real'
+       THEN printf('%!.17g', "column_name")
+       ELSE hex("column_name") END
+   )
+   ```
+
+   The restoration program must decode hexadecimal text and binary values, preserve whole numbers
+   without JavaScript number conversion, preserve missing values, and round-trip decimal values.
+   Verify its handling of empty text, embedded zero bytes, binary data, and large whole numbers on
+   disposable local data. Refuse an unsupported type or an incomplete result.
+
+4. Paste the complete prepared query into the Studio editor using its normal editing controls.
+   Select **Run** and confirm the result has the expected snapshot column and exactly one row. A
+   query error, the previous query's column headings, truncated JSON, or a missing table means the
+   backup is incomplete. Do not export an old result as a substitute. Export this result as CSV and
+   move it into the protected directory. Restrict the directory to its owner and the files to that
+   owner's read/write access, for example `chmod 700 <directory>` and `chmod 600 <file>`.
+5. Reconstruct the SQL backup privately. Create tables before inserting data, then create their
+   indexes and triggers after insertion so restoration does not run membership actions. Preserve
+   stored row identifiers and numbering sequences. Never execute generated statements against the
+   hosted database. Restore into a fresh, isolated local SQLite database and perform step 4 below,
+   including SQLite's `PRAGMA integrity_check` and `PRAGMA foreign_key_check`.
+6. Compare the complete restored schema and every typed value with the snapshot, not only record
+   totals. Compare each table in a stable order and retain its checksum privately. Run and export a
+   second complete snapshot from Studio; it must match the backup's schema, tables, values and
+   numbering sequences. A difference means the source changed: arrange a stable window and repeat
+   the backup rather than editing either result to make them agree.
+
+This fallback runs ordinary read queries instead of the provider's full export operation. It does
+not copy Cloudflare-managed recovery state, make a live restore safe, or prove that a future
+migration will succeed. A large database may exceed query, response, or browser download limits;
+stop and use the approved Wrangler export path if complete fidelity cannot be verified. Retain the
+source downloads, reconstructed SQL, private program, checksums and verification together under
+step 5. Do not start an application against the restored authentication or pending-job data.
+
 ## 3. Restore into a fresh local directory
 
 Choose a second, unused private directory for local database storage. The example is

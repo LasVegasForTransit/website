@@ -3,6 +3,7 @@ import test from 'node:test';
 import { PersonService } from '../src/person-service';
 import { runMaintenance } from '../src/retention';
 import { queryBudget } from '../src/query-budget';
+import { eraseProfile } from '../src/person-erasure';
 import { memoryDb, type MemoryDb } from './support/db';
 
 const now = new Date('2026-10-14T10:00:00.000Z');
@@ -223,9 +224,54 @@ void test('self-deletion records member without accepting a contact address as a
     assert.throws(
       () =>
         db.raw.exec(
-          "INSERT OR REPLACE INTO person_deletion_log VALUES('self','member','requested','forged','2026-01-01')",
+          "INSERT OR REPLACE INTO person_deletion_log(person_id,requested_at,requested_by,reason,operation_id,completed_at) VALUES('self','2026-01-01','member','requested','forged','2026-01-01')",
         ),
       /cannot be replaced/,
+    );
+  } finally {
+    db.raw.close();
+  }
+});
+void test('a deletion receipt preserves the actual request time separately from local completion across replay and purge', async () => {
+  const db = memoryDb();
+  try {
+    person(db, 'delayed-subject');
+    person(db, 'staff-requester');
+    const requestedAt = '2026-01-15T02:30:00.000Z';
+    const operationId = 'delayed-erasure';
+    await db.batch([
+      db
+        .prepare(
+          `INSERT INTO person_erasure_scope(operation_id,person_id,requested_at,requested_by,reason)
+        VALUES(?,'delayed-subject',?,'staff-requester','requested')`,
+        )
+        .bind(operationId, requestedAt),
+      eraseProfile(db, operationId, requestedAt),
+      db.prepare('DELETE FROM person_erasure_scope WHERE operation_id=?').bind(operationId),
+    ]);
+    const receipt = db.raw
+      .prepare("SELECT * FROM person_deletion_log WHERE person_id='delayed-subject'")
+      .get();
+    assert.ok(receipt);
+    assert.equal(receipt.requested_at, requestedAt);
+    assert.equal(receipt.requested_by, 'staff-requester');
+    assert.ok(
+      typeof receipt.completed_at === 'string' &&
+        Date.parse(receipt.completed_at) > Date.parse(requestedAt),
+    );
+    assert.throws(
+      () => db.raw.exec("UPDATE person_deletion_log SET requested_at='2026-01-16T00:00:00Z'"),
+      /cannot be changed/,
+    );
+    await new PersonService(db).deletePerson('delayed-subject');
+    await runMaintenance(db, { now: new Date('2030-01-01T00:00:00Z'), category: 'profiles' });
+    assert.equal(
+      db.raw.prepare("SELECT id FROM people WHERE id='delayed-subject'").get(),
+      undefined,
+    );
+    assert.deepEqual(
+      db.raw.prepare("SELECT * FROM person_deletion_log WHERE person_id='delayed-subject'").get(),
+      receipt,
     );
   } finally {
     db.raw.close();

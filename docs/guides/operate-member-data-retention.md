@@ -85,13 +85,15 @@ those details through undo. Record only the opaque member key in the private acc
 
 Inspect that key's `person_deletion_log` receipt privately. `requested_by` is `member` for the
 self-service flow, the authenticated staff actor's opaque key for a staff request, or `retention`
-for automatic maintenance. `completed_at` records completion of the local irreversible erasure
-transaction. It does **not** confirm deletion in Beehiiv, removal of Discord access, review of a
-Google account, or expiry of a backup. Names and email addresses never belong in the log.
+for automatic maintenance. `requested_at` preserves the request timestamp captured in the erasure
+scope. `completed_at` records completion of the local irreversible erasure transaction. It does
+**not** confirm deletion in Beehiiv, removal of Discord access, review of a Google account, or
+expiry of a backup. Names and email addresses never belong in the log.
 
 Migration-created historical receipts use `requested_by=retention`, `reason=legacy`, and the stored
-erasure timestamp. They document the retained legacy erasure, not a recovered original human
-requester or newly observed completion time. Keep that limitation in any acceptance report.
+erasure timestamp as `completed_at`. Their `requested_at` is null because the original request time
+is unknown. They document the retained legacy erasure, not a recovered original human requester or
+newly observed completion time. Keep that limitation in any acceptance report.
 
 The regular minute maintenance pass physically removes erased profiles strictly more than thirty
 days after their deletion time. It keeps the opaque person key and deletion receipt. Verified

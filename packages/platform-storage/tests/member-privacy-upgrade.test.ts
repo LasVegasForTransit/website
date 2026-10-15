@@ -19,12 +19,15 @@ void test('the privacy upgrade clears older erased history and backfills honest 
     assert.ok(receipt);
     assert.equal(receipt.requested_by, 'retention');
     assert.equal(receipt.reason, 'legacy');
+    assert.equal(receipt.requested_at, null, 'the original legacy request time is unknown');
     assert.equal(receipt.completed_at, '2026-10-01T00:00:00.000Z');
     assert.equal(
       db.raw.prepare('SELECT reason FROM workspace_offboarding_queue').get()?.reason,
       'erased',
     );
     assert.deepEqual(db.raw.prepare('SELECT * FROM integration_outbox').all(), pending);
+    applyMigrations(db.raw);
+    assert.deepEqual(db.raw.prepare('SELECT * FROM person_deletion_log').get(), receipt);
     assert.deepEqual(db.raw.prepare('PRAGMA foreign_key_check').all(), []);
   } finally {
     db.raw.close();

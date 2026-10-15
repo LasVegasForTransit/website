@@ -2,6 +2,9 @@ import assert from 'node:assert/strict';
 import { mkdir } from 'node:fs/promises';
 import { join } from 'node:path';
 import { chromium } from '@playwright/test';
+import { loadActor } from '@lasvegasfortransit/platform-storage/staff-roles';
+import { issueFormToken } from '@lasvegasfortransit/platform-storage/form-tokens';
+import { digestToken } from '@lasvegasfortransit/platform-core/random-token';
 import { ORIGIN, startRuntime } from '../support/runtime';
 
 const guildId = '111111111111111111';
@@ -156,11 +159,73 @@ try {
   assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
 
   await setSession('lead');
-  await page.goto(`${ORIGIN}/access/`);
-  await page.getByRole('heading', { name: 'Discord accounts to check' }).waitFor();
-  assert.equal(await reviewSection.getByText('Events Committee', { exact: true }).count(), 1);
-  assert.equal(await reviewSection.getByRole('link', { name: 'Open Discord profile' }).count(), 1);
-  assert.equal(await reviewSection.getByText('Advocacy Team', { exact: true }).count(), 0);
+  const leadHeaders = {
+    'Cf-Access-Jwt-Assertion': fixture.lead.assertion,
+    Cookie: `__Host-lvbt_session=${fixture.lead.session.token}`,
+  };
+  const lead = await loadActor(fixture.db, fixture.lead.person.id);
+  assert.ok(lead);
+  const token = await issueFormToken(fixture.db, lead, 'access:retry:denied-overview-target');
+  const tokenHash = await digestToken(token);
+  for (const path of [
+    '/access/',
+    '/access/?view=all',
+    '/access/?committee=events',
+    '/access/?q=Committee',
+  ]) {
+    for (const method of ['GET', 'POST']) {
+      const denied = await fixture.simulator.dispatchFetch(`${ORIGIN}${path}`, {
+        method,
+        headers: { ...leadHeaders, ...(method === 'POST' ? { Origin: ORIGIN } : {}) },
+        ...(method === 'POST'
+          ? {
+              body: new URLSearchParams({
+                action: 'retry',
+                target: 'denied-overview-target',
+                token,
+              }),
+            }
+          : {}),
+      });
+      const deniedBody = await denied.text();
+      assert.equal(denied.status, 403, `${method} ${path}: ${deniedBody}`);
+      assert.equal(
+        /Discord accounts to check|Committee Rider|Advocacy Team|rider\d+@/.test(deniedBody),
+        false,
+      );
+      assert.equal(deniedBody.includes(firstAccount) || deniedBody.includes(secondAccount), false);
+    }
+  }
+  const postedPerson = await fixture.simulator.dispatchFetch(
+    `${ORIGIN}/access/?person=${fixture.inside.id}`,
+    {
+      method: 'POST',
+      headers: { ...leadHeaders, Origin: ORIGIN },
+      body: new URLSearchParams({ action: 'retry', target: 'denied-overview-target', token }),
+    },
+  );
+  assert.equal(postedPerson.status, 403);
+  await postedPerson.arrayBuffer();
+  assert.ok(
+    await fixture.db
+      .prepare('SELECT 1 FROM staff_form_tokens WHERE token_hash=?')
+      .bind(tokenHash)
+      .first(),
+    'denied overview submissions must not consume a valid scoped form token',
+  );
+  const legacy = await fixture.simulator.dispatchFetch(
+    `${ORIGIN}/access/?person=${fixture.inside.id}`,
+    {
+      headers: leadHeaders,
+      redirect: 'manual',
+    },
+  );
+  assert.equal(legacy.status, 303);
+  assert.equal(legacy.headers.get('Location'), `/people/${fixture.inside.id}/#accounts`);
+  await legacy.arrayBuffer();
+  assert.equal((await page.goto(`${ORIGIN}/people/${fixture.inside.id}/`))?.status(), 200);
+  assert.equal((await page.goto(`${ORIGIN}/people/`))?.status(), 200);
+  assert.equal(await page.locator('a[href="/access/"]').count(), 0);
   await context.close();
   console.log(
     JSON.stringify({
@@ -168,7 +233,9 @@ try {
       javaScript: false,
       checks: [
         'admin sees every unlinked role holder and managed role name',
-        'committee lead sees only accounts with their committee role',
+        'committee leads cannot read or post the access overview through filters',
+        'denied overview submissions preserve scoped form tokens and reveal no account data',
+        'legacy member links redirect to scoped profiles and lead roster hides the overview link',
         'review actions render as recognizable buttons on desktop and mobile',
         'mobile layout has no horizontal overflow',
       ],

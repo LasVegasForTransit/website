@@ -8,7 +8,7 @@ interface Props {
   profile: StaffPerson;
 }
 const { profile } = Astro.props;
-const { consents, identities, events, fieldSources } = profile;
+const { consents, identities, events, fieldSources, counts } = profile;
 ---
 
 <details class="staff-records" open={Astro.url.searchParams.has('cursor')}>
@@ -89,6 +89,24 @@ const { consents, identities, events, fieldSources } = profile;
     </section>
     <section aria-labelledby="history-heading">
       <h2 id="history-heading">{t('staff.record.activity')}</h2>
+      {
+        counts.last_engaged_at && (
+          <p class="staff-help">
+            <time datetime={counts.last_engaged_at}>
+              {t('staff.people.lastActivity', {
+                date: formatFullDate(new Date(counts.last_engaged_at)),
+              })}
+            </time>
+          </p>
+        )
+      }
+      {
+        counts.attended_total > 0 && (
+          <p class="staff-help">
+            {t('staff.record.attendedTotal', { count: counts.attended_total })}
+          </p>
+        )
+      }
       {
         events.items.length ? (
           <ol class="mt-3 space-y-3">

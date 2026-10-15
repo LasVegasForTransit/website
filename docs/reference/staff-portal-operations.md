@@ -129,13 +129,13 @@ verifies the consumer before the website begins relying on queued updates.
 3. Set the jobs preview's public publication variables in `apps/jobs/wrangler.jsonc` before
    building: `LVBT_BEEHIIV_PUBLICATION_ID` identifies the test publication and
    `LVBT_BEEHIIV_PRODUCTION_PUBLICATION_ID` identifies production. They must differ in preview. Keep
-   `LVBT_BEEHIIV_SYNC_ENABLED=false` during setup. Set `LVBT_BEEHIIV_CONFLICT_POLICY` only after the
-   maintainer chooses how to handle an unsubscribe whose date cannot be ordered against a recent
-   signup. `keep_unsubscribed` ends membership at the observation time and retains a staff review;
-   `staff_review` preserves membership while holding outgoing subscription grants for staff
-   confirmation. The source default is blank, which disables observation processing. Both policies
-   preserve a verified signup made after the observation. Public variables are replaced by uploads;
-   a setting saved only in the dashboard does not survive the next release.
+   `LVBT_BEEHIIV_SYNC_ENABLED=false` during setup. LVBT uses
+   `LVBT_BEEHIIV_CONFLICT_POLICY=staff_review`: when an unsubscribe cannot be ordered against a
+   recent signup, preserve membership, hold conflicting outgoing subscription changes, and send the
+   difference to staff review. Do not change that policy without a new maintainer decision. The
+   source default is blank, which disables observation processing. Both policies preserve a verified
+   signup made after the observation. Public variables are replaced by uploads; a setting saved only
+   in the dashboard does not survive the next release.
 4. Using the guide's **Settings → Variables and Secrets** procedure, install the approved API key
    and dedicated `LVBT_NEWSLETTER_INTENT_KEY` on `lvbt-jobs-preview`. The intent key must be a
    base64url-encoded random 32-byte value. Keep it separate from sign-in and provider credentials.

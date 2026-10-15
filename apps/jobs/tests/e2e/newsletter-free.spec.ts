@@ -34,7 +34,7 @@ const simulator = new Miniflare(
       LVBT_DEPLOYMENT_ENV: 'preview',
       LVBT_DISCORD_SYNC_ENABLED: 'false',
       LVBT_BEEHIIV_SYNC_ENABLED: 'true',
-      LVBT_BEEHIIV_CONFLICT_POLICY: 'keep_unsubscribed',
+      LVBT_BEEHIIV_CONFLICT_POLICY: 'staff_review',
       LVBT_BEEHIIV_PUBLICATION_ID: 'pub_free_fixture',
       LVBT_BEEHIIV_PRODUCTION_PUBLICATION_ID: 'pub_production',
       LVBT_BEEHIIV_API_KEY: 'fixture-only',
@@ -89,6 +89,12 @@ try {
   const worker = await simulator.getWorker();
   const tick = async () =>
     assert.equal((await worker.scheduled({ cron: '* * * * *' })).outcome, 'ok');
+  const scan = async () => {
+    await db
+      .prepare("UPDATE beehiiv_poll_checkpoints SET next_scan_at='2000-01-01T00:00:00.000Z'")
+      .run();
+    await tick();
+  };
   await tick();
   assert.equal(status, 'active');
   assert.equal(
@@ -111,10 +117,7 @@ try {
     0,
   );
   status = 'inactive';
-  await db
-    .prepare("UPDATE beehiiv_poll_checkpoints SET next_scan_at='2000-01-01T00:00:00.000Z'")
-    .run();
-  await tick();
+  await scan();
   assert.equal(
     (await people.getPerson(person.id))?.membership_status,
     'former_member',
@@ -157,6 +160,74 @@ try {
   const count = calls.length;
   await tick();
   assert.equal(calls.length, count);
+
+  await people.recordConsent(person.id, {
+    scope: 'newsletter',
+    source: 'account',
+    method: 'checkbox',
+    wordingVersion: 'fixture-active-baseline',
+    givenAt: new Date().toISOString(),
+    renew: true,
+  });
+  await tick();
+  assert.equal(status, 'active');
+  await scan();
+  const baseline = await db
+    .prepare('SELECT status,observed_at FROM beehiiv_subscription_observations')
+    .first<{ status: string; observed_at: string }>();
+  assert.equal(baseline?.status, 'active');
+  assert.ok(baseline);
+  const freshSignupAt = new Date(
+    Math.max(Date.now(), Date.parse(baseline.observed_at) + 1),
+  ).toISOString();
+  await people.recordConsent(person.id, {
+    scope: 'newsletter',
+    source: 'account',
+    method: 'checkbox',
+    wordingVersion: 'fixture-uncertain-order',
+    givenAt: freshSignupAt,
+    renew: true,
+  });
+  status = 'inactive';
+  const writesBeforeReview = calls.filter((method) => ['POST', 'PATCH'].includes(method)).length;
+  await scan();
+  assert.equal(
+    (await people.getPerson(person.id))?.membership_status,
+    'member',
+    'an unsubscribe observed after a recent signup must preserve membership for staff review',
+  );
+  const review = await db
+    .prepare('SELECT state,reason,baseline_active_at,observed_at FROM newsletter_poll_choices')
+    .first<{
+      state: string;
+      reason: string;
+      baseline_active_at: string;
+      observed_at: string;
+    }>();
+  assert.ok(review);
+  assert.equal(review.state, 'needs_review');
+  assert.equal(review.reason, 'choice_order_unknown');
+  assert.ok(Date.parse(review.baseline_active_at) < Date.parse(freshSignupAt));
+  assert.ok(Date.parse(freshSignupAt) <= Date.parse(review.observed_at));
+  assert.equal(
+    calls.filter((method) => ['POST', 'PATCH'].includes(method)).length,
+    writesBeforeReview,
+    'staff review must hold conflicting provider writes',
+  );
+  await db
+    .prepare("UPDATE newsletter_sync_jobs SET next_attempt_at='2000-01-01T00:00:00.000Z'")
+    .run();
+  await scan();
+  assert.equal((await people.getPerson(person.id))?.membership_status, 'member');
+  assert.equal(
+    (await db.prepare('SELECT state FROM newsletter_poll_choices').first())?.state,
+    'needs_review',
+  );
+  assert.equal(
+    calls.filter((method) => ['POST', 'PATCH'].includes(method)).length,
+    writesBeforeReview,
+    'repeating the scan and due reconciliation must keep conflicting writes held',
+  );
   console.log(
     JSON.stringify({
       runtime: 'compiled scheduled jobs Worker',
@@ -168,6 +239,8 @@ try {
         'new explicit signup after an observed unsubscribe can rejoin',
         'signed intake remains closed',
         'completed work stays complete',
+        'unclear unsubscribe and recent signup preserve membership for staff review',
+        'staff review holds conflicting writes across repeated scans and reconciliation',
       ],
     }),
   );

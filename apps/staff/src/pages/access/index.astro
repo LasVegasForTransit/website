@@ -32,6 +32,8 @@ if (personId && Astro.request.method === 'GET') {
     303,
   );
 }
+if (!can(staff.actor, 'staff_admin.manage'))
+  return messageResponse(t('staff.common.accessDenied'), 403);
 let feedback: AccessFeedback | undefined;
 if (Astro.request.method === 'POST') {
   const result = await submitAccessAction(Astro.request, staff);

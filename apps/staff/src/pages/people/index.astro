@@ -51,7 +51,7 @@ const acceptingCommitteeIds = committees
 const hasMemberTasks =
   can(staff.actor, 'attendance.record') ||
   can(staff.actor, 'review_queue.resolve') ||
-  can(staff.actor, 'access.view') ||
+  can(staff.actor, 'staff_admin.manage') ||
   can(staff.actor, 'export.full');
 ---
 
@@ -193,7 +193,7 @@ const hasMemberTasks =
                 <a href="/offboarding/">Google accounts to review</a>
               </li>
             )}
-            {can(staff.actor, 'access.view') && (
+            {can(staff.actor, 'staff_admin.manage') && (
               <li>
                 <a href="/access/">{t('staff.people.checkAccess')}</a>
               </li>

@@ -6,10 +6,12 @@ ALTER TABLE person_erasure_scope ADD COLUMN reason TEXT NOT NULL DEFAULT 'legacy
 
 CREATE TABLE person_deletion_log (
   person_id TEXT PRIMARY KEY REFERENCES person_keys(id),
+  requested_at TEXT CHECK(requested_at IS NULL OR julianday(requested_at) IS NOT NULL),
   requested_by TEXT NOT NULL,
   reason TEXT NOT NULL CHECK(reason IN ('requested','inactive','legacy')),
   operation_id TEXT NOT NULL,
-  completed_at TEXT NOT NULL CHECK(julianday(completed_at) IS NOT NULL)
+  completed_at TEXT NOT NULL CHECK(julianday(completed_at) IS NOT NULL),
+  CHECK(reason='legacy' OR requested_at IS NOT NULL)
 );
 CREATE TRIGGER person_erasure_requester BEFORE INSERT ON person_erasure_scope
 WHEN NEW.requested_by NOT IN ('member','retention')
@@ -24,8 +26,8 @@ BEGIN
   DELETE FROM workspace_link_operations WHERE person_id=OLD.person_id;
   DELETE FROM committee_assignments WHERE person_id=OLD.person_id;
   DELETE FROM staff_administrators WHERE person_id=OLD.person_id;
-  INSERT INTO person_deletion_log(person_id,requested_by,reason,operation_id,completed_at)
-    VALUES(OLD.person_id,OLD.requested_by,OLD.reason,OLD.operation_id,strftime('%Y-%m-%dT%H:%M:%fZ','now'))
+  INSERT INTO person_deletion_log(person_id,requested_at,requested_by,reason,operation_id,completed_at)
+    VALUES(OLD.person_id,OLD.requested_at,OLD.requested_by,OLD.reason,OLD.operation_id,strftime('%Y-%m-%dT%H:%M:%fZ','now'))
     ON CONFLICT(person_id) DO NOTHING;
 END;
 -- Earlier erasure versions left these local records until physical purge.
@@ -35,8 +37,9 @@ DELETE FROM form_submissions WHERE person_id IN (SELECT id FROM person_keys WHER
 DELETE FROM workspace_link_operations WHERE person_id IN (SELECT id FROM person_keys WHERE erased_at IS NOT NULL);
 DELETE FROM committee_assignments WHERE person_id IN (SELECT id FROM person_keys WHERE erased_at IS NOT NULL);
 DELETE FROM staff_administrators WHERE person_id IN (SELECT id FROM person_keys WHERE erased_at IS NOT NULL);
-INSERT INTO person_deletion_log(person_id,requested_by,reason,operation_id,completed_at)
-  SELECT id,'retention','legacy','legacy:'||id,erased_at FROM person_keys WHERE erased_at IS NOT NULL;
+-- Historical profiles retain their erasure time, not the original request time.
+INSERT INTO person_deletion_log(person_id,requested_at,requested_by,reason,operation_id,completed_at)
+  SELECT id,NULL,'retention','legacy','legacy:'||id,erased_at FROM person_keys WHERE erased_at IS NOT NULL;
 CREATE TRIGGER person_deletion_log_no_update BEFORE UPDATE ON person_deletion_log
 BEGIN SELECT RAISE(ABORT,'deletion receipts cannot be changed'); END;
 CREATE TRIGGER person_deletion_log_no_delete BEFORE DELETE ON person_deletion_log
