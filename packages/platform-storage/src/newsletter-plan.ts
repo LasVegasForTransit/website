@@ -12,6 +12,7 @@ export interface NewsletterPlan {
   generation: number;
   email: string | null;
   deletedAt: string | null;
+  erasedAt: string | null;
   desired: 'active' | 'inactive' | 'unknown';
   allowActivation: boolean;
   identities: NewsletterIdentity[];
@@ -22,6 +23,7 @@ interface Snapshot {
   generation: number;
   email: string | null;
   deletedAt: string | null;
+  erasedAt: string | null;
   activationId: string | null;
   activationEmailKey: string | null;
   activationVerifiedAt: string | null;
@@ -31,7 +33,7 @@ interface Snapshot {
   identities: NewsletterIdentity[];
 }
 const SNAPSHOT = `SELECT json_object('generation',j.generation,'email',p.email,
-  'deletedAt',coalesce(p.deleted_at,k.deleted_at),'activationId',j.activation_consent_id,
+  'deletedAt',coalesce(p.deleted_at,k.deleted_at),'erasedAt',k.erased_at,'activationId',j.activation_consent_id,
   'activationEmailKey',j.activation_email_key,'activationVerifiedAt',j.activation_email_verified_at,'emailVerifiedAt',p.email_verified_at,
   'active',json((SELECT json_group_array(json_object('id',id,'givenAt',given_at,'source',source)) FROM (SELECT id,given_at,source FROM consent_records WHERE person_id=k.id AND scope='newsletter' AND withdrawn_at IS NULL ORDER BY id))),
   'lastWithdrawal',(SELECT at FROM (SELECT withdrawn_at AS at FROM consent_withdrawals WHERE (person_id=k.id OR origin_person_id=k.id) AND scope='newsletter' UNION ALL SELECT withdrawn_at AS at FROM consent_records WHERE person_id=k.id AND scope='newsletter' AND withdrawn_at IS NOT NULL) ORDER BY (julianday(at) IS NULL) DESC,julianday(at) DESC,at DESC LIMIT 1),
@@ -91,6 +93,7 @@ export async function loadNewsletterPlan(db: Db, personId: string): Promise<News
     generation: snapshot.generation,
     email: snapshot.email,
     deletedAt: snapshot.deletedAt,
+    erasedAt: snapshot.erasedAt,
     desired,
     allowActivation,
     identities: snapshot.identities,

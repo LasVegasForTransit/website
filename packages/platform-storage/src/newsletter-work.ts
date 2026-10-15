@@ -32,6 +32,27 @@ function guard(
 export async function newsletterEmailKey(email: string): Promise<string> {
   return `email:${await digestToken(email.trim().toLowerCase())}`;
 }
+
+/** An older completed unsubscribe may leave its stable ID only in a receipt. */
+export async function newsletterErasureTargets(
+  db: Db,
+  personId: string,
+  publicationId: string,
+): Promise<string[]> {
+  const { results } = await db
+    .prepare(
+      `SELECT DISTINCT substr(r.target_key,4) AS id FROM newsletter_target_receipts r
+      WHERE r.person_id=? AND r.publication_id=? AND r.target_key LIKE 'id:%'
+        AND NOT EXISTS(SELECT 1 FROM identities i JOIN person_keys k ON k.id=i.person_id
+          WHERE i.platform='beehiiv' AND i.external_id=substr(r.target_key,4)
+            AND i.person_id<>r.person_id AND k.erased_at IS NULL
+            AND i.link_method IN ('verified_email','staff_confirmed','created_by_platform'))
+      ORDER BY id`,
+    )
+    .bind(personId, publicationId)
+    .all<{ id: string }>();
+  return results.map((row) => row.id);
+}
 export async function newsletterIntents(
   db: Db,
   plan: NewsletterPlan,

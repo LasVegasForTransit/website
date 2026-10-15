@@ -2,6 +2,7 @@ import {
   newsletterEmailKey,
   newsletterIntents,
   newsletterConfirmedTargets,
+  newsletterErasureTargets,
   finishNewsletterIntent,
   confirmNewsletterTargets,
   type NewsletterWriteIntent,
@@ -41,6 +42,13 @@ export async function newsletterTargets(
   for (const identity of plan.identities) {
     const key = `id:${identity.externalId}`;
     if (!items.has(key)) items.set(key, { key, id: identity.externalId });
+  }
+  const erasedIds = plan.erasedAt
+    ? await newsletterErasureTargets(db, plan.personId, lease.publicationId)
+    : [];
+  for (const id of erasedIds) {
+    const key = `id:${id}`;
+    if (!items.has(key)) items.set(key, { key, id });
   }
   if (plan.email) {
     const key = await newsletterEmailKey(plan.email);
@@ -135,13 +143,24 @@ async function revoke(context: BeehiivReconciliation, step: Step): Promise<StepR
   const { subscription, intent } = step;
   if (!subscription && intent?.writeStartedAt && !intent.subscriptionId)
     return { done: false, result: await context.outcome('retry', 'unknown') };
-  if (!subscription || subscription.status === 'inactive') return { done: true, step };
+  if (!subscription || subscription.status === 'inactive') return await erase(context, step);
   if ((await context.conflict(subscription)) || !(await context.authorizeRemoval(subscription)))
     return { done: false, result: context.stale() };
   const removed = await context.client.deactivate(subscription.id);
   if (!removed.ok) return { done: false, result: await context.failed(removed) };
+  if ((!context.plan.erasedAt || !removed.subscription) && !(await context.current()))
+    return { done: false, result: context.stale() };
+  return await erase(context, { ...step, subscription: removed.subscription });
+}
+async function erase(context: BeehiivReconciliation, step: Step): Promise<StepResult> {
+  const { subscription } = step;
+  if (!context.plan.erasedAt || !subscription) return { done: true, step };
+  if ((await context.conflict(subscription)) || !(await context.authorizeRemoval(subscription)))
+    return { done: false, result: context.stale() };
+  const removed = await context.client.remove(subscription.id);
+  if (!removed.ok) return { done: false, result: await context.failed(removed) };
   return (await context.current())
-    ? { done: true, step }
+    ? { done: true, step: { ...step, subscription: removed.subscription } }
     : { done: false, result: context.stale() };
 }
 async function confirm(

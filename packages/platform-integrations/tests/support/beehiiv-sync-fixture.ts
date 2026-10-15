@@ -53,6 +53,10 @@ export async function fixture(consentSource: 'join_form' | 'import' = 'join_form
       ? [...subscriptions.values()].find((value) => value.email === decodeURIComponent(id))
       : subscriptions.get(id);
     if (!subscription) return new Response(null, { status: 404 });
+    if (method === 'DELETE') {
+      subscriptions.delete(subscription.id);
+      return new Response(null, { status: 204 });
+    }
     if (method === 'PATCH') subscription.status = 'inactive';
     return Response.json({ data: subscription });
   };

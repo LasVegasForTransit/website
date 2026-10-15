@@ -261,6 +261,10 @@ void test('an erased account can move to its new consenting owner without old cl
     assert.equal((await reconcile(f.db, f.person.id, f.options)).kind, 'confirmed');
     assert.equal(f.subscriptions.get('sub_reused')?.status, 'active');
     assert.equal(
+      f.calls.some((call) => call.method === 'DELETE'),
+      false,
+    );
+    assert.equal(
       f.db.raw.prepare("SELECT person_id FROM identities WHERE external_id='sub_reused'").get()
         ?.person_id,
       replacement.id,
@@ -310,7 +314,7 @@ void test('withdrawal during a remote grant retains its ID for cleanup without r
     );
     assert.equal(everyStoredText(f.db).includes('durable@example.invalid'), false);
     assert.equal((await reconcile(f.db, f.person.id, f.options)).kind, 'confirmed');
-    assert.equal(f.subscriptions.get('sub_created')?.status, 'inactive');
+    assert.equal(f.subscriptions.has('sub_created'), false);
     assert.equal(f.calls.filter((call) => call.method === 'POST').length, 1);
     assert.equal(
       f.db.raw.prepare('SELECT count(*) AS n FROM newsletter_write_intents').get()?.n,
@@ -336,7 +340,7 @@ void test('an ambiguous creation survives restart and erasure using only an encr
     assert.equal(intent?.subscription_id, null);
     assert.equal(everyStoredText(f.db).includes('durable@example.invalid'), false);
     assert.equal((await reconcile(f.db, f.person.id, f.options)).kind, 'confirmed');
-    assert.equal(f.subscriptions.get('sub_created')?.status, 'inactive');
+    assert.equal(f.subscriptions.has('sub_created'), false);
     assert.equal(f.calls.filter((call) => call.method === 'POST').length, 1);
     assert.equal(
       f.db.raw.prepare('SELECT count(*) AS n FROM newsletter_write_intents').get()?.n,
@@ -361,7 +365,7 @@ void test('an expired worker cannot attach a late grant or overwrite its success
     assert.equal(f.db.raw.prepare('SELECT count(*) AS n FROM identities').get()?.n, 0);
     f.now.setTime(f.now.getTime() + 61_000);
     assert.equal((await reconcile(f.db, f.person.id, f.options)).kind, 'confirmed');
-    assert.equal(f.subscriptions.get('sub_created')?.status, 'inactive');
+    assert.equal(f.subscriptions.has('sub_created'), false);
     assert.equal(everyStoredText(f.db).includes('durable@example.invalid'), false);
   } finally {
     f.db.raw.close();
