@@ -41,7 +41,7 @@ export async function authenticatedContext(
   return context;
 }
 
-async function verifyPrintedSheet(page: Page) {
+export async function verifyPrintedSheet(page: Page) {
   const sheet = page.getByRole('region', { name: 'Printable signup sheet', exact: true });
   await page.locator('.staff-back').focus();
   await page.keyboard.press('Tab');
@@ -50,7 +50,16 @@ async function verifyPrintedSheet(page: Page) {
     true,
     'the sheet must be reachable with Tab',
   );
-  if (await sheet.evaluate((element) => element.scrollWidth > element.clientWidth)) {
+  const overflow = await sheet.evaluate((element) => ({
+    mode: getComputedStyle(element).overflowX,
+    hasOverflow: element.scrollWidth > element.clientWidth,
+  }));
+  assert.ok(
+    ['visible', 'auto', 'scroll'].includes(overflow.mode),
+    'the sheet must keep content visible or keyboard-scrollable',
+  );
+  // Visible table overflow can increase scrollWidth without creating a scroll container.
+  if (overflow.hasOverflow && overflow.mode !== 'visible') {
     await page.keyboard.press('ArrowRight');
     await page.waitForFunction(
       () => {
@@ -60,6 +69,8 @@ async function verifyPrintedSheet(page: Page) {
       undefined,
       { timeout: 2000 },
     );
+  } else {
+    assert.equal(await sheet.evaluate((element) => element.scrollLeft), 0);
   }
   assert.equal(await page.locator('.staff-signup-checkbox[aria-hidden="true"]').count(), 12);
   assert.equal(

@@ -863,6 +863,9 @@ separate artifact. Inspect the named route and report when a check fails, fix th
 the same command after the compiled build is stable. Keep thresholds and authorization checks
 intact.
 
+The print-sheet keyboard check requires native arrow scrolling when its region scrolls and visible
+content on desktop when it does not. Width overflow alone does not identify a scroll container.
+
 On GitHub's Linux runners, the Lighthouse fixtures launch bundled Chromium with `--no-sandbox`
 because the runner disallows its sandbox. That exception applies only when `CI=true` on Linux, and
 the audit browser is restricted to the isolated local fixture. Local runs retain Chromium's sandbox.
