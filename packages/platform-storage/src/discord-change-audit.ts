@@ -2,6 +2,7 @@ import { ulid } from '@lasvegasfortransit/platform-core/ids';
 import { digestToken } from '@lasvegasfortransit/platform-core/random-token';
 import type { Db, SqlValue } from './db';
 import type { DiscordRoleTarget } from './discord-plan';
+import { discordTarget } from './discord-target';
 import { discordSyncGuard, type DiscordSyncWrite } from './discord-sync-store';
 interface Intent {
   id: string;
@@ -12,27 +13,30 @@ interface Intent {
 }
 function targetGuard(input: DiscordSyncWrite, target: DiscordRoleTarget) {
   const base = discordSyncGuard(input);
+  const { committeeId, lead } = discordTarget(target.targetId);
+  const roleColumn = lead ? 'discord_lead_role_id' : 'discord_role_id';
   return {
     sql: `${base.sql} AND EXISTS(SELECT 1 FROM reconciliation_people p WHERE p.id=?
       AND coalesce((SELECT generation FROM reconcile_generations WHERE person_id=p.id AND target_id=?),0)=?
-      AND (?='person' OR EXISTS(SELECT 1 FROM committee_account_mappings WHERE committee_id=? AND provider='discord' AND external_id=?)
-        OR EXISTS(SELECT 1 FROM committees WHERE id=? AND discord_role_id=?))
+      AND (?='person' OR EXISTS(SELECT 1 FROM committee_account_mappings WHERE committee_id=? AND provider='discord' AND external_id=? AND role_kind=?)
+        OR EXISTS(SELECT 1 FROM committees WHERE id=? AND ${roleColumn}=?))
       AND ?=CASE WHEN p.deleted_at IS NULL AND p.membership_status='member' AND NOT EXISTS(SELECT 1 FROM discord_disconnects d WHERE d.identity_record_id=?) AND (?='person' OR EXISTS(
-        SELECT 1 FROM committees c JOIN committee_assignments a ON a.committee_id=c.id WHERE c.id=? AND c.discord_role_id=? AND a.person_id=p.id AND a.ended_at IS NULL)) THEN 1 ELSE 0 END)`,
+        SELECT 1 FROM committees c JOIN committee_assignments a ON a.committee_id=c.id WHERE c.id=? AND c.${roleColumn}=? AND a.person_id=p.id AND a.ended_at IS NULL ${lead ? "AND a.role='lead'" : ''})) THEN 1 ELSE 0 END)`,
     values: [
       ...base.values,
       input.plan.personId,
-      target.targetId,
+      committeeId,
       target.generation,
-      target.targetId,
-      target.targetId,
+      committeeId,
+      committeeId,
       target.resourceId,
-      target.targetId,
+      lead ? 'lead' : 'member',
+      committeeId,
       target.resourceId,
       Number(target.expectedAccess),
       input.plan.identityRecordId,
-      target.targetId,
-      target.targetId,
+      committeeId,
+      committeeId,
       target.resourceId,
     ] satisfies SqlValue[],
   };

@@ -248,7 +248,7 @@ export async function listDiscordRoleReviews(
   const { results } = await db
     .prepare(
       `WITH visible_roles AS (
-        SELECT mapping.external_id AS role_id,c.name AS label
+        SELECT mapping.external_id AS role_id,CASE WHEN mapping.role_kind='lead' THEN c.name||' leads' ELSE c.name END AS label
         FROM committee_account_mappings mapping JOIN committees c ON c.id=mapping.committee_id
         WHERE mapping.provider='discord' AND ${scope}
         UNION ALL

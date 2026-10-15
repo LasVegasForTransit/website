@@ -8,6 +8,7 @@ import { normalizeSettings, type CommitteeSettingsInput } from './committee-sett
 import type { CommitteeSettings } from './committee-views';
 import { settingsWrites } from './committee-settings-writes';
 export type { CommitteeSettingsInput } from './committee-settings-input';
+export { normalizeSettings } from './committee-settings-input';
 export async function updateCommitteeSettings(
   db: Db,
   actor: Actor,

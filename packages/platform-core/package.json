@@ -4,6 +4,7 @@
   "private": true,
   "type": "module",
   "exports": {
+    "./discord-role-settings": "./src/discord-role-settings.ts",
     "./ids": "./src/ids.ts",
     "./join-form": "./src/join-form.ts",
     "./membership": "./src/membership.ts",

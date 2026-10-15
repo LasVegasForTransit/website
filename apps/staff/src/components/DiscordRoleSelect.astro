@@ -1,0 +1,45 @@
+---
+import type {
+  DiscordRoleChoice,
+  CurrentDiscordRole,
+} from '@lasvegasfortransit/platform-core/discord-role-settings';
+interface Props {
+  id: string;
+  label: string;
+  empty: string;
+  choices: DiscordRoleChoice[] | undefined;
+  current: CurrentDiscordRole | null | undefined;
+  selected: string | null | undefined;
+  connected: boolean;
+}
+const { id, label, empty, choices, current, selected, connected } = Astro.props;
+const unavailable = current && !current.available && selected === current.id;
+---
+
+<div>
+  <label for={id}>{label}</label>
+  <select id={id} name={id} disabled={!connected}>
+    <option value="" selected={!selected}>{empty}</option>
+    {
+      !connected && selected && (
+        <option value={selected} selected>
+          Current connection kept
+        </option>
+      )
+    }
+    {
+      unavailable && (
+        <option value={current.id} selected disabled>
+          {current.name} (unavailable)
+        </option>
+      )
+    }
+    {
+      choices?.map((role) => (
+        <option value={role.id} selected={selected === role.id}>
+          {role.name}
+        </option>
+      ))
+    }
+  </select>
+</div>

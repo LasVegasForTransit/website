@@ -38,6 +38,11 @@ export async function exerciseAccountAccess(page: Page, fixture: Fixture) {
     operationId: 'recovery-grant',
   });
   assert.equal(assigned.kind, 'ok');
+  // This stale confirmation is independent of the disabled settings controls.
+  await fixture.db
+    .prepare("UPDATE committees SET discord_role_id=? WHERE id='events'")
+    .bind('123456789012345678')
+    .run();
   const team = await fixture.db
     .prepare("SELECT discord_role_id FROM committees WHERE id='events'")
     .first<{ discord_role_id: string }>();

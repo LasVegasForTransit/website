@@ -1,6 +1,7 @@
 import type { AccessObservation } from '@lasvegasfortransit/platform-core/access';
 import { ulid } from '@lasvegasfortransit/platform-core/ids';
 import type { Db, Statement, SqlValue } from './db';
+import { committeeTargetSql, discordLeadSql } from './discord-target';
 const FAILURES = ['provider_unavailable', 'rate_limited', 'permission_denied', 'unknown'];
 function validTimes(input: AccessObservation, now: Date): boolean {
   const stamp = Date.parse(input.observedAt),
@@ -36,49 +37,7 @@ export function accessObservationWrite(
   guard?: { sql: string; values: SqlValue[] },
 ): Statement | null {
   if (!valid(input, now)) return null;
-  return db
-    .prepare(
-      `INSERT INTO access_observations (id,person_id,target_id,provider,identity_id,identity_email,resource_id,context_id,generation,expected_access,state,failure,observed_at,expires_at)
-    SELECT ?,?,?,?,?,?,?,?,?,?,?,?,?,? FROM people p WHERE p.id=? AND p.deleted_at IS NULL
-    AND EXISTS(SELECT 1 FROM identities i WHERE i.person_id=p.id AND i.platform=? AND i.external_id=? AND i.external_email IS ?
-      AND (i.platform<>'discord' OR i.link_method IN ('self_linked','staff_confirmed')))
-    AND (SELECT count(*) FROM identities WHERE person_id=p.id AND platform=?)=1
-    AND coalesce((SELECT generation FROM reconcile_generations WHERE person_id=p.id AND target_id=?),0)=?
-    AND (?='person' OR EXISTS(SELECT 1 FROM committees c WHERE c.id=? AND CASE ? WHEN 'discord' THEN c.discord_role_id ELSE c.workspace_group_email END=?))
-    AND (?=CASE WHEN p.membership_status='member' AND (?='person' OR EXISTS(SELECT 1 FROM committee_assignments a WHERE a.person_id=p.id AND a.committee_id=? AND a.ended_at IS NULL)) THEN 1 ELSE 0 END)
-    AND (${guard?.sql ?? '1=1'})`,
-    )
-    .bind(
-      ulid(),
-      input.personId,
-      input.targetId,
-      input.provider,
-      input.identityId,
-      input.identityEmail,
-      input.resourceId,
-      input.contextId,
-      input.generation,
-      Number(input.expectedAccess),
-      input.state,
-      input.failure ?? null,
-      input.observedAt,
-      input.expiresAt,
-      input.personId,
-      input.provider,
-      input.identityId,
-      input.identityEmail,
-      input.provider,
-      input.targetId,
-      input.generation,
-      input.targetId,
-      input.targetId,
-      input.provider,
-      input.resourceId,
-      Number(input.expectedAccess),
-      input.targetId,
-      input.targetId,
-      ...(guard?.values ?? []),
-    );
+  return accessObservationBatchWrite(db, [input], now, guard ?? { sql: '1=1', values: [] });
 }
 export async function recordAccessObservation(
   db: Db,
@@ -140,6 +99,8 @@ export function accessObservationBatchWrite(
   const fields = columns
     .map((name, index) => `json_extract(value,'$[${index}]') AS ${name}`)
     .join(',');
+  const target = committeeTargetSql('incoming.target_id', 'incoming.provider');
+  const lead = discordLeadSql('incoming.target_id', 'incoming.provider');
   return db
     .prepare(
       `WITH incoming AS (SELECT ${fields} FROM json_each(?))
@@ -149,9 +110,9 @@ export function accessObservationBatchWrite(
       AND EXISTS(SELECT 1 FROM identities i WHERE i.person_id=p.id AND i.platform=incoming.provider AND i.external_id=incoming.identity_id AND i.external_email IS incoming.identity_email
         AND (i.platform<>'discord' OR i.link_method IN ('self_linked','staff_confirmed')))
       AND (SELECT count(*) FROM identities WHERE person_id=p.id AND platform=incoming.provider)=1
-      AND coalesce((SELECT generation FROM reconcile_generations WHERE person_id=p.id AND target_id=incoming.target_id),0)=incoming.generation
-      AND (incoming.target_id='person' OR EXISTS(SELECT 1 FROM committees c WHERE c.id=incoming.target_id AND CASE incoming.provider WHEN 'discord' THEN c.discord_role_id ELSE c.workspace_group_email END=incoming.resource_id))
-      AND (incoming.expected_access=CASE WHEN p.membership_status='member' AND (incoming.target_id='person' OR EXISTS(SELECT 1 FROM committee_assignments a WHERE a.person_id=p.id AND a.committee_id=incoming.target_id AND a.ended_at IS NULL)) THEN 1 ELSE 0 END)
+      AND coalesce((SELECT generation FROM reconcile_generations WHERE person_id=p.id AND target_id=${target}),0)=incoming.generation
+      AND (incoming.target_id='person' OR EXISTS(SELECT 1 FROM committees c WHERE c.id=${target} AND CASE incoming.provider WHEN 'discord' THEN CASE WHEN ${lead} THEN c.discord_lead_role_id ELSE c.discord_role_id END ELSE c.workspace_group_email END=incoming.resource_id))
+      AND (incoming.expected_access=CASE WHEN p.membership_status='member' AND (incoming.target_id='person' OR EXISTS(SELECT 1 FROM committee_assignments a WHERE a.person_id=p.id AND a.committee_id=${target} AND a.ended_at IS NULL AND (NOT ${lead} OR a.role='lead'))) THEN 1 ELSE 0 END)
       AND (${guard.sql})`,
     )
     .bind(rows, ...guard.values);

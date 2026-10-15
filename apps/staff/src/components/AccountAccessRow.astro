@@ -1,5 +1,5 @@
 ---
-import type { AccessRow } from '@lasvegasfortransit/platform-storage/access-view';
+import { discordTarget, type AccessRow } from '@lasvegasfortransit/platform-storage/access-view';
 import { issueFormToken } from '@lasvegasfortransit/platform-storage/form-tokens';
 import { ulid } from '@lasvegasfortransit/platform-core/ids';
 import { can } from '@lasvegasfortransit/platform-core/permissions';
@@ -14,17 +14,20 @@ interface Props {
 }
 const { row, personView = false } = Astro.props;
 const memberChannels = row.targetId === 'person';
+const leadChannels = discordTarget(row.targetId).lead;
 const staff = Astro.locals.staff!;
 const admin = can(staff.actor, 'access.recover');
 const removeToken =
-  admin && row.assignmentId && !personView
+  admin && row.assignmentId && !personView && !leadChannels
     ? await issueFormToken(staff.db, staff.actor, `access:remove:${row.assignmentId}`)
     : null;
 const providers =
-  row.targetId === 'person'
+  memberChannels || leadChannels
     ? [
         {
-          name: t(personView ? 'staff.access.memberChannels' : 'staff.common.discord'),
+          name: t(
+            personView && memberChannels ? 'staff.access.memberChannels' : 'staff.common.discord',
+          ),
           access: row.discord,
         },
       ]

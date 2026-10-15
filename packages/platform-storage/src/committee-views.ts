@@ -17,6 +17,7 @@ export interface CommitteeSettings {
   settingsVersion: number;
   workspaceGroupEmail: string | null;
   discordRoleId: string | null;
+  discordLeadRoleId: string | null;
   interestIds: Interest[];
 }
 interface CommitteeRow {
@@ -28,6 +29,7 @@ interface CommitteeRow {
   settings_version: number;
   workspace_group_email: string | null;
   discord_role_id: string | null;
+  discord_lead_role_id: string | null;
   interest_ids: string;
   people_count: number;
   lead_names: string;
@@ -46,6 +48,7 @@ export function committeeSettings(row: CommitteeRow): CommitteeSummary {
     settingsVersion: row.settings_version,
     workspaceGroupEmail: row.workspace_group_email,
     discordRoleId: row.discord_role_id,
+    discordLeadRoleId: row.discord_lead_role_id,
     interestIds: JSON.parse(row.interest_ids) as Interest[],
     peopleCount: row.people_count,
     leadNames: JSON.parse(row.lead_names) as string[],

@@ -279,6 +279,18 @@ work for non-deleted people with current or past assignments; old grants become 
 Metadata-only changes do not request provider work. Provider observations and actual account changes
 remain the responsibility of the reconciliation runner.
 
+### Optional Discord lead roles (0042)
+
+`committees.discord_lead_role_id` stores an optional role in addition to the committee member role.
+Only current leads with active membership receive it. `committee_account_mappings.role_kind`
+distinguishes member and lead roles; existing mappings default to member. Retired mappings remain
+reserved for their original committee and kind so reconciliation can remove obsolete access safely.
+Both kinds share the committee's authoritative generation, while Discord observations and confirmed
+change history use separate targets for lead access. A lead change cannot overwrite evidence for the
+committee's member role. Administrator settings saves reject duplicate member/lead selections and
+mappings reserved for another committee or kind. Provider hierarchy validation runs in the jobs
+Worker immediately before changed role mappings are saved.
+
 ### Access confirmations (0014)
 
 `access_observations` stores bounded provider reads, separate from saved membership and committee

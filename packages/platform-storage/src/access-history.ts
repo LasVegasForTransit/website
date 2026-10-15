@@ -5,6 +5,7 @@ import { loadActor } from './staff-roles';
 import { STAFF_ADMIN_SCOPE, STAFF_PERSON_SCOPE } from './staff-scope';
 import { COMMITTEE_SCOPE } from './committee-views';
 import { auditDenied } from './audits';
+import { committeeTargetSql, discordLeadSql } from './discord-target';
 import { accessCursor, readAccessCursor } from './access-cursors';
 export interface AccessHistoryRow {
   id: string;
@@ -79,11 +80,11 @@ export async function accessHistory(
     p.deleted_at IS NOT NULL AS personDeleted,
     CASE a.actor_id WHEN 'platform:discord' THEN 'discord' WHEN 'platform:google_workspace' THEN 'google_workspace' ELSE 'person' END AS actorKind,
     CASE WHEN a.actor_id NOT IN ('platform:discord','platform:google_workspace') THEN nullif(trim(coalesce(recorder.given_name,'')||' '||coalesce(recorder.family_name,'')),'') END AS actorName,
-    c.id AS committeeId,c.name AS committeeName,json_extract(a.details,'$.role') AS role,json_extract(a.details,'$.reason') AS reason,
+    c.id AS committeeId,CASE WHEN ${discordLeadSql("json_extract(a.details,'$.targetId')", "json_extract(a.details,'$.provider')")} THEN c.name||' leads' ELSE c.name END AS committeeName,json_extract(a.details,'$.role') AS role,json_extract(a.details,'$.reason') AS reason,
     json_extract(a.details,'$.provider') AS provider,json_extract(a.details,'$.source') AS source,json_extract(a.details,'$.mappingState') AS mappingState,
     nullif(trim(coalesce(requester.given_name,'')||' '||coalesce(requester.family_name,'')),'') AS requestedByName
     FROM staff_audits a LEFT JOIN staff_operations receipt ON receipt.operation_id=a.operation_id
-    LEFT JOIN committees c ON c.id=CASE WHEN a.action='committee.settings' THEN a.target_id WHEN a.action IN ('access.retry','access.group_update','access.granted','access.revoked') THEN json_extract(a.details,'$.targetId') ELSE receipt.target_id END
+    LEFT JOIN committees c ON c.id=CASE WHEN a.action='committee.settings' THEN a.target_id WHEN a.action IN ('access.retry','access.group_update','access.granted','access.revoked') THEN ${committeeTargetSql("json_extract(a.details,'$.targetId')", "json_extract(a.details,'$.provider')")} ELSE receipt.target_id END
     LEFT JOIN people p ON p.id=CASE WHEN a.action='committee.settings' THEN NULL ELSE a.target_id END
     LEFT JOIN people recorder ON recorder.id=a.actor_id AND recorder.deleted_at IS NULL
     LEFT JOIN people requester ON requester.id=json_extract(a.details,'$.requestedBy') AND requester.deleted_at IS NULL

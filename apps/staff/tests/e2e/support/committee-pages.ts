@@ -43,7 +43,14 @@ export async function exerciseCommitteePages(page: Page, fixture: Fixture) {
     await page
       .getByLabel('Google group email', { exact: true })
       .fill('events@lasvegasfortransit.org');
-    await page.getByLabel('Discord role ID', { exact: true }).fill('123456789012345678');
+    assert.equal(
+      await page.getByLabel('Committee Discord role', { exact: true }).isDisabled(),
+      true,
+    );
+    assert.equal(
+      await page.getByLabel('Lead Discord role (optional)', { exact: true }).isDisabled(),
+      true,
+    );
     assert.equal((await save(page)).status(), 303);
     await page.getByRole('heading', { name: 'Events Committee', exact: true }).waitFor();
     assert.ok((await page.textContent('main'))?.includes('Not accepting new assignments'));
