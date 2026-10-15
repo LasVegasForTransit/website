@@ -427,12 +427,18 @@ importers:
       '@astrojs/check':
         specifier: 'catalog:'
         version: 0.9.10(prettier-plugin-astro@0.14.1)(prettier@3.9.6)(typescript@6.0.3)
+      '@axe-core/playwright':
+        specifier: 'catalog:'
+        version: 4.13.0(playwright-core@1.62.1)
       '@cloudflare/workers-types':
         specifier: 'catalog:'
         version: 5.20260901.1
       '@lasvegasfortransit/eslint-config':
         specifier: file:../../.lvbt/web-platform/packages/eslint-config
         version: file:.lvbt/web-platform/packages/eslint-config(eslint@10.9.1(jiti@2.7.0)(supports-color@10.2.2))(supports-color@10.2.2)(turbo@2.10.12)(typescript@6.0.3)
+      '@lhci/cli':
+        specifier: 'catalog:'
+        version: 0.15.1(supports-color@10.2.2)
       '@playwright/test':
         specifier: 'catalog:'
         version: 1.62.1

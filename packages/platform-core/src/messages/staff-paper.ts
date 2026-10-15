@@ -75,7 +75,6 @@ export const staffPaper = {
     name: 'Name',
     optional: '(optional)',
     yes: 'Yes',
-    checkYes: 'Check Yes',
     footer: 'lasvegasfortransit.org · Signup wording: {version}',
   },
 };
