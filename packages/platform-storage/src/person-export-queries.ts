@@ -26,6 +26,10 @@ const PROFILE = `p.id,p.given_name,p.family_name,p.email,p.email_verified_at,p.p
   (SELECT name FROM regions WHERE id=p.region_id) AS region`;
 const IDENTITY = `i.platform,i.external_id,i.external_email,i.linked_at,i.link_method,i.created_at,i.updated_at`;
 const QUERIES = {
+  current_membership_evidence: `SELECT r.status,r.observed_at,r.source_created_at,r.withdrawn_at,r.entitled,r.recognized_at,r.revoked_at FROM membership_roll r JOIN people p ON p.id=r.person_id`,
+  imported_signup_evidence: `SELECT r.source,r.state,
+    json_remove(r.evidence,'$.beehiiv','$.form.rawResponseUrl','$.form.responseId','$.newsletter.evidenceReference') AS evidence,
+    r.recorded_at FROM roster_import_records r JOIN people p ON p.id=r.person_id`,
   details: `SELECT ${PROFILE} FROM people p`,
   where_each_detail_came_from: `SELECT r.field,r.source,r.confirmed_at,r.created_at,r.updated_at FROM field_sources r JOIN people p ON p.id=r.person_id`,
   consent_records: `SELECT r.scope,r.given_at,r.source,r.method,r.wording_version,r.withdrawn_at,

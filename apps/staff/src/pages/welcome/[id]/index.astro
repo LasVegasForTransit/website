@@ -40,15 +40,18 @@ const releaseToken = contact
 <StaffLayout title={welcomeName(person)}>
   <a slot="breadcrumb" href="/welcome/" class="staff-back">← Welcome members</a>
   <div slot="heading-meta" class="staff-member-meta">
-    <span
-      >Joined {
-        new Date(person.joinedAt).toLocaleDateString('en-US', {
-          month: 'short',
-          day: 'numeric',
-          timeZone: 'America/Los_Angeles',
-        })
-      }</span
-    >
+    {
+      person.joinedAt && (
+        <span>
+          Joined{' '}
+          {new Date(person.joinedAt).toLocaleDateString('en-US', {
+            month: 'short',
+            day: 'numeric',
+            timeZone: 'America/Los_Angeles',
+          })}
+        </span>
+      )
+    }
     {person.overdue && <span class="text-primary-ink">{t('staff.welcome.overdue')}</span>}
     {profileAllowed && <a href={`/people/${personId}/`}>View member profile</a>}
   </div>

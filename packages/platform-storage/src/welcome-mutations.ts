@@ -25,7 +25,7 @@ function fresh(input: Context) {
 function saveReceipt(db: Db, input: Context): Statement {
   const availability =
     input.kind === 'claim'
-      ? `${UNWELCOMED} AND julianday(${MEMBER_SINCE}) BETWEEN julianday(?) AND julianday(?) AND NOT EXISTS(SELECT 1 FROM welcome_claims WHERE person_id=p.id AND expires_at>?)`
+      ? `${UNWELCOMED} AND (${MEMBER_SINCE} IS NULL OR julianday(${MEMBER_SINCE}) BETWEEN julianday(?) AND julianday(?)) AND NOT EXISTS(SELECT 1 FROM welcome_claims WHERE person_id=p.id AND expires_at>?)`
       : `EXISTS(SELECT 1 FROM welcome_claims WHERE person_id=p.id AND id=? AND actor_id=? AND expires_at>?)${input.kind === 'complete' ? ` AND ${UNWELCOMED}` : ''}`;
   const params =
     input.kind === 'claim'

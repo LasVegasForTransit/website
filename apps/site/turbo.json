@@ -42,6 +42,19 @@
     "worker:check": {
       "dependsOn": ["build"],
       "outputs": [".wrangler/deploy-dry-run/**"]
+    },
+    "roster:export": {
+      "cache": false,
+      "passThroughEnv": [
+        "LVBT_BEEHIIV_API_KEY",
+        "LVBT_BEEHIIV_PUBLICATION_ID",
+        "LVBT_NOTION_API_KEY",
+        "LVBT_NOTION_DATA_SOURCE_ID"
+      ]
+    },
+    "roster:import": {
+      "cache": false,
+      "passThroughEnv": ["CLOUDFLARE_API_TOKEN"]
     }
   }
 }

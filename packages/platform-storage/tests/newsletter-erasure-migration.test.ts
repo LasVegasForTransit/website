@@ -3,9 +3,10 @@ import test from 'node:test';
 import { applyMigrations, memoryDb } from './support/db';
 import { PersonService } from '../src/person-service';
 import { eraseLegacyFixturePerson } from './support/legacy-erasure';
+import { useHistoricalMembershipSchema } from './support/legacy-membership';
 
 void test('the cleanup migration requeues completed erased accounts and preserves reversible archives', async () => {
-  const db = memoryDb('0038_newsletter_erasure.sql');
+  const db = memoryDb();
   const people = new PersonService(db);
   try {
     const add = async (email: string) =>
@@ -27,6 +28,7 @@ void test('the cleanup migration requeues completed erased accounts and preserve
     db.raw
       .prepare('UPDATE people SET deleted_at=? WHERE id=?')
       .run(new Date().toISOString(), archive.id);
+    useHistoricalMembershipSchema(db, '0038_newsletter_erasure.sql');
     db.raw.prepare("UPDATE newsletter_sync_jobs SET state='done'").run();
     const before = Number(
       db.raw

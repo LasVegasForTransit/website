@@ -3,6 +3,7 @@ import { staffPeople } from './staff-people';
 import { staffWelcome } from './staff-welcome';
 import { staffPaper } from './staff-paper';
 import { staffAccess } from './staff-access';
+import { staffImports } from './staff-imports';
 
 // English messages for member and staff screens. Keys are grouped by screen.
 // `{name}` fills in a value. A message that depends on a count is an object
@@ -10,7 +11,14 @@ import { staffAccess } from './staff-access';
 // How to add a message: README.md in this directory.
 
 export const en = {
-  staff: { ...staffCommon, ...staffPeople, ...staffAccess, ...staffPaper, ...staffWelcome },
+  staff: {
+    ...staffCommon,
+    ...staffPeople,
+    ...staffAccess,
+    ...staffPaper,
+    ...staffWelcome,
+    ...staffImports,
+  },
   workspace: {
     signIn: 'Sign in with Google',
     hint: 'For volunteers with an LVBT Google account.',

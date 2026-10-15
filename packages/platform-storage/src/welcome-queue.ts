@@ -47,7 +47,7 @@ export async function welcomeQueue(
     where.splice(
       0,
       where.length,
-      '((julianday(joinedAt)>=julianday(?) AND julianday(joinedAt)<=julianday(?)) OR (claimedBy=? AND claimExpiresAt>?))',
+      '((julianday(joinedAt)>=julianday(?) AND julianday(joinedAt)<=julianday(?)) OR (claimedBy=? AND claimExpiresAt>?) OR joinedAt IS NULL)',
       'personId=?',
     );
     values.push(actorId, now.toISOString(), input.personId);
@@ -61,7 +61,7 @@ export async function welcomeQueue(
     .prepare(
       `WITH queue AS (
     SELECT p.id AS personId,p.given_name AS givenName,p.family_name AS familyName,${MEMBER_SINCE} AS joinedAt,
-    (SELECT source FROM consent_records WHERE person_id=p.id AND scope='newsletter' AND withdrawn_at IS NULL ORDER BY given_at,id LIMIT 1) AS source,
+    coalesce((SELECT source FROM consent_records WHERE person_id=p.id AND scope='newsletter' AND withdrawn_at IS NULL ORDER BY given_at,id LIMIT 1),(SELECT 'beehiiv' FROM membership_roll WHERE person_id=p.id AND entitled=1 LIMIT 1)) AS source,
     (SELECT CASE WHEN json_type(e.details,'$.interests')='array' THEN json_extract(e.details,'$.interests') ELSE '[]' END FROM engagement_events e WHERE e.person_id=p.id AND e.type='joined' AND NOT EXISTS(SELECT 1 FROM engagement_events correction WHERE correction.person_id=p.id AND correction.type='correction' AND correction.reference=e.id) ORDER BY e.occurred_at DESC,e.id DESC LIMIT 1) AS interests,
     c.actor_id AS claimedBy,NULLIF(trim(coalesce(claimant.given_name,'') || ' ' || coalesce(claimant.family_name,'')),'') AS claimedByName,c.expires_at AS claimExpiresAt,
     julianday(${MEMBER_SINCE})<julianday(?) AS overdue FROM people p
@@ -77,7 +77,10 @@ export async function welcomeQueue(
     return {
       ...row,
       overdue: Boolean(row.overdue),
-      waitingDays: Math.max(0, Math.floor((now.getTime() - Date.parse(row.joinedAt)) / DAY)),
+      waitingDays:
+        row.joinedAt === null
+          ? null
+          : Math.max(0, Math.floor((now.getTime() - Date.parse(row.joinedAt)) / DAY)),
       interests: Array.isArray(interests)
         ? INTERESTS.filter((interest) => interests.includes(interest))
         : [],

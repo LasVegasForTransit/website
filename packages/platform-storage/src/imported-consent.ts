@@ -1,6 +1,8 @@
 import { nowIso, ulid } from '@lasvegasfortransit/platform-core/ids';
 import type { Db, Statement } from './db';
+import { importedConsentGuard, importedConsentChanged } from './imported-consent-guard';
 import { normalizeEmail } from './field-ownership';
+import type { ConsentMethod } from './person-service';
 
 export interface ImportedNewsletterEvidence {
   platform: 'beehiiv' | 'notion_intake';
@@ -9,6 +11,9 @@ export interface ImportedNewsletterEvidence {
   givenAt: string;
   withdrawnAt: string | null;
   runId: string;
+  method?: ConsentMethod;
+  wordingVersion?: string | null;
+  withdrawnTimeBasis?: 'choice' | 'observed';
 }
 
 export type ImportedNewsletterStatus = 'applied' | 'already_applied' | 'needs_review' | 'conflict';
@@ -21,6 +26,8 @@ interface ProviderIdentity {
 interface ConsentRow {
   id: string;
   withdrawn_at: string | null;
+  method: string;
+  wording_version: string | null;
 }
 
 interface ConsentWriteContext {
@@ -54,9 +61,9 @@ async function hasPendingDuplicateReview(db: Db, personId: string): Promise<bool
   return Boolean(
     await db
       .prepare(
-        'SELECT 1 AS pending FROM review_queue WHERE candidate_person_id=? AND resolved_at IS NULL LIMIT 1',
+        'SELECT 1 AS pending FROM review_queue WHERE (candidate_person_id=? OR existing_person_id=?) AND resolved_at IS NULL LIMIT 1',
       )
-      .bind(personId)
+      .bind(personId, personId)
       .first(),
   );
 }
@@ -68,7 +75,7 @@ async function importedConsent(
 ): Promise<ConsentRow | null> {
   return db
     .prepare(
-      `SELECT id,withdrawn_at FROM consent_records
+      `SELECT id,withdrawn_at,method,wording_version FROM consent_records
        WHERE origin_identity_id=? AND scope='newsletter' AND given_at=?`,
     )
     .bind(identityId, givenAt)
@@ -106,125 +113,131 @@ async function activeBeforeWithdrawal(db: Db, personId: string, withdrawnAt: str
 
 function insertImportedConsent(db: Db, context: ConsentWriteContext): Statement {
   const { personId, identityId, consentId, evidence, now } = context;
+  const guard = importedConsentGuard(personId, identityId, evidence);
   return db
     .prepare(
       `INSERT INTO consent_records
         (id,person_id,scope,given_at,source,method,wording_version,withdrawn_at,withdrawn_source,
          created_at,updated_at,origin_identity_id,import_run_id)
-       VALUES (?,?,'newsletter',?,'import','unknown',NULL,?,?,?, ?,?,?)
+       SELECT ?,?,'newsletter',?,'import',?,?, ?,?,?, ?,?,? WHERE ${guard.sql}
        ON CONFLICT(id) DO NOTHING`,
     )
     .bind(
       consentId,
       personId,
       evidence.givenAt,
+      evidence.method ?? 'unknown',
+      evidence.wordingVersion ?? null,
       evidence.withdrawnAt,
       evidence.withdrawnAt ? 'import' : null,
       now,
       now,
       identityId,
       evidence.runId,
+      ...guard.values,
     );
 }
 
-function updateImportedWithdrawal(
-  db: Db,
-  consentId: string,
-  input: ImportedNewsletterEvidence,
-  now: string,
-): Statement {
+function updateImportedWithdrawal(db: Db, context: ConsentWriteContext): Statement {
+  const { personId, identityId, consentId, evidence, now } = context;
+  const guard = importedConsentGuard(personId, identityId, evidence);
   return db
     .prepare(
       `UPDATE consent_records SET withdrawn_at=?,withdrawn_source='import',import_run_id=?,updated_at=?
-       WHERE id=? AND withdrawn_at IS NULL`,
+    WHERE id=? AND person_id=? AND origin_identity_id=? AND withdrawn_at IS NULL AND ${guard.sql}`,
     )
-    .bind(input.withdrawnAt, input.runId, now, consentId);
+    .bind(
+      evidence.withdrawnAt,
+      evidence.runId,
+      now,
+      consentId,
+      personId,
+      identityId,
+      ...guard.values,
+    );
 }
-
 function updateOlderActiveConsent(
   db: Db,
+  context: ConsentWriteContext,
   consentId: string,
-  withdrawnAt: string,
-  now: string,
 ): Statement {
+  const { personId, identityId, evidence, now } = context;
+  const guard = importedConsentGuard(personId, identityId, evidence);
   return db
     .prepare(
       `UPDATE consent_records SET withdrawn_at=?,withdrawn_source='import',updated_at=?
-       WHERE id=? AND withdrawn_at IS NULL AND julianday(given_at)<=julianday(?)`,
+    WHERE id=? AND person_id=? AND withdrawn_at IS NULL AND julianday(given_at)<=julianday(?) AND ${guard.sql}`,
     )
-    .bind(withdrawnAt, now, consentId, withdrawnAt);
+    .bind(evidence.withdrawnAt, now, consentId, personId, evidence.withdrawnAt, ...guard.values);
 }
-
-function recordWithdrawal(db: Db, personId: string, withdrawnAt: string, now: string): Statement {
+function recordWithdrawal(db: Db, context: ConsentWriteContext): Statement {
+  const { personId, identityId, evidence, now } = context;
+  const guard = importedConsentGuard(personId, identityId, evidence);
   return db
     .prepare(
       `INSERT INTO consent_withdrawals(id,person_id,origin_person_id,scope,source,withdrawn_at,recorded_at)
-       VALUES (?,?,?,'newsletter','import',?,?)
-       ON CONFLICT(origin_person_id,scope,source,withdrawn_at) DO NOTHING`,
+    SELECT ?,?,?,'newsletter','import',?,? WHERE ${guard.sql}
+    ON CONFLICT(origin_person_id,scope,source,withdrawn_at) DO NOTHING`,
     )
-    .bind(ulid(), personId, personId, withdrawnAt, now);
+    .bind(ulid(), personId, personId, evidence.withdrawnAt, now, ...guard.values);
 }
-
 function recordEngagementEvent(
   db: Db,
-  input: {
-    personId: string;
-    event: 'subscribed' | 'unsubscribed';
-    consentId: string;
-    now: string;
-  },
+  context: ConsentWriteContext,
+  event: 'subscribed' | 'unsubscribed',
+  consentId = context.consentId,
 ): Statement {
-  const { personId, event, consentId, now } = input;
+  const { personId, identityId, evidence, now } = context;
+  const guard = importedConsentGuard(personId, identityId, evidence);
   const occurredAt = event === 'subscribed' ? 'given_at' : 'withdrawn_at';
   const withdrawnGuard = event === 'unsubscribed' ? ' AND withdrawn_at IS NOT NULL' : '';
   return db
     .prepare(
       `INSERT OR IGNORE INTO engagement_events(id,person_id,type,occurred_at,source,reference,details,created_at)
-       SELECT ?,?, ?,${occurredAt},'import',id,NULL,? FROM consent_records
-       WHERE id=? AND person_id=?${withdrawnGuard}`,
+    SELECT ?,?, ?,${occurredAt},'import',id,NULL,? FROM consent_records
+    WHERE id=? AND person_id=?${withdrawnGuard} AND ${guard.sql}`,
     )
-    .bind(ulid(), personId, event, now, consentId, personId);
+    .bind(ulid(), personId, event, now, consentId, personId, ...guard.values);
 }
 
 function writeStatements(db: Db, context: ConsentWriteContext): Statement[] {
-  const { personId, consentId, existing, evidence, now, activeConsents } = context;
+  const { consentId, existing, evidence, activeConsents } = context;
   const withdrawnAt = evidence.withdrawnAt;
   const statements = [
-    existing
-      ? updateImportedWithdrawal(db, consentId, evidence, now)
-      : insertImportedConsent(db, context),
+    existing ? updateImportedWithdrawal(db, context) : insertImportedConsent(db, context),
   ];
   if (!withdrawnAt) {
-    statements.push(recordEngagementEvent(db, { personId, event: 'subscribed', consentId, now }));
+    statements.push(recordEngagementEvent(db, context, 'subscribed'));
     return statements;
   }
 
-  statements.push(
-    ...activeConsents.map(({ id }) => updateOlderActiveConsent(db, id, withdrawnAt, now)),
-  );
-  statements.push(recordWithdrawal(db, personId, withdrawnAt, now));
-  statements.push(recordEngagementEvent(db, { personId, event: 'subscribed', consentId, now }));
+  statements.push(...activeConsents.map(({ id }) => updateOlderActiveConsent(db, context, id)));
+  statements.push(recordWithdrawal(db, context));
+  statements.push(recordEngagementEvent(db, context, 'subscribed'));
   for (const { id } of activeConsents) {
-    statements.push(
-      recordEngagementEvent(db, { personId, event: 'unsubscribed', consentId: id, now }),
-    );
+    statements.push(recordEngagementEvent(db, context, 'unsubscribed', id));
   }
   if (!activeConsents.some(({ id }) => id === consentId))
-    statements.push(recordEngagementEvent(db, { personId, event: 'unsubscribed', consentId, now }));
+    statements.push(recordEngagementEvent(db, context, 'unsubscribed'));
   return statements;
 }
 
-/** Apply historical newsletter evidence using the source identity as its replay key. */
-export async function applyImportedNewsletterConsent(
+function evidenceChanged(existing: ConsentRow, input: ImportedNewsletterEvidence): boolean {
+  const method = input.method ?? 'unknown',
+    wording = input.wordingVersion ?? null;
+  return (
+    (method !== 'unknown' && existing.method !== method) ||
+    (wording !== null && wording !== '' && existing.wording_version !== wording)
+  );
+}
+
+async function existingImportStatus(
   db: Db,
   personId: string,
   input: ImportedNewsletterEvidence,
-): Promise<ImportedNewsletterStatus> {
-  const identity = await providerIdentity(db, personId, input);
-  if (!identity) return 'conflict';
-  if (await hasPendingDuplicateReview(db, personId)) return 'needs_review';
-
-  const existing = await importedConsent(db, identity.id, input.givenAt);
+  existing: ConsentRow | null,
+): Promise<ImportedNewsletterStatus | null> {
+  if (existing && evidenceChanged(existing, input)) return 'conflict';
   if (existing?.withdrawn_at === input.withdrawnAt) return 'already_applied';
   if (existing && (existing.withdrawn_at !== null || input.withdrawnAt === null)) return 'conflict';
   if (
@@ -234,12 +247,32 @@ export async function applyImportedNewsletterConsent(
   )
     return 'conflict';
 
+  return null;
+}
+
+/** Apply historical newsletter evidence using the source identity as its replay key. */
+export async function applyImportedNewsletterConsent(
+  db: Db,
+  personId: string,
+  input: ImportedNewsletterEvidence,
+): Promise<ImportedNewsletterStatus> {
+  // A status observation is not a dated withdrawal choice. Staff must resolve
+  // its ordering before an import may alter membership.
+  if (input.withdrawnAt && input.withdrawnTimeBasis === 'observed') return 'needs_review';
+  const identity = await providerIdentity(db, personId, input);
+  if (!identity) return 'conflict';
+  if (await hasPendingDuplicateReview(db, personId)) return 'needs_review';
+
+  const existing = await importedConsent(db, identity.id, input.givenAt);
+  const held = await existingImportStatus(db, personId, input, existing);
+  if (held) return held;
+
   const now = nowIso();
   const consentId = existing?.id ?? `import:${identity.id}:${input.givenAt}`;
   const activeConsents = input.withdrawnAt
     ? await activeBeforeWithdrawal(db, personId, input.withdrawnAt)
     : [];
-  await db.batch(
+  const result = await db.batch(
     writeStatements(db, {
       personId,
       identityId: identity.id,
@@ -250,5 +283,7 @@ export async function applyImportedNewsletterConsent(
       activeConsents,
     }),
   );
+  if (!importedConsentChanged(result[0]))
+    return (await hasPendingDuplicateReview(db, personId)) ? 'needs_review' : 'conflict';
   return 'applied';
 }

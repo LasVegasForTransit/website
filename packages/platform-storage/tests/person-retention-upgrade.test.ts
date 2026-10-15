@@ -2,8 +2,9 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { applyMigrations } from './support/db';
 import { mergeFixture } from './support/merge-fixture';
+import { useHistoricalMembershipSchema } from './support/legacy-membership';
 void test('the retention upgrade preserves every existing row, pending removal intent, receipt and reversible merge', async () => {
-  const f = await mergeFixture('0024_person_erasure.sql', '2026-01-01T00:00:00.000Z');
+  const f = await mergeFixture(undefined, '2026-01-01T00:00:00.000Z');
   assert.equal((await f.mergePeople(f.db, f.actor, f.input)).kind, 'ok');
   await f.people.linkIdentity(f.survivor.id, {
     platform: 'discord',
@@ -31,6 +32,7 @@ void test('the retention upgrade preserves every existing row, pending removal i
       "INSERT INTO provider_access_intents VALUES('intent','discord','pending',?,?,'222222222222222222','111111111111111111','333333333333333333','person',1,'revision',1,0,'person_deleted',NULL,'2026-01-01')",
     )
     .run(f.survivor.id, identity);
+  useHistoricalMembershipSchema(f.db, '0024_person_erasure.sql');
   const tables = f.db.raw
     .prepare("SELECT name FROM sqlite_master WHERE type='table' AND name<>'d1_migrations'")
     .all()
@@ -45,10 +47,13 @@ void test('the retention upgrade preserves every existing row, pending removal i
   const before = snapshot();
   applyMigrations(f.db.raw);
   const comparable = snapshot().map((rows, index) =>
-    rows.map((row) =>
-      Object.fromEntries(Object.entries(row).filter(([key]) => columns[index]?.includes(key))),
-    ),
+    rows
+      .filter((row) => tables[index] !== 'membership_rules' || row.version === 1)
+      .map((row) =>
+        Object.fromEntries(Object.entries(row).filter(([key]) => columns[index]?.includes(key))),
+      ),
   );
+  assert.equal(f.db.raw.prepare('SELECT max(version) AS n FROM membership_rules').get()?.n, 2);
   assert.equal(
     JSON.stringify(comparable),
     JSON.stringify(before),

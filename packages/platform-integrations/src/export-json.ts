@@ -8,6 +8,8 @@ const direct = [
   'committee_assignments',
   'consent_withdrawals',
   'person_corrections',
+  'roster_import_records',
+  'membership_roll',
 ] as const;
 type Related = (typeof direct)[number] | 'discord_identity_profiles' | 'discord_profiles';
 type NestedPerson = Record<string, string | number | null | ExportRow[]> &
@@ -27,6 +29,8 @@ export function nestedExport(data: FullExport) {
         committee_assignments: [],
         consent_withdrawals: [],
         person_corrections: [],
+        roster_import_records: [],
+        membership_roll: [],
         discord_identity_profiles: [],
         discord_profiles: [],
       },
@@ -52,5 +56,6 @@ export function nestedExport(data: FullExport) {
     formatVersion: data.formatVersion,
     exportedAt: data.exportedAt,
     people: [...people.values()],
+    unassigned_roster_import_records: data.unassigned_roster_import_records,
   };
 }

@@ -30,12 +30,20 @@ interface Snapshot {
   emailVerifiedAt: string | null;
   active: { id: string; givenAt: string; source: string }[];
   lastWithdrawal: string | null;
+  roll: {
+    entitled: number;
+    observedAt: string;
+    status: string;
+    revokedAt: string | null;
+    revision: string;
+  }[];
   identities: NewsletterIdentity[];
 }
 const SNAPSHOT = `SELECT json_object('generation',j.generation,'email',p.email,
   'deletedAt',coalesce(p.deleted_at,k.deleted_at),'erasedAt',k.erased_at,'activationId',j.activation_consent_id,
   'activationEmailKey',j.activation_email_key,'activationVerifiedAt',j.activation_email_verified_at,'emailVerifiedAt',p.email_verified_at,
   'active',json((SELECT json_group_array(json_object('id',id,'givenAt',given_at,'source',source)) FROM (SELECT id,given_at,source FROM consent_records WHERE person_id=k.id AND scope='newsletter' AND withdrawn_at IS NULL ORDER BY id))),
+  'roll',json((SELECT json_group_array(json_object('entitled',entitled,'observedAt',observed_at,'status',status,'revokedAt',revoked_at,'revision',revision_token)) FROM (SELECT * FROM membership_roll WHERE person_id=k.id ORDER BY external_id))),
   'lastWithdrawal',(SELECT at FROM (SELECT withdrawn_at AS at FROM consent_withdrawals WHERE (person_id=k.id OR origin_person_id=k.id) AND scope='newsletter' UNION ALL SELECT withdrawn_at AS at FROM consent_records WHERE person_id=k.id AND scope='newsletter' AND withdrawn_at IS NOT NULL) ORDER BY (julianday(at) IS NULL) DESC,julianday(at) DESC,at DESC LIMIT 1),
   'identities',json((SELECT json_group_array(json_object('recordId',id,'externalId',external_id,'email',external_email,'method',link_method)) FROM (SELECT * FROM identities WHERE person_id=k.id AND platform='beehiiv' ORDER BY id)))) AS snapshot
   FROM newsletter_sync_jobs j JOIN person_keys k ON k.id=j.person_id LEFT JOIN people p ON p.id=k.id WHERE j.person_id=?`;
@@ -85,9 +93,11 @@ export async function loadNewsletterPlan(db: Db, personId: string): Promise<News
       ? 'inactive'
       : snapshot.active.length > 0
         ? 'active'
-        : snapshot.lastWithdrawal
+        : snapshot.lastWithdrawal || snapshot.roll.some((value) => value.revokedAt !== null)
           ? 'inactive'
-          : 'unknown';
+          : snapshot.roll.some((value) => value.entitled === 1)
+            ? 'active'
+            : 'unknown';
   return {
     personId,
     generation: snapshot.generation,
@@ -107,20 +117,25 @@ const PENDING_POLL = `EXISTS(SELECT 1 FROM newsletter_poll_choices r WHERE r.pub
   AND r.state IN ('pending','needs_review') AND (r.person_id=? OR 'id:'||r.subscription_id IN (SELECT value FROM json_each(?)))
   AND NOT EXISTS(SELECT 1 FROM newsletter_sync_jobs j JOIN consent_records c ON c.id=j.activation_consent_id
     WHERE j.person_id=? AND c.person_id=j.person_id AND c.withdrawn_at IS NULL AND julianday(c.given_at)>julianday(r.observed_at)))`;
+const PENDING_ROLL = `EXISTS(SELECT 1 FROM membership_roll WHERE person_id=? AND review_reason IN ('duplicate_review','pending_choice','choice_order_unknown','membership_status_unknown','newer_signup'))`;
 function pendingValues(plan: NewsletterPlan, publicationId: string): SqlValue[] {
   const keys = JSON.stringify(plan.accountKeys);
   return [publicationId, keys, keys, plan.personId];
 }
 function pendingEvidence(plan: NewsletterPlan, publicationId: string) {
   if (plan.desired !== 'active')
-    return { sql: PENDING_SOURCE, values: pendingValues(plan, publicationId) };
+    return {
+      sql: `(${PENDING_SOURCE} OR ${PENDING_ROLL})`,
+      values: [...pendingValues(plan, publicationId), plan.personId],
+    };
   return {
-    sql: `(${PENDING_SOURCE} OR ${PENDING_POLL})`,
+    sql: `(${PENDING_SOURCE} OR ${PENDING_POLL} OR ${PENDING_ROLL})`,
     values: [
       ...pendingValues(plan, publicationId),
       publicationId,
       plan.personId,
       JSON.stringify(plan.accountKeys),
+      plan.personId,
       plan.personId,
     ],
   };

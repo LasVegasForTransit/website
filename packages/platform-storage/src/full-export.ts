@@ -33,6 +33,9 @@ export interface FullExport {
   person_corrections: ExportRow[];
   discord_identity_profiles: ExportRow[];
   discord_profiles: ExportRow[];
+  roster_import_records: ExportRow[];
+  membership_roll: ExportRow[];
+  unassigned_roster_import_records: ExportRow[];
 }
 function profileQueries(db: Db, actorId: string): Statement[] {
   return ['discord_identity_profiles', 'discord_profiles'].map((table) =>
@@ -107,9 +110,20 @@ export async function collectFullExport(
     ...profileQueries(db, actor.personId),
     db
       .prepare(
-        `INSERT INTO staff_audits(id,actor_id,action,permission,details,occurred_at) SELECT ?,?,'people.export','export.full',json_object('people',(SELECT count(*) FROM people WHERE deleted_at IS NULL),'formatVersion',2),? WHERE ${STAFF_ADMIN_SCOPE}`,
+        `SELECT r.* FROM membership_roll r JOIN people p ON p.id=r.person_id WHERE p.deleted_at IS NULL AND ${STAFF_ADMIN_SCOPE} ORDER BY r.external_id`,
       )
-      .bind(ulid(), actor.personId, exportedAt, actor.personId),
+      .bind(actor.personId),
+    db
+      .prepare(
+        `SELECT * FROM roster_import_records WHERE person_id IS NULL AND evidence IS NOT NULL AND ${STAFF_ADMIN_SCOPE} ORDER BY id`,
+      )
+      .bind(actor.personId),
+    db
+      .prepare(
+        `SELECT r.* FROM roster_import_records r JOIN people p ON p.id=r.person_id WHERE p.deleted_at IS NULL AND ${STAFF_ADMIN_SCOPE} ORDER BY r.id`,
+      )
+      .bind(actor.personId),
+    exportAudit(db, actor, exportedAt),
   ]);
   if (
     !(await db
@@ -118,6 +132,18 @@ export async function collectFullExport(
       .first())
   )
     return null;
+  return exportRows(result, exportedAt);
+}
+
+function exportAudit(db: Db, actor: Actor, exportedAt: string): Statement {
+  return db
+    .prepare(
+      `INSERT INTO staff_audits(id,actor_id,action,permission,details,occurred_at) SELECT ?,?,'people.export','export.full',json_object('people',(SELECT count(*) FROM people WHERE deleted_at IS NULL),'formatVersion',2),? WHERE ${STAFF_ADMIN_SCOPE}`,
+    )
+    .bind(ulid(), actor.personId, exportedAt, actor.personId);
+}
+
+function exportRows(result: unknown[], exportedAt: string): FullExport {
   return {
     formatVersion: 2,
     exportedAt,
@@ -131,5 +157,8 @@ export async function collectFullExport(
     person_corrections: rows(result[7]),
     discord_identity_profiles: rows(result[8]),
     discord_profiles: rows(result[9]),
+    membership_roll: rows(result[10]),
+    roster_import_records: rows(result[12]),
+    unassigned_roster_import_records: rows(result[11]),
   };
 }

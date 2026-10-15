@@ -63,6 +63,16 @@ import run on each imported newsletter-consent row. The import path checks unres
 duplicates before writing consent, applies withdrawals only to older active consent, and treats a
 newer local withdrawal as a conflict for an older active provider snapshot.
 
+A new imported person, its owned fields, source identity and any review items commit together. If
+the response is interrupted, the next attempt finds that identity instead of creating another
+person. Historical consent writes recheck the exact active identity, unresolved duplicate reviews on
+either side, and newer actual withdrawals inside their transaction.
+
+The one-time roster importer opts into `holdUnverifiedEmail` on `upsertFromSource`. An unverified
+email match returns a typed hold signal before creating another profile; the importer retains the
+original source separately for an administrator to confirm. This option does not change the default
+matching results below or automatically link an uncertain identity.
+
 Every record that reaches `upsertFromSource` goes through the matching rules in `matching.ts`. They
 decide whether it belongs to someone LVBT already knows, is someone new, or needs a staff member to
 decide. The rules run in order, and the first that applies decides.

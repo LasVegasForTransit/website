@@ -11,7 +11,7 @@ const record = {
   email: 'profile@example.invalid',
   givenName: '  Ana María  ',
   familyName: '  de la Cruz  ',
-  newsletter: { state: 'active', givenAt: '2026-06-22T18:50:32.000Z' },
+  newsletter: { affirmative: true, state: 'active', givenAt: '2026-06-22T18:50:32.000Z' },
 };
 const options = { runId: 'profile-import-fixture', now: new Date('2026-10-14T12:00:00.000Z') };
 
@@ -40,7 +40,8 @@ void test('import replay fills missing names and preserves names already correct
     assert.ok(person);
     await people.updateFields(person.id, { source: 'staff', fields: { given_name: 'Ana' } });
     const replay = await applyRosterImport(db, [record], options);
-    assert.equal(replay.counts.alreadyApplied, 1);
+    assert.equal(replay.counts.applied, 1);
+    assert.equal((await applyRosterImport(db, [record], options)).counts.alreadyApplied, 1);
     const updated = await people.getPerson(person.id);
     assert.ok(updated);
     assert.equal(updated.given_name, 'Ana');

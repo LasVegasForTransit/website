@@ -19,13 +19,14 @@ void test('the roster preview CLI reports row conflicts without exposing source 
           email: 'member@example.org',
           givenName: 'Private Given Name',
           familyName: 'Private Family Name',
-          newsletter: { state: 'active', givenAt: '2025-01-02T09:00:00.000Z' },
+          newsletter: { affirmative: true, state: 'active', givenAt: '2025-01-02T09:00:00.000Z' },
         },
         {
           source: 'notion_intake',
           sourceId: 'private-page-2',
           email: 'former@example.org',
           newsletter: {
+            affirmative: true,
             state: 'withdrawn',
             givenAt: '2025-02-03T09:00:00.000Z',
             withdrawnAt: '2025-03-04T09:00:00.000Z',
@@ -35,7 +36,7 @@ void test('the roster preview CLI reports row conflicts without exposing source 
           source: 'beehiiv',
           sourceId: 'private-subscriber-3',
           email: 'member@example.org',
-          newsletter: { state: 'active', givenAt: '2025-04-05T09:00:00.000Z' },
+          newsletter: { affirmative: true, state: 'active', givenAt: '2025-04-05T09:00:00.000Z' },
         },
       ]),
     );

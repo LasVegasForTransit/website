@@ -1,3 +1,4 @@
+import { MEMBERSHIP_STATUS_SQL, CURRENT_MEMBERSHIP_VERSION } from './membership-policy';
 // The internal person service, version 1: the only way platform code reads
 // and writes people. It enforces which source may change which field,
 // records where every field came from, adds consent only with evidence, and
@@ -7,6 +8,7 @@ import { nowIso, ulid } from '@lasvegasfortransit/platform-core/ids';
 import type { ConsentScope, MembershipStatus } from '@lasvegasfortransit/platform-core/membership';
 import type { RegionId, RegionSource } from '@lasvegasfortransit/platform-core/regions';
 import type { Db, SqlValue } from './db';
+import { createImportedPersonAtomically, requireConfirmedImportMatch } from './import-person';
 import { deletePersonData } from './person-deletion';
 import { PERSON_MERGE_CHAIN, PERSON_MERGE_TERMINAL } from './person-resolution';
 import {
@@ -42,6 +44,7 @@ import {
   type MatchDecision,
 } from './matching';
 
+export { ImportedMatchNeedsReview } from './import-person';
 export { normalizeEmail } from './field-ownership';
 
 export const PERSON_SERVICE_VERSION = 1;
@@ -167,6 +170,7 @@ export class PersonService {
    */
   async upsertFromSource(
     input: IncomingRecord & {
+      holdUnverifiedEmail?: boolean;
       consent?:
         | {
             scope: ConsentScope;
@@ -179,6 +183,7 @@ export class PersonService {
     },
   ): Promise<{ person: Person; action: UpsertAction }> {
     const decision = await decideMatch(this.db, input);
+    requireConfirmedImportMatch(input, decision, input.holdUnverifiedEmail);
     const now = nowIso();
     let personId: string;
     let action: UpsertAction = 'linked';
@@ -227,6 +232,8 @@ export class PersonService {
     decision: Extract<MatchDecision, { kind: 'new' }>,
     now: string,
   ): Promise<string> {
+    if (input.source === 'import' && input.identity)
+      return createImportedPersonAtomically(this.db, input, decision, { now, warn: this.warn });
     const personId = ulid();
     await this.db
       .prepare('INSERT INTO people (id, created_at, updated_at) VALUES (?, ?, ?)')
@@ -398,10 +405,7 @@ export class PersonService {
   private async recomputeMembership(id: string): Promise<Person | null> {
     await this.db
       .prepare(
-        `UPDATE people SET membership_status=CASE
-        WHEN EXISTS(SELECT 1 FROM consent_records WHERE person_id=people.id AND scope='newsletter' AND withdrawn_at IS NULL) THEN 'member'
-        WHEN EXISTS(SELECT 1 FROM consent_records WHERE person_id=people.id AND scope='newsletter' AND withdrawn_at IS NOT NULL) THEN 'former_member'
-        ELSE 'not_member' END,membership_rules_version=1,updated_at=? WHERE id=? AND deleted_at IS NULL`,
+        `UPDATE people SET membership_status=${MEMBERSHIP_STATUS_SQL},membership_rules_version=${CURRENT_MEMBERSHIP_VERSION},updated_at=? WHERE id=? AND deleted_at IS NULL`,
       )
       .bind(nowIso(), id)
       .run();

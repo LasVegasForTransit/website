@@ -18,10 +18,10 @@ export interface WelcomeQueueRow {
   personId: string;
   givenName: string | null;
   familyName: string | null;
-  joinedAt: string;
-  source: string;
+  joinedAt: string | null;
+  source: string | null;
   interests: string[];
-  waitingDays: number;
+  waitingDays: number | null;
   overdue: boolean;
   claimedBy: string | null;
   claimedByName: string | null;

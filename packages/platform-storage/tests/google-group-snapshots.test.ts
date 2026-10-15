@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { mergeFixture } from './support/merge-fixture';
+import { useHistoricalMembershipSchema } from './support/legacy-membership';
 import { everyStoredText, applyMigrations } from './support/db';
 import { runMaintenance } from '../src/retention';
 
@@ -292,7 +293,8 @@ void test('registration removed immediately before the transaction prevents publ
 });
 
 void test('upgrading the canonical schema preserves membership while adding empty caches', async () => {
-  const f = await mergeFixture('0031_discord_disconnect.sql');
+  const f = await mergeFixture();
+  useHistoricalMembershipSchema(f.db, '0031_discord_disconnect.sql');
   const before = f.db.raw.prepare('SELECT count(*) AS n FROM people').get()?.n;
   applyMigrations(f.db.raw);
   assert.equal(f.db.raw.prepare('SELECT count(*) AS n FROM people').get()?.n, before);

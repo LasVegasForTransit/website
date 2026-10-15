@@ -1,3 +1,4 @@
+import { MEMBERSHIP_STATUS_SQL, CURRENT_MEMBERSHIP_VERSION } from './membership-policy';
 import { ulid } from '@lasvegasfortransit/platform-core/ids';
 import type { Db, SqlValue } from './db';
 
@@ -20,12 +21,14 @@ interface PollContext {
     updated_at: string;
   } | null;
   consents: { id: string; given_at: string; withdrawn_at: string | null }[];
+  roll: { entitled: number; observedAt: string }[];
 }
 const CONTEXT = `SELECT json_object(
   'choice',json((SELECT json_object('revision',revision,'status',status,'observed_at',observed_at,'baseline_active_at',baseline_active_at,'state',state,'person_id',person_id) FROM newsletter_poll_choices WHERE publication_id=?1 AND subscription_id=?2)),
   'currentStatus',(SELECT status FROM beehiiv_subscription_observations WHERE publication_id=?1 AND subscription_id=?2),
   'owner',json((SELECT json_object('id',i.person_id,'deleted_at',k.deleted_at,'erased_at',k.erased_at,'linked_at',i.linked_at,'updated_at',i.updated_at)
     FROM identities i JOIN person_keys k ON k.id=i.person_id WHERE i.platform='beehiiv' AND i.external_id=?2)),
+  'roll',json((SELECT json_group_array(json_object('entitled',entitled,'observedAt',observed_at)) FROM (SELECT r.entitled,r.observed_at FROM membership_roll r JOIN identities i ON i.person_id=r.person_id AND i.external_id=r.external_id AND i.platform='beehiiv' WHERE i.external_id=?2 ORDER BY r.external_id))),
   'consents',json((SELECT json_group_array(json_object('id',id,'given_at',given_at,'withdrawn_at',withdrawn_at)) FROM (
     SELECT c.id,c.given_at,c.withdrawn_at FROM consent_records c JOIN identities i ON i.person_id=c.person_id
     WHERE i.platform='beehiiv' AND i.external_id=?2 AND c.scope='newsletter' ORDER BY c.id)))) AS snapshot`;
@@ -54,25 +57,41 @@ function decide(
   )
     return result('needs_review', 'source_time_unknown');
   const active = context.consents.filter((value) => value.withdrawn_at === null);
+  const roll = context.roll.filter((value) => value.entitled === 1);
   if (choice.status === 'active')
-    return active.length ? result('applied') : result('needs_review', 'consent_evidence_needed');
+    return active.length || roll.length
+      ? result('applied')
+      : result('needs_review', 'consent_evidence_needed');
   const observed = Date.parse(choice.observed_at);
   if (active.some((value) => Date.parse(value.given_at) > observed))
     return result('ignored', 'newer_signup');
   if (Date.parse(owner.linked_at) > observed || Date.parse(owner.updated_at) > observed)
     return result('needs_review', 'ownership_changed');
-  if (!active.length) return result('applied');
+  if (!active.length && !roll.length) return result('applied');
   const baseline = choice.baseline_active_at ? Date.parse(choice.baseline_active_at) : NaN;
-  const uncertain =
-    !Number.isFinite(baseline) ||
-    baseline > observed ||
-    active.some(
-      (value) =>
-        !Number.isFinite(Date.parse(value.given_at)) || Date.parse(value.given_at) > baseline,
-    );
+  const uncertain = uncertainChoice(baseline, observed, active, roll);
   if (uncertain)
     return result('needs_review', 'choice_order_unknown', policy === 'keep_unsubscribed');
   return result('applied', null, true);
+}
+function uncertainChoice(
+  baseline: number,
+  observed: number,
+  active: PollContext['consents'],
+  roll: PollContext['roll'],
+) {
+  return (
+    !Number.isFinite(baseline) ||
+    baseline > observed ||
+    roll.some(
+      (value) =>
+        !Number.isFinite(Date.parse(value.observedAt)) || Date.parse(value.observedAt) > baseline,
+    ) ||
+    active.some(
+      (value) =>
+        !Number.isFinite(Date.parse(value.given_at)) || Date.parse(value.given_at) > baseline,
+    )
+  );
 }
 function accountRemoved(owner: NonNullable<PollContext['owner']>) {
   return owner.deleted_at !== null || owner.erased_at !== null;
@@ -118,10 +137,7 @@ function withdrawalWrites(db: Db, input: PollWithdrawal) {
       ),
     db
       .prepare(
-        `UPDATE people SET membership_status=CASE
-        WHEN EXISTS(SELECT 1 FROM consent_records WHERE person_id=people.id AND scope='newsletter' AND withdrawn_at IS NULL) THEN 'member'
-        WHEN EXISTS(SELECT 1 FROM consent_records WHERE person_id=people.id AND scope='newsletter' AND withdrawn_at IS NOT NULL) THEN 'former_member'
-        ELSE 'not_member' END,membership_rules_version=1,updated_at=? WHERE id=? AND deleted_at IS NULL AND ${held}`,
+        `UPDATE people SET membership_status=${MEMBERSHIP_STATUS_SQL},membership_rules_version=${CURRENT_MEMBERSHIP_VERSION},updated_at=? WHERE id=? AND deleted_at IS NULL AND ${held}`,
       )
       .bind(stamp, personId, nonce),
   ];

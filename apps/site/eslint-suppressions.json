@@ -170,7 +170,7 @@
   },
   "scripts/notion/provision-intake-db.ts": {
     "turbo/no-undeclared-env-vars": {
-      "count": 2
+      "count": 1
     }
   },
   "scripts/screenshot.ts": {

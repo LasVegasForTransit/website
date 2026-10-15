@@ -4,6 +4,9 @@
   "private": true,
   "type": "module",
   "exports": {
+    "./roster-import-resolve": "./src/roster-import-resolve.ts",
+    "./membership-roll": "./src/membership-roll.ts",
+    "./roster-import-reviews": "./src/roster-import-reviews.ts",
     "./person-export": "./src/person-export.ts",
     "./workspace-offboarding": "./src/workspace-offboarding.ts",
     "./member-privacy-schedule": "./src/member-privacy-schedule.ts",

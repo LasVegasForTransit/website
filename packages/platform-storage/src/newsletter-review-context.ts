@@ -33,6 +33,7 @@ export interface ReviewContext {
     updatedAt: string;
   } | null;
   active: { id: string; givenAt: string }[];
+  rollEntitled: number;
   lastWithdrawal: string | null;
   deliveryStatus: string | null;
   duplicate: number;
@@ -59,6 +60,7 @@ function contextSql(kind: NewsletterReviewRef['kind']): string {
     'owner',json((SELECT json_object('id',p.id,'name',coalesce(nullif(trim(coalesce(p.given_name,'')||' '||coalesce(p.family_name,'')),''),p.email,'Name not recorded'),'email',p.email,'verifiedAt',p.email_verified_at,'deletedAt',coalesce(p.deleted_at,k.deleted_at),'erasedAt',k.erased_at,'linkedAt',o.linked_at,'updatedAt',o.updated_at) FROM selected_owner o JOIN person_keys k ON k.id=o.person_id LEFT JOIN people p ON p.id=o.person_id)),
     'deliveryStatus',(SELECT status FROM beehiiv_subscription_observations WHERE publication_id=?1 AND subscription_id=(SELECT subscriptionId FROM selected)),
     'active',json((SELECT json_group_array(json_object('id',id,'givenAt',given_at)) FROM (SELECT id,given_at FROM consent_records WHERE person_id=(SELECT person_id FROM selected_owner) AND scope='newsletter' AND withdrawn_at IS NULL ORDER BY id))),
+    'rollEntitled',EXISTS(SELECT 1 FROM membership_roll WHERE person_id=(SELECT person_id FROM selected_owner) AND entitled=1),
     'lastWithdrawal',(SELECT max(at) FROM (SELECT withdrawn_at AS at FROM consent_records WHERE person_id=(SELECT person_id FROM selected_owner) AND scope='newsletter' UNION ALL SELECT withdrawn_at FROM consent_withdrawals WHERE (person_id=(SELECT person_id FROM selected_owner) OR origin_person_id=(SELECT person_id FROM selected_owner)) AND scope='newsletter')),
     'duplicate',(SELECT count(*) FROM review_queue WHERE resolved_at IS NULL AND (candidate_person_id=(SELECT person_id FROM selected_owner) OR existing_person_id=(SELECT person_id FROM selected_owner)))) AS snapshot WHERE ${STAFF_ADMIN_SCOPE}`;
 }
