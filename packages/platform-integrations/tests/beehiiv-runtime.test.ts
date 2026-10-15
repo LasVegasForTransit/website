@@ -16,7 +16,6 @@ void test('newsletter synchronization requires complete configuration and an exp
     LVBT_BEEHIIV_PRODUCTION_PUBLICATION_ID: 'pub_production',
     LVBT_BEEHIIV_API_KEY: 'fixture-only',
     LVBT_NEWSLETTER_INTENT_KEY: randomToken(),
-    LVBT_BEEHIIV_WEBHOOK_SECRET: `whsec_${btoa('fixture-event-key-only')}`,
   };
   assert.ok(read(base));
   for (const changed of [
@@ -26,10 +25,6 @@ void test('newsletter synchronization requires complete configuration and an exp
     { LVBT_BEEHIIV_PUBLICATION_ID: '' },
     { LVBT_BEEHIIV_PRODUCTION_PUBLICATION_ID: '' },
     { LVBT_BEEHIIV_API_KEY: '' },
-    { LVBT_BEEHIIV_WEBHOOK_SECRET: '' },
-    { LVBT_BEEHIIV_WEBHOOK_SECRET: 'invalid' },
-    { LVBT_BEEHIIV_WEBHOOK_SECRET: 'whsec_!' },
-    { LVBT_BEEHIIV_WEBHOOK_SECRET: 'whsec_' },
     { LVBT_NEWSLETTER_INTENT_KEY: '' },
     { LVBT_NEWSLETTER_INTENT_KEY: 'invalid' },
     { LVBT_BEEHIIV_API_KEY: base.LVBT_NEWSLETTER_INTENT_KEY },
@@ -44,4 +39,19 @@ void test('newsletter synchronization requires complete configuration and an exp
       LVBT_BEEHIIV_PUBLICATION_ID: 'pub_production',
     }),
   );
+});
+
+void test('API polling and account updates work on Free without optional webhook credentials', async () => {
+  const read = await runtime();
+  const base = {
+    LVBT_DEPLOYMENT_ENV: 'preview',
+    LVBT_BEEHIIV_SYNC_ENABLED: 'true',
+    LVBT_BEEHIIV_PUBLICATION_ID: 'pub_preview',
+    LVBT_BEEHIIV_PRODUCTION_PUBLICATION_ID: 'pub_production',
+    LVBT_BEEHIIV_API_KEY: 'fixture-only',
+    LVBT_NEWSLETTER_INTENT_KEY: randomToken(),
+  };
+  assert.ok(read(base));
+  for (const secret of ['', 'invalid', 'whsec_!', 'whsec_', `whsec_${btoa('fixture-only')}`])
+    assert.ok(read({ ...base, LVBT_BEEHIIV_WEBHOOK_SECRET: secret }));
 });

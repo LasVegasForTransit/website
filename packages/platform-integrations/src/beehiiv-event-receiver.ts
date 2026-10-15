@@ -2,7 +2,7 @@ import type { Db } from '@lasvegasfortransit/platform-storage/db';
 import { saveNewsletterEvent } from '@lasvegasfortransit/platform-storage/newsletter-inbound';
 import { newsletterEmailKey } from '@lasvegasfortransit/platform-storage/newsletter-work';
 import { beehiivRuntime, type BeehiivRuntimeEnv } from './beehiiv-runtime';
-import { readBeehiivWebhook } from './beehiiv-webhook';
+import { beehiivWebhookSecret, readBeehiivWebhook } from './beehiiv-webhook';
 import { NewsletterEventCipher } from './newsletter-event-cipher';
 
 export interface BeehiivEventRuntimeEnv extends BeehiivRuntimeEnv {
@@ -50,7 +50,7 @@ export async function receiveBeehiivEvent(
 ): Promise<number> {
   const runtime = beehiivRuntime(env),
     secret = env.LVBT_BEEHIIV_WEBHOOK_SECRET;
-  if (!runtime || !secret) return 503;
+  if (!runtime || !secret || !beehiivWebhookSecret(secret)) return 503;
   const result = await readBeehiivWebhook({
     ...input,
     secret,

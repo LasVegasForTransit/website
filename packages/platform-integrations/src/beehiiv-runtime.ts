@@ -1,5 +1,4 @@
 import type { BeehiivSyncOptions } from './beehiiv-sync';
-import { beehiivWebhookSecret } from './beehiiv-webhook';
 
 export interface BeehiivRuntimeEnv {
   LVBT_DEPLOYMENT_ENV?: string;
@@ -22,8 +21,7 @@ export function beehiivRuntime(env: BeehiivRuntimeEnv): BeehiivSyncOptions | nul
   if (
     env.LVBT_BEEHIIV_SYNC_ENABLED !== 'true' ||
     !publication(publicationId) ||
-    !publication(productionId) ||
-    !beehiivWebhookSecret(env.LVBT_BEEHIIV_WEBHOOK_SECRET)
+    !publication(productionId)
   )
     return null;
   if (environment !== 'preview' && environment !== 'production') return null;

@@ -122,3 +122,19 @@ void test('a failed inbox transaction is never acknowledged', async () => {
     db.raw.close();
   }
 });
+
+void test('API-only configuration never opens unsigned or malformed signed event intake', async () => {
+  const db = memoryDb();
+  try {
+    const env = environment(db);
+    for (const secret of [undefined, '', 'invalid', 'whsec_!', 'whsec_']) {
+      const configured = { ...env };
+      if (secret === undefined) Reflect.deleteProperty(configured, 'LVBT_BEEHIIV_WEBHOOK_SECRET');
+      else configured.LVBT_BEEHIIV_WEBHOOK_SECRET = secret;
+      assert.equal((await handleNewsletterEventRequest(message(), configured, now)).status, 503);
+    }
+    assert.equal(db.raw.prepare('SELECT count(*) AS n FROM newsletter_inbound_events').get()?.n, 0);
+  } finally {
+    db.raw.close();
+  }
+});

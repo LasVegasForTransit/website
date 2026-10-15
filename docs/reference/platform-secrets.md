@@ -216,7 +216,7 @@ setup, callback reachability, verification, and recovery before enabling synchro
 | Jobs setting                             | Storage         | Purpose                                                    |
 | ---------------------------------------- | --------------- | ---------------------------------------------------------- |
 | `LVBT_BEEHIIV_API_KEY`                   | Secret          | Read and update the selected publication's subscriptions.  |
-| `LVBT_BEEHIIV_WEBHOOK_SECRET`            | Secret          | Authenticate callbacks from that publication.              |
+| `LVBT_BEEHIIV_WEBHOOK_SECRET`            | Optional secret | Authenticate signed callbacks; not required on Free.       |
 | `LVBT_NEWSLETTER_INTENT_KEY`             | Secret          | Encrypt queued addresses and recover interrupted creation. |
 | `LVBT_BEEHIIV_PUBLICATION_ID`            | Source variable | Select this environment's publication.                     |
 | `LVBT_BEEHIIV_PRODUCTION_PUBLICATION_ID` | Source variable | Prevent preview from using production.                     |
@@ -226,7 +226,10 @@ The webhook and intent keys belong only on jobs. The website forwards signed cal
 its environment's private jobs binding. Keep all credential values out of GitHub release
 environments, build logs, and task descriptions. Retain the intent key until pending encrypted work
 is consumed or explicitly resolved; changing it does not re-encrypt stored work. A missing or
-malformed webhook secret prevents both incoming and outgoing scheduled processing.
+malformed webhook secret closes signed intake. API polling, outgoing requests, and processing of
+already authenticated saved events remain available with the required API and encryption settings.
+Keep newsletter work disabled until the Free-plan status handling, staff review and provider
+acceptance requirements pass; an API credential alone does not establish launch readiness.
 
 ### Random signing keys
 
