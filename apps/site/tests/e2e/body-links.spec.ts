@@ -879,6 +879,9 @@ test.describe('body content links', () => {
     await page.waitForLoadState('networkidle');
 
     const hasJoinSlide = (await page.locator('#qr-join').count()) > 0;
+    const joinDestination = hasJoinSlide
+      ? await page.locator('#qr-join').getAttribute('data-qr-url')
+      : undefined;
     const flyer = await page.evaluate(() => {
       const slide = document.querySelector<HTMLElement>('#qr-flyer');
       const flyer = document.querySelector<HTMLElement>('.qr-flyer');
@@ -907,7 +910,12 @@ test.describe('body content links', () => {
     expect(flyer.gridColumnCount).toBeGreaterThanOrEqual(2);
     expect(flyer.narrowestValue).toBeGreaterThanOrEqual(130);
     expect(flyer.text).toContain('lasvegasfortransit.org');
-    if (hasJoinSlide) expect(flyer.text).toContain('lasvegasfortransit.org/join/member');
+    if (hasJoinSlide)
+      expect(flyer.text).toContain(
+        joinDestination === `${SITE_URL}/join/member/`
+          ? 'lasvegasfortransit.org/join/member'
+          : 'lasvegasfortransit.org/join',
+      );
     expect(flyer.text).not.toContain(MEMBERSHIP_FORM_URL.replace(/^https?:\/\//, ''));
   });
 

@@ -46,6 +46,12 @@ export default defineConfig({
       use: { ...devices['Desktop Chrome'] },
     },
     {
+      name: 'hosted-acceptance',
+      testMatch: /hosted-acceptance\.spec\.ts$/,
+      retries: 0,
+      use: { ...devices['Desktop Chrome'], serviceWorkers: 'block' },
+    },
+    {
       name: 'mobile-portrait',
       testMatch: /screenshots\.spec\.ts$/,
       use: { ...devices['iPhone 14'], browserName: 'chromium' }, // viewport 390×664

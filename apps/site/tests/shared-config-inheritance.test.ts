@@ -27,6 +27,7 @@ void test('shared browser defaults retain product screenshot and credential boun
     config.projects?.map((project) => project.name),
     [
       'ui-contracts',
+      'hosted-acceptance',
       'mobile-portrait',
       'mobile-landscape',
       'tablet-portrait',
@@ -37,4 +38,11 @@ void test('shared browser defaults retain product screenshot and credential boun
       'perf-memory',
     ],
   );
+});
+
+void test('hosted acceptance cannot multiply its request budget through test retries', () => {
+  const hosted = config.projects?.find((project) => project.name === 'hosted-acceptance');
+  assert.ok(hosted, 'Publication needs a bounded hosted project.');
+  assert.equal(hosted.retries, 0);
+  assert.equal(hosted.use?.serviceWorkers, 'block');
 });

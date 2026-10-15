@@ -8,8 +8,17 @@ function sleep(ms: number): void {
   Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ms);
 }
 
-export function builtSitemapPaths(importMetaUrl: string): string[] {
-  const sitemapPath = resolve(dirname(fileURLToPath(importMetaUrl)), '../../dist/sitemap-0.xml');
+function builtAssetsDirectory(importMetaUrl: string): string {
+  return process.env.BUILT_ASSETS_DIRECTORY
+    ? resolve(process.env.BUILT_ASSETS_DIRECTORY)
+    : resolve(dirname(fileURLToPath(importMetaUrl)), '../../dist');
+}
+
+export function builtSitemapPaths(
+  importMetaUrl: string,
+  distDir = builtAssetsDirectory(importMetaUrl),
+): string[] {
+  const sitemapPath = resolve(distDir, 'sitemap-0.xml');
   const deadline = Date.now() + 5_000;
 
   while (!existsSync(sitemapPath) && Date.now() < deadline) {
@@ -49,8 +58,10 @@ function htmlFileToPath(filePath: string, distDir: string): string {
   return `/${relativePath}`;
 }
 
-export function builtHtmlPagePaths(importMetaUrl: string): string[] {
-  const distDir = resolve(dirname(fileURLToPath(importMetaUrl)), '../../dist');
+export function builtHtmlPagePaths(
+  importMetaUrl: string,
+  distDir = builtAssetsDirectory(importMetaUrl),
+): string[] {
   const sitemapPath = resolve(distDir, 'sitemap-0.xml');
   const deadline = Date.now() + 5_000;
 

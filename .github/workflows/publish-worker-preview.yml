@@ -22,5 +22,5 @@ jobs:
       acceptance-directory: apps/site
       smoke-script: worker:smoke
       browser-script: worker:test:browser
-      browser-project: ui-contracts
+      browser-project: hosted-acceptance
     secrets: inherit

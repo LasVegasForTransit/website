@@ -9,11 +9,16 @@ Use the pinned Node and pnpm versions, then run:
 
 ```sh
 pnpm bootstrap
+pnpm -C apps/site test:install
 pnpm check
 ```
 
 For interactive local inspection, run `pnpm -C apps/site worker:dev`. Local requests use local
 storage. Missing integration secrets intentionally return `503 service_unavailable`.
+
+`pnpm check` runs the exhaustive `ui-contracts` browser project against its own local compiled
+Worker. It overrides any remote `PLAYWRIGHT_BASE_URL`; a local check never traverses protected
+staging. To repeat just those contracts after a build, run `pnpm -C apps/site test:ui-contracts`.
 
 ## Configure protected staging
 
@@ -42,8 +47,8 @@ build receives no deployment credentials; the publisher uses only configuration 
 from `main`. It does not move the permanent preview site. Fork PRs receive no deployment secrets.
 
 Inspect phone and desktop layouts, navigation, nested routes, event calendars, and the branded 404
-page. Use test data for preview APIs. Browser contract checks run automatically through Access.
-Visual and accessibility audits also remain available through the ordinary audit workflow.
+page. Use test data for preview APIs. A representative browser check runs automatically through
+Access. Visual and accessibility audits also remain available through the ordinary audit workflow.
 
 ## Review staging
 
@@ -53,6 +58,48 @@ the domain currently serves; record its originating Actions run ID for promotion
 
 A new main build can replace this domain while review is ongoing. Review the version URL recorded in
 that run's upload step when you need to return to the selected build.
+
+Publication verification has fixed request allowances: 20 for candidate smoke, 64 for the
+representative browser test, and 32 for activated-origin smoke, totaling at most 116. Pull request
+publication omits activation, so its maximum is 84. The production workflow has four additional
+fixed precondition reads, giving a maximum of 120; `pnpm promote` adds one completion-marker read
+outside that workflow. Provider administration API calls are separate from Worker requests.
+
+The representative test checks the marker, loaded styles/scripts/fonts/images, mobile navigation, a
+nested page and the branded missing-page response. Test and network retries are disabled. Candidate
+smoke reads the marker once. Activated smoke allows at most five explicit marker reads over 20
+seconds, included in its 32-request allowance. Every browser resource and direct HTTP check uses the
+same counter for its stage. Unexpected browser redirects stop before another request.
+
+The required artifact-validation job downloads the single saved main or PR release and checks its
+identity and file hashes. It runs exhaustive local contracts against a byte-identical disposable
+copy of the packaged Worker, preview configuration and retained pages, then verifies both copies are
+unchanged. Main attestation waits for this check; the trusted PR publisher requires the entire PR
+build workflow to pass. This final gate rebuilds and repackages nothing.
+
+If acceptance reports an exceeded request ceiling, inspect the request counts in its Actions log
+(also saved as `hosted-request-budget` in the local browser report). Download and extract the
+selected retained release, then start its Worker in one terminal:
+
+```sh
+CLOUDFLARE_LOAD_DEV_VARS_FROM_DOT_ENV=false pnpm -C apps/site exec wrangler dev \
+  --config /absolute/path/to/retained-release/wrangler.jsonc --env preview --local --no-bundle --port 8787
+```
+
+Replace the example absolute path with the extracted release directory. In another terminal, run:
+
+```sh
+PLAYWRIGHT_BASE_URL=http://127.0.0.1:8787 pnpm -C apps/site test:e2e --project=hosted-acceptance
+```
+
+This uses local bindings and sends no acceptance traffic to Cloudflare. Stop the local Worker with
+Ctrl-C when finished. Fix the unexpected requests or broken asset; do not increase retries or weaken
+Access, cache protection or indexing protection. An exhausted shared Workers request allowance can
+also block the staff portal. Stop hosted checks until the allowance resets or the account's capacity
+is deliberately changed, then rerun only the failed publication job. Do not rebuild an already
+retained release or dispatch repeated publication attempts. If activation already happened, inspect
+the publication receipt and current marker before retrying; see the
+[production publication reference](../reference/deployment-pipeline.md#production-promotion).
 
 ## Publish the reviewed release
 

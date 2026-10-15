@@ -31,6 +31,7 @@
     "roster:normalize": "tsx scripts/platform/normalize-roster.ts",
     "discord:register-link": "tsx scripts/discord/register-link-command.ts",
     "validate": "tsx scripts/audit/worker-parity.ts",
+    "test:ui-contracts": "tsx scripts/audit/local-ui-contracts.ts",
     "astro": "astro",
     "setup:notion": "tsx scripts/notion/provision-intake-db.ts",
     "add:transit-news": "tsx scripts/notion/add-transit-news.ts",

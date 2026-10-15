@@ -43,6 +43,9 @@ jobs:
       - name: Setup Node + pnpm
         uses: ./.github/actions/setup-node-pnpm
 
+      - name: Install validation browser
+        run: pnpm --dir apps/site exec playwright install --with-deps chromium
+
       - name: Check
         run: pnpm check
 

@@ -6,6 +6,7 @@ import {
   accessCredentials,
   accessRequestOptions,
 } from '../scripts/deploy/access-auth';
+import { scopedAccessRequest } from '../scripts/deploy/access-browser';
 import { deploymentResponse } from '../functions/_middleware';
 
 void test('Access headers are supplied only to the configured HTTPS origin', () => {
@@ -70,4 +71,44 @@ void test('the same production analytics bundle stays disabled on every preview 
     assert.equal(shouldEnable({ ...input, hostname }).enabled, false);
   }
   assert.equal(shouldEnable({ ...input, hostname: 'lasvegasfortransit.org' }).enabled, true);
+});
+
+void test('the browser API fixture preserves analytics methods and bodies with origin-scoped Access', async () => {
+  const calls: { url: unknown; options: unknown }[] = [];
+  const request = {
+    get: (url: string, options: unknown) => {
+      calls.push({ url, options });
+      return Promise.resolve();
+    },
+    fetch: (url: string, options: unknown) => {
+      calls.push({ url, options });
+      return Promise.resolve();
+    },
+  } as unknown as Parameters<typeof scopedAccessRequest>[0];
+  const scoped = scopedAccessRequest(request, 'https://preview.lasvegasfortransit.org', {
+    clientId: 'test-id',
+    clientSecret: 'test-secret',
+  });
+  await scoped.fetch('/event', { method: 'POST', data: 'analytics', maxRetries: 0 });
+  await scoped.fetch('https://events.lasvegasfortransit.org/event', { method: 'OPTIONS' });
+  assert.deepEqual(calls, [
+    {
+      url: 'https://preview.lasvegasfortransit.org/event',
+      options: {
+        method: 'POST',
+        data: 'analytics',
+        maxRetries: 0,
+        maxRedirects: 0,
+        headers: { 'CF-Access-Client-Id': 'test-id', 'CF-Access-Client-Secret': 'test-secret' },
+      },
+    },
+    {
+      url: 'https://events.lasvegasfortransit.org/event',
+      options: {
+        method: 'OPTIONS',
+        maxRedirects: 0,
+        headers: {},
+      },
+    },
+  ]);
 });

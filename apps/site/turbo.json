@@ -43,6 +43,14 @@
       "dependsOn": ["build"],
       "outputs": [".wrangler/deploy-dry-run/**"]
     },
+    "test:e2e": {
+      "passThroughEnv": ["RELEASE_ID", "RELEASE_COMMIT", "BUILT_ASSETS_DIRECTORY"]
+    },
+    "test:ui-contracts": {
+      "dependsOn": ["build"],
+      "inputs": ["$TURBO_DEFAULT$", "dist/**", ".wrangler/worker/**"],
+      "outputs": []
+    },
     "roster:export": {
       "cache": false,
       "passThroughEnv": [
