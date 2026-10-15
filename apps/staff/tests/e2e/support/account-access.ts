@@ -140,8 +140,13 @@ export async function exerciseAccountAccess(page: Page, fixture: Fixture) {
 export async function exerciseLeadAccountAccess(page: Page, fixture: Fixture) {
   await page.goto(`${ORIGIN}/access/?person=${fixture.inside.id}`);
   const accounts = page.getByRole('region', { name: 'Accounts', exact: true });
-  assert.equal(await accounts.locator('.staff-account-row').count(), 2);
+  await accounts.locator('summary').first().click();
+  assert.equal(await accounts.locator('.staff-account-row').count(), 1);
   assert.equal(await accounts.getByRole('button', { name: 'Try again', exact: true }).count(), 0);
   assert.equal(await accounts.getByText('Remove from committee', { exact: true }).count(), 0);
   assert.equal((await accounts.innerText()).includes('Advocacy Team'), false);
+  assert.equal(
+    await page.getByRole('link', { name: 'Download member record', exact: true }).count(),
+    0,
+  );
 }

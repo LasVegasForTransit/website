@@ -7,6 +7,7 @@ import {
   type DiscordRuntimeEnv,
 } from '@lasvegasfortransit/platform-integrations/discord-runtime';
 import { membershipStep, canContinueMembership, type ScheduledBudget } from './scheduled-budget';
+import { memberPrivacySchedule } from '@lasvegasfortransit/platform-storage/member-privacy-schedule';
 
 interface EnabledProviders {
   discord: boolean;
@@ -44,12 +45,16 @@ async function scanProviders(
 async function processIncoming(
   context: ExecutionContext,
   budget: ScheduledBudget,
+  polled = false,
 ): Promise<boolean> {
   for (let batch = 0; batch < 6 && canContinueMembership(budget); batch++) {
     const result = await membershipStep(
       budget,
-      'newsletter_incoming',
-      async () => await context.exports.NewsletterIncoming.run(),
+      polled ? 'newsletter_poll_choices' : 'newsletter_incoming',
+      async () =>
+        polled
+          ? await context.exports.NewsletterPollingChoices.run()
+          : await context.exports.NewsletterIncoming.run(),
     );
     if (!result || result.kind === 'failed') return true;
     if (result.kind === 'idle' || !result.more) break;
@@ -79,6 +84,17 @@ async function runAccount(context: ExecutionContext, newsletter: boolean, budget
   };
 }
 
+async function processProviderQueues(
+  context: ExecutionContext,
+  enabled: EnabledProviders,
+  budget: ScheduledBudget,
+) {
+  const incomingFailed = enabled.newsletter ? await processIncoming(context, budget) : false;
+  const newsletterReady = enabled.newsletter;
+  const scanFailed = await scanProviders(context, enabled, budget);
+  const pollingFailed = newsletterReady ? await processIncoming(context, budget, true) : false;
+  return [incomingFailed, scanFailed, pollingFailed].some(Boolean);
+}
 export async function runScheduledMembership(
   controller: ScheduledController,
   env: Env & BeehiivRuntimeEnv & DiscordRuntimeEnv,
@@ -92,13 +108,17 @@ export async function runScheduledMembership(
   const profiles = await membershipStep(budget, 'profile_maintenance', () =>
     context.exports.ProfileMaintenance.run(controller.scheduledTime),
   );
+  const inactive = memberPrivacySchedule(new Date(controller.scheduledTime))
+    ? await membershipStep(budget, 'inactive_profile_maintenance', () =>
+        context.exports.InactiveProfileMaintenance.run(controller.scheduledTime),
+      )
+    : true;
   const enabled = {
     discord: Boolean(discordRuntime(env)),
     newsletter: Boolean(beehiivRuntime(env)),
   };
-  const incomingFailed = enabled.newsletter ? await processIncoming(context, budget) : false;
-  const scanFailed = await scanProviders(context, enabled, budget);
-  let failed = incomingFailed || scanFailed || !records || !profiles;
+  const queueFailed = await processProviderQueues(context, enabled, budget);
+  let failed = queueFailed || !records || !profiles || !inactive;
   for (
     let slot = 0;
     canContinueMembership(budget) && (enabled.discord || enabled.newsletter);

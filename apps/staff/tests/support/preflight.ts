@@ -53,10 +53,20 @@ function bindings(path: string, mode: Mode) {
           LVBT_BEEHIIV_SYNC_ENABLED: 'false',
           LVBT_BEEHIIV_PUBLICATION_ID: '',
           LVBT_BEEHIIV_PRODUCTION_PUBLICATION_ID: '',
+          LVBT_BEEHIIV_CONFLICT_POLICY: '',
         }
       : {}),
   };
   return [
+    ...(!path.includes('jobs')
+      ? [
+          {
+            type: 'service',
+            name: 'LVBT_NEWSLETTER_JOBS',
+            service: mode.productionDiscord ? 'lvbt-jobs' : 'lvbt-jobs-preview',
+          },
+        ]
+      : []),
     {
       type: 'd1',
       name: 'PLATFORM_DB',

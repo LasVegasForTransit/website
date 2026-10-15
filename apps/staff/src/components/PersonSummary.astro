@@ -4,10 +4,8 @@ import { t, formatFullDate } from '@lasvegasfortransit/platform-core/messages';
 import { MEMBERSHIP_LABELS } from '../lib/people';
 interface Props {
   profile: StaffPerson;
-  discordConnected: boolean;
-  discordStatus: string;
 }
-const { profile, discordConnected, discordStatus } = Astro.props;
+const { profile } = Astro.props;
 const newsletter = profile.consents.filter((consent) => consent.scope === 'newsletter');
 const active = newsletter.filter((consent) => consent.withdrawn_at === null);
 const since = active
@@ -15,76 +13,32 @@ const since = active
   .filter((date) => Number.isFinite(Date.parse(date)))
   .sort((a, b) => Date.parse(a) - Date.parse(b))[0];
 const left = newsletter
-  .flatMap((consent) => (consent.withdrawn_at ? [consent.withdrawn_at] : []))
-  .filter((date) => Number.isFinite(Date.parse(date)))
-  .sort((a, b) => Date.parse(b) - Date.parse(a))[0];
-const date = profile.person.membership_status === 'member' ? since : left;
-const lastActivity = profile.counts.last_engaged_at;
+  .filter((consent) => consent.withdrawn_at && Number.isFinite(Date.parse(consent.withdrawn_at)))
+  .sort((a, b) => Date.parse(b.withdrawn_at!) - Date.parse(a.withdrawn_at!))[0];
 const membershipLabel = MEMBERSHIP_LABELS[profile.person.membership_status];
-const membershipClass =
+const date = profile.person.membership_status === 'member' ? since : left?.withdrawn_at;
+const explanation =
   profile.person.membership_status === 'member'
-    ? 'staff-access-status staff-access-status-confirmed'
-    : 'staff-access-status';
-const membershipDate = date
-  ? profile.person.membership_status === 'member'
-    ? t('staff.profile.memberSince', { date: formatFullDate(new Date(date)) })
-    : t('staff.profile.leftOn', { date: formatFullDate(new Date(date)) })
-  : t('staff.profile.dateNotRecorded');
-const mailingStatus = active.length
-  ? t('staff.profile.mailingSignedUp')
-  : newsletter.length
-    ? t('staff.profile.mailingLeft')
-    : t('staff.profile.mailingUnknown');
+    ? since
+      ? t('staff.profile.memberSince', { date: formatFullDate(new Date(since)) })
+      : t('staff.profile.memberUpdates')
+    : profile.person.membership_status === 'former_member'
+      ? left?.withdrawn_at
+        ? left.withdrawn_time_basis === 'observed'
+          ? t('staff.profile.unsubscribeRecorded', {
+              date: formatFullDate(new Date(left.withdrawn_at)),
+            })
+          : t('staff.profile.unsubscribedOn', {
+              date: formatFullDate(new Date(left.withdrawn_at)),
+            })
+        : t('staff.profile.formerUpdates')
+      : t('staff.profile.noSignup');
 ---
 
-<section aria-label={t('staff.profile.summary')} class="staff-profile-summary">
-  <dl class="staff-profile-facts">
-    <div>
-      <dt>{t('staff.profile.membership')}</dt>
-      <dd><strong class={membershipClass}>{membershipLabel}</strong></dd>
-      {
-        profile.person.membership_status !== 'not_member' && (
-          <dd class="staff-profile-fact-note">
-            {date ? <time datetime={date}>{membershipDate}</time> : membershipDate}
-          </dd>
-        )
-      }
-    </div>
-    <div>
-      <dt>{t('staff.labels.newsletter')}</dt>
-      <dd>
-        <strong>{mailingStatus}</strong>
-      </dd>
-    </div>
-    <div>
-      <dt>{t('staff.profile.lastActivity')}</dt>
-      <dd>
-        {
-          lastActivity ? (
-            <time datetime={lastActivity}>{formatFullDate(new Date(lastActivity))}</time>
-          ) : (
-            t('staff.record.noActivity')
-          )
-        }
-      </dd>
-      {
-        profile.counts.attended_total > 0 && (
-          <dd class="staff-profile-fact-note">
-            {t('staff.profile.attended', { count: profile.counts.attended_total })}
-          </dd>
-        )
-      }
-    </div>
-    <div>
-      <dt>{t('staff.common.discord')}</dt>
-      <dd><strong>{discordConnected ? discordStatus : t('staff.profile.notConnected')}</strong></dd>
-      {
-        discordConnected && (
-          <dd class="staff-profile-fact-note">
-            <a href="#accounts">{t('staff.profile.checkAccess')}</a>
-          </dd>
-        )
-      }
-    </div>
-  </dl>
+<section aria-label={t('staff.profile.summary')} class="staff-member-membership">
+  <h2>{t('staff.profile.membership')}</h2>
+  <p class="staff-membership-state"><strong>{membershipLabel}</strong></p>
+  <p class="staff-membership-explanation">
+    {date ? <time datetime={date}>{explanation}</time> : explanation}
+  </p>
 </section>

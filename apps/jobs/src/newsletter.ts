@@ -6,6 +6,7 @@ import {
 import { pollBeehiivRoster } from '@lasvegasfortransit/platform-integrations/beehiiv-poll';
 import { reconcileBeehiivPerson } from '@lasvegasfortransit/platform-integrations/beehiiv-sync';
 import { processNewsletterSourceEvents } from '@lasvegasfortransit/platform-integrations/newsletter-source-processor';
+import { PersonService } from '@lasvegasfortransit/platform-storage/person-service';
 import { pendingNewsletterPeople } from '@lasvegasfortransit/platform-storage/newsletter-sync-store';
 import { newsletterPause } from '@lasvegasfortransit/platform-storage/newsletter-work';
 import {
@@ -58,6 +59,32 @@ export class NewsletterIncoming extends WorkerEntrypoint<Env & BeehiivRuntimeEnv
       const result = await processNewsletterSourceEvents(budget.db, {
         publicationId: runtime.configuration.publicationId,
         intentKey: runtime.intentKey,
+        now: new Date(),
+      });
+      return { ...result, queries: budget.queries };
+    } catch (error) {
+      return {
+        kind: 'failed' as const,
+        queries: budget.queries,
+        more: false,
+        failure: error instanceof QueryBudgetExceeded ? 'query_budget' : 'storage_error',
+      };
+    }
+  }
+}
+
+export class NewsletterPollingChoices extends WorkerEntrypoint<Env & BeehiivRuntimeEnv> {
+  async run() {
+    const env: BeehiivRuntimeEnv = this.env;
+    const runtime = beehiivRuntime(env),
+      policy = env.LVBT_BEEHIIV_CONFLICT_POLICY;
+    if (!runtime || (policy !== 'keep_unsubscribed' && policy !== 'staff_review'))
+      return { kind: 'idle' as const, queries: 0, more: false };
+    const budget = queryBudget(this.env.PLATFORM_DB, 50);
+    try {
+      const result = await new PersonService(budget.db).processNewsletterPollChoices({
+        publicationId: runtime.configuration.publicationId,
+        policy,
         now: new Date(),
       });
       return { ...result, queries: budget.queries };

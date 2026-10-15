@@ -183,6 +183,16 @@ const hasMemberTasks =
                 <a href="/review/">{t('staff.people.duplicates')}</a>
               </li>
             )}
+            {staff.actor.staffAdmin && (
+              <li>
+                <a href="/newsletter/">Newsletter follow-up</a>
+              </li>
+            )}
+            {staff.actor.staffAdmin && (
+              <li>
+                <a href="/offboarding/">Google accounts to review</a>
+              </li>
+            )}
             {can(staff.actor, 'access.view') && (
               <li>
                 <a href="/access/">{t('staff.people.checkAccess')}</a>

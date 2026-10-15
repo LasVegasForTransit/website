@@ -5,7 +5,12 @@ import { runScheduledMembership } from '../src/scheduled';
 function fixture(
   failedStep?: string,
   onStep?: (name: string) => void,
-  options: { busyInbox?: boolean; scanComplete?: boolean; paused?: boolean } = {},
+  options: {
+    busyInbox?: boolean;
+    scanComplete?: boolean;
+    paused?: boolean;
+    scheduledTime?: number;
+  } = {},
 ) {
   const visits: string[] = [];
   const step = (name: string, result: object) => ({
@@ -21,6 +26,7 @@ function fixture(
     exports: {
       StaffMaintenance: step('records', {}),
       ProfileMaintenance: step('profiles', {}),
+      InactiveProfileMaintenance: step('inactive_profiles', {}),
       ProviderCompletion: step('completion', {}),
       DiscordScan: step('discord_scan', {}),
       NewsletterScan: step('newsletter_scan', {
@@ -31,6 +37,7 @@ function fixture(
         kind: options.busyInbox ? 'progress' : 'idle',
         more: options.busyInbox ?? false,
       }),
+      NewsletterPollingChoices: step('newsletter_poll_choices', { kind: 'idle', more: false }),
       DiscordAccount: step('discord_account', { selected: 1, failed: false, paused: false }),
       NewsletterAccount: step('newsletter_account', { kind: 'progress', paused: false }),
     },
@@ -50,9 +57,21 @@ function fixture(
     LVBT_NEWSLETTER_INTENT_KEY: 'a'.repeat(43),
     LVBT_BEEHIIV_WEBHOOK_SECRET: `whsec_${btoa('fixture-event-key-only')}`,
   } as unknown as Env;
-  const controller = { scheduledTime: Date.now() } as ScheduledController;
+  const controller = { scheduledTime: options.scheduledTime ?? Date.now() } as ScheduledController;
   return { visits, run: () => runScheduledMembership(controller, env, context) };
 }
+void test('daily privacy work starts at03:00 Pacific and remains inside the invocation allowance', async () => {
+  for (const [time, expected] of [
+    ['2026-10-14T09:59:00Z', false],
+    ['2026-10-14T10:00:00Z', true],
+  ] as const) {
+    const f = fixture(undefined, undefined, { scheduledTime: Date.parse(time) });
+    await f.run();
+    assert.equal(f.visits.includes('inactive_profiles'), expected);
+    assert.ok(f.visits.length + 1 <= 32);
+    assert.equal(f.visits.at(-1), 'completion');
+  }
+});
 
 void test('both busy providers get work within the 32-invocation request limit', async () => {
   const f = fixture();

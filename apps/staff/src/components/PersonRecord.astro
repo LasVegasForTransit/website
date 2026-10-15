@@ -42,10 +42,14 @@ const { consents, identities, events, fieldSources } = profile;
                 )}
                 {consent.withdrawn_at && (
                   <p class="text-body-sm">
-                    {t('staff.record.withdrawn', {
-                      date: formatFullDate(new Date(consent.withdrawn_at)),
-                      source: displayLabel(consent.withdrawn_source ?? 'unknown'),
-                    })}
+                    {consent.withdrawn_time_basis === 'observed'
+                      ? t('staff.record.withdrawalRecorded', {
+                          date: formatFullDate(new Date(consent.withdrawn_at)),
+                        })
+                      : t('staff.record.withdrawn', {
+                          date: formatFullDate(new Date(consent.withdrawn_at)),
+                          source: displayLabel(consent.withdrawn_source ?? 'unknown'),
+                        })}
                   </p>
                 )}
               </li>
@@ -90,7 +94,12 @@ const { consents, identities, events, fieldSources } = profile;
           <ol class="mt-3 space-y-3">
             {events.items.map((event) => (
               <li>
-                <strong>{displayLabel(event.type)}</strong> ·{' '}
+                <strong>
+                  {event.type === 'unsubscribed' && event.source === 'beehiiv_observed'
+                    ? t('staff.record.unsubscribeRecorded')
+                    : displayLabel(event.type)}
+                </strong>{' '}
+                ·{' '}
                 <time datetime={event.occurred_at}>
                   {formatFullDate(new Date(event.occurred_at))}
                 </time>

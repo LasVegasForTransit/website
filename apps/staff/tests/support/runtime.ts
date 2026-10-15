@@ -6,6 +6,7 @@ import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { DatabaseSync } from 'node:sqlite';
 import { Miniflare, Response as RuntimeResponse, convertV4MiniflareOptions } from 'miniflare';
+import { newsletterRuntime } from './newsletter-runtime';
 import { exportJWK, generateKeyPair, SignJWT } from 'jose';
 import { applyMigrations } from '@lasvegasfortransit/platform-storage/test-db';
 import { ulid } from '@lasvegasfortransit/platform-core/ids';
@@ -53,6 +54,7 @@ function seedRoster(raw: DatabaseSync) {
   }
 }
 interface RuntimeOptions {
+  newsletter?: boolean;
   discord?: boolean;
   googleGroups?: boolean;
   initialAdminSetup?: boolean;
@@ -95,84 +97,89 @@ async function startRuntimeInternal(options: RuntimeOptions = {}) {
     path: join(server, file),
   }));
   const simulator = new Miniflare(
-    convertV4MiniflareOptions({
-      host: '127.0.0.1',
-      port: 0,
-      https: true,
-      httpsKey,
-      httpsCert,
-      name: 'lvbt-staff-browser-fixture',
-      modules,
-      modulesRoot: server,
-      compatibilityDate: '2026-09-04',
-      compatibilityFlags: ['nodejs_compat'],
-      resourcePersistencePath: data,
-      cf: false,
-      telemetry: { enabled: false },
-      bindings: {
-        LVBT_SIGN_IN_SECRET: 'local-browser-fixture-only',
-        LVBT_ACCESS_TEAM_DOMAIN: 'lvbt.cloudflareaccess.com',
-        LVBT_ACCESS_AUD: 'browser-fixture-app',
-        ...(options.googleOAuth
-          ? {
-              LVBT_GOOGLE_OAUTH_CLIENT_ID: 'google-runtime-fixture',
-              LVBT_GOOGLE_OAUTH_CLIENT_SECRET: 'google-runtime-fixture-secret',
+    convertV4MiniflareOptions(
+      newsletterRuntime(
+        {
+          host: '127.0.0.1',
+          port: 0,
+          https: true,
+          httpsKey,
+          httpsCert,
+          name: 'lvbt-staff-browser-fixture',
+          modules,
+          modulesRoot: server,
+          compatibilityDate: '2026-09-04',
+          compatibilityFlags: ['nodejs_compat'],
+          resourcePersistencePath: data,
+          cf: false,
+          telemetry: { enabled: false },
+          bindings: {
+            LVBT_SIGN_IN_SECRET: 'local-browser-fixture-only',
+            LVBT_ACCESS_TEAM_DOMAIN: 'lvbt.cloudflareaccess.com',
+            LVBT_ACCESS_AUD: 'browser-fixture-app',
+            ...(options.googleOAuth
+              ? {
+                  LVBT_GOOGLE_OAUTH_CLIENT_ID: 'google-runtime-fixture',
+                  LVBT_GOOGLE_OAUTH_CLIENT_SECRET: 'google-runtime-fixture-secret',
+                }
+              : {}),
+            ...(options.initialAdminSetup
+              ? { LVBT_INITIAL_STAFF_ADMIN_WORKSPACE_EMAIL: 'admin@lasvegasfortransit.org' }
+              : {}),
+            ...(options.googleGroups
+              ? {
+                  LVBT_DEPLOYMENT_ENV: 'preview',
+                  LVBT_GOOGLE_ACCESS_OBSERVATIONS_ENABLED: 'true',
+                  LVBT_GOOGLE_CUSTOMER_ID: 'Cfixture',
+                  LVBT_GOOGLE_PRODUCTION_CUSTOMER_ID: 'Cfixture',
+                  LVBT_GOOGLE_MANAGED_GROUPS: '["preview-events@lasvegasfortransit.org"]',
+                  LVBT_GOOGLE_PRODUCTION_GROUPS: '["events@lasvegasfortransit.org"]',
+                  LVBT_GOOGLE_CONSOLE_GROUP_EMAIL: 'console-users@lasvegasfortransit.org',
+                }
+              : {}),
+            ...(options.discord
+              ? {
+                  LVBT_DEPLOYMENT_ENV: 'preview',
+                  LVBT_DISCORD_SYNC_ENABLED: 'true',
+                  LVBT_DISCORD_APPLICATION_ID: '555555555555555555',
+                  LVBT_DISCORD_GUILD_ID: '111111111111111111',
+                  LVBT_DISCORD_PRODUCTION_GUILD_ID: '999999999999999999',
+                  LVBT_DISCORD_MEMBER_ROLE_ID: '333333333333333333',
+                }
+              : {}),
+          },
+          d1Databases: { PLATFORM_DB: 'browser-fixture-db' },
+          assets: {
+            directory: join(root, 'dist/client'),
+            binding: 'ASSETS',
+            run_worker_first: true,
+            routerConfig: { has_user_worker: true },
+          },
+          outboundService: async (request) => {
+            if (options.googleOAuth && request.url === 'https://oauth2.googleapis.com/token') {
+              const form = new URLSearchParams(await request.text());
+              assert.equal(form.get('client_id'), 'google-runtime-fixture');
+              assert.equal(form.get('client_secret'), 'google-runtime-fixture-secret');
+              assert.equal(form.get('grant_type'), 'authorization_code');
+              assert.ok(form.get('code_verifier'));
+              return new RuntimeResponse(
+                JSON.stringify({ id_token: await options.googleOAuth.token() }),
+                { headers: { 'Content-Type': 'application/json' } },
+              );
             }
-          : {}),
-        ...(options.initialAdminSetup
-          ? { LVBT_INITIAL_STAFF_ADMIN_WORKSPACE_EMAIL: 'admin@lasvegasfortransit.org' }
-          : {}),
-        ...(options.googleGroups
-          ? {
-              LVBT_DEPLOYMENT_ENV: 'preview',
-              LVBT_GOOGLE_ACCESS_OBSERVATIONS_ENABLED: 'true',
-              LVBT_GOOGLE_CUSTOMER_ID: 'Cfixture',
-              LVBT_GOOGLE_PRODUCTION_CUSTOMER_ID: 'Cfixture',
-              LVBT_GOOGLE_MANAGED_GROUPS: '["preview-events@lasvegasfortransit.org"]',
-              LVBT_GOOGLE_PRODUCTION_GROUPS: '["events@lasvegasfortransit.org"]',
-              LVBT_GOOGLE_CONSOLE_GROUP_EMAIL: 'console-users@lasvegasfortransit.org',
-            }
-          : {}),
-        ...(options.discord
-          ? {
-              LVBT_DEPLOYMENT_ENV: 'preview',
-              LVBT_DISCORD_SYNC_ENABLED: 'true',
-              LVBT_DISCORD_APPLICATION_ID: '555555555555555555',
-              LVBT_DISCORD_GUILD_ID: '111111111111111111',
-              LVBT_DISCORD_PRODUCTION_GUILD_ID: '999999999999999999',
-              LVBT_DISCORD_MEMBER_ROLE_ID: '333333333333333333',
-            }
-          : {}),
-      },
-      d1Databases: { PLATFORM_DB: 'browser-fixture-db' },
-      assets: {
-        directory: join(root, 'dist/client'),
-        binding: 'ASSETS',
-        run_worker_first: true,
-        routerConfig: { has_user_worker: true },
-      },
-      outboundService: async (request) => {
-        if (options.googleOAuth && request.url === 'https://oauth2.googleapis.com/token') {
-          const form = new URLSearchParams(await request.text());
-          assert.equal(form.get('client_id'), 'google-runtime-fixture');
-          assert.equal(form.get('client_secret'), 'google-runtime-fixture-secret');
-          assert.equal(form.get('grant_type'), 'authorization_code');
-          assert.ok(form.get('code_verifier'));
-          return new RuntimeResponse(
-            JSON.stringify({ id_token: await options.googleOAuth.token() }),
-            { headers: { 'Content-Type': 'application/json' } },
-          );
-        }
-        if (options.googleOAuth && request.url === 'https://www.googleapis.com/oauth2/v3/certs')
-          return new RuntimeResponse(JSON.stringify({ keys: [options.googleOAuth.key] }), {
-            headers: { 'Content-Type': 'application/json' },
-          });
-        assert.equal(request.url, 'https://lvbt.cloudflareaccess.com/cdn-cgi/access/certs');
-        return new RuntimeResponse(JSON.stringify({ keys: [jwk] }), {
-          headers: { 'Content-Type': 'application/json' },
-        });
-      },
-    }),
+            if (options.googleOAuth && request.url === 'https://www.googleapis.com/oauth2/v3/certs')
+              return new RuntimeResponse(JSON.stringify({ keys: [options.googleOAuth.key] }), {
+                headers: { 'Content-Type': 'application/json' },
+              });
+            assert.equal(request.url, 'https://lvbt.cloudflareaccess.com/cdn-cgi/access/certs');
+            return new RuntimeResponse(JSON.stringify({ keys: [jwk] }), {
+              headers: { 'Content-Type': 'application/json' },
+            });
+          },
+        },
+        options.newsletter,
+      ),
+    ),
   );
   try {
     const db = await simulator.getD1Database('PLATFORM_DB');

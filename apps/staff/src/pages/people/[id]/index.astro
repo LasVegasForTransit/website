@@ -19,7 +19,6 @@ import { submitCommittee, type CommitteeFeedback } from '../../../lib/committees
 import { messageResponse } from '../../../lib/responses';
 import { can, PermissionDenied } from '@lasvegasfortransit/platform-core/permissions';
 import { rosterReturn } from '../../../lib/roster-return';
-import { rosterDetails } from '@lasvegasfortransit/platform-storage/roster-details';
 const staff = Astro.locals.staff;
 if (!staff) return messageResponse(t('staff.common.accessDenied'), 403);
 const returnTo = rosterReturn(Astro.url.searchParams.get('return_to'));
@@ -57,12 +56,7 @@ if (Astro.request.method === 'POST') {
   }
 }
 const { person } = profile;
-const roster = (
-  await rosterDetails(staff.db, staff.actor, [person.id], {
-    configuration: staff.accessConfiguration ?? {},
-  })
-).get(person.id);
-const discordConnected = roster?.discordConnected ?? false;
+const discordConnected = profile.identities.some((identity) => identity.platform === 'discord');
 let accountAccess, server;
 try {
   accountAccess = await listAccess(staff.db, staff.actor, {
@@ -88,12 +82,6 @@ try {
 const nextAccess = new URL(Astro.url);
 if (accountAccess.nextCursor)
   nextAccess.searchParams.set('access_cursor', accountAccess.nextCursor);
-const discordPresence =
-  roster?.discordInServer === true
-    ? t('staff.people.discordPresent')
-    : roster?.discordInServer === false
-      ? t('staff.people.discordAbsent')
-      : t('staff.profile.serverNotChecked');
 const combinations = await personMerges(staff.db, staff.actor, person.id);
 let providerHistory;
 if (can(staff.actor, 'access.recover')) {
@@ -116,17 +104,22 @@ if (can(staff.actor, 'access.recover')) {
   <a slot="breadcrumb" href={returnTo ?? '/people/'} class="staff-back"
     >{t('staff.navigation.backMembers')}</a
   >
-  {
-    can(staff.actor, 'person.update') && (
-      <a
-        slot="heading-meta"
-        href={`/people/${person.id}/edit/${returnQuery}`}
-        class="staff-edit-link"
-      >
-        {t('staff.profile.edit')}
-      </a>
-    )
-  }
+  <div slot="heading-meta" class="staff-profile-actions">
+    {
+      can(staff.actor, 'person.update') && (
+        <a href={`/people/${person.id}/edit/${returnQuery}`} class="staff-edit-link">
+          {t('staff.profile.edit')}
+        </a>
+      )
+    }
+    {
+      can(staff.actor, 'export.full') && (
+        <a href={`/people/${person.id}/data/`} class="staff-edit-link">
+          {t('staff.profile.downloadRecord')}
+        </a>
+      )
+    }
+  </div>
   {
     profile.mergeNotice && (
       <p role="status" class="staff-record-notice">
@@ -136,114 +129,117 @@ if (can(staff.actor, 'access.recover')) {
       </p>
     )
   }
-  <PersonSummary
-    profile={profile}
-    discordConnected={discordConnected}
-    discordStatus={discordPresence}
-  />
-  <div class="staff-profile">
-    <section aria-labelledby="contact-heading">
-      <h2 id="contact-heading">{t('staff.profile.contact')}</h2>
-      <dl class="staff-contact-details">
-        <div>
-          <dt>{t('staff.common.email')}</dt><dd>
-            {
-              person.email ? (
+  <div class="staff-member-profile">
+    <PersonSummary profile={profile} />
+    <div class="staff-profile">
+      <section aria-labelledby="contact-heading">
+        <h2 id="contact-heading">{t('staff.profile.contact')}</h2>
+        <dl class="staff-contact-details">
+          <div>
+            <dt>{t('staff.common.email')}</dt><dd>
+              {
+                person.email ? (
+                  <>
+                    <a href={`mailto:${person.email}`}>{person.email}</a>
+                    {profile.emailVerified && (
+                      <span class="staff-email-confirmed">{t('staff.profile.emailConfirmed')}</span>
+                    )}
+                  </>
+                ) : (
+                  t('staff.profile.noEmail')
+                )
+              }
+            </dd>
+          </div>
+          {
+            person.phone && (
+              <div>
                 <>
-                  <a href={`mailto:${person.email}`}>{person.email}</a>
-                  {profile.emailVerified && (
-                    <span class="staff-email-confirmed">{t('staff.profile.emailConfirmed')}</span>
-                  )}
+                  <dt>{t('staff.common.phone')}</dt>
+                  <dd>
+                    <a href={`tel:${person.phone}`}>{formatPhone(person.phone)}</a>
+                  </dd>
                 </>
-              ) : (
-                t('staff.profile.noEmail')
-              )
-            }
-          </dd>
-        </div>
+              </div>
+            )
+          }
+          {
+            person.zip && (
+              <div>
+                <>
+                  <dt>{t('staff.profile.location')}</dt>
+                  <dd>
+                    {person.zip}
+                    {(regionName(person.region_id) ?? person.place_name) &&
+                      ` · ${regionName(person.region_id) ?? person.place_name}`}
+                  </dd>
+                </>
+              </div>
+            )
+          }
+          {
+            person.preferred_language !== 'en' && (
+              <div>
+                <>
+                  <dt>{t('staff.profile.language')}</dt>
+                  <dd>{languageLabel(person.preferred_language)}</dd>
+                </>
+              </div>
+            )
+          }
+        </dl>
+      </section>
+      <div class="staff-profile-involvement">
+        <PersonCommittees profile={profile} feedback={feedback} />
         {
-          person.phone && (
-            <div>
-              <>
-                <dt>{t('staff.common.phone')}</dt>
-                <dd>
-                  <a href={`tel:${person.phone}`}>{formatPhone(person.phone)}</a>
-                </dd>
-              </>
-            </div>
+          server && (
+            <MemberAccess
+              member={server}
+              committees={accountAccess.items}
+              discordConnected={discordConnected}
+              feedback={accessFeedback}
+              nextHref={
+                accountAccess.nextCursor
+                  ? nextAccess.pathname + nextAccess.search + '#accounts'
+                  : undefined
+              }
+            />
           )
         }
-        {
-          person.zip && (
-            <div>
-              <>
-                <dt>{t('staff.profile.location')}</dt>
-                <dd>
-                  {person.zip}
-                  {(regionName(person.region_id) ?? person.place_name) &&
-                    ` · ${regionName(person.region_id) ?? person.place_name}`}
-                </dd>
-              </>
-            </div>
+      </div>
+    </div>
+    <div class="staff-profile-history">
+      {
+        providerHistory &&
+          (providerHistory.items.length > 0 || Astro.url.searchParams.has('history_cursor')) && (
+            <AccessHistory
+              page={providerHistory}
+              personId={person.id}
+              title={t('staff.profile.accessHistory')}
+            />
           )
-        }
-        {
-          person.preferred_language !== 'en' && (
-            <div>
-              <>
-                <dt>{t('staff.profile.language')}</dt>
-                <dd>{languageLabel(person.preferred_language)}</dd>
-              </>
-            </div>
-          )
-        }
-      </dl>
-    </section>
-    <PersonCommittees profile={profile} feedback={feedback} />
-  </div>
-  {
-    server && (
-      <MemberAccess member={server} committees={accountAccess.items} feedback={accessFeedback} />
-    )
-  }
-  {
-    accountAccess.nextCursor && (
-      <a href={nextAccess.pathname + nextAccess.search + '#accounts'} class="staff-next">
-        {t('staff.access.moreCommittees')}
-      </a>
-    )
-  }
-  <div class="staff-profile-history">
+      }
+      <PersonRecord profile={profile} />
+    </div>
     {
-      providerHistory &&
-        (providerHistory.items.length > 0 || Astro.url.searchParams.has('history_cursor')) && (
-          <AccessHistory
-            page={providerHistory}
-            personId={person.id}
-            title={t('staff.profile.accessHistory')}
-          />
-        )
+      combinations.length > 0 && (
+        <details class="mb-6 text-body-sm">
+          <summary>{t('staff.profile.combinedEntries', { count: combinations.length })}</summary>
+          <ul class="mt-3 space-y-3">
+            {combinations.map((item) => (
+              <li>
+                <a href={`/review/combined/${item.id}/`}>{item.mergedName}</a> ·{' '}
+                {formatFullDate(new Date(item.mergedAt))}
+                {item.erasedAt
+                  ? ` · ${t('staff.profile.detailsErased')}`
+                  : item.undoneAt
+                    ? ` · ${t('staff.profile.undone')}`
+                    : ''}
+              </li>
+            ))}
+          </ul>
+        </details>
+      )
     }
-    <PersonRecord profile={profile} />
   </div>
-  {
-    combinations.length > 0 && (
-      <details class="mb-6 text-body-sm">
-        <summary>{t('staff.profile.combinedEntries', { count: combinations.length })}</summary>
-        <ul class="mt-3 space-y-3">
-          {combinations.map((item) => (
-            <li>
-              <a href={`/review/combined/${item.id}/`}>{item.mergedName}</a> ·{' '}
-              {formatFullDate(new Date(item.mergedAt))}
-              {item.erasedAt
-                ? ` · ${t('staff.profile.detailsErased')}`
-                : item.undoneAt
-                  ? ` · ${t('staff.profile.undone')}`
-                  : ''}
-            </li>
-          ))}
-        </ul>
-      </details>
-    )
-  }
 </StaffLayout>

@@ -3,25 +3,60 @@ import type { AccessRow } from '@lasvegasfortransit/platform-storage/access-view
 import { t } from '@lasvegasfortransit/platform-core/messages';
 import AccountAccessRow from './AccountAccessRow.astro';
 import type { AccessFeedback } from '../lib/account-access';
+import { needsAccessRecovery } from '@lasvegasfortransit/platform-core/access';
 interface Props {
   member: AccessRow;
   committees: AccessRow[];
   feedback?: AccessFeedback | undefined;
+  discordConnected?: boolean;
+  nextHref?: string | undefined;
 }
-const { member, committees, feedback } = Astro.props;
+const { member, committees, feedback, discordConnected = true, nextHref } = Astro.props;
+const showMember =
+  discordConnected || needsAccessRecovery(member) || member.discord.state === 'granted';
+const committeeAccounts = committees.filter(
+  (row) =>
+    row.assignmentId ||
+    needsAccessRecovery(row) ||
+    row.discord.state === 'granted' ||
+    row.googleWorkspace.state === 'granted',
+);
+const needsHelp = [...(showMember ? [member] : []), ...committeeAccounts].some((row) => {
+  const providers = row.targetId === 'person' ? [row.discord] : [row.discord, row.googleWorkspace];
+  const expected = row.expectedAccess ? 'granted' : 'absent';
+  return (
+    needsAccessRecovery(row) ||
+    providers.some((access) => access.state !== 'unknown' && access.state !== expected)
+  );
+});
+const showAccounts = showMember || committeeAccounts.length > 0 || feedback || nextHref;
 ---
 
-<section id="accounts" class="staff-person-access" aria-labelledby="account-access-heading">
-  <h2 id="account-access-heading">{t('staff.access.accountTitle')}</h2>
-  {
-    feedback && (
-      <p role="alert" class="staff-error">
-        {feedback.message}
-      </p>
-    )
-  }
-  <ul class="staff-account-list">
-    <AccountAccessRow row={member} personView />
-    {committees.map((row) => <AccountAccessRow row={row} personView />)}
-  </ul>
-</section>
+{
+  showAccounts && (
+    <section id="accounts" class="staff-person-access" aria-labelledby="account-access-heading">
+      <details open={Boolean(feedback || needsHelp || Astro.url.searchParams.has('access_cursor'))}>
+        <summary>
+          <h2 id="account-access-heading">{t('staff.access.accountTitle')}</h2>
+        </summary>
+        <p class="staff-help">{t('staff.access.profileHelp')}</p>
+        {feedback && (
+          <p role="alert" class="staff-error">
+            {feedback.message}
+          </p>
+        )}
+        <ul class="staff-account-list">
+          {showMember && <AccountAccessRow row={member} personView />}
+          {committeeAccounts.map((row) => (
+            <AccountAccessRow row={row} personView />
+          ))}
+        </ul>
+        {nextHref && (
+          <a href={nextHref} class="staff-next">
+            {t('staff.access.moreCommittees')}
+          </a>
+        )}
+      </details>
+    </section>
+  )
+}

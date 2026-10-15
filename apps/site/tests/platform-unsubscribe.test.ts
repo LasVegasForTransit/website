@@ -47,7 +47,25 @@ void test('one-click unsubscribe accepts withdrawal without a session or provide
     Promise.resolve(new Response(null, { status: 503 })),
   );
   assert.equal((await invoke()).status, 200);
-  assert.ok(db.raw.prepare('SELECT withdrawn_at FROM consent_records').get()?.withdrawn_at);
+  assert.equal(
+    db.raw.prepare('SELECT count(*) AS n FROM consent_records WHERE person_id=?').get(person.id)?.n,
+    0,
+  );
+  assert.equal(
+    db.raw.prepare('SELECT count(*) AS n FROM consent_withdrawals WHERE person_id=?').get(person.id)
+      ?.n,
+    0,
+  );
+  const receipt = db.raw
+    .prepare('SELECT * FROM person_deletion_log WHERE person_id=?')
+    .get(person.id);
+  assert.ok(receipt);
+  assert.equal(receipt.requested_by, 'member');
+  assert.equal(receipt.reason, 'requested');
+  assert.ok(
+    typeof receipt.completed_at === 'string' && Number.isFinite(Date.parse(receipt.completed_at)),
+  );
+  assert.equal(JSON.stringify(receipt).includes('one-click@example.org'), false);
   assert.equal(await people.getPerson(person.id), null);
   assert.equal(db.raw.prepare('SELECT email FROM people').get()?.email, null);
   assert.equal(
@@ -56,6 +74,10 @@ void test('one-click unsubscribe accepts withdrawal without a session or provide
     'queued',
   );
   assert.equal((await invoke()).status, 200);
+  assert.deepEqual(
+    db.raw.prepare('SELECT * FROM person_deletion_log WHERE person_id=?').get(person.id),
+    receipt,
+  );
   const { person: replacement } = await people.upsertFromSource({
     source: 'join_form',
     fields: { email: 'one-click@example.org' },

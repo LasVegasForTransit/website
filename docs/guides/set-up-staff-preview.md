@@ -263,6 +263,11 @@ commit. Open **Deploy staff preview → Run workflow**. Select `main`, enter tha
 ID, and choose **setup**. The default is **launch**, which requires additional provider
 configuration.
 
+When upgrading an older staff preview, setup mode may defer the check for its missing newsletter
+service binding. Before activation, the workflow verifies that the uploaded staff version binds
+`LVBT_NEWSLETTER_JOBS` to `lvbt-jobs-preview`. A different destination stops deployment. Launch mode
+requires the active binding to match too.
+
 The environment reviewer checks the selected build and approves that deployment. Wait for the
 workflow's final configuration check and saved deployment receipt. Confirm that both selected
 Workers are active. Retain the receipt privately with the build record; it is needed for recovery.

@@ -37,6 +37,7 @@ void test('every catalog key is used and every used key exists', () => {
     'scripts/discord/',
     '../staff/src/',
     '../../packages/platform-core/src/',
+    '../../packages/platform-storage/src/',
   ]
     .flatMap((dir) => sourceFiles(new URL(dir, root)))
     .filter((file) => !file.includes('/platform/messages/'))

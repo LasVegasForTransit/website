@@ -29,6 +29,10 @@ just say guides.)
   LVBT's member list
 - [Set up the protected staff preview](./guides/set-up-staff-preview.md) — prepare access, sign-in,
   the preview database, a saved deployment, and the first administrator
+- [Export a member record](./guides/export-a-member-record.md) — download one person's complete
+  record for a privacy request.
+- [Operate member data retention](./guides/operate-member-data-retention.md) — review deletion,
+  daily retention, and Google accounts that need attention.
 - [Back up the membership database](./guides/back-up-membership-database.md) — export privately and
   verify an isolated restore before a migration
 - [Recover a linked preview test membership](./guides/recover-a-preview-test-membership.md) — repair

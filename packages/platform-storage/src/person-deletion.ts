@@ -10,10 +10,14 @@ import {
 } from './person-erasure';
 
 /** Erase this person's profiles and saved copies; retain IDs for access removal. */
-export async function deletePersonData(db: Db, id: string): Promise<void> {
+export async function deletePersonData(
+  db: Db,
+  id: string,
+  options: { requesterId?: string } = {},
+): Promise<void> {
   for (let attempt = 0; ; attempt++) {
     try {
-      await eraseCurrentPerson(db, id);
+      await eraseCurrentPerson(db, id, options.requesterId ?? 'member');
       return;
     } catch (error) {
       if (attempt >= 2 || !(error instanceof Error) || !error.message.includes('valid_snapshot=1'))
@@ -22,12 +26,12 @@ export async function deletePersonData(db: Db, id: string): Promise<void> {
   }
 }
 
-async function eraseCurrentPerson(db: Db, id: string): Promise<void> {
+async function eraseCurrentPerson(db: Db, id: string, requesterId: string): Promise<void> {
   const stamp = nowIso();
   const operationId = ulid();
   const newsletter = await newsletterErasureWrites(db, id, operationId, stamp);
   await db.batch([
-    beginErasure(db, id, operationId, stamp),
+    beginErasure(db, id, operationId, { stamp, requesterId }),
     ...newsletter,
     eraseProfile(db, operationId, stamp),
     beginErasureCopies(db, operationId),

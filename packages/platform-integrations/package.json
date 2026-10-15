@@ -4,6 +4,7 @@
   "private": true,
   "type": "module",
   "exports": {
+    "./newsletter-event-cipher": "./src/newsletter-event-cipher.ts",
     "./newsletter-source-processor": "./src/newsletter-source-processor.ts",
     "./beehiiv-event-receiver": "./src/beehiiv-event-receiver.ts",
     "./beehiiv-runtime": "./src/beehiiv-runtime.ts",

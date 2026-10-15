@@ -34,6 +34,7 @@ const simulator = new Miniflare(
       LVBT_DEPLOYMENT_ENV: 'preview',
       LVBT_DISCORD_SYNC_ENABLED: 'false',
       LVBT_BEEHIIV_SYNC_ENABLED: 'true',
+      LVBT_BEEHIIV_CONFLICT_POLICY: 'keep_unsubscribed',
       LVBT_BEEHIIV_PUBLICATION_ID: 'pub_free_fixture',
       LVBT_BEEHIIV_PRODUCTION_PUBLICATION_ID: 'pub_production',
       LVBT_BEEHIIV_API_KEY: 'fixture-only',
@@ -109,6 +110,34 @@ try {
     (await db.prepare('SELECT count(*) AS n FROM newsletter_inbound_events').first())?.n,
     0,
   );
+  status = 'inactive';
+  await db
+    .prepare("UPDATE beehiiv_poll_checkpoints SET next_scan_at='2000-01-01T00:00:00.000Z'")
+    .run();
+  await tick();
+  assert.equal(
+    (await people.getPerson(person.id))?.membership_status,
+    'former_member',
+    'a real API-only scan must apply a routine external unsubscribe',
+  );
+  assert.deepEqual(
+    await db
+      .prepare(
+        "SELECT time_basis,source_occurred_at FROM consent_withdrawals WHERE source='beehiiv_observed'",
+      )
+      .first(),
+    { time_basis: 'observed', source_occurred_at: null },
+  );
+  await people.recordConsent(person.id, {
+    scope: 'newsletter',
+    source: 'account',
+    method: 'checkbox',
+    wordingVersion: 'fixture-rejoin',
+    givenAt: new Date().toISOString(),
+    renew: true,
+  });
+  await tick();
+  assert.equal(status, 'active', 'a new explicit signup after the observation may rejoin');
   await people.withdrawConsent(person.id, {
     scope: 'newsletter',
     source: 'account',
@@ -135,6 +164,8 @@ try {
         'Free API configuration without webhook key',
         'signup and withdrawal with separate readback',
         'roster polling',
+        'external unsubscribe changes membership without inventing choice time',
+        'new explicit signup after an observed unsubscribe can rejoin',
         'signed intake remains closed',
         'completed work stays complete',
       ],

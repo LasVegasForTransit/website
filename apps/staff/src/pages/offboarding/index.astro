@@ -1,0 +1,127 @@
+---
+import StaffLayout from '../../layouts/StaffLayout.astro';
+import { ulid } from '@lasvegasfortransit/platform-core/ids';
+import { PermissionDenied } from '@lasvegasfortransit/platform-core/permissions';
+import { formatDate } from '@lasvegasfortransit/platform-core/messages';
+import { workspaceOffboardingQueue } from '@lasvegasfortransit/platform-storage/workspace-offboarding';
+import { issueFormToken } from '@lasvegasfortransit/platform-storage/form-tokens';
+import { InvalidCursor } from '@lasvegasfortransit/platform-storage/staff-history';
+import { submitWorkspaceReview, workspaceReviewAction } from '../../lib/workspace-offboarding';
+import { messageResponse } from '../../lib/responses';
+const staff = Astro.locals.staff;
+if (!staff?.actor.staffAdmin) return messageResponse('You don’t have access to this', 403);
+if (Astro.request.method === 'POST') return await submitWorkspaceReview(Astro.request, staff);
+let page;
+try {
+  page = await workspaceOffboardingQueue(staff.db, staff.actor, {
+    cursor: Astro.url.searchParams.get('cursor') ?? undefined,
+  });
+} catch (error) {
+  if (error instanceof PermissionDenied)
+    return messageResponse('You don’t have access to this', 403);
+  if (error instanceof InvalidCursor)
+    return messageResponse('This page link is invalid. Open the review list again.', 400);
+  throw error;
+}
+const rows = await Promise.all(
+  page.items.map(async (item) => ({
+    ...item,
+    operationId: ulid(),
+    token: await issueFormToken(
+      staff.db,
+      staff.actor,
+      workspaceReviewAction(item.identityRecordId, item.revision),
+    ),
+  })),
+);
+---
+
+<StaffLayout
+  title="Google accounts to review"
+  description="Review linked Google accounts after membership ends or a member deletes their data."
+>
+  <a slot="breadcrumb" href="/people/" class="staff-back">← Members</a>
+  {
+    Astro.url.searchParams.get('saved') === '1' && (
+      <p role="status" class="staff-notice">
+        Review recorded.
+      </p>
+    )
+  }
+  <p class="staff-help">
+    Check each account in <a href="https://admin.google.com/">Google Admin</a> and decide whether staff
+    need to take further action. Marking it reviewed records your review. Google accounts and files stay
+    in place.
+  </p>
+  {
+    rows.length ? (
+      <ul class="account-reviews" aria-label="Google accounts to review">
+        {rows.map((item) => (
+          <li>
+            <div>
+              <h2>{item.reason === 'erased' ? 'Member data deleted' : 'Membership ended'}</h2>
+              <p class="staff-help">Flagged {formatDate(new Date(item.flaggedAt))}</p>
+              <p>
+                Google account ID: <span class="account-id">{item.workspaceSubject}</span>
+              </p>
+            </div>
+            <form method="post" action="/offboarding/">
+              <input type="hidden" name="token" value={item.token} />
+              <input type="hidden" name="identity_id" value={item.identityRecordId} />
+              <input type="hidden" name="revision" value={item.revision} />
+              <input type="hidden" name="operation_id" value={item.operationId} />
+              <button type="submit" class="staff-secondary-button">
+                Mark reviewed
+              </button>
+            </form>
+          </li>
+        ))}
+      </ul>
+    ) : (
+      <div class="staff-empty">
+        <>
+          <h2>No Google accounts need review</h2>
+          <p>Accounts will appear here when a linked member leaves or deletes their data.</p>
+        </>
+      </div>
+    )
+  }
+  {
+    page.nextCursor && (
+      <a class="staff-next" href={`/offboarding/?cursor=${encodeURIComponent(page.nextCursor)}`}>
+        Next page
+      </a>
+    )
+  }
+</StaffLayout>
+
+<style>
+  .account-reviews {
+    list-style: none;
+    padding: 0;
+    margin: 1.5rem 0;
+  }
+  .account-reviews li {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1.5rem;
+    padding: 1.5rem 0;
+    border-top: 1px solid var(--staff-border, #aaa);
+  }
+  .account-reviews li > div {
+    min-width: 0;
+    flex: 1 1 20rem;
+  }
+  .account-reviews h2 {
+    margin: 0 0 0.5rem;
+    font-size: 1.125rem;
+  }
+  .account-id {
+    overflow-wrap: anywhere;
+  }
+  .account-reviews button {
+    min-height: 44px;
+  }
+</style>

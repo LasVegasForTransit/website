@@ -6,7 +6,7 @@ import ts from 'typescript';
 import { packageStaffRelease } from '../scripts/release-artifact';
 import { uploadStaffRelease, activateStaffRelease } from '../scripts/release-deploy';
 import { object } from '../scripts/preflight-api';
-import { deploymentFixture } from './support/deployment';
+import { deploymentFixture, versions } from './support/deployment';
 import { releaseIdentity } from './support/release';
 
 async function setupFixture(sourceEnabled = false, newsletterSourceEnabled = false) {
@@ -86,6 +86,43 @@ void test('preview setup deploys saved applications with Discord disabled and no
     assert.equal(f.state.commands.length, 4);
   } finally {
     await rm(f.root, { recursive: true, force: true });
+  }
+});
+
+void test('setup can install the new private binding but rejects a wrong uploaded target before activation', async () => {
+  for (const validTarget of [true, false]) {
+    const f = await setupFixture();
+    try {
+      const fetcher: typeof fetch = async (input, init) => {
+        const url = new URL(input instanceof Request ? input.url : input);
+        const response = await f.options.fetch(input, init),
+          body = object(await response.json());
+        if (url.pathname.includes('/lvbt-staff-preview/versions/')) {
+          const resources = object(object(body.result).resources),
+            bindings = resources.bindings as Record<string, unknown>[];
+          resources.bindings = url.pathname.endsWith(versions.staff)
+            ? bindings.map((b) =>
+                b.name === 'LVBT_NEWSLETTER_JOBS' && !validTarget
+                  ? { ...b, service: 'lvbt-jobs' }
+                  : b,
+              )
+            : bindings.filter((b) => b.name !== 'LVBT_NEWSLETTER_JOBS');
+        }
+        return Response.json(body);
+      };
+      const action = uploadStaffRelease(f.destination, releaseIdentity, f.receiptFile, {
+        ...f.options,
+        fetch: fetcher,
+      });
+      if (validTarget) assert.equal((await action).status, 'uploaded');
+      else await assert.rejects(action, /staff.version/);
+      assert.equal(
+        f.state.commands.some((args) => args[1] === 'deploy'),
+        false,
+      );
+    } finally {
+      await rm(f.root, { recursive: true, force: true });
+    }
   }
 });
 

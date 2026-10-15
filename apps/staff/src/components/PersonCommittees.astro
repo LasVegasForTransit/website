@@ -34,7 +34,7 @@ const endReasons = {
 };
 ---
 
-<section aria-labelledby="committees-heading">
+<section aria-labelledby="committees-heading" class="staff-profile-committees">
   <h2 id="committees-heading">{t('staff.common.committees')}</h2>
   {
     feedback && (
@@ -115,6 +115,11 @@ const endReasons = {
     }
   </ul>
   {!current.length && <p class="mt-3">{t('staff.assignments.none')}</p>}
+  {
+    available.length > 0 && profile.person.membership_status !== 'member' && (
+      <p class="staff-help">{t('staff.assignments.onlyCurrent')}</p>
+    )
+  }
   {
     available.length > 0 && profile.person.membership_status === 'member' && (
       <>

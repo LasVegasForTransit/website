@@ -62,6 +62,7 @@ export const staffAccess = {
   },
   access: {
     accountTitle: 'Accounts',
+    profileHelp: 'Use these details when helping with Google or Discord access.',
     history: 'Access history',
     title: 'Google and Discord access',
     description: 'Check member channels and committee access.',
@@ -74,8 +75,8 @@ export const staffAccess = {
     committeeLead: 'Committee lead',
     noLongerAssigned: 'No longer on this committee',
     googleGroup: 'Google group',
-    hasMemberAccess: 'Can see member channels',
-    noMemberAccess: 'Can’t see member channels',
+    hasMemberAccess: 'Has access',
+    noMemberAccess: 'No access',
     hasAccess: 'Has access',
     noAccess: 'No access',
     missing: 'Access missing',
