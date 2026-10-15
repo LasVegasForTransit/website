@@ -1,0 +1,73 @@
+---
+import type { Page } from '@lasvegasfortransit/platform-core/staff-types';
+import type { AccessChangeRow } from '@lasvegasfortransit/platform-storage/access-audit';
+import { t, formatFullDate, formatTime } from '@lasvegasfortransit/platform-core/messages';
+import { displayLabel } from '../lib/presentation';
+interface Props {
+  page: Page<AccessChangeRow>;
+}
+const { page } = Astro.props;
+const next = new URL(Astro.url);
+if (page.nextCursor) next.searchParams.set('correction_cursor', page.nextCursor);
+const labels = {
+  grant: t('staff.history.granted'),
+  revoke: t('staff.history.revoked'),
+  suspend: t('staff.accessOverview.suspended'),
+  unsuspend: t('staff.accessOverview.unsuspended'),
+  transfer: t('staff.accessOverview.transferred'),
+  delete: t('staff.accessOverview.deleted'),
+};
+---
+
+<section class="staff-discord-corrections" aria-labelledby="discord-corrections-heading">
+  <h2 id="discord-corrections-heading">{t('staff.accessOverview.discordChanges')}</h2>
+  <p class="staff-help">{t('staff.accessOverview.changesHint')}</p>
+  {
+    page.items.length ? (
+      <ol class="staff-account-history-list">
+        {page.items.map((item) => (
+          <li>
+            <p class="staff-history-date">
+              <time datetime={item.at}>
+                <span>{formatFullDate(new Date(item.at))}</span>
+                <span>{formatTime(new Date(item.at))}</span>
+              </time>
+            </p>
+            <div>
+              <p>
+                <strong>{labels[item.action]}</strong>
+              </p>
+              <p>
+                {item.personDeleted ? (
+                  t('staff.history.deletedRecord')
+                ) : (
+                  <a href={`/people/${encodeURIComponent(item.personId)}/#accounts`}>
+                    {item.personName ?? t('staff.common.member')}
+                  </a>
+                )}
+              </p>
+              <p class="staff-help">
+                {t('staff.history.by', {
+                  name:
+                    item.actor === 'platform'
+                      ? t('staff.history.automaticActor')
+                      : (item.actorName ?? t('staff.labels.staff')),
+                })}
+              </p>
+              {item.reason && <p class="staff-help">{displayLabel(item.reason)}</p>}
+            </div>
+          </li>
+        ))}
+      </ol>
+    ) : (
+      <p class="staff-help">{t('staff.accessOverview.noChanges')}</p>
+    )
+  }
+  {
+    page.nextCursor && (
+      <a class="staff-next" href={next.pathname + next.search}>
+        {t('staff.accessOverview.moreChanges')}
+      </a>
+    )
+  }
+</section>

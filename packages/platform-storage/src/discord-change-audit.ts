@@ -1,4 +1,5 @@
 import { ulid } from '@lasvegasfortransit/platform-core/ids';
+import { accessChangeWrite } from './access-audit';
 import { digestToken } from '@lasvegasfortransit/platform-core/random-token';
 import type { Db, SqlValue } from './db';
 import type { DiscordRoleTarget } from './discord-plan';
@@ -109,14 +110,7 @@ function confirmationWrites(db: Db, input: DiscordSyncWrite, intent: Intent, rev
   const sql = `${guard.sql} AND EXISTS(SELECT 1 FROM provider_access_intents WHERE id=? AND revision_hash=?)`;
   const values = [...guard.values, intent.id, revision];
   return [
-    db
-      .prepare(
-        `INSERT INTO staff_audits(id,actor_id,action,target_id,details,operation_id,occurred_at)
-      SELECT id,'platform:discord',CASE after_granted WHEN 1 THEN 'access.granted' ELSE 'access.revoked' END,person_id,
-        json_object('provider',provider,'identityId',identity_id,'contextId',context_id,'resourceId',resource_id,'targetId',target_id,'generation',generation,'source',source,'requestedBy',requested_by,'operationId',operation_id,'preparedAt',prepared_at,'proof','provider_read'),
-        'provider-change:'||id,? FROM provider_access_intents WHERE id=? AND ${sql} ON CONFLICT(id) DO NOTHING`,
-      )
-      .bind(input.now.toISOString(), intent.id, ...values),
+    accessChangeWrite(db, { intentId: intent.id, guard: { sql, values } }, input.now),
     db
       .prepare(
         `DELETE FROM provider_access_intents WHERE id=? AND ${sql} AND EXISTS(SELECT 1 FROM staff_audits WHERE id=?)`,

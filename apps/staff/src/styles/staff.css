@@ -1711,3 +1711,88 @@ html {
     }
   }
 }
+
+@layer components {
+  .staff-committee-access,
+  .staff-committee-detail,
+  .staff-discord-corrections {
+    margin-block: 1.5rem;
+    padding-block: 1.25rem;
+    border-top: 1px solid var(--color-outline-variant);
+  }
+  .staff-committee-access-table {
+    width: 100%;
+    border-collapse: collapse;
+    text-align: left;
+  }
+  .staff-committee-access-table th,
+  .staff-committee-access-table td {
+    vertical-align: top;
+    padding: 1rem 0.75rem;
+    border-bottom: 1px solid var(--color-outline-variant);
+    overflow-wrap: anywhere;
+  }
+  .staff-committee-access-table thead {
+    background: var(--color-surface-container);
+  }
+  .staff-committee-access-table tbody th {
+    width: 35%;
+  }
+  .staff-committee-access-table a {
+    color: var(--color-primary-ink);
+    text-decoration: underline;
+    text-underline-offset: 0.2em;
+  }
+  .staff-committee-access-table p {
+    margin-block: 0.35rem;
+  }
+  .staff-committee-access-label {
+    display: none;
+  }
+  .staff-committee-lead-access {
+    margin-top: 1rem;
+  }
+  .staff-committee-detail dl {
+    display: grid;
+    gap: 0.75rem;
+  }
+  .staff-committee-detail dt {
+    color: var(--color-on-surface-variant);
+    font-size: 0.875rem;
+  }
+  .staff-committee-detail dd {
+    margin: 0;
+    font-weight: 600;
+  }
+  @media (max-width: 40rem) {
+    .staff-committee-access-table thead {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      overflow: hidden;
+      clip-path: inset(50%);
+    }
+    .staff-committee-access-table tbody,
+    .staff-committee-access-table tr,
+    .staff-committee-access-table tbody th,
+    .staff-committee-access-table th,
+    .staff-committee-access-table td {
+      display: block;
+      width: auto;
+    }
+    .staff-committee-access-table tr {
+      padding-block: 0.75rem;
+      border-bottom: 1px solid var(--color-outline);
+    }
+    .staff-committee-access-table th,
+    .staff-committee-access-table td {
+      padding: 0.5rem 0;
+      border: 0;
+    }
+    .staff-committee-access-label {
+      display: block;
+      font-weight: 600;
+    }
+  }
+}

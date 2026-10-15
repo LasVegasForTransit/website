@@ -1,5 +1,18 @@
 import { t } from '@lasvegasfortransit/platform-core/messages';
 const LABELS: Record<string, string> = {
+  access_page: t('staff.accessOverview.removedReason'),
+  staff_retry: t('staff.accessOverview.retryReason'),
+  google_group: t('staff.access.googleGroup'),
+  checklist: t('staff.accessOverview.checklist'),
+  github: 'GitHub',
+  committee_assignment: t('staff.history.added'),
+  committee_role_changed: t('staff.history.roleChanged'),
+  committee_assignment_ended: t('staff.history.removed'),
+  staff_correction: t('staff.accessOverview.staffCorrection'),
+  periodic_check: t('staff.history.periodicCheck'),
+  onboarding: t('staff.accessOverview.onboarding'),
+  account_linked: t('staff.history.accountUpdate'),
+  account_disconnected: t('staff.accessOverview.disconnected'),
   beehiiv_observed: 'Newsletter',
   newsletter: t('staff.labels.newsletter'),
   event_reminders: t('staff.labels.event_reminders'),

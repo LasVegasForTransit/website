@@ -45,6 +45,8 @@
     "./committee-views": "./src/committee-views.ts",
     "./committee-settings": "./src/committee-settings.ts",
     "./welcome-committees": "./src/welcome-committees.ts",
+    "./access-audit": "./src/access-audit.ts",
+    "./committee-access": "./src/committee-access.ts",
     "./access-view": "./src/access-view.ts",
     "./access-observations": "./src/access-observations.ts",
     "./access-recovery": "./src/access-recovery.ts",

@@ -144,6 +144,7 @@ export class CommitteeService {
       actorId: input.actorId,
       operationId: input.operationId,
       administratorsOnly: true,
+      accessPage: true,
     });
   }
   private async allowed(actorId: string, committeeId: string): Promise<boolean> {

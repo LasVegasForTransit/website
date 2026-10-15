@@ -1,3 +1,4 @@
+import { t } from '@lasvegasfortransit/platform-core/messages';
 import type { Actor, Page } from '@lasvegasfortransit/platform-core/staff-types';
 import type { ProviderConfiguration } from '@lasvegasfortransit/platform-core/access';
 import { PermissionDenied } from '@lasvegasfortransit/platform-core/permissions';
@@ -39,6 +40,7 @@ export interface GoogleGroupPerson {
   identityId: string | null;
   state: 'missing' | 'unexpected' | 'unconfirmed';
   assignmentCommitteeId: string | null;
+  firstSeenAt: string | null;
   requestState: 'queued' | 'running' | 'retry' | 'done' | null;
   requestReviewReason: 'inherited_access' | null;
 }
@@ -52,6 +54,7 @@ function groupPerson(row: GroupPersonRow): GoogleGroupPerson {
   const { request, ...person } = row;
   return {
     ...person,
+    name: person.name || t('staff.accessOverview.unnamed'),
     requestState: request?.state ?? null,
     requestReviewReason: request?.reviewReason ?? null,
   };
@@ -153,8 +156,9 @@ export async function getGoogleGroupReview(
     .prepare(
       `${GOOGLE_GROUP_QUERY}, selected AS (SELECT * FROM summaries WHERE group_email=?)
     SELECT v.allowed,(SELECT ${GROUP_JSON} FROM summaries WHERE group_email=?) AS summary,
-      (SELECT json_group_array(json(value)) FROM (SELECT json_object('personId',p.id,'name',coalesce(nullif(trim(coalesce(p.given_name,'')||' '||coalesce(p.family_name,'')),''),p.email,'Name not recorded'),
+      (SELECT json_group_array(json(value)) FROM (SELECT json_object('personId',p.id,'name',coalesce(nullif(trim(coalesce(p.given_name,'')||' '||coalesce(p.family_name,'')),''),p.email,''),
         'email',p.email,'identityId',d.identity_id,'state',d.state,
+        'firstSeenAt',(SELECT first_seen_at FROM access_mismatch_observations mismatch WHERE mismatch.provider='google_workspace' AND mismatch.context_id=(SELECT customer FROM settings) AND mismatch.resource_id=s.group_email AND mismatch.identity_id=d.identity_id AND mismatch.person_id=p.id AND mismatch.expected_access=CASE d.state WHEN 'missing' THEN 1 ELSE 0 END AND mismatch.last_seen_at=s.observed_at),
         'assignmentCommitteeId',CASE WHEN d.state='unexpected' AND p.membership_status='member' THEN (SELECT c.id FROM committees c WHERE c.workspace_group_email=s.group_email AND c.accepting_members=1 LIMIT 1) END,
         'request',json((SELECT json_object('state',o.state,'reviewReason',json_extract(o.payload,'$.googleReview.reason')) FROM integration_outbox o JOIN reconcile_generations g ON g.person_id=o.person_id AND g.target_id='person' AND g.generation=o.generation
           WHERE o.person_id=p.id AND o.target_id='person' AND o.kind='person_reconcile' AND o.state IN ('queued','running','retry','done')

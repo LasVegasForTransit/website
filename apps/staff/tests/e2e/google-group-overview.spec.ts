@@ -2,6 +2,8 @@ import assert from 'node:assert/strict';
 import { mkdir } from 'node:fs/promises';
 import { chromium } from '@playwright/test';
 import { saveGoogleGroupSnapshot } from '@lasvegasfortransit/platform-storage/google-group-snapshots';
+import { recordAccessObservation } from '@lasvegasfortransit/platform-storage/access-observations';
+import { accessChangeWrite } from '@lasvegasfortransit/platform-storage/access-audit';
 import { PersonService } from '@lasvegasfortransit/platform-storage/person-service';
 import { linkWorkspaceIdentity } from '@lasvegasfortransit/platform-storage/workspace-link';
 import { exerciseGoogleGroupActions } from './support/google-group-actions';
@@ -9,7 +11,7 @@ import { ORIGIN, startRuntime } from '../support/runtime';
 
 const groupEmail = 'preview-events@lasvegasfortransit.org',
   consoleGroupEmail = 'console-users@lasvegasfortransit.org';
-const fixture = await startRuntime({ googleGroups: true });
+const fixture = await startRuntime({ googleGroups: true, discord: true });
 const browser = await chromium.launch({
   args: [
     `--host-resolver-rules=MAP staff.lasvegasfortransit.org 127.0.0.1:${fixture.port}`,
@@ -89,6 +91,68 @@ try {
       ),
       true,
     );
+  const role = '222222222222222222',
+    identity = '444444444444444444';
+  await fixture.db
+    .prepare("UPDATE committees SET discord_role_id=? WHERE id='events'")
+    .bind(role)
+    .run();
+  await new PersonService(fixture.db).linkIdentity(fixture.welcomePerson.id, {
+    platform: 'discord',
+    externalId: identity,
+    linkMethod: 'self_linked',
+  });
+  const generation = await fixture.db
+    .prepare(
+      "SELECT generation FROM reconcile_generations WHERE person_id=? AND target_id='events'",
+    )
+    .bind(fixture.welcomePerson.id)
+    .first<{ generation: number }>();
+  assert.equal(
+    await recordAccessObservation(
+      fixture.db,
+      {
+        personId: fixture.welcomePerson.id,
+        targetId: 'events',
+        provider: 'discord',
+        identityId: identity,
+        identityEmail: null,
+        resourceId: role,
+        contextId: '111111111111111111',
+        generation: generation?.generation ?? 0,
+        expectedAccess: true,
+        state: 'absent',
+        observedAt: stamp,
+        expiresAt: new Date(now.getTime() + 300000).toISOString(),
+      },
+      now,
+    ),
+    true,
+    JSON.stringify(
+      await fixture.db
+        .prepare(
+          "SELECT (SELECT count(*) FROM access_observations) AS stored,(SELECT count(*) FROM identities WHERE person_id=? AND platform='discord') AS identities",
+        )
+        .bind(fixture.welcomePerson.id)
+        .first(),
+    ),
+  );
+  await accessChangeWrite(
+    fixture.db,
+    {
+      change: {
+        personId: fixture.welcomePerson.id,
+        system: 'discord',
+        action: 'grant',
+        target: role,
+        actor: fixture.admin.person.id,
+        reason: 'staff_correction',
+        operationId: 'compiled-access-change',
+        changed: true,
+      },
+    },
+    now,
+  ).run();
   const context = await browser.newContext({
     javaScriptEnabled: false,
     ignoreHTTPSErrors: true,
@@ -125,14 +189,26 @@ try {
     true,
   );
   const group = page.getByRole('link', { name: 'Events Committee', exact: true });
-  await Promise.all([
-    page.waitForURL(`${ORIGIN}/access/groups/?group=${encodeURIComponent(groupEmail)}`),
-    group.click(),
-  ]);
+  await Promise.all([page.waitForURL(`${ORIGIN}/access/events/`), group.click()]);
   assert.equal(
     await page.getByRole('heading', { name: 'Events Committee', exact: true }).count(),
     1,
   );
+  assert.equal(await page.getByText('Expected access', { exact: true }).isVisible(), true);
+  assert.equal(await page.getByText('Confirmed access', { exact: true }).isVisible(), true);
+  assert.equal((await page.getByText(/^First noticed /).count()) > 0, true);
+  for (const width of [1440, 768, 320]) {
+    await page.setViewportSize({ width, height: 1000 });
+    assert.equal(
+      await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth),
+      true,
+    );
+  }
+  await Promise.all([
+    page.waitForURL(`${ORIGIN}/access/groups/?group=${encodeURIComponent(groupEmail)}`),
+    page.getByRole('link', { name: 'Review Google access', exact: true }).click(),
+  ]);
+
   assert.equal(await page.getByText('Amina Staff', { exact: true }).isVisible(), true);
   assert.equal(await page.getByText('Not on this committee', { exact: true }).count(), 2);
   assert.equal(await page.getByText('Leon Staff', { exact: true }).isVisible(), true);
@@ -172,6 +248,26 @@ try {
     animations: 'disabled',
   });
   await page.goto(`${ORIGIN}/access/`);
+  assert.equal(
+    await page
+      .getByRole('heading', { name: 'Discord corrections in the last seven days', exact: true })
+      .count(),
+    1,
+  );
+  assert.equal(
+    await page
+      .locator('.staff-discord-corrections')
+      .getByText('Corrected by staff', { exact: true })
+      .isVisible(),
+    true,
+  );
+  assert.equal(
+    await page
+      .locator('.staff-discord-corrections')
+      .getByText('By Amina Staff', { exact: true })
+      .isVisible(),
+    true,
+  );
   await page.screenshot({
     path: `${shots}/google-group-overview-mobile.png`,
     fullPage: true,
@@ -184,7 +280,11 @@ try {
   }
   assert.equal(await groupLink.evaluate((element) => element.matches(':focus-visible')), true);
   await page.keyboard.press('Enter');
-  await page.waitForURL('**/access/groups/**');
+  await page.waitForURL(`${ORIGIN}/access/events/`);
+  await Promise.all([
+    page.waitForURL(`${ORIGIN}/access/groups/?group=${encodeURIComponent(groupEmail)}`),
+    page.getByRole('link', { name: 'Review Google access', exact: true }).click(),
+  ]);
   await exerciseGoogleGroupActions(page, fixture, removalPerson.id);
   const denied = await fixture.simulator.dispatchFetch(
     `${ORIGIN}/access/groups/?group=${groupEmail}`,
@@ -196,6 +296,14 @@ try {
     },
   );
   assert.equal(denied.status, 403);
+  const combinedDenied = await fixture.simulator.dispatchFetch(`${ORIGIN}/access/events/`, {
+    headers: {
+      'Cf-Access-Jwt-Assertion': fixture.lead.assertion,
+      Cookie: `__Host-lvbt_session=${fixture.lead.session.token}`,
+    },
+  });
+  assert.equal(combinedDenied.status, 403);
+  assert.equal((await combinedDenied.text()).includes('Expected access'), false);
   assert.equal((await denied.text()).includes('Amina Staff'), false);
   await fixture.db
     .prepare(

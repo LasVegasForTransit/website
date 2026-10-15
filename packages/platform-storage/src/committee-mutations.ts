@@ -20,6 +20,7 @@ export interface AssignmentMutation {
   operationId: string;
   fromWelcome?: true;
   administratorsOnly?: true;
+  accessPage?: true;
   /** A trusted server-side condition for assignment from another protected workflow. */
   reviewGuard?: { sql: string; values: SqlValue[] };
 }
@@ -215,6 +216,7 @@ export async function assignmentMutation(
     ...(mutation.kind === 'assign' ? {} : { assignmentId: mutation.id }),
     role: mutation.role,
     ...(mutation.kind === 'end' ? { reason: mutation.reason } : {}),
+    ...(mutation.accessPage ? { source: 'access_page' } : {}),
   });
   const input = { ...mutation, payload, stamp: new Date().toISOString() };
   await db.batch([

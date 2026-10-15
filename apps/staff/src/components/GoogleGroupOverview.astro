@@ -4,8 +4,9 @@ import { t } from '@lasvegasfortransit/platform-core/messages';
 import { googleGroupName, googleGroupStatus } from '../lib/google-group-presentation';
 interface Props {
   page: Awaited<ReturnType<typeof listGoogleGroupOverview>>;
+  showGroups?: boolean;
 }
-const { page } = Astro.props;
+const { page, showGroups = true } = Astro.props;
 const problemsOnly = Astro.url.searchParams.get('groups') !== 'all';
 const emptyLabel =
   page.totalProblems === 0 && problemsOnly
@@ -45,62 +46,63 @@ attention.searchParams.delete('group_cursor');
     )
   }
   {
-    page.totalGroups ? (
-      <>
-        <nav class="staff-access-views" aria-label={t('staff.googleGroups.views')}>
-          <a
-            href={attention.pathname + attention.search}
-            aria-current={problemsOnly ? 'page' : undefined}
-          >
-            {t('staff.googleGroups.needsAttention')}
-          </a>
-          <a href={all.pathname + all.search} aria-current={!problemsOnly ? 'page' : undefined}>
-            {t('staff.googleGroups.all')}
-          </a>
-        </nav>
-        <ul class="staff-google-group-list">
-          {page.items.map((group) => (
-            <li>
-              <div>
-                <h3>
-                  <a href={`/access/groups/?group=${encodeURIComponent(group.groupEmail)}`}>
-                    {googleGroupName(group)}
-                  </a>
-                </h3>
-                {group.committees.every((c) => !c.current) && (
-                  <p class="staff-help">{t('staff.googleGroups.retired')}</p>
-                )}
-                <p
-                  class:list={[
-                    'staff-google-group-state',
-                    { 'staff-google-warning': group.state !== 'current' },
-                  ]}
-                >
-                  {googleGroupStatus(group)}
-                </p>
-              </div>
-              <dl class="staff-google-counts">
+    showGroups &&
+      (page.totalGroups ? (
+        <>
+          <nav class="staff-access-views" aria-label={t('staff.googleGroups.views')}>
+            <a
+              href={attention.pathname + attention.search}
+              aria-current={problemsOnly ? 'page' : undefined}
+            >
+              {t('staff.googleGroups.needsAttention')}
+            </a>
+            <a href={all.pathname + all.search} aria-current={!problemsOnly ? 'page' : undefined}>
+              {t('staff.googleGroups.all')}
+            </a>
+          </nav>
+          <ul class="staff-google-group-list">
+            {page.items.map((group) => (
+              <li>
                 <div>
-                  <dt>{t('staff.googleGroups.googlePeople')}</dt>
-                  <dd>{group.userCount ?? t('staff.googleGroups.unknownCount')}</dd>
+                  <h3>
+                    <a href={`/access/groups/?group=${encodeURIComponent(group.groupEmail)}`}>
+                      {googleGroupName(group)}
+                    </a>
+                  </h3>
+                  {group.committees.every((c) => !c.current) && (
+                    <p class="staff-help">{t('staff.googleGroups.retired')}</p>
+                  )}
+                  <p
+                    class:list={[
+                      'staff-google-group-state',
+                      { 'staff-google-warning': group.state !== 'current' },
+                    ]}
+                  >
+                    {googleGroupStatus(group)}
+                  </p>
                 </div>
-                <div>
-                  <dt>{t('staff.googleGroups.expectedPeople')}</dt>
-                  <dd>{group.expectedCount}</dd>
-                </div>
-              </dl>
-            </li>
-          ))}
-        </ul>
-        {!page.items.length && <p class="staff-help">{emptyLabel}</p>}
-        {page.nextCursor && (
-          <a class="staff-next" href={next.pathname + next.search}>
-            {t('staff.googleGroups.next')}
-          </a>
-        )}
-      </>
-    ) : (
-      <p class="staff-help">{t('staff.googleGroups.noGroups')}</p>
-    )
+                <dl class="staff-google-counts">
+                  <div>
+                    <dt>{t('staff.googleGroups.googlePeople')}</dt>
+                    <dd>{group.userCount ?? t('staff.googleGroups.unknownCount')}</dd>
+                  </div>
+                  <div>
+                    <dt>{t('staff.googleGroups.expectedPeople')}</dt>
+                    <dd>{group.expectedCount}</dd>
+                  </div>
+                </dl>
+              </li>
+            ))}
+          </ul>
+          {!page.items.length && <p class="staff-help">{emptyLabel}</p>}
+          {page.nextCursor && (
+            <a class="staff-next" href={next.pathname + next.search}>
+              {t('staff.googleGroups.next')}
+            </a>
+          )}
+        </>
+      ) : (
+        <p class="staff-help">{t('staff.googleGroups.noGroups')}</p>
+      ))
   }
 </section>

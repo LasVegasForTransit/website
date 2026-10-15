@@ -57,6 +57,7 @@ try {
               '/review/',
               '/export/',
               '/access/',
+              '/access/events/',
               '/newsletter/',
               '/offboarding/',
               '/paper/',
@@ -84,9 +85,10 @@ try {
         colorScheme: 'dark',
         ...(await auditPage(page, '/people/')),
       });
-      if (actor === 'lead')
+      const refusedRoutes = actor === 'lead' ? ['/export/', '/access/events/'] : [];
+      for (const path of refusedRoutes)
         assert.equal(
-          (await page.goto(`${ORIGIN}/export/`))?.status(),
+          (await page.goto(`${ORIGIN}${path}`))?.status(),
           403,
           'the audit must not widen committee-lead access',
         );

@@ -1,3 +1,5 @@
+import { t } from '@lasvegasfortransit/platform-core/messages';
+import { discordTarget } from './discord-target';
 import type { Actor, Page } from '@lasvegasfortransit/platform-core/staff-types';
 import type { MembershipStatus } from '@lasvegasfortransit/platform-core/membership';
 import {
@@ -11,9 +13,9 @@ import { loadActor } from './staff-roles';
 import { STAFF_ADMIN_SCOPE, STAFF_PERSON_SCOPE } from './staff-scope';
 import { COMMITTEE_SCOPE } from './committee-views';
 import { auditDenied } from './audits';
-import { observedAccess, OBSERVATION_JSON, type ObservedRow } from './access-state';
+import { observedAccess, type ObservedRow } from './access-state';
+import { ACCESS_ROWS_QUERY } from './access-query';
 import { accessCursor, readAccessCursor } from './access-cursors';
-import { committeeTargetSql, discordLeadSql } from './discord-target';
 export { discordTarget } from './discord-target';
 export { accessHistory, type AccessHistoryRow } from './access-history';
 export interface AccessRow {
@@ -26,6 +28,9 @@ export interface AccessRow {
   assignmentId: string | null;
   role: 'member' | 'lead' | null;
   expectedAccess: boolean;
+  discordExpectedAccess: boolean;
+  discordResourceId: string | null;
+  discordFirstSeenAt: string | null;
   googleConnected: boolean;
   discordConnected: boolean;
   googleWorkspace: ProviderAccess;
@@ -39,18 +44,14 @@ interface Row
     ObservedRow,
     Omit<
       AccessRow,
-      'expectedAccess' | 'googleConnected' | 'discordConnected' | 'googleWorkspace' | 'discord'
-    > {}
-const TARGETS = `WITH targets AS (SELECT person_id AS personId,committee_id AS targetId FROM committee_assignments GROUP BY person_id,committee_id
-  UNION SELECT a.person_id,'committee_lead:'||a.committee_id FROM committee_assignments a JOIN committees c ON c.id=a.committee_id
-    WHERE c.discord_lead_role_id IS NOT NULL OR EXISTS(SELECT 1 FROM committee_account_mappings m WHERE m.committee_id=c.id AND m.provider='discord' AND m.role_kind='lead')
-  UNION SELECT id,'person' FROM people)`;
-const COMMITTEE_TARGET = committeeTargetSql('t.targetId');
-const LEAD_TARGET = discordLeadSql('t.targetId');
-const CURRENT_JOB = `SELECT o.id FROM integration_outbox o WHERE o.person_id=p.id AND o.target_id=${COMMITTEE_TARGET} AND o.generation=coalesce(g.generation,0)
-  AND o.kind IN ('person_reconcile','committee_reconcile') ORDER BY o.created_at DESC,o.id DESC LIMIT 1`;
-function observation(provider: string) {
-  return `(SELECT ${OBSERVATION_JSON} FROM access_observations WHERE person_id=p.id AND target_id=t.targetId AND provider='${provider}' ORDER BY observed_at DESC,rowid DESC LIMIT 1)`;
+      | 'expectedAccess'
+      | 'discordExpectedAccess'
+      | 'googleConnected'
+      | 'discordConnected'
+      | 'googleWorkspace'
+      | 'discord'
+    > {
+  discordExpectedAccess: number;
 }
 export interface AccessQuery {
   personId?: string | undefined;
@@ -70,14 +71,20 @@ function accessRow(
   const { configuration, now } = context;
   return {
     personId: row.personId,
-    name: row.name,
+    name: row.name || t('staff.accessOverview.unnamed'),
     email: row.email,
     membershipStatus: row.membershipStatus,
     targetId: row.targetId,
-    committeeName: row.committeeName,
+    committeeName:
+      row.committeeName && discordTarget(row.targetId).lead
+        ? t('staff.accessOverview.leadName', { name: row.committeeName })
+        : row.committeeName,
     assignmentId: row.assignmentId,
     role: row.role,
     expectedAccess: Boolean(row.expectedAccess),
+    discordExpectedAccess: Boolean(row.discordExpectedAccess),
+    discordResourceId: row.discordResourceId,
+    discordFirstSeenAt: row.discordFirstSeenAt,
     googleConnected: row.googleIdentityCount > 0,
     discordConnected: row.discordIdentityCount > 0,
     googleWorkspace: observedAccess(row, 'google_workspace', configuration, now),
@@ -138,24 +145,7 @@ export async function listAccess(
     const cursorValues: SqlValue[] = cursor ? [cursor[0], cursor[0], cursor[1]] : [];
     const { results } = await db
       .prepare(
-        `${TARGETS}
-    SELECT p.id AS personId,t.targetId,coalesce(nullif(trim(coalesce(p.given_name,'')||' '||coalesce(p.family_name,'')),''),p.email,'Name not recorded') AS name,
-    p.email,p.membership_status AS membershipStatus,CASE WHEN ${LEAD_TARGET} THEN c.name||' leads' ELSE c.name END AS committeeName,a.id AS assignmentId,a.role,
-    CASE WHEN p.membership_status='member' AND (t.targetId='person' OR a.id IS NOT NULL) THEN 1 ELSE 0 END AS expectedAccess,
-    coalesce(g.generation,0) AS generation,
-    (SELECT count(*) FROM identities WHERE person_id=p.id AND platform='google_workspace') AS googleIdentityCount,
-    (SELECT count(*) FROM identities WHERE person_id=p.id AND platform='discord') AS discordIdentityCount,
-    (SELECT external_id FROM identities WHERE person_id=p.id AND platform='google_workspace') AS googleIdentity,
-    (SELECT external_email FROM identities WHERE person_id=p.id AND platform='google_workspace') AS googleEmail,
-    (SELECT external_id FROM identities WHERE person_id=p.id AND platform='discord' AND link_method IN ('self_linked','staff_confirmed')) AS discordIdentity,
-    CASE WHEN ${LEAD_TARGET} THEN NULL ELSE c.workspace_group_email END AS workspaceGroupEmail,
-    CASE WHEN ${LEAD_TARGET} THEN c.discord_lead_role_id ELSE c.discord_role_id END AS discordRoleId,
-    CASE WHEN ${LEAD_TARGET} THEN NULL ELSE ${observation('google_workspace')} END AS googleObservation,${observation('discord')} AS discordObservation,
-    o.id AS operationId,o.state AS operationState,o.last_failure AS lastFailure
-    FROM targets t JOIN people p ON p.id=t.personId LEFT JOIN committees c ON c.id=${COMMITTEE_TARGET}
-    LEFT JOIN committee_assignments a ON a.person_id=p.id AND a.committee_id=c.id AND a.ended_at IS NULL AND (NOT ${LEAD_TARGET} OR a.role='lead')
-    LEFT JOIN reconcile_generations g ON g.person_id=p.id AND g.target_id=${COMMITTEE_TARGET}
-    LEFT JOIN integration_outbox o ON o.id=(${CURRENT_JOB})
+        `${ACCESS_ROWS_QUERY}
     WHERE ${where.join(' AND ')}${cursorFilter} ORDER BY p.id,t.targetId LIMIT ?`,
       )
       .bind(...values, ...cursorValues, batchSize)
@@ -173,4 +163,22 @@ export async function listAccess(
     nextCursor:
       matches.length > limit && last ? accessCursor([last.personId, last.targetId]) : null,
   };
+}
+
+/** Complete facts for administrator committee summaries; no per-person provider requests. */
+export async function committeeAccessFacts(
+  db: Db,
+  actor: Actor,
+  query: AccessQuery,
+): Promise<AccessRow[]> {
+  const { where, values } = accessFilters(actor, { ...query, target: 'committee' });
+  where.push(STAFF_ADMIN_SCOPE);
+  values.push(actor.personId);
+  const { results } = await db
+    .prepare(`${ACCESS_ROWS_QUERY} WHERE ${where.join(' AND ')} ORDER BY p.id,t.targetId`)
+    .bind(...values)
+    .all<Row>();
+  return results.map((row) =>
+    accessRow(row, { configuration: query.configuration ?? {}, now: query.now ?? new Date() }),
+  );
 }

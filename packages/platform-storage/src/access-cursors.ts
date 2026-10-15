@@ -18,3 +18,7 @@ export function readAccessCursor(value: string | undefined): [string, string] | 
     throw new InvalidCursor();
   }
 }
+
+export function accessPageLimit(limit?: number): number {
+  return Number.isFinite(limit) ? Math.max(1, Math.min(100, Math.floor(limit ?? 25))) : 25;
+}
