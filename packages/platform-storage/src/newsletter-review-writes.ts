@@ -1,3 +1,4 @@
+import { MEMBERSHIP_STATUS_SQL, CURRENT_MEMBERSHIP_VERSION } from './membership-policy';
 import { ulid } from '@lasvegasfortransit/platform-core/ids';
 import type { Actor, MutationResult } from '@lasvegasfortransit/platform-core/staff-types';
 import type { Db, SqlValue, Statement } from './db';
@@ -95,8 +96,7 @@ function unsubscribeWrites(db: Db, tx: Transaction): Statement[] {
     mutation(
       db,
       tx,
-      `UPDATE people SET membership_status=CASE WHEN EXISTS(SELECT 1 FROM consent_records WHERE person_id=people.id AND scope='newsletter' AND withdrawn_at IS NULL) THEN 'member'
-      WHEN EXISTS(SELECT 1 FROM consent_records WHERE person_id=people.id AND scope='newsletter' AND withdrawn_at IS NOT NULL) THEN 'former_member' ELSE 'not_member' END,membership_rules_version=1,updated_at=? WHERE id=? AND __HELD__`,
+      `UPDATE people SET membership_status=${MEMBERSHIP_STATUS_SQL},membership_rules_version=${CURRENT_MEMBERSHIP_VERSION},updated_at=? WHERE id=? AND __HELD__`,
       [tx.stamp, tx.personId],
     ),
   ];
@@ -251,7 +251,7 @@ export async function resolveNewsletterReview(
     publicationId,
     note: input.note.trim(),
     effectiveAt: review.cutoff,
-    hadActive: loaded.context.active.length > 0,
+    hadActive: loaded.context.active.length > 0 || loaded.context.rollEntitled === 1,
     ...choiceProvenance(input.kind, review.cutoff),
   };
   const guard = reviewSnapshotGuard(actor.personId, publicationId, input, loaded.snapshot);

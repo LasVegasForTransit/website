@@ -30,6 +30,7 @@ function row(input: {
     sourceId: input.sourceId ?? 'source-1',
     email: input.email ?? 'member@example.org',
     newsletter: {
+      affirmative: true,
       state: input.state ?? 'active',
       givenAt: input.givenAt === undefined ? '2026-03-01T09:00:00.000Z' : input.givenAt,
       withdrawnAt: input.withdrawnAt ?? null,
@@ -273,10 +274,14 @@ void test('unresolved duplicate review blocks imported membership even on retry'
   assert.equal(first.counts.needsReview, 1);
   assert.equal(db.raw.prepare('SELECT count(*) AS n FROM consent_records').get()?.n, 0);
   const second = await apply(db, input);
-  assert.equal(second.counts.needsReview, 1);
+  assert.equal(second.counts.alreadyApplied, 1);
   assert.equal(db.raw.prepare('SELECT count(*) AS n FROM consent_records').get()?.n, 0);
   assert.equal(
-    db.raw.prepare('SELECT count(*) AS n FROM review_queue WHERE resolved_at IS NULL').get()?.n,
+    db.raw
+      .prepare(
+        "SELECT count(*) AS n FROM roster_import_records WHERE state='held' AND person_id IS NULL AND suggested_person_id IS NOT NULL",
+      )
+      .get()?.n,
     1,
   );
   db.raw.close();

@@ -61,6 +61,12 @@ function recordMaintenanceWrites(db: Db, now: Date, limit: number): Statement[] 
       )
       .bind(stamp, limit),
     ...googleGroupPruneWrites(db, now, limit),
+    db
+      .prepare(
+        `UPDATE roster_import_records SET evidence=NULL,reasons='[]',state='erased' WHERE id IN (
+      SELECT id FROM roster_import_records WHERE person_id IS NULL AND evidence IS NOT NULL AND recorded_at<? ORDER BY recorded_at,id LIMIT ?)`,
+      )
+      .bind(new Date(now.getTime() - 30 * 86_400_000).toISOString(), limit),
   ];
 }
 async function runInactiveMaintenance(

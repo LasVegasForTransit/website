@@ -92,7 +92,7 @@ export async function welcomeAction(
   });
 }
 
-export function welcomeSource(source: string): string {
+export function welcomeSource(source: string | null): string {
   const labels: Record<string, string> = {
     join_form: t('staff.labels.join_form'),
     newsletter_box: t('staff.labels.newsletter_box'),
@@ -104,7 +104,7 @@ export function welcomeSource(source: string): string {
     check_in: t('staff.labels.check_in'),
     account: t('staff.labels.account'),
   };
-  return labels[source] ?? t('staff.welcome.otherSource');
+  return (source ? labels[source] : null) ?? t('staff.welcome.otherSource');
 }
 export function welcomeInterestLabels(interests: readonly string[]): string {
   const labels: Record<string, string> = {

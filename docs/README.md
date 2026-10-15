@@ -33,6 +33,8 @@ just say guides.)
   record for a privacy request.
 - [Export all member records](./guides/export-member-records.md) — move LVBT's records to a
   spreadsheet or contact-management system while preserving permission evidence.
+- [Import existing member records](./guides/import-existing-members.md) — preserve original sources,
+  review a database-aware preview, and safely bring in the current roster.
 - [Combine duplicate member records](./guides/combine-member-records.md) — confirm a match, combine
   safely, and undo a mistaken combination without losing history
 - [Enter paper signups](./guides/enter-paper-signups.md) — print a sheet, record attendance and

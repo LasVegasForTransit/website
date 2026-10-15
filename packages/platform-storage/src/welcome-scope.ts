@@ -14,7 +14,7 @@ export const WELCOME_SCOPE = `EXISTS (SELECT 1 FROM people viewer
 export const MEMBER_SINCE = `(SELECT min(given_at) FROM consent_records
  WHERE person_id=p.id AND scope='newsletter' AND withdrawn_at IS NULL)`;
 export const UNWELCOMED = `NOT EXISTS (SELECT 1 FROM engagement_events e WHERE e.person_id=p.id
- AND e.type='welcomed' AND julianday(e.occurred_at)>=julianday(${MEMBER_SINCE}))`;
+ AND e.type='welcomed' AND (${MEMBER_SINCE} IS NULL OR julianday(e.occurred_at)>=julianday(${MEMBER_SINCE})))`;
 export async function canWelcomePerson(
   db: Db,
   actorId: string,

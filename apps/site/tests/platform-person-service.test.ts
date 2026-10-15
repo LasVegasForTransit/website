@@ -41,7 +41,7 @@ void test('a newsletter consent makes a member and withdrawing it makes a former
   assert.equal(action, 'created');
   assert.equal(person.email, 'ana@example.org');
   assert.equal(person.membership_status, 'member');
-  assert.equal(person.membership_rules_version, 1);
+  assert.equal(person.membership_rules_version, 2);
 
   const withdrawn = await people.withdrawConsent(person.id, {
     scope: 'newsletter',

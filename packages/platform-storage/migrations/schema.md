@@ -763,3 +763,30 @@ erased. Only a current administrator can mark a particular revision reviewed. A 
 membership change reopens review. No Google account or file is deleted by this flag. Follow
 [Operate member data retention](../../../docs/guides/operate-member-data-retention.md) for setup,
 verification, receipt interpretation, and recovery.
+
+## Roster import review evidence
+
+`roster_import_records` retains bounded matching and signup facts from each original source. An
+unverified email match stays unlinked with `suggested_person_id`, without creating a second profile;
+a current administrator must confirm the displayed source and person before attachment. Its source,
+source ID and evidence hash make unchanged repeats safe. A row belongs to a person when the matching
+rules can establish one; otherwise an administrator can review the unassigned source row. `held`
+means staff need to confirm missing or conflicting information. It does not create consent or assert
+a joining date. `applied` means that version was handled; `superseded` preserves an earlier hold
+after newer evidence applied; `erased` retains only the replay marker without personal evidence.
+
+Original answer, wording, method and timestamps remain distinct from observation and import times.
+The table contains an explicit allowlist, not arbitrary provider payloads. It follows person merge
+ownership, erasure and retention. Unassigned personal evidence is cleared after 30 days, and erasure
+also clears an unassigned row matching the person's recorded email. Administrator exports retain
+assigned evidence with each person and unassigned evidence once at the top level. Member downloads
+exclude acquisition metadata, source-sheet links, response IDs and operational references.
+
+`membership_roll` records authoritative current Beehiiv membership separately from historical
+newsletter consent. Each source account has one row with its person, original provider status,
+observation time, optional original account and actual withdrawal times, recognition/revocation
+state, a review reason and a concurrency token. Active recognized membership participates in rule
+version 2; it never creates a consent answer, signup date or `member_since`. Existing rule version 1
+remains immutable. A real later withdrawal takes precedence, and unclear ordering holds provider
+writes for staff review. Erasure and physical retention remove the row; merge and undo preserve its
+owner. Administrator and member exports include the applicable evidence.

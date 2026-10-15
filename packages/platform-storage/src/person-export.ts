@@ -194,5 +194,7 @@ export async function collectPersonExport(
     newsletter_observations: snapshot.newsletter_observations,
     newsletter_choices: snapshot.newsletter_choices,
     newsletter_source_events: snapshot.newsletter_source_events,
+    imported_signup_evidence: snapshot.imported_signup_evidence,
+    current_membership_evidence: snapshot.current_membership_evidence,
   };
 }

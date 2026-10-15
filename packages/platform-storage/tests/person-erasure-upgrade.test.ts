@@ -4,11 +4,13 @@ import { URL } from 'node:url';
 import test from 'node:test';
 import { applyMigrations } from './support/db';
 import { mergeFixture } from './support/merge-fixture';
+import { useHistoricalMembershipSchema } from './support/legacy-membership';
 
 void test('an existing active merge stays reversible after the erasure migration', async () => {
-  const f = await mergeFixture('0024_person_erasure.sql');
+  const f = await mergeFixture();
   const combined = await f.mergePeople(f.db, f.actor, f.input);
   assert.equal(combined.kind, 'ok');
+  useHistoricalMembershipSchema(f.db, '0024_person_erasure.sql');
   // Recreate the previous canonical schema and snapshot shape, then apply the
   // real upgrade. Old archives have no erased_at field in their saved people.
   f.db.raw.exec(`DROP TRIGGER merges_bookkeeping_immutable;

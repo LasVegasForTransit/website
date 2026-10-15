@@ -6,6 +6,16 @@ export function rowValue(row: MergeRow, field: string): SqlValue {
   return value;
 }
 export const RELATED_TABLES = {
+  membership_roll: {
+    key: 'external_id',
+    columns:
+      'external_id,person_id,status,observed_at,source_created_at,withdrawn_at,entitled,recognized_at,revoked_at,review_reason,revision_token',
+  },
+  roster_import_records: {
+    key: 'id',
+    columns:
+      'id,source,source_id,evidence_hash,person_id,suggested_person_id,state,reasons,evidence,recorded_at',
+  },
   consent_records: {
     key: 'id',
     columns:

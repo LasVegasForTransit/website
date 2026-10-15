@@ -60,6 +60,7 @@ try {
               '/access/events/',
               '/newsletter/',
               '/offboarding/',
+              '/imports/',
               '/paper/',
               '/paper/sheet/',
               '/welcome/',

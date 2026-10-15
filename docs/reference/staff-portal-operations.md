@@ -815,6 +815,10 @@ applies to every supported action.
 
 ## Historical roster preview
 
+Use [Import existing member records](../guides/import-existing-members.md) for the actual
+database-aware dry run, reviewed apply, and recovery procedure. The command below only checks a
+normalized file.
+
 Give the read-only import command a reviewed JSON array normalized to the roster evidence fields. It
 prints aggregate counts and row numbers with conflict reasons; it omits email addresses and provider
 IDs. It does not write member records or a report file.

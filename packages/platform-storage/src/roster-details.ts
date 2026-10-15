@@ -43,7 +43,7 @@ export async function rosterDetails(
       LIMIT 1) AS discord_in_server,
     (p.membership_status='member' AND ${WELCOME_SCOPE} AND ${UNWELCOMED}
       AND ((julianday(${MEMBER_SINCE})>=julianday(?) AND julianday(${MEMBER_SINCE})<=julianday(?))
-      OR (claim.actor_id=? AND claim.expires_at>?))) AS welcome_pending,
+      OR (claim.actor_id=? AND claim.expires_at>?) OR ${MEMBER_SINCE} IS NULL)) AS welcome_pending,
     claim.actor_id AS claimed_by,
     NULLIF(trim(coalesce(claimant.given_name,'') || ' ' || coalesce(claimant.family_name,'')),'') AS claimed_by_name
     FROM people p LEFT JOIN welcome_claims claim ON claim.person_id=p.id AND claim.expires_at>?

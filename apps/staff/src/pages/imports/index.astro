@@ -1,0 +1,149 @@
+---
+import StaffLayout from '../../layouts/StaffLayout.astro';
+import Button from '../../../../site/src/components/app/Button.astro';
+import { formatDate, t } from '@lasvegasfortransit/platform-core/messages';
+import { ulid } from '@lasvegasfortransit/platform-core/ids';
+import { issueFormToken } from '@lasvegasfortransit/platform-storage/form-tokens';
+import {
+  rosterImportReviews,
+  type RosterReviewRow,
+} from '@lasvegasfortransit/platform-storage/roster-import-reviews';
+import { messageResponse } from '../../lib/responses';
+const staff = Astro.locals.staff;
+if (!staff?.actor.staffAdmin) return messageResponse('You don’t have access to this', 403);
+const page = await rosterImportReviews(
+  staff.db,
+  staff.actor,
+  Astro.url.searchParams.get('after') ?? '',
+);
+function evidence(value: string): Record<string, unknown> {
+  return JSON.parse(value) as Record<string, unknown>;
+}
+function object(value: unknown): Record<string, unknown> {
+  return value && typeof value === 'object' ? (value as Record<string, unknown>) : {};
+}
+function nextStep(reasons: string): string {
+  const values = JSON.parse(reasons) as string[];
+  if (values.includes('identity_match_unconfirmed')) return t('staff.imports.match');
+  if (values.some((reason) => reason.includes('duplicate'))) return t('staff.imports.duplicate');
+  if (values.some((reason) => reason.includes('withdrawal'))) return t('staff.imports.withdrawal');
+  return t('staff.imports.missing');
+}
+function canConfirm(item: RosterReviewRow): boolean {
+  return (
+    item.personId === null &&
+    Boolean(item.suggestedPersonId && item.suggestedEmail && item.suggestedUpdatedAt) &&
+    (JSON.parse(item.reasons) as string[]).includes('identity_match_unconfirmed')
+  );
+}
+// A successful POST consumes this shared token, then redirects to a freshly issued page.
+const token = page.items.some(canConfirm)
+  ? await issueFormToken(staff.db, staff.actor, 'imports:resolve')
+  : '';
+---
+
+<StaffLayout title={t('staff.imports.title')} description={t('staff.imports.description')}>
+  <a slot="breadcrumb" href="/people/" class="staff-back">{t('staff.imports.back')}</a>
+  {
+    Astro.url.searchParams.get('confirmed') === '1' && (
+      <p role="status">{t('staff.imports.confirmed')}</p>
+    )
+  }
+  {
+    page.items.length ? (
+      <ul class="staff-review-list" aria-label={t('staff.imports.title')}>
+        {page.items.map((item) => {
+          const facts = evidence(item.evidence),
+            newsletter = object(facts.newsletter),
+            form = object(facts.form);
+          return (
+            <li>
+              <h2>
+                {item.personId ? <a href={`/people/${item.personId}/`}>{item.name}</a> : item.name}
+              </h2>
+              <p>
+                {item.source === 'beehiiv'
+                  ? t('staff.imports.newsletter')
+                  : t('staff.imports.form')}
+              </p>
+              {item.email && item.name !== item.email && <p>{item.email}</p>}
+              <p>
+                {item.personId &&
+                (JSON.parse(item.reasons) as string[]).includes('identity_match_unconfirmed')
+                  ? t('staff.imports.linked')
+                  : nextStep(item.reasons)}
+              </p>
+              {canConfirm(item) && (
+                <>
+                  <dl>
+                    <div>
+                      <dt>{t('staff.imports.possibleMember')}</dt>
+                      <dd>
+                        <a href={`/people/${item.suggestedPersonId}/`}>
+                          {item.suggestedName ?? item.suggestedEmail}
+                        </a>
+                        {item.suggestedName !== item.suggestedEmail && <p>{item.suggestedEmail}</p>}
+                      </dd>
+                    </div>
+                  </dl>
+                  <form method="post" action="/imports/resolve/" class="staff-form">
+                    <input type="hidden" name="token" value={token} />
+                    <input type="hidden" name="operation_id" value={ulid()} />
+                    <input type="hidden" name="record_id" value={item.id} />
+                    <input type="hidden" name="person_id" value={item.suggestedPersonId} />
+                    <input type="hidden" name="person_updated_at" value={item.suggestedUpdatedAt} />
+                    <input type="hidden" name="evidence_hash" value={item.evidenceHash} />
+                    <Button>{t('staff.imports.confirm')}</Button>
+                  </form>
+                </>
+              )}
+              {newsletter.wording && (
+                <p>{t('staff.imports.question', { question: String(newsletter.wording) })}</p>
+              )}
+              {!form.submittedAt && form.sourceSubmittedAt && (
+                <p>{t('staff.imports.sourceTime', { date: String(form.sourceSubmittedAt) })}</p>
+              )}
+              {(form.affirmativeAnswer || newsletter.answer) && (
+                <p>
+                  {t('staff.imports.answer', {
+                    answer: String(form.affirmativeAnswer ?? newsletter.answer),
+                  })}
+                </p>
+              )}
+              {form.referral && (
+                <p>{t('staff.imports.referral', { referral: String(form.referral) })}</p>
+              )}
+              {form.discordUsername && (
+                <p>{t('staff.imports.discord', { name: String(form.discordUsername) })}</p>
+              )}
+              {form.submittedAt && (
+                <p>
+                  {t('staff.imports.submitted', {
+                    date: formatDate(new Date(String(form.submittedAt))),
+                  })}
+                </p>
+              )}
+              {item.personId && (
+                <a href={`/people/${item.personId}/edit/`}>{t('staff.imports.correct')}</a>
+              )}
+            </li>
+          );
+        })}
+      </ul>
+    ) : (
+      <div class="staff-empty">
+        <>
+          <h2>{t('staff.imports.empty')}</h2>
+          <p>{t('staff.imports.emptyHelp')}</p>
+        </>
+      </div>
+    )
+  }
+  {
+    page.next && (
+      <a class="staff-next" href={`/imports/?after=${encodeURIComponent(page.next)}`}>
+        {t('staff.imports.next')}
+      </a>
+    )
+  }
+</StaffLayout>

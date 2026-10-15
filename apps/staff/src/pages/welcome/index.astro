@@ -48,21 +48,31 @@ try {
                     {welcomeName(person)}
                   </a>
                   <p class="mt-1 text-body-sm text-on-surface-variant">
-                    Joined{' '}
-                    {new Date(person.joinedAt).toLocaleDateString('en-US', {
-                      month: 'short',
-                      day: 'numeric',
-                      timeZone: 'America/Los_Angeles',
-                    })}
+                    {person.joinedAt && (
+                      <>
+                        Joined{' '}
+                        {new Date(person.joinedAt).toLocaleDateString('en-US', {
+                          month: 'short',
+                          day: 'numeric',
+                          timeZone: 'America/Los_Angeles',
+                        })}
+                      </>
+                    )}
                     {person.overdue && (
                       <span class="staff-welcome-overdue">{t('staff.welcome.overdue')}</span>
                     )}
                   </p>
                   <p class="mt-1 text-body-sm text-on-surface-variant">
-                    {t('staff.welcome.source', { source: welcomeSource(person.source) })} ·{' '}
-                    {person.waitingDays === 0
-                      ? t('staff.welcome.today')
-                      : t('staff.welcome.waitingDays', { count: person.waitingDays })}
+                    {t('staff.welcome.source', { source: welcomeSource(person.source) })}
+                    {person.waitingDays !== null && (
+                      <>
+                        {' '}
+                        ·{' '}
+                        {person.waitingDays === 0
+                          ? t('staff.welcome.today')
+                          : t('staff.welcome.waitingDays', { count: person.waitingDays })}
+                      </>
+                    )}
                   </p>
                   {person.interests.length > 0 && (
                     <p class="mt-1 text-body-sm">

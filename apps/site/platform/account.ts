@@ -57,7 +57,7 @@ export async function accountView(db: Db, personId: string): Promise<AccountView
   const since = consent?.since ?? null;
   return {
     person,
-    onMailingList: since !== null,
+    onMailingList: person.membership_status === 'member',
     memberSince: since,
     area: areaLabel(person),
   };
