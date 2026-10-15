@@ -44,7 +44,10 @@ class SnapshotTests(unittest.TestCase):
             path = pathlib.Path(directory) / 'exists.sqlite'
             path.touch()
             with self.assertRaises(ValueError): snapshot.restore(snapshot.capture_local(db), path)
-        db.execute('INSERT INTO people(amount) VALUES(?)', (-3.6391714106235285e-187,))
+        # SQLite literal formatting differs by platform/version. Simulate a formatter
+        # that loses precision so this verifies the source-side guard on every runner.
+        db.create_function('quote', 1, lambda value: '0.0')
+        db.execute('INSERT INTO people(amount) VALUES(?)', (1.25,))
         with self.assertRaises(ValueError): snapshot.capture_local(db)
         db.close()
 
