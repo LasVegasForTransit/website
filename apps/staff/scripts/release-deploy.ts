@@ -6,7 +6,7 @@ import { portableConfiguration } from './release-config';
 import { type Environment } from './preflight-config';
 import { preflightStaff } from './preflight';
 import { MetadataClient, object } from './preflight-api';
-import { previewSetupReady } from './preview-setup';
+import { assertPreviewSetupReady } from './preview-setup';
 import { previewShutdownReady } from './preview-shutdown';
 import { disabledDeployment } from './preflight-workers';
 import {
@@ -18,7 +18,13 @@ import {
   sameSchedule,
   verifySavedSchedule,
 } from './release-schedule';
-import { deploymentStep, DeploymentFailure } from './release-failure';
+import {
+  deploymentStep,
+  DeploymentFailure,
+  deploymentDiagnostics,
+  failedChecks,
+  type DeploymentCheck,
+} from './release-failure';
 import {
   activeDeployment,
   providerOutput,
@@ -57,15 +63,7 @@ async function previewBoundary(
   checks: Awaited<ReturnType<typeof preflightStaff>>['checks'],
   state: { currentSchedule: string[]; final: boolean },
 ) {
-  if (options.stage === 'setup') {
-    if (
-      !(await deploymentStep('setup-boundary', () =>
-        previewSetupReady(options.root, client, checks),
-      ))
-    )
-      throw new DeploymentFailure('setup-boundary');
-    return true;
-  }
+  if (options.stage === 'setup') return await assertPreviewSetupReady(options.root, client, checks);
   if (options.stage === 'shutdown') {
     if (
       !(await deploymentStep('shutdown-boundary', () =>
@@ -118,7 +116,7 @@ async function ready(options: DeploymentOptions, receipt?: DeploymentReceipt, fi
   );
   if (final && receipt?.schedule && !sameSchedule(currentSchedule, receipt.schedule.desired))
     throw new DeploymentFailure('jobs.schedule');
-  if (failures.length) throw new DeploymentFailure('configuration');
+  if (failures.length) failedChecks('configuration', failures);
 }
 async function withRelease<T>(
   directory: string,
@@ -288,7 +286,7 @@ export async function inspectStaffRelease(
   return await withRelease(directory, identity, options, async (copy, expected) => {
     const receipt = await deploymentStep('receipt', () => readReceipt(file, expected));
     await verifySavedSchedule(copy, receipt);
-    const checks: { stage: string; passed: boolean }[] = [];
+    const checks: DeploymentCheck[] = [];
     for (const worker of receipt.workers) {
       try {
         const config = object(
@@ -305,6 +303,7 @@ export async function inspectStaffRelease(
         checks.push({
           stage: error instanceof DeploymentFailure ? error.stage : 'saved-configuration',
           passed: false,
+          ...deploymentDiagnostics(error),
         });
       }
     }
@@ -318,6 +317,7 @@ export async function inspectStaffRelease(
       checks.push({
         stage: error instanceof DeploymentFailure ? error.stage : 'configuration',
         passed: false,
+        ...deploymentDiagnostics(error),
       });
     }
     return {
@@ -344,8 +344,7 @@ async function activeConfigurationReady(
     if (!(await previewShutdownReady(options.root, client, report.checks, true)))
       throw new DeploymentFailure('shutdown-boundary');
   } else if (options.stage === 'setup') {
-    if (!(await previewSetupReady(options.root, client, report.checks)))
-      throw new DeploymentFailure('setup-boundary');
+    await assertPreviewSetupReady(options.root, client, report.checks);
   } else if (
     report.checks.some(
       (check) =>

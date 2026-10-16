@@ -3,11 +3,13 @@ import { resolve } from 'node:path';
 import ts from 'typescript';
 import { array, object } from './preflight-api';
 import { discordProviderConfiguration } from '@lasvegasfortransit/platform-integrations/discord-runtime';
+import type { SafeDiagnostics } from './release-diagnostics';
 export type Environment = 'production' | 'preview';
 export interface Check {
   id: string;
   status: 'passed' | 'failed' | 'unverified';
   detail: string;
+  diagnostics?: SafeDiagnostics;
 }
 export function check(id: string, passed: boolean, detail: string): Check {
   return { id, status: passed ? 'passed' : 'failed', detail };

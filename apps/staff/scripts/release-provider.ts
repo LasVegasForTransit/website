@@ -16,6 +16,7 @@ import {
 } from './preflight-workers';
 import { setupBindings } from './preview-setup';
 import type { DeploymentOptions } from './release-deploy';
+import { ReleaseDiagnosticError } from './release-diagnostics';
 
 const execute = promisify(execFile);
 export function assertDeploymentOptions(options: DeploymentOptions) {
@@ -80,6 +81,39 @@ function serviceBindingsMatch(
     ),
   );
 }
+function requiredBindingChecks(
+  bindings: Record<string, unknown>[],
+  worker: WorkerReceipt,
+  receipt: DeploymentReceipt,
+) {
+  return STAFF_WORKER_BINDINGS[worker.app]
+    .filter(
+      (name) =>
+        !(
+          receipt.stage === 'setup' &&
+          receipt.environment === 'preview' &&
+          name === 'LVBT_DISCORD_BOT_TOKEN'
+        ),
+    )
+    .map(
+      (name) =>
+        [
+          `version.binding.${name}`,
+          bindings.some(
+            (binding) =>
+              binding.name === name &&
+              (binding.type === 'secret_text' ||
+                ([
+                  'LVBT_ACCESS_AUD',
+                  'LVBT_ACCESS_TEAM_DOMAIN',
+                  'LVBT_GOOGLE_OAUTH_CLIENT_ID',
+                ].includes(name) &&
+                  binding.type === 'plain_text' &&
+                  Boolean(binding.text))),
+          ),
+        ] as const,
+    );
+}
 export async function verifyVersion(
   client: MetadataClient,
   worker: WorkerReceipt,
@@ -87,57 +121,59 @@ export async function verifyVersion(
   config: Record<string, unknown>,
 ) {
   const version = object(await client.get(`${workerPath(worker)}/versions/${worker.versionId}`));
-  const bindings = array(object(version.resources).bindings);
+  let bindings: Record<string, unknown>[];
+  try {
+    bindings = array(object(version.resources).bindings);
+  } catch {
+    throw new ReleaseDiagnosticError([{ id: 'version.metadata', status: 'unverified' }]);
+  }
   const database = array(config.d1_databases).find((db) => db.binding === 'PLATFORM_DB');
   const vars = object(config.vars);
-  if (
-    version.id !== worker.versionId ||
-    object(version.annotations)['workers/message'] !== releaseMessage(receipt) ||
-    !serviceBindingsMatch(bindings, config) ||
-    !bindings.some(
-      (binding) =>
-        binding.type === 'd1' &&
-        binding.name === 'PLATFORM_DB' &&
-        binding.id === database?.database_id,
-    ) ||
-    !Object.entries(vars).every(([name, text]) =>
+  const checks = [
+    ['version.id', version.id === worker.versionId],
+    [
+      'version.annotation',
+      object(version.annotations)['workers/message'] === releaseMessage(receipt),
+    ],
+    ['version.services', serviceBindingsMatch(bindings, config)],
+    [
+      'version.database',
       bindings.some(
         (binding) =>
-          binding.name === name && binding.type === 'plain_text' && binding.text === text,
+          binding.type === 'd1' &&
+          binding.name === 'PLATFORM_DB' &&
+          binding.id === database?.database_id,
       ),
-    ) ||
-    !STAFF_WORKER_BINDINGS[worker.app]
-      .filter(
-        (name) =>
-          !(
-            receipt.stage === 'setup' &&
-            receipt.environment === 'preview' &&
-            name === 'LVBT_DISCORD_BOT_TOKEN'
+    ],
+    ...Object.entries(vars).map(
+      ([name, text]) =>
+        [
+          `version.variable.${name}`,
+          bindings.some(
+            (binding) =>
+              binding.name === name && binding.type === 'plain_text' && binding.text === text,
           ),
-      )
-      .every((name) =>
-        bindings.some(
-          (binding) =>
-            binding.name === name &&
-            (binding.type === 'secret_text' ||
-              ([
-                'LVBT_ACCESS_AUD',
-                'LVBT_ACCESS_TEAM_DOMAIN',
-                'LVBT_GOOGLE_OAUTH_CLIENT_ID',
-              ].includes(name) &&
-                binding.type === 'plain_text' &&
-                Boolean(binding.text))),
-        ),
-      ) ||
-    (worker.app === 'staff' &&
-      bindings.some((binding) =>
-        ['LVBT_DISCORD_BOT_TOKEN', 'LVBT_BEEHIIV_API_KEY', 'LVBT_NEWSLETTER_INTENT_KEY'].includes(
-          String(binding.name),
-        ),
-      )) ||
-    (worker.app === 'jobs' && !newsletterBindingsReady(bindings, receipt.environment))
-  )
-    throw new Error('Uploaded version does not match the selected release configuration.');
+        ] as const,
+    ),
+    ...requiredBindingChecks(bindings, worker, receipt),
+    [
+      'version.forbidden_bindings',
+      !(
+        worker.app === 'staff' &&
+        bindings.some((binding) =>
+          ['LVBT_DISCORD_BOT_TOKEN', 'LVBT_BEEHIIV_API_KEY', 'LVBT_NEWSLETTER_INTENT_KEY'].includes(
+            String(binding.name),
+          ),
+        )
+      ),
+    ],
+    [
+      'version.newsletter',
+      worker.app !== 'jobs' || newsletterBindingsReady(bindings, receipt.environment),
+    ],
+  ] as const;
+  const failed = checks.filter(([, passed]) => !passed).map(([id]) => ({ id, status: 'failed' }));
+  if (failed.length) throw new ReleaseDiagnosticError(failed);
 }
 export async function activeDeployment(client: MetadataClient, worker: WorkerReceipt) {
   const latest = array(
