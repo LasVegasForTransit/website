@@ -129,8 +129,8 @@ enables and verifies the consumer before the website begins relying on queued up
 3. Preserve `LVBT_BEEHIIV_CONFLICT_POLICY=staff_review` in the reviewed launch configuration: when
    an unsubscribe cannot be ordered against a recent signup, preserve membership, hold conflicting
    outgoing subscription changes, and send the difference to staff review. Do not change that policy
-   without a new maintainer decision. The source default is blank, which disables observation
-   processing. Always preserve a verified signup made after the observation.
+   without a new maintainer decision. A blank policy disables observation processing. Always
+   preserve a verified signup made after the observation.
 4. Obtain separate approval before creating a production platform API key or installing it as
    `LVBT_BEEHIIV_API_KEY` on **`lvbt-jobs` only**. Do not rotate or reuse an unrelated integration's
    key. In Beehiiv's new-key form, select **LVBT Updates** under **Publications**; do not leave
@@ -154,6 +154,21 @@ enables and verifies the consumer before the website begins relying on queued up
    the same isolated database. Production staff targets `lvbt-jobs`. This differs from the website's
    `LVBT_DISCORD_JOBS` binding used to forward optional callbacks. Keep the flag and minute schedule
    disabled until a reviewed launch release passes the required workflow and live acceptance.
+
+Production publication and schedule activation remain launch implementation work. The current staff
+release workflow publishes preview versions only and does not apply cron changes. Keep schedules and
+synchronization disabled until a supported activation path is implemented, reviewed and verified.
+
+Once that path exists and launch is approved, set `LVBT_BEEHIIV_SYNC_ENABLED=true` and
+`triggers.crons` to `["* * * * *"]` for only the approved target environment in
+`apps/jobs/wrangler.jsonc`. Production uses the top-level settings; a named environment uses its own
+`env` entry. Update that environment's disabled-state expectations in
+`apps/jobs/tests/configuration.test.ts`, regenerate Worker types, and run `pnpm check`. The reviewed
+release path must apply and read back the approved schedule as well as activate the saved code;
+version activation alone does not change cron triggers. Verify actual scheduled processing before
+accepting launch. Dashboard-only cron edits do not survive later uploads. Leave other environments
+disabled and retain the `release.previewOnly` hold until its separate removal requirements above are
+met.
 
 Skip webhook configuration on Free. If signed callbacks become available under a separately approved
 setup, configure `subscription.created`, `subscription.confirmed`, and `subscription.deleted`, with

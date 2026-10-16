@@ -1,9 +1,9 @@
 # Scheduled membership work
 
 This Worker performs bounded profile and audit retention and processes incoming newsletter choices,
-pending newsletter requests, and Discord membership and committee role changes once a minute. It has
-no public HTTP API. The production and preview configurations keep synchronization disabled until
-maintainer setup and live verification are complete.
+pending newsletter requests, and Discord membership and committee role changes once a minute after
+launch. It has no public HTTP API. The production and preview configurations keep schedules and
+synchronization disabled until maintainer setup and live verification are complete.
 
 Shared reconciliation work is marked done only after every verified linked provider has a fresh
 success receipt. A missing provider link needs no receipt; an enabled identity with no current
@@ -64,10 +64,11 @@ Set `LVBT_BEEHIIV_SYNC_ENABLED=true` only after approved provider setup. Jobs re
 `LVBT_BEEHIIV_PUBLICATION_ID`, `LVBT_BEEHIIV_PRODUCTION_PUBLICATION_ID`, the encrypted
 `LVBT_BEEHIIV_API_KEY` secret, and a dedicated `LVBT_NEWSLETTER_INTENT_KEY` secret. The intent key
 is a base64url-encoded 32-byte random value used only by jobs to protect incoming addresses and
-recover interrupted creation; never reuse a sign-in or provider credential. Preview must use a
-different publication from production. Production must match its declared production publication.
-Missing or inconsistent configuration disables newsletter work. Both source environments default to
-disabled.
+recover interrupted creation; never reuse a sign-in or provider credential. Ordinary hosted preview
+keeps its selected publication blank and has no live Beehiiv key. Local tests use synthetic
+publication IDs and provider fixtures; the preview guard rejects the real production publication.
+Production must match its declared production publication. Missing or inconsistent configuration
+disables newsletter work. Both source environments default to disabled.
 
 Free-plan API work does not require a webhook key. Optional signed intake requires the selected
 publication's valid `LVBT_BEEHIIV_WEBHOOK_SECRET` on jobs. The website's `POST /webhooks/beehiiv`

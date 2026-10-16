@@ -208,8 +208,9 @@ These already exist for LVBT, so you copy values rather than create anything.
 #### Scheduled newsletter credentials
 
 The jobs Worker needs its own approved Beehiiv configuration. Website bootstrap does not install
-these credentials on jobs. Preview uses `lvbt-jobs-preview` and a separate Beehiiv publication;
-production uses `lvbt-jobs`. Follow
+these credentials on jobs. Production uses `lvbt-jobs` and LVBT Updates. Hosted preview uses
+`lvbt-jobs-preview` with no live Beehiiv key and a blank selected publication; ordinary tests use
+isolated local fixtures. Follow
 [Scheduled newsletter processing](./staff-portal-operations.md#scheduled-newsletter-processing) for
 setup, callback reachability, verification, and recovery before enabling synchronization.
 
