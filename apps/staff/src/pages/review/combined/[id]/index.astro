@@ -4,13 +4,13 @@ import Button from '../../../../../../site/src/components/app/Button.astro';
 import { mergeView } from '@lasvegasfortransit/platform-storage/merge-views';
 import { issueFormToken } from '@lasvegasfortransit/platform-storage/form-tokens';
 import { ulid } from '@lasvegasfortransit/platform-core/ids';
-import { formatDate } from '@lasvegasfortransit/platform-core/messages';
+import { formatDate, t } from '@lasvegasfortransit/platform-core/messages';
 import { uncombineAction, type MergeFailure } from '../../../../lib/merges';
 import { messageResponse } from '../../../../lib/responses';
 const staff = Astro.locals.staff;
-if (!staff) return messageResponse("You don't have access to this", 403);
+if (!staff) return messageResponse(t('staff.common.accessDenied'), 403);
 const item = await mergeView(staff.db, staff.actor, Astro.params.id ?? '');
-if (!item) return messageResponse("You don't have access to this", 404);
+if (!item) return messageResponse(t('staff.common.accessDenied'), 404);
 let failure: MergeFailure | undefined;
 if (Astro.request.method === 'POST') {
   const result = await uncombineAction(Astro.request, staff, item);
@@ -24,21 +24,23 @@ const token =
     : null;
 ---
 
-<StaffLayout title={item.undoneAt ? 'Combination undone' : 'Entries combined'}>
-  <a slot="breadcrumb" href="/review/" class="staff-back">← Check duplicates</a>
-  <section class="staff-editor" aria-label="Combination details">
+<StaffLayout title={item.undoneAt ? t('staff.merge.undoneTitle') : t('staff.merge.combinedTitle')}>
+  <a slot="breadcrumb" href="/review/" class="staff-back">{t('staff.review.back')}</a>
+  <section class="staff-editor" aria-label={t('staff.merge.details')}>
     <p>
       {
         item.erasedAt
-          ? 'Saved personal details from this combination have been erased.'
+          ? t('staff.merge.detailsErased')
           : item.undoneAt
-            ? 'These entries are separate again.'
-            : 'These entries now share one member profile.'
+            ? t('staff.merge.separateAgain')
+            : t('staff.merge.sharedProfile')
       }
     </p>
     <ul class="mt-4 space-y-2">
       <li>
-        <a class="font-bold" href={`/people/${item.survivorId}/`}>{item.survivorName}</a> · Entry kept
+        <a class="font-bold" href={`/people/${item.survivorId}/`}>{item.survivorName}</a> · {
+          t('staff.merge.entryKept')
+        }
       </li>
       <li>
         {
@@ -49,25 +51,41 @@ const token =
           ) : (
             item.mergedName
           )
-        } · {item.erasedAt ? 'Details erased' : item.undoneAt ? 'Entry restored' : 'Entry combined'}
+        } · {
+          item.erasedAt
+            ? t('staff.profile.detailsErased')
+            : item.undoneAt
+              ? t('staff.merge.entryRestored')
+              : t('staff.merge.entryCombined')
+        }
       </li>
     </ul>
     <p class="mt-4 text-body-sm text-on-surface-variant">
-      Combined {formatDate(new Date(item.mergedAt))}{item.actorName && ` by ${item.actorName}`}.
+      {
+        item.actorName
+          ? t('staff.merge.combinedBy', {
+              date: formatDate(new Date(item.mergedAt)),
+              name: item.actorName,
+            })
+          : t('staff.merge.combinedAt', { date: formatDate(new Date(item.mergedAt)) })
+      }
     </p>
     {item.reason && <p class="mt-2 whitespace-pre-wrap [overflow-wrap:anywhere]">{item.reason}</p>}
-    {item.undoneAt && <p class="mt-4">Undone {formatDate(new Date(item.undoneAt))}.</p>}
+    {
+      item.undoneAt && (
+        <p class="mt-4">
+          {t('staff.merge.undoneAt', { date: formatDate(new Date(item.undoneAt)) })}
+        </p>
+      )
+    }
   </section>
   {
     !item.undoneAt && !item.erasedAt && (
       <section class="staff-review-decision" aria-labelledby="undo-heading">
         <h2 id="undo-heading" class="font-bold">
-          Combined by mistake?
+          {t('staff.merge.undoHeading')}
         </h2>
-        <p class="staff-help">
-          Undo restores the entries that were combined. Later activity stays on the member profile
-          where it was added.
-        </p>
+        <p class="staff-help">{t('staff.merge.undoHint')}</p>
         {failure && (
           <p role="alert" class="staff-error mt-4">
             {failure.error}
@@ -80,13 +98,13 @@ const token =
           </>
           <div>
             <>
-              <label for="reason">Reason for undoing</label>
+              <label for="reason">{t('staff.merge.undoReason')}</label>
               <textarea id="reason" name="reason" maxlength="2000" rows="2" required>
                 {failure?.reason ?? ''}
               </textarea>
             </>
           </div>
-          <Button variant="secondary">Undo combination</Button>
+          <Button variant="secondary">{t('staff.merge.undo')}</Button>
         </form>
       </section>
     )

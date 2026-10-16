@@ -10,10 +10,10 @@ import { reviewReason, separateAction, submittedEmail } from '../../lib/reviews'
 import { combineAction, type MergeFailure } from '../../lib/merges';
 import { messageResponse } from '../../lib/responses';
 const staff = Astro.locals.staff;
-if (!staff) return messageResponse("You don't have access to this", 403);
+if (!staff) return messageResponse(t('staff.common.accessDenied'), 403);
 const id = Astro.params.id ?? '';
 const item = await reviewItem(staff.db, staff.actor, id);
-if (!item) return messageResponse("You don't have access to this", 404);
+if (!item) return messageResponse(t('staff.common.accessDenied'), 404);
 let failure: MergeFailure | undefined;
 if (Astro.request.method === 'POST') {
   if (Astro.url.searchParams.get('decision') !== 'combine')
@@ -32,12 +32,18 @@ const combineToken = !item.resolvedAt
 const email = submittedEmail(item.details);
 ---
 
-<StaffLayout title="Are these the same person?" description={reviewReason(item.reason)}>
-  <a slot="breadcrumb" href="/review/" class="staff-back">← Check duplicates</a>
-  {email && <p class="mb-5 text-body-sm [overflow-wrap:anywhere]">Submitted email: {email}</p>}
+<StaffLayout title={t('staff.review.detailTitle')} description={reviewReason(item.reason)}>
+  <a slot="breadcrumb" href="/review/" class="staff-back">{t('staff.review.back')}</a>
+  {
+    email && (
+      <p class="mb-5 text-body-sm [overflow-wrap:anywhere]">
+        {t('staff.review.submittedEmail', { email })}
+      </p>
+    )
+  }
   <div class="staff-review-comparison">
-    <ReviewPerson profile={item.candidate} label="New entry" />
-    <ReviewPerson profile={item.existing} label="Already on our list" />
+    <ReviewPerson profile={item.candidate} label={t('staff.review.newEntry')} />
+    <ReviewPerson profile={item.existing} label={t('staff.review.existingEntry')} />
   </div>
   {
     failure && (
@@ -51,11 +57,15 @@ const email = submittedEmail(item.details);
       <div class="staff-review-decision">
         <>
           <h2 class="font-bold">
-            {item.resolution === 'kept_separate' ? 'Kept as two people' : 'Review completed'}
+            {item.resolution === 'kept_separate'
+              ? t('staff.review.keptSeparate')
+              : t('staff.review.completed')}
           </h2>
-          <p class="staff-help">Reviewed {formatDate(new Date(item.resolvedAt))}.</p>
+          <p class="staff-help">
+            {t('staff.review.reviewedAt', { date: formatDate(new Date(item.resolvedAt)) })}
+          </p>
           <a class="staff-next" href="/review/">
-            Back to possible duplicates
+            {t('staff.review.backToList')}
           </a>
         </>
       </div>
@@ -63,27 +73,26 @@ const email = submittedEmail(item.details);
       <>
         <section class="staff-review-decision" aria-labelledby="separate-heading">
           <h2 id="separate-heading" class="font-bold">
-            Different people?
+            {t('staff.review.separateHeading')}
           </h2>
-          <p class="staff-help">
-            Keep them separate if you’ve confirmed they are different people.
-          </p>
+          <p class="staff-help">{t('staff.review.separateHint')}</p>
           <form method="post" action={`/review/${id}/`} class="staff-form max-w-2xl">
             <input type="hidden" name="token" value={token} />
             <input type="hidden" name="operation_id" value={ulid()} />
             <div>
               <>
                 <label for="note">
-                  Note <span class="staff-optional">(optional)</span>
+                  {t('staff.record.note')}{' '}
+                  <span class="staff-optional">{t('staff.review.optional')}</span>
                 </label>
                 <textarea id="note" name="note" maxlength="2000" rows="2" />
               </>
             </div>
-            <Button variant="secondary">Keep separate</Button>
+            <Button variant="secondary">{t('staff.review.separate')}</Button>
           </form>
         </section>
         <details class="staff-review-decision staff-combine-options" open={Boolean(failure)}>
-          <summary>Combine if they are the same person</summary>
+          <summary>{t('staff.review.combineHeading')}</summary>
           <p class="staff-help">{t('staff.merge.keepsOlder')}</p>
           <form
             method="post"
@@ -96,13 +105,13 @@ const email = submittedEmail(item.details);
             </>
             <div>
               <>
-                <label for="combine-reason">Reason for combining</label>
+                <label for="combine-reason">{t('staff.review.combineReason')}</label>
                 <textarea id="combine-reason" name="reason" maxlength="2000" rows="2" required>
                   {failure?.reason ?? ''}
                 </textarea>
               </>
             </div>
-            <Button>Combine entries</Button>
+            <Button>{t('staff.review.combine')}</Button>
           </form>
         </details>
       </>

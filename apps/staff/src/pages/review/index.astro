@@ -1,4 +1,5 @@
 ---
+import { t } from '@lasvegasfortransit/platform-core/messages';
 import StaffLayout from '../../layouts/StaffLayout.astro';
 import { listReviews, type ReviewRow } from '@lasvegasfortransit/platform-storage/reviews';
 import type { Page } from '@lasvegasfortransit/platform-core/staff-types';
@@ -7,7 +8,7 @@ import { PermissionDenied } from '@lasvegasfortransit/platform-core/permissions'
 import { reviewReason } from '../../lib/reviews';
 import { messageResponse } from '../../lib/responses';
 const staff = Astro.locals.staff;
-if (!staff) return messageResponse("You don't have access to this", 403);
+if (!staff) return messageResponse(t('staff.common.accessDenied'), 403);
 let page: Page<ReviewRow> = { items: [], nextCursor: null };
 let error: string | undefined;
 try {
@@ -15,25 +16,26 @@ try {
     cursor: Astro.url.searchParams.get('cursor') ?? undefined,
   });
 } catch (cause) {
-  if (cause instanceof PermissionDenied) return messageResponse(cause.message, 403);
+  if (cause instanceof PermissionDenied)
+    return messageResponse(t('staff.common.accessDenied'), 403);
   if (!(cause instanceof InvalidCursor)) throw cause;
-  error = 'This page link is invalid. Open the list of possible duplicates again.';
+  error = t('staff.review.invalidLink');
   Astro.response.status = 400;
 }
 ---
 
-<StaffLayout title="Check duplicates" description="Check whether two entries are the same person.">
+<StaffLayout title={t('staff.review.title')} description={t('staff.review.description')}>
   {
     error && (
       <p role="alert">
-        {error} <a href="/review/">Start again</a>
+        {error} <a href="/review/">{t('staff.review.startAgain')}</a>
       </p>
     )
   }
   {
     !error &&
       (page.items.length ? (
-        <ul class="staff-review-list" aria-label="Possible duplicates">
+        <ul class="staff-review-list" aria-label={t('staff.review.list')}>
           {page.items.map((item) => (
             <li>
               <a href={`/review/${item.id}/`} class="staff-person-link">
@@ -46,8 +48,8 @@ try {
       ) : (
         <div class="staff-empty">
           <>
-            <h2>No possible duplicates to check</h2>
-            <p>Possible duplicates will appear here when we find them.</p>
+            <h2>{t('staff.review.empty')}</h2>
+            <p>{t('staff.review.emptyHint')}</p>
           </>
         </div>
       ))
@@ -55,7 +57,7 @@ try {
   {
     page.nextCursor && (
       <a class="staff-next" href={`/review/?cursor=${encodeURIComponent(page.nextCursor)}`}>
-        Next page
+        {t('staff.review.next')}
       </a>
     )
   }
