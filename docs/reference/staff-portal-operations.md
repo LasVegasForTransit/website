@@ -492,6 +492,13 @@ runtime suites, builds staff and jobs, and saves `staff-release-<Actions run ID>
 deployment credentials and does not upload Worker versions or apply migrations. CI also checks
 packaging on pull requests.
 
+Before starting a build, confirm the repository's `PUBLIC_LVBT_*` variables under **Settings →
+Secrets and variables → Actions → Variables**. The staff build uses the same public website settings
+as CI; [the environment example](../../apps/site/.env.example) lists them. Missing social or
+donation URLs can fail the website's UI checks before an artifact is saved. Correct the public
+variables and start a new build for the reviewed source; an unsuccessful run cannot supply a
+release.
+
 For a maintainer preparing a release locally, select a clean source checkout and an unused directory
 outside it:
 
