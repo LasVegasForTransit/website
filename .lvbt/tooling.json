@@ -149,6 +149,10 @@
         "type": "text",
         "value": "preview"
       },
+      "LVBT_DISCORD_JOBS": {
+        "type": "worker",
+        "worker": "lvbt-jobs-preview"
+      },
       "LVBT_RESEND_API_KEY": {
         "type": "secret"
       },

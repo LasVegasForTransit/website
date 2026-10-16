@@ -4,6 +4,10 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import test from 'node:test';
 import ts from 'typescript';
+import {
+  readReleaseConfiguration,
+  typedWorkerConfiguration,
+} from '@lasvegasfortransit/web-platform/release';
 import cloudflare from '../cloudflare.config.ts';
 import wranglerBuild from '../wrangler.config.ts';
 
@@ -45,6 +49,24 @@ void test('the production Worker serves Discord interactions before static asset
     production.worker.assets.runWorkerFirst.includes('/platform/discord/interactions'),
     'Discord interaction POSTs must reach the Worker handler, not the asset response',
   );
+});
+void test('saved releases retain isolated Discord jobs connections without enabling account linking', async () => {
+  const generated = typedWorkerConfiguration(
+    production,
+    await readReleaseConfiguration(path.resolve(deployDir, '../..')),
+    preview,
+  );
+  const previewConfig = (generated.env as { preview: Record<string, unknown> }).preview;
+  for (const [built, worker] of [
+    [generated, 'lvbt-jobs'],
+    [previewConfig, 'lvbt-jobs-preview'],
+  ] as const) {
+    assert.deepEqual(built.services, [{ binding: 'LVBT_DISCORD_JOBS', service: worker }]);
+    const vars = built.vars as Record<string, unknown>;
+    assert.equal(Object.hasOwn(vars, 'LVBT_DISCORD_APPLICATION_ID'), false);
+    assert.equal(Object.hasOwn(vars, 'LVBT_DISCORD_BOT_TOKEN'), false);
+    assert.deepEqual(built.triggers, { crons: [] });
+  }
 });
 void test('production and preview retain existing secret types and declared integration names without values', () => {
   const names = platform.secrets
@@ -121,6 +143,7 @@ void test('generated compatibility mirror preserves actual routes, database iden
       migrations_dir: string;
     }>;
     assets: { directory: string; run_worker_first: string[] | boolean; not_found_handling: string };
+    services: { binding: string; service: string }[];
   }
   const parsed = ts.parseConfigFileTextToJson(
     'wrangler.jsonc',
@@ -162,6 +185,12 @@ void test('generated compatibility mirror preserves actual routes, database iden
         database_name: built.worker.env.PLATFORM_DB.name,
         database_id: built.worker.env.PLATFORM_DB.id,
         migrations_dir: '../../packages/platform-storage/migrations',
+      },
+    ]);
+    assert.deepEqual(mode.services, [
+      {
+        binding: 'LVBT_DISCORD_JOBS',
+        service: built.worker.name === 'lvbt-website-preview' ? 'lvbt-jobs-preview' : 'lvbt-jobs',
       },
     ]);
   }

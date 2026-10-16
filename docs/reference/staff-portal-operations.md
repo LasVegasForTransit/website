@@ -490,6 +490,63 @@ credentials.
    after the audited designation is confirmed. Do not infer admin access from a domain or group
    alone.
 
+### Prepare the isolated Discord preview
+
+This procedure lets a maintainer prepare the test server without enabling Discord account linking or
+background role changes. Before starting, complete the approved app, test-server, bot-permission and
+credential setup in [platform secrets](./platform-secrets.md#discord). The bot must be above the
+test Member role. Keep the bot token only on `lvbt-jobs-preview` and the OAuth client secret only on
+`lvbt-website-preview`; do not copy either value into source or release credentials.
+
+1. In the `env.preview.vars` sections of `apps/jobs/wrangler.jsonc` and `apps/staff/wrangler.jsonc`,
+   use the same approved public values:
+
+   | Setting                            | Preview value         |
+   | ---------------------------------- | --------------------- |
+   | `LVBT_DEPLOYMENT_ENV`              | `preview`             |
+   | `LVBT_DISCORD_APPLICATION_ID`      | `1552481672945999872` |
+   | `LVBT_DISCORD_GUILD_ID`            | `1560146082640568350` |
+   | `LVBT_DISCORD_PRODUCTION_GUILD_ID` | `1509298455896522823` |
+   | `LVBT_DISCORD_MEMBER_ROLE_ID`      | `1560151428180353104` |
+
+   Keep `LVBT_DISCORD_SYNC_ENABLED=false` on both Workers, newsletter synchronization disabled, jobs
+   `triggers.crons` empty, and `release.previewOnly=true`. Leave production IDs and flags unchanged.
+   The production server ID is a guard: preview must never use it as its active server.
+
+2. The website's release source is `apps/deploy/cloudflare.config.ts`. Its `LVBT_DISCORD_JOBS`
+   binding must target `lvbt-jobs-preview` in preview and `lvbt-jobs` in production. Declare the
+   preview binding in `.lvbt/tooling.json` too. Regenerate the website compatibility file and types;
+   editing only `apps/site/wrangler.jsonc` does not fix a typed release:
+
+   ```sh
+   pnpm -C apps/deploy compat:generate
+   pnpm -C apps/site build:functions
+   pnpm -C apps/site exec wrangler types --include-runtime=false
+   pnpm -C apps/jobs exec wrangler types --include-runtime=false
+   pnpm check
+   ```
+
+3. Leave `LVBT_DISCORD_APPLICATION_ID` unset on the website until the live preview test is approved.
+   Website account linking checks the application ID, client secret and private jobs binding; it
+   does not check the staff/jobs synchronization flag. Filling that website ID early exposes account
+   linking while jobs is still unable to finish joining.
+4. Publish the reviewed saved builds only through the approved protected preview procedures. Use the
+   staff **setup** stage. Read back both Workers' disabled flags, the empty jobs schedule, the
+   isolated database and the website's preview service target. With the approved preview account,
+   confirm Discord account linking remains unavailable. If a target differs or linking appears, stop
+   and correct the selected source and release; do not enable jobs to conceal the mismatch.
+
+A later live test must explicitly cover enabling Discord on the isolated preview and its scheduled
+role changes. That step sets matching preview synchronization flags, supplies the website
+application ID, and verifies the exact preview OAuth callback. The launch stage requires a minute
+schedule; activate it only through a reviewed release path that applies and reads it back.
+Credential setup alone does not activate it. Plan verification and shutdown before enabling it; keep
+newsletter processing and production disabled. A successful join only queues role work. Confirm
+actual Member and multiple committee roles, unrelated-role preservation, removal and retry before
+accepting the integration. The `/link` command also needs its public key, guild-only registration
+and a Discord-reachable signed interaction endpoint; do not remove preview Access protection to make
+that separate check pass.
+
 ## Release order and rollback
 
 ### Prepare the saved artifact

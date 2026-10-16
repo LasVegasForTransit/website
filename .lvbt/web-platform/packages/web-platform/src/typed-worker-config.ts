@@ -137,6 +137,7 @@ export function typedWorkerConfiguration(
     built.env,
     config.previewBindings,
     config.previewReadOnlyBindings,
+    config.productionWorker,
   );
   durableNamespaces(built, preview, config);
   const assetNames = Object.entries(built.env)
