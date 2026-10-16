@@ -9,5 +9,7 @@ export function rosterReturn(value: string | null): string | null {
     const parameter = url.searchParams.get(key);
     if (parameter) query.set(key, parameter);
   }
+  const intent = url.searchParams.get('intent');
+  if (intent === 'search' || intent === 'filters') query.set('intent', intent);
   return `/people/${query.size ? `?${query.toString()}` : ''}`;
 }
