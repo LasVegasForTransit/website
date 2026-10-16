@@ -9,7 +9,11 @@ import {
   type WorkerReceipt,
   type DeploymentReceipt,
 } from './release-receipt';
-import { inspectDiscord } from './preflight-workers';
+import {
+  disabledProviderBindings,
+  inspectDiscord,
+  newsletterBindingsReady,
+} from './preflight-workers';
 import { setupBindings } from './preview-setup';
 
 const execute = promisify(execFile);
@@ -115,7 +119,12 @@ export async function verifyVersion(
         ),
       ) ||
     (worker.app === 'staff' &&
-      bindings.some((binding) => binding.name === 'LVBT_DISCORD_BOT_TOKEN'))
+      bindings.some((binding) =>
+        ['LVBT_DISCORD_BOT_TOKEN', 'LVBT_BEEHIIV_API_KEY', 'LVBT_NEWSLETTER_INTENT_KEY'].includes(
+          String(binding.name),
+        ),
+      )) ||
+    (worker.app === 'jobs' && !newsletterBindingsReady(bindings, receipt.environment))
   )
     throw new Error('Uploaded version does not match the selected release configuration.');
 }
@@ -163,7 +172,8 @@ export async function recordedTransition(client: MetadataClient, receipt: Deploy
       if (
         receipt.stage === 'setup'
           ? receipt.environment !== 'preview' || !setupBindings(bindings)
-          : inspectDiscord(bindings, bindings, receipt.environment).status !== 'passed'
+          : !disabledProviderBindings(bindings, receipt.environment) &&
+            inspectDiscord(bindings, bindings, receipt.environment).status !== 'passed'
       )
         return { valid: false, selectedActive };
     }

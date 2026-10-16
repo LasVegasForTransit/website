@@ -17,6 +17,7 @@ async function setupFixture(sourceEnabled = false, newsletterSourceEnabled = fal
       ts.parseConfigFileTextToJson(filename, await readFile(filename, 'utf8')).config,
     );
     const vars = object(object(object(config.env).preview).vars);
+    if (app === 'jobs') object(object(config.env).preview).triggers = { crons: [] };
     vars.LVBT_DISCORD_SYNC_ENABLED = sourceEnabled ? 'true' : 'false';
     if (app === 'jobs') vars.LVBT_BEEHIIV_SYNC_ENABLED = newsletterSourceEnabled ? 'true' : 'false';
     await writeFile(filename, JSON.stringify(config));

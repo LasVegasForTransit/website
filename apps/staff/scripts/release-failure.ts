@@ -8,6 +8,7 @@ export type DeploymentStage =
   | 'configuration'
   | 'recorded-traffic'
   | 'setup-boundary'
+  | 'jobs.schedule'
   | `${Worker}.version`
   | `${Worker}.upload`
   | `${Worker}.activation`
@@ -18,7 +19,7 @@ export type DeploymentStage =
 export class DeploymentFailure extends Error {
   constructor(readonly stage: DeploymentStage) {
     super(
-      `Staff preview stopped at ${stage}. Inspect the saved receipt and matching configuration checks before retrying.`,
+      `Staff release stopped at ${stage}. Inspect the saved receipt and matching configuration checks before retrying.`,
     );
     this.name = 'DeploymentFailure';
   }

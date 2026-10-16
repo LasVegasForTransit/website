@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import { readdirSync } from 'node:fs';
 import { resolve } from 'node:path';
 interface Mode {
+  production?: boolean;
   unsafe?: boolean;
   paginatedBypass?: boolean;
   denied?: boolean;
@@ -39,7 +40,7 @@ function bindings(path: string, mode: Mode) {
   const vars = {
     LVBT_ACCESS_AUD: 'staff-audience',
     LVBT_ACCESS_TEAM_DOMAIN: 'lvbt.cloudflareaccess.com',
-    LVBT_DEPLOYMENT_ENV: mode.productionDiscord ? 'production' : 'preview',
+    LVBT_DEPLOYMENT_ENV: mode.productionDiscord || mode.production ? 'production' : 'preview',
     LVBT_DISCORD_SYNC_ENABLED: mode.disabled ? 'false' : 'true',
     LVBT_DISCORD_APPLICATION_ID: '111111111111111111',
     LVBT_DISCORD_GUILD_ID: guildId,
@@ -63,14 +64,19 @@ function bindings(path: string, mode: Mode) {
           {
             type: 'service',
             name: 'LVBT_NEWSLETTER_JOBS',
-            service: mode.productionDiscord ? 'lvbt-jobs' : 'lvbt-jobs-preview',
+            service: mode.productionDiscord || mode.production ? 'lvbt-jobs' : 'lvbt-jobs-preview',
           },
         ]
       : []),
     {
       type: 'd1',
       name: 'PLATFORM_DB',
-      id: mode.unsafe && path.includes('jobs') ? 'production-db' : databaseId,
+      id:
+        mode.unsafe && path.includes('jobs')
+          ? 'production-db'
+          : mode.production
+            ? 'dcde8dbd-d827-4405-85b4-97bc2accc906'
+            : databaseId,
     },
     ...secrets.map((name) => ({ type: 'secret_text', name, text: 'DO-NOT-PRINT-SECRET' })),
     ...Object.entries(vars).map(([name, text]) => ({ type: 'plain_text', name, text })),
@@ -120,7 +126,12 @@ function metadata(url: URL, mode: Mode, root: string): unknown {
     deployments: () => deployment(mode),
     subdomain: () => ({ enabled: Boolean(mode.exposedSubdomain), previews_enabled: false }),
     domains: () => [
-      { hostname: 'staff-preview.lasvegasfortransit.org', service: 'lvbt-staff-preview' },
+      {
+        hostname: mode.production
+          ? 'staff.lasvegasfortransit.org'
+          : 'staff-preview.lasvegasfortransit.org',
+        service: mode.production ? 'lvbt-staff' : 'lvbt-staff-preview',
+      },
       ...(mode.exposedDomain
         ? [{ hostname: 'jobs.example.org', service: 'lvbt-jobs-preview' }]
         : []),
@@ -133,7 +144,9 @@ function metadata(url: URL, mode: Mode, root: string): unknown {
     apps: () => [
       {
         id: 'staff-app',
-        domain: 'staff-preview.lasvegasfortransit.org',
+        domain: mode.production
+          ? 'staff.lasvegasfortransit.org'
+          : 'staff-preview.lasvegasfortransit.org',
         aud: 'staff-audience',
         session_duration: '12h',
         type: 'self_hosted',

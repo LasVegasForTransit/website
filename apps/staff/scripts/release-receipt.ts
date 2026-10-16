@@ -4,6 +4,7 @@ import { isAbsolute, relative, resolve } from 'node:path';
 import { object } from './preflight-api';
 import type { StaffRelease } from './release-artifact';
 import type { Environment } from './preflight-config';
+import { parseSchedule, type ScheduleReceipt } from './release-schedule';
 
 export type App = 'staff' | 'jobs';
 export interface Traffic {
@@ -19,7 +20,7 @@ export interface WorkerReceipt {
   deploymentId?: string;
 }
 export interface DeploymentReceipt {
-  formatVersion: 1;
+  formatVersion: 1 | 2;
   commit: string;
   releaseId: string;
   artifactHash: string;
@@ -28,6 +29,7 @@ export interface DeploymentReceipt {
   stage: 'setup' | 'launch';
   status: 'uploading' | 'uploaded' | 'activating' | 'active' | 'failed';
   workers: WorkerReceipt[];
+  schedule?: ScheduleReceipt;
 }
 export function uuid(value: unknown): value is string {
   return typeof value === 'string' && /^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/i.test(value);
@@ -67,7 +69,7 @@ export function newReceipt(
   stage: 'setup' | 'launch' = 'launch',
 ): DeploymentReceipt {
   return {
-    formatVersion: 1,
+    formatVersion: 2,
     commit: release.commit,
     releaseId: release.releaseId,
     artifactHash: release.artifactHash,
@@ -90,16 +92,14 @@ export async function readReceipt(
 export function parseReceipt(value: unknown, expected: DeploymentReceipt): DeploymentReceipt {
   const receipt = object(value);
   if (
-    Object.keys(receipt).sort().join() !== Object.keys(expected).sort().join() ||
-    [
-      'formatVersion',
-      'commit',
-      'releaseId',
-      'artifactHash',
-      'accountId',
-      'environment',
-      'stage',
-    ].some((key) => receipt[key] !== object(expected)[key]) ||
+    Object.keys(receipt).some((key) => ![...Object.keys(expected), 'schedule'].includes(key)) ||
+    (receipt.formatVersion !== 1 && receipt.formatVersion !== 2) ||
+    (receipt.formatVersion === 1 &&
+      (expected.environment !== 'preview' || receipt.schedule !== undefined)) ||
+    (receipt.formatVersion === 2 && receipt.schedule === undefined) ||
+    ['commit', 'releaseId', 'artifactHash', 'accountId', 'environment', 'stage'].some(
+      (key) => receipt[key] !== object(expected)[key],
+    ) ||
     !['uploaded', 'activating', 'active', 'failed'].includes(String(receipt.status)) ||
     !Array.isArray(receipt.workers) ||
     receipt.workers.length !== 2
@@ -130,7 +130,13 @@ export function parseReceipt(value: unknown, expected: DeploymentReceipt): Deplo
       ...(worker.deploymentId ? { deploymentId: worker.deploymentId } : {}),
     };
   });
-  return { ...expected, status: receipt.status as DeploymentReceipt['status'], workers };
+  return {
+    ...expected,
+    formatVersion: receipt.formatVersion,
+    status: receipt.status as DeploymentReceipt['status'],
+    workers,
+    ...(receipt.schedule === undefined ? {} : { schedule: parseSchedule(receipt.schedule) }),
+  };
 }
 export async function saveReceipt(file: string, receipt: DeploymentReceipt) {
   const temporary = `${file}.${randomUUID()}.tmp`;

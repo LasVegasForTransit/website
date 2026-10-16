@@ -13,6 +13,7 @@ async function fixture() {
   const f = await releaseFixture();
   const release = await packageStaffRelease(f.source, f.destination, releaseIdentity);
   const receipt = newReceipt(release, 'lvbt-account', 'preview', 'setup');
+  receipt.formatVersion = 1; // Retained preview receipts remain recoverable without schedule writes.
   receipt.status = 'failed';
   receipt.workers = (['staff', 'jobs'] as const).map((app, index) => ({
     app,
@@ -150,6 +151,29 @@ void test('partial, cross-account, cross-stage and malformed receipts never reac
       );
       await assert.rejects(readFile(f.options.filename));
     }
+  } finally {
+    await rm(f.root, { recursive: true, force: true });
+  }
+});
+
+void test('production receipt recovery requires its own workflow provenance and environment', async () => {
+  const f = await fixture();
+  try {
+    f.run.name = 'Deploy staff production';
+    f.run.path = '.github/workflows/deploy-staff-production.yml';
+    f.artifact.name = 'staff-production-deployment-67890';
+    f.receipt.environment = 'production';
+    f.receipt.stage = 'launch';
+    f.receipt.formatVersion = 2;
+    f.receipt.schedule = { previous: [], desired: ['* * * * *'], state: 'attempted' };
+    for (const worker of f.receipt.workers) worker.name = worker.name.replace('-preview', '');
+    f.archiveFor();
+    await assert.rejects(prepareStaffReceipt(f.options, f.client));
+    await prepareStaffReceipt(
+      { ...f.options, environment: 'production', stage: 'launch' },
+      f.client,
+    );
+    assert.deepEqual(JSON.parse(await readFile(f.options.filename, 'utf8')), f.receipt);
   } finally {
     await rm(f.root, { recursive: true, force: true });
   }

@@ -22,6 +22,44 @@ export type Bindings = Record<string, unknown>[];
 export function value(bindings: Bindings, name: string): unknown {
   return bindings.find((binding) => binding.name === name && binding.type === 'plain_text')?.text;
 }
+export function disabledProviderBindings(bindings: Bindings, environment: Environment) {
+  return (
+    value(bindings, 'LVBT_DEPLOYMENT_ENV') === environment &&
+    value(bindings, 'LVBT_DISCORD_SYNC_ENABLED') === 'false' &&
+    (value(bindings, 'LVBT_BEEHIIV_SYNC_ENABLED') ?? 'false') === 'false'
+  );
+}
+export function newsletterBindingsReady(bindings: Bindings, environment: Environment): boolean {
+  const enabled = value(bindings, 'LVBT_BEEHIIV_SYNC_ENABLED');
+  if (enabled === undefined || enabled === 'false') return true;
+  const selected = value(bindings, 'LVBT_BEEHIIV_PUBLICATION_ID');
+  const production = value(bindings, 'LVBT_BEEHIIV_PRODUCTION_PUBLICATION_ID');
+  return (
+    enabled === 'true' &&
+    value(bindings, 'LVBT_DEPLOYMENT_ENV') === environment &&
+    typeof selected === 'string' &&
+    /^pub_[A-Za-z0-9_-]{1,124}$/.test(selected) &&
+    typeof production === 'string' &&
+    /^pub_[A-Za-z0-9_-]{1,124}$/.test(production) &&
+    (environment === 'production' ? selected === production : selected !== production) &&
+    value(bindings, 'LVBT_BEEHIIV_CONFLICT_POLICY') === 'staff_review' &&
+    ['LVBT_BEEHIIV_API_KEY', 'LVBT_NEWSLETTER_INTENT_KEY'].every((name) =>
+      bindings.some((binding) => binding.name === name && binding.type === 'secret_text'),
+    )
+  );
+}
+export async function disabledDeployment(
+  client: MetadataClient,
+  names: string[],
+  environment: Environment,
+) {
+  for (const name of names) {
+    const versions = await activeBindings(client, `/workers/scripts/${encodeURIComponent(name)}`);
+    if (!versions.every((bindings) => disabledProviderBindings(bindings, environment)))
+      return false;
+  }
+  return true;
+}
 async function activeBindings(client: MetadataClient, path: string): Promise<Bindings[]> {
   const active = array(object(await client.get(`${path}/deployments`)).deployments).at(0);
   const versions = array(active?.versions ?? []).filter(
@@ -131,6 +169,20 @@ export async function inspectWorker(
         ),
       ),
       ...(kind === 'staff' ? staffBindingChecks(versions, name) : []),
+      ...(kind === 'jobs'
+        ? [
+            check(
+              'jobs.newsletter_configuration',
+              versions.every((bindings) =>
+                newsletterBindingsReady(
+                  bindings,
+                  name.endsWith('-preview') ? 'preview' : 'production',
+                ),
+              ),
+              'Enabled newsletter processing requires matching publication, conflict policy and encrypted jobs credentials.',
+            ),
+          ]
+        : []),
     ],
   };
 }

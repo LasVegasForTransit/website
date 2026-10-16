@@ -9,6 +9,7 @@ import { runWrangler } from './release-provider';
 import { deploymentStep, DeploymentFailure } from './release-failure';
 import { prepareStaffReceipt } from './release-recovery';
 import { withReceiptLock } from './release-receipt';
+import { productionReleaseAllowed } from './release-schedule';
 
 type Action = 'upload' | 'activate' | 'inspect' | 'receipt';
 type Values = Partial<
@@ -30,36 +31,41 @@ type Values = Partial<
 function deploymentStage(value?: string) {
   if (value === undefined || value === 'launch') return 'launch' as const;
   if (value === 'setup') return 'setup' as const;
-  throw new Error('Select --stage launch or --stage setup for the protected preview.');
+  throw new Error('Select --stage launch, or --stage setup for the protected preview only.');
 }
 function actionOptions(action: Action, values: Values) {
   if (action === 'receipt') {
     if (!values['deployment-run'] || values['source-directory'])
       throw new Error('Receipt retrieval requires --deployment-run and no source override.');
-  } else if (values['deployment-run'] || (action === 'upload' && values['source-directory'])) {
-    throw new Error('Only inspection and activation accept a selected source directory.');
+  } else if (values['deployment-run']) {
+    throw new Error('Only receipt retrieval accepts a deployment run.');
   }
 }
-function selection(action: Action, values: Values) {
+export function selection(action: Action, values: Values) {
   actionOptions(action, values);
   if (
     !values.directory ||
     !values.repository ||
     !values['run-id'] ||
     !values.receipt ||
-    values.target !== 'preview' ||
+    (values.target !== 'preview' && values.target !== 'production') ||
     values.commit ||
     values['release-id']
   )
     throw new Error(
-      'Select a saved build, directory, receipt and preview target. Production promotion requires separate acceptance.',
+      'Select a saved build, directory, receipt and explicit preview or production target.',
     );
+  const stage = deploymentStage(values.stage);
+  const environment: 'preview' | 'production' = values.target;
+  if (values.target === 'production' && stage !== 'launch')
+    throw new Error('Production requires launch acceptance; setup is preview-only.');
   return {
     directory: resolve(values.directory),
     repository: values.repository,
     runId: values['run-id'],
     receiptFile: resolve(values.receipt),
-    stage: deploymentStage(values.stage),
+    stage,
+    environment,
     sourceDirectory: values['source-directory'],
     deploymentRun: values['deployment-run'],
   };
@@ -90,6 +96,8 @@ export async function deployFromBuild(action: Action, values: Values) {
   const choice = selection(action, values);
   const { accountId, token } = credentials(action);
   const verifierRoot = resolve(import.meta.dirname, '../../..');
+  if (action === 'upload' || action === 'activate')
+    await productionReleaseAllowed({ root: verifierRoot, environment: choice.environment });
   const root = choice.sourceDirectory ? resolve(choice.sourceDirectory) : verifierRoot;
   const temporary = await mkdtemp(join(tmpdir(), 'lvbt-staff-build-'));
   try {
@@ -105,6 +113,7 @@ export async function deployFromBuild(action: Action, values: Values) {
           release: saved,
           accountId,
           stage: choice.stage,
+          environment: choice.environment,
         }),
       );
     }
@@ -114,8 +123,13 @@ export async function deployFromBuild(action: Action, values: Values) {
       root,
       accountId,
       token,
-      environment: 'preview' as const,
+      environment: choice.environment,
       stage: choice.stage,
+      assertSource: async () => {
+        await deploymentStep('source-checkout', () => assertReleaseSource(root, selected.commit));
+        if (action === 'upload' || action === 'activate')
+          await productionReleaseAllowed({ root: verifierRoot, environment: choice.environment });
+      },
       run: async (args: string[], output: string) => {
         await deploymentStep('source-checkout', () => assertReleaseSource(root, selected.commit));
         await runWrangler(args, output, { accountId, token }, verifierRoot);

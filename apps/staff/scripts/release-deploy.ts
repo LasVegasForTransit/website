@@ -7,6 +7,16 @@ import { type Environment } from './preflight-config';
 import { preflightStaff } from './preflight';
 import { MetadataClient, object } from './preflight-api';
 import { previewSetupReady } from './preview-setup';
+import { disabledDeployment } from './preflight-workers';
+import {
+  applySavedSchedule,
+  captureSchedule,
+  productionReleaseAllowed,
+  readJobsSchedule,
+  scheduleUnchanged,
+  sameSchedule,
+  verifySavedSchedule,
+} from './release-schedule';
 import { deploymentStep, DeploymentFailure } from './release-failure';
 import {
   activeDeployment,
@@ -36,6 +46,7 @@ export interface DeploymentOptions {
   token: string;
   fetch?: typeof fetch;
   run?: (args: string[], output: string) => Promise<void>;
+  assertSource?: () => Promise<void>;
 }
 function assertDeploymentOptions(options: DeploymentOptions) {
   if (
@@ -47,18 +58,42 @@ function assertDeploymentOptions(options: DeploymentOptions) {
   )
     throw new Error('Select an environment and explicit scoped deployment credentials.');
 }
-async function ready(options: DeploymentOptions, receipt?: DeploymentReceipt) {
+async function ready(options: DeploymentOptions, receipt?: DeploymentReceipt, final = false) {
   assertDeploymentOptions(options);
+  await productionReleaseAllowed(options);
   const report = await deploymentStep('configuration', () =>
     preflightStaff(options.environment, options),
   );
-  const failures = report.checks.filter((check) => check.status !== 'passed');
+  const client = new MetadataClient(options);
   const transition = receipt
     ? await deploymentStep('recorded-traffic', () =>
         recordedTransition(new MetadataClient(options), receipt),
       )
     : null;
   if (receipt && !transition?.valid) throw new DeploymentFailure('recorded-traffic');
+  const currentSchedule = await deploymentStep('jobs.schedule', () =>
+    readJobsSchedule(client, workerName('jobs', options.environment)),
+  );
+  if (receipt) await deploymentStep('jobs.schedule', () => scheduleUnchanged(client, receipt));
+  const disabled =
+    !final &&
+    (await deploymentStep('configuration', () =>
+      disabledDeployment(
+        client,
+        [workerName('staff', options.environment), workerName('jobs', options.environment)],
+        options.environment,
+      ),
+    ));
+  const failures = report.checks.filter(
+    (check) =>
+      check.status !== 'passed' &&
+      !(
+        !final &&
+        check.status === 'failed' &&
+        (check.id === 'jobs.schedule' ||
+          (check.id === 'discord.configuration' && (disabled || transition?.selectedActive)))
+      ),
+  );
   if (options.stage === 'setup') {
     if (
       !(await deploymentStep('setup-boundary', () =>
@@ -68,14 +103,9 @@ async function ready(options: DeploymentOptions, receipt?: DeploymentReceipt) {
       throw new DeploymentFailure('setup-boundary');
     return;
   }
-  if (
-    failures.length &&
-    !(
-      transition?.selectedActive &&
-      failures.every((check) => check.id === 'discord.configuration' && check.status === 'failed')
-    )
-  )
-    throw new DeploymentFailure('configuration');
+  if (final && receipt?.schedule && !sameSchedule(currentSchedule, receipt.schedule.desired))
+    throw new DeploymentFailure('jobs.schedule');
+  if (failures.length) throw new DeploymentFailure('configuration');
 }
 async function withRelease<T>(
   directory: string,
@@ -83,6 +113,7 @@ async function withRelease<T>(
   options: DeploymentOptions,
   run: (copy: string, receipt: DeploymentReceipt) => Promise<T>,
 ) {
+  assertDeploymentOptions(options);
   const release = await deploymentStep('saved-artifact', () =>
     verifyStaffRelease(directory, identity),
   );
@@ -133,12 +164,16 @@ export async function uploadStaffRelease(
   file: string,
   options: DeploymentOptions,
 ) {
+  await productionReleaseAllowed(options);
   return await withReceiptLock(
     directory,
     file,
     async () =>
       await withRelease(directory, identity, options, async (copy, receipt) => {
         await ready(options);
+        receipt.schedule = await deploymentStep('jobs.schedule', () =>
+          captureSchedule(copy, options),
+        );
         await writeFile(file, `${JSON.stringify(receipt)}\n`, { flag: 'wx', mode: 0o600 });
         try {
           const client = new MetadataClient(options);
@@ -239,6 +274,7 @@ export async function inspectStaffRelease(
   assertDeploymentOptions(options);
   return await withRelease(directory, identity, options, async (copy, expected) => {
     const receipt = await deploymentStep('receipt', () => readReceipt(file, expected));
+    await verifySavedSchedule(copy, receipt);
     const checks: { stage: string; passed: boolean }[] = [];
     for (const worker of receipt.workers) {
       try {
@@ -281,18 +317,43 @@ export async function inspectStaffRelease(
   });
 }
 
+async function activeConfigurationReady(
+  client: MetadataClient,
+  receipt: DeploymentReceipt,
+  options: DeploymentOptions,
+) {
+  for (const worker of receipt.workers) {
+    if (!(await activationCheckpoint(client, worker)))
+      throw new DeploymentFailure('recorded-traffic');
+  }
+  const report = await preflightStaff(options.environment, options);
+  if (options.stage === 'setup') {
+    if (!(await previewSetupReady(options.root, client, report.checks)))
+      throw new DeploymentFailure('setup-boundary');
+  } else if (
+    report.checks.some(
+      (check) =>
+        check.status !== 'passed' && !(check.id === 'jobs.schedule' && check.status === 'failed'),
+    )
+  ) {
+    throw new DeploymentFailure('configuration');
+  }
+}
+
 export async function activateStaffRelease(
   directory: string,
   identity: ReleaseIdentity,
   file: string,
   options: DeploymentOptions,
 ) {
+  await productionReleaseAllowed(options);
   return await withReceiptLock(
     directory,
     file,
     async () =>
       await withRelease(directory, identity, options, async (copy, expected) => {
         const receipt = await deploymentStep('receipt', () => readReceipt(file, expected));
+        await verifySavedSchedule(copy, receipt);
         try {
           const client = new MetadataClient(options);
           for (const worker of receipt.workers) {
@@ -313,6 +374,10 @@ export async function activateStaffRelease(
           await saveReceipt(file, receipt);
           for (const worker of receipt.workers)
             await activateWorker({ copy, receipt, client, file }, worker, options);
+          await applySavedSchedule(receipt, file, options, () =>
+            activeConfigurationReady(client, receipt, options),
+          );
+          await ready(options, receipt, true);
           receipt.status = 'active';
           await saveReceipt(file, receipt);
           return receipt;
