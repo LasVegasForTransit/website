@@ -8,6 +8,8 @@ interface WorkerConfiguration {
   preview_urls: boolean;
   vars: Record<string, string>;
   d1_databases: { database_id: string; migrations_dir: string }[];
+  triggers: { crons: string[] };
+  routes?: unknown[];
 }
 void test('preview jobs use isolated storage and disabled public URLs', () => {
   const file = fileURLToPath(new URL('../wrangler.jsonc', import.meta.url));
@@ -16,9 +18,21 @@ void test('preview jobs use isolated storage and disabled public URLs', () => {
   assert.equal(production.workers_dev, false);
   assert.equal(production.preview_urls, false);
   assert.equal(production.vars.LVBT_DISCORD_SYNC_ENABLED, 'false');
+  assert.equal(
+    production.vars.LVBT_BEEHIIV_PUBLICATION_ID,
+    'pub_d3178023-f8d5-4e9d-a768-0c4eaa6b7280',
+  );
+  assert.equal(preview.vars.LVBT_BEEHIIV_PUBLICATION_ID, '');
   for (const config of [production, preview]) {
+    assert.equal(config.workers_dev, false);
+    assert.equal(config.preview_urls, false);
+    assert.deepEqual(config.triggers.crons, []);
+    assert.deepEqual(config.routes ?? [], []);
     assert.equal(config.vars.LVBT_BEEHIIV_SYNC_ENABLED, 'false');
-    assert.equal(config.vars.LVBT_BEEHIIV_PUBLICATION_ID, '');
+    assert.equal(
+      config.vars.LVBT_BEEHIIV_PRODUCTION_PUBLICATION_ID,
+      production.vars.LVBT_BEEHIIV_PUBLICATION_ID,
+    );
     assert.equal(Object.hasOwn(config.vars, 'LVBT_BEEHIIV_API_KEY'), false);
     assert.equal(Object.hasOwn(config.vars, 'LVBT_NEWSLETTER_INTENT_KEY'), false);
   }
