@@ -3,6 +3,7 @@ import test from 'node:test';
 import { fileURLToPath, URL } from 'node:url';
 import { unstable_readConfig } from 'wrangler';
 import { DISCORD_RUNTIME_CONFIG } from '@lasvegasfortransit/platform-integrations/worker-runtime-config';
+import { discordProviderConfiguration } from '@lasvegasfortransit/platform-integrations/discord-runtime';
 interface WorkerConfiguration {
   workers_dev: boolean;
   preview_urls: boolean;
@@ -52,5 +53,28 @@ void test('preview jobs use isolated storage and disabled public URLs', () => {
     for (const value of DISCORD_RUNTIME_CONFIG) assert.ok(Object.hasOwn(config.vars, value.name));
     assert.equal(config.vars.LVBT_DISCORD_SYNC_ENABLED, 'false');
     assert.equal(Object.hasOwn(config.vars, 'LVBT_DISCORD_BOT_TOKEN'), false);
+  }
+});
+
+void test('prepared preview Discord settings stay disabled and reject the production server', () => {
+  for (const app of ['staff', 'jobs']) {
+    const file = fileURLToPath(new URL(`../../${app}/wrangler.jsonc`, import.meta.url));
+    const { vars } = unstable_readConfig({ config: file, env: 'preview' }) as WorkerConfiguration;
+    assert.deepEqual(discordProviderConfiguration(vars), { configured: false, contextId: '' });
+    const enabled = { ...vars, LVBT_DISCORD_SYNC_ENABLED: 'true' };
+    assert.deepEqual(discordProviderConfiguration(enabled), {
+      configured: true,
+      contextId: '1560146082640568350',
+      memberRoleId: '1560151428180353104',
+    });
+    assert.equal(vars.LVBT_DISCORD_APPLICATION_ID, '1552481672945999872');
+    assert.equal(vars.LVBT_DISCORD_PRODUCTION_GUILD_ID, '1509298455896522823');
+    assert.equal(
+      discordProviderConfiguration({
+        ...enabled,
+        LVBT_DISCORD_GUILD_ID: '1509298455896522823',
+      }).configured,
+      false,
+    );
   }
 });
