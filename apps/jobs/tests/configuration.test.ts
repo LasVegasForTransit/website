@@ -24,10 +24,11 @@ void test('preview jobs use isolated storage and disabled public URLs', () => {
     'pub_d3178023-f8d5-4e9d-a768-0c4eaa6b7280',
   );
   assert.equal(preview.vars.LVBT_BEEHIIV_PUBLICATION_ID, '');
+  assert.deepEqual(production.triggers.crons, []);
+  assert.deepEqual(preview.triggers.crons, ['* * * * *']);
   for (const config of [production, preview]) {
     assert.equal(config.workers_dev, false);
     assert.equal(config.preview_urls, false);
-    assert.deepEqual(config.triggers.crons, []);
     assert.deepEqual(config.routes ?? [], []);
     assert.equal(config.vars.LVBT_BEEHIIV_SYNC_ENABLED, 'false');
     assert.equal(
@@ -51,18 +52,19 @@ void test('preview jobs use isolated storage and disabled public URLs', () => {
   }) as WorkerConfiguration;
   for (const config of [production, preview, staff, staffPreview]) {
     for (const value of DISCORD_RUNTIME_CONFIG) assert.ok(Object.hasOwn(config.vars, value.name));
-    assert.equal(config.vars.LVBT_DISCORD_SYNC_ENABLED, 'false');
+    assert.equal(
+      config.vars.LVBT_DISCORD_SYNC_ENABLED,
+      config.vars.LVBT_DEPLOYMENT_ENV === 'preview' ? 'true' : 'false',
+    );
     assert.equal(Object.hasOwn(config.vars, 'LVBT_DISCORD_BOT_TOKEN'), false);
   }
 });
 
-void test('prepared preview Discord settings stay disabled and reject the production server', () => {
+void test('preview Discord settings are enabled only for the isolated server', () => {
   for (const app of ['staff', 'jobs']) {
     const file = fileURLToPath(new URL(`../../${app}/wrangler.jsonc`, import.meta.url));
     const { vars } = unstable_readConfig({ config: file, env: 'preview' }) as WorkerConfiguration;
-    assert.deepEqual(discordProviderConfiguration(vars), { configured: false, contextId: '' });
-    const enabled = { ...vars, LVBT_DISCORD_SYNC_ENABLED: 'true' };
-    assert.deepEqual(discordProviderConfiguration(enabled), {
+    assert.deepEqual(discordProviderConfiguration(vars), {
       configured: true,
       contextId: '1560146082640568350',
       memberRoleId: '1560151428180353104',
@@ -71,7 +73,7 @@ void test('prepared preview Discord settings stay disabled and reject the produc
     assert.equal(vars.LVBT_DISCORD_PRODUCTION_GUILD_ID, '1509298455896522823');
     assert.equal(
       discordProviderConfiguration({
-        ...enabled,
+        ...vars,
         LVBT_DISCORD_GUILD_ID: '1509298455896522823',
       }).configured,
       false,

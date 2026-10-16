@@ -536,16 +536,91 @@ test Member role. Keep the bot token only on `lvbt-jobs-preview` and the OAuth c
    confirm Discord account linking remains unavailable. If a target differs or linking appears, stop
    and correct the selected source and release; do not enable jobs to conceal the mismatch.
 
-A later live test must explicitly cover enabling Discord on the isolated preview and its scheduled
-role changes. That step sets matching preview synchronization flags, supplies the website
-application ID, and verifies the exact preview OAuth callback. The launch stage requires a minute
-schedule; activate it only through a reviewed release path that applies and reads it back.
-Credential setup alone does not activate it. Plan verification and shutdown before enabling it; keep
-newsletter processing and production disabled. A successful join only queues role work. Confirm
-actual Member and multiple committee roles, unrelated-role preservation, removal and retry before
-accepting the integration. The `/link` command also needs its public key, guild-only registration
-and a Discord-reachable signed interaction endpoint; do not remove preview Access protection to make
-that separate check pass.
+### Run an approved isolated Discord preview
+
+Use this procedure to test real joining and role changes in the isolated server. Preparing or
+merging configuration does not authorize live activation or provider writes.
+
+Before starting, obtain explicit approval for the preview activation, the test accounts and their
+role changes. Complete the [isolated setup](#prepare-the-isolated-discord-preview), protect the
+preview with Access, and prepare a clearly marked non-admin member fixture in the preview database.
+Use an explicitly authorized Discord tester, never the preview administrator or an unrelated member.
+Confirm the bot has **Manage Roles** and **Create Invite**, sits above every test managed role, and
+the app allows `https://preview.lasvegasfortransit.org/account/discord/callback`. Plan the
+[shutdown](#shut-down-the-isolated-discord-preview) before enabling anything.
+
+The minute schedule also runs existing preview maintenance and queued Discord work across the
+preview database; it is not limited to the marked fixture. Before activation approval, select the
+LVBT account in Cloudflare, open **Storage & databases → D1 → lvbt-platform-preview → Console**, and
+run each of these read-only statements separately:
+
+```sql
+SELECT count(*) AS linked_discord_accounts
+FROM identities WHERE platform='discord';
+
+SELECT kind,state,count(*) AS pending_jobs
+FROM integration_outbox
+WHERE state IN ('queued','running','retry')
+GROUP BY kind,state ORDER BY kind,state;
+
+SELECT
+  (SELECT count(*) FROM people
+   WHERE deleted_at IS NOT NULL AND erased_at IS NULL) AS archived_unerased_profiles,
+  (SELECT count(*) FROM people
+   WHERE deleted_at IS NULL AND date(created_at)<=date('now','-18 months')) AS older_active_profiles,
+  (SELECT count(*) FROM people
+   WHERE erased_at IS NOT NULL
+     AND julianday(deleted_at)<julianday('now','-30 days')) AS erased_purge_candidates;
+```
+
+No pending-job rows means that queue is empty. Require zero linked accounts, pending work and
+profile candidates, or privately identify every affected record as explicitly approved disposable
+test data. The profile counts are conservative: the age check includes the whole cutoff day and does
+not evaluate consent, linked identities, engagement, merge protection or the daily run's exact
+cutoff. Check candidates against [the retention rules](../guides/operate-member-data-retention.md)
+before deciding what the schedule can affect. Stop before enabling the schedule if any account or
+record falls outside the approved test scope; do not delete records merely to clear this check.
+
+1. Prepare the staff/jobs source change first. Set `LVBT_DISCORD_SYNC_ENABLED=true` only in both
+   preview configurations and `env.preview.triggers.crons=["* * * * *"]` on jobs. Keep the reviewed
+   isolated IDs and database unchanged, newsletter synchronization off, production unchanged and
+   `release.previewOnly=true`. Leave the website application ID absent or empty. Regenerate jobs
+   types and run `pnpm check` before review. This first change must be safe for automatic website
+   preview publication: it must not expose account linking.
+2. Select the successful main-branch **Build staff release** run for that reviewed source. After
+   live approval, run **Deploy staff preview** with that **release_run** and **stage: launch**,
+   following [the saved-release procedure](#prepare-the-saved-artifact). Do not choose **setup**; it
+   requires Discord and schedules to remain disabled.
+3. Read back the receipt's exact staff/jobs versions at 100 percent traffic and the actual jobs
+   schedule containing only `* * * * *`. Run `pnpm staff:preflight --preview --json` with the
+   approved scoped credential and require every configuration check to pass. Verify the isolated
+   database, Access protection, enabled preview flags and disabled newsletter processing. Stop on a
+   mismatch; configuration readiness alone does not prove role changes work.
+4. Prepare a separate website change last. Set the preview `LVBT_DISCORD_APPLICATION_ID` text
+   binding in `apps/deploy/cloudflare.config.ts` and `.lvbt/tooling.json` to the approved app ID.
+   Retain an explicitly empty production counterpart. Regenerate compatibility configuration,
+   compile functions, regenerate site types and run `pnpm check` using the commands above. Review
+   and publish the saved website preview through its normal protected procedure only after step 3.
+   PR and main workflows can publish website previews automatically; do not push this second change
+   before staff/jobs readiness is confirmed. Confirm linking appears only on preview.
+5. Sign in as the marked member fixture and connect the authorized tester's Discord account. A
+   fresh-join test requires an account that is not already in the test server; an existing server
+   account cannot prove automatic joining. Confirm the account joins the isolated server and gains
+   its Member role. A saved link or queued request alone is insufficient. Verify a recoverable
+   failed attempt can be retried without duplicate linking.
+6. Assign the fixture to two test committees and confirm both committees' actual Discord roles.
+   Remove one assignment and confirm the other entitlement remains. End the fixture's membership and
+   confirm the Member and remaining managed roles are removed. An unrelated test role must survive
+   every change. In the approved unlinked-account case, confirm staff review is flagged and existing
+   roles stay unchanged; never use a real member's access for this check.
+7. Keep concise outcomes in the private acceptance record. On failure, stop adding test work and
+   follow [activation recovery](#recover-a-failed-preview-activation) or
+   [shutdown](#shut-down-the-isolated-discord-preview). Undo only approved fixture changes. Shut
+   down website linking first, then staff/jobs and the schedule, and verify the final disabled
+   state. Keep production, newsletter processing and unrelated accounts unchanged throughout.
+
+The `/link` command separately needs its public key, guild-only registration and a Discord-reachable
+signed interaction endpoint. Do not remove preview Access protection to make that check pass.
 
 ## Release order and rollback
 

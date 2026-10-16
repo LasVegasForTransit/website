@@ -31,14 +31,14 @@
   "env": {
     "preview": {
       "name": "lvbt-jobs-preview",
-      "triggers": { "crons": [] },
+      "triggers": { "crons": ["* * * * *"] },
       "vars": {
         "LVBT_DEPLOYMENT_ENV": "preview",
         "LVBT_BEEHIIV_SYNC_ENABLED": "false",
         "LVBT_BEEHIIV_CONFLICT_POLICY": "staff_review",
         "LVBT_BEEHIIV_PUBLICATION_ID": "",
         "LVBT_BEEHIIV_PRODUCTION_PUBLICATION_ID": "pub_d3178023-f8d5-4e9d-a768-0c4eaa6b7280",
-        "LVBT_DISCORD_SYNC_ENABLED": "false",
+        "LVBT_DISCORD_SYNC_ENABLED": "true",
         "LVBT_DISCORD_APPLICATION_ID": "1552481672945999872",
         "LVBT_DISCORD_GUILD_ID": "1560146082640568350",
         "LVBT_DISCORD_PRODUCTION_GUILD_ID": "1509298455896522823",
