@@ -21,6 +21,7 @@ function versionMetadata(
     messages: Map<string, string>;
     changedRole: boolean;
     wrongVersion: boolean;
+    configurations: Map<string, Record<string, unknown>>;
   },
 ) {
   const result = object(body.result);
@@ -29,6 +30,22 @@ function versionMetadata(
   result.annotations = {
     'workers/message': options.wrongVersion ? 'other source' : options.messages.get(id),
   };
+  const selected = options.configurations.get(id);
+  if (selected) {
+    const resource = object(result.resources);
+    resource.bindings = [
+      ...(resource.bindings as Record<string, unknown>[]).filter(
+        (binding) =>
+          binding.type !== 'plain_text' ||
+          !Object.hasOwn(object(selected.vars), String(binding.name)),
+      ),
+      ...Object.entries(object(selected.vars)).map(([name, text]) => ({
+        name,
+        text,
+        type: 'plain_text',
+      })),
+    ];
+  }
   if (options.changedRole) {
     const bindings = object(result.resources).bindings as Record<string, unknown>[];
     for (const binding of bindings)
@@ -103,13 +120,19 @@ export async function deploymentFixture(changedRole = false) {
     commands: [] as string[][],
   };
   const messages = new Map<string, string>();
+  const configurations = new Map<string, Record<string, unknown>>();
   const active = new Map<string, string>();
   const fetcher: typeof fetch = async (input, init) => {
     const url = new URL(input instanceof Request ? input.url : input);
     const response = await remote.options.fetch(input, init);
     const body = object(await response.json());
     if (url.pathname.includes('/versions/'))
-      versionMetadata(body, { messages, changedRole, wrongVersion: state.wrongVersion });
+      versionMetadata(body, {
+        messages,
+        configurations,
+        changedRole,
+        wrongVersion: state.wrongVersion,
+      });
     const app = url.pathname.includes('jobs') ? 'jobs' : 'staff';
     if (url.pathname.endsWith('/deployments')) body.result = deploymentMetadata(app, active, state);
     if (state.unsafe && url.pathname.endsWith('/policies')) body.result = [{ decision: 'bypass' }];
@@ -127,6 +150,7 @@ export async function deploymentFixture(changedRole = false) {
       if (app === 'jobs')
         assert.equal(await readFile(worker, 'utf8'), 'export default { scheduled() {} };');
       messages.set(versions[app], message);
+      configurations.set(versions[app], config);
       await writeFile(
         output,
         JSON.stringify({
