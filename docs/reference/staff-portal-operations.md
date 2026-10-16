@@ -10,10 +10,11 @@ applications, including the public website, use one canonical membership schema;
 separate database and Discord server.
 
 The staff workflows save compiled applications and migrations, then upload and activate a selected
-saved build in preview after maintainer setup. They do not promote staff or jobs to production. The
-website's bootstrap and promotion workflows do not provision or promote these applications. Use the
-build system and private acceptance record to determine what is deployed and verified. Keep
-automatic production provider writes disabled until configuration and live acceptance pass.
+saved build in preview after maintainer setup. The separate protected production workflow uses the
+same saved release after launch approval and removal of the production hold. The website's bootstrap
+and promotion workflows do not provision or promote these applications. Use the build system and
+private acceptance record to determine what is deployed and verified. Keep automatic production
+provider writes disabled until configuration and live acceptance pass.
 
 ## Read-only configuration check
 
@@ -155,20 +156,20 @@ enables and verifies the consumer before the website begins relying on queued up
    `LVBT_DISCORD_JOBS` binding used to forward optional callbacks. Keep the flag and minute schedule
    disabled until a reviewed launch release passes the required workflow and live acceptance.
 
-Production publication and schedule activation remain launch implementation work. The current staff
-release workflow publishes preview versions only and does not apply cron changes. Keep schedules and
-synchronization disabled until a supported activation path is implemented, reviewed and verified.
+Production publication and schedule activation use the
+[protected saved-release procedure](#publish-an-approved-staff-production-release) below. The
+production hold still blocks uploads, activation and schedule writes. Keep schedules and
+synchronization disabled until the separately reviewed launch change and acceptance are complete.
 
-Once that path exists and launch is approved, set `LVBT_BEEHIIV_SYNC_ENABLED=true` and
-`triggers.crons` to `["* * * * *"]` for only the approved target environment in
-`apps/jobs/wrangler.jsonc`. Production uses the top-level settings; a named environment uses its own
-`env` entry. Update that environment's disabled-state expectations in
-`apps/jobs/tests/configuration.test.ts`, regenerate Worker types, and run `pnpm check`. The reviewed
-release path must apply and read back the approved schedule as well as activate the saved code;
-version activation alone does not change cron triggers. Verify actual scheduled processing before
-accepting launch. Dashboard-only cron edits do not survive later uploads. Leave other environments
-disabled and retain the `release.previewOnly` hold until its separate removal requirements above are
-met.
+Once launch is approved, set `LVBT_BEEHIIV_SYNC_ENABLED=true` and `triggers.crons` to
+`["* * * * *"]` for only the approved target environment in `apps/jobs/wrangler.jsonc`. Production
+uses the top-level settings; a named environment uses its own `env` entry. Update that environment's
+disabled-state expectations in `apps/jobs/tests/configuration.test.ts`, regenerate Worker types, and
+run `pnpm check`. The reviewed release path must apply and read back the approved schedule as well
+as activate the saved code; version activation alone does not change cron triggers. Verify actual
+scheduled processing before accepting launch. Dashboard-only cron edits do not survive later
+uploads. Leave other environments disabled and retain the `release.previewOnly` hold until its
+separate removal requirements above are met.
 
 Skip webhook configuration on Free. If signed callbacks become available under a separately approved
 setup, configure `subscription.created`, `subscription.confirmed`, and `subscription.deleted`, with
@@ -533,8 +534,10 @@ build; protected preview deployment and human/provider acceptance are still requ
 The manifest contains file hashes. The **Deploy staff preview** workflow uploads those saved files
 and saves the actual staff and jobs version IDs in a separate deployment receipt. It verifies each
 uploaded version's source annotation, database and bindings before activating either version, then
-requires provider readback showing those exact versions at 100 percent. It never rebuilds, applies
-SQL, changes secrets, creates Workers or changes routes and schedules.
+requires provider readback showing those exact versions at 100 percent. New receipts also retain the
+previous and desired jobs schedules. Launch activation applies the saved minute schedule only after
+both versions are confirmed active, then verifies it independently. Setup keeps the schedule empty.
+The workflow never rebuilds, applies SQL, changes secrets, creates Workers or changes routes.
 
 Before using the workflow, a maintainer must create the `staff-preview` GitHub environment with
 required reviewers and main-only deployment protection. Set its `CLOUDFLARE_ACCOUNT_ID` variable and
@@ -569,7 +572,72 @@ settings: resuming requires each active version to be either the recorded previo
 selected new version, with independently valid settings for the selected environment. Unexpected
 versions and other configuration failures still stop activation. The workflow retains this receipt
 even on failure. Configuration checks do not prove sign-in, live provider behavior or staff
-acceptance. Production promotion remains unfinished and is not available through these commands.
+acceptance. Production uses the separate protected procedure below and remains blocked while the
+production hold is set.
+
+### Publish an approved staff production release
+
+This procedure is for a maintainer releasing staff and jobs after configuration, provider and staff
+acceptance. It does not publish the public website. Before you start, complete production Worker,
+Access, domain, canonical database/migration and provider setup. The existing staff and jobs
+versions must be either valid configured versions or a verified disabled baseline. Jobs must have no
+public route or URL. Both applications need their approved authentication and provider bindings;
+enabling newsletter processing additionally requires its production publication, encrypted
+API/intent keys, and `staff_review` conflict policy.
+
+Create and protect the **`staff-production`** GitHub environment before using the workflow: require
+maintainer review and main-only deployments. Set `CLOUDFLARE_ACCOUNT_ID` and the separately approved
+`CLOUDFLARE_STAFF_PRODUCTION_API_TOKEN` there. Limit Worker edit permission to `lvbt-staff` and
+`lvbt-jobs`; retain the read permissions listed in the configuration-check section. The token needs
+permission to update the jobs schedule. A YAML environment reference does not create its review
+protections or authorize credentials. Do not reuse the preview deployment key.
+
+1. Complete the separate reviewed launch change. It must clear `release.previewOnly` only after its
+   acceptance requirements are met, set the approved production provider flags, and retain
+   `triggers.crons: ["* * * * *"]` in the production jobs source. Keep other environments unchanged.
+   Both the trusted verifier and selected source must allow production; an older saved build cannot
+   bypass a current hold. Production has no setup mode.
+2. Select the successful **Build staff release** run for that reviewed source. Use **Prepare staff
+   release** to check its exact artifact and runtime. Review the saved build and required live
+   acceptance before approving deployment. Do not substitute a newer build or rely on passing
+   configuration checks as acceptance.
+3. Run **Deploy staff production** from `main` with that `release_run`. Approve the protected
+   environment only after checking the selected build and target. The workflow retrieves the exact
+   saved artifact and checks its source, database, Access, privacy and provider configuration. It
+   verifies uploaded bindings, activates the recorded staff/jobs versions, and requires independent
+   100-percent version readback before applying the saved jobs schedule. It records the schedule
+   intent before its single update request and verifies the complete schedule afterward.
+4. Confirm the retained receipt is active with both versions and schedule confirmed. Then verify
+   actual sign-in, staff workflows, scheduled membership processing and live provider outcomes.
+   Deployment metadata alone does not establish production acceptance. Keep detailed records
+   private.
+
+The equivalent CLI commands, using approved credentials and a clean checkout of the selected source,
+are:
+
+```sh
+pnpm staff:release upload --repository LasVegasForTransit/website --run-id <Actions-run-ID> --directory /tmp/selected-staff-release --target production --stage launch --receipt /tmp/staff-deployment.json
+pnpm staff:release activate --repository LasVegasForTransit/website --run-id <Actions-run-ID> --directory /tmp/selected-staff-release --target production --stage launch --receipt /tmp/staff-deployment.json
+pnpm staff:release inspect --repository LasVegasForTransit/website --run-id <Actions-run-ID> --directory /tmp/selected-staff-release --target production --stage launch --receipt /tmp/staff-deployment.json
+```
+
+Use **Recover staff production** for a failed activation. Supply the original `release_run`, the
+completed `deployment_run` holding its receipt, and **inspect** first. A complete, matching receipt
+is required; partial uploads cannot be inferred or silently retried. After resolving the reported
+gate, choose **resume** with the same inputs. Recovery skips confirmed versions, rejects unexpected
+traffic or schedule changes, and never repeats an attempted schedule write. If its response was
+lost, readback can confirm the desired schedule; if the outcome remains uncertain, stop and obtain a
+reviewed recovery decision. Do not edit receipts, toggle dashboard schedules or redeploy to erase
+the uncertainty. Preview receipts cannot authorize production; older preview receipts remain
+recoverable but never acquire schedule-write permission.
+
+Only the selected jobs schedule is changed; routes, secrets, migrations and billing remain separate
+operations. Serialize deployment/recovery through their shared workflow concurrency group and avoid
+manual Worker edits during a release. The
+[Cloudflare schedules API](https://developers.cloudflare.com/api/resources/workers/subresources/scripts/subresources/schedules/methods/update/)
+does not offer a conditional update: immediate drift checks and recorded recovery protect the flow,
+but cannot lock out a simultaneous dashboard edit. Cron propagation and actual execution must be
+verified before relying on scheduled processing.
 
 ### Recover a failed preview activation
 
@@ -608,7 +676,8 @@ establish whether Cloudflare changed traffic. Do not rerun the whole workflow to
 Recovery uses the same scoped deployment credential and serialized deployment queue as the normal
 preview workflow. Do not extract GitHub secrets, copy browser sessions, or create a broader key to
 run recovery locally. Inspect and resume are separate choices; selecting inspect cannot activate a
-version. Neither choice can deploy production, apply migrations, or enable schedules.
+version. Neither choice can deploy production or apply migrations. Setup recovery keeps schedules
+empty; launch recovery may finish only its recorded schedule after the selected versions are active.
 
 ### Inspect with an approved local credential
 

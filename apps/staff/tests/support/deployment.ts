@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { cp, readFile, rm, writeFile } from 'node:fs/promises';
+import { cp, mkdir, readFile, rm, writeFile } from 'node:fs/promises';
 import { dirname, join, resolve } from 'node:path';
 import ts from 'typescript';
 import { object } from '../../scripts/preflight-api';
@@ -75,64 +75,58 @@ function deploymentMetadata(
       : selected;
   return { deployments: [{ id, versions: [{ version_id: versionId, percentage: 100 }] }] };
 }
-export async function deploymentFixture(changedRole = false) {
+interface FixtureMode {
+  production?: boolean;
+  disabledBaseline?: boolean;
+  unscheduled?: boolean;
+  held?: boolean;
+  newsletter?: boolean;
+  setup?: boolean;
+}
+export async function deploymentFixture(changedRole = false, mode: FixtureMode = {}) {
   const f = await releaseFixture();
-  const remote = cloudflareFixture();
+  const remote = cloudflareFixture({
+    production: mode.production,
+    productionDiscord: mode.production,
+    disabled: mode.setup,
+  });
+  await mkdir(join(f.source, '.lvbt'), { recursive: true });
+  await writeFile(
+    join(f.source, '.lvbt/tooling.json'),
+    JSON.stringify({ release: { previewOnly: mode.held ?? false } }),
+  );
   await rm(join(f.source, 'packages/platform-storage/migrations'), { recursive: true });
   await cp(
     join(remote.options.root, 'packages/platform-storage/migrations'),
     join(f.source, 'packages/platform-storage/migrations'),
     { recursive: true },
   );
-  for (const app of ['staff', 'jobs']) {
-    const filename = join(f.source, `apps/${app}/wrangler.jsonc`);
-    const config = object(
-      ts.parseConfigFileTextToJson(filename, await readFile(filename, 'utf8')).config,
-    );
-    for (const environment of ['preview', 'production']) {
-      const selected = environment === 'preview' ? object(object(config.env).preview) : config;
-      selected.vars = {
-        ...object(selected.vars),
-        LVBT_DEPLOYMENT_ENV: environment,
-        LVBT_ACCESS_AUD: 'staff-audience',
-        LVBT_ACCESS_TEAM_DOMAIN: 'lvbt.cloudflareaccess.com',
-        LVBT_DISCORD_SYNC_ENABLED: 'true',
-        LVBT_DISCORD_APPLICATION_ID: '111111111111111111',
-        LVBT_DISCORD_GUILD_ID:
-          environment === 'preview' ? '222222222222222222' : '444444444444444444',
-        LVBT_DISCORD_PRODUCTION_GUILD_ID: '444444444444444444',
-        LVBT_DISCORD_MEMBER_ROLE_ID: changedRole ? '777777777777777777' : '555555555555555555',
-      };
-    }
-    await writeFile(filename, JSON.stringify(config));
-  }
+  await configureSource(f.source, changedRole, mode);
   const release = await packageStaffRelease(f.source, f.destination, releaseIdentity);
   const receiptFile = join(f.root, 'deployment.json');
-  const state = {
-    failUploadJobs: false,
-    failActivateJobs: false,
-    unsafe: false,
-    wrongVersion: false,
-    wrongReadback: false,
-    wrongJobsReadback: false,
-    serializedMapTraffic: false,
-    unexpectedJobsVersion: false,
-    commands: [] as string[][],
-  };
+  const state = initialState(mode);
   const messages = new Map<string, string>();
   const configurations = new Map<string, Record<string, unknown>>();
   const active = new Map<string, string>();
   const fetcher: typeof fetch = async (input, init) => {
     const url = new URL(input instanceof Request ? input.url : input);
+    if (url.pathname.endsWith('/policies') && active.size === 2) {
+      state.readinessAfterVersions += 1;
+      if (state.readinessAfterVersions === 2 && state.failReadinessBeforeSchedule)
+        throw new Error('DO-NOT-PRINT');
+      if (state.readinessAfterVersions === 2 && state.changeScheduleDuringReadiness)
+        state.schedules = ['0 * * * *'];
+    }
+    if (url.pathname.endsWith('/schedules')) return scheduleReply(init, state, active, receiptFile);
     const response = await remote.options.fetch(input, init);
     const body = object(await response.json());
     if (url.pathname.includes('/versions/'))
-      versionMetadata(body, {
-        messages,
-        configurations,
-        changedRole,
-        wrongVersion: state.wrongVersion,
-      });
+      decorateVersion(
+        body,
+        url,
+        { messages, configurations, changedRole, wrongVersion: state.wrongVersion },
+        { mode, state },
+      );
     const app = url.pathname.includes('jobs') ? 'jobs' : 'staff';
     if (url.pathname.endsWith('/deployments')) body.result = deploymentMetadata(app, active, state);
     if (state.unsafe && url.pathname.endsWith('/policies')) body.result = [{ decision: 'bypass' }];
@@ -164,20 +158,7 @@ export async function deploymentFixture(changedRole = false) {
     } else {
       assert.equal(args[1], 'deploy');
       assert.equal(args[2], `${versions[app]}@100%`);
-      if (app === 'jobs' && state.failActivateJobs) throw new Error('DO-NOT-PRINT-PROVIDER-BODY');
-      active.set(app, versions[app]);
-      await writeFile(
-        output,
-        JSON.stringify({
-          type: 'version-deploy',
-          version: 1,
-          worker_name: config.name,
-          deployment_id: deployments[app],
-          version_traffic: state.serializedMapTraffic
-            ? new Map([[versions[app], 100]])
-            : { [versions[app]]: 100 },
-        }) + '\n',
-      );
+      await writeActivation(app, config, output, { state, active });
     }
   };
   return {
@@ -188,9 +169,174 @@ export async function deploymentFixture(changedRole = false) {
     options: {
       ...remote.options,
       root: f.source,
-      environment: 'preview' as const,
+      environment: mode.production ? ('production' as const) : ('preview' as const),
+      ...(mode.setup ? { stage: 'setup' as const } : {}),
       run,
       fetch: fetcher,
     },
   };
+}
+
+async function configureSource(source: string, changedRole: boolean, mode: FixtureMode) {
+  for (const app of ['staff', 'jobs']) {
+    const filename = join(source, `apps/${app}/wrangler.jsonc`);
+    const config = object(
+      ts.parseConfigFileTextToJson(filename, await readFile(filename, 'utf8')).config,
+    );
+    for (const environment of ['preview', 'production']) {
+      const selected = environment === 'preview' ? object(object(config.env).preview) : config;
+      configureEnvironment(selected, app, environment, { changedRole, mode });
+    }
+    await writeFile(filename, JSON.stringify(config));
+  }
+}
+function configureNewsletter(
+  selected: Record<string, unknown>,
+  app: string,
+  environment: string,
+  mode: FixtureMode,
+) {
+  if (app !== 'jobs' || !mode.newsletter) return;
+  Object.assign(object(selected.vars), {
+    LVBT_BEEHIIV_SYNC_ENABLED: 'true',
+    LVBT_BEEHIIV_PUBLICATION_ID: environment === 'production' ? 'pub_production' : 'pub_fixture',
+    LVBT_BEEHIIV_PRODUCTION_PUBLICATION_ID: 'pub_production',
+  });
+}
+
+type FixtureState = ReturnType<typeof initialState>;
+function initialState(mode: FixtureMode) {
+  return {
+    failUploadJobs: false,
+    failActivateJobs: false,
+    unsafe: false,
+    wrongVersion: false,
+    wrongReadback: false,
+    wrongJobsReadback: false,
+    serializedMapTraffic: false,
+    unexpectedJobsVersion: false,
+    schedules: mode.unscheduled || mode.setup ? ([] as string[]) : ['* * * * *'],
+    scheduleWrites: 0,
+    loseScheduleResponse: false,
+    failScheduleWrite: false,
+    failScheduleReads: 0,
+    failReadsAfterScheduleWrite: 0,
+    changeScheduleAfterVersions: false,
+    loseActivationResponse: false,
+    readinessAfterVersions: 0,
+    failReadinessBeforeSchedule: false,
+    changeScheduleDuringReadiness: false,
+    removeNewsletterSecret: false,
+    commands: [] as string[][],
+  };
+}
+
+async function scheduleReply(
+  init: RequestInit | undefined,
+  state: FixtureState,
+  active: Map<string, string>,
+  receiptFile: string,
+) {
+  if (init?.method === 'PUT') {
+    state.scheduleWrites += 1;
+    assert.equal(active.size, 2);
+    assert.equal(
+      (JSON.parse(await readFile(receiptFile, 'utf8')) as { schedule: { state: string } }).schedule
+        .state,
+      'attempted',
+    );
+    if (state.failScheduleWrite) throw new Error('DO-NOT-PRINT');
+    state.schedules = (
+      JSON.parse(
+        typeof init.body === 'string' ? init.body : assert.fail('Expected JSON schedule body'),
+      ) as { cron: string }[]
+    ).map((row) => row.cron);
+    state.failScheduleReads = state.failReadsAfterScheduleWrite;
+    if (state.loseScheduleResponse) throw new Error('DO-NOT-PRINT');
+  } else if (state.failScheduleReads > 0) {
+    state.failScheduleReads -= 1;
+    throw new Error('Unavailable');
+  }
+  if (state.changeScheduleAfterVersions && active.size === 2) state.schedules = ['* * * * *'];
+  return Response.json({
+    success: true,
+    result: { schedules: state.schedules.map((cron) => ({ cron })) },
+  });
+}
+
+function decorateVersion(
+  body: Record<string, unknown>,
+  url: URL,
+  versionOptions: Parameters<typeof versionMetadata>[1],
+  context: { mode: FixtureMode; state: FixtureState },
+) {
+  const { mode, state } = context;
+  versionMetadata(body, versionOptions);
+  {
+    const result = object(body.result);
+    const resource = object(result.resources);
+    const bindings = resource.bindings as Record<string, unknown>[];
+    if (!versionOptions.messages.has(String(result.id)) && mode.disabledBaseline) {
+      for (const binding of bindings)
+        if (
+          binding.name === 'LVBT_DISCORD_SYNC_ENABLED' ||
+          binding.name === 'LVBT_BEEHIIV_SYNC_ENABLED'
+        )
+          binding.text = 'false';
+    }
+    if (mode.newsletter && !state.removeNewsletterSecret && url.pathname.includes('jobs'))
+      bindings.push(
+        ...['LVBT_BEEHIIV_API_KEY', 'LVBT_NEWSLETTER_INTENT_KEY'].map((name) => ({
+          name,
+          type: 'secret_text',
+        })),
+      );
+  }
+}
+
+async function writeActivation(
+  app: 'staff' | 'jobs',
+  config: Record<string, unknown>,
+  output: string,
+  context: { state: FixtureState; active: Map<string, string> },
+) {
+  const { state, active } = context;
+  if (app === 'jobs' && state.failActivateJobs) throw new Error('DO-NOT-PRINT-PROVIDER-BODY');
+  active.set(app, versions[app]);
+  if (app === 'jobs' && state.loseActivationResponse) throw new Error('DO-NOT-PRINT');
+  await writeFile(
+    output,
+    JSON.stringify({
+      type: 'version-deploy',
+      version: 1,
+      worker_name: config.name,
+      deployment_id: deployments[app],
+      version_traffic: state.serializedMapTraffic
+        ? new Map([[versions[app], 100]])
+        : { [versions[app]]: 100 },
+    }) + '\n',
+  );
+}
+
+function configureEnvironment(
+  selected: Record<string, unknown>,
+  app: string,
+  environment: string,
+  context: { changedRole: boolean; mode: FixtureMode },
+) {
+  const { changedRole, mode } = context;
+  selected.vars = {
+    ...object(selected.vars),
+    LVBT_DEPLOYMENT_ENV: environment,
+    LVBT_ACCESS_AUD: 'staff-audience',
+    LVBT_ACCESS_TEAM_DOMAIN: 'lvbt.cloudflareaccess.com',
+    LVBT_DISCORD_SYNC_ENABLED: 'true',
+    LVBT_DISCORD_APPLICATION_ID: '111111111111111111',
+    LVBT_DISCORD_GUILD_ID: environment === 'preview' ? '222222222222222222' : '444444444444444444',
+    LVBT_DISCORD_PRODUCTION_GUILD_ID: '444444444444444444',
+    LVBT_DISCORD_MEMBER_ROLE_ID: changedRole ? '777777777777777777' : '555555555555555555',
+  };
+  if (mode.setup) object(selected.vars).LVBT_DISCORD_SYNC_ENABLED = 'false';
+  if (app === 'jobs') selected.triggers = { crons: mode.setup ? [] : ['* * * * *'] };
+  configureNewsletter(selected, app, environment, mode);
 }

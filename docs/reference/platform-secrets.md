@@ -486,9 +486,12 @@ vars are documented in `DISCORD_RUNTIME_CONFIG` in
 
 Only jobs receives `LVBT_DISCORD_BOT_TOKEN`. Staff receives these public values and no bot token.
 The existing website bootstrap does not provision jobs or staff, so its readiness report cannot
-prove these Workers are ready. Their release setup and migration application remain unfinished. An
-empty or mismatched configuration performs no scheduled role changes and renders no confirmed staff
-role status. Never point preview at the production server or membership database.
+prove these Workers are ready. Follow the
+[staff portal operations guide](staff-portal-operations.md) for setup prerequisites and the
+protected release procedure. The `release.previewOnly` hold blocks production changes until a
+separately reviewed launch change and acceptance. An empty or mismatched configuration performs no
+scheduled role changes and renders no confirmed staff role status. Never point preview at the
+production server or membership database.
 
 **The team.**
 

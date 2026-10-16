@@ -6,6 +6,7 @@ import { releaseProvider, validateRepository, type ReleaseProvider } from './rel
 import { digest } from './release-files';
 import { deploymentStep } from './release-failure';
 import { newReceipt, parseReceipt } from './release-receipt';
+import type { Environment } from './preflight-config';
 
 interface RecoveryOptions {
   repository: string;
@@ -14,12 +15,32 @@ interface RecoveryOptions {
   release: StaffRelease;
   accountId: string;
   stage: 'setup' | 'launch';
+  environment?: Environment;
 }
-const WORKFLOWS: Record<string, string> = {
-  'Deploy staff preview': '.github/workflows/deploy-staff-preview.yml',
-  'Recover staff preview': '.github/workflows/recover-staff-preview.yml',
+const WORKFLOWS: Partial<Record<string, { path: string; environment: Environment }>> = {
+  'Deploy staff preview': {
+    path: '.github/workflows/deploy-staff-preview.yml',
+    environment: 'preview',
+  },
+  'Recover staff preview': {
+    path: '.github/workflows/recover-staff-preview.yml',
+    environment: 'preview',
+  },
+  'Deploy staff production': {
+    path: '.github/workflows/deploy-staff-production.yml',
+    environment: 'production',
+  },
+  'Recover staff production': {
+    path: '.github/workflows/recover-staff-production.yml',
+    environment: 'production',
+  },
 };
-function deploymentOrigin(value: unknown, repository: string, runId: string) {
+function deploymentOrigin(
+  value: unknown,
+  repository: string,
+  runId: string,
+  environment: Environment,
+) {
   const run = object(value);
   const repo = validateRepository(run, repository);
   validateIdentity({ commit: String(run.head_sha), releaseId: runId });
@@ -28,23 +49,25 @@ function deploymentOrigin(value: unknown, repository: string, runId: string) {
     !Number.isSafeInteger(run.id) ||
     !Number.isSafeInteger(run.run_attempt) ||
     Number(run.run_attempt) < 1 ||
-    WORKFLOWS[String(run.name)] !== run.path ||
+    WORKFLOWS[String(run.name)]?.path !== run.path ||
+    WORKFLOWS[String(run.name)]?.environment !== environment ||
     run.event !== 'workflow_dispatch' ||
     run.head_branch !== 'main' ||
     run.status !== 'completed' ||
     !['success', 'failure', 'cancelled', 'timed_out'].includes(String(run.conclusion))
   )
-    throw new Error('Select a completed protected preview deployment.');
+    throw new Error('Select a completed protected deployment for the selected environment.');
   return { run, repo };
 }
 function receiptArtifact(
   values: unknown[],
   run: Record<string, unknown>,
   repo: Record<string, unknown>,
+  environment: Environment,
 ) {
   const matches = values
     .map(object)
-    .filter((artifact) => artifact.name === `staff-preview-deployment-${String(run.id)}`);
+    .filter((artifact) => artifact.name === `staff-${environment}-deployment-${String(run.id)}`);
   if (matches.length !== 1) throw new Error('Select exactly one retained deployment receipt.');
   const artifact = matches[0];
   if (
@@ -106,16 +129,23 @@ export async function prepareStaffReceipt(
       await client.run(options.repository, options.runId),
       options.repository,
       options.runId,
+      options.environment ?? 'preview',
     );
     const artifact = receiptArtifact(
       await client.artifacts(options.repository, options.runId),
       run,
       repo,
+      options.environment ?? 'preview',
     );
     const archive = await client.download(options.repository, String(artifact.id));
     const receipt = parseReceipt(
       receiptContent(archive, artifact),
-      newReceipt(options.release, options.accountId, 'preview', options.stage),
+      newReceipt(
+        options.release,
+        options.accountId,
+        options.environment ?? 'preview',
+        options.stage,
+      ),
     );
     await writeFile(options.filename, `${JSON.stringify(receipt, null, 2)}\n`, {
       flag: 'wx',

@@ -78,8 +78,6 @@ jobs:
         run: |
           if [ "$DEPLOYMENT_STAGE" = setup ]; then
             pnpm staff:preflight --preview --setup --json
-          else
-            pnpm staff:preflight --preview --json
           fi
       - name: Upload saved Workers
         env:
