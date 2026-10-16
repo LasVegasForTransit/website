@@ -845,6 +845,55 @@ files. Malformed, missing, partial, foreign, or changed receipts cannot authoriz
 | `recorded-traffic`                         | Actual traffic differs from an allowed recorded transition or cannot be verified; investigate the provider state.             |
 | A Worker `activation` or `readback` stage  | A deployment may have changed traffic; inspect both actual deployments and the retained receipt before resuming.              |
 
+### Interpret safe release diagnostics
+
+For maintainers investigating a stopped release, the command's error names its stage and safe check
+IDs. The existing **Recover staff preview → inspect** report also includes a `diagnostics` object
+for a blocked version or setup check. Keep the original build, deployment receipt and selected
+environment available; use the inspection procedure above before considering recovery.
+
+Deployment runs the selected build's source code. To use updated diagnostics, review and select a
+new successful **Build staff release** from that source, then start a fresh deployment with a new
+receipt after inspecting existing traffic. Retrying an older build retains its older deployment
+code. Recovery of an existing receipt always keeps that receipt's original build and artifact.
+
+- `failed` means the available configuration or metadata does not meet a requirement.
+- `unverified` means the required evidence could not be read or interpreted. It does not establish
+  that the configuration is wrong, and it still blocks release.
+- `HTTP` and `Cloudflare codes` contain only a validated response status and bounded numeric error
+  codes. They identify a rejected metadata read without exposing the response message or body.
+  Missing status means no usable response status was captured. When several reads fail, the summary
+  carries the first blocking read's provider details; each preflight check retains its own details.
+
+| Check ID                                 | Interpretation and next action                                                                                              |
+| ---------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
+| `provider.metadata`                      | Inspect the selected account and the workflow token's read permissions. A local CLI login may use a different identity.     |
+| `version.metadata`                       | The uploaded version's binding inventory could not be interpreted; inspect that exact version through approved read access. |
+| `version.id` or `version.annotation`     | Compare the uploaded version with the original receipt and saved build. Do not substitute another version.                  |
+| `version.services` or `version.database` | Compare the saved service target and database with that uploaded version's metadata.                                        |
+| `version.variable.<approved name>`       | Compare the named public variable with the frozen build configuration without publishing its value.                         |
+| `version.binding.<approved name>`        | Check the required binding's presence and type; do not print its secret value.                                              |
+| `version.forbidden_bindings`             | Staff contains a credential that belongs only on jobs. Correct the approved destination before another release.             |
+| `version.newsletter`                     | Enabled newsletter processing does not meet the existing publication, conflict-policy and encrypted-binding requirements.   |
+| `setup.<app>.source`                     | The selected preview source must retain disabled provider flags.                                                            |
+| `setup.<app>.traffic`                    | Active preview traffic is missing or does not total 100 percent; read actual deployments before proceeding.                 |
+| `setup.<app>.disabled`                   | An active version does not have the required preview identity and disabled provider flags.                                  |
+| `setup.<app>.version_metadata`           | An active version's identity or bindings could not be interpreted.                                                          |
+| `setup.jobs.schedule`                    | Confirm the preview jobs schedule is readable and empty.                                                                    |
+| Other preflight check IDs                | Read the matching configuration check in the report and correct that requirement; deferred launch checks remain deferred.   |
+
+For HTTP 401/403, check the exact workflow credential and its approved account/scope before changing
+configuration. For HTTP 429, inspect account limits before another attempt. These codes alone do not
+establish why a credential or request was rejected. A later successful read cannot explain an
+earlier unreadable check.
+
+Retain the receipt and read actual traffic and schedules before any retry: a failed command may
+follow a provider write. Partial upload receipts cannot authorize activation or recovery. Any new
+setup attempt requires review of the same immutable build and actual provider state, uses a fresh
+receipt, and passes every existing gate. Do not edit receipts, suppress failed or unverified checks,
+replace the selected artifact, or repeatedly dispatch to hide an unresolved failure. Keep detailed
+provider evidence in approved private operational records.
+
 ### Activate and verify
 
 A release must record the source commit, canonical migration names, staff and jobs version IDs,

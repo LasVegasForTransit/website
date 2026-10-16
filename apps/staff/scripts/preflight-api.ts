@@ -1,3 +1,4 @@
+import { ReleaseDiagnosticError } from './release-diagnostics';
 export function object(value: unknown): Record<string, unknown> {
   return value && typeof value === 'object' && !Array.isArray(value)
     ? (value as Record<string, unknown>)
@@ -13,22 +14,39 @@ export class MetadataClient {
     const resource = path.startsWith('/zones')
       ? path
       : `/accounts/${encodeURIComponent(this.options.accountId)}${path}`;
-    const response = await (this.options.fetch ?? fetch)(
-      `https://api.cloudflare.com/client/v4${resource}`,
-      {
-        method: sql ? 'POST' : 'GET',
-        redirect: 'error',
-        signal: AbortSignal.timeout(15_000),
-        headers: {
-          Authorization: `Bearer ${this.options.token}`,
-          'Content-Type': 'application/json',
+    let response: Response;
+    try {
+      response = await (this.options.fetch ?? fetch)(
+        `https://api.cloudflare.com/client/v4${resource}`,
+        {
+          method: sql ? 'POST' : 'GET',
+          redirect: 'error',
+          signal: AbortSignal.timeout(15_000),
+          headers: {
+            Authorization: `Bearer ${this.options.token}`,
+            'Content-Type': 'application/json',
+          },
+          body: sql ? JSON.stringify({ sql }) : undefined,
         },
-        body: sql ? JSON.stringify({ sql }) : undefined,
-      },
-    );
-    if (!response.ok) throw new Error('Metadata unavailable');
-    const data = object(await response.json());
-    if (data.success !== true || !('result' in data)) throw new Error('Metadata unavailable');
+      );
+    } catch {
+      throw new ReleaseDiagnosticError([{ id: 'provider.metadata', status: 'unverified' }]);
+    }
+    let data: Record<string, unknown>;
+    try {
+      data = object(await response.json());
+    } catch {
+      throw new ReleaseDiagnosticError([{ id: 'provider.metadata', status: 'unverified' }], {
+        httpStatus: response.status,
+      });
+    }
+    if (!response.ok || data.success !== true || !('result' in data))
+      throw new ReleaseDiagnosticError([{ id: 'provider.metadata', status: 'unverified' }], {
+        httpStatus: response.status,
+        cloudflareCodes: Array.isArray(data.errors)
+          ? data.errors.map((error) => object(error).code)
+          : [],
+      });
     return data;
   }
   async get(path: string): Promise<unknown> {

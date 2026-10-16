@@ -3,13 +3,14 @@ import { inspectWorker, inspectDiscord, type Bindings } from './preflight-worker
 import { remoteProbes } from './preflight-probes';
 import { releaseConfiguration, type Check, type Environment } from './preflight-config';
 import { STAFF_WORKER_BINDINGS } from '@lasvegasfortransit/platform-integrations/worker-runtime-config';
+import { safeDiagnostics } from './release-diagnostics';
 interface Options {
   root: string;
   accountId?: string;
   token?: string;
   fetch?: typeof fetch;
 }
-function unverifiedWorker(kind: 'staff' | 'jobs'): Check[] {
+function unverifiedWorker(kind: 'staff' | 'jobs', error?: unknown): Check[] {
   return [
     'deployment',
     'database',
@@ -20,6 +21,7 @@ function unverifiedWorker(kind: 'staff' | 'jobs'): Check[] {
     status: 'unverified',
     detail:
       'Worker metadata unavailable; check the selected account and scoped token read permissions.',
+    ...(safeDiagnostics(error) ? { diagnostics: safeDiagnostics(error) } : {}),
   }));
 }
 function unverifiedRequirements(): Check[] {
@@ -60,8 +62,8 @@ async function inspectRemote(
       checks.push(...result.checks);
       if (kind === 'staff') staffBindings = result.bindings;
       else jobsBindings = result.bindings;
-    } catch {
-      checks.push(...unverifiedWorker(kind));
+    } catch (error) {
+      checks.push(...unverifiedWorker(kind, error));
     }
   }
   checks.push(
@@ -77,11 +79,12 @@ async function inspectRemote(
   for (const probe of probes) {
     try {
       checks.push(...(await probe.run()));
-    } catch {
+    } catch (error) {
       checks.push({
         id: probe.id,
         status: 'unverified',
         detail: 'Metadata unavailable; check account and token read permissions.',
+        ...(safeDiagnostics(error) ? { diagnostics: safeDiagnostics(error) } : {}),
       });
     }
   }
