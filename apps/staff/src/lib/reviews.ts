@@ -1,15 +1,16 @@
 import { keepSeparate } from '@lasvegasfortransit/platform-storage/reviews';
+import { t } from '@lasvegasfortransit/platform-core/messages';
 import { consumeFormToken } from '@lasvegasfortransit/platform-storage/form-tokens';
 import type { StaffContext } from './context';
 import { field } from './forms';
 import { messageResponse } from './responses';
 const REASONS: Record<string, string> = {
-  'same phone': 'Shared phone number',
-  'same name and ZIP code': 'Matching name and ZIP code',
-  'same email, unverified': 'Same email, not verified',
+  'same phone': t('staff.review.sharedPhone'),
+  'same name and ZIP code': t('staff.review.matchingNameZip'),
+  'same email, unverified': t('staff.review.unverifiedEmail'),
 };
 export function reviewReason(value: string): string {
-  return Object.hasOwn(REASONS, value) ? REASONS[value] : 'Possible duplicate';
+  return Object.hasOwn(REASONS, value) ? REASONS[value] : t('staff.review.possibleDuplicate');
 }
 export function submittedEmail(details: string | null): string | null {
   if (!details) return null;
@@ -30,19 +31,12 @@ export async function separateAction(
       token: field(form, 'token', 43),
     }))
   )
-    return messageResponse(
-      'This form expired or was already submitted. Reload duplicate review.',
-      409,
-    );
+    return messageResponse(t('staff.review.separateExpired'), 409);
   const result = await keepSeparate(staff.db, staff.actor, reviewId, {
     operationId: field(form, 'operation_id', 201),
     note: field(form, 'note', 2001),
   });
-  if (result.kind === 'forbidden') return messageResponse("You don't have access to this", 403);
-  if (result.kind !== 'ok')
-    return messageResponse(
-      'This review changed or the note is too long. Reload duplicate review.',
-      409,
-    );
+  if (result.kind === 'forbidden') return messageResponse(t('staff.common.accessDenied'), 403);
+  if (result.kind !== 'ok') return messageResponse(t('staff.review.separateChanged'), 409);
   return new Response(null, { status: 303, headers: { Location: `/review/${reviewId}/` } });
 }

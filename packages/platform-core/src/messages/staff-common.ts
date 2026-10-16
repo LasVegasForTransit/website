@@ -1,9 +1,35 @@
 export const staffCommon = {
   merge: {
+    combinedTitle: 'Entries combined',
+    undoneTitle: 'Combination undone',
+    details: 'Combination details',
+    detailsErased: 'Saved personal details from this combination have been erased.',
+    separateAgain: 'These entries are separate again.',
+    sharedProfile: 'These entries now share one member profile.',
+    entryKept: 'Entry kept',
+    entryRestored: 'Entry restored',
+    entryCombined: 'Entry combined',
+    combinedAt: 'Combined {date}.',
+    combinedBy: 'Combined {date} by {name}.',
+    undoneAt: 'Undone {date}.',
+    undoHeading: 'Combined by mistake?',
+    undoHint:
+      'Undo restores the entries that were combined. Later activity stays on the member profile where it was added.',
+    undoReason: 'Reason for undoing',
+    undo: 'Undo combination',
     keepsOlder:
       'We’ll keep the earlier record, add any missing details and combine both histories. You can review their details afterward.',
     alreadyCombined: 'These entries are already combined. Open the current member profile.',
     undoNewerFirst: 'Undo the later combination first, then return to this one.',
+    combineExpired: 'This page is out of date. Open the duplicate check again.',
+    reviewChanged: 'This check has changed. Open the list of possible duplicates again.',
+    combineReasonRequired: 'Enter a reason for combining these entries.',
+    combineConflict:
+      'These entries can’t be combined yet. Check their email addresses, accounts and current committees, then try again.',
+    undoExpired: 'This page is out of date. Open the combination again.',
+    undoReasonRequired: 'Enter a reason for undoing this combination.',
+    undoConflict:
+      'This combination can’t be undone automatically because details, accounts or access have changed. Ask an administrator to check both entries.',
   },
   common: {
     accessDenied: "You don't have access to this",

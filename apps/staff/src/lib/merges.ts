@@ -25,10 +25,10 @@ export async function combineAction(
       token: field(form, 'token', 43),
     }))
   )
-    return messageResponse('This page is out of date. Open the duplicate check again.', 409);
+    return messageResponse(t('staff.merge.combineExpired'), 409);
   if (item.resolvedAt) {
     return {
-      error: 'This check has changed. Open the list of possible duplicates again.',
+      error: t('staff.merge.reviewChanged'),
       reason,
       survivorId,
     };
@@ -40,7 +40,7 @@ export async function combineAction(
     operationId: field(form, 'operation_id', 201),
     reviewId: item.id,
   });
-  if (result.kind === 'forbidden') return messageResponse("You don't have access to this", 403);
+  if (result.kind === 'forbidden') return messageResponse(t('staff.common.accessDenied'), 403);
   if (result.kind === 'ok')
     return new Response(null, {
       status: 303,
@@ -49,10 +49,10 @@ export async function combineAction(
   return {
     error:
       result.kind === 'invalid'
-        ? 'Enter a reason for combining these entries.'
+        ? t('staff.merge.combineReasonRequired')
         : 'reason' in result && result.reason === 'already_combined'
           ? t('staff.merge.alreadyCombined')
-          : 'These entries can’t be combined yet. Check their email addresses, accounts and current committees, then try again.',
+          : t('staff.merge.combineConflict'),
     reason,
     survivorId,
   };
@@ -70,13 +70,13 @@ export async function uncombineAction(
       token: field(form, 'token', 43),
     }))
   )
-    return messageResponse('This page is out of date. Open the combination again.', 409);
+    return messageResponse(t('staff.merge.undoExpired'), 409);
   const result = await undoMerge(staff.db, staff.actor, {
     mergeId: item.id,
     reason,
     operationId: field(form, 'operation_id', 201),
   });
-  if (result.kind === 'forbidden') return messageResponse("You don't have access to this", 403);
+  if (result.kind === 'forbidden') return messageResponse(t('staff.common.accessDenied'), 403);
   if (result.kind === 'ok')
     return new Response(null, {
       status: 303,
@@ -85,10 +85,10 @@ export async function uncombineAction(
   return {
     error:
       result.kind === 'invalid'
-        ? 'Enter a reason for undoing this combination.'
+        ? t('staff.merge.undoReasonRequired')
         : 'reason' in result && result.reason === 'undo_newer_merge_first'
           ? t('staff.merge.undoNewerFirst')
-          : 'This combination can’t be undone automatically because details, accounts or access have changed. Ask an administrator to check both entries.',
+          : t('staff.merge.undoConflict'),
     reason,
   };
 }
