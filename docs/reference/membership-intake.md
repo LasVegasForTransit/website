@@ -11,12 +11,11 @@ one record per person LVBT knows about, in a Cloudflare D1 database (see the
 what they agreed to** — not a spreadsheet, and not Notion.
 
 > **Before you start.** You'll need: edit access to the membership Google Form (and its Apps Script
-> editor) if you're touching the Google Form path, a [Beehiiv](./glossary.md#beehiiv) (our
-> newsletter platform) account with an API key, a Notion workspace where you can create a connection
-> (for staff follow-up, until the staff console replaces it — see
-> [below](#staff-follow-up-in-notion)), and access to the LVBT Cloudflare account to set Worker
-> secrets. The fastest setup path (`pnpm bootstrap --production`) is described under
-> [Required Cloudflare secrets](#required-cloudflare-secrets).
+> editor) if you're touching the Google Form path, the intake token, and access to the LVBT
+> Cloudflare account for an authorized configuration change. Newsletter delivery needs separately
+> configured [scheduled jobs](../../apps/jobs/README.md). The older Google Form endpoint also needs
+> its existing Notion connection while that compatibility path remains in use; the versioned
+> interface does not. See [Required Cloudflare secrets](#required-cloudflare-secrets).
 
 ## How someone joins
 
@@ -26,19 +25,25 @@ Whichever form someone fills in, the same three things happen:
    for them in the platform database, read and written only through the
    [person service](../../packages/platform-storage/src/person-service.md). See the
    [schema](../../packages/platform-storage/migrations/schema.md) for every column that record can
-   hold. A person is matched to an existing record by email address, so filling in a second form
-   links to the same person instead of creating a duplicate.
+   hold. A linked account or a matching verified email links to the existing person. Website,
+   newsletter, Google Form, external-form and member submissions also link a matching self-reported
+   email without prior verification. Other unverified email collisions, matching phone numbers and
+   matching full names with the same ZIP code are queued for staff review.
 2. Newsletter consent makes them a member and queues delivery in [Beehiiv](./glossary.md#beehiiv).
    Consent retains the original submission time, so an older replay cannot reverse a newer
    withdrawal. A provider outage does not discard the accepted membership record. A form without
    consent remains a form response rather than a membership join.
-3. Staff learn about the new person for follow-up. Today that's a Notion page (see
-   [Staff follow-up in Notion](#staff-follow-up-in-notion)); once the staff console's follow-up
-   queue ships, staff will work from that queue instead.
+3. The staff console's **Welcome** queue lets staff claim and record follow-up for new members.
+   Staff can also review uncertain matches and original signup answers. The older Google Form
+   endpoint still creates a Notion page for compatibility (see
+   [Staff follow-up in Notion](#staff-follow-up-in-notion)). That page is not the canonical member
+   record. A deployed staff console and an accepted switch of the follow-up process are separate
+   from the availability of this code; use the
+   [staff acceptance checklist](./staff-portal-acceptance.md) before retiring the old process.
 
-LVBT's own join form, at `/join/member`, does all three directly — see
-[joining LVBT on the website](./newsletter-signup.md) for exactly how. Every other form reaches the
-person record through the intake interface below.
+LVBT's own join form, at `/join/member`, writes the canonical record and queues newsletter delivery
+without creating a Notion page — see [joining LVBT on the website](./newsletter-signup.md) for
+exactly how. Every other form reaches the person record through the intake interface below.
 
 ## The versioned intake interface
 
@@ -51,7 +56,7 @@ The full contract — headers, request body, every field, every response — is 
 [connect a form tool](../guides/connect-a-form-tool.md). Send it there before wiring up a new tool.
 In short: you `POST` a JSON body with the person's email and consent, authenticated with a bearer
 token (see [glossary](./glossary.md#bearer-token)), and you get back whether the person was newly
-`created` or `linked` to someone LVBT already knew.
+`created`, `linked` to someone LVBT already knew, or `created_and_queued` for match review.
 
 ## The Google Form: a supported fallback
 
@@ -66,8 +71,9 @@ of the raw answers, kept in case a submission ever needs to be checked or re-ent
 
 The answer “Yes” to “Finishing this form will sign you up for our email newsletter. Is this okay?”
 and a valid original submission time are required to record newsletter consent. A blank or negative
-answer, or an unknown submission time, does not create membership. The existing Apps Script includes
-these answers and the response timestamp; it does not need newsletter credentials.
+answer, or an unknown submission time, does not record new newsletter consent or a membership join.
+It does not cancel an existing membership. The existing Apps Script includes these answers and the
+response timestamp; it does not need newsletter credentials.
 
 ### Switching the membership front door
 
@@ -143,12 +149,16 @@ execution and sends the trigger owner the standard failure email.
 
 ## Staff follow-up in Notion
 
-> **Will be superseded once the staff console's follow-up queue ships.** At that point staff will
-> work new sign-ups from the console instead of a Notion database, and this section will be marked
-> superseded with a date and a link to whatever replaces it. That project hasn't shipped yet — see
-> the [platform decision record](../explanation/decisions/organizing-platform.md) for where the
-> staff console fits into the platform. **Until then, Notion is still how staff follow up with every
-> new person who joins, and the steps below are current.**
+> **Superseded on 2026-10-16.** The staff console's Welcome queue provides member follow-up in the
+> canonical platform. See the
+> [platform decision record](../explanation/decisions/organizing-platform.md) and
+> [staff acceptance checklist](./staff-portal-acceptance.md) for the transition requirements.
+
+The setup below records the older Notion process. Keep its connection working while the Google
+Form's `/api/membership-intake` compatibility endpoint is still in use: that endpoint saves the
+canonical record first and then creates or finds a Notion page. `/api/intake/v1` and the website's
+join form do not need Notion. Do not treat the presence of the Welcome queue in source as proof that
+production follow-up has switched or that the old endpoint has been retired.
 
 Two parts: a one-time manual setup the Notion API can't do for you (creating the connection and
 sharing a page), then a script that builds the database with the right schema. Run `pnpm bootstrap`
@@ -259,7 +269,7 @@ log in the Cloudflare dashboard.
 
 ## Verification
 
-1. Submit a test response from the live Google Form.
+1. Use an approved test response in the intended environment. Submit it through the Google Form.
 2. Confirm the Apps Script execution succeeded.
 3. Confirm the canonical profile records the original consent time only for an affirmative answer.
    With scheduled newsletter work configured, verify delivery separately in Beehiiv. A blank or
@@ -286,21 +296,23 @@ fixtures.
 Apps Script treats any non-2xx response as a failed execution and emails the trigger owner. The
 status in that email says what went wrong:
 
-- **`503 service_unavailable`**: a Worker secret is missing. Nothing reached Beehiiv or Notion, and
-  every submission fails the same way until it is fixed. Run `pnpm bootstrap --production` to set
-  the names in `missing` on the production Worker, deploy the resulting Worker version, then replay
-  as below.
+- **`503 service_unavailable`**: a required binding is missing or the canonical write failed. A
+  missing Notion setting is checked after the person record is saved, so a failed response does not
+  prove that nothing was accepted. Check the named setting and canonical record in the intended
+  environment, then follow [platform secrets](./platform-secrets.md) for an authorized repair and
+  replay the original response.
 - **`401 unauthorized`**: the Apps Script `LVBT_MEMBERSHIP_INTAKE_SECRET` property no longer matches
   the Worker secret.
-- **`502`**: Beehiiv or Notion rejected the request; the body says which. If Beehiiv succeeded and
-  Notion failed, the person is subscribed and in the person record, but has no Notion follow-up
-  page. Replay fixes that too.
+- **`502 notion_sync_failed`**: the canonical record was saved, but Notion follow-up failed. Repair
+  the Notion connection and replay the same response. Verify newsletter delivery separately; the
+  intake endpoint never calls Beehiiv directly.
 
-Replaying is safe because the request is [idempotent](./glossary.md#idempotent): Beehiiv treats a
-re-subscribe as a no-op (`reactivate_existing: true`) and sends no email, the endpoint looks up the
-form's **Response ID** in the Notion data source before creating a page, and the intake interface
-remembers the same idempotency key for 30 days — so a replayed submission changes nothing it already
-did.
+Replaying the same response is [idempotent](./glossary.md#idempotent): the intake interface
+remembers its source and idempotency key for 30 days, and the compatibility endpoint looks up the
+form's **Response ID** before creating a Notion page. Preserve the original answers, response
+identifier and submission time. Accepted consent queues durable newsletter work; retrying must not
+manufacture a new choice or reverse a newer withdrawal. Check delivery through the
+[newsletter operations procedure](./staff-portal-operations.md#scheduled-newsletter-processing).
 
 1. Confirm the outage is over: submit a test response and check that the execution succeeds.
 2. In **Extensions → Apps Script**, select `backfillMembershipIntake` in the toolbar and press

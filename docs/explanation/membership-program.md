@@ -242,16 +242,20 @@ and what's still planned.
   [person service](../../packages/platform-storage/src/person-service.md), and every sign-up, from
   any form, lands there (see [membership-intake.md](../reference/membership-intake.md)). Adding
   `Stage`, `Role`, an events-attended signal, and a `Lapsing` flag to that record still covers most
-  of this spec's state model — the record just isn't Notion anymore. (Notion still holds a working
-  queue for staff follow-up on new sign-ups, until the staff console's own follow-up queue ships;
-  that's a separate thing from the roster.)
+  of this spec's state model — the record just isn't Notion anymore. The staff console provides
+  member search, profiles, review and a **Welcome** queue where staff claim and record follow-up.
+  The older Google Form endpoint still writes Notion follow-up pages for compatibility; that does
+  not make Notion the roster. Retiring that process requires an accepted operational transition.
 - **Events already flow through a public calendar** ([events-pipeline.md](./events-pipeline.md)).
   Attendance capture — a check-in that writes back to the person record — is not built yet. It's
   planned as the **Event Attendance Record** project. That single signal will power attendance
   metrics, Regular detection, and lapse alerts, same as this document originally described.
-- **Discord** is the natural home for roles/belonging, but roles don't sync automatically yet.
-  Linking a member's Discord account and mirroring rungs and teams as roles is planned as the
-  **Discord Account Linking and Role Sync** project.
+- **Discord Account Linking and Role Sync** implements optional Discord account linking and
+  reconciliation of member and committee access. It does not implement this proposed engagement
+  ladder. Joining Discord is optional and does not establish or end LVBT membership. A person can
+  belong to multiple committees at once; ending one assignment preserves the others and unrelated
+  Discord roles. Synchronization needs separately configured and accepted provider access; its
+  presence in source does not prove it is active in a deployed environment.
 - **Newsletter segments** (Beehiiv, our newsletter-sending platform — see
   [glossary](../reference/glossary.md#beehiiv)) can carry recognition and re-engagement flows, as
   before.
@@ -263,10 +267,16 @@ and what's still planned.
 
 ### The interim definition of "member" differs from rung 1
 
-Today, LVBT's platform treats **"subscribed to the newsletter"** as the definition of a member —
-that's what sets `membership_status` to `member` in the person record. This is an interim rule, not
-a permanent one: it will hold until the **LVBT Membership Model Design** project decides what
-"member" should mean and whether that matches this ladder.
+LVBT's interim definition remains **"subscribed to the newsletter"**. An accepted signup records
+consent and establishes membership in the canonical person record before scheduled delivery to
+Beehiiv completes. The current active Beehiiv subscriber roll can also establish membership through
+the reviewed import process, without inventing a missing historical signup date, answer or consent
+record. An ambiguous unsubscribe chronology holds conflicting mailing-list changes for staff review
+and preserves membership while that conflict is unresolved. See
+[import existing members](../guides/import-existing-members.md) for the evidence rules.
+
+This is an interim rule, not a permanent one: it will hold until the **LVBT Membership Model
+Design** project decides what "member" should mean and whether that matches this ladder.
 
 That interim rule is looser than this document's rung 1, **Member**, which requires opting in
 through the membership form and appearing in the roster — a newsletter subscription alone is closer
@@ -274,9 +284,10 @@ to rung 0, **Subscriber**, in the ladder above. Don't assume the two match until
 Model Design project says they do. Until then, "member" in the platform's data and "Member" on this
 ladder are two different things that happen to share a word.
 
-Nothing above requires the gated-content/auth system that doesn't exist yet. Sign-in and account
-management, as noted above, already do exist; what's still missing is staff-facing tooling (the
-console) and the automation projects named above.
+Sign-in, account management and the staff console exist; this proposed engagement ladder and event
+attendance capture remain separate work. Production activation and provider acceptance must be
+verified against the [staff acceptance checklist](../reference/staff-portal-acceptance.md), rather
+than inferred from available source code.
 
 ---
 

@@ -1,5 +1,9 @@
 # Decision: Newsletter platform
 
+> **Superseded on 2026-09-23.** Beehiiv supplies LVBT's newsletter while the Organizing Platform
+> keeps the canonical member record and queues delivery separately. See the
+> [Organizing Platform decision record](./organizing-platform.md) and the dated addendum below.
+
 This decision record explains which service we send the newsletter through and why — read it before
 proposing a platform change. The names below are competing newsletter/publishing services;
 **Ghost(Pro)** is the hosted version of the open-source Ghost publishing platform, **Substack** and
@@ -126,10 +130,13 @@ sign-up form, and it still does. Its web address is `mail.lasvegasfortransit.org
 doesn't capture why the recommendation wasn't followed; if that matters for a future decision, ask
 the people who set up the newsletter.
 
-The website's code works with Beehiiv because that's where LVBT's mailing list lives. Joining LVBT
-on the website subscribes the person in Beehiiv, in the same step that creates their record and
-records their consent (see [membership intake](../../reference/membership-intake.md)). Being on the
-mailing list is what makes someone a member today, so the two are kept in step. The
+The website's code works with Beehiiv because that's where LVBT's mailing list lives. An accepted
+signup first saves the person's record and original consent and queues durable delivery work. The
+scheduled jobs Worker then reconciles Beehiiv; a provider outage does not discard the accepted
+signup (see [membership intake](../../reference/membership-intake.md)). Newsletter-based membership
+remains the interim rule. Reviewed current-roll imports recognize active Beehiiv subscribers without
+inventing absent historical consent, while conflicting unsubscribe chronology is held for staff
+review before a mailing-list change. The
 [Organizing Platform decision record](./organizing-platform.md) keeps Beehiiv behind its own
 integration, so the newsletter could move to another service later without changing the platform's
 rules.
