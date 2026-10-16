@@ -76,6 +76,23 @@ void test('CI runs the required gate with full history and no duplicate security
   );
 });
 
+void test('saved staff builds receive the same public website settings as CI', async () => {
+  const ci = await readFile(new URL('../../../.github/workflows/ci.yml', import.meta.url), 'utf8');
+  const staff = await readFile(
+    new URL('../../../.github/workflows/build-staff-release.yml', import.meta.url),
+    'utf8',
+  );
+  const environment = (staff.split('\n    steps:')[0] ?? '').split('\n');
+  const settings = [...ci.matchAll(/^ {6}(PUBLIC_LVBT_[A-Z_]+): (.+)$/gm)];
+  assert.ok(settings.some((setting) => setting[1] === 'PUBLIC_LVBT_LINKEDIN'));
+  assert.ok(settings.some((setting) => setting[1] === 'PUBLIC_LVBT_DONATE_URL'));
+  for (const [, name, value] of settings)
+    assert.ok(
+      environment.includes(`      ${name}: ${value}`),
+      `Saved staff validation and packaging must receive CI's ${name} setting.`,
+    );
+});
+
 void test('production promotion uses shared selected-release verification and never rebuilds', async () => {
   const workflow = await readFile(workflowUrl, 'utf8');
   assert.match(workflow, /workflow_dispatch:/);
