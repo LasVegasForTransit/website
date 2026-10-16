@@ -7,6 +7,7 @@ import type { Environment } from './preflight-config';
 import { parseSchedule, type ScheduleReceipt } from './release-schedule';
 
 export type App = 'staff' | 'jobs';
+export type ReleaseStage = 'setup' | 'launch' | 'shutdown';
 export interface Traffic {
   versionId: string;
   percentage: number;
@@ -26,7 +27,7 @@ export interface DeploymentReceipt {
   artifactHash: string;
   accountId: string;
   environment: Environment;
-  stage: 'setup' | 'launch';
+  stage: ReleaseStage;
   status: 'uploading' | 'uploaded' | 'activating' | 'active' | 'failed';
   workers: WorkerReceipt[];
   schedule?: ScheduleReceipt;
@@ -66,8 +67,13 @@ export function newReceipt(
   release: StaffRelease,
   accountId: string,
   environment: Environment,
-  stage: 'setup' | 'launch' = 'launch',
+  stage: ReleaseStage = 'launch',
 ): DeploymentReceipt {
+  if (
+    !['setup', 'launch', 'shutdown'].includes(stage) ||
+    (environment === 'production' && stage !== 'launch')
+  )
+    throw new Error('Production requires launch; setup and shutdown are preview-only.');
   return {
     formatVersion: 2,
     commit: release.commit,
@@ -91,6 +97,7 @@ export async function readReceipt(
 }
 export function parseReceipt(value: unknown, expected: DeploymentReceipt): DeploymentReceipt {
   const receipt = object(value);
+  const schedule = receiptSchedule(receipt, expected);
   if (
     Object.keys(receipt).some((key) => ![...Object.keys(expected), 'schedule'].includes(key)) ||
     (receipt.formatVersion !== 1 && receipt.formatVersion !== 2) ||
@@ -135,8 +142,19 @@ export function parseReceipt(value: unknown, expected: DeploymentReceipt): Deplo
     formatVersion: receipt.formatVersion,
     status: receipt.status as DeploymentReceipt['status'],
     workers,
-    ...(receipt.schedule === undefined ? {} : { schedule: parseSchedule(receipt.schedule) }),
+    ...(schedule === undefined ? {} : { schedule }),
   };
+}
+function receiptSchedule(receipt: Record<string, unknown>, expected: DeploymentReceipt) {
+  const schedule = receipt.schedule === undefined ? undefined : parseSchedule(receipt.schedule);
+  if (
+    expected.stage === 'shutdown' &&
+    (expected.environment !== 'preview' ||
+      receipt.formatVersion !== 2 ||
+      schedule?.desired.length !== 0)
+  )
+    throw new Error('Shutdown requires a preview receipt with an empty desired schedule.');
+  return schedule;
 }
 export async function saveReceipt(file: string, receipt: DeploymentReceipt) {
   const temporary = `${file}.${randomUUID()}.tmp`;

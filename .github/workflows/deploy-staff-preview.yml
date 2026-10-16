@@ -9,11 +9,12 @@ on:
         type: string
       stage:
         description:
-          Setup keeps Discord disabled and jobs inactive; launch requires full configuration
+          Setup keeps preview inactive; launch enables configured work; shutdown disables Discord
+          and jobs
         required: true
         type: choice
         default: launch
-        options: [launch, setup]
+        options: [launch, setup, shutdown]
 
 permissions:
   contents: read
@@ -109,6 +110,8 @@ jobs:
         run: |
           if [ "$DEPLOYMENT_STAGE" = setup ]; then
             pnpm staff:preflight --preview --setup --json
+          elif [ "$DEPLOYMENT_STAGE" = shutdown ]; then
+            pnpm staff:preflight --preview --shutdown --json
           else
             pnpm staff:preflight --preview --json
           fi

@@ -7,6 +7,7 @@ import { type Environment } from './preflight-config';
 import { preflightStaff } from './preflight';
 import { MetadataClient, object } from './preflight-api';
 import { previewSetupReady } from './preview-setup';
+import { previewShutdownReady } from './preview-shutdown';
 import { disabledDeployment } from './preflight-workers';
 import {
   applySavedSchedule,
@@ -26,6 +27,7 @@ import {
   verifyVersion,
   versionTraffic,
   recordedTransition,
+  assertDeploymentOptions,
 } from './release-provider';
 import {
   newReceipt,
@@ -36,27 +38,46 @@ import {
   workerName,
   type DeploymentReceipt,
   type WorkerReceipt,
+  type ReleaseStage,
 } from './release-receipt';
 
 export interface DeploymentOptions {
   root: string;
   environment: Environment;
-  stage?: 'setup' | 'launch';
+  stage?: ReleaseStage;
   accountId: string;
   token: string;
   fetch?: typeof fetch;
   run?: (args: string[], output: string) => Promise<void>;
   assertSource?: () => Promise<void>;
 }
-function assertDeploymentOptions(options: DeploymentOptions) {
-  if (
-    !options.accountId ||
-    !options.token ||
-    !['preview', 'production'].includes(options.environment) ||
-    (options.stage !== undefined && !['setup', 'launch'].includes(options.stage)) ||
-    (options.stage === 'setup' && options.environment !== 'preview')
-  )
-    throw new Error('Select an environment and explicit scoped deployment credentials.');
+async function previewBoundary(
+  options: DeploymentOptions,
+  client: MetadataClient,
+  checks: Awaited<ReturnType<typeof preflightStaff>>['checks'],
+  state: { currentSchedule: string[]; final: boolean },
+) {
+  if (options.stage === 'setup') {
+    if (
+      !(await deploymentStep('setup-boundary', () =>
+        previewSetupReady(options.root, client, checks),
+      ))
+    )
+      throw new DeploymentFailure('setup-boundary');
+    return true;
+  }
+  if (options.stage === 'shutdown') {
+    if (
+      !(await deploymentStep('shutdown-boundary', () =>
+        previewShutdownReady(options.root, client, checks, state.final),
+      ))
+    )
+      throw new DeploymentFailure('shutdown-boundary');
+    if (state.final && state.currentSchedule.length !== 0)
+      throw new DeploymentFailure('jobs.schedule');
+    return true;
+  }
+  return false;
 }
 async function ready(options: DeploymentOptions, receipt?: DeploymentReceipt, final = false) {
   assertDeploymentOptions(options);
@@ -75,6 +96,7 @@ async function ready(options: DeploymentOptions, receipt?: DeploymentReceipt, fi
     readJobsSchedule(client, workerName('jobs', options.environment)),
   );
   if (receipt) await deploymentStep('jobs.schedule', () => scheduleUnchanged(client, receipt));
+  if (await previewBoundary(options, client, report.checks, { currentSchedule, final })) return;
   const disabled =
     !final &&
     (await deploymentStep('configuration', () =>
@@ -94,15 +116,6 @@ async function ready(options: DeploymentOptions, receipt?: DeploymentReceipt, fi
           (check.id === 'discord.configuration' && (disabled || transition?.selectedActive)))
       ),
   );
-  if (options.stage === 'setup') {
-    if (
-      !(await deploymentStep('setup-boundary', () =>
-        previewSetupReady(options.root, new MetadataClient(options), report.checks),
-      ))
-    )
-      throw new DeploymentFailure('setup-boundary');
-    return;
-  }
   if (final && receipt?.schedule && !sameSchedule(currentSchedule, receipt.schedule.desired))
     throw new DeploymentFailure('jobs.schedule');
   if (failures.length) throw new DeploymentFailure('configuration');
@@ -327,7 +340,10 @@ async function activeConfigurationReady(
       throw new DeploymentFailure('recorded-traffic');
   }
   const report = await preflightStaff(options.environment, options);
-  if (options.stage === 'setup') {
+  if (options.stage === 'shutdown') {
+    if (!(await previewShutdownReady(options.root, client, report.checks, true)))
+      throw new DeploymentFailure('shutdown-boundary');
+  } else if (options.stage === 'setup') {
     if (!(await previewSetupReady(options.root, client, report.checks)))
       throw new DeploymentFailure('setup-boundary');
   } else if (

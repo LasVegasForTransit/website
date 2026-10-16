@@ -8,6 +8,7 @@ export type DeploymentStage =
   | 'configuration'
   | 'recorded-traffic'
   | 'setup-boundary'
+  | 'shutdown-boundary'
   | 'jobs.schedule'
   | `${Worker}.version`
   | `${Worker}.upload`

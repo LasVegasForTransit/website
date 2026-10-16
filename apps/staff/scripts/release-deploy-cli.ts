@@ -31,7 +31,8 @@ type Values = Partial<
 function deploymentStage(value?: string) {
   if (value === undefined || value === 'launch') return 'launch' as const;
   if (value === 'setup') return 'setup' as const;
-  throw new Error('Select --stage launch, or --stage setup for the protected preview only.');
+  if (value === 'shutdown') return 'shutdown' as const;
+  throw new Error('Select --stage launch, or preview-only --stage setup or shutdown.');
 }
 function actionOptions(action: Action, values: Values) {
   if (action === 'receipt') {
@@ -58,7 +59,7 @@ export function selection(action: Action, values: Values) {
   const stage = deploymentStage(values.stage);
   const environment: 'preview' | 'production' = values.target;
   if (values.target === 'production' && stage !== 'launch')
-    throw new Error('Production requires launch acceptance; setup is preview-only.');
+    throw new Error('Production requires launch acceptance; setup and shutdown are preview-only.');
   return {
     directory: resolve(values.directory),
     repository: values.repository,

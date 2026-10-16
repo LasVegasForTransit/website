@@ -15,8 +15,19 @@ import {
   newsletterBindingsReady,
 } from './preflight-workers';
 import { setupBindings } from './preview-setup';
+import type { DeploymentOptions } from './release-deploy';
 
 const execute = promisify(execFile);
+export function assertDeploymentOptions(options: DeploymentOptions) {
+  if (
+    !options.accountId ||
+    !options.token ||
+    !['preview', 'production'].includes(options.environment) ||
+    (options.stage !== undefined && !['setup', 'launch', 'shutdown'].includes(options.stage)) ||
+    (options.stage !== undefined && options.stage !== 'launch' && options.environment !== 'preview')
+  )
+    throw new Error('Select an environment and explicit scoped deployment credentials.');
+}
 export function releaseMessage(receipt: DeploymentReceipt) {
   return `Release ${receipt.releaseId} ${receipt.commit} ${receipt.artifactHash}`;
 }
