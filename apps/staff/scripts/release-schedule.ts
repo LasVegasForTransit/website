@@ -57,8 +57,9 @@ export async function captureSchedule(
   );
   const desired = boundedSchedules(object(config.triggers).crons);
   if (
-    (options.stage === 'setup' && desired.length !== 0) ||
-    (options.stage !== 'setup' && desired.length !== 1)
+    ((options.stage === 'setup' || options.stage === 'shutdown') && desired.length !== 0) ||
+    (options.stage !== 'setup' && options.stage !== 'shutdown' && desired.length !== 1) ||
+    (options.stage === 'shutdown' && options.environment !== 'preview')
   )
     throw new DeploymentFailure('jobs.schedule');
   const previous = await readJobsSchedule(
@@ -70,6 +71,13 @@ export async function captureSchedule(
   return { previous, desired, state: 'pending' };
 }
 export async function verifySavedSchedule(copy: string, receipt: DeploymentReceipt) {
+  if (
+    receipt.stage === 'shutdown' &&
+    (receipt.environment !== 'preview' ||
+      receipt.formatVersion !== 2 ||
+      receipt.schedule?.desired.length !== 0)
+  )
+    throw new DeploymentFailure('receipt');
   if (!receipt.schedule) return;
   const config = object(
     JSON.parse(await readFile(join(copy, 'jobs', `wrangler.${receipt.environment}.json`), 'utf8')),

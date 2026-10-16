@@ -82,6 +82,7 @@ interface FixtureMode {
   held?: boolean;
   newsletter?: boolean;
   setup?: boolean;
+  shutdown?: boolean;
 }
 export async function deploymentFixture(changedRole = false, mode: FixtureMode = {}) {
   const f = await releaseFixture();
@@ -171,6 +172,7 @@ export async function deploymentFixture(changedRole = false, mode: FixtureMode =
       root: f.source,
       environment: mode.production ? ('production' as const) : ('preview' as const),
       ...(mode.setup ? { stage: 'setup' as const } : {}),
+      ...(mode.shutdown ? { stage: 'shutdown' as const } : {}),
       run,
       fetch: fetcher,
     },
@@ -336,7 +338,8 @@ function configureEnvironment(
     LVBT_DISCORD_PRODUCTION_GUILD_ID: '444444444444444444',
     LVBT_DISCORD_MEMBER_ROLE_ID: changedRole ? '777777777777777777' : '555555555555555555',
   };
-  if (mode.setup) object(selected.vars).LVBT_DISCORD_SYNC_ENABLED = 'false';
-  if (app === 'jobs') selected.triggers = { crons: mode.setup ? [] : ['* * * * *'] };
+  const disabled = mode.setup === true || (mode.shutdown === true && environment === 'preview');
+  if (disabled) object(selected.vars).LVBT_DISCORD_SYNC_ENABLED = 'false';
+  if (app === 'jobs') selected.triggers = { crons: disabled ? [] : ['* * * * *'] };
   configureNewsletter(selected, app, environment, mode);
 }

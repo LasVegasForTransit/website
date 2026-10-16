@@ -16,7 +16,7 @@ on:
         required: true
         type: choice
         default: setup
-        options: [setup, launch]
+        options: [setup, launch, shutdown]
       operation:
         description: Inspect reads configuration only; resume activates the recorded versions
         required: true

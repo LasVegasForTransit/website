@@ -91,6 +91,28 @@ void test('retained deployment retrieval preserves the original build and upload
   }
 });
 
+void test('retained preview shutdown keeps its empty desired schedule and cannot become another stage', async () => {
+  const f = await fixture();
+  try {
+    f.receipt.stage = 'shutdown';
+    f.receipt.formatVersion = 2;
+    f.receipt.schedule = { previous: ['* * * * *'], desired: [], state: 'attempted' };
+    f.archiveFor();
+    const options = { ...f.options, stage: 'shutdown' as const };
+    await prepareStaffReceipt(options, f.client);
+    assert.deepEqual(JSON.parse(await readFile(options.filename, 'utf8')), f.receipt);
+    await rm(options.filename);
+    await assert.rejects(prepareStaffReceipt({ ...options, stage: 'setup' }, f.client));
+    await assert.rejects(prepareStaffReceipt({ ...options, stage: 'launch' }, f.client));
+    await assert.rejects(prepareStaffReceipt({ ...options, environment: 'production' }, f.client));
+    f.receipt.schedule.desired = ['* * * * *'];
+    f.archiveFor();
+    await assert.rejects(prepareStaffReceipt(options, f.client));
+  } finally {
+    await rm(f.root, { recursive: true, force: true });
+  }
+});
+
 void test('foreign or unfinished deployments and tampered artifact provenance cannot supply a receipt', async () => {
   const f = await fixture();
   try {

@@ -57,6 +57,13 @@ configuration, bot-token and minute-schedule requirements can remain incomplete.
 `stage: "setup"` and `setupReady`; it retains every launch check and unverified acceptance item.
 This mode is refused for production and does not establish launch readiness.
 
+`--shutdown` verifies a completed preview shutdown: both active Workers must have Discord disabled,
+newsletter work must remain disabled, and jobs must have no cron triggers. It retains the Access,
+database, authentication and exposure checks and requires the same isolated Discord target in source
+and active versions. The JSON includes `stage: "shutdown"` and `shutdownReady`; disabled Discord
+launch checks remain visible. This read-only check does not disable anything and cannot prove that
+website linking is off or that a prior provider request has finished.
+
 Newsletter work must also remain disabled during setup. The jobs source configuration must set
 `LVBT_BEEHIIV_SYNC_ENABLED=false`; any deployed version with this binding must expose the same
 plain-text disabled value. A missing deployed binding does not enable newsletter work. Setup checks
@@ -568,6 +575,9 @@ setup receipt cannot be resumed as a launch deployment. Omitting the option reta
 gate. Resolve the remaining configuration and live-provider acceptance before enabling schedules or
 treating a setup preview as operational.
 
+Use the separate **shutdown** stage below to return an enabled preview to disabled operation. Setup
+requires the preview to be disabled already; it cannot stop a running preview.
+
 Both commands require explicit scoped `CLOUDFLARE_ACCOUNT_ID` and `CLOUDFLARE_API_TOKEN`
 credentials. They recheck the successful main build's GitHub artifact and reject a changed checkout
 or saved artifact. Keep the receipt outside the artifact. Upload refuses an existing receipt. If
@@ -581,6 +591,64 @@ versions and other configuration failures still stop activation. The workflow re
 even on failure. Configuration checks do not prove sign-in, live provider behavior or staff
 acceptance. Production uses the separate protected procedure below and remains blocked while the
 production hold is set.
+
+### Shut down the isolated Discord preview
+
+This procedure is for a maintainer authorized to stop the existing test-server integration. Before
+starting, keep the reviewed test-server and Member-role IDs, isolated database, Access protection
+and existing `staff-preview` deployment credential. Production and newsletter synchronization stay
+unchanged. Shutdown stops new linking and scheduled work; it does not cancel provider requests that
+are already running or remove roles already granted.
+
+1. Disable website account linking first. In `apps/deploy/cloudflare.config.ts` and
+   `.lvbt/tooling.json`'s `release.previewBindings`, set the preview `LVBT_DISCORD_APPLICATION_ID`
+   text binding to an empty value, retaining the binding key and the production value. Regenerate
+   the website's compatibility configuration and types:
+
+   ```sh
+   pnpm -C apps/deploy compat:generate
+   pnpm -C apps/site build:functions
+   pnpm -C apps/site exec wrangler types --include-runtime=false
+   pnpm check
+   ```
+
+   Review and publish that saved **website preview** release through its normal protected procedure.
+   Confirm the preview account page no longer offers connecting Discord. Do not use a dashboard-only
+   setting. The staff release verifier does not inspect or prove this website prerequisite.
+
+2. Prepare a separate reviewed staff/jobs shutdown build. In both `env.preview.vars` sections, set
+   `LVBT_DISCORD_SYNC_ENABLED=false`. In jobs, retain `LVBT_BEEHIIV_SYNC_ENABLED=false` and set
+   `env.preview.triggers.crons` to `[]`. Keep the application, test-server, production-guard and
+   Member-role IDs unchanged and matching on staff and jobs. Keep `release.previewOnly=true` and all
+   production settings unchanged. Run the normal full checks and select the successful **Build staff
+   release** run for that main-branch source.
+3. Run **Deploy staff preview** with that `release_run` and **stage: shutdown**. The protected
+   workflow checks the known preview target, saves previous traffic and schedule state, and
+   activates only the exact saved disabled staff/jobs versions. It then applies the empty jobs
+   schedule and reads it back. A scoped local operator can use the same prepared artifact and an
+   unused receipt path:
+
+   ```sh
+   pnpm staff:release upload --repository LasVegasForTransit/website --run-id <shutdown-build-run-ID> --directory /tmp/selected-staff-release --target preview --stage shutdown --receipt /tmp/staff-shutdown.json
+   pnpm staff:release activate --repository LasVegasForTransit/website --run-id <shutdown-build-run-ID> --directory /tmp/selected-staff-release --target preview --stage shutdown --receipt /tmp/staff-shutdown.json
+   pnpm staff:preflight --preview --shutdown --json
+   ```
+
+4. Require `shutdownReady: true`, both recorded disabled versions at 100 percent, and an empty
+   actual jobs schedule. Verify website linking remains unavailable. Let any prior scheduled
+   invocation and provider request finish; inspect the existing Worker logs and test-server roles
+   before reporting that no work remains in flight. The configuration check alone does not prove
+   cancellation.
+5. If a step fails, preserve its receipt. Use **Recover staff preview** with the original build and
+   deployment run, **stage: shutdown**, and **operation: inspect** before an approved **resume**. Do
+   not substitute a setup/launch receipt or guess versions. Resume skips confirmed activations and
+   stops on unexpected traffic or schedules. An uncertain schedule write is never sent again;
+   readback can confirm that it succeeded, otherwise stop for operator review.
+
+Restarting requires a separately reviewed preview **launch** release with matching enabled Discord
+settings and the saved minute schedule. Publish the website's nonempty preview application ID last,
+after staff/jobs versions and the actual schedule are verified. Never use shutdown to change
+production, newsletter processing, Access policies or unlinked accounts' roles.
 
 ### Publish an approved staff production release
 
@@ -603,7 +671,7 @@ protections or authorize credentials. Do not reuse the preview deployment key.
    acceptance requirements are met, set the approved production provider flags, and retain
    `triggers.crons: ["* * * * *"]` in the production jobs source. Keep other environments unchanged.
    Both the trusted verifier and selected source must allow production; an older saved build cannot
-   bypass a current hold. Production has no setup mode.
+   bypass a current hold. Production has no setup or shutdown mode.
 2. Select the successful **Build staff release** run for that reviewed source. Use **Prepare staff
    release** to check its exact artifact and runtime. Review the saved build and required live
    acceptance before approving deployment. Do not substitute a newer build or rely on passing
@@ -709,15 +777,16 @@ repository, exactly one unexpired receipt artifact, its verified archive digest,
 versions matching the selected build, account, environment, and stage. It refuses existing output
 files. Malformed, missing, partial, foreign, or changed receipts cannot authorize activation.
 
-| Failure stage                              | Meaning and next action                                                                                           |
-| ------------------------------------------ | ----------------------------------------------------------------------------------------------------------------- |
-| `saved-build` or `saved-artifact`          | Verify the original successful build and retained artifact; do not substitute a newer build.                      |
-| `source-checkout` or `saved-configuration` | Restore a clean checkout of that build's source and compare its saved configuration.                              |
-| `receipt`                                  | Verify the selected deployment run, complete receipt, account, and stage. Do not edit or guess recorded versions. |
-| `staff.version` or `jobs.version`          | The uploaded version could not be verified against the saved release; inspect its metadata before any activation. |
-| `configuration` or `setup-boundary`        | Read the named configuration checks and confirm setup keeps Discord disabled and jobs unscheduled.                |
-| `recorded-traffic`                         | Actual traffic differs from an allowed recorded transition or cannot be verified; investigate the provider state. |
-| A Worker `activation` or `readback` stage  | A deployment may have changed traffic; inspect both actual deployments and the retained receipt before resuming.  |
+| Failure stage                              | Meaning and next action                                                                                                       |
+| ------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------- |
+| `saved-build` or `saved-artifact`          | Verify the original successful build and retained artifact; do not substitute a newer build.                                  |
+| `source-checkout` or `saved-configuration` | Restore a clean checkout of that build's source and compare its saved configuration.                                          |
+| `receipt`                                  | Verify the selected deployment run, complete receipt, account, and stage. Do not edit or guess recorded versions.             |
+| `staff.version` or `jobs.version`          | The uploaded version could not be verified against the saved release; inspect its metadata before any activation.             |
+| `configuration` or `setup-boundary`        | Read the named configuration checks and confirm setup keeps Discord disabled and jobs unscheduled.                            |
+| `shutdown-boundary`                        | Confirm the disabled preview source retains the known isolated target and all security checks; disable website linking first. |
+| `recorded-traffic`                         | Actual traffic differs from an allowed recorded transition or cannot be verified; investigate the provider state.             |
+| A Worker `activation` or `readback` stage  | A deployment may have changed traffic; inspect both actual deployments and the retained receipt before resuming.              |
 
 ### Activate and verify
 

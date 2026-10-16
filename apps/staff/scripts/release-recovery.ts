@@ -5,7 +5,7 @@ import { validateIdentity, type StaffRelease } from './release-artifact';
 import { releaseProvider, validateRepository, type ReleaseProvider } from './release-download';
 import { digest } from './release-files';
 import { deploymentStep } from './release-failure';
-import { newReceipt, parseReceipt } from './release-receipt';
+import { newReceipt, parseReceipt, type ReleaseStage } from './release-receipt';
 import type { Environment } from './preflight-config';
 
 interface RecoveryOptions {
@@ -14,7 +14,7 @@ interface RecoveryOptions {
   filename: string;
   release: StaffRelease;
   accountId: string;
-  stage: 'setup' | 'launch';
+  stage: ReleaseStage;
   environment?: Environment;
 }
 const WORKFLOWS: Partial<Record<string, { path: string; environment: Environment }>> = {
