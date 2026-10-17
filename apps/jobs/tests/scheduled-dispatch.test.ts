@@ -10,6 +10,8 @@ function fixture(
     scanComplete?: boolean;
     paused?: boolean;
     scheduledTime?: number;
+    commandFailed?: boolean;
+    discordDisabled?: boolean;
   } = {},
 ) {
   const visits: string[] = [];
@@ -28,6 +30,9 @@ function fixture(
       ProfileMaintenance: step('profiles', {}),
       InactiveProfileMaintenance: step('inactive_profiles', {}),
       ProviderCompletion: step('completion', {}),
+      DiscordCommands: step('discord_commands', {
+        kind: options.commandFailed ? 'failed' : 'complete',
+      }),
       DiscordScan: step('discord_scan', {}),
       NewsletterScan: step('newsletter_scan', {
         kind: options.paused ? 'paused' : 'scanned',
@@ -44,7 +49,7 @@ function fixture(
   } as unknown as ExecutionContext;
   const env = {
     LVBT_DEPLOYMENT_ENV: 'preview',
-    LVBT_DISCORD_SYNC_ENABLED: 'true',
+    LVBT_DISCORD_SYNC_ENABLED: options.discordDisabled ? 'false' : 'true',
     LVBT_DISCORD_APPLICATION_ID: '555555555555555555',
     LVBT_DISCORD_GUILD_ID: '111111111111111111',
     LVBT_DISCORD_PRODUCTION_GUILD_ID: '999999999999999999',
@@ -145,3 +150,28 @@ for (const provider of ['discord', 'newsletter']) {
     assert.equal(f.visits.at(-1), 'completion');
   });
 }
+
+void test('command registration exceptions do not stop membership work or completion', async () => {
+  const f = fixture('discord_commands');
+  await assert.rejects(f.run(), /Scheduled membership work failed/);
+  assert.ok(f.visits.includes('discord_scan'));
+  assert.ok(f.visits.includes('discord_account'));
+  assert.ok(f.visits.includes('newsletter_account'));
+  assert.equal(f.visits.at(-1), 'completion');
+  assert.ok(f.visits.length + 1 <= 32);
+});
+
+void test('a failed registration result leaves both membership queues enabled', async () => {
+  const f = fixture(undefined, undefined, { commandFailed: true });
+  await assert.rejects(f.run(), /Scheduled membership work failed/);
+  assert.ok(f.visits.includes('discord_account'));
+  assert.ok(f.visits.includes('newsletter_account'));
+  assert.equal(f.visits.at(-1), 'completion');
+});
+void test('disabled Discord synchronization never invokes command registration', async () => {
+  const f = fixture(undefined, undefined, { discordDisabled: true });
+  await f.run();
+  assert.equal(f.visits.includes('discord_commands'), false);
+  assert.equal(f.visits.includes('discord_account'), false);
+  assert.ok(f.visits.includes('newsletter_account'));
+});

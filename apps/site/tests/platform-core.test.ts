@@ -38,6 +38,7 @@ void test('every catalog key is used and every used key exists', () => {
     '../staff/src/',
     '../../packages/platform-core/src/',
     '../../packages/platform-storage/src/',
+    '../../packages/platform-integrations/src/',
   ]
     .flatMap((dir) => sourceFiles(new URL(dir, root)))
     .filter((file) => !file.includes('/platform/messages/'))

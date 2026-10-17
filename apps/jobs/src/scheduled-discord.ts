@@ -1,4 +1,5 @@
 import { WorkerEntrypoint } from 'cloudflare:workers';
+import { runDiscordCommandRegistration } from '@lasvegasfortransit/platform-integrations/discord-command-registration';
 import {
   discordRuntime,
   type DiscordRuntimeEnv,
@@ -50,5 +51,19 @@ export class DiscordScan extends WorkerEntrypoint<Env & DiscordRuntimeEnv> {
       memberRoleId: runtime.memberRoleId,
     });
     return { ready: true, drift, roster, queries: budget.queries };
+  }
+}
+
+export class DiscordCommands extends WorkerEntrypoint<Env & DiscordRuntimeEnv> {
+  async run() {
+    const runtime = discordRuntime(this.env);
+    if (!runtime) return { kind: 'idle' as const, queries: 0 };
+    const budget = queryBudget(this.env.PLATFORM_DB, 50);
+    const result = await runDiscordCommandRegistration(budget.db, {
+      applicationId: runtime.applicationId,
+      guildId: runtime.configuration.guildId,
+      botToken: runtime.configuration.botToken,
+    });
+    return { ...result, queries: budget.queries };
   }
 }

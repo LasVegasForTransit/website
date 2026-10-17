@@ -35,7 +35,9 @@
     "./discord-runtime": "./src/discord-runtime.ts",
     "./discord-roster": "./src/discord-roster.ts",
     "./worker-runtime-config": "./src/worker-runtime-config.ts",
-    "./export-archive": "./src/export-archive.ts"
+    "./export-archive": "./src/export-archive.ts",
+    "./discord-link-command": "./src/discord-link-command.ts",
+    "./discord-command-registration": "./src/discord-command-registration.ts"
   },
   "scripts": {
     "lint": "eslint . --max-warnings 0",

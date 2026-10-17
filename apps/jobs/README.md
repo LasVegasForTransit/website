@@ -17,6 +17,16 @@ Shared reconciliation work is marked done only after every verified linked provi
 success receipt. A missing provider link needs no receipt; an enabled identity with no current
 confirmation keeps the operation open for its provider runner.
 
+## Discord command registration
+
+Approved Discord synchronization activation also registers the guild-only `/link` command using the
+bot token already installed on jobs. A durable checkpoint completes only after provider readback;
+completed definitions are skipped on later schedules and restarts. Failed attempts retry no sooner
+than 30 minutes, respecting longer persisted Discord rate limits. Registration errors leave
+membership processing running. See
+[command setup and manual repair](../../docs/reference/platform-secrets.md#register-the-link-command)
+for the existing one-time CLI and live acceptance checks.
+
 ## Local verification
 
 Run from the repository root:

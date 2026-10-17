@@ -6,17 +6,21 @@ import {
 } from './discord-types';
 const ENDPOINT = 'https://discord.com/api/v10';
 interface RequestInput {
-  method?: 'GET' | 'PUT' | 'DELETE' | 'POST';
+  method?: 'GET' | 'PUT' | 'DELETE' | 'POST' | 'PATCH';
   authorization: string;
   reason?: string;
   body?: URLSearchParams;
-  jsonBody?: { access_token: string };
+  jsonBody?:
+    | { access_token: string }
+    | { type?: number; name: string; description: string; options: readonly unknown[] };
+  commandRegistration?: true;
   memberJoin?: true;
   unknownMember?: boolean;
   responseSize?: 'guild-members' | 'guild-roles';
 }
 function checkedResult(response: Response, input: RequestInput, data: unknown): unknown {
   if (response.status === 404 && input.unknownMember && object(data).code === 10007) return null;
+  if (response.status === 201 && input.commandRegistration && input.method === 'POST') return data;
   if (response.status === 201 && input.memberJoin && input.method === 'PUT') return data;
   if (response.status !== 200) throw new DiscordApiFailure('unknown');
   if (input.method === 'PUT' || input.method === 'DELETE')

@@ -95,6 +95,17 @@ async function processProviderQueues(
   const pollingFailed = newsletterReady ? await processIncoming(context, budget, true) : false;
   return [incomingFailed, scanFailed, pollingFailed].some(Boolean);
 }
+async function registerDiscordCommand(
+  context: ExecutionContext,
+  enabled: boolean,
+  budget: ScheduledBudget,
+): Promise<boolean> {
+  if (!enabled || !canContinueMembership(budget)) return false;
+  const result = await membershipStep(budget, 'discord_commands', () =>
+    context.exports.DiscordCommands.run(),
+  );
+  return !result || result.kind === 'failed';
+}
 export async function runScheduledMembership(
   controller: ScheduledController,
   env: Env & BeehiivRuntimeEnv & DiscordRuntimeEnv,
@@ -117,8 +128,9 @@ export async function runScheduledMembership(
     discord: Boolean(discordRuntime(env)),
     newsletter: Boolean(beehiivRuntime(env)),
   };
+  const commandFailed = await registerDiscordCommand(context, enabled.discord, budget);
   const queueFailed = await processProviderQueues(context, enabled, budget);
-  let failed = queueFailed || !records || !profiles || !inactive;
+  let failed = [commandFailed, queueFailed, !records, !profiles, !inactive].some(Boolean);
   for (
     let slot = 0;
     canContinueMembership(budget) && (enabled.discord || enabled.newsletter);

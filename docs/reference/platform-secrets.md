@@ -152,8 +152,8 @@ environment. Install the approved token on the jobs Worker before its protected 
 the
 [staff and jobs setup procedure](./staff-portal-operations.md#prepare-the-first-production-baseline).
 Keep synchronization disabled until the matching release and live provider acceptance permit it. The
-`/link` registrar uses the token only in its local process environment, supplied from the approved
-secret store.
+`/link` registrar uses the token already installed on jobs after approved Discord synchronization
+activation; it does not need a copy on the website or in a local process.
 
 "Now" means a feature on the live site uses it. "Later" means no live production feature depends on
 the value yet. The feature may already exist in code but still need setup or deployment, so it is
@@ -543,16 +543,31 @@ can manage it after that person leaves.
 
 #### Register the `/link` command
 
-After creating the LVBT app, make sure the application ID, LVBT server ID and bot token are
-available to the command process from the approved secret store. From the repository root, run:
+After the approved jobs release enables Discord synchronization, the scheduled worker registers
+`/link` using its existing jobs-only bot token. It lists the configured guild's commands, creates or
+updates only the `link` chat-input command, and reads the stored definition before marking it
+complete. The command text remains “Confirm your LVBT membership on the website.” Other commands and
+other guilds are preserved.
+
+Completion is saved for the application, guild and command definition, so normal scheduled runs and
+Worker restarts do not repeat registration. Failed or interrupted attempts wait at least 30 minutes;
+a longer Discord rate limit is honored across restarts. Registration failure does not stop other
+membership work. The `discord_commands` scheduled log reports `complete`, `idle`, `paused` or
+`failed`; `idle` can mean completed, waiting to retry, or another attempt holds the lease. It is not
+provider acceptance.
+
+For an explicitly authorized manual registration or repair, the one-time CLI remains available. If
+the application ID, guild ID and bot token are already supplied to that process from the approved
+secret store, run from the repository root:
 
 ```sh
 pnpm --dir apps/site discord:register-link
 ```
 
 The script lists commands for the configured LVBT server, then creates `/link` there or updates that
-one command if it already exists. It does not touch commands in other servers or replace the guild's
-other commands. Keep the bot token out of committed files and shell command text.
+one command if it already exists, then confirms it with a read. An already matching definition needs
+no write. It does not touch commands in other servers or replace the guild's other commands. Keep
+the bot token out of committed files and shell command text.
 
 In the Developer Portal, set **Interactions Endpoint URL** to
 `https://lasvegasfortransit.org/platform/discord/interactions` after the site release containing the
