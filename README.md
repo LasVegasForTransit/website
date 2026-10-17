@@ -156,7 +156,7 @@ in [`.github/actions/`](./.github/actions/) (`setup-node-pnpm`, `build-site`,
 
 | Workflow                                                | Trigger                                        | What it does                                        |
 | ------------------------------------------------------- | ---------------------------------------------- | --------------------------------------------------- |
-| `deploy-production.yml` (Deploy staging)                | Main pushes and manual dispatch                | Save a release and verify protected staging         |
+| `deploy-production.yml` (Deploy staging)                | Workflow dispatch (including calendar refresh) | Save a release and verify protected staging         |
 | `deploy-worker-preview.yml`                             | Same-repository PR updates                     | Verify and comment an independent protected preview |
 | `deploy-worker-candidate.yml` (Promote website release) | Explicit selection of a successful staging run | Publish the saved release after candidate checks    |
 

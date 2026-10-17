@@ -612,8 +612,9 @@ enabling a recurring preview schedule.
    Retain an explicitly empty production counterpart. Regenerate compatibility configuration,
    compile functions, regenerate site types and run `pnpm check` using the commands above. Review
    and publish the saved website preview through its normal protected procedure only after step 3.
-   PR and main workflows can publish website previews automatically; do not push this second change
-   before staff/jobs readiness is confirmed. Confirm linking appears only on preview.
+   PR workflows can publish isolated website previews automatically; retained staging requires a
+   dispatch, including the existing calendar refresh. Do not push this second change before
+   staff/jobs readiness is confirmed. Confirm linking appears only on preview.
 5. Sign in as the marked member fixture and connect the authorized tester's Discord account. A
    fresh-join test requires an account that is not already in the test server; an existing server
    account cannot prove automatic joining. Confirm the account joins the isolated server and gains

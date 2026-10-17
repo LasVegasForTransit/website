@@ -1,15 +1,16 @@
 # Deployment pipeline
 
-GitHub Actions builds one release from `main`, deploys it to protected staging, and stores its files
-for explicit production promotion. Merging a pull request updates staging; it does not publish the
-public website.
+An explicit staging dispatch, including the existing calendar refresh, builds one release from
+`main`, deploys it to protected staging, and stores its files for explicit production promotion.
+Merging a pull request runs source checks and saves staff build artifacts without updating retained
+staging or publishing the public website.
 
 ## Hosts and environments
 
 | Host                                                      | Worker                             | Data                    | Update trigger             |
 | --------------------------------------------------------- | ---------------------------------- | ----------------------- | -------------------------- |
 | `lasvegasfortransit.org` and `www.lasvegasfortransit.org` | `lvbt-website`                     | `lvbt-platform`         | Explicit promotion         |
-| `preview.lasvegasfortransit.org`                          | `lvbt-website-preview`             | `lvbt-platform-preview` | Successful main build      |
+| `preview.lasvegasfortransit.org`                          | `lvbt-website-preview`             | `lvbt-platform-preview` | Staging workflow dispatch  |
 | Versioned PR Worker URLs                                  | Versions of `lvbt-website-preview` | `lvbt-platform-preview` | Same-repository PR updates |
 
 Staging and PR previews share a preview database. They do not have a separate database per PR.
@@ -89,10 +90,14 @@ new staging run when a rebuild is needed.
 
 ## Main and PR deployment
 
-Main pushes and scheduled calendar rebuilds run `Deploy staging`. The workflow validates, saves and
-signs the artifact, uploads a preview version, checks anonymous denial and authenticated browser
-rendering, runs bounded hosted acceptance, activates that exact preview version, and checks the
-permanent staging hostname. Its summary records the release, commit, version, and originating run.
+Main pushes run source checks and save staff build artifacts without starting retained staging.
+`Deploy staging` requires a workflow dispatch on `main`; the existing scheduled calendar rebuild
+also dispatches it. This avoids migrations and staging publication for unrelated source changes.
+Before a manual dispatch, verify preview database quota and migration readiness. The workflow still
+validates, saves and signs the artifact, applies its retained preview schema, uploads a preview
+version, checks anonymous denial and authenticated browser rendering, runs bounded hosted
+acceptance, activates that exact preview version, and checks the permanent staging hostname. Its
+summary records the release, commit, version, and originating run.
 
 Same-repository PRs use `Deploy Worker preview` when `CLOUDFLARE_WORKERS_PREVIEW_ENABLED=true`. This
 build has a read-only GitHub token, no release environment, and no Cloudflare or Access credentials.
