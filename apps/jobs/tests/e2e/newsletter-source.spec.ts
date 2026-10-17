@@ -44,6 +44,17 @@ function discordResponse(
   url: URL,
 ) {
   assert.equal(request.headers.get('Authorization'), 'Bot fixture-only');
+  if (url.pathname === `/api/v10/applications/555555555555555555/guilds/${guildId}/commands`) {
+    assert.equal(request.method, 'GET');
+    return json([
+      {
+        id: '101010101010101010',
+        type: 1,
+        name: 'link',
+        description: 'Confirm your LVBT membership on the website',
+      },
+    ]);
+  }
   if (url.pathname === `/api/v10/guilds/${guildId}/members`)
     return json([
       { user: { id: discordUserId, bot: false }, roles: [...discordRoles], pending: false },

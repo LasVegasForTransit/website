@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { commandFixture } from './support/discord-commands';
 import { mkdtemp, readdir, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -20,6 +21,7 @@ const unrelatedRoleId = '666666666666666666';
 const guildId = '111111111111111111';
 const roles = new Set([unrelatedRoleId]);
 const calls: string[] = [];
+const commands = commandFixture('555555555555555555', guildId);
 const simulator = new Miniflare(
   convertV4MiniflareOptions({
     name: 'lvbt-jobs-fixture',
@@ -40,10 +42,12 @@ const simulator = new Miniflare(
       LVBT_DISCORD_MEMBER_ROLE_ID: memberRoleId,
       LVBT_DISCORD_BOT_TOKEN: 'fixture-only',
     },
-    outboundService: (request) => {
+    outboundService: async (request) => {
       const url = new URL(request.url);
       assert.equal(url.origin, 'https://discord.com');
       assert.equal(request.headers.get('Authorization'), 'Bot fixture-only');
+      const commandResponse = await commands.respond(request);
+      if (commandResponse) return commandResponse;
       const rosterRoute = `/api/v10/guilds/${guildId}/members`;
       if (url.pathname === rosterRoute) {
         assert.equal(request.method, 'GET');
@@ -155,6 +159,7 @@ try {
   const worker = await simulator.getWorker();
   assert.equal((await worker.fetch('https://jobs.example.invalid/')).status, 404);
   assert.equal((await worker.scheduled({ cron: '* * * * *' })).outcome, 'ok');
+  assert.deepEqual(commands.calls, ['GET', 'POST', 'GET']);
   assert.deepEqual([...roles].sort(), [memberRoleId, committeeRoleId, unrelatedRoleId].sort());
   assert.deepEqual(
     await db.prepare('SELECT discord_user_id,managed_role_ids FROM discord_role_reviews').first(),

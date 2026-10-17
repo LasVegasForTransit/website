@@ -12,7 +12,7 @@ export {
   NewsletterIncoming,
   NewsletterPollingChoices,
 } from './newsletter';
-export { DiscordAccount, DiscordScan } from './scheduled-discord';
+export { DiscordAccount, DiscordScan, DiscordCommands } from './scheduled-discord';
 export {
   StaffMaintenance,
   ProfileMaintenance,
