@@ -56,6 +56,8 @@
   },
   "vars": {
     "LVBT_DEPLOYMENT_ENV": "production",
+    "LVBT_DISCORD_APPLICATION_ID": "1552481672945999872",
+    "LVBT_DISCORD_PUBLIC_KEY": "21422dba5d410653b6e1b21fedffbf8cdbccaa94fc221d81d767712d2f6faef9",
   },
   "d1_databases": [
     {
@@ -112,6 +114,8 @@
       },
       "vars": {
         "LVBT_DEPLOYMENT_ENV": "preview",
+        "LVBT_DISCORD_APPLICATION_ID": "1552481672945999872",
+        "LVBT_DISCORD_PUBLIC_KEY": "21422dba5d410653b6e1b21fedffbf8cdbccaa94fc221d81d767712d2f6faef9",
       },
       "d1_databases": [
         {

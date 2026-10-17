@@ -50,7 +50,7 @@ void test('the production Worker serves Discord interactions before static asset
     'Discord interaction POSTs must reach the Worker handler, not the asset response',
   );
 });
-void test('saved releases retain isolated Discord jobs connections without enabling account linking', async () => {
+void test('saved releases retain matching Discord applications and isolated jobs connections', async () => {
   const generated = typedWorkerConfiguration(
     production,
     await readReleaseConfiguration(path.resolve(deployDir, '../..')),
@@ -63,7 +63,11 @@ void test('saved releases retain isolated Discord jobs connections without enabl
   ] as const) {
     assert.deepEqual(built.services, [{ binding: 'LVBT_DISCORD_JOBS', service: worker }]);
     const vars = built.vars as Record<string, unknown>;
-    assert.equal(Object.hasOwn(vars, 'LVBT_DISCORD_APPLICATION_ID'), false);
+    assert.equal(vars.LVBT_DISCORD_APPLICATION_ID, '1552481672945999872');
+    assert.equal(
+      vars.LVBT_DISCORD_PUBLIC_KEY,
+      '21422dba5d410653b6e1b21fedffbf8cdbccaa94fc221d81d767712d2f6faef9',
+    );
     assert.equal(Object.hasOwn(vars, 'LVBT_DISCORD_BOT_TOKEN'), false);
     assert.deepEqual(built.triggers, { crons: [] });
   }

@@ -7,8 +7,10 @@ import { runPromote, runWorkerRelease } from '@lasvegasfortransit/web-platform/r
 import { releaseConfiguration } from '../scripts/deploy/release-config';
 import { packageRelease } from '../scripts/deploy/release-artifact';
 
+const previewOnlyConfiguration = { ...releaseConfiguration, previewOnly: true };
+
 void test('queue-only newsletter rollout cannot request production promotion', async () => {
-  await assert.rejects(runPromote(releaseConfiguration, ['--help']), /preview-only/i);
+  await assert.rejects(runPromote(previewOnlyConfiguration, ['--help']), /preview-only/i);
 });
 
 void test('queue-only newsletter rollout blocks production upload and activation but preserves preview verification', async () => {
@@ -24,7 +26,7 @@ void test('queue-only newsletter rollout blocks production upload and activation
     await packageRelease(source, directory, { commit: 'a'.repeat(40), releaseId: '12345' });
     for (const command of ['upload', 'activate'])
       await assert.rejects(
-        runWorkerRelease(releaseConfiguration, [
+        runWorkerRelease(previewOnlyConfiguration, [
           command,
           '--directory',
           directory,
@@ -34,7 +36,7 @@ void test('queue-only newsletter rollout blocks production upload and activation
         /preview-only/i,
       );
     await assert.rejects(
-      runWorkerRelease(releaseConfiguration, [
+      runWorkerRelease(previewOnlyConfiguration, [
         'upload',
         '--directory',
         directory,

@@ -46,6 +46,7 @@ void test('production hold prevents uploads, activation and schedule writes', as
     held: true,
     disabledBaseline: true,
     unscheduled: true,
+    newsletter: true,
   });
   try {
     await assert.rejects(
@@ -105,6 +106,7 @@ void test('partial version activation never enables schedules and resume activat
     production: true,
     disabledBaseline: true,
     unscheduled: true,
+    newsletter: true,
   });
   try {
     await uploadStaffRelease(f.destination, releaseIdentity, f.receiptFile, f.options);
