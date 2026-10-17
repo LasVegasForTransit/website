@@ -456,13 +456,15 @@ operational reports.
    application and policy sessions to 12 hours. Allow the Console users Google group and require the
    LVBT email domain. Do not add bypass policies or broader alternative allow rules. Review the
    Google identity provider and actual group membership separately.
-4. Register the fixed staff and staff-preview Google callback addresses documented in
-   [Google sign-in setup](./platform-secrets.md#google-sign-in-for-the-website). Keep dynamic
-   preview origins disabled unless explicitly approved. Configure the existing sign-in and email
-   bindings on staff. Sessions and confirmation cookies are scoped to their issuing host, so staff
-   can use an independent `LVBT_SIGN_IN_SECRET` while sharing the membership database. Preserve the
-   website's existing signing key; rotating it invalidates its member sessions. Confirm a real
-   sign-in on each application before acceptance.
+4. Configure the dedicated
+   [production staff Google client](./platform-secrets.md#google-sign-in-for-the-staff-portal) and
+   [staff email key](./platform-secrets.md#staff-email-key). Use
+   [staff preview setup](../guides/set-up-staff-preview.md) for the shared preview credentials and
+   fixed preview callbacks. Keep dynamic preview origins disabled unless explicitly approved.
+   Configure the approved sign-in and email bindings on staff. Sessions and confirmation cookies are
+   scoped to their issuing host, so staff can use an independent `LVBT_SIGN_IN_SECRET` while sharing
+   the membership database. Preserve the website's existing signing key; rotating it invalidates its
+   member sessions. Confirm a real sign-in on each application before acceptance.
 5. Add the non-sensitive Access audience and team domain to the staff source configuration's Worker
    variables for each environment before building the release. Upload replaces public variables;
    values added only to the remote Worker are not inherited. If an audience is stored as an opaque
@@ -870,11 +872,14 @@ recovery before making settings changes; those changes can create new active ver
 6. Install missing approved secrets on their exact production destinations. Staff needs
    `LVBT_SIGN_IN_SECRET`, `LVBT_GOOGLE_OAUTH_CLIENT_ID`, `LVBT_GOOGLE_OAUTH_CLIENT_SECRET` and
    `LVBT_RESEND_API_KEY`. If staff has no approved signing key, provision an independent
-   `LVBT_SIGN_IN_SECRET` there and preserve the website's existing key and member sessions. The
-   Google client must allow the fixed production staff callback. Jobs needs `LVBT_DISCORD_BOT_TOKEN`
-   even for this disabled production baseline. Enabled newsletter delivery also needs
-   `LVBT_BEEHIIV_API_KEY` and `LVBT_NEWSLETTER_INTENT_KEY` on jobs. Keep bot, Beehiiv and intent
-   keys off staff.
+   `LVBT_SIGN_IN_SECRET` there and preserve the website's existing key and member sessions. Use the
+   dedicated [staff Google client](./platform-secrets.md#google-sign-in-for-the-staff-portal) with
+   its sole fixed production staff callback and the domain-restricted
+   [staff email key](./platform-secrets.md#staff-email-key). Save new values in the approved secret
+   store at creation time; encrypted Worker settings cannot reveal them later. Website bootstrap
+   does not install staff credentials. Jobs needs `LVBT_DISCORD_BOT_TOKEN` even for this disabled
+   production baseline. Enabled newsletter delivery also needs `LVBT_BEEHIIV_API_KEY` and
+   `LVBT_NEWSLETTER_INTENT_KEY` on jobs. Keep bot, Beehiiv and intent keys off staff.
 
    Choose **Secret** in the same dashboard panel, or use the following interactive commands from the
    repository root for values that are missing. Supply values only at each hidden prompt from the

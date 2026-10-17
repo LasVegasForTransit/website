@@ -11,7 +11,7 @@ Worker and read at request time. GitHub stores only the credentials used by trus
 
 ## Set them with bootstrap
 
-The production requirements and value-finding steps live in
+The website's production requirements and value-finding steps live in
 [`apps/site/platform.json`](../../apps/site/platform.json). A maintainer first reads readiness:
 
 ```sh
@@ -30,12 +30,39 @@ promotion uses the already installed GitHub credentials and needs no local Cloud
 production report separates live features, future features, and requirements that are only listed
 because no code consumes them yet.
 
+Website bootstrap does not install credentials on staff or jobs. Use
+[the first staff production setup](./staff-portal-operations.md#prepare-the-first-production-baseline)
+for those Workers, including the dedicated staff Google client and sending key documented below.
+
 Credentials are entered through hidden input and never printed. IDs, domains and public keys are
 visible so they can be checked. Cloudflare and GitHub cannot reveal stored credentials; setup
 preserves values that already exist. A missing provider permission is reported as unknown, not as an
 empty target. A shared signing key can be generated only when every target is known to be empty.
 Keep an existing shared value when filling a missing target; if that value is unavailable, perform
-an explicit rotation instead of creating divergent copies.
+an explicitly authorized rotation instead of creating divergent copies. Staff can use its own
+signing key; it does not need the website's value.
+
+## Save new credentials before closing the provider dialog
+
+Before creating a credential, confirm the LVBT account, permissions, environment and every approved
+destination. Have the team's approved secret store available. Providers may show a new secret only
+once, and Cloudflare Workers cannot reveal an encrypted value after it is installed.
+
+1. Save the new value directly from its creation dialog to the approved secret store. Label it with
+   the service, environment and intended Workers so another authorized maintainer can find it. Keep
+   the value out of source control, chat, screenshots, task descriptions and build records.
+2. Install it on every approved destination while the value is available. A staff-only credential
+   goes only to `lvbt-staff`; shared preview credentials go only to their approved preview Workers.
+   Never expand the destinations just because another Worker uses the same setting name.
+3. Read back each Worker's setting names and types, then verify the sign-in or sending operation.
+   Metadata confirms that a setting exists, not that its value works. Record only the outcome in the
+   private operational record and remove any temporary local copy after transfer.
+
+If a destination is missing a value, first look in the approved secret store. Do not reset a working
+credential merely to copy it: resetting can break the Workers already using it. If the value was
+lost, either create a separately approved credential for the missing application or authorize a
+coordinated rotation across all existing consumers. Preserve working consumers until the replacement
+is installed and verified.
 
 ## Replace a secret on purpose
 
@@ -57,18 +84,19 @@ consumer aligned before accepting a rotation as complete.
 | Target                                | What it serves                                            |
 | ------------------------------------- | --------------------------------------------------------- |
 | Worker `lvbt-website`                 | Production site and candidate versions                    |
+| Worker `lvbt-staff`                   | Production staff sign-in and membership confirmation      |
 | GitHub environment `worker-candidate` | Production Worker deployment and D1 migration credentials |
 | GitHub environment `worker-preview`   | Staging upload and protected-preview verification         |
 | Worker `lvbt-jobs`                    | Scheduled Discord and newsletter reconciliation           |
 
 Runtime integration credentials are forbidden in the GitHub release environments. Website
-credentials stay on `lvbt-website`; the Discord role bot token belongs only on `lvbt-jobs`. Version
-uploads preserve Worker secrets without sending their values through CI. Each environment has its
-own per-Worker `CLOUDFLARE_WORKERS_API_TOKEN` and a separate `CLOUDFLARE_MIGRATIONS_API_TOKEN` for
-trusted retained SQL. D1 write access may be account-wide, so it is not added to the Worker
-deployment token. Only `worker-preview` needs the Access service pair. Both environments accept only
-the selected branch `main`; bootstrap detects drift and preserves existing reviewer and timer
-protections when applying this restriction.
+credentials stay on `lvbt-website`; dedicated staff credentials stay on `lvbt-staff`; the Discord
+role bot token belongs only on `lvbt-jobs`. Version uploads preserve Worker secrets without sending
+their values through CI. Each environment has its own per-Worker `CLOUDFLARE_WORKERS_API_TOKEN` and
+a separate `CLOUDFLARE_MIGRATIONS_API_TOKEN` for trusted retained SQL. D1 write access may be
+account-wide, so it is not added to the Worker deployment token. Only `worker-preview` needs the
+Access service pair. Both environments accept only the selected branch `main`; bootstrap detects
+drift and preserves existing reviewer and timer protections when applying this restriction.
 
 Public build values remain GitHub Actions variables. The manifest checks their presence and the
 release environments' account IDs against the declared Cloudflare account. It never overwrites an
@@ -190,9 +218,31 @@ it changes no ID, token or URL, so fixing it never breaks anything already confi
    subdomain too. Otherwise add it with the name Resend shows. Then click **Verify DNS Records** and
    wait for "Verified". That usually takes minutes; DNS can take up to 72 hours, and you can skip
    the key and come back.
-7. Open <https://resend.com/api-keys>, click **Create API Key**, name it `LVBT website`, choose
-   **Sending access** and the domain `notify.lasvegasfortransit.org`, and click **Add**. Copy the
-   key and paste it at the bootstrap prompt; Resend shows it only once.
+7. For the website, open <https://resend.com/api-keys>, select **Create API Key**, name it
+   `LVBT website`, choose **Sending access** and the domain `notify.lasvegasfortransit.org`, and
+   select **Add**.
+   [Save the new credential](#save-new-credentials-before-closing-the-provider-dialog) and supply it
+   at the website bootstrap prompt; Resend shows it only once.
+
+#### Staff email key
+
+The production staff portal uses its own sending key. Before creating one, obtain authorization for
+the LVBT Resend organization, the sending domain and installation only on `lvbt-staff`. The domain
+must already be verified using the steps above.
+
+1. Open <https://resend.com/api-keys> in the **Las Vegans for Better Transit** organization. Check
+   whether the approved `LVBT staff production` key already exists and is available in the secret
+   store. Reuse it when available; a masked key in the dashboard cannot be copied back out.
+2. If a new key is authorized, select **Create API Key**. In **Add API Key**, enter the name
+   `LVBT staff production`, choose **Sending access**, and select only
+   `notify.lasvegasfortransit.org` under **Domain**. Review these choices before selecting **Add**.
+3. [Save the revealed key](#save-new-credentials-before-closing-the-provider-dialog), then install
+   it as `LVBT_RESEND_API_KEY` only on `lvbt-staff`, following
+   [production staff setup](./staff-portal-operations.md#prepare-the-first-production-baseline).
+4. Confirm the setting is encrypted on staff and complete an approved real staff confirmation-code
+   delivery. If delivery fails, check the selected Resend organization, key permission, verified
+   sending domain and installed destination before considering replacement. A successful save alone
+   does not prove delivery.
 
 ### Beehiiv, Apps Script and Notion
 
@@ -238,13 +288,18 @@ acceptance requirements pass; an API credential alone does not establish launch 
 ### Random signing keys
 
 `LVBT_TRANSIT_NEWS_INTAKE_SECRET`, `LVBT_SIGN_IN_SECRET` and `LVBT_LINK_SIGNING_SECRET` are random
-values bootstrap makes for you the first time, when no target has them yet. Cloudflare and GitHub
-never show a stored secret again, so if one of these exists in some places and not others, there is
-nothing to copy. Run `pnpm bootstrap --production --rotate <NAME>` to make a new value and store it
-everywhere. For the transit news secret, bootstrap then offers to show the new value once so you can
-paste it into the Notion automation's `Authorization: Bearer` header. A new sign-in secret means
-anyone waiting for a code asks for a new one; a new link-signing secret means links already sent by
-email stop working.
+values website bootstrap makes for you the first time, when no declared target has them yet. If a
+shared target is missing a value, retrieve the existing approved value from the secret store.
+Cloudflare and GitHub cannot reveal it. If it is unavailable, authorize a coordinated rotation
+before running `pnpm bootstrap --production --rotate <NAME>` for the website's declared targets. For
+the transit news secret, bootstrap offers to show the new value once so you can save it and set the
+Notion automation's `Authorization: Bearer` header. A new sign-in secret means anyone waiting for a
+code asks for a new one; a new link-signing secret means links already sent by email stop working.
+
+Staff sessions and confirmation cookies are scoped to the staff hostname. Provision an independent
+`LVBT_SIGN_IN_SECRET` on `lvbt-staff` when it has no approved value; preserve the website's working
+key and member sessions. Website bootstrap does not provision this staff key. Follow
+[production staff setup](./staff-portal-operations.md#prepare-the-first-production-baseline).
 
 ### Google sign-in for the website
 
@@ -278,24 +333,57 @@ still needs provider verification.
 4. Skip the **Audience** and **Data Access** pages. Signing in uses only the basic email, profile
    and openid permissions, which need no setup.
 5. Open <https://console.cloud.google.com/auth/clients?project=lvbt-core>. Select the approved
-   client for the environment. Reuse `LVBT website` for production and the approved preview client
-   for preview. Create a missing client only with authorization: choose **Web application** and name
-   it for that environment. Leave **Authorized JavaScript origins** empty; sign-in runs on the
-   server. Under **Authorized redirect URIs**, allow the website and staff callbacks for that
-   client: production uses `https://lasvegasfortransit.org/sign-in/google/callback` and
-   `https://staff.lasvegasfortransit.org/sign-in/google/callback`; preview uses
+   website client for the environment. Preserve the production website's existing client and
+   callback, `https://lasvegasfortransit.org/sign-in/google/callback`. Production staff uses a
+   [dedicated client](#google-sign-in-for-the-staff-portal); do not add its callback to the website
+   client as a setup shortcut. For preview, use the approved shared preview client with
    `https://preview.lasvegasfortransit.org/sign-in/google/callback` and
-   `https://staff-preview.lasvegasfortransit.org/sign-in/google/callback`. Save the client and
-   inspect its callback list before installing credentials. Do not add temporary or arbitrary
-   preview origins.
+   `https://staff-preview.lasvegasfortransit.org/sign-in/google/callback`. Create a missing client
+   only with authorization: choose **Web application** and name it for that environment. Leave
+   **Authorized JavaScript origins** empty; sign-in runs on the server. Save and inspect the exact
+   callback list before installing credentials. Do not remove existing working callbacks as part of
+   an inventory check or add temporary preview addresses.
 6. Copy the Client ID (it ends with `.apps.googleusercontent.com`) and paste it at the
    `LVBT_GOOGLE_OAUTH_CLIENT_ID` prompt.
 7. At the next prompt, `LVBT_GOOGLE_OAUTH_CLIENT_SECRET`, use the existing client secret from the
    approved secret store or transfer the newly authorized secret directly from its creation dialog.
-   A missing visible secret is not permission to add or reset one. If a replacement is necessary,
-   coordinate its installation across the website and staff Worker for that environment before
-   retiring the old value. Preview installation uses the staff preview guide; production
-   installation uses the authorized bootstrap.
+   [Save a newly created value](#save-new-credentials-before-closing-the-provider-dialog) before
+   closing the dialog. A missing visible secret is not permission to add or reset one. If a shared
+   preview replacement is authorized, install it on both approved preview Workers before retiring
+   the old value. Preview installation uses the staff preview guide; production website installation
+   uses the authorized website bootstrap.
+
+### Google sign-in for the staff portal
+
+The production staff portal has a dedicated Google client so its credentials and callback can be
+managed independently of the website. Before starting, you need an authorized LVBT Workspace
+administrator, access to **LVBT Core** (`lvbt-core`), the approved secret store and permission to
+create credentials for `lvbt-staff`. The existing project's audience must be **Internal**. Use only
+the basic `openid`, `email` and `profile` permissions; Google Directory administration is separate.
+
+1. Open <https://console.cloud.google.com/auth/clients?project=lvbt-core> and confirm **LVBT Core**
+   in the project picker. Inspect the approved **LVBT staff production** Web application first. If
+   it exists and its secret is available in the secret store, reuse it. Do not change the website,
+   preview or Cloudflare Access clients. Complete an account-owner passkey check if Google asks.
+2. If the staff client is missing and creation is authorized, select **Create client**. Set
+   **Application type** to **Web application** and **Name** to `LVBT staff production`.
+3. Leave **Authorized JavaScript origins** empty. Under **Authorized redirect URIs**, select **Add
+   URI** and enter only `https://staff.lasvegasfortransit.org/sign-in/google/callback`. Review the
+   name, application type and sole redirect, then select **Create**.
+4. [Save the new credentials](#save-new-credentials-before-closing-the-provider-dialog) while the
+   dialog is open. Install the Client ID as `LVBT_GOOGLE_OAUTH_CLIENT_ID` and the matching client
+   secret as `LVBT_GOOGLE_OAUTH_CLIENT_SECRET` only on `lvbt-staff`, following
+   [production staff setup](./staff-portal-operations.md#prepare-the-first-production-baseline).
+   Website bootstrap does not install either value on staff.
+5. Reopen the saved client and confirm its sole redirect exactly matches the address above. Read
+   back the encrypted staff setting names, then complete real Google sign-in, membership
+   confirmation and staff access through the protected hostname. Keep the website and preview
+   credentials unchanged.
+
+If Google reports `redirect_uri_mismatch`, compare the staff client's saved redirect with the exact
+staff hostname and callback path; do not add arbitrary callbacks. If the client secret was lost,
+check the approved secret store before requesting a replacement. A stored Worker secret cannot be
+exported, and replacing another application's working client will not recover the missing value.
 
 ### Cloudflare One: the Access team domain
 
