@@ -6,7 +6,9 @@ export interface ProviderCompletionOptions {
   now?: Date;
 }
 
-/** Close a shared operation only after every verified linked provider has a fresh success. */
+/** Close a shared operation only after every verified linked provider has a fresh success.
+ * Opaque keys preserve deletion state after physical profile retention.
+ */
 export async function completeProviderOperations(
   db: Db,
   options: ProviderCompletionOptions = {},
@@ -23,7 +25,7 @@ export async function completeProviderOperations(
       SELECT o.id FROM integration_outbox o
       JOIN reconcile_generations g ON g.person_id=o.person_id
         AND g.target_id=o.target_id AND g.generation=o.generation
-      JOIN reconciliation_people p ON p.id=o.person_id
+      JOIN person_keys p ON p.id=o.person_id
       WHERE o.kind IN ('person_reconcile','committee_reconcile')
         AND o.state IN ('queued','running','retry') AND o.next_attempt_at<=?
         AND ${PERSON_OPERATION_ELIGIBLE}

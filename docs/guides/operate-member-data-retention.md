@@ -26,8 +26,10 @@ From the repository root, list the preview database's installed migrations:
 pnpm -C apps/staff exec wrangler d1 execute lvbt-platform-preview --remote --env preview --command "SELECT name FROM d1_migrations ORDER BY id"
 ```
 
-Confirm that `0041_member_privacy_maintenance.sql` is installed alongside every earlier canonical
-migration. The website, staff portal, and jobs Worker must use that same environment's database and
+Confirm that `0041_member_privacy_maintenance.sql` and `0045_scheduled_read_budget.sql` are
+installed alongside every earlier canonical migration before enabling scheduled maintenance. The
+latter adds an index that keeps legacy erasure from repeatedly reading already-erased retained
+profiles. The website, staff portal, and jobs Worker must use that same environment's database and
 compatible saved applications. A Worker is a backend application running on Cloudflare; see the
 [glossary](../reference/glossary.md). A missing migration or mismatched application is a release
 blocker. Use the
@@ -140,6 +142,16 @@ account's current revision.
 - **Provider cleanup is pending:** retain the verified identifiers, attempted writes, encrypted
   recovery data, and provider receipts. Follow the provider recovery procedure. Do not clear a job
   or mark it done because local erasure or thirty-day purge succeeded.
+- **D1 reports daily read quota exhaustion (error 7500):** inspect the selected database's
+  Cloudflare Metrics view and compare query counts with rows read. For an isolated Discord preview,
+  use the
+  [preview shutdown procedure](../reference/staff-portal-operations.md#shut-down-the-isolated-discord-preview)
+  to stop the minute schedule while investigating. A result limit or query-count budget does not
+  bound scanned rows. Confirm migration 0045 and the saved applications are installed together; an
+  idle provider selection must not scan all profiles and opaque keys, and legacy erasure must seek
+  only unerased deletions. Repeated roster dry runs cannot clear the account-wide quota. After quota
+  recovery, verify low idle read usage over several scheduled ticks before accepting the repaired
+  schedule; preserve pending privacy and provider work throughout.
 - **The review form expired or changed:** reload `/offboarding/`, inspect the current flag, and
   submit its new form. If access is denied, verify current administrator membership rather than
   granting access through a submitted actor identifier.
