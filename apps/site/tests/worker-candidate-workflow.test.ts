@@ -166,7 +166,7 @@ void test('PR publication runs through the trusted main publisher and preview ac
   assert.match(workflow, /browser-project: hosted-acceptance/);
   assert.doesNotMatch(workflow, /steps:|wrangler|upload-artifact|attestations: write/);
 });
-void test('main updates staging through shared publication and never activates production', async () => {
+void test('dispatched staging uses shared publication and never activates production', async () => {
   const workflow = await readFile(stagingWorkflowUrl, 'utf8');
   assert.match(workflow, /name: Deploy staging/);
   assert.match(workflow, /needs: \[build, attest\]/);

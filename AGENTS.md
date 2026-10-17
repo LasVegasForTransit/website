@@ -199,8 +199,8 @@ markers or GitHub-side prose checks.
 ## Stack quick map
 
 - Astro 7 + Tailwind v4 (MDX content collections under `apps/site/src/content/`)
-- Cloudflare Workers in production, with protected staging updated from main and explicit release
-  promotion
+- Cloudflare Workers in production, with explicitly dispatched protected staging from main and
+  explicit release promotion
 - pnpm 11.25.0 and Node 24.20 or newer in the 24.x line, run through Turborepo
 - Playwright for tests and ad-hoc screenshots
 - `.lvbt/tooling.json` declares local setup; `apps/site/platform.json` declares production setup
