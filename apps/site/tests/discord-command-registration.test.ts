@@ -26,7 +26,14 @@ function fakeDiscord(existing: unknown[] = []) {
       body: typeof init?.body === 'string' ? init.body : undefined,
       authorization: headers.get('Authorization'),
     });
-    const body = calls.length === 1 ? existing : { id: COMMAND_ID, name: 'link' };
+    const definition = {
+      id: COMMAND_ID,
+      type: 1,
+      name: 'link',
+      description: 'Confirm your LVBT membership on the website',
+    };
+    const body =
+      calls.length === 1 ? existing : (init?.method ?? 'GET') === 'GET' ? [definition] : definition;
     return Promise.resolve(
       new Response(JSON.stringify(body), {
         status: 200,
@@ -52,18 +59,21 @@ void test('registering /link creates only an LVBT guild command', async () => {
     [
       { url: collection, method: 'GET' },
       { url: collection, method: 'POST' },
+      { url: collection, method: 'GET' },
     ],
   );
   assert.equal(calls[0]?.authorization, `Bot ${BOT_TOKEN}`);
   assert.deepEqual(JSON.parse(calls[1]?.body ?? '{}'), {
+    type: 1,
     name: 'link',
+    options: [],
     description: 'Confirm your LVBT membership on the website',
   });
 });
 
 void test('registering /link updates the existing guild command without replacing others', async () => {
   const { calls, fetcher } = fakeDiscord([
-    { id: COMMAND_ID, name: 'link' },
+    { id: COMMAND_ID, type: 1, name: 'link' },
     { id: '555555555555555555', name: 'another-command' },
   ]);
   const result = await registerLinkCommand({
@@ -73,21 +83,22 @@ void test('registering /link updates the existing guild command without replacin
     fetcher,
   });
   assert.equal(result, 'updated');
-  assert.equal(calls.length, 2);
+  assert.equal(calls.length, 3);
   const update = calls[1];
   assert.ok(update);
   assert.equal(update.method, 'PATCH');
   assert.match(update.url, /\/commands\/444444444444444444$/);
   assert.deepEqual(JSON.parse(update.body ?? '{}'), {
     name: 'link',
+    options: [],
     description: 'Confirm your LVBT membership on the website',
   });
 });
 
 void test('registering /link refuses an ambiguous existing command list', async () => {
   const { calls, fetcher } = fakeDiscord([
-    { id: COMMAND_ID, name: 'link' },
-    { id: '555555555555555555', name: 'link' },
+    { id: COMMAND_ID, type: 1, name: 'link' },
+    { id: '555555555555555555', type: 1, name: 'link' },
   ]);
   await assert.rejects(
     registerLinkCommand({
