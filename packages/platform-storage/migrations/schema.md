@@ -790,3 +790,13 @@ version 2; it never creates a consent answer, signup date or `member_since`. Exi
 remains immutable. A real later withdrawal takes precedence, and unclear ordering holds provider
 writes for staff review. Erasure and physical retention remove the row; merge and undo preserve its
 owner. Administrator and member exports include the applicable evidence.
+
+### Scheduled read budget (0045)
+
+`people_pending_erasure` indexes erasure state and deletion time for deleted profiles. Legacy
+erasure seeks unerased deletions without revisiting profiles already erased during the thirty-day
+retention window. The existing deletion-time index continues to support physical purge. Due provider
+selection and shared completion use indexed opaque person keys, whose deletion state mirrors profile
+updates, so an idle queue does not materialize the full reconciliation view. Provider ownership,
+generation, fresh-receipt and archived-merge guards remain required. Follow the retention operator
+guide to verify the index and applications before enabling minute schedules.
