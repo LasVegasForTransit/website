@@ -50,6 +50,10 @@ export default defineConfig((ctx) => {
             ASSETS: bindings.assets(),
             LVBT_DEPLOYMENT_ENV: bindings.text('preview'),
             LVBT_DISCORD_JOBS: bindings.worker({ worker: 'lvbt-jobs-preview' }),
+            LVBT_DISCORD_APPLICATION_ID: bindings.text('1552481672945999872'),
+            LVBT_DISCORD_PUBLIC_KEY: bindings.text(
+              '21422dba5d410653b6e1b21fedffbf8cdbccaa94fc221d81d767712d2f6faef9',
+            ),
             LVBT_RESEND_API_KEY: bindings.secret(),
             LVBT_BEEHIIV_API_KEY: bindings.secret(),
             LVBT_BEEHIIV_PUBLICATION_ID: bindings.secret(),
@@ -78,6 +82,10 @@ export default defineConfig((ctx) => {
             ASSETS: bindings.assets(),
             LVBT_DEPLOYMENT_ENV: bindings.text('production'),
             LVBT_DISCORD_JOBS: bindings.worker({ worker: 'lvbt-jobs' }),
+            LVBT_DISCORD_APPLICATION_ID: bindings.text('1552481672945999872'),
+            LVBT_DISCORD_PUBLIC_KEY: bindings.text(
+              '21422dba5d410653b6e1b21fedffbf8cdbccaa94fc221d81d767712d2f6faef9',
+            ),
             LVBT_RESEND_API_KEY: bindings.secret(),
             LVBT_BEEHIIV_API_KEY: bindings.secret(),
             LVBT_BEEHIIV_PUBLICATION_ID: bindings.secret(),

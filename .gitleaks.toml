@@ -7,11 +7,11 @@ useDefault = true
 id = "generic-api-key"
 
 [[rules.allowlists]]
-description = "The staff preview Access audience is a public application identifier."
+description = "The staff Access audiences are public application identifiers."
 condition = "AND"
 paths = ['''^apps/staff/wrangler\.jsonc$''']
 regexTarget = "line"
-regexes = ['''^\s*"LVBT_ACCESS_AUD": "f89573338a947c9027f83748935d86f62041adba8672ab807c1634a85c85ef69",$''']
+regexes = ['''^\s*"LVBT_ACCESS_AUD": "(?:f89573338a947c9027f83748935d86f62041adba8672ab807c1634a85c85ef69|39a31460a680106970dd476e5d11d748b181df3ea7772f66f2e5823543120700)",$''']
 
 [[rules.allowlists]]
 description = "Svix's public verification test vector, https://docs.svix.com/receiving/verifying-payloads/how-manual."
@@ -19,6 +19,16 @@ condition = "AND"
 paths = ['''^packages/platform-integrations/tests/beehiiv-webhook\.test\.ts$''']
 regexTarget = "line"
 regexes = ['''^\s*secret: 'whsec_plJ3nmyCDGBKInavdOK15jsl',$''']
+
+[[rules]]
+id = "discord-api-token"
+
+[[rules.allowlists]]
+description = "Discord's public interaction-verification key in website configuration and generated types."
+condition = "AND"
+paths = ['''^apps/site/(?:wrangler\.jsonc|worker-configuration\.d\.ts)$''']
+regexTarget = "line"
+regexes = ['''^\s*"?LVBT_DISCORD_PUBLIC_KEY"?: "21422dba5d410653b6e1b21fedffbf8cdbccaa94fc221d81d767712d2f6faef9"[,;]$''']
 
 [[allowlists]]
 description = "Paths that carry no secrets but trip generic entropy rules."

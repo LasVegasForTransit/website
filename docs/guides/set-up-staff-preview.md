@@ -184,22 +184,26 @@ https://preview.lasvegasfortransit.org/sign-in/google/callback
 https://staff-preview.lasvegasfortransit.org/sign-in/google/callback
 ```
 
-Use the preview client credentials on the preview website and preview staff Worker. Keep their
-session-signing secret consistent within that environment. Google sign-in uses name, email, and
-profile; Google Workspace group administration is a separate integration.
+Use the approved preview Google client credentials on the preview website and preview staff Worker.
+Their sessions and confirmation cookies are scoped to their issuing host. Each Worker can use an
+independent `LVBT_SIGN_IN_SECRET`, even though they share the preview database. Preserve the
+website's existing signing key when provisioning a missing staff key; rotating the website key
+invalidates its existing sessions. Google sign-in uses name, email, and profile; Google Workspace
+group administration is a separate integration.
 
-To install an approved existing value, open the exact preview Worker in Cloudflare, select
-**Settings → Variables and Secrets → Add**, choose **Secret**, enter its name and value from the
-approved secret store, and save. Repeat for each destination below. Do not reveal, reset, or replace
-a working value just to copy it; if the shared value is unavailable, coordinate an approved
-rotation.
+To install an approved value, open the exact preview Worker in Cloudflare, select **Settings →
+Variables and Secrets → Add**, choose **Secret**, enter its name and value from the approved secret
+store, and save. Repeat for each destination below. Do not reveal, reset, or replace a working value
+just to copy it. A missing staff signing key can use a newly authorized independent value. Replacing
+a shared Google client or email credential still requires coordinated approval.
 
-| Value                                                               | Destinations                                           |
-| ------------------------------------------------------------------- | ------------------------------------------------------ |
-| `LVBT_GOOGLE_OAUTH_CLIENT_ID` and `LVBT_GOOGLE_OAUTH_CLIENT_SECRET` | Preview website and preview staff                      |
-| `LVBT_SIGN_IN_SECRET`                                               | Preview website and preview staff, with the same value |
-| `LVBT_LINK_SIGNING_SECRET`                                          | Preview website for its member email links             |
-| `LVBT_RESEND_API_KEY`                                               | Preview website and preview staff                      |
+| Value                                                               | Destinations                                            |
+| ------------------------------------------------------------------- | ------------------------------------------------------- |
+| `LVBT_GOOGLE_OAUTH_CLIENT_ID` and `LVBT_GOOGLE_OAUTH_CLIENT_SECRET` | Preview website and preview staff                       |
+| `LVBT_SIGN_IN_SECRET`                                               | Preview website; preserve its existing value            |
+| `LVBT_SIGN_IN_SECRET`                                               | Preview staff; an independent approved key is supported |
+| `LVBT_LINK_SIGNING_SECRET`                                          | Preview website for its member email links              |
+| `LVBT_RESEND_API_KEY`                                               | Preview website and preview staff                       |
 
 Use the reviewed source variables for nonsecret configuration. Confirm the exact Worker name before
 saving a secret; the existing website bootstrap does not install staff-preview credentials.

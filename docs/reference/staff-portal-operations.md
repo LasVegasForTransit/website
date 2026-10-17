@@ -116,8 +116,8 @@ previews and production during setup. The preview runtime rejects the production
 preserve that guard and keep live Beehiiv credentials out of preview. An isolated database alone
 cannot protect the real mailing list.
 
-The website release configuration sets `release.previewOnly=true` in `.lvbt/tooling.json` while
-newsletter delivery depends on this unfinished consumer. The shared release commands refuse
+Keep `release.previewOnly=true` in `.lvbt/tooling.json` while queued newsletter delivery has not
+passed its production launch requirements. While this hold is set, shared release commands refuse
 production promotion, upload, activation, and saved-release migrations. Preview packaging and
 verification remain available. This hold also blocks unrelated website production updates from this
 source revision; do not remove it merely to publish another change. Retain the last accepted
@@ -442,8 +442,10 @@ deletion; the entire maintenance transaction still fits the worker's 50-query li
 
 Use the existing values and approved applications in the
 [Worker runtime configuration](../../packages/platform-integrations/src/worker-runtime-config.ts),
-following [platform secrets](./platform-secrets.md). Agents must not set or rotate production
-credentials.
+following [platform secrets](./platform-secrets.md). Production credential setup or rotation
+requires explicit maintainer authorization for the account, permissions and destination. An
+authorized operator or agent may perform that setup; keep credential values out of source and
+operational reports.
 
 1. Confirm the selected Cloudflare account and database. Production uses `lvbt-platform`; preview
    uses `lvbt-platform-preview`. Site, staff and jobs must bind the same database within each
@@ -457,8 +459,10 @@ credentials.
 4. Register the fixed staff and staff-preview Google callback addresses documented in
    [Google sign-in setup](./platform-secrets.md#google-sign-in-for-the-website). Keep dynamic
    preview origins disabled unless explicitly approved. Configure the existing sign-in and email
-   bindings on staff. The sign-in signing secret must match the shared session storage; an existing
-   secret name does not prove its value matches. Confirm a real sign-in before acceptance.
+   bindings on staff. Sessions and confirmation cookies are scoped to their issuing host, so staff
+   can use an independent `LVBT_SIGN_IN_SECRET` while sharing the membership database. Preserve the
+   website's existing signing key; rotating it invalidates its member sessions. Confirm a real
+   sign-in on each application before acceptance.
 5. Add the non-sensitive Access audience and team domain to the staff source configuration's Worker
    variables for each environment before building the release. Upload replaces public variables;
    values added only to the remote Worker are not inherited. If an audience is stored as an opaque
@@ -792,6 +796,126 @@ public route or URL. Both applications need their approved authentication and pr
 enabling newsletter processing additionally requires its production publication, encrypted
 API/intent keys, and `staff_review` conflict policy.
 
+Prepare the top-level production variables in `apps/staff/wrangler.jsonc` and
+`apps/jobs/wrangler.jsonc`; keep their `env.preview` settings unchanged. Staff needs the production
+Access team's domain and its own exact `LVBT_ACCESS_AUD`. Both Workers need matching enabled Discord
+settings, with `LVBT_DISCORD_GUILD_ID` equal to `LVBT_DISCORD_PRODUCTION_GUILD_ID` and the Member
+role from that production server. Keep the bot token only on jobs. The production website separately
+needs its matching Discord application ID, OAuth client secret, fixed callback and private jobs
+binding. Publish website linking only after the staff/jobs versions and schedule are verified.
+
+For the first launch, existing staff/jobs versions may be a verified disabled production baseline:
+both must use the production identity, disabled provider flags, canonical database and required
+authentication bindings. Access, domain, database migration, privacy and credential checks still
+apply. An empty existing jobs schedule is allowed; the selected launch artifact must contain the
+minute schedule. The release commands apply it only after both exact versions are active. The
+standalone production preflight describes the final enabled state, so disabled Discord and an empty
+schedule can fail that report before first activation; use the protected release command's existing
+baseline checks rather than enabling schedules in the dashboard.
+
+#### Prepare the first production baseline
+
+Use this procedure for existing disabled placeholders before the first production upload. You need
+authorized access to the LVBT Cloudflare account, the approved production secrets, the exact
+reviewed launch source, and separately authorized database migration access. Website bootstrap does
+not configure staff or jobs. If a deployment already has a receipt, reconcile it through production
+recovery before making settings changes; those changes can create new active versions.
+
+1. In **Workers & Pages**, select the existing `lvbt-staff` and `lvbt-jobs` Workers. Create a
+   missing placeholder with its exact name only when authorized. On both, disable `workers.dev` and
+   preview URLs under **Settings → Domains & Routes**. Keep jobs without custom domains or ordinary
+   routes. A placeholder supplies an existing Worker for version uploads; it does not serve the
+   staff app.
+2. Complete the [staff Access setup](#maintainer-setup) for `staff.lasvegasfortransit.org`,
+   including its own audience, the Console users Google group, the LVBT email-domain requirement and
+   12-hour sessions. On `lvbt-staff`, use **Settings → Domains & Routes → Add → Custom Domain** to
+   attach that exact hostname. Verify its Access protection before attaching membership data. Keep
+   the jobs Worker private.
+3. Take and verify the [production database backup](../guides/back-up-membership-database.md), then
+   rehearse the pending [canonical upgrade](#release-order-and-rollback) from the current schema.
+   From the clean reviewed launch checkout, use the separately approved D1 credential to list, apply
+   and recheck the production migrations:
+
+   ```sh
+   pnpm -C apps/site exec wrangler d1 migrations list lvbt-platform --remote
+   pnpm -C apps/site exec wrangler d1 migrations apply lvbt-platform --remote
+   pnpm -C apps/site exec wrangler d1 migrations list lvbt-platform --remote
+   ```
+
+   The final list must have no pending canonical migration. If apply fails, inspect migration
+   history and schema objects before retrying; earlier migrations may already be applied. Staff
+   release never applies migrations, so the later public website promotion cannot complete this
+   prerequisite.
+
+4. On both Workers, open **Bindings → Add binding**, choose **D1 database**, name the binding
+   `PLATFORM_DB`, and select the existing `lvbt-platform` database. Compare its ID with the reviewed
+   production configuration; never create a replacement database to fix an incomplete binding. On
+   staff, also add a **Service binding** named `LVBT_NEWSLETTER_JOBS` targeting `lvbt-jobs`.
+5. Under **Settings → Variables and Secrets**, set these as **Text** on the active baseline:
+
+   | Workers | Variable                    | Baseline value                                               |
+   | ------- | --------------------------- | ------------------------------------------------------------ |
+   | Both    | `LVBT_DEPLOYMENT_ENV`       | `production`                                                 |
+   | Both    | `LVBT_DISCORD_SYNC_ENABLED` | `false`                                                      |
+   | Jobs    | `LVBT_BEEHIIV_SYNC_ENABLED` | `false`                                                      |
+   | Staff   | `LVBT_ACCESS_TEAM_DOMAIN`   | The approved production team domain from staff source        |
+   | Staff   | `LVBT_ACCESS_AUD`           | The exact production staff Access audience from staff source |
+
+   Save the approved production Discord application, guild and role variables from the reviewed
+   source on both Workers too, keeping synchronization disabled. On jobs, open **Settings → Triggers
+   → Cron Triggers** and confirm there are no triggers. For a newly provisioned baseline, remove an
+   existing trigger only through the approved setup operation. These disabled live settings are
+   separate from the selected launch artifact's enabled flags and minute schedule.
+
+6. Install missing approved secrets on their exact production destinations. Staff needs
+   `LVBT_SIGN_IN_SECRET`, `LVBT_GOOGLE_OAUTH_CLIENT_ID`, `LVBT_GOOGLE_OAUTH_CLIENT_SECRET` and
+   `LVBT_RESEND_API_KEY`. If staff has no approved signing key, provision an independent
+   `LVBT_SIGN_IN_SECRET` there and preserve the website's existing key and member sessions. The
+   Google client must allow the fixed production staff callback. Jobs needs `LVBT_DISCORD_BOT_TOKEN`
+   even for this disabled production baseline. Enabled newsletter delivery also needs
+   `LVBT_BEEHIIV_API_KEY` and `LVBT_NEWSLETTER_INTENT_KEY` on jobs. Keep bot, Beehiiv and intent
+   keys off staff.
+
+   Choose **Secret** in the same dashboard panel, or use the following interactive commands from the
+   repository root for values that are missing. Supply values only at each hidden prompt from the
+   approved secret store; do not overwrite a working value to make an inventory pass.
+
+   ```sh
+   pnpm -C apps/staff exec wrangler secret put LVBT_SIGN_IN_SECRET --name lvbt-staff
+   pnpm -C apps/staff exec wrangler secret put LVBT_GOOGLE_OAUTH_CLIENT_ID --name lvbt-staff
+   pnpm -C apps/staff exec wrangler secret put LVBT_GOOGLE_OAUTH_CLIENT_SECRET --name lvbt-staff
+   pnpm -C apps/staff exec wrangler secret put LVBT_RESEND_API_KEY --name lvbt-staff
+   pnpm -C apps/jobs exec wrangler secret put LVBT_DISCORD_BOT_TOKEN --name lvbt-jobs
+   ```
+
+   [Secret changes deploy a new version immediately](https://developers.cloudflare.com/workers/configuration/secrets/#adding-secrets-to-your-project).
+   Finish them before release upload and retain the active baseline privately. For a first
+   administrator, install the temporary `LVBT_INITIAL_STAFF_ADMIN_WORKSPACE_EMAIL` on staff as
+   described in [maintainer setup](#maintainer-setup); remove it after the audited designation.
+
+7. Read back the active baseline with the approved configuration-check credential:
+
+   ```sh
+   pnpm --silent staff:preflight --production --json
+   ```
+
+   A disabled baseline can exit with status 1 because `discord.configuration` and `jobs.schedule`
+   fail the final enabled-state requirements. Every other configuration check must pass, including
+   the database migration inventory, staff authentication, private service, Access policy, custom
+   domain and jobs exposure. An **unverified** check is not eligible for deferral. Correct the named
+   prerequisite before attempting upload. The protected launch command handles these two expected
+   baseline failures and applies the saved schedule after activating both exact versions; there is
+   no production setup mode. Configuration checks leave live sign-in and provider acceptance
+   unverified.
+
+#### Activate the selected production release
+
+For the full membership launch, enable production `LVBT_BEEHIIV_SYNC_ENABLED` with both publication
+IDs identifying LVBT Updates and `LVBT_BEEHIIV_CONFLICT_POLICY=staff_review`. Install its approved
+API and intent keys only on production jobs. Preview newsletter processing stays disabled. Scheduled
+API processing works on Free and requires no webhook or paid plan. Verify a real signup reaches the
+mailing list before accepting the membership website launch.
+
 Create and protect the **`staff-production`** GitHub environment before using the workflow: require
 maintainer review and main-only deployments. Set `CLOUDFLARE_ACCOUNT_ID` and the separately approved
 `CLOUDFLARE_STAFF_PRODUCTION_API_TOKEN` there. Limit Worker edit permission to `lvbt-staff` and
@@ -820,13 +944,20 @@ protections or authorize credentials. Do not reuse the preview deployment key.
    private.
 
 The equivalent CLI commands, using approved credentials and a clean checkout of the selected source,
-are:
+are below. Prepare into a new directory and use an unused receipt path. The preparation command
+downloads and verifies the selected successful main build; it does not build another artifact.
 
 ```sh
+pnpm staff:release prepare --repository LasVegasForTransit/website --run-id <Actions-run-ID> --directory /tmp/selected-staff-release
 pnpm staff:release upload --repository LasVegasForTransit/website --run-id <Actions-run-ID> --directory /tmp/selected-staff-release --target production --stage launch --receipt /tmp/staff-deployment.json
 pnpm staff:release activate --repository LasVegasForTransit/website --run-id <Actions-run-ID> --directory /tmp/selected-staff-release --target production --stage launch --receipt /tmp/staff-deployment.json
 pnpm staff:release inspect --repository LasVegasForTransit/website --run-id <Actions-run-ID> --directory /tmp/selected-staff-release --target production --stage launch --receipt /tmp/staff-deployment.json
 ```
+
+Run these from the clean selected source checkout, or append
+`--source-directory /private/selected-staff-source` to upload, activate and inspect when the trusted
+verifier uses a separate checkout. That directory must be clean and at the prepared build's exact
+commit. The trusted verifier and selected source must both permit production.
 
 Use **Recover staff production** for a failed activation. Supply the original `release_run`, the
 completed `deployment_run` holding its receipt, and **inspect** first. A complete, matching receipt

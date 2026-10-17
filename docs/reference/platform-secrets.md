@@ -120,9 +120,12 @@ website.
 
 **Jobs-only Discord secret.** `LVBT_DISCORD_BOT_TOKEN` lets `lvbt-jobs` update LVBT-managed roles.
 It is not part of website bootstrap and must never be stored on `lvbt-website` or in a GitHub
-environment. Jobs deployment and secret setup are still outstanding; leave synchronization disabled
-until an approved jobs release setup can provision this token to that Worker. The `/link` registrar
-uses it only in its local process environment, supplied from the approved secret store.
+environment. Install the approved token on the jobs Worker before its protected release, following
+the
+[staff and jobs setup procedure](./staff-portal-operations.md#prepare-the-first-production-baseline).
+Keep synchronization disabled until the matching release and live provider acceptance permit it. The
+`/link` registrar uses the token only in its local process environment, supplied from the approved
+secret store.
 
 "Now" means a feature on the live site uses it. "Later" means no live production feature depends on
 the value yet. The feature may already exist in code but still need setup or deployment, so it is

@@ -108,7 +108,7 @@
     }
   },
   "release": {
-    "previewOnly": true,
+    "previewOnly": false,
     "repository": "LasVegasForTransit/website",
     "appDirectory": "apps/deploy",
     "productionUrl": "https://lasvegasfortransit.org",
@@ -152,6 +152,14 @@
       "LVBT_DISCORD_JOBS": {
         "type": "worker",
         "worker": "lvbt-jobs-preview"
+      },
+      "LVBT_DISCORD_APPLICATION_ID": {
+        "type": "text",
+        "value": "1552481672945999872"
+      },
+      "LVBT_DISCORD_PUBLIC_KEY": {
+        "type": "text",
+        "value": "21422dba5d410653b6e1b21fedffbf8cdbccaa94fc221d81d767712d2f6faef9"
       },
       "LVBT_RESEND_API_KEY": {
         "type": "secret"

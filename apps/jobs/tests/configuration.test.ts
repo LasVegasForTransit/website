@@ -18,19 +18,22 @@ void test('preview jobs use isolated storage and disabled public URLs', () => {
   const preview = unstable_readConfig({ config: file, env: 'preview' }) as WorkerConfiguration;
   assert.equal(production.workers_dev, false);
   assert.equal(production.preview_urls, false);
-  assert.equal(production.vars.LVBT_DISCORD_SYNC_ENABLED, 'false');
+  assert.equal(production.vars.LVBT_DISCORD_SYNC_ENABLED, 'true');
   assert.equal(
     production.vars.LVBT_BEEHIIV_PUBLICATION_ID,
     'pub_d3178023-f8d5-4e9d-a768-0c4eaa6b7280',
   );
   assert.equal(preview.vars.LVBT_BEEHIIV_PUBLICATION_ID, '');
-  assert.deepEqual(production.triggers.crons, []);
+  assert.deepEqual(production.triggers.crons, ['* * * * *']);
   assert.deepEqual(preview.triggers.crons, ['* * * * *']);
   for (const config of [production, preview]) {
     assert.equal(config.workers_dev, false);
     assert.equal(config.preview_urls, false);
     assert.deepEqual(config.routes ?? [], []);
-    assert.equal(config.vars.LVBT_BEEHIIV_SYNC_ENABLED, 'false');
+    assert.equal(
+      config.vars.LVBT_BEEHIIV_SYNC_ENABLED,
+      config.vars.LVBT_DEPLOYMENT_ENV === 'production' ? 'true' : 'false',
+    );
     assert.equal(
       config.vars.LVBT_BEEHIIV_PRODUCTION_PUBLICATION_ID,
       production.vars.LVBT_BEEHIIV_PUBLICATION_ID,
@@ -52,11 +55,29 @@ void test('preview jobs use isolated storage and disabled public URLs', () => {
   }) as WorkerConfiguration;
   for (const config of [production, preview, staff, staffPreview]) {
     for (const value of DISCORD_RUNTIME_CONFIG) assert.ok(Object.hasOwn(config.vars, value.name));
-    assert.equal(
-      config.vars.LVBT_DISCORD_SYNC_ENABLED,
-      config.vars.LVBT_DEPLOYMENT_ENV === 'preview' ? 'true' : 'false',
-    );
+    assert.equal(config.vars.LVBT_DISCORD_SYNC_ENABLED, 'true');
     assert.equal(Object.hasOwn(config.vars, 'LVBT_DISCORD_BOT_TOKEN'), false);
+  }
+});
+
+void test('production Discord targets the LVBT server while staff retains its own Access audience', () => {
+  for (const app of ['staff', 'jobs']) {
+    const file = fileURLToPath(new URL(`../../${app}/wrangler.jsonc`, import.meta.url));
+    const { vars } = unstable_readConfig({ config: file }) as WorkerConfiguration;
+    const configured = discordProviderConfiguration(vars);
+    assert.equal(configured.configured, true);
+    assert.equal(configured.contextId, '1509298455896522823');
+    assert.equal(
+      discordProviderConfiguration({ ...vars, LVBT_DISCORD_GUILD_ID: '1560146082640568350' })
+        .configured,
+      false,
+    );
+    if (app === 'staff') {
+      const preview = unstable_readConfig({ config: file, env: 'preview' }) as WorkerConfiguration;
+      assert.equal(vars.LVBT_ACCESS_TEAM_DOMAIN, 'lvbt.cloudflareaccess.com');
+      assert.ok(vars.LVBT_ACCESS_AUD);
+      assert.notEqual(vars.LVBT_ACCESS_AUD, preview.vars.LVBT_ACCESS_AUD);
+    }
   }
 });
 
