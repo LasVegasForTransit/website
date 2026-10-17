@@ -140,7 +140,7 @@ function metadata(url: URL, mode: Mode, root: string): unknown {
     routes: () => [
       { id: 'test-route', pattern: 'jobs.example.org/*', script: 'lvbt-jobs-preview' },
     ],
-    schedules: () => ({ schedules: [{ cron: '* * * * *' }] }),
+    schedules: () => ({ schedules: mode.production ? [{ cron: '* * * * *' }] : [] }),
     apps: () => [
       {
         id: 'staff-app',

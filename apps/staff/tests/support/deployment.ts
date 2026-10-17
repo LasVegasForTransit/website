@@ -217,7 +217,10 @@ function initialState(mode: FixtureMode) {
     wrongJobsReadback: false,
     serializedMapTraffic: false,
     unexpectedJobsVersion: false,
-    schedules: mode.unscheduled || mode.setup ? ([] as string[]) : ['* * * * *'],
+    schedules:
+      mode.unscheduled || mode.setup || (!mode.production && !mode.shutdown)
+        ? ([] as string[])
+        : ['* * * * *'],
     scheduleWrites: 0,
     loseScheduleResponse: false,
     failScheduleWrite: false,
@@ -340,6 +343,7 @@ function configureEnvironment(
   };
   const disabled = mode.setup === true || (mode.shutdown === true && environment === 'preview');
   if (disabled) object(selected.vars).LVBT_DISCORD_SYNC_ENABLED = 'false';
-  if (app === 'jobs') selected.triggers = { crons: disabled ? [] : ['* * * * *'] };
+  if (app === 'jobs')
+    selected.triggers = { crons: disabled || environment === 'preview' ? [] : ['* * * * *'] };
   configureNewsletter(selected, app, environment, mode);
 }

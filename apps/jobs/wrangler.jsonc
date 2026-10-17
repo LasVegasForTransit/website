@@ -31,7 +31,7 @@
   "env": {
     "preview": {
       "name": "lvbt-jobs-preview",
-      "triggers": { "crons": ["* * * * *"] },
+      "triggers": { "crons": [] },
       "vars": {
         "LVBT_DEPLOYMENT_ENV": "preview",
         "LVBT_BEEHIIV_SYNC_ENABLED": "false",
