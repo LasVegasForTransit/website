@@ -168,15 +168,15 @@ Production publication and schedule activation use the
 production hold still blocks uploads, activation and schedule writes. Keep schedules and
 synchronization disabled until the separately reviewed launch change and acceptance are complete.
 
-Once launch is approved, set `LVBT_BEEHIIV_SYNC_ENABLED=true` and `triggers.crons` to
-`["* * * * *"]` for only the approved target environment in `apps/jobs/wrangler.jsonc`. Production
-uses the top-level settings; a named environment uses its own `env` entry. Update that environment's
-disabled-state expectations in `apps/jobs/tests/configuration.test.ts`, regenerate Worker types, and
-run `pnpm check`. The reviewed release path must apply and read back the approved schedule as well
-as activate the saved code; version activation alone does not change cron triggers. Verify actual
-scheduled processing before accepting launch. Dashboard-only cron edits do not survive later
-uploads. Leave other environments disabled and retain the `release.previewOnly` hold until its
-separate removal requirements above are met.
+Once production launch is approved, set `LVBT_BEEHIIV_SYNC_ENABLED=true` and `triggers.crons` to
+`["* * * * *"]` in the top-level production settings in `apps/jobs/wrangler.jsonc`. Preview keeps
+`env.preview.triggers.crons=[]`; ordinary preview launch and resume cannot enable its cron. Update
+that environment's disabled-state expectations in `apps/jobs/tests/configuration.test.ts`,
+regenerate Worker types, and run `pnpm check`. The reviewed release path must apply and read back
+the approved schedule as well as activate the saved code; version activation alone does not change
+cron triggers. Verify actual scheduled processing before accepting launch. Dashboard-only cron edits
+do not survive later uploads. Leave other environments disabled and retain the `release.previewOnly`
+hold until its separate removal requirements above are met.
 
 Skip webhook configuration on Free. If signed callbacks become available under a separately approved
 setup, configure `subscription.created`, `subscription.confirmed`, and `subscription.deleted`, with
@@ -555,10 +555,14 @@ Confirm the bot has **Manage Roles** and **Create Invite**, sits above every tes
 the app allows `https://preview.lasvegasfortransit.org/account/discord/callback`. Plan the
 [shutdown](#shut-down-the-isolated-discord-preview) before enabling anything.
 
-The minute schedule also runs existing preview maintenance and queued Discord work across the
-preview database; it is not limited to the marked fixture. Before activation approval, select the
-LVBT account in Cloudflare, open **Storage & databases → D1 → lvbt-platform-preview → Console**, and
-run each of these read-only statements separately:
+Preview must remain unscheduled. Automatic maintenance and queued retries are deferred while its
+cron is off; request-driven integrations remain available. Exercise scheduled two-way behavior with
+`pnpm -C apps/jobs test:e2e` against isolated local storage and synthetic providers. Those fixtures
+invoke scheduled events explicitly and never enable a live cron. A live background-worker rehearsal
+requires a separately reviewed, bounded execution path; ordinary preview launch cannot enable it.
+Before approving any live provider test or future background rehearsal, select the LVBT account in
+Cloudflare, open **Storage & databases → D1 → lvbt-platform-preview → Console**, and run each of
+these read-only statements separately:
 
 ```sql
 SELECT count(*) AS linked_discord_accounts
@@ -584,11 +588,12 @@ profile candidates, or privately identify every affected record as explicitly ap
 test data. The profile counts are conservative: the age check includes the whole cutoff day and does
 not evaluate consent, linked identities, engagement, merge protection or the daily run's exact
 cutoff. Check candidates against [the retention rules](../guides/operate-member-data-retention.md)
-before deciding what the schedule can affect. Stop before enabling the schedule if any account or
-record falls outside the approved test scope; do not delete records merely to clear this check.
+before deciding what a controlled test can affect. Stop if any account or record falls outside the
+approved test scope; do not delete records merely to clear this check. These checks do not authorize
+enabling a recurring preview schedule.
 
 1. Prepare the staff/jobs source change first. Set `LVBT_DISCORD_SYNC_ENABLED=true` only in both
-   preview configurations and `env.preview.triggers.crons=["* * * * *"]` on jobs. Keep the reviewed
+   preview configurations and retain `env.preview.triggers.crons=[]` on jobs. Keep the reviewed
    isolated IDs and database unchanged, newsletter synchronization off, production unchanged and
    `release.previewOnly=true`. Leave the website application ID absent or empty. Regenerate jobs
    types and run `pnpm check` before review. This first change must be safe for automatic website
@@ -598,10 +603,10 @@ record falls outside the approved test scope; do not delete records merely to cl
    following [the saved-release procedure](#prepare-the-saved-artifact). Do not choose **setup**; it
    requires Discord and schedules to remain disabled.
 3. Read back the receipt's exact staff/jobs versions at 100 percent traffic and the actual jobs
-   schedule containing only `* * * * *`. Run `pnpm staff:preflight --preview --json` with the
-   approved scoped credential and require every configuration check to pass. Verify the isolated
-   database, Access protection, enabled preview flags and disabled newsletter processing. Stop on a
-   mismatch; configuration readiness alone does not prove role changes work.
+   schedule is empty. Run `pnpm staff:preflight --preview --json` with the approved scoped
+   credential and require every configuration check to pass. Verify the isolated database, Access
+   protection, enabled preview flags and disabled newsletter processing. Stop on a mismatch;
+   configuration readiness alone does not prove role changes work.
 4. Prepare a separate website change last. Set the preview `LVBT_DISCORD_APPLICATION_ID` text
    binding in `apps/deploy/cloudflare.config.ts` and `.lvbt/tooling.json` to the approved app ID.
    Retain an explicitly empty production counterpart. Regenerate compatibility configuration,
@@ -687,19 +692,20 @@ The manifest contains file hashes. The **Deploy staff preview** workflow uploads
 and saves the actual staff and jobs version IDs in a separate deployment receipt. It verifies each
 uploaded version's source annotation, database and bindings before activating either version, then
 requires provider readback showing those exact versions at 100 percent. New receipts also retain the
-previous and desired jobs schedules. Launch activation applies the saved minute schedule only after
-both versions are confirmed active, then verifies it independently. Setup keeps the schedule empty.
-The workflow never rebuilds, applies SQL, changes secrets, creates Workers or changes routes.
+previous and desired jobs schedules. Preview launch and resume require an empty desired schedule and
+independently verify that jobs remain unscheduled after activation. Old preview artifacts or
+receipts that would restore a recurring cron are rejected. Setup also keeps the schedule empty. The
+workflow never rebuilds, applies SQL, changes secrets, creates Workers or changes routes.
 
 Before using the workflow, a maintainer must create the `staff-preview` GitHub environment with
 required reviewers and main-only deployment protection. Set its `CLOUDFLARE_ACCOUNT_ID` variable and
 scoped `CLOUDFLARE_STAFF_PREVIEW_API_TOKEN` secret. Referencing an environment in YAML does not
 create its review protections. Complete the existing Worker, Access, database migration and domain
-setup first. The workflow's default **launch** stage additionally requires schedule and provider
-configuration. Choose **setup** for the initial protected preview with Discord disabled and no cron
-triggers. This lets staff test sign-in and workflows before provider activation. It cannot enable
-Discord, run background jobs, or deploy production. Cloudflare version uploads require an existing
-Worker; a failed upload does not fall back to a first deployment.
+setup first. The workflow's default **launch** stage requires enabled provider configuration and an
+empty preview schedule. Choose **setup** for the initial protected preview with Discord disabled and
+no cron triggers. This lets staff test sign-in and workflows before provider activation. It cannot
+enable Discord, run background jobs, or deploy production. Cloudflare version uploads require an
+existing Worker; a failed upload does not fall back to a first deployment.
 
 A maintainer with a clean checkout of the verified build's commit can run the same two steps:
 
@@ -710,8 +716,8 @@ pnpm staff:release activate --repository LasVegasForTransit/website --run-id <Ac
 
 For initial setup, add `--stage setup` to both commands. The deployment receipt records the stage; a
 setup receipt cannot be resumed as a launch deployment. Omitting the option retains the full launch
-gate. Resolve the remaining configuration and live-provider acceptance before enabling schedules or
-treating a setup preview as operational.
+gate. Resolve the remaining configuration and live-provider acceptance before treating a setup
+preview as operational.
 
 Use the separate **shutdown** stage below to return an enabled preview to disabled operation. Setup
 requires the preview to be disabled already; it cannot stop a running preview.
@@ -784,9 +790,10 @@ are already running or remove roles already granted.
    readback can confirm that it succeeded, otherwise stop for operator review.
 
 Restarting requires a separately reviewed preview **launch** release with matching enabled Discord
-settings and the saved minute schedule. Publish the website's nonempty preview application ID last,
-after staff/jobs versions and the actual schedule are verified. Never use shutdown to change
-production, newsletter processing, Access policies or unlinked accounts' roles.
+settings and an empty saved schedule. Publish the website's nonempty preview application ID last,
+after staff/jobs versions and the empty live schedule are verified. Restarting preview does not
+resume automatic maintenance or queued retries. Never use shutdown to change production, newsletter
+processing, Access policies or unlinked accounts' roles.
 
 ### Publish an approved staff production release
 
@@ -1117,8 +1124,10 @@ Before applying migrations, a maintainer
 canonical upgrade against the current deployed schema. Apply migrations before activating code that
 requires them. Keep scheduled jobs inactive while the applications and bindings are being updated.
 Verify the protected preview first, including refusal on alternate hosts and direct asset requests.
-Enable schedules and provider writes only after real preview grant, readback, retry and revocation
-evidence exists.
+Keep preview unscheduled and retain its request-driven integrations. Production schedule activation
+and provider writes still require real live-provider grant, readback, retry and revocation evidence
+from an explicitly approved rehearsal. Local synthetic fixtures alone do not satisfy production
+acceptance.
 
 Rehearse pending migrations from the retained schema, including the migration-tracking inserts:
 

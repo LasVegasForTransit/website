@@ -30,14 +30,18 @@ export function remoteProbes(
       run: async () => [
         check(
           'jobs.schedule',
-          array(
-            object(
-              await client.get(
-                `/workers/scripts/${encodeURIComponent(config.jobsWorker)}/schedules`,
-              ),
-            ).schedules,
-          ).some((schedule) => schedule.cron === '* * * * *'),
-          'Jobs must run once a minute.',
+          JSON.stringify(
+            array(
+              object(
+                await client.get(
+                  `/workers/scripts/${encodeURIComponent(config.jobsWorker)}/schedules`,
+                ),
+              ).schedules,
+            ).map((schedule) => schedule.cron),
+          ) === JSON.stringify(config.environment === 'preview' ? [] : ['* * * * *']),
+          config.environment === 'preview'
+            ? 'Preview jobs must have no recurring cron.'
+            : 'Production jobs must run exactly once a minute.',
         ),
       ],
     },

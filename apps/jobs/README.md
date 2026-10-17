@@ -1,9 +1,17 @@
 # Scheduled membership work
 
 This Worker performs bounded profile and audit retention and processes incoming newsletter choices,
-pending newsletter requests, and Discord membership and committee role changes once a minute after
-launch. It has no public HTTP API. The production and preview configurations keep schedules and
-synchronization disabled until maintainer setup and live verification are complete.
+pending newsletter requests, and Discord membership and committee role changes once a minute in
+production after launch. It has no public HTTP API. Preview has no recurring cron, including after
+ordinary preview deployments; its configured request-driven integrations remain available. Automatic
+preview reconciliation and retention are deferred while its cron is off. Production keeps its minute
+schedule and existing setup and live-verification requirements.
+
+Preview launch and resume reject a saved artifact or receipt that would restore a recurring cron.
+Preview preflight requires an empty live schedule; production preflight requires exactly its minute
+schedule. Test scheduled two-way reconciliation explicitly with the local compiled-Worker fixture
+below, which invokes scheduled events against synthetic providers and isolated storage. This does
+not enable a live preview cron or change production.
 
 Shared reconciliation work is marked done only after every verified linked provider has a fresh
 success receipt. A missing provider link needs no receipt; an enabled identity with no current

@@ -13,8 +13,8 @@ void test('saved launch receipt records the previous and desired jobs schedule b
     await uploadStaffRelease(f.destination, releaseIdentity, f.receiptFile, f.options);
     const receipt = JSON.parse(await readFile(f.receiptFile, 'utf8')) as { schedule?: unknown };
     assert.deepEqual(receipt.schedule, {
-      previous: ['* * * * *'],
-      desired: ['* * * * *'],
+      previous: [],
+      desired: [],
       state: 'pending',
     });
     await activateStaffRelease(f.destination, releaseIdentity, f.receiptFile, f.options);
@@ -130,7 +130,11 @@ void test('partial version activation never enables schedules and resume activat
 });
 
 void test('lost schedule response is resolved by readback without another PUT', async () => {
-  const f = await deploymentFixture(false, { unscheduled: true });
+  const f = await deploymentFixture(false, {
+    production: true,
+    unscheduled: true,
+    newsletter: true,
+  });
   try {
     await uploadStaffRelease(f.destination, releaseIdentity, f.receiptFile, f.options);
     f.state.loseScheduleResponse = true;
@@ -150,7 +154,11 @@ void test('lost schedule response is resolved by readback without another PUT', 
 });
 
 void test('uncertain schedule failure stays attempted and cannot automatically repeat its write', async () => {
-  const f = await deploymentFixture(false, { unscheduled: true });
+  const f = await deploymentFixture(false, {
+    production: true,
+    unscheduled: true,
+    newsletter: true,
+  });
   try {
     await uploadStaffRelease(f.destination, releaseIdentity, f.receiptFile, f.options);
     f.state.failScheduleWrite = true;
@@ -172,7 +180,11 @@ void test('uncertain schedule failure stays attempted and cannot automatically r
 });
 
 void test('concurrent schedule changes stop activation without overwriting them', async () => {
-  const f = await deploymentFixture(false, { unscheduled: true });
+  const f = await deploymentFixture(false, {
+    production: true,
+    unscheduled: true,
+    newsletter: true,
+  });
   try {
     await uploadStaffRelease(f.destination, releaseIdentity, f.receiptFile, f.options);
     f.state.schedules = ['* * * * *'];
@@ -207,7 +219,11 @@ void test('enabled newsletter candidate without encrypted jobs credentials canno
 });
 
 void test('lost activation response resumes its recorded live version without deploying again', async () => {
-  const f = await deploymentFixture(false, { unscheduled: true });
+  const f = await deploymentFixture(false, {
+    production: true,
+    unscheduled: true,
+    newsletter: true,
+  });
   try {
     await uploadStaffRelease(f.destination, releaseIdentity, f.receiptFile, f.options);
     f.state.loseActivationResponse = true;
@@ -230,7 +246,11 @@ void test('lost activation response resumes its recorded live version without de
 });
 
 void test('lost schedule response and unavailable readback recover only by reading the saved attempt', async () => {
-  const f = await deploymentFixture(false, { unscheduled: true });
+  const f = await deploymentFixture(false, {
+    production: true,
+    unscheduled: true,
+    newsletter: true,
+  });
   try {
     await uploadStaffRelease(f.destination, releaseIdentity, f.receiptFile, f.options);
     f.state.loseScheduleResponse = true;
@@ -254,7 +274,11 @@ void test('lost schedule response and unavailable readback recover only by readi
 });
 
 void test('schedule conflict after both versions activate still stops before the schedule write', async () => {
-  const f = await deploymentFixture(false, { unscheduled: true });
+  const f = await deploymentFixture(false, {
+    production: true,
+    unscheduled: true,
+    newsletter: true,
+  });
   try {
     await uploadStaffRelease(f.destination, releaseIdentity, f.receiptFile, f.options);
     f.state.changeScheduleAfterVersions = true;
@@ -315,7 +339,11 @@ void test('setup and legacy preview recovery keep jobs unscheduled and never acq
 });
 
 void test('a final readiness failure before PUT keeps the pending schedule safely resumable', async () => {
-  const f = await deploymentFixture(false, { unscheduled: true });
+  const f = await deploymentFixture(false, {
+    production: true,
+    unscheduled: true,
+    newsletter: true,
+  });
   try {
     await uploadStaffRelease(f.destination, releaseIdentity, f.receiptFile, f.options);
     f.state.failReadinessBeforeSchedule = true;
@@ -342,7 +370,11 @@ void test('a final readiness failure before PUT keeps the pending schedule safel
 });
 
 void test('schedule drift during the final readiness check is not overwritten', async () => {
-  const f = await deploymentFixture(false, { unscheduled: true });
+  const f = await deploymentFixture(false, {
+    production: true,
+    unscheduled: true,
+    newsletter: true,
+  });
   try {
     await uploadStaffRelease(f.destination, releaseIdentity, f.receiptFile, f.options);
     f.state.changeScheduleDuringReadiness = true;

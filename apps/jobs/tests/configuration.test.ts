@@ -25,7 +25,7 @@ void test('preview jobs use isolated storage and disabled public URLs', () => {
   );
   assert.equal(preview.vars.LVBT_BEEHIIV_PUBLICATION_ID, '');
   assert.deepEqual(production.triggers.crons, ['* * * * *']);
-  assert.deepEqual(preview.triggers.crons, ['* * * * *']);
+  assert.deepEqual(preview.triggers.crons, []);
   for (const config of [production, preview]) {
     assert.equal(config.workers_dev, false);
     assert.equal(config.preview_urls, false);

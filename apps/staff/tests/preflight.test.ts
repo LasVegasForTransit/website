@@ -133,3 +133,23 @@ void test('a dashboard-enabled jobs URL or custom domain fails deployed exposure
     assert.equal(report.checks.find((check) => check.id === 'jobs.exposure')?.status, 'failed');
   }
 });
+
+void test('preview preflight accepts no cron and rejects an implicitly restored minute cron', async () => {
+  for (const scheduled of [false, true]) {
+    const fixture = cloudflareFixture();
+    const fetcher: typeof fetch = async (input, init) => {
+      const url = new URL(input instanceof Request ? input.url : input);
+      if (url.pathname.endsWith('/schedules'))
+        return Response.json({
+          success: true,
+          result: { schedules: scheduled ? [{ cron: '* * * * *' }] : [] },
+        });
+      return await fixture.options.fetch(input, init);
+    };
+    const report = await preflightStaff('preview', { ...fixture.options, fetch: fetcher });
+    assert.equal(
+      report.checks.find((check) => check.id === 'jobs.schedule')?.status,
+      scheduled ? 'failed' : 'passed',
+    );
+  }
+});
