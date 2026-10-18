@@ -95,4 +95,9 @@ const editUrl = `/people/${personId}/edit/${returnQuery}`;
       <a href={profileUrl} class="staff-muted-link text-body-sm">{t('staff.common.cancel')}</a>
     </div>
   </form>
+  <p class="mt-10">
+    <a href={`/people/${person.id}/delete/${returnQuery}`} class="staff-muted-link"
+      >{t('staff.deletion.title')}</a
+    >
+  </p>
 </StaffLayout>

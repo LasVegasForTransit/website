@@ -35,12 +35,15 @@ html {
   outline-offset: 3px;
 }
 
-/* Staff controls keep the shared button treatment with a compact 44px target.
+/* Staff controls keep the shared type and a minimum 44px target.
    This must outrank the public component's spacing utilities. */
 .staff-shell .press {
   min-height: 2.75rem;
-  padding: 0.5rem 1rem;
-  font-size: 0.875rem;
+  max-width: 100%;
+  padding: 0.625rem 1.25rem;
+  font-size: var(--text-body-md);
+  line-height: var(--text-body-md--line-height);
+  overflow-wrap: anywhere;
 }
 
 .staff-shell .staff-action-link {
@@ -49,10 +52,10 @@ html {
   align-items: center;
   justify-content: center;
   padding: 0.5rem 0.75rem;
-  border: 2px solid var(--color-on-surface);
-  background: var(--color-on-surface);
-  color: var(--color-surface);
-  font-size: 0.8125rem;
+  border: 2px solid var(--color-primary);
+  background: var(--color-primary);
+  color: var(--color-on-primary);
+  font-size: var(--text-body-sm);
   font-weight: 700;
   line-height: 1.25;
   text-align: center;
@@ -86,7 +89,7 @@ html {
   background: transparent;
   color: var(--color-on-surface);
   font: inherit;
-  font-size: 0.8125rem;
+  font-size: var(--text-body-sm);
   font-weight: 700;
   line-height: 1.25;
   text-align: center;
@@ -181,7 +184,8 @@ html {
     }
   }
   .staff-header {
-    border-bottom: 1px solid var(--color-outline-variant);
+    background: var(--color-surface-container);
+    border-bottom: 1px solid var(--color-outline);
   }
 
   .staff-header-inner {
@@ -252,48 +256,80 @@ html {
     font-weight: 700;
   }
 
+  .staff-muted-link {
+    display: inline-flex;
+    min-height: 2.75rem;
+    align-items: center;
+    color: var(--color-link);
+    font-weight: 600;
+    text-decoration: underline;
+    text-underline-offset: 0.25em;
+  }
+
   .staff-nav a:hover,
   .staff-muted-link:hover {
     color: var(--color-primary-ink);
   }
 
   .staff-main {
-    padding-block: 2rem 4rem;
+    max-width: 76rem;
+    padding-block: 3rem 4rem;
+  }
+
+  .staff-main-record {
+    max-width: 62rem;
   }
 
   .staff-page-heading {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: baseline;
-    gap: 0.5rem 1.25rem;
-    margin-bottom: 1.5rem;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: start;
+    gap: 1rem 1.5rem;
+    margin-bottom: 2rem;
+  }
+
+  .staff-heading-copy {
+    min-width: 0;
   }
 
   .staff-page-heading h1 {
-    font-size: clamp(1.5rem, 2.5vw, 2rem);
-    font-weight: 700;
-    line-height: 1.2;
-    letter-spacing: -0.02em;
+    font-size: var(--text-headline-lg);
+    font-weight: var(--text-headline-lg--font-weight);
+    line-height: var(--text-headline-lg--line-height);
+    letter-spacing: var(--text-headline-lg--letter-spacing);
     overflow-wrap: anywhere;
   }
 
-  .staff-page-heading > p {
-    flex-basis: 100%;
-    margin-top: 0.5rem;
+  .staff-heading-copy > p {
+    max-width: 60ch;
+    margin-top: 1rem;
+    font-size: var(--text-body-md);
     color: var(--color-on-surface-variant);
   }
 
+  .staff-result-notice {
+    margin-bottom: 1.5rem;
+    padding: 1rem 1.25rem;
+    border-left: 3px solid var(--color-primary);
+    background: var(--color-surface-container);
+    font-weight: 600;
+  }
+
   .staff-back {
-    display: inline-block;
-    margin-bottom: 1rem;
+    display: inline-flex;
+    min-height: 2.75rem;
+    align-items: center;
+    margin-bottom: 0.75rem;
     font-size: 0.875rem;
     font-weight: 600;
-    text-decoration: none;
+    text-decoration: underline;
+    text-underline-offset: 0.25em;
   }
 
   .staff-search {
-    padding-bottom: 1rem;
-    border-bottom: 2px solid var(--color-on-surface);
+    max-width: 56rem;
+    padding: 1.5rem;
+    background: var(--color-surface-container);
   }
 
   .staff-filter-row {
@@ -306,8 +342,8 @@ html {
   .staff-search label,
   .staff-form label {
     display: block;
-    margin-bottom: 0.375rem;
-    font-size: 0.875rem;
+    margin-bottom: 0.5rem;
+    font-size: var(--text-body-md);
     font-weight: 700;
   }
 
@@ -320,13 +356,13 @@ html {
     width: 100%;
     min-width: 0;
     min-height: 2.75rem;
-    padding: 0.5rem 0.625rem;
-    border: 1px solid var(--color-outline);
+    padding: 0.625rem 0.875rem;
+    border: 2px solid var(--color-outline);
     border-radius: 0;
     background: var(--color-surface);
     color: var(--color-on-surface);
     font: inherit;
-    font-size: 0.875rem;
+    font-size: var(--text-body-md);
   }
 
   .staff-search-options {
@@ -334,7 +370,7 @@ html {
     justify-content: space-between;
     gap: 1rem;
     margin-top: 0.75rem;
-    font-size: 0.8125rem;
+    font-size: var(--text-body-sm);
     color: var(--color-on-surface-variant);
   }
 
@@ -353,8 +389,8 @@ html {
     align-items: center;
     justify-content: space-between;
     gap: 0.75rem 1rem;
-    padding-block: 1rem 0.75rem;
-    font-size: 0.8125rem;
+    padding-block: 1.5rem 1rem;
+    font-size: var(--text-body-sm);
     color: var(--color-on-surface-variant);
   }
 
@@ -421,37 +457,46 @@ html {
     text-align: left;
   }
 
+  .staff-roster th[scope='col']:first-child {
+    width: 48%;
+  }
+
+  .staff-roster-with-status th[scope='col']:first-child {
+    width: 40%;
+  }
+
+  .staff-roster-with-status th[scope='col']:nth-child(2) {
+    width: 22%;
+  }
+
   .staff-roster th[scope='col'] {
-    padding: 0.5rem 0.75rem;
+    padding: 0.75rem 1rem;
     border-bottom: 2px solid var(--color-outline);
     color: var(--color-on-surface-variant);
-    font-size: 0.75rem;
+    font-size: var(--text-body-sm);
     font-weight: 700;
   }
 
   .staff-roster th[scope='row'],
   .staff-roster td {
-    padding: 0.75rem;
-    border-bottom: 1px solid var(--color-outline-variant);
-    font-size: 0.875rem;
-    line-height: 1.4;
+    padding: 1rem;
+    border-bottom: 1px solid var(--color-outline);
+    font-size: var(--text-body-md);
+    line-height: var(--text-body-md--line-height);
     vertical-align: top;
   }
 
   .staff-roster th[scope='row'] {
-    width: 34%;
     font-weight: 500;
     text-align: left;
   }
 
   .staff-roster td.staff-roster-status {
-    width: 26%;
     color: var(--color-on-surface-variant);
-    font-size: 0.8125rem;
+    font-size: var(--text-body-sm);
   }
 
   .staff-roster td.staff-roster-committee {
-    width: 40%;
   }
 
   .staff-roster-committee-content {
@@ -468,7 +513,15 @@ html {
   .staff-roster-person a,
   .staff-person-link {
     font-weight: 700;
-    text-decoration: none;
+    text-decoration: underline;
+    text-decoration-color: var(--color-primary);
+    text-underline-offset: 0.25em;
+  }
+
+  .staff-roster-person > a {
+    display: inline-flex;
+    min-height: 2.75rem;
+    align-items: center;
   }
 
   .staff-roster-person a:hover,
@@ -487,29 +540,30 @@ html {
   .staff-committee-chips {
     display: flex;
     flex-wrap: wrap;
-    gap: 0.375rem;
+    gap: 0 1rem;
     margin: 0;
     padding: 0;
     list-style: none;
   }
 
   .staff-committee-chips li {
-    border-radius: 0.25rem;
-    background: var(--color-primary-container);
-    color: var(--color-on-primary-container);
-    font-size: 0.75rem;
+    color: var(--color-on-surface);
+    font-size: var(--text-body-sm);
     line-height: 1.25;
   }
 
   .staff-committee-chips a,
   .staff-committee-chips span {
-    display: inline-block;
-    padding: 0.25rem 0.5rem;
+    display: inline-flex;
+    min-height: 2.75rem;
+    align-items: center;
+    padding: 0.25rem 0;
   }
 
   .staff-committee-chips a {
-    color: inherit;
-    text-decoration: none;
+    color: var(--color-link);
+    text-decoration: underline;
+    text-underline-offset: 0.25em;
   }
 
   .staff-committee-chips a:hover {
@@ -524,7 +578,7 @@ html {
     align-items: center;
     margin-top: 0.25rem;
     color: var(--color-primary-ink);
-    font-size: 0.8125rem;
+    font-size: var(--text-body-sm);
     font-weight: 700;
     text-decoration: underline;
     text-underline-offset: 0.2em;
@@ -536,9 +590,9 @@ html {
   }
 
   .staff-member-tasks {
-    margin-block: 0.25rem 0.5rem;
-    border-bottom: 1px solid var(--color-outline-variant);
-    font-size: 0.8125rem;
+    margin-block: 1rem 0.5rem;
+    border-bottom: 1px solid var(--color-outline);
+    font-size: var(--text-body-sm);
   }
 
   .staff-member-tasks > summary {
@@ -569,13 +623,13 @@ html {
 
   .staff-roster-person p {
     margin-top: 0.125rem;
-    font-size: 0.8125rem;
+    font-size: var(--text-body-sm);
     color: var(--color-on-surface-variant);
   }
 
   .staff-roster-person .staff-roster-activity {
     margin-top: 0.375rem;
-    font-size: 0.75rem;
+    font-size: var(--text-body-sm);
   }
 
   .staff-roster-zip {
@@ -597,12 +651,11 @@ html {
     flex-wrap: wrap;
     gap: 0.5rem 1.25rem;
     margin-top: 0.75rem;
-    font-size: 0.8125rem;
+    font-size: var(--text-body-sm);
     color: var(--color-on-surface-variant);
   }
 
-  .staff-member-meta a,
-  .staff-contact-details a {
+  .staff-member-meta a {
     color: var(--color-primary-ink);
     text-underline-offset: 0.2em;
   }
@@ -620,8 +673,7 @@ html {
   .staff-welcome-contact h2,
   .staff-welcome-record h2,
   .staff-welcome-start h2,
-  .staff-empty h2,
-  .staff-profile h2 {
+  .staff-empty h2 {
     font-size: 1.125rem;
     font-weight: 800;
     letter-spacing: -0.015em;
@@ -644,26 +696,8 @@ html {
     display: block;
     margin-top: 0.25rem;
     color: var(--color-on-surface-variant);
-    font-size: 0.75rem;
+    font-size: var(--text-body-sm);
     font-weight: 400;
-  }
-
-  .staff-contact-details {
-    margin-block: 1rem;
-  }
-
-  .staff-contact-details > div {
-    margin-top: 0.75rem;
-  }
-
-  .staff-contact-details dt {
-    font-size: 0.75rem;
-    color: var(--color-on-surface-variant);
-  }
-
-  .staff-contact-details dd {
-    overflow-wrap: anywhere;
-    font-weight: 600;
   }
 
   .staff-help,
@@ -683,14 +717,14 @@ html {
     margin-top: 1.25rem;
     padding-top: 0.75rem;
     border-top: 1px solid var(--color-outline-variant);
-    font-size: 0.8125rem;
+    font-size: var(--text-body-sm);
     color: var(--color-on-surface-variant);
   }
 
   .staff-form {
     display: grid;
-    gap: 1rem;
-    margin-top: 1.25rem;
+    gap: 1.5rem;
+    margin-top: 1.5rem;
   }
 
   .staff-form .press {
@@ -708,7 +742,7 @@ html {
 
   .staff-review-list p {
     margin-top: 0.25rem;
-    font-size: 0.8125rem;
+    font-size: var(--text-body-sm);
     color: var(--color-on-surface-variant);
   }
 
@@ -725,7 +759,7 @@ html {
   }
 
   .staff-review-history {
-    font-size: 0.8125rem;
+    font-size: var(--text-body-sm);
     margin-top: 1rem;
   }
 
@@ -740,8 +774,8 @@ html {
 
   .staff-editor {
     max-width: 44rem;
-    border-top: 2px solid var(--color-on-surface);
-    padding-top: 1.25rem;
+    padding: 1.5rem;
+    background: var(--color-surface-container);
   }
 
   .staff-editor-fields {
@@ -784,7 +818,7 @@ html {
   }
 
   .staff-welcome-row > p {
-    font-size: 0.8125rem;
+    font-size: var(--text-body-sm);
     color: var(--color-on-surface-variant);
   }
 
@@ -797,16 +831,6 @@ html {
     font-weight: 600;
   }
 
-  .staff-profile {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-    align-items: start;
-    gap: 2rem 3rem;
-    max-width: 64rem;
-    font-size: 0.875rem;
-  }
-
-  .staff-profile section,
   .staff-record-grid section {
     min-width: 0;
     border-top: 2px solid var(--color-on-surface);
@@ -823,12 +847,10 @@ html {
 
   .staff-search-filters {
     margin-top: 0.25rem;
-    font-size: 0.8125rem;
+    font-size: var(--text-body-sm);
   }
 
-  .staff-records > summary,
-  .staff-assignment-actions > summary,
-  .staff-assignment-history > summary {
+  .staff-records > summary {
     cursor: pointer;
     padding-block: 0.75rem;
   }
@@ -837,66 +859,6 @@ html {
     cursor: pointer;
     min-height: 2.75rem;
     padding-block: 0.5rem;
-  }
-
-  .staff-profile-summary {
-    margin-bottom: 1.5rem;
-    padding-block: 1rem;
-    border-top: 1px solid var(--color-outline-variant);
-    font-size: 0.875rem;
-  }
-
-  .staff-profile-facts {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(min(100%, 8rem), 1fr));
-    gap: 1rem 1.5rem;
-  }
-
-  .staff-profile-facts dt {
-    margin-bottom: 0.375rem;
-    color: var(--color-on-surface-variant);
-    font-size: 0.8125rem;
-  }
-
-  .staff-profile-facts dd {
-    overflow-wrap: anywhere;
-  }
-
-  .staff-profile-fact-note {
-    margin-top: 0.375rem;
-    color: var(--color-on-surface-variant);
-    font-size: 0.8125rem;
-  }
-
-  .staff-profile-fact-note a {
-    display: inline-flex;
-    align-items: center;
-    min-height: 2.75rem;
-    color: var(--color-primary-ink);
-    text-underline-offset: 0.2em;
-  }
-
-  .staff-current-assignments > li {
-    padding-block: 0.75rem;
-    border-bottom: 1px solid var(--color-outline-variant);
-  }
-
-  .staff-current-assignments .staff-help {
-    margin-top: 0.25rem;
-    font-size: 0.75rem;
-  }
-
-  .staff-assignment-actions,
-  .staff-assignment-history {
-    font-size: 0.8125rem;
-  }
-
-  .staff-assignment-form {
-    grid-template-columns: minmax(0, 1fr) 6rem;
-  }
-
-  .staff-assignment-form .press {
-    grid-column: 1 / -1;
   }
 
   .staff-inline-form {
@@ -973,7 +935,7 @@ html {
   }
 
   .staff-team-roster .staff-help {
-    font-size: 0.8125rem;
+    font-size: var(--text-body-sm);
     margin-top: 0;
   }
 
@@ -998,7 +960,7 @@ html {
 
     .staff-committee-leads {
       grid-column: 1 / -1;
-      font-size: 0.8125rem;
+      font-size: var(--text-body-sm);
       color: var(--color-on-surface-variant);
     }
 
@@ -1015,23 +977,37 @@ html {
       grid-column: 1 / -1;
     }
     .staff-header-inner {
-      grid-template-columns: minmax(0, 1fr) auto;
+      display: flex;
+      flex-wrap: wrap;
       gap: 0 1rem;
       padding-block: 0.5rem 0;
     }
 
+    .staff-identity {
+      flex: 1 0 auto;
+      max-width: 100%;
+    }
+
     .staff-sign-out {
-      grid-column: 2;
-      grid-row: 1;
+      margin-inline-start: auto;
     }
 
     .staff-nav {
-      grid-column: 1 / -1;
+      flex-basis: 100%;
+      order: 1;
       gap: 1rem;
     }
 
     .staff-main {
-      padding-top: 1.5rem;
+      padding-top: 2rem;
+    }
+
+    .staff-page-heading {
+      grid-template-columns: minmax(0, 1fr);
+    }
+
+    .staff-search {
+      padding: 1rem;
     }
 
     .staff-filter-row {
@@ -1039,7 +1015,17 @@ html {
     }
 
     .staff-search-row {
-      grid-template-columns: minmax(0, 1fr) auto;
+      display: flex;
+      flex-wrap: wrap;
+    }
+
+    .staff-search-query {
+      flex: 1 1 8rem;
+      min-width: 0;
+    }
+
+    .staff-search-row .press {
+      padding-inline: 0.75rem;
     }
 
     .staff-roster,
@@ -1060,9 +1046,10 @@ html {
 
     .staff-roster tbody tr {
       display: grid;
+      grid-template-columns: minmax(0, 1fr);
       gap: 0.25rem;
-      padding-block: 0.75rem;
-      border-bottom: 1px solid var(--color-outline-variant);
+      padding-block: 1rem;
+      border-bottom: 1px solid var(--color-outline);
     }
 
     .staff-roster th[scope='row'],
@@ -1074,11 +1061,38 @@ html {
     }
 
     .staff-roster th[scope='row'] {
-      font-size: 0.875rem;
+      font-size: var(--text-body-md);
+    }
+
+    .staff-roster-person .staff-roster-activity {
+      display: none;
     }
 
     .staff-roster td.staff-roster-status {
-      font-size: 0.75rem;
+      font-size: var(--text-body-sm);
+    }
+
+    .staff-roster td.staff-roster-committee {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: start;
+      gap: 0 0.75rem;
+      margin-top: 0.5rem;
+    }
+
+    .staff-roster-committee::before {
+      display: block;
+      flex: 0 1 5.5rem;
+      color: var(--color-on-surface-variant);
+      font-size: var(--text-body-sm);
+      font-weight: 600;
+      content: attr(data-label);
+    }
+
+    .staff-roster-committee-content {
+      flex: 1 1 10rem;
+      min-width: 0;
+      max-width: 100%;
     }
 
     .staff-roster-add-committee {
@@ -1087,14 +1101,13 @@ html {
 
     .staff-member-tasks ul {
       display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
+      grid-template-columns: minmax(0, 1fr);
       gap: 0 0.75rem;
     }
 
     .staff-review-comparison,
     .staff-welcome-workspace,
     .staff-editor-fields,
-    .staff-profile,
     .staff-record-grid {
       grid-template-columns: minmax(0, 1fr);
       gap: 1.5rem;
@@ -1145,7 +1158,7 @@ html {
     padding: 0.25rem 0.5rem;
     border: 1px solid var(--color-outline-variant);
     color: var(--color-on-surface-variant);
-    font-size: 0.8125rem;
+    font-size: var(--text-body-sm);
     font-weight: 600;
   }
 
@@ -1216,14 +1229,16 @@ html {
 
   .staff-account-status dt {
     margin-bottom: 0.375rem;
-    font-size: 0.8125rem;
+    font-size: var(--text-body-sm);
     font-weight: 600;
     color: var(--color-on-surface-variant);
   }
 
   .staff-access-status {
-    display: inline-block;
-    padding: 0.25rem 0.5rem;
+    display: inline-flex;
+    min-height: 2.75rem;
+    align-items: center;
+    padding: 0.25rem 0;
     border: 1px solid var(--color-outline-variant);
     color: var(--color-on-surface-variant);
     font-weight: 600;
@@ -1244,25 +1259,8 @@ html {
   .staff-access-checked {
     margin-top: 0.5rem;
     color: var(--color-on-surface-variant);
-    font-size: 0.75rem;
+    font-size: var(--text-body-sm);
     line-height: 1.5;
-  }
-
-  .staff-person-access {
-    max-width: 48rem;
-    margin-block: 2rem 1.75rem;
-    scroll-margin-top: 1rem;
-  }
-
-  .staff-person-access > h2 {
-    margin-bottom: 0.75rem;
-    font-size: 1.125rem;
-    font-weight: 800;
-    letter-spacing: -0.015em;
-  }
-
-  .staff-person-access .staff-account-heading h3 {
-    font-size: 1rem;
   }
 
   .staff-access-explanation {
@@ -1288,7 +1286,7 @@ html {
 
   .staff-account-removal {
     grid-column: 1 / -1;
-    font-size: 0.8125rem;
+    font-size: var(--text-body-sm);
   }
   .staff-account-removal summary,
   .staff-account-history summary {
@@ -1323,24 +1321,9 @@ html {
     border-bottom: 1px solid var(--color-outline-variant);
   }
 
-  .staff-person-access ~ .staff-account-history {
-    max-width: 48rem;
-  }
-
-  .staff-profile-history {
-    max-width: 48rem;
-  }
-
-  .staff-profile-history > details {
-    margin-block: 0;
-    padding-block: 0;
-    border-top: 1px solid var(--color-outline-variant);
-    font-size: 0.875rem;
-  }
-
   .staff-history-date {
     color: var(--color-on-surface-variant);
-    font-size: 0.8125rem;
+    font-size: var(--text-body-sm);
     font-variant-numeric: tabular-nums;
   }
 
@@ -1367,7 +1350,7 @@ html {
   .staff-history-reason {
     margin-top: 0.25rem;
     color: var(--color-on-surface-variant);
-    font-size: 0.8125rem;
+    font-size: var(--text-body-sm);
   }
   .staff-account-history-list .staff-help {
     max-width: none;
@@ -1629,7 +1612,7 @@ html {
     gap: 1rem;
   }
   .staff-google-counts dt {
-    font-size: 0.8125rem;
+    font-size: var(--text-body-sm);
     color: var(--color-on-surface-variant);
   }
   .staff-google-counts dd {

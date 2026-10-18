@@ -76,7 +76,8 @@
     "./full-export": "./src/full-export.ts",
     "./google-group-overview": "./src/google-group-overview.ts",
     "./google-group-actions": "./src/google-group-actions.ts",
-    "./discord-command-checkpoint": "./src/discord-command-checkpoint.ts"
+    "./discord-command-checkpoint": "./src/discord-command-checkpoint.ts",
+    "./staff-deletion": "./src/staff-deletion.ts"
   },
   "scripts": {
     "lint": "eslint . --max-warnings 0",

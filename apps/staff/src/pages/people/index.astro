@@ -64,6 +64,13 @@ const hasMemberTasks =
       : t('staff.people.leadIntro')}
 >
   {
+    Astro.url.searchParams.get('deleted') === '1' && (
+      <p role="status" class="staff-result-notice">
+        {t('staff.people.deleted')}
+      </p>
+    )
+  }
+  {
     error && (
       <p role="alert" class="staff-error">
         {error} <a href="/people/">{t('staff.people.clearFilters')}</a>
@@ -228,7 +235,12 @@ const hasMemberTasks =
                   : t('staff.people.showingPeople', { count: page.items.length })}
             </p>
           </div>
-          <table class="staff-roster">
+          <table
+            class:list={[
+              'staff-roster',
+              (showMembership || showDiscord) && 'staff-roster-with-status',
+            ]}
+          >
             <caption class="sr-only">
               {status === 'member' ? t('staff.people.title') : t('staff.people.people')}
             </caption>

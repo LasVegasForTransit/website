@@ -144,8 +144,10 @@ bytes are the bytes retained for publication; this gate performs no build or rep
 
 Both `worker-preview` and `worker-candidate` accept only the selected branch `main`. The preview
 publisher receives the preview Worker's deployment token and supplies Access credentials only to
-verification steps. Worker deployment tokens use the Workers Editor role for their one existing
-Worker. Schema migration steps receive a separate `CLOUDFLARE_MIGRATIONS_API_TOKEN` with the minimum
+verification steps. Worker deployment tokens use **Individual Workers Editor** and **Individual
+Workers Metadata Read-Only**, each scoped to their one existing Worker. The metadata permission lets
+promotion read the current deployment before activation; editor access alone may not permit this
+read. Schema migration steps receive a separate `CLOUDFLARE_MIGRATIONS_API_TOKEN` with the minimum
 D1 write permission Cloudflare supports; account-wide D1 access remains a separate privilege. No
 provider credentials belong at repository scope.
 
@@ -199,6 +201,20 @@ needed only when maintainers first install or rotate those credentials. Bootstra
 selected-main branch restriction and existing approval rules. Environment reviewers may provide an
 additional publication gate; the command reports a waiting run with its URL. Nothing automatically
 dispatches production promotion.
+
+If the current-deployment lookup returns **No access to the specified resource**, check the token in
+Cloudflare before starting another promotion:
+
+1. Open **Manage account → Account API tokens** and select the existing production website
+   deployment token.
+2. Confirm **Individual Workers Editor** and **Individual Workers Metadata Read-Only** both name
+   only `lvbt-website`. Keep the existing expiration and other restrictions. Obtain authorization
+   before adding a missing permission; account-wide metadata access is unnecessary for this lookup.
+3. Review and save the authorized change, then reopen the token to confirm both scopes. Do not reset
+   the token or replace the value stored in GitHub merely to change its permissions.
+4. Inspect the failed promotion's retained receipt and the current active version before recovery. A
+   failure before activation leaves production unchanged. Follow the exact run's recovery path;
+   never dispatch a replacement while activation has an unknown outcome.
 
 Each promotion retains `publication-<promotion-run-id>-<attempt>` for 90 days, including the
 baseline public release, selected source, artifact hash, uploaded version, activation outcome, and

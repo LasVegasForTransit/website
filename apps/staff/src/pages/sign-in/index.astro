@@ -16,6 +16,11 @@ const next = safeNext(
 <StaffLayout title="Sign in to LVBT staff" signIn>
   <div class="max-w-[30rem] space-y-6">
     {
+      Astro.url.searchParams.get('deleted') === '1' && (
+        <p role="status">{t('staff.deletion.selfDeleted')}</p>
+      )
+    }
+    {
       Astro.url.searchParams.has('membership_confirmation_expired') && (
         <p role="alert">
           Your membership confirmation expired. Sign in again to request a new code.
