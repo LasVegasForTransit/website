@@ -43,6 +43,7 @@ pnpm check
 pnpm -C apps/jobs test:maintenance
 pnpm -C apps/jobs test:e2e
 pnpm -C apps/staff exec node --import tsx tests/e2e/workspace-offboarding.spec.ts
+pnpm -C apps/staff exec node --import tsx tests/e2e/person-deletion.spec.ts
 ```
 
 The fixtures use isolated databases and simulated providers. They cover irreversible erasure,
@@ -80,10 +81,55 @@ reviewed launch procedure. A setup release with schedules disabled cannot prove 
 
 ## 3. Verify an approved deletion
 
-Use the member account's deletion flow with a synthetic preview member. Confirm that the member can
-no longer sign in and that the profile's contact fields, consent, engagement, private account
-profiles, saved corrections, and affected merge copies are removed. An erased merge cannot restore
-those details through undo. Record only the opaque member key in the private acceptance record.
+For a member deleting their own account, use the member account's deletion flow with a synthetic
+preview member. For staff-assisted deletion, use the procedure below. Never delete a production
+member or the final preview administrator as a test.
+
+### Delete a member as an administrator
+
+You need current LVBT membership, staff administrator access, and authorization to delete the
+selected record. The `person.delete` permission is administrator-only; a committee lead cannot open
+or submit this action.
+
+1. In the selected staff portal, open **Members**, find the synthetic test member, and open their
+   profile. Choose **Edit details**, then **Delete member** below the editing form.
+2. Check the name and email on the confirmation page. Read the consequences before proceeding:
+   deletion ends membership, clears local personal data and saved activity, ends sessions, and
+   queues the existing newsletter and member-access cleanup. A Google account note appears only when
+   that member has a linked Google account. The account and shared files require administrator
+   review; this action does not delete either. A combined-record notice appears when erasure will
+   also cover records combined with this member.
+3. First select **Cancel**. Confirm that the profile still exists and no deletion receipt was
+   created. Reopen **Edit details → Delete member** to continue the test.
+4. Select **Delete member** on the confirmation page. There is one confirmation form, with no name
+   re-entry, reason field, or extra checkbox. A successful request returns to **Members** with
+   **Member deleted.** The deleted profile can no longer be opened.
+5. Verify that another test member's profile and access remain unchanged. Repeat the old submission
+   only in the synthetic fixture: it must not create another deletion or affect another person.
+
+The form expires after thirty minutes and can be used only once for that selected member. Current
+administrator authority, the member's record version, and preservation of an active administrator
+are checked again inside the erasure transaction. If the record changed, review its latest details
+through **Review deletion again** before deciding whether to submit a fresh confirmation.
+
+If a connected account changes during confirmation, the staff action also rolls back and asks for
+another review. It does not repeat erasure automatically. Reopen the confirmation after checking the
+member and their current accounts. If administrator access was withdrawn, sign in with a currently
+authorized account instead; an old confirmation cannot preserve former permissions.
+
+The final active administrator cannot be deleted, even when another former member still has an
+administrator designation. Ask the maintainer responsible for staff authorization to arrange an
+approved transfer to another current member first. The portal does not provide an administrator
+designation screen. Verify that person can sign in, then reopen the deletion confirmation. If you
+delete your own record while another active administrator remains, your sessions and cookies are
+cleared. You return to sign-in with confirmation that your member record was deleted.
+
+### Verify erasure and connected-service cleanup
+
+Confirm that the member can no longer sign in and that the profile's contact fields, consent,
+engagement, private account profiles, saved corrections, and affected merge copies are removed. An
+erased merge cannot restore those details through undo. Record only the opaque member key in the
+private acceptance record.
 
 Inspect that key's `person_deletion_log` receipt privately. `requested_by` is `member` for the
 self-service flow, the authenticated staff actor's opaque key for a staff request, or `retention`

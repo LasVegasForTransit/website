@@ -9,7 +9,13 @@ export async function exerciseMemberSummary(
   const people = new PersonService(fixture.db);
   const { person } = await people.upsertFromSource({
     source: 'join_form',
-    fields: { given_name: 'Ana', family_name: 'Reyes', email: 'summary@example.invalid' },
+    fields: {
+      given_name: 'Ana',
+      family_name: 'Reyes',
+      email: 'summary@example.invalid',
+      phone: '+17025550100',
+      zip: '89104',
+    },
   });
   const consent = {
     scope: 'newsletter' as const,
@@ -165,18 +171,23 @@ export async function exerciseMemberSummary(
       .getByRole('region', { name: 'Committees', exact: true })
       .boundingBox();
     assert.ok(contact && committees);
-    if (width === 320) {
-      assert.equal(Math.round(contact.x), Math.round(committees.x));
-      assert.ok(
-        committees.y >= contact.y + contact.height,
-        'phone layout places contact before committee work',
-      );
+    assert.equal(Math.round(contact.x), Math.round(committees.x));
+    assert.ok(
+      committees.y >= contact.y + contact.height,
+      'contact and committee work follow the member portal section order',
+    );
+    const cells = page.locator('.staff-contact-details > div');
+    const first = await cells.nth(0).boundingBox();
+    const second = await cells.nth(1).boundingBox();
+    assert.ok(first && second);
+    if (width === 1440) {
+      assert.equal(Math.round(first.y), Math.round(second.y));
+      assert.ok(second.x > first.x + first.width, 'contact details share a row when there is room');
     } else {
       assert.ok(
-        committees.x > contact.x + contact.width,
-        'desktop layout gives committee work its own wider column',
+        second.y >= first.y + first.height,
+        'phone contact details stay grouped and readable',
       );
-      assert.ok(committees.width > contact.width);
     }
   }
   await page.emulateMedia({ colorScheme: 'dark' });

@@ -1,0 +1,72 @@
+---
+import { can } from '@lasvegasfortransit/platform-core/permissions';
+import { t } from '@lasvegasfortransit/platform-core/messages';
+import { ulid } from '@lasvegasfortransit/platform-core/ids';
+import { staffDeletionView } from '@lasvegasfortransit/platform-storage/staff-deletion';
+import { issueFormToken } from '@lasvegasfortransit/platform-storage/form-tokens';
+import StaffLayout from '../../../layouts/StaffLayout.astro';
+import Button from '../../../../../site/src/components/app/Button.astro';
+import { submitPersonDeletion, type DeletionFeedback } from '../../../lib/person-deletion';
+import { personName } from '../../../lib/people';
+import { messageResponse } from '../../../lib/responses';
+import { rosterReturn } from '../../../lib/roster-return';
+const staff = Astro.locals.staff;
+if (!staff || !can(staff.actor, 'person.delete'))
+  return messageResponse(t('staff.common.accessDenied'), 403);
+if (!['GET', 'POST'].includes(Astro.request.method))
+  return messageResponse(t('staff.common.accessDenied'), 405);
+const personId = Astro.params.id ?? '';
+let feedback: DeletionFeedback | undefined;
+if (Astro.request.method === 'POST') {
+  const result = await submitPersonDeletion(Astro.request, staff, personId);
+  if (result instanceof Response) return result;
+  feedback = result;
+  Astro.response.status = result.status;
+}
+const person = await staffDeletionView(staff.db, staff.actor, personId);
+if (!person) return messageResponse(t('staff.common.accessDenied'), 404);
+const returnTo = rosterReturn(Astro.url.searchParams.get('return_to'));
+const returnQuery = returnTo ? `?return_to=${encodeURIComponent(returnTo)}` : '';
+const profileUrl = `/people/${person.id}/${returnQuery}`;
+const confirmationUrl = `/people/${person.id}/delete/${returnQuery}`;
+const token = feedback
+  ? null
+  : await issueFormToken(staff.db, staff.actor, `person:delete:${person.id}`);
+---
+
+<StaffLayout title={t('staff.deletion.title')} description={personName(person)}>
+  <a slot="breadcrumb" href={profileUrl} class="staff-back">{t('staff.navigation.backProfile')}</a>
+  <section class="max-w-2xl space-y-6" aria-labelledby="delete-heading">
+    <h2 id="delete-heading" class="text-title-lg">
+      {t('staff.deletion.question', { name: personName(person) })}
+    </h2>
+    <p class="[overflow-wrap:anywhere]">{person.email ?? t('staff.profile.noEmail')}</p>
+    <p>{t('staff.deletion.consequences')}</p>
+    <p>{t('staff.deletion.cleanup')}</p>
+    {Boolean(person.has_google_account) && <p>{t('staff.deletion.google')}</p>}
+    {Boolean(person.has_combined_records) && <p>{t('staff.deletion.combined')}</p>}
+    {person.id === staff.actor.personId && <p>{t('staff.deletion.self')}</p>}
+    {
+      feedback && (
+        <p role="alert" class="staff-error">
+          {feedback.message} <a href={confirmationUrl}>{t('staff.deletion.reload')}</a>
+        </p>
+      )
+    }
+    <form method="post" action={confirmationUrl} class="flex flex-wrap items-center gap-5">
+      {
+        !feedback && (
+          <>
+            <input type="hidden" name="token" value={token} />
+            <input type="hidden" name="operation_id" value={ulid()} />
+            <input type="hidden" name="expected_updated_at" value={person.updated_at} />
+            <Button variant="destructive" name="action" value="delete">
+              {t('staff.deletion.confirm')}
+            </Button>
+          </>
+        )
+      }
+      <a href={profileUrl} class="staff-muted-link">{t('staff.common.cancel')}</a>
+    </form>
+  </section>
+</StaffLayout>

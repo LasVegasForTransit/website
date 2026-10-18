@@ -1,5 +1,6 @@
 export const staffPeople = {
   people: {
+    deleted: 'Member deleted.',
     lastActivity: 'Last activity {date}',
     title: 'Members',
     unassignedTitle: 'Members without a committee',
@@ -95,6 +96,24 @@ export const staffPeople = {
     invalid: 'Change at least one field, enter a reason, and check the contact details.',
     conflict:
       'These changes could not be saved. Reload the profile and check that the email belongs to this member.',
+  },
+  deletion: {
+    title: 'Delete member',
+    question: 'Delete {name}?',
+    consequences:
+      'This ends their membership and removes their personal details and saved activity. It cannot be undone.',
+    cleanup: 'They will be signed out, unsubscribed from the newsletter, and lose member access.',
+    google: 'An administrator will review their Google account and shared files.',
+    combined: 'Records combined with this member will also be deleted.',
+    self: 'This is your own member record. You will be signed out after confirming.',
+    selfDeleted: 'Your member record was deleted. You have been signed out.',
+    confirm: 'Delete member',
+    invalid: 'Open the confirmation page again before deleting this member.',
+    expired: 'This confirmation expired or was already submitted. Open the member profile again.',
+    changed: 'This member’s record changed. Review the latest details before deleting it.',
+    reload: 'Review deletion again',
+    lastAdmin:
+      'Give another current member administrator access before deleting this record. LVBT needs an active administrator.',
   },
   review: {
     title: 'Check duplicates',

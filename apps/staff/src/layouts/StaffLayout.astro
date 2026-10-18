@@ -15,6 +15,7 @@ const staff = Astro.locals.staff;
 const consoleVisible = staff && can(staff.actor, 'console.enter');
 const home = staff && !consoleVisible ? '/paper/' : '/';
 const signOutToken = staff ? await issueFormToken(staff.db, staff.actor, 'sign-out') : null;
+const memberRecord = /^\/people\/[^/]+(?:\/(?:edit|delete))?\/?$/.test(Astro.url.pathname);
 ---
 
 <!doctype html>
@@ -90,12 +91,18 @@ const signOutToken = staff ? await issueFormToken(staff.db, staff.actor, 'sign-o
           }
         </div>
       </header>
-      <main id="main" class="container-page staff-main" tabindex="-1">
+      <main
+        id="main"
+        class:list={['container-page staff-main', memberRecord && 'staff-main-record']}
+        tabindex="-1"
+      >
         <slot name="breadcrumb" />
         <div class="staff-page-heading">
-          <h1>{title}</h1>
+          <div class="staff-heading-copy">
+            <h1>{title}</h1>
+            {description && <p>{description}</p>}
+          </div>
           <slot name="heading-meta" />
-          {description && <p>{description}</p>}
         </div>
         <slot />
       </main>

@@ -52,8 +52,23 @@ const staff = Astro.locals.staff!;
       )
     }
   </th>
-  {(showMembership || showDiscord) && <td class="staff-roster-status">{rosterStatus}</td>}
-  <td class="staff-roster-committee">
+  {
+    (showMembership || showDiscord) && (
+      <td
+        class="staff-roster-status"
+        data-label={
+          showMembership && showDiscord
+            ? t('staff.people.membershipDiscord')
+            : showDiscord
+              ? t('staff.common.discord')
+              : t('staff.common.membership')
+        }
+      >
+        {rosterStatus}
+      </td>
+    )
+  }
+  <td class="staff-roster-committee" data-label={t('staff.common.committees')}>
     <div class="staff-roster-committee-content">
       {
         details?.committees.length ? (

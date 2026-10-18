@@ -36,6 +36,7 @@ void test('every staff permission cell allows its scope and denies unrelated rec
     ['person.view', [false, false, true, true]],
     ['person.search', [false, false, true, true]],
     ['person.update', [false, false, false, true]],
+    ['person.delete', [false, false, false, true]],
     ['review_queue.resolve', [false, false, false, true]],
     ['person.merge', [false, false, false, true]],
     ['person.unmerge', [false, false, false, true]],
