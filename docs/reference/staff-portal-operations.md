@@ -22,6 +22,12 @@ removing people through the portal and the separate Google Group prerequisite.
 
 ## Read-only configuration check
 
+The [staff environment example](../../apps/staff/.env.example) lists the Access binding names.
+Deployment uses the reviewed values in the selected `wrangler.jsonc` environment: its own Access
+application's audience and the team's hostname, without a scheme or path. Keep production and
+preview audiences separate. Use synthetic Access identities in the local browser fixtures; never
+copy a production session into a test.
+
 From the repository root:
 
 ```sh
