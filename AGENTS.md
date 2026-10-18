@@ -219,9 +219,9 @@ markers or GitHub-side prose checks.
   the `lvwwd` Worker; this repo only redirects `/wwd`, `/wwd/` and `/week-without-driving` there —
   see
   [`docs/reference/week-without-driving-site.md`](./docs/reference/week-without-driving-site.md).
-- Membership intake: website or versioned form intake → canonical person record → durable scheduled
-  Beehiiv delivery; the older Google Form endpoint also maintains Notion follow-up compatibility —
-  see [`docs/reference/membership-intake.md`](./docs/reference/membership-intake.md).
+- Membership intake: website, versioned form, or original Google Form intake → canonical person
+  record → staff Welcome flow and durable scheduled Beehiiv delivery, without new Notion pages — see
+  [`docs/reference/membership-intake.md`](./docs/reference/membership-intake.md).
 - Transit news intake: three ways to push articles into a Notion database (pnpm script, Claude Code
   skill, public Notion form + Cloudflare enrichment) — see
   [`docs/guides/add-transit-news.md`](./docs/guides/add-transit-news.md) and
