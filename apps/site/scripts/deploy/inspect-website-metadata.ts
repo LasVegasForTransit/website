@@ -32,7 +32,7 @@ function providerResult(body: unknown): Pick<WebsiteMetadataReport, 'success' | 
   if (
     !record(body) ||
     typeof body.success !== 'boolean' ||
-    (body.errors !== undefined && !Array.isArray(body.errors))
+    (body.errors !== undefined && body.errors !== null && !Array.isArray(body.errors))
   )
     return { success: false, errorCodes: [] };
   const errors: unknown[] = body.errors ?? [];
