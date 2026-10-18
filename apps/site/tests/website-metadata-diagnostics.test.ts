@@ -21,6 +21,33 @@ async function feature() {
   return module;
 }
 
+void test('successful dashboard custom-domain envelopes accept null errors without exposing records', async () => {
+  const { runWebsiteMetadataDiagnostics } = await feature();
+  const output: string[] = [];
+  const exitCode = await runWebsiteMetadataDiagnostics(
+    environment,
+    (url) =>
+      Promise.resolve(
+        Response.json({
+          success: true,
+          errors: url.includes('/domains/records?') ? null : [],
+          messages: null,
+          result: [{ hostname: providerSecret }],
+        }),
+      ),
+    (line) => output.push(line),
+  );
+  assert.equal(exitCode, 0);
+  const reports = JSON.parse(output.join('')) as Array<{
+    resource: string;
+    success: boolean;
+    errorCodes: number[];
+  }>;
+  assert.equal(reports.find(({ resource }) => resource === 'custom-domains')?.success, true);
+  assert.deepEqual(reports.find(({ resource }) => resource === 'custom-domains')?.errorCodes, []);
+  assert.doesNotMatch(output.join(''), /fixture|hostname|result|messages/);
+});
+
 void test('one GET per exact Wrangler resource isolates a denied route without retries or disclosure', async () => {
   const { inspectWebsiteMetadata } = await feature();
   const calls: Array<{ url: string; options: RequestInit }> = [];

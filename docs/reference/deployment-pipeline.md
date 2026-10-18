@@ -245,6 +245,34 @@ resources must succeed. A denied resource identifies the boundary to investigate
 permission documentation or support. Do not broaden the deployment key based on the generic error,
 replace it with another service's key, or disable Wrangler's configuration-conflict check.
 
+If only **routes** and **custom-domains** return `403` with code `10000`, the per-Worker metadata
+permission has not authorized those dashboard reads. Worker-scoped deployment and current-version
+reads can still succeed. Diagnose these reads separately from a failed deployment lookup:
+
+1. Open **Manage account → Account API tokens** and select the existing website production
+   deployment key. Preserve its website-only editor and individual metadata policies, expiration,
+   and IP restrictions.
+2. Review the available read policies. **Workers Metadata Read-Only** under **Entire Account**
+   permits account-wide Worker settings and observability reads without script source content. This
+   is broader than the individual-Worker policy. Confirm this policy against the failed dashboard
+   reads rather than assuming the public API's legacy permissions are required.
+3. Obtain explicit authorization for the exact additional policy before saving. Do not add Worker
+   content reads, route editing, DNS editing, account-wide editing, or another service's deployment
+   key.
+4. Review the token summary, save the authorized policies, then reopen the token to verify their
+   resources. Its existing encrypted value in GitHub continues to work; no credential reset or
+   secret replacement is needed.
+5. Run **Inspect website deployment metadata** once with the same key. All six reads must pass
+   before another publication attempt. If a read is still denied, retain its resource, status, and
+   numeric code for Cloudflare support instead of adding permissions speculatively.
+
+Cloudflare documents the accepted permissions for
+[listing Worker routes](https://developers.cloudflare.com/api/resources/workers/subresources/routes/methods/list/)
+and
+[listing Worker domains](https://developers.cloudflare.com/api/resources/workers/subresources/domains/methods/list/).
+Wrangler's dashboard endpoints differ from these public endpoints; the protected diagnostic's actual
+results determine whether the deployment key can complete the required reads.
+
 After correcting the identified prerequisite, reconcile the failed promotion again and follow the
 recorded release's supported recovery path. Keep its selected artifact and current-version guard.
 
