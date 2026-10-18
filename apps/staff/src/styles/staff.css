@@ -496,11 +496,9 @@ html {
     font-size: var(--text-body-sm);
   }
 
-  .staff-roster td.staff-roster-committee {
-  }
-
   .staff-roster-committee-content {
     display: grid;
+    grid-template-columns: minmax(0, 1fr);
     justify-items: start;
     gap: 0.25rem;
   }

@@ -190,6 +190,25 @@ export async function exerciseMemberSummary(
       );
     }
   }
+  await page.goto(`${ORIGIN}/people/?q=summary%40example.invalid`);
+  await page.evaluate(() => {
+    document.documentElement.style.fontSize = '32px';
+  });
+  assert.equal(
+    await page.evaluate(() => getComputedStyle(document.documentElement).fontSize),
+    '32px',
+  );
+  assert.equal(
+    await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth),
+    true,
+    'multiple committee links and actions must reflow at 200% text on a 320px phone',
+  );
+  await page.screenshot({
+    animations: 'disabled',
+    fullPage: true,
+    path: `${fixture.root}/test-results/staff/member-roster-enlarged-text.png`,
+  });
+  await page.goto(`${ORIGIN}/people/${person.id}/`);
   await page.emulateMedia({ colorScheme: 'dark' });
   await page.screenshot({
     animations: 'disabled',
