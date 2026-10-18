@@ -398,7 +398,20 @@ restart or rate limit. `discord_role_reviews` contains only the server ID, Disco
 LVBT-managed role IDs, and first/last seen times. The scan never changes roles on unlinked accounts.
 A completed roster scan removes review rows that no longer match; interrupted scans leave the prior
 review list intact. Staff see only role mappings within their current committee scope, while
-administrators see the full list. Migration 0030 has not been applied to production.
+administrators see the full list.
+
+Migration 0046 adds nullable, bounded username, global display name and server nickname snapshots to
+`discord_role_reviews`. The existing guild scan refreshes them only for accounts that still need
+review. These provider names help staff recognize accounts; they never establish LVBT identity
+ownership or change personal contact fields. Existing rows have no names until their page is read in
+a normal scan. Erasure clears these names immediately through the permanent person key; later scans
+keep them null even after the personal profile is physically purged. The indexed
+`discord_erased_accounts` table retains only the opaque Discord subject ID, backfilled from
+currently retained erased identities and captured during erasure. It preserves suppression after a
+pending disconnect deletes the identity link, after review-row cleanup and after profile purge. It
+stores no name, contact field or person profile. Account IDs and managed role observations remain
+available for access cleanup. The existing completed-scan cleanup removes rows that no longer
+require review.
 
 ### Deleted account cleanup (0020)
 

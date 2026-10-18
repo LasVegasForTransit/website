@@ -46,6 +46,9 @@ export interface DiscordMember {
 }
 export interface DiscordGuildMember {
   id: string;
+  username?: string | null;
+  displayName?: string | null;
+  nickname?: string | null;
   roleIds: string[];
   pending: boolean;
   bot: boolean;
@@ -99,6 +102,10 @@ export function parseDiscordMember(value: unknown, expectedId: string): DiscordM
     nickname: nullableText(data.nick, 32),
   };
 }
+function rosterName(value: unknown): string | null {
+  const name = nullableText(value, 32)?.trim() ?? '';
+  return name.length ? name : null;
+}
 export function parseDiscordGuildMember(value: unknown): DiscordGuildMember {
   const data = object(value);
   const user = object(data.user);
@@ -113,6 +120,9 @@ export function parseDiscordGuildMember(value: unknown): DiscordGuildMember {
     throw new DiscordApiFailure('invalid_response');
   return {
     id: user.id,
+    username: rosterName(user.username),
+    displayName: rosterName(user.global_name),
+    nickname: rosterName(data.nick),
     roleIds: [...new Set(data.roles)].sort(),
     pending: data.pending === true,
     bot: user.bot === true,

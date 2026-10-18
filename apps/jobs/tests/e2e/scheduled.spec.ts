@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import { commandFixture } from './support/discord-commands';
+import { assertReviewAccount, rosterFixture } from './support/discord-roster';
 import { mkdtemp, readdir, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -55,14 +56,9 @@ const simulator = new Miniflare(
         calls.push(`${request.method} ${url.pathname}`);
         return Promise.resolve(
           new RuntimeResponse(
-            JSON.stringify([
-              { user: { id: identityId, bot: false }, roles: [...roles], pending: false },
-              {
-                user: { id: reviewUserId, bot: false },
-                roles: [memberRoleId, unrelatedRoleId],
-                pending: false,
-              },
-            ]),
+            JSON.stringify(
+              rosterFixture(identityId, reviewUserId, [...roles], [memberRoleId, unrelatedRoleId]),
+            ),
             { headers: { 'Content-Type': 'application/json' } },
           ),
         );
@@ -161,13 +157,14 @@ try {
   assert.equal((await worker.scheduled({ cron: '* * * * *' })).outcome, 'ok');
   assert.deepEqual(commands.calls, ['GET', 'POST', 'GET']);
   assert.deepEqual([...roles].sort(), [memberRoleId, committeeRoleId, unrelatedRoleId].sort());
-  assert.deepEqual(
-    await db.prepare('SELECT discord_user_id,managed_role_ids FROM discord_role_reviews').first(),
-    {
-      discord_user_id: reviewUserId,
-      managed_role_ids: JSON.stringify([memberRoleId]),
-    },
-    'an unlinked account is flagged for review without changing its roles',
+  assertReviewAccount(
+    await db
+      .prepare(
+        'SELECT discord_user_id,managed_role_ids,username,display_name,nickname FROM discord_role_reviews',
+      )
+      .first(),
+    reviewUserId,
+    memberRoleId,
   );
   assert.equal(
     (await db.prepare('SELECT username FROM discord_profiles').first())?.username,
