@@ -31,16 +31,12 @@ import {
   PersonService,
   type PersonFields,
 } from '@lasvegasfortransit/platform-storage/person-service';
-import { getArray, notionClient, notionErrorMessage } from '../scripts/notion/lib/notion-client';
-import { intakeLookupQuery, intakePage } from '../scripts/notion/lib/intake-page';
 
 export interface PlatformEnv {
   PLATFORM_DB: Db;
   LVBT_LINK_SIGNING_SECRET: string;
   LVBT_BEEHIIV_API_KEY?: string;
   LVBT_BEEHIIV_PUBLICATION_ID?: string;
-  LVBT_NOTION_API_KEY?: string;
-  LVBT_NOTION_DATA_SOURCE_ID?: string;
   LVBT_RESEND_API_KEY?: string;
 }
 
@@ -140,44 +136,6 @@ async function sendConfirmation(
     },
     fetcher,
   );
-}
-
-// Staff still follow up with new members from the Notion intake database
-// until the staff console's welcome queue replaces it. Best effort: a Notion
-// outage never stops someone joining.
-async function addToNotionIntake(
-  env: PlatformEnv,
-  input: JoinInput,
-  fetcher: typeof fetch,
-): Promise<void> {
-  if (!env.LVBT_NOTION_API_KEY || !env.LVBT_NOTION_DATA_SOURCE_ID) return;
-  const name = [input.givenName, input.familyName].filter(Boolean).join(' ');
-  const fields = {
-    email: input.email,
-    name: name || undefined,
-    source: input.origin === 'join_form' ? 'Website join form' : 'Website newsletter box',
-    submittedAt: nowIso(),
-  };
-  const notionFetch = notionClient(fetcher);
-  try {
-    const lookup = await notionFetch(
-      env.LVBT_NOTION_API_KEY,
-      'POST',
-      `data_sources/${env.LVBT_NOTION_DATA_SOURCE_ID}/query`,
-      intakeLookupQuery(fields),
-    );
-    if (lookup.ok && (getArray(lookup.json, 'results') ?? []).length > 0) return;
-    const created = await notionFetch(
-      env.LVBT_NOTION_API_KEY,
-      'POST',
-      'pages',
-      intakePage(env.LVBT_NOTION_DATA_SOURCE_ID, fields),
-    );
-    if (!created.ok)
-      console.error('Notion intake page create failed', notionErrorMessage(created.json));
-  } catch {
-    console.error('Notion intake request failed');
-  }
 }
 
 // Checks that end a submission before anything is saved: the honeypot, the
@@ -299,20 +257,17 @@ export async function processJoin(
   if (person?.membership_status !== 'member') return { kind: 'discarded' };
   const givenName = person.given_name ?? '';
 
-  await Promise.all([
-    sendConfirmation(
-      env,
-      {
-        personId,
-        email: input.email,
-        givenName,
-        interests: input.interests,
-        referral: input.referral,
-      },
-      fetcher,
-    ),
-    addToNotionIntake(env, input, fetcher),
-  ]);
+  await sendConfirmation(
+    env,
+    {
+      personId,
+      email: input.email,
+      givenName,
+      interests: input.interests,
+      referral: input.referral,
+    },
+    fetcher,
+  );
 
   return {
     kind: 'joined',

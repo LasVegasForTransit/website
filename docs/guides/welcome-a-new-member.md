@@ -60,9 +60,10 @@ does not grant access to the full member roster.
 ## Production transition from the old welcome process
 
 The protected preview does not retire the existing Google Form or Notion workflow. An operator must
-complete the approved production cutover, verify a real form submission reaches the member records
-without creating a new Notion welcome page, and give staff a retirement note before relying solely
-on this queue. Keep the old Notion records available as read-only history; do not delete them as
-part of this transition. See [Connect the membership form](./connect-the-membership-form.md) for the
-existing form connection and [staff portal acceptance](../reference/staff-portal-acceptance.md) for
-the launch checks.
+complete the
+[approved production cutover](../reference/membership-intake.md#staff-follow-up-in-notion), verify a
+real form submission reaches the member records without creating a new Notion welcome page, and give
+staff a retirement note before relying solely on this queue. Keep the old Notion records available
+as read-only history; do not delete them as part of this transition. See
+[Connect the membership form](./connect-the-membership-form.md) for the existing form connection and
+[staff portal acceptance](../reference/staff-portal-acceptance.md) for the launch checks.

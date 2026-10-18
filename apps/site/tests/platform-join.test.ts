@@ -25,9 +25,6 @@ function fakeServices() {
     if (url.includes('beehiiv.com') && init?.method === 'POST') {
       return Promise.resolve(Response.json({ data: { id: `sub_${calls.length}` } }));
     }
-    if (url.includes('notion.com') && url.endsWith('/query')) {
-      return Promise.resolve(Response.json({ results: [] }));
-    }
     return Promise.resolve(Response.json({ id: 'ok' }));
   }) as typeof fetch;
   return { calls, fetcher };
@@ -48,7 +45,9 @@ function sentEmail(calls: Call[]): {
   };
 }
 
-function env(db: MemoryDb): PlatformEnv {
+function env(
+  db: MemoryDb,
+): PlatformEnv & Record<'LVBT_NOTION_API_KEY' | 'LVBT_NOTION_DATA_SOURCE_ID', string> {
   return {
     PLATFORM_DB: db,
     LVBT_LINK_SIGNING_SECRET: 'test-signing-secret',
@@ -100,7 +99,10 @@ void test('joining saves membership and queues mailing-list delivery', async () 
   );
   assert.equal(db.raw.prepare('SELECT state FROM newsletter_sync_jobs').get()?.state, 'queued');
   assert.ok(calls.some((call) => call.url === 'https://api.resend.com/emails'));
-  assert.ok(calls.some((call) => call.url.endsWith('/pages')));
+  assert.equal(
+    calls.some((call) => call.url.includes('notion.com')),
+    false,
+  );
   const email = sentEmail(calls);
   assert.equal(email.subject, 'Welcome to LVBT');
   assert.match(email.text, /\/join\/remove\/\?token=/);
@@ -305,13 +307,20 @@ void test('a mailing provider outage cannot discard accepted membership consent'
 
 void test('the newsletter box joins the same way with its own consent wording', async () => {
   const db = memoryDb();
+  const { calls, fetcher } = fakeServices();
   const outcome = await processJoin(
     env(db),
     form({ origin: 'newsletter_box', email: 'ana@example.org', consent: 'yes' }),
     '203.0.113.1',
-    { fetcher: fakeServices().fetcher },
+    { fetcher },
   );
-  assert.equal(outcome.kind === 'joined' && outcome.needsRegion, false);
+  assert.equal(outcome.kind, 'joined');
+  assert.equal(
+    calls.some((call) => call.url.includes('notion.com')),
+    false,
+  );
+  assert.ok(calls.some((call) => call.url === 'https://api.resend.com/emails'));
+  assert.equal(outcome.needsRegion, false);
   const consent = db.raw.prepare('SELECT source, wording_version FROM consent_records').get();
   assert.deepEqual(
     { ...consent },

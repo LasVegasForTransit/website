@@ -7,15 +7,15 @@ or phone. If the entries are different people, keep them separate instead.
 ## Before you start
 
 Sign in to the staff portal with an active LVBT membership and current administrator access. Compare
-the entries with the person or a reliable existing record. Write a brief reason that explains the
-decision without adding sensitive personal details.
+the entries with the person or a reliable existing record. When combining entries, write a brief
+reason that explains the decision without adding sensitive personal details.
 
 ## Combine the entries
 
 1. Open **Members**, expand **Member records**, and choose **Check for duplicate members**.
 2. Open the possible match and compare **New entry** with **Already on our list**.
-3. For different people, choose **Keep separate**. Add a short note when useful. The same pair will
-   not be proposed again for the same reason.
+3. For different people, choose **Keep separate**. LVBT records your decision and who made it. The
+   same pair will not be proposed again for the same reason.
 4. For the same person, open **Combine if they are the same person**. The earlier-created record is
    kept automatically. Its existing details take precedence; missing details and both histories are
    combined. Enter the reason and select **Combine entries**.

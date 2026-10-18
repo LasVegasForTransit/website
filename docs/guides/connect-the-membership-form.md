@@ -1,6 +1,6 @@
 # Connect the membership form to the intake pipeline
 
-The membership Google Form feeds new members into Beehiiv and Notion through a small Apps Script
+The membership Google Form records signups in the canonical platform through a small Apps Script
 attached to the form (Apps Script is Google's built-in JavaScript automation; see
 [glossary](../reference/glossary.md#apps-script)). This guide wires that script up. Do it once per
 form, or again if the form is recreated. How the rest of the pipeline works, and what to do when a
@@ -64,4 +64,8 @@ Submit a test response from the live form, then confirm in **Executions** (the l
 Script sidebar) that `onMembershipFormSubmit` completed. A failed execution shows the endpoint's
 status and body; the
 [recovery section](../reference/membership-intake.md#failure-handling-and-recovery) of the reference
-explains what each one means.
+explains what each one means. Confirm the canonical profile has the original consent time and Google
+Form attribution, then find the eligible member in the staff Welcome queue. Newsletter delivery runs
+separately. The endpoint creates no Notion page and needs no Notion credentials. Follow the
+[retirement procedure](../reference/membership-intake.md#staff-follow-up-in-notion) before marking
+the old Notion intake retired and read-only.

@@ -12,7 +12,8 @@ it when someone needs a readable copy of the personal information LVBT holds abo
   file contains personal information.
 
 Members can also sign in to their own account, open **Your data**, and download their record without
-administrator help.
+administrator help. That self-service copy omits staff correction authors, reasons and previous
+values, including when the member signs in with a staff account.
 
 ## Download the record
 
@@ -21,7 +22,10 @@ administrator help.
 2. Select **Download member record**. Your browser saves a file named
    `lvbt-member-data-YYYY-MM-DD.json`. JSON is a text format you can open in a text editor.
 3. Read the summary and `details` at the start of the file. Confirm they identify the intended
-   person. Review the sections the person asked about before sharing the download.
+   person. Review the sections the person asked about before sharing the download. This is an
+   administrator copy: `profile_corrections` includes correction authors, reasons and previous and
+   new field values. Check those details before returning the file to the requester; suggest the
+   member's self-service download when they need a copy without staff correction details.
 4. Return the file through the approved private channel. Remove your local working copy when the
    request is complete according to your organization's handling policy.
 
@@ -35,11 +39,15 @@ and role changes. It also includes newsletter status observations and source-eve
 to the person's currently linked newsletter account. The file explains the difference between a
 person's choice time and the time LVBT observed a status.
 
-Private staff notes, arbitrary activity payloads, staff identifiers, references to other people,
-duplicate candidates, and archived merge records are omitted. Profile correction history identifies
-which fields changed and when. Sign-in sessions, codes, credentials, encrypted inbox addresses, and
-provider delivery receipts are excluded. This download does not change membership, consent, account
-links, committee assignments, or provider access.
+The administrator's `profile_corrections` entries identify which fields changed and when, the
+recorded author (`changed_by.id` and name), the required reason, and the old and new profile values.
+An author's name is `null` if it is no longer recorded. Only corrections belonging to the selected
+person are included. Member self-service exports retain only the changed field names and dates.
+
+Other private staff notes, arbitrary activity payloads, unrelated staff identifiers, references to
+other people, duplicate candidates, and archived merge records are omitted. Sign-in sessions, codes,
+credentials, encrypted inbox addresses, and provider delivery receipts are excluded. This download
+does not change membership, consent, account links, committee assignments, or provider access.
 
 ## If the download does not work
 

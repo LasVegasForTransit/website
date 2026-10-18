@@ -22,11 +22,7 @@
       },
       {
         "name": "LVBT_NOTION_API_KEY",
-        "purpose": "Staff follow-up and press archive"
-      },
-      {
-        "name": "LVBT_NOTION_DATA_SOURCE_ID",
-        "purpose": "Staff membership follow-up"
+        "purpose": "Transit news and press archive"
       },
       {
         "name": "LVBT_PRESS_DATA_SOURCE_ID",
@@ -174,9 +170,6 @@
         "type": "secret"
       },
       "LVBT_NOTION_API_KEY": {
-        "type": "secret"
-      },
-      "LVBT_NOTION_DATA_SOURCE_ID": {
         "type": "secret"
       },
       "LVBT_PRESS_DATA_SOURCE_ID": {

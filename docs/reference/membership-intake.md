@@ -13,9 +13,8 @@ what they agreed to** — not a spreadsheet, and not Notion.
 > **Before you start.** You'll need: edit access to the membership Google Form (and its Apps Script
 > editor) if you're touching the Google Form path, the intake token, and access to the LVBT
 > Cloudflare account for an authorized configuration change. Newsletter delivery needs separately
-> configured [scheduled jobs](../../apps/jobs/README.md). The older Google Form endpoint also needs
-> its existing Notion connection while that compatibility path remains in use; the versioned
-> interface does not. See [Required Cloudflare secrets](#required-cloudflare-secrets).
+> configured [scheduled jobs](../../apps/jobs/README.md). Neither intake endpoint needs a Notion
+> connection. See [Required Cloudflare secrets](#required-cloudflare-secrets).
 
 ## How someone joins
 
@@ -34,12 +33,12 @@ Whichever form someone fills in, the same three things happen:
    withdrawal. A provider outage does not discard the accepted membership record. A form without
    consent remains a form response rather than a membership join.
 3. The staff console's **Welcome** queue lets staff claim and record follow-up for new members.
-   Staff can also review uncertain matches and original signup answers. The older Google Form
-   endpoint still creates a Notion page for compatibility (see
-   [Staff follow-up in Notion](#staff-follow-up-in-notion)). That page is not the canonical member
-   record. A deployed staff console and an accepted switch of the follow-up process are separate
-   from the availability of this code; use the
-   [staff acceptance checklist](./staff-portal-acceptance.md) before retiring the old process.
+   Staff can also review uncertain matches and imported signup evidence. The original Google Form
+   endpoint also uses this canonical record and creates no Notion pages. Preserve the form's
+   response sheet for its full original answers. Complete the
+   [Notion retirement procedure](#staff-follow-up-in-notion) and
+   [staff acceptance checklist](./staff-portal-acceptance.md) before treating the old process as
+   retired.
 
 LVBT's own join form, at `/join/member`, writes the canonical record and queues newsletter delivery
 without creating a Notion page — see [joining LVBT on the website](./newsletter-signup.md) for
@@ -64,7 +63,7 @@ The membership Google Form still works, as a fallback alongside the website's ow
 doesn't call `/api/intake/v1` directly. Instead, an Apps Script attached to the form (see
 [glossary](./glossary.md#apps-script)) posts each submission, in its own older shape, to
 `/api/membership-intake`. That handler turns the submission into a version 1 intake submission and
-writes it to the person record before contacting Notion, through the same intake logic every other
+writes it to the person record without contacting Notion, through the same intake logic every other
 source uses — so a Google Form sign-up ends up in exactly the same place a `/api/intake/v1` sign-up
 does. The Google Sheet the form writes to is not the record of who joined; it's a convenience copy
 of the raw answers, kept in case a submission ever needs to be checked or re-entered by hand.
@@ -105,15 +104,14 @@ real form. You do not need to touch any code to connect a new form tool.
 
 The fastest path is `pnpm bootstrap --production` (see [platform secrets](./platform-secrets.md)).
 It checks which of these the live site already has, asks for each missing one once, and stores it on
-the production Worker and the `worker-candidate` GitHub environment. It never replaces a value that
-is already stored. For `LVBT_MEMBERSHIP_INTAKE_SECRET` it asks for the value the Apps Script already
-uses, so the form keeps working.
+the production Worker. Intake secrets are not required by the GitHub release environments. It never
+replaces a value that is already stored. For `LVBT_MEMBERSHIP_INTAKE_SECRET` it asks for the value
+the Apps Script already uses, so the form keeps working.
 
-`pnpm bootstrap` seeds `apps/site/.env.local` only when the file is missing. Add test Beehiiv keys,
-your test Notion access token, and a local intake secret there only when your task needs them. Those
-values stay on your machine and are never sent to production. Never paste that local intake secret
-into Apps Script. `LVBT_NOTION_DATA_SOURCE_ID` is created for you by
-`pnpm -C apps/site setup:notion` (see [Staff follow-up in Notion](#staff-follow-up-in-notion)).
+`pnpm bootstrap` seeds `apps/site/.env.local` only when the file is missing. Add test Beehiiv keys
+and a local intake secret there only when your task needs them. Those values stay on your machine
+and are never sent to production. Never paste that local intake secret into Apps Script. Notion
+credentials are unnecessary for intake; preserve any shared key used by press or transit-news work.
 
 Intake runtime bindings:
 
@@ -121,12 +119,10 @@ Intake runtime bindings:
 | ------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `LVBT_MEMBERSHIP_INTAKE_SECRET` | Shared bearer token (a secret string sent in the request's `Authorization: Bearer …` header to prove the caller is allowed; see [glossary](./glossary.md#bearer-token)) used by Apps Script when calling `/api/membership-intake`, and by any other form tool calling `/api/intake/v1` |
 | `PLATFORM_DB`                   | Canonical membership database; required before a submission can be accepted                                                                                                                                                                                                            |
-| `LVBT_NOTION_API_KEY`           | Notion connection access token (starts with `ntn_`) — needed only for staff follow-up; see [Staff follow-up in Notion](#staff-follow-up-in-notion)                                                                                                                                     |
-| `LVBT_NOTION_DATA_SOURCE_ID`    | Notion data source ID (a data source is the actual table of rows inside a Notion database; the API writes to its ID, not the database ID — see [glossary](./glossary.md#data-source)) — created by `pnpm -C apps/site setup:notion`; same caveat as above                              |
 
 Newsletter credentials belong to the [scheduled membership Worker](../../apps/jobs/README.md).
-Neither intake endpoint calls Beehiiv directly. Notion failure is reported after the canonical
-record has been saved; retrying the same source response resumes follow-up safely.
+Neither intake endpoint calls Beehiiv or Notion. A successful intake response means canonical
+processing completed; newsletter delivery and a personal welcome remain separate work.
 
 Only when the form is set up for the first time does the intake secret need a new value. Generate
 one with `openssl rand -hex 32` (`openssl` is a command-line crypto tool; this prints a random
@@ -149,63 +145,57 @@ execution and sends the trigger owner the standard failure email.
 
 ## Staff follow-up in Notion
 
-> **Superseded on 2026-10-16.** The staff console's Welcome queue provides member follow-up in the
-> canonical platform. See the
-> [platform decision record](../explanation/decisions/organizing-platform.md) and
-> [staff acceptance checklist](./staff-portal-acceptance.md) for the transition requirements.
+The Welcome queue replaces the old Notion intake process. `/api/membership-intake` keeps the
+original Google Form request format and bearer token, but writes only to the canonical platform. A
+successful response is `200 {"success":true}`. The existing Apps Script checks only HTTP status, so
+its URL, secret and trigger stay in place. The handler neither reads nor writes Notion, even if old
+Notion credentials remain installed. The same release stops membership Notion writes from the
+website join form and newsletter box. Their canonical records, queued newsletter work and existing
+welcome email remain in place.
 
-The setup below records the older Notion process. Keep its connection working while the Google
-Form's `/api/membership-intake` compatibility endpoint is still in use: that endpoint saves the
-canonical record first and then creates or finds a Notion page. `/api/intake/v1` and the website's
-join form do not need Notion. Do not treat the presence of the Welcome queue in source as proof that
-production follow-up has switched or that the old endpoint has been retired.
+Complete the production transition in this order:
 
-Two parts: a one-time manual setup the Notion API can't do for you (creating the connection and
-sharing a page), then a script that builds the database with the right schema. Run `pnpm bootstrap`
-to create your local environment file, then add the two values below to `apps/site/.env.local` on
-your machine when working on this integration.
+1. Select and promote a reviewed website release containing the canonical-only intake handler using
+   the normal saved-release procedure. Confirm the staff Welcome queue uses the intended database.
+   Keep the form's trigger and original source responses; do not delete the old Notion database.
+2. Submit an approved original Google Form response. Confirm its Apps Script execution succeeds,
+   then find the canonical member profile and verify the original consent time and Google Form
+   attribution. An affirmative newsletter answer creates membership and queued delivery; a blank or
+   negative answer must not manufacture consent or a welcome-queue entry.
+3. Open **Welcome** as a staff administrator and confirm the eligible new member appears once. Claim
+   the entry and verify contact details against the approved response. Release it if the test does
+   not include a real personal welcome. Check newsletter delivery separately.
+4. Independently inspect the old Notion intake and confirm this response created no page. Replay the
+   same original response and verify it creates no duplicate canonical join or Notion page. Preserve
+   its original response ID, answers and submission time. Also verify approved website-join and
+   newsletter-box fixtures reach their canonical records and welcome email without creating Notion
+   pages. Save concise verification in the private launch record; local tests do not establish this
+   hosted result.
+5. Only after that verification, the president adds a note at the top of the existing Notion intake
+   database with the actual cutover date and the Welcome queue link. The note must say that the
+   database is retired and new-member follow-up takes place in the Welcome queue.
+6. The president makes the old database read-only through its sharing controls and verifies that
+   staff can still read historical entries. Remove the old intake writer's ability to add pages to
+   that database. Preserve the shared Notion connection needed for press and transit news; do not
+   revoke its token as a substitute for retiring membership intake.
 
-### 1. Connection and parent page (manual)
+The historical source ID may still be needed for an explicitly authorized roster export. It is not
+an intake runtime requirement. Historical provisioning and backfill scripts must not be run as part
+of normal signup or recovery because they create Notion pages.
 
-1. At <https://www.notion.so/my-integrations>, create an internal **connection** (authentication
-   method **Access token**) with the **Insert content** capability — that is what lets it create the
-   database and pages. Copy its access token (starts with `ntn_`) into `LVBT_NOTION_API_KEY`.
-2. Create a Notion page to hold the intake database (e.g. "LVBT Ops").
-3. Share that page with the connection: open the page → `•••` → **Connections** → add your
-   connection.
-4. Copy the page's 32-character ID from its URL into `LVBT_NOTION_PARENT_PAGE_ID`.
+### Rollback of the transition
 
-> The new Notion Developer Platform (May 2026) adds an `ntn` CLI and hosted Workers, but a server
-> that writes to Notion — the site's compiled API function — still authenticates with a connection
-> access token, so these steps don't change.
+If canonical intake fails, keep the original responses and inspect the canonical record before
+retrying: a failed receipt may follow an accepted write. Repair storage or restore a reviewed
+canonical-only website release through the saved-release recovery procedure, then replay the same
+response. Do not alter consent timestamps, remove accepted member records or disable the form's
+trigger to hide an error.
 
-### 2. Provision the database
-
-```sh
-pnpm -C apps/site setup:notion
-```
-
-This creates a **Membership intake** database under your parent page with the columns below, reads
-back its [data source ID](./glossary.md#data-source) (the ID the endpoint writes to), and writes
-`LVBT_NOTION_DATA_SOURCE_ID` into `apps/site/.env.local`. Re-running reuses the existing database
-instead of duplicating it. Store the value in production with `pnpm bootstrap --production`, which
-asks for it if it is missing.
-
-The schema lives in one place — `apps/site/functions/api/_intake-schema.ts` — which both the
-endpoint and the provisioner import, so the columns can't drift from what the code writes. The
-endpoint writes these properties:
-
-| Property name  | Type  | Value                                          |
-| -------------- | ----- | ---------------------------------------------- |
-| `Name`         | Title | "Preferred name" answer, falling back to email |
-| `Email`        | Email | Normalized lowercase email                     |
-| `Discord`      | Text  | "Discord username" answer (may be blank)       |
-| `Source`       | Text  | Google Form title or supplied source label     |
-| `Submitted at` | Date  | Form submission timestamp                      |
-| `Raw response` | URL   | Response spreadsheet URL                       |
-| `Response ID`  | Text  | Google Forms response ID                       |
-
-The raw answers are added to the Notion page body for staff context.
+A release predating this change creates Notion pages and requires its former Notion configuration.
+Do not activate it against a retired, read-only intake database as an ordinary rollback. If the
+organization deliberately resumes that older process, coordinate the database's write permissions,
+staff instructions and retirement note before activating that release, then verify both canonical
+intake and follow-up again. Keep all existing canonical records and Notion history.
 
 ## Endpoint contract: `/api/membership-intake`
 
@@ -243,26 +233,24 @@ Expected body:
 Responses. The **Status** column is the [HTTP status code](./glossary.md#status-code) (`2xx` =
 success, `4xx`/`5xx` = failure):
 
-| Status | Body                                                   | Meaning                                                                                                                        |
-| ------ | ------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------ |
-| `200`  | `{ "success": true, "notion": "created" }`             | The person record was processed, any accepted newsletter consent was queued for delivery, and a Notion intake page was created |
-| `200`  | `{ "success": true, "notion": "existing" }`            | The person record was processed; a Notion page for this response already existed                                               |
-| `400`  | `{ "error": "invalid_body" }`                          | JSON body could not be parsed                                                                                                  |
-| `400`  | `{ "error": "invalid_email" }`                         | Email missing or malformed                                                                                                     |
-| `401`  | `{ "error": "unauthorized" }`                          | Missing or incorrect bearer token                                                                                              |
-| `502`  | `{ "error": "notion_sync_failed" }`                    | Notion rejected the page create                                                                                                |
-| `503`  | `{ "error": "service_unavailable", "missing": [...] }` | A required binding is missing; its name is included for authenticated callers                                                  |
-| `503`  | `{ "error": "service_unavailable" }`                   | The canonical record could not be saved; retry the same response                                                               |
-| `500`  | Cloudflare error page (not JSON)                       | An exception escaped the handler                                                                                               |
+| Status | Body                                                   | Meaning                                                                                                               |
+| ------ | ------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------- |
+| `200`  | `{ "success": true }`                                  | Canonical processing completed and any accepted newsletter consent was queued for delivery; no Notion page is created |
+| `400`  | `{ "error": "invalid_body" }`                          | JSON body could not be parsed                                                                                         |
+| `400`  | `{ "error": "invalid_email" }`                         | Email missing or malformed                                                                                            |
+| `401`  | `{ "error": "unauthorized" }`                          | Missing or incorrect bearer token                                                                                     |
+| `503`  | `{ "error": "service_unavailable", "missing": [...] }` | A required binding is missing; its name is included for authenticated callers                                         |
+| `503`  | `{ "error": "service_unavailable" }`                   | The canonical record could not be saved; retry the same response                                                      |
+| `500`  | Cloudflare error page (not JSON)                       | An exception escaped the handler                                                                                      |
 
 The auth check runs before the config check, so only a caller with the correct bearer token sees the
 `missing` list. The exception is `LVBT_MEMBERSHIP_INTAKE_SECRET` itself: without it nobody can
 authenticate, so it is always reported.
 
-Writing the person record is required and precedes Notion follow-up. A database failure returns
-`503` before contacting Notion. Newsletter delivery is durable work saved with accepted consent;
-replays use the original consent time and cannot reactivate a later withdrawal. Idempotency receipts
-store hashed source keys and the original response without retaining contact details.
+Writing the person record is required before success. A database failure returns `503`; the handler
+never falls back to Notion. Newsletter delivery is durable work saved with accepted consent; replays
+use the original consent time and cannot reactivate a later withdrawal. Idempotency receipts store
+hashed source keys and the original response without retaining contact details.
 
 The endpoint never returns `500` deliberately; if you see one, read the deployment's **Functions**
 log in the Cloudflare dashboard.
@@ -274,7 +262,7 @@ log in the Cloudflare dashboard.
 3. Confirm the canonical profile records the original consent time only for an affirmative answer.
    With scheduled newsletter work configured, verify delivery separately in Beehiiv. A blank or
    negative answer must not create newsletter consent or an LVBT join event.
-4. Confirm a Notion page was created with the expected properties.
+4. Confirm the eligible member appears in the staff Welcome queue and no Notion page was created.
 5. Confirm the person record has a row for the test address:
 
    ```sh
@@ -296,22 +284,19 @@ fixtures.
 Apps Script treats any non-2xx response as a failed execution and emails the trigger owner. The
 status in that email says what went wrong:
 
-- **`503 service_unavailable`**: a required binding is missing or the canonical write failed. A
-  missing Notion setting is checked after the person record is saved, so a failed response does not
-  prove that nothing was accepted. Check the named setting and canonical record in the intended
-  environment, then follow [platform secrets](./platform-secrets.md) for an authorized repair and
-  replay the original response.
+- **`503 service_unavailable`**: the intake secret or canonical database is missing, or canonical
+  processing failed. A failed receipt may follow a saved person or consent, so inspect the canonical
+  record before retrying. Repair the named binding or storage problem in the intended environment,
+  then replay the original response. Notion credentials do not repair this path.
 - **`401 unauthorized`**: the Apps Script `LVBT_MEMBERSHIP_INTAKE_SECRET` property no longer matches
   the Worker secret.
-- **`502 notion_sync_failed`**: the canonical record was saved, but Notion follow-up failed. Repair
-  the Notion connection and replay the same response. Verify newsletter delivery separately; the
-  intake endpoint never calls Beehiiv directly.
 
 Replaying the same response is [idempotent](./glossary.md#idempotent): the intake interface
-remembers its source and idempotency key for 30 days, and the compatibility endpoint looks up the
-form's **Response ID** before creating a Notion page. Preserve the original answers, response
-identifier and submission time. Accepted consent queues durable newsletter work; retrying must not
-manufacture a new choice or reverse a newer withdrawal. Check delivery through the
+remembers its source and idempotency key for 30 days. The Google Form adapter derives the key from
+the original **Response ID**, with an email-and-original-time fallback when that ID is absent.
+Preserve the original answers, response identifier and submission time. Accepted consent queues
+durable newsletter work; retrying must not manufacture a new choice or reverse a newer withdrawal.
+Check delivery through the
 [newsletter operations procedure](./staff-portal-operations.md#scheduled-newsletter-processing).
 
 1. Confirm the outage is over: submit a test response and check that the execution succeeds.
@@ -320,11 +305,6 @@ manufacture a new choice or reverse a newer withdrawal. Check delivery through t
    replay only part of the history, call `backfillIntakeSince(new Date('…'))` from a scratch
    function instead.
 3. Re-run once any `failed` lines in the execution log have been dealt with.
-
-To create Notion pages without touching Beehiiv at all,
-`pnpm -C apps/site exec tsx scripts/notion/backfill-intake.ts <payloads.json>` takes a JSON array of
-endpoint-shaped bodies and uses the Notion secrets in `apps/site/.env.local`. It skips submissions
-that already have a page.
 
 The Google Sheet stays useful for the full response if a row ever needs to be entered by hand, but
 it is not what LVBT treats as the record of who joined — the person record is.

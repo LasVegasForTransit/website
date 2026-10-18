@@ -59,6 +59,7 @@ export async function assignGoogleGroupMember(
     actorId: actor.personId,
     operationId: input.operationId,
     administratorsOnly: true,
+    fromAccessReview: true,
     reviewGuard: {
       sql: `${guard.sql} AND EXISTS(SELECT 1 FROM committees WHERE id=? AND workspace_group_email=?)`,
       values: [...guard.values, input.committeeId, input.groupEmail],

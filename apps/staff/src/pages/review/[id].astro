@@ -1,6 +1,7 @@
 ---
 import StaffLayout from '../../layouts/StaffLayout.astro';
 import ReviewPerson from '../../components/ReviewPerson.astro';
+import ReviewComparison from '../../components/ReviewComparison.astro';
 import Button from '../../../../site/src/components/app/Button.astro';
 import { reviewItem } from '@lasvegasfortransit/platform-storage/reviews';
 import { issueFormToken } from '@lasvegasfortransit/platform-storage/form-tokens';
@@ -41,7 +42,8 @@ const email = submittedEmail(item.details);
       </p>
     )
   }
-  <div class="staff-review-comparison">
+  <ReviewComparison candidate={item.candidate} existing={item.existing} />
+  <div class="staff-review-secondary">
     <ReviewPerson profile={item.candidate} label={t('staff.review.newEntry')} />
     <ReviewPerson profile={item.existing} label={t('staff.review.existingEntry')} />
   </div>
@@ -79,15 +81,6 @@ const email = submittedEmail(item.details);
           <form method="post" action={`/review/${id}/`} class="staff-form max-w-2xl">
             <input type="hidden" name="token" value={token} />
             <input type="hidden" name="operation_id" value={ulid()} />
-            <div>
-              <>
-                <label for="note">
-                  {t('staff.record.note')}{' '}
-                  <span class="staff-optional">{t('staff.review.optional')}</span>
-                </label>
-                <textarea id="note" name="note" maxlength="2000" rows="2" />
-              </>
-            </div>
             <Button variant="secondary">{t('staff.review.separate')}</Button>
           </form>
         </section>

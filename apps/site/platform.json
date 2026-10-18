@@ -104,35 +104,19 @@
     },
     {
       "name": "LVBT_NOTION_API_KEY",
-      "purpose": "Lets the site read the LVBT Press database and write member and transit news submissions into LVBT's Notion workspace.",
+      "purpose": "Lets the site read the LVBT Press database and write transit news submissions into LVBT's Notion workspace.",
       "use": "live",
-      "neededFor": "Joining (staff follow-up), transit news intake, press coverage",
+      "neededFor": "Transit news intake, press coverage",
       "targets": ["worker"],
       "url": "https://www.notion.so/profile/integrations",
       "steps": [
-        "Skip only if you cannot reach Notion today: the press page cannot load coverage and staff do not see new member or transit news submissions until this is set.",
+        "Skip only if you cannot reach Notion today: the press page cannot load coverage and transit news submissions cannot be processed until this is set.",
         "Sign in to Notion as an owner of the LVBT workspace.",
-        "Click the integration connected to the Membership intake database. To check its name, open https://www.notion.so/6bad03ffdebf4072a34a6408d3e7180d \u2192 \u2022\u2022\u2022 \u2192 Connections.",
+        "Open the existing integration connected to the LVBT Press and transit-news databases. Preserve their current connection.",
         "Connect this same integration to the LVBT Press database.",
         "Under \"Internal Integration Secret\", click \"Show\", then \"Copy\", and paste it here. It starts with ntn_."
       ],
       "pattern": "^.{20,}$",
-      "patternHint": "Use the complete value described in the steps above."
-    },
-    {
-      "name": "LVBT_NOTION_DATA_SOURCE_ID",
-      "purpose": "Tells Notion which table, the Membership intake data source, new members are written to.",
-      "use": "live",
-      "neededFor": "Joining (staff follow-up)",
-      "targets": ["worker"],
-      "url": "https://www.notion.so/6bad03ffdebf4072a34a6408d3e7180d",
-      "steps": [
-        "Skip only if you cannot reach Notion today: staff do not see new members in Notion until this is set.",
-        "Open the Membership intake database.",
-        "Click \u2022\u2022\u2022 \u2192 \"Copy data source ID\" and paste it here. For LVBT it is 6e3df57f-d336-4c0c-a814-a0be68c7f455."
-      ],
-      "sensitive": false,
-      "pattern": "^.{32,}$",
       "patternHint": "Use the complete value described in the steps above."
     },
     {
@@ -601,7 +585,7 @@
     {
       "name": "LVBT_NOTION_DATA_SOURCE_ID",
       "targets": ["github:worker-preview", "github:worker-candidate"],
-      "reason": "Runtime integration credentials belong only on the production Worker; release workflows do not consume them."
+      "reason": "Historical membership source references do not belong in deployment environments; signup no longer uses this value."
     },
     {
       "name": "LVBT_PRESS_DATA_SOURCE_ID",

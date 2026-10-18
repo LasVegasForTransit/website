@@ -4,7 +4,8 @@ const LABELS: Record<string, string> = {
   staff_retry: t('staff.accessOverview.retryReason'),
   google_group: t('staff.access.googleGroup'),
   checklist: t('staff.accessOverview.checklist'),
-  github: 'GitHub',
+  github: t('staff.labels.github'),
+  access_review_assignment: t('staff.accessOverview.assignmentReason'),
   committee_assignment: t('staff.history.added'),
   committee_role_changed: t('staff.history.roleChanged'),
   committee_assignment_ended: t('staff.history.removed'),
@@ -13,7 +14,9 @@ const LABELS: Record<string, string> = {
   onboarding: t('staff.accessOverview.onboarding'),
   account_linked: t('staff.history.accountUpdate'),
   account_disconnected: t('staff.accessOverview.disconnected'),
-  beehiiv_observed: 'Newsletter',
+  beehiiv_observed: t('staff.labels.beehiiv_observed'),
+  membership_change: t('staff.history.membershipChanged'),
+  person_deleted: t('staff.history.accountDeleted'),
   newsletter: t('staff.labels.newsletter'),
   event_reminders: t('staff.labels.event_reminders'),
   volunteer_contact: t('staff.labels.volunteer_contact'),
@@ -55,6 +58,9 @@ const LABELS: Record<string, string> = {
   duplicate_reviewed: t('staff.labels.duplicate_reviewed'),
   lead: t('staff.labels.lead'),
   stepped_back: t('staff.labels.stepped_back'),
+  moved: t('staff.access.moved'),
+  left_lvbt: t('staff.access.left'),
+  removed: t('staff.access.removed'),
   missing_access: t('staff.labels.missing_access'),
   unexpected_access: t('staff.labels.unexpected_access'),
   given_name: t('staff.labels.given_name'),
@@ -70,8 +76,7 @@ const LABELS: Record<string, string> = {
 
 export function displayLabel(value: string): string {
   if (Object.hasOwn(LABELS, value)) return LABELS[value];
-  const words = value.replaceAll('_', ' ');
-  return words.charAt(0).toUpperCase() + words.slice(1);
+  return value.trim() ? t('staff.common.otherChange') : t('staff.common.detailsNotRecorded');
 }
 
 export function languageLabel(value: string): string {
