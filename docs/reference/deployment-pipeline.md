@@ -84,6 +84,12 @@ those headers. Production uses selective Worker routing for application endpoint
 delivery for static pages. The shared analytics package enables tracking only on the public apex and
 `www` hostname, so the production-shaped artifact sends no analytics on staging or PR URLs.
 
+Hosted acceptance checks these protections on site pages and assets. Cloudflare's
+[`/cdn-cgi/` infrastructure](https://developers.cloudflare.com/fundamentals/reference/cdn-cgi-endpoint/)
+is served outside the Worker. Only the exact `/cdn-cgi/speculation` response, classified by the
+browser as `other` with the speculation-rules JSON content type, is excluded from those header
+assertions. Its HTTP status, request allowance, and redirect checks still apply.
+
 A failed staging job can be retried with **Re-run failed jobs**. Each run ID identifies one
 immutable artifact; **Re-run all jobs** cannot replace an artifact that already exists. Dispatch a
 new staging run when a rebuild is needed.

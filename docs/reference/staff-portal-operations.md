@@ -484,17 +484,19 @@ operational reports.
    Disconnection retains its verified account target until the reconciler confirms removal; failed
    requests recover through the same scheduled work. Apply the canonical disconnect-intent migration
    before publishing these controls.
-7. Before the first administrator signs in, set the secret
-   `LVBT_INITIAL_STAFF_ADMIN_WORKSPACE_EMAIL` on the selected staff Worker to the president's exact
-   `@lasvegasfortransit.org` account. On `lvbt-staff-preview`, use an approved Google account linked
-   to a clearly marked test member in the isolated preview database. This may be an existing staff
-   Google account; do not copy production member records or permissions. Do not store this value in
-   source control or use a personal email. The one-time setup page checks that this exact Workspace
-   account is linked to an active LVBT member and that no administrator designation exists, then
-   records the grant in the staff audit log. Once deployed, the first sign-in goes to that page
-   automatically; the president completes the setup and verifies access. Remove the temporary secret
-   after the audited designation is confirmed. Do not infer admin access from a domain or group
-   alone.
+7. After the selected staff release is activated, and before the first administrator signs in, set
+   the temporary secret `LVBT_INITIAL_STAFF_ADMIN_WORKSPACE_EMAIL` on the active staff Worker to the
+   president's exact `@lasvegasfortransit.org` account. On `lvbt-staff-preview`, use an approved
+   Google account linked to a clearly marked test member in the isolated preview database. This may
+   be an existing staff Google account; do not copy production member records or permissions. Do not
+   store this value in source control or use a personal email. The one-time setup page checks that
+   this exact Workspace account is linked to an active LVBT member and that no administrator
+   designation exists, then records the grant in the staff audit log. The president signs in with
+   Google, completes any inbox confirmation needed to link their member record, then completes the
+   first-administrator setup. Confirm the audited designation and access to the member list, then
+   remove the temporary secret. Sign out and sign in again through the normal Google flow; verify
+   that the member list opens without the temporary setting. Do not infer admin access from a domain
+   or group alone.
 
 ### Prepare the isolated Discord preview
 
@@ -902,9 +904,9 @@ recovery before making settings changes; those changes can create new active ver
    ```
 
    [Secret changes deploy a new version immediately](https://developers.cloudflare.com/workers/configuration/secrets/#adding-secrets-to-your-project).
-   Finish them before release upload and retain the active baseline privately. For a first
-   administrator, install the temporary `LVBT_INITIAL_STAFF_ADMIN_WORKSPACE_EMAIL` on staff as
-   described in [maintainer setup](#maintainer-setup); remove it after the audited designation.
+   Finish these durable runtime secrets before release upload and retain the active baseline
+   privately. Install the temporary `LVBT_INITIAL_STAFF_ADMIN_WORKSPACE_EMAIL` only after the
+   selected staff release is activated, following [maintainer setup](#maintainer-setup).
 
 7. Read back the active baseline with the approved configuration-check credential:
 
@@ -951,10 +953,13 @@ protections or authorize credentials. Do not reuse the preview deployment key.
    verifies uploaded bindings, activates the recorded staff/jobs versions, and requires independent
    100-percent version readback before applying the saved jobs schedule. It records the schedule
    intent before its single update request and verifies the complete schedule afterward.
-4. Confirm the retained receipt is active with both versions and schedule confirmed. Then verify
-   actual sign-in, staff workflows, scheduled membership processing and live provider outcomes.
-   Deployment metadata alone does not establish production acceptance. Keep detailed records
-   private.
+4. Confirm the retained receipt is active with both versions and schedule confirmed. If no
+   administrator exists, install the temporary first-administrator setting on the active staff
+   Worker and complete [maintainer setup](#maintainer-setup). This includes Google sign-in, member
+   linking, the audited designation, removal of the temporary setting, and a fresh normal sign-in.
+   Secret changes deploy new Worker versions; record their actual active version IDs privately. Then
+   verify staff workflows, scheduled membership processing and live provider outcomes. Deployment
+   metadata alone does not establish production acceptance. Keep detailed records private.
 
 The equivalent CLI commands, using approved credentials and a clean checkout of the selected source,
 are below. Prepare into a new directory and use an unused receipt path. The preparation command
