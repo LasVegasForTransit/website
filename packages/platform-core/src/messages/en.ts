@@ -185,6 +185,7 @@ export const en = {
     dataNav: 'Data',
     greetingNamed: 'Hi, {name}.',
     greeting: 'Hi.',
+    member: 'LVBT member',
     memberSince: 'LVBT member since {date}',
     notOnList: "You're not on LVBT's mailing list right now.",
     rejoin: 'Rejoin the mailing list',

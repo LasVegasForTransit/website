@@ -65,12 +65,14 @@ export const onRequestGet: PagesFunction<SignInPagesEnv> = async ({ env, request
         filled = filled.on('[data-slot="phone"]', showText(formatPhone(person.phone)));
       }
       if (view.area) filled = filled.on('[data-slot="area"]', showText(view.area));
-      if (view.onMailingList && view.memberSince) {
+      if (view.onMailingList) {
         filled = filled
           .on(
             '[data-slot="member-since"]',
             showText(
-              t('account.memberSince', { date: formatFullDate(new Date(view.memberSince)) }),
+              view.memberSince
+                ? t('account.memberSince', { date: formatFullDate(new Date(view.memberSince)) })
+                : t('account.member'),
             ),
           )
           .on('[data-slot="mailing-list"]', show());
