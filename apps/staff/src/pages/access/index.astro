@@ -155,29 +155,41 @@ if (discordReviews?.nextCursor)
         <p>{t('staff.access.reviewHint')}</p>
         {discordReviews.items.length ? (
           <ul class="staff-discord-review-list">
-            {discordReviews.items.map((review) => (
-              <li>
-                <div>
-                  <strong>{review.roles.map((role) => role.label).join(', ')}</strong>
-                  <p class="staff-help staff-discord-review-meta">
-                    <span>
-                      {t('staff.access.reviewAdded', {
-                        date: formatFullDate(new Date(review.firstSeenAt)),
-                      })}
-                    </span>
-                  </p>
-                </div>
-                <a
-                  class="staff-action-link"
-                  aria-label={t('staff.access.openDiscordLabel')}
-                  href={`https://discord.com/users/${review.discordUserId}`}
-                  target="_blank"
-                  rel="noreferrer"
-                >
-                  {t('staff.access.openDiscord')}
-                </a>
-              </li>
-            ))}
+            {discordReviews.items.map((review, index) => {
+              const accountName =
+                review.nickname ||
+                review.displayName ||
+                review.username ||
+                t('staff.access.reviewNameUnavailable');
+              const profileLabel = review.username
+                ? t('staff.access.openDiscordLabel', { name: `@${review.username}` })
+                : t('staff.access.openDiscordUnknownLabel', { number: String(index + 1) });
+              return (
+                <li>
+                  <div>
+                    <strong>{accountName}</strong>
+                    {review.username && <p class="staff-help">@{review.username}</p>}
+                    <p>{review.roles.map((role) => role.label).join(', ')}</p>
+                    <p class="staff-help staff-discord-review-meta">
+                      <span>
+                        {t('staff.access.reviewAdded', {
+                          date: formatFullDate(new Date(review.firstSeenAt)),
+                        })}
+                      </span>
+                    </p>
+                  </div>
+                  <a
+                    class="staff-action-link"
+                    aria-label={profileLabel}
+                    href={`https://discord.com/users/${review.discordUserId}`}
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    {t('staff.access.openDiscord')}
+                  </a>
+                </li>
+              );
+            })}
           </ul>
         ) : (
           <p class="staff-help">{t('staff.access.reviewNone')}</p>

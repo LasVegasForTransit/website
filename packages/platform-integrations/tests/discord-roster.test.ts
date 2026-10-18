@@ -2,7 +2,9 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { PersonService } from '@lasvegasfortransit/platform-storage/person-service';
 import { memoryDb } from '@lasvegasfortransit/platform-storage/test-db';
-import { DiscordApiFailure, type DiscordGuildMember } from '../src/discord-access';
+import { queryBudget } from '@lasvegasfortransit/platform-storage/query-budget';
+import { claimDiscordScan } from '@lasvegasfortransit/platform-storage/discord-scan-store';
+import { DiscordAccess, DiscordApiFailure, type DiscordGuildMember } from '../src/discord-access';
 
 const guildId = '111111111111111111';
 const memberRoleId = '333333333333333333';
@@ -64,6 +66,9 @@ void test('guild review scan pages 2500 accounts, resumes a Discord rate limit, 
                 : [],
     pending: false,
     bot: index === 3,
+    username: `rider.${index}`,
+    displayName: `Rider ${index}`,
+    nickname: 'Server Rider',
   }));
   const calls: Array<string | undefined> = [];
   let limitOnce = true;
@@ -171,6 +176,87 @@ void test('guild review scan pages 2500 accounts, resumes a Discord rate limit, 
       last_completed_at: '2026-10-12T10:00:00.000Z',
     },
   );
-  assert.equal('username' in (flags.results[0] ?? {}), false);
+  const named = await db
+    .prepare(
+      'SELECT username,display_name,nickname FROM discord_role_reviews WHERE discord_user_id=?',
+    )
+    .bind(reviewUserId)
+    .first();
+  assert.deepEqual(
+    { ...named },
+    {
+      username: 'rider.1',
+      display_name: 'Rider 1',
+      nickname: 'Server Rider',
+    },
+  );
+  db.raw.close();
+});
+
+void test('REST roster names fit the scheduled query budget and expired leases cannot replace them', async () => {
+  const { db, scanDiscordGuildRoster } = await fixture();
+  const budget = queryBudget(db, 50);
+  let stamp = new Date('2026-10-12T10:00:00.000Z');
+  let expire = false;
+  const client = new DiscordAccess(
+    {
+      environment: 'preview',
+      guildId,
+      productionGuildId: '999999999999999999',
+      botToken: 'fixture-only',
+    },
+    {
+      fetch: async () => {
+        if (expire) {
+          stamp = new Date('2026-10-12T11:00:31.000Z');
+          const successor = await claimDiscordScan(db, guildId, stamp, `guild-roster:${guildId}`);
+          assert.equal(typeof successor, 'object');
+        }
+        return Response.json(
+          Array.from({ length: 1000 }, (_, index) => ({
+            user: {
+              id: id(index),
+              username: expire ? 'stale.name' : `rider.${index}`,
+              global_name: 'Rider',
+            },
+            roles: [memberRoleId],
+            pending: false,
+            nick: 'Server Rider',
+          })),
+        );
+      },
+    },
+  );
+  const first = await scanDiscordGuildRoster(budget.db, { client, memberRoleId, now: () => stamp });
+  assert.equal(first.kind, 'scanned');
+  assert.equal(first.scanned, 1000);
+  assert.equal(budget.queries <= 50, true);
+  assert.equal(budget.largestBindings <= 100, true);
+  const names = () =>
+    db.raw
+      .prepare(
+        'SELECT username,display_name,nickname FROM discord_role_reviews WHERE discord_user_id=?',
+      )
+      .get(reviewUserId);
+  assert.deepEqual(
+    { ...names() },
+    { username: 'rider.1', display_name: 'Rider', nickname: 'Server Rider' },
+  );
+  expire = true;
+  stamp = new Date('2026-10-12T11:00:00.000Z');
+  const stale = await scanDiscordGuildRoster(db, { client, memberRoleId, now: () => stamp });
+  assert.equal(stale.kind, 'stale');
+  assert.deepEqual(
+    { ...names() },
+    { username: 'rider.1', display_name: 'Rider', nickname: 'Server Rider' },
+  );
+  assert.equal(
+    db.raw
+      .prepare(
+        'SELECT lease_token IS NOT NULL AS leased FROM provider_scan_checkpoints WHERE context_id=?',
+      )
+      .get(`guild-roster:${guildId}`)?.leased,
+    1,
+  );
   db.raw.close();
 });

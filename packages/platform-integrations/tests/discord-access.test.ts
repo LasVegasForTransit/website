@@ -57,7 +57,7 @@ void test('server reads validate the stable account and only an Unknown Member 4
   response = Response.json({ user: { id: user, username: 'rider' } });
   await assert.rejects(client.readMember(user), { kind: 'invalid_response' });
 });
-void test('guild member pages fetch up to 1000 accounts without retaining profile details', async () => {
+void test('guild member pages retain bounded account names without avatars', async () => {
   const { DiscordAccess } = await api();
   const cursor = '777777777777777777';
   const page = Array.from({ length: 1000 }, (_, index) => ({
@@ -93,9 +93,12 @@ void test('guild member pages fetch up to 1000 accounts without retaining profil
     roleIds: [memberRole, unrelatedRole],
     pending: false,
     bot: false,
+    username: 'transit-member-0',
+    displayName: 'Transit member 0',
+    nickname: null,
   });
   assert.equal(members.at(2)?.bot, true);
-  assert.equal('username' in members[0], false);
+  assert.equal(members[0].username, 'transit-member-0');
   assert.equal('avatar' in members[0], false);
 });
 void test('a verified Discord 404 records server absence without retrying an impossible role grant', async () => {
@@ -322,4 +325,35 @@ void test('a configuration object changed during a request cannot redirect role 
     requests.every((url) => url.includes(`/guilds/${guild}/`)),
     true,
   );
+});
+
+void test('guild account names tolerate missing fields and reject oversized provider text', async () => {
+  const { parseDiscordGuildMember } = await import('../src/discord-types');
+  const base = { user: { id: user }, roles: [], nick: null };
+  assert.deepEqual(parseDiscordGuildMember(base), {
+    id: user,
+    roleIds: [],
+    pending: false,
+    bot: false,
+    username: null,
+    displayName: null,
+    nickname: null,
+  });
+  const named = parseDiscordGuildMember({
+    ...base,
+    user: { id: user, username: 'transit.rider', global_name: '<b>Rider</b>' },
+    nick: 'Server Rider',
+  });
+  assert.equal(named.username, 'transit.rider');
+  assert.equal(named.displayName, '<b>Rider</b>');
+  assert.equal(named.nickname, 'Server Rider');
+  for (const field of ['username', 'global_name']) {
+    assert.throws(
+      () => parseDiscordGuildMember({ ...base, user: { id: user, [field]: 'a'.repeat(33) } }),
+      { kind: 'invalid_response' },
+    );
+  }
+  assert.throws(() => parseDiscordGuildMember({ ...base, nick: 'a'.repeat(33) }), {
+    kind: 'invalid_response',
+  });
 });

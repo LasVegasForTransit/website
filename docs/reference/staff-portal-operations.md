@@ -1214,6 +1214,37 @@ a retired managed role for another committee or assignment kind. Confirm its rem
 approved test account while unrelated server roles remain. Accounts without a connected member
 record are flagged for staff review; this configuration does not authorize removing their roles.
 
+## Review unlinked Discord accounts
+
+Administrators use **Google and Discord access → Discord accounts to check** to recognize accounts
+with managed roles that are not connected to an active member record. Each row shows the server
+nickname, global display name or username, followed by the username when available and the relevant
+LVBT roles. Provider names are only clues: open the Discord profile to check the account, then ask
+the member to connect Discord from their own LVBT account. Staff cannot confirm ownership or remove
+an unlinked account's roles from this review list.
+
+Apply the canonical `0046_discord_review_names.sql` migration before activating the corresponding
+staff and jobs applications, following [Activate and verify](#activate-and-verify). It adds nullable
+name fields and an erasure trigger without changing existing roles or review dates. The guarded
+website promotion applies the saved release's canonical SQL using its existing migration credential;
+staff release verifies the schema before activation. Select a saved release containing migration
+0046 before activating the new staff and jobs applications. No new provider permissions or
+credentials are required. Existing rows initially show **Account name unavailable**. Names fill in
+as each account's page is read by the next normal guild scan, which reads at most 1,000 accounts per
+scheduled invocation. Accounts already passed by an in-progress scan wait for the following scan.
+There is no provider lookup when staff opens the page.
+
+If names remain unavailable, check that the matching jobs version is active, the normal schedule is
+running, and the guild-roster checkpoint's page, account and error counts are advancing. Follow the
+existing provider retry and schedule recovery procedures; do not delete checkpoints or change roles
+to force a name refresh. Missing provider fields and erased accounts intentionally have no names.
+Erasure clears the local name snapshot immediately, and later scans must not restore it, including
+after the member profile's retention purge. An opaque Discord account marker preserves that
+suppression after a queued disconnect removes the identity link; it contains no names or contact
+fields. Account IDs and role observations remain for access cleanup. A completed guild scan removes
+rows that no longer need review. Application rollback keeps this additive migration and its erasure
+trigger in place.
+
 ## Google committee access
 
 The Google Directory adapter reconciles verified linked accounts against current and retained

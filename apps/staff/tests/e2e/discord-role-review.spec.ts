@@ -50,6 +50,11 @@ try {
     )
     .run();
 
+  await fixture.db
+    .prepare('UPDATE discord_role_reviews SET username=?,nickname=? WHERE discord_user_id=?')
+    .bind('a'.repeat(32), 'W'.repeat(32), firstAccount)
+    .run();
+
   const context = await browser.newContext({
     javaScriptEnabled: false,
     ignoreHTTPSErrors: true,
@@ -102,10 +107,13 @@ try {
       .count(),
     1,
   );
-  const openDiscord = reviewSection.locator('li').first().getByRole('link', {
-    name: 'Open Discord profile',
-    exact: true,
-  });
+  const openDiscord = reviewSection
+    .locator('li')
+    .first()
+    .getByRole('link', {
+      name: `Open Discord profile for @${'a'.repeat(32)}`,
+      exact: true,
+    });
   assert.equal(await openDiscord.innerText(), 'Open in Discord');
   assert.equal(await openDiscord.getAttribute('href'), `https://discord.com/users/${firstAccount}`);
   assert.equal(
@@ -157,6 +165,18 @@ try {
     path: join(fixture.root, 'test-results/staff/discord-review-mobile.png'),
   });
   assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
+
+  await page.evaluate(() => {
+    document.documentElement.style.fontSize = '200%';
+  });
+  assert.equal(
+    await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth),
+    true,
+    'the access page must fit at 320px with long provider names and enlarged text',
+  );
+  await page.evaluate(() => {
+    document.documentElement.style.fontSize = '';
+  });
 
   await setSession('lead');
   const leadHeaders = {

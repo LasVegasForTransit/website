@@ -9,6 +9,9 @@ import { SCAN_CURRENT, scanValues, type DiscordScanLease } from './discord-scan-
 
 export interface DiscordRosterMember {
   id: string;
+  username?: string | null;
+  displayName?: string | null;
+  nickname?: string | null;
   roleIds: string[];
   pending: boolean;
   bot: boolean;
@@ -16,6 +19,9 @@ export interface DiscordRosterMember {
 
 export interface DiscordRosterFlag {
   discordUserId: string;
+  username: string | null;
+  displayName: string | null;
+  nickname: string | null;
   roles: Array<{ id: string; label: string }>;
   firstSeenAt: string;
   lastSeenAt: string;
@@ -55,7 +61,10 @@ function validateRosterPage({
         member.roleIds.length <= 1000 &&
         member.roleIds.every(isDiscordId) &&
         typeof member.pending === 'boolean' &&
-        typeof member.bot === 'boolean',
+        typeof member.bot === 'boolean' &&
+        [member.username, member.displayName, member.nickname].every(
+          (value) => value == null || (typeof value === 'string' && value.length <= 32),
+        ),
     )
   )
     throw new Error('Invalid Discord roster page');
@@ -68,11 +77,19 @@ async function loadManagedRoleIds(db: Db, memberRoleId: string): Promise<Set<str
   return new Set([memberRoleId, ...results.map(({ external_id }) => external_id)]);
 }
 
+function snapshotName(value?: string | null): string | null {
+  const name = value?.trim() ?? '';
+  return name.length ? name : null;
+}
+
 function encodeRosterPage(members: DiscordRosterMember[], managed: Set<string>): string {
   return JSON.stringify(
     members.map((member) => ({
       id: member.id,
       bot: member.bot,
+      username: snapshotName(member.username),
+      displayName: snapshotName(member.displayName),
+      nickname: snapshotName(member.nickname),
       roles: [...new Set(member.roleIds.filter((roleId) => managed.has(roleId)))].sort(),
     })),
   );
@@ -88,11 +105,19 @@ function insertRosterFlags(
       `WITH page AS (
         SELECT json_extract(value,'$.id') AS user_id,
           json_extract(value,'$.roles') AS role_ids,
-          json_extract(value,'$.bot') AS bot
+          json_extract(value,'$.bot') AS bot,
+          json_extract(value,'$.username') AS username,
+          json_extract(value,'$.displayName') AS display_name,
+          json_extract(value,'$.nickname') AS nickname,
+          NOT EXISTS(SELECT 1 FROM discord_erased_accounts erased
+            WHERE erased.discord_user_id=json_extract(value,'$.id')) AS retain_names
         FROM json_each(?)
       )
-      INSERT INTO discord_role_reviews(guild_id,discord_user_id,managed_role_ids,first_seen_at,last_seen_at,last_seen_scan_id)
-      SELECT ?,page.user_id,page.role_ids,?,?,? FROM page
+      INSERT INTO discord_role_reviews(guild_id,discord_user_id,managed_role_ids,first_seen_at,last_seen_at,last_seen_scan_id,username,display_name,nickname)
+      SELECT ?,page.user_id,page.role_ids,?,?,?,
+        CASE WHEN page.retain_names THEN page.username END,
+        CASE WHEN page.retain_names THEN page.display_name END,
+        CASE WHEN page.retain_names THEN page.nickname END FROM page
       WHERE page.bot=0 AND json_array_length(page.role_ids)>0
         AND NOT EXISTS(
           SELECT 1 FROM identities i JOIN people p ON p.id=i.person_id AND p.deleted_at IS NULL
@@ -102,6 +127,7 @@ function insertRosterFlags(
         AND ${SCAN_CURRENT}
       ON CONFLICT(guild_id,discord_user_id) DO UPDATE SET
         managed_role_ids=excluded.managed_role_ids,
+        username=excluded.username,display_name=excluded.display_name,nickname=excluded.nickname,
         last_seen_at=excluded.last_seen_at,
         last_seen_scan_id=excluded.last_seen_scan_id`,
     )
@@ -255,6 +281,7 @@ export async function listDiscordRoleReviews(
         SELECT ?,'LVBT Member' WHERE ${STAFF_ADMIN_SCOPE}
       )
       SELECT review.discord_user_id AS discordUserId,
+        review.username,review.display_name AS displayName,review.nickname,
         review.first_seen_at AS firstSeenAt,review.last_seen_at AS lastSeenAt,
         (SELECT json_group_array(json_object('id',role_id,'label',label)) FROM (
           SELECT visible.role_id,visible.label FROM visible_roles visible
@@ -274,6 +301,9 @@ export async function listDiscordRoleReviews(
     .bind(...values)
     .all<{
       discordUserId: string;
+      username: string | null;
+      displayName: string | null;
+      nickname: string | null;
       firstSeenAt: string;
       lastSeenAt: string;
       roles: string;
