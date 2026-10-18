@@ -203,12 +203,26 @@ async function verifiedManifest(
   }
   return manifest;
 }
+function migrationEnvironment(): NodeJS.ProcessEnv {
+  const token = process.env.CLOUDFLARE_MIGRATIONS_API_TOKEN;
+  if (token !== undefined && !token.trim())
+    throw new Error(
+      'CLOUDFLARE_MIGRATIONS_API_TOKEN must be nonempty when supplied; no SQL was applied.',
+    );
+  return {
+    ...process.env,
+    ...(token === undefined ? {} : { CLOUDFLARE_API_TOKEN: token }),
+    CI: 'true',
+    WRANGLER_LOG_SANITIZE: 'true',
+  };
+}
 async function applyMigrations(
   directory: string,
   manifest: z.infer<typeof manifestSchema>,
   target: string,
   artifactHash: string,
 ): Promise<void> {
+  const env = migrationEnvironment();
   const temporary = await mkdtemp(path.join(os.tmpdir(), 'lvbt-release-migrate-'));
   try {
     const copy = path.join(temporary, 'release');
@@ -234,7 +248,7 @@ async function applyMigrations(
             target === 'preview' ? 'preview' : '',
           ],
           {
-            env: { ...process.env, CI: 'true', WRANGLER_LOG_SANITIZE: 'true' },
+            env,
             maxBuffer: 16 * 1024 * 1024,
           },
         );
