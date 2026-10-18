@@ -162,6 +162,14 @@ void test('competing claims have one winner; only the current claimant sees cont
   assert.equal(await f.service.contact(loser, person.id, NOW), null);
   const expires = new Date(NOW.getTime() + 7 * 86_400_000);
   assert.equal(await f.service.contact(winner, person.id, expires), null);
+  const available = (await f.service.list(loser, { now: expires })).items.find(
+    (row) => row.personId === person.id,
+  );
+  assert.ok(available);
+  assert.equal(available.claimedBy, null);
+  assert.equal('email' in available, false);
+  assert.equal('phone' in available, false);
+
   assert.equal(
     (await f.service.claim(loser, person.id, { operationId: 'after-expiry', now: expires })).kind,
     'ok',

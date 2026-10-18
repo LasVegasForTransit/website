@@ -116,6 +116,7 @@ export const staffPeople = {
       'Give another current member administrator access before deleting this record. LVBT needs an active administrator.',
   },
   review: {
+    different: 'Different',
     title: 'Check duplicates',
     description: 'Check whether two entries are the same person.',
     invalidLink: 'This page link is invalid. Open the list of possible duplicates again.',
@@ -135,7 +136,6 @@ export const staffPeople = {
     backToList: 'Back to possible duplicates',
     separateHeading: 'Different people?',
     separateHint: 'Keep them separate if you’ve confirmed they are different people.',
-    optional: '(optional)',
     separate: 'Keep separate',
     combineHeading: 'Combine if they are the same person',
     combineReason: 'Reason for combining',

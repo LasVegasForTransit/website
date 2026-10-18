@@ -284,6 +284,14 @@ void test('adding a holder uses the canonical assignment workflow and current gr
       .get(input.operationId)?.actor_id,
     f.admin.id,
   );
+  assert.equal(
+    f.db.raw
+      .prepare(
+        "SELECT json_extract(details,'$.reason') AS reason FROM staff_audits WHERE operation_id=? AND action='committee.assign'",
+      )
+      .get(input.operationId)?.reason,
+    'access_review_assignment',
+  );
   const other = await fixture();
   const changed = {
     ...input,

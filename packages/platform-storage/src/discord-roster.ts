@@ -1,4 +1,5 @@
 import { isDiscordId } from '@lasvegasfortransit/platform-core/discord-identity';
+import { t } from '@lasvegasfortransit/platform-core/messages';
 import { can, PermissionDenied } from '@lasvegasfortransit/platform-core/permissions';
 import type { Actor, Page } from '@lasvegasfortransit/platform-core/staff-types';
 import type { Db, SqlValue, Statement } from './db';
@@ -241,6 +242,19 @@ function boundedLimit(limit?: number): number {
   return Number.isFinite(limit) ? Math.max(1, Math.min(100, Math.floor(limit ?? 25))) : 25;
 }
 
+function reviewRoleLabels(value: string): DiscordRosterFlag['roles'] {
+  const roles = JSON.parse(value) as Array<{ id: string; label: string; kind: string }>;
+  return roles.map(({ id, label, kind }) => ({
+    id,
+    label:
+      kind === 'member_channels'
+        ? t('staff.access.memberRole')
+        : kind === 'lead'
+          ? t('staff.accessOverview.leadName', { name: label })
+          : label,
+  }));
+}
+
 /** Return only current review flags that the viewer's current staff scope permits. */
 export async function listDiscordRoleReviews(
   db: Db,
@@ -274,19 +288,19 @@ export async function listDiscordRoleReviews(
   const { results } = await db
     .prepare(
       `WITH visible_roles AS (
-        SELECT mapping.external_id AS role_id,CASE WHEN mapping.role_kind='lead' THEN c.name||' leads' ELSE c.name END AS label
+        SELECT mapping.external_id AS role_id,c.name AS label,mapping.role_kind AS kind
         FROM committee_account_mappings mapping JOIN committees c ON c.id=mapping.committee_id
         WHERE mapping.provider='discord' AND ${scope}
         UNION ALL
-        SELECT ?,'LVBT Member' WHERE ${STAFF_ADMIN_SCOPE}
+        SELECT ?,NULL,'member_channels' WHERE ${STAFF_ADMIN_SCOPE}
       )
       SELECT review.discord_user_id AS discordUserId,
         review.username,review.display_name AS displayName,review.nickname,
         review.first_seen_at AS firstSeenAt,review.last_seen_at AS lastSeenAt,
-        (SELECT json_group_array(json_object('id',role_id,'label',label)) FROM (
-          SELECT visible.role_id,visible.label FROM visible_roles visible
+        (SELECT json_group_array(json_object('id',role_id,'label',label,'kind',kind)) FROM (
+          SELECT visible.role_id,visible.label,visible.kind FROM visible_roles visible
           WHERE visible.role_id IN (SELECT value FROM json_each(review.managed_role_ids))
-          ORDER BY CASE WHEN visible.label='LVBT Member' THEN 0 ELSE 1 END,visible.label,visible.role_id
+          ORDER BY CASE WHEN visible.kind='member_channels' THEN 0 ELSE 1 END,visible.label,visible.role_id
         )) AS roles
       FROM discord_role_reviews review
       WHERE review.guild_id=? ${cursorClause}
@@ -310,7 +324,7 @@ export async function listDiscordRoleReviews(
     }>();
   const items = results.slice(0, limit).map((row) => ({
     ...row,
-    roles: JSON.parse(row.roles) as DiscordRosterFlag['roles'],
+    roles: reviewRoleLabels(row.roles),
   }));
   return {
     items,

@@ -103,16 +103,44 @@ function rows(result: unknown): Row[] {
     throw new Error('The personal export snapshot could not be read.');
   return result.results as Row[];
 }
-function corrections(records: Row[], fields: string[]): Row[] {
+const CORRECTION_FIELDS = new Set([
+  'given_name',
+  'family_name',
+  'email',
+  'phone',
+  'zip',
+  'census_block',
+  'census_block_vintage',
+  'place_name',
+  'preferred_language',
+]);
+function corrections(records: Row[], fields: string[], administrator: boolean): Row[] {
   return records.map((row) => {
     const changes: unknown =
       typeof row.changes === 'string' ? (JSON.parse(row.changes) as unknown) : null;
-    return {
+    const summary = {
       corrected_at: row.corrected_at,
       changed_fields: Array.isArray(changes)
         ? changes
             .map((value) => object(value).field)
             .filter((field) => typeof field === 'string' && fields.includes(field))
+        : [],
+    };
+    if (!administrator) return summary;
+    return {
+      ...summary,
+      changed_by: { id: row.actor_id, name: row.actor_name },
+      reason: row.reason,
+      changes: Array.isArray(changes)
+        ? changes.flatMap((value) => {
+            const change = object(value);
+            return typeof change.field === 'string' &&
+              CORRECTION_FIELDS.has(change.field) &&
+              (change.before === null || typeof change.before === 'string') &&
+              (change.after === null || typeof change.after === 'string')
+              ? [{ field: change.field, before: change.before, after: change.after }]
+              : [];
+          })
         : [],
     };
   });
@@ -133,6 +161,13 @@ function memberSince(events: Row[]): string | null {
       .sort()[0] ?? null
   );
 }
+
+const EXPORT_PRIVACY = {
+  administrator:
+    'Administrator copy: profile corrections include their recorded author, reason and previous and new profile values. Sign-in secrets and sessions, unrelated people, duplicate candidates and merge archives are excluded.',
+  member:
+    'Sign-in secrets and sessions, staff identifiers, duplicate candidates and merge archives are excluded.',
+};
 
 /** Read one person's snapshot, then authorize and receipt its export in one guarded write. */
 export async function collectPersonExport(
@@ -178,8 +213,7 @@ export async function collectPersonExport(
         'Provider observations describe delivery status. A provider account creation date alone does not establish consent.',
       activity:
         'Your recorded activity, including corrections, recognized donation amounts and currencies, event participation, volunteer shifts, contact methods and role changes. Member responses include recognized participation and transport choices. Private staff notes, raw source payloads and references to other people are omitted.',
-      privacy:
-        'Sign-in secrets and sessions, staff identifiers, duplicate candidates and merge archives are excluded.',
+      privacy: EXPORT_PRIVACY[authority.kind],
     },
     details: { ...person, member_since: memberSince(events) },
     where_each_detail_came_from: (snapshot.where_each_detail_came_from ?? []).map(safeSources),
@@ -189,7 +223,11 @@ export async function collectPersonExport(
     discord_account_profiles: snapshot.discord_account_profiles,
     discord_server_profiles: snapshot.discord_server_profiles,
     committee_assignments: snapshot.committee_assignments,
-    profile_corrections: corrections(snapshot.profile_corrections ?? [], Object.keys(person)),
+    profile_corrections: corrections(
+      snapshot.profile_corrections ?? [],
+      Object.keys(person),
+      authority.kind === 'administrator',
+    ),
     activity: events.map(activity),
     newsletter_observations: snapshot.newsletter_observations,
     newsletter_choices: snapshot.newsletter_choices,

@@ -33,6 +33,7 @@ export const staffAccess = {
     moreChanges: 'Earlier corrections',
     removedReason: 'Removed from access page',
     retryReason: 'Staff requested another access check',
+    assignmentReason: 'Added during staff access review',
     suspended: 'Access suspended',
     unsuspended: 'Access restored',
     transferred: 'Access transferred',
@@ -112,6 +113,7 @@ export const staffAccess = {
     title: 'Google and Discord access',
     description: 'Check member channels and committee access.',
     memberChannels: 'Member channels',
+    memberRole: 'LVBT Member',
     memberChannelsHint: 'Former members should not have access to member channels.',
     memberChannelsNotMemberHint: 'Member channels are for current LVBT members.',
     connectDiscordHint:

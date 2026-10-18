@@ -96,10 +96,10 @@ returns that same answer; the command above makes a new key each time, so runnin
 
 The LVBT Google Form uses an Apps Script that runs on every submission and posts to the older
 address, `/api/membership-intake`, in its own format. That address records the submission first and
-adds a Notion intake page for staff follow-up. Newsletter consent requires a “Yes” answer to the
-form's newsletter question and its original submission time; missing answers or times do not create
-consent. The consent wording is `gform-2026-06`. The script is in
-`apps/site/scripts/google-apps/membership-intake.gs`, and
+makes eligible new members available in the staff Welcome queue without creating a Notion page.
+Newsletter consent requires a “Yes” answer to the form's newsletter question and its original
+submission time; missing answers or times do not create consent. The consent wording is
+`gform-2026-06`. The script is in `apps/site/scripts/google-apps/membership-intake.gs`, and
 [connect the membership form](./connect-the-membership-form.md) explains how to install it.
 
 A new form tool should use `/api/intake/v1` directly, as above.

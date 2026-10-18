@@ -26,13 +26,13 @@ function onMembershipFormSubmit(event) {
  * Replay every stored response through the endpoint. Run by hand from the
  * editor (select this function, press Run) after an outage — e.g. the
  * endpoint was returning 503 while a secret was missing — so the people who
- * submitted during it get subscribed and get their Notion intake page.
+ * submitted during it reach the canonical member record and Welcome queue.
  *
- * Safe to run repeatedly: the endpoint sends no email when it adds someone,
- * Beehiiv treats an already-subscribed address as a no-op, and a response
- * that already has an intake page (matched by Response ID) is skipped rather
- * than duplicated. To limit the replay, call backfillIntakeSince with the
- * timestamp of the last response that went through.
+ * Preserve the original Response ID, answers and timestamp. Canonical receipts
+ * deduplicate recent replays; accepted consent retains its original time and
+ * cannot reverse a newer withdrawal. The endpoint creates no Notion pages and
+ * queues newsletter delivery separately. To limit the replay, call
+ * backfillIntakeSince with the timestamp of the last response that went through.
  */
 function backfillMembershipIntake() {
   backfillIntakeSince(null);

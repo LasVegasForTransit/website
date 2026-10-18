@@ -19,6 +19,7 @@ export interface AssignmentMutation {
   actorId: string;
   operationId: string;
   fromWelcome?: true;
+  fromAccessReview?: true;
   administratorsOnly?: true;
   accessPage?: true;
   /** A trusted server-side condition for assignment from another protected workflow. */
@@ -216,6 +217,9 @@ export async function assignmentMutation(
     ...(mutation.kind === 'assign' ? {} : { assignmentId: mutation.id }),
     role: mutation.role,
     ...(mutation.kind === 'end' ? { reason: mutation.reason } : {}),
+    ...(mutation.kind === 'assign' && mutation.fromAccessReview
+      ? { reason: 'access_review_assignment' }
+      : {}),
     ...(mutation.accessPage ? { source: 'access_page' } : {}),
   });
   const input = { ...mutation, payload, stamp: new Date().toISOString() };

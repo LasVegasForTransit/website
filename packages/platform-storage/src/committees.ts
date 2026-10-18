@@ -47,6 +47,7 @@ export class CommitteeService {
     actorId: string;
     operationId: string;
     fromWelcome?: true;
+    fromAccessReview?: true;
     administratorsOnly?: true;
     reviewGuard?: { sql: string; values: SqlValue[] };
   }): Promise<MutationResult<Assignment>> {
@@ -62,6 +63,7 @@ export class CommitteeService {
       actorId,
       operationId,
       ...(input.fromWelcome ? { fromWelcome: true } : {}),
+      ...(input.fromAccessReview ? { fromAccessReview: true } : {}),
       ...(input.administratorsOnly ? { administratorsOnly: true } : {}),
       ...(input.reviewGuard ? { reviewGuard: input.reviewGuard } : {}),
     });

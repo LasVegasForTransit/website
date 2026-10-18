@@ -48,6 +48,8 @@ export const staffCommon = {
     cancel: 'Cancel',
     notRecorded: 'Not recorded',
     nameNotRecorded: 'Name not recorded',
+    detailsNotRecorded: 'Details not recorded',
+    otherChange: 'Other change',
     profileExpired: 'This form expired or was already submitted. Reload the profile and try again.',
   },
   navigation: {
@@ -79,6 +81,8 @@ export const staffCommon = {
     check_in: 'Event check-in',
     import: 'Imported member list',
     beehiiv: 'Mailing list',
+    beehiiv_observed: 'Newsletter',
+    github: 'GitHub',
     google_workspace: 'LVBT Google account',
     discord: 'Discord',
     givebutter: 'Givebutter donations',

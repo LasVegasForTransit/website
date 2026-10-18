@@ -1,0 +1,84 @@
+---
+import type { StaffPerson } from '@lasvegasfortransit/platform-storage/staff-people';
+import { formatDate, t } from '@lasvegasfortransit/platform-core/messages';
+import { formatPhone, normalizePhone } from '@lasvegasfortransit/platform-core/join-form';
+import { personName, MEMBERSHIP_LABELS } from '../lib/people';
+interface Props {
+  candidate: StaffPerson;
+  existing: StaffPerson;
+}
+const { candidate, existing } = Astro.props;
+const records = [
+  { person: candidate.person, label: t('staff.review.newEntry') },
+  { person: existing.person, label: t('staff.review.existingEntry') },
+];
+const fields = [
+  { name: 'given_name', label: t('staff.labels.given_name') },
+  { name: 'family_name', label: t('staff.labels.family_name') },
+  { name: 'email', label: t('staff.common.email') },
+  { name: 'phone', label: t('staff.common.phone') },
+  { name: 'zip', label: t('staff.common.zip') },
+] as const;
+function comparable(value: string | null, field: string): string {
+  const text = (value ?? '').normalize('NFC').trim().replaceAll(/\s+/gu, ' ');
+  return field === 'phone' ? (normalizePhone(text) ?? text) : text.toLocaleLowerCase('en');
+}
+---
+
+<div class="staff-review-comparison">
+  <div class="staff-review-headers">
+    {
+      records.map(({ person, label }) => (
+        <section class="staff-review-header">
+          <p class="staff-section-label">{label}</p>
+          <h2 class="mt-2 font-bold text-title-lg">
+            <a href={`/people/${person.id}/`}>{personName(person)}</a>
+          </h2>
+          <p class="mt-1 text-body-sm text-on-surface-variant">
+            {MEMBERSHIP_LABELS[person.membership_status]} ·{' '}
+            {t('staff.review.addedAt', { date: formatDate(new Date(person.created_at)) })}
+          </p>
+        </section>
+      ))
+    }
+  </div>
+  <dl class="staff-review-fields">
+    {
+      fields.map((field) => {
+        const different =
+          comparable(candidate.person[field.name], field.name) !==
+          comparable(existing.person[field.name], field.name);
+        return (
+          <div class:list={['staff-review-field', { 'staff-review-field-different': different }]}>
+            <dt>
+              {field.label}
+              {different && (
+                <span class="staff-review-difference">{t('staff.review.different')}</span>
+              )}
+            </dt>
+            {records.map(({ person, label }) => {
+              const value = person[field.name];
+              return (
+                <dd>
+                  <span class="staff-review-value-label" aria-hidden="true">
+                    {label}
+                  </span>
+                  <span class="sr-only">
+                    {label}, {field.label},{' '}
+                  </span>
+                  <span class="staff-review-value">
+                    {value?.trim()
+                      ? field.name === 'phone'
+                        ? formatPhone(value)
+                        : value
+                      : t('staff.review.notProvided')}
+                  </span>
+                </dd>
+              );
+            })}
+          </div>
+        );
+      })
+    }
+  </dl>
+</div>

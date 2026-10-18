@@ -1,9 +1,8 @@
 ---
 import type { StaffPerson } from '@lasvegasfortransit/platform-storage/staff-people';
 import { formatDate, t } from '@lasvegasfortransit/platform-core/messages';
-import { formatPhone } from '@lasvegasfortransit/platform-core/join-form';
 import { displayLabel } from '../lib/presentation';
-import { personName, MEMBERSHIP_LABELS } from '../lib/people';
+import { personName } from '../lib/people';
 interface Props {
   profile: StaffPerson;
   label: string;
@@ -13,30 +12,7 @@ const { person } = profile;
 ---
 
 <section class="staff-review-person">
-  <p class="staff-section-label">{label}</p>
-  <h2 class="mt-2 font-bold text-title-lg">
-    <a href={`/people/${person.id}/`}>{personName(person)}</a>
-  </h2>
-  <p class="mt-1 text-body-sm text-on-surface-variant">
-    {MEMBERSHIP_LABELS[person.membership_status]} · {
-      t('staff.review.addedAt', {
-        date: formatDate(new Date(person.created_at)),
-      })
-    }
-  </p>
-  <dl class="staff-contact-details">
-    <div>
-      <dt>{t('staff.common.email')}</dt><dd>{person.email ?? t('staff.review.notProvided')}</dd>
-    </div>
-    <div>
-      <dt>{t('staff.common.phone')}</dt><dd>
-        {person.phone ? formatPhone(person.phone) : t('staff.review.notProvided')}
-      </dd>
-    </div>
-    <div>
-      <dt>{t('staff.common.zip')}</dt><dd>{person.zip ?? t('staff.review.notProvided')}</dd>
-    </div>
-  </dl>
+  <p class="staff-section-label">{label} · {personName(person)}</p>
   <details class="staff-review-history">
     <summary>{t('staff.review.permissionsAndAccounts')}</summary>
     <h3 class="mt-4 font-bold">{t('staff.record.permission')}</h3>

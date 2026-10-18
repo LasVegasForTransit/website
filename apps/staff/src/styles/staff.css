@@ -750,16 +750,86 @@ html {
     color: var(--color-on-surface-variant);
   }
 
-  .staff-review-comparison {
+  .staff-review-secondary {
     display: grid;
     grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
     gap: 2rem;
+    margin-top: 1.5rem;
+  }
+
+  .staff-review-headers,
+  .staff-review-field {
+    display: grid;
+    grid-template-columns: minmax(7rem, 0.7fr) repeat(2, minmax(0, 1fr));
+  }
+
+  .staff-review-headers {
+    border-top: 2px solid var(--color-on-surface);
+  }
+
+  .staff-review-header {
+    min-width: 0;
+    padding: 0.75rem;
+    overflow-wrap: anywhere;
+  }
+
+  .staff-review-header:first-child {
+    grid-column: 2;
   }
 
   .staff-review-person,
   .staff-review-decision {
     border-top: 2px solid var(--color-on-surface);
     padding-top: 1rem;
+  }
+
+  .staff-review-fields {
+    border-top: 1px solid var(--color-outline-variant);
+  }
+
+  .staff-review-field {
+    min-width: 0;
+    border-bottom: 1px solid var(--color-outline-variant);
+  }
+
+  .staff-review-field dt {
+    display: flex;
+    flex-direction: column;
+    align-items: start;
+    gap: 0.25rem 0.75rem;
+    font-size: var(--text-body-sm);
+    color: var(--color-on-surface-variant);
+  }
+
+  .staff-review-field dd {
+    min-width: 0;
+  }
+
+  .staff-review-field dt,
+  .staff-review-field dd {
+    padding: 0.75rem;
+  }
+
+  .staff-review-value {
+    display: block;
+    overflow-wrap: anywhere;
+  }
+
+  .staff-review-value-label {
+    display: none;
+  }
+
+  .staff-review-field-different {
+    background: var(--color-primary-container);
+    color: var(--color-on-primary-container);
+  }
+
+  .staff-review-field-different dt {
+    color: inherit;
+  }
+
+  .staff-review-difference {
+    font-weight: 700;
   }
 
   .staff-review-history {
@@ -1109,12 +1179,45 @@ html {
       gap: 0 0.75rem;
     }
 
-    .staff-review-comparison,
+    .staff-review-secondary,
     .staff-welcome-workspace,
     .staff-editor-fields,
     .staff-record-grid {
       grid-template-columns: minmax(0, 1fr);
       gap: 1.5rem;
+    }
+
+    .staff-review-headers {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .staff-review-header:first-child {
+      grid-column: auto;
+    }
+
+    .staff-review-field {
+      grid-template-columns: minmax(0, 1fr);
+    }
+
+    .staff-review-field dt {
+      flex-direction: row;
+      justify-content: space-between;
+      padding-bottom: 0.25rem;
+    }
+
+    .staff-review-field dd {
+      padding-block: 0.5rem;
+    }
+
+    .staff-review-value-label {
+      display: block;
+      margin-bottom: 0.125rem;
+      font-size: var(--text-body-sm);
+      color: var(--color-on-surface-variant);
+    }
+
+    .staff-review-field-different .staff-review-value-label {
+      color: inherit;
     }
 
     .staff-inline-form {

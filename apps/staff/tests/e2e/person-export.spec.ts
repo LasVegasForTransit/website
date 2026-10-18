@@ -3,6 +3,8 @@ import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { chromium } from '@playwright/test';
 import { PersonService } from '@lasvegasfortransit/platform-storage/person-service';
+import { correctPerson } from '@lasvegasfortransit/platform-storage/corrections';
+import { loadActor } from '@lasvegasfortransit/platform-storage/staff-roles';
 import { ORIGIN, startRuntime } from '../support/runtime';
 
 const fixture = await startRuntime();
@@ -18,6 +20,24 @@ const browser = await chromium
     throw error;
   });
 try {
+  const actor = await loadActor(fixture.db, fixture.admin.person.id);
+  assert.ok(actor);
+  for (const [personId, reason, operationId] of [
+    [fixture.inside.id, 'Member confirmed the spelling.', 'download-subject-correction'],
+    [fixture.reviewPerson.id, 'UNRELATED-CORRECTION-REASON', 'download-unrelated-correction'],
+  ]) {
+    assert.ok(personId && reason && operationId);
+    assert.equal(
+      (
+        await correctPerson(fixture.db, actor, personId, {
+          fields: { given_name: 'Corrected member' },
+          reason,
+          operationId,
+        })
+      ).kind,
+      'ok',
+    );
+  }
   await new PersonService(fixture.db).recordEngagement(fixture.inside.id, {
     type: 'duplicate_reviewed',
     occurredAt: new Date().toISOString(),
@@ -60,15 +80,32 @@ try {
     details: { id: string; email: string };
     committee_assignments: unknown[];
     consent_records: unknown[];
+    activity: unknown[];
+    profile_corrections: Array<{
+      changed_by: { id: string; name: string | null };
+      reason: string;
+      changes: Array<{ field: string; before: string | null; after: string | null }>;
+    }>;
   };
   assert.equal(data.details.id, fixture.inside.id);
   assert.equal(data.details.email, fixture.inside.email);
   assert.equal(data.committee_assignments.length, 1);
   assert.equal(data.consent_records.length, 1);
+  assert.equal(data.profile_corrections.length, 1);
+  assert.equal(data.profile_corrections[0]?.changed_by.id, fixture.admin.person.id);
+  assert.equal(data.profile_corrections[0]?.reason, 'Member confirmed the spelling.');
+  assert.deepEqual(data.profile_corrections[0]?.changes, [
+    {
+      field: 'given_name',
+      before: 'Committee',
+      after: 'Corrected member',
+    },
+  ]);
+  assert.equal(JSON.stringify(data.activity).includes(fixture.admin.person.id), false);
   for (const forbidden of [
     fixture.reviewPerson.id,
     fixture.reviewPerson.email,
-    fixture.admin.person.id,
+    'UNRELATED-CORRECTION-REASON',
     'private-source-',
     'actorId',
     'survivorId',

@@ -6,7 +6,7 @@ import { onRequestPost as legacyPost } from '../functions/api/membership-intake'
 import { onRequestPost as versionedPost } from '../functions/api/intake/v1';
 import { googleFormSubmission } from '../platform/intake';
 const question = 'Finishing this form will sign you up for our email newsletter. Is this okay?';
-function fixture(t: test.TestContext, notionFails = false) {
+function fixture(t: test.TestContext) {
   const db = memoryDb();
   t.after(() => db.raw.close());
   const calls: string[] = [];
@@ -15,7 +15,7 @@ function fixture(t: test.TestContext, notionFails = false) {
     calls.push(url);
     return Promise.resolve(
       Response.json(url.endsWith('/query') ? { results: [] } : { data: { id: 'sub_fixture' } }, {
-        status: notionFails ? 503 : 200,
+        status: 503,
       }),
     );
   });
@@ -64,10 +64,7 @@ void test('legacy intake saves the original consent and queues delivery without 
     payload().submittedAt,
   );
   assert.equal(f.db.raw.prepare('SELECT state FROM newsletter_sync_jobs').get()?.state, 'queued');
-  assert.equal(
-    f.calls.every((url) => url.startsWith('https://api.notion.com/')),
-    true,
-  );
+  assert.deepEqual(f.calls, []);
 });
 void test('versioned intake records accepted consent during a newsletter outage', async (t) => {
   const f = fixture(t);
@@ -116,9 +113,10 @@ void test('an older Google Form replay cannot undo a newer membership withdrawal
     false,
   );
 });
-void test('Notion failure cannot discard the accepted membership record or delivery work', async (t) => {
-  const f = fixture(t, true);
-  assert.equal((await f.post(payload(), true, true)).status, 502);
+void test('retired Notion follow-up cannot block the accepted membership record or delivery work', async (t) => {
+  const f = fixture(t);
+  assert.equal((await f.post(payload(), true, true)).status, 200);
+  assert.deepEqual(f.calls, []);
   assert.equal(
     f.db.raw.prepare('SELECT given_at FROM consent_records').get()?.given_at,
     payload().submittedAt,

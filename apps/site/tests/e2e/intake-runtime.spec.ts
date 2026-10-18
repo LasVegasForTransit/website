@@ -4,7 +4,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { DatabaseSync } from 'node:sqlite';
-import { Miniflare, Response as RuntimeResponse, convertV4MiniflareOptions } from 'miniflare';
+import { Miniflare, convertV4MiniflareOptions } from 'miniflare';
 import { applyMigrations } from '@lasvegasfortransit/platform-storage/test-db';
 import { PersonService } from '@lasvegasfortransit/platform-storage/person-service';
 
@@ -14,7 +14,6 @@ const origin = 'https://preview.lasvegasfortransit.org';
 const question = 'Finishing this form will sign you up for our email newsletter. Is this okay?';
 const submittedAt = '2026-06-15T18:00:00.000Z';
 let providerCalls = 0;
-let unavailable = false;
 const simulator = new Miniflare(
   convertV4MiniflareOptions({
     modules: true,
@@ -27,8 +26,6 @@ const simulator = new Miniflare(
     bindings: {
       LVBT_DEPLOYMENT_ENV: 'preview',
       LVBT_MEMBERSHIP_INTAKE_SECRET: 'intake-runtime-fixture',
-      LVBT_NOTION_API_KEY: 'notion-runtime-fixture',
-      LVBT_NOTION_DATA_SOURCE_ID: 'intake-runtime-source',
     },
     d1Databases: { PLATFORM_DB: 'intake-runtime-fixture' },
     assets: {
@@ -37,18 +34,9 @@ const simulator = new Miniflare(
       run_worker_first: true,
       routerConfig: { has_user_worker: true },
     },
-    outboundService: (request) => {
+    outboundService: () => {
       providerCalls++;
-      assert.equal(
-        request.url,
-        'https://api.notion.com/v1/data_sources/intake-runtime-source/query',
-      );
-      assert.equal(request.method, 'POST');
-      assert.equal(request.headers.get('Authorization'), 'Bearer notion-runtime-fixture');
-      return new RuntimeResponse(JSON.stringify({ results: [{ id: 'fixture-page' }] }), {
-        status: unavailable ? 503 : 200,
-        headers: { 'Content-Type': 'application/json' },
-      });
+      throw new Error('Canonical intake must not contact a provider');
     },
   }),
 );
@@ -102,6 +90,7 @@ try {
     (await post('/api/membership-intake', form('legacy@example.invalid', 'legacy'))).status,
     200,
   );
+  assert.equal(providerCalls, 0, 'the original Google Form also requires no provider calls');
   const member = await db
     .prepare("SELECT id,membership_status FROM people WHERE email='legacy@example.invalid'")
     .first<{ id: string; membership_status: string }>();
@@ -158,10 +147,14 @@ try {
     )?.type,
     'form_response',
   );
-  unavailable = true;
+  await db
+    .prepare(
+      "CREATE TRIGGER receipt_failure BEFORE INSERT ON intake_submissions BEGIN SELECT RAISE(ABORT,'fixture-storage-failure'); END",
+    )
+    .run();
   assert.equal(
     (await post('/api/membership-intake', form('outage@example.invalid', 'outage'))).status,
-    502,
+    503,
   );
   assert.equal(
     (
@@ -181,6 +174,7 @@ try {
     )?.n,
     0,
   );
+  assert.equal(providerCalls, 0);
   console.log(
     JSON.stringify({
       runtime: 'compiled intake Worker',
@@ -190,7 +184,7 @@ try {
         'durable newsletter delivery',
         'older replay preserves later withdrawal',
         'negative answer does not create a member',
-        'follow-up outage preserves accepted signup',
+        'canonical receipt failure remains retryable without discarding the accepted signup',
         'receipts exclude contact addresses',
       ],
       providers: 'isolated fixture',

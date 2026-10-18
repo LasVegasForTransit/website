@@ -25,6 +25,10 @@ const PROFILE = `p.id,p.given_name,p.family_name,p.email,p.email_verified_at,p.p
   p.membership_rules_version,p.region_id,p.region_source,p.region_set_at,p.created_at,p.updated_at,
   (SELECT name FROM regions WHERE id=p.region_id) AS region`;
 const IDENTITY = `i.platform,i.external_id,i.external_email,i.linked_at,i.link_method,i.created_at,i.updated_at`;
+const ADMINISTRATOR_CORRECTIONS = `SELECT r.corrected_at,r.changes,r.reason,r.actor_id,
+  nullif(trim(coalesce(author.given_name,'')||' '||coalesce(author.family_name,'')),'') AS actor_name
+  FROM person_corrections r JOIN people p ON p.id=r.person_id
+  LEFT JOIN people author ON author.id=r.actor_id AND author.deleted_at IS NULL`;
 const QUERIES = {
   current_membership_evidence: `SELECT r.status,r.observed_at,r.source_created_at,r.withdrawn_at,r.entitled,r.recognized_at,r.revoked_at FROM membership_roll r JOIN people p ON p.id=r.person_id`,
   imported_signup_evidence: `SELECT r.source,r.state,
@@ -71,6 +75,12 @@ export function exportStatement(
   section?: PersonExportSection,
 ): Statement {
   const { personId, authority, at } = input;
+  const query =
+    section === 'profile_corrections' && authority.kind === 'administrator'
+      ? ADMINISTRATOR_CORRECTIONS
+      : section
+        ? QUERIES[section]
+        : null;
   const values: SqlValue[] = [personId, authority.personId, authority.sessionHash, at];
   if (authority.kind === 'administrator') values.push(authority.workspaceEmail);
   // The final scope check writes its receipt atomically, so stale authority
@@ -81,7 +91,7 @@ export function exportStatement(
   if (!section) values.push(ulid());
   return db
     .prepare(
-      `${section ? QUERIES[section] : receipt}
+      `${query ?? receipt}
     WHERE p.id=?1 AND p.deleted_at IS NULL AND ${scope(authority)}
     ${section === 'newsletter_source_events' ? 'AND (op.person_id IS NULL OR op.person_id=p.id)' : ''}
     ${section ? 'ORDER BY 1,2' : 'RETURNING id'}`,
