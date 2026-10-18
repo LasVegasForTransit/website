@@ -51,6 +51,8 @@ const QUERIES = {
     JOIN people p ON p.id=i.person_id`,
   committee_assignments: `SELECT c.id AS committee_id,c.name AS committee_name,r.role,r.started_at,r.ended_at,
     r.end_reason,r.updated_at FROM committee_assignments r JOIN committees c ON c.id=r.committee_id JOIN people p ON p.id=r.person_id`,
+  organization_roles: `SELECT d.id AS role_id,d.name,r.assigned_at,r.ended_at,d.retired_at
+    FROM person_organization_roles r JOIN organization_roles d ON d.id=r.role_id JOIN people p ON p.id=r.person_id`,
   activity: `SELECT r.type,r.occurred_at,r.created_at,r.details,
     EXISTS(SELECT 1 FROM engagement_events correction WHERE correction.person_id=r.person_id
       AND correction.type='correction' AND correction.reference=r.id) AS corrected

@@ -1,0 +1,36 @@
+export const staffRoles = {
+  organizationRoles: {
+    title: 'Roles',
+    description: 'Name the responsibilities members take on at LVBT.',
+    manage: 'Manage roles',
+    heading: 'Roles',
+    empty: 'No roles yet.',
+    personEmpty: 'No roles assigned.',
+    addHeading: 'Add a role',
+    name: 'Role name',
+    nameHint: 'For example, Treasurer or Volunteer coordinator.',
+    create: 'Create role',
+    rename: 'Rename',
+    renameHeading: 'Rename {name}',
+    save: 'Save name',
+    retire: 'Stop using this role',
+    stopUsing: 'Stop using',
+    retireHeading: 'Stop using {name}?',
+    retireHint:
+      'Members who already have this role keep it. It won’t be available for new assignments.',
+    retired: 'No longer offered',
+    retiredHeading: 'Roles no longer offered',
+    retiredHint: 'These remain on existing member records until you remove them.',
+    assign: 'Add role',
+    choose: 'Choose a role',
+    remove: 'Remove',
+    unavailable: 'This form expired. Reload the page and try again.',
+    invalid: 'Enter a role name of 1–100 characters.',
+    conflict:
+      'This role changed or its name is already in use. Reload the page and check the current roles.',
+    assignmentConflict:
+      'This role is no longer available or the member’s roles changed. Reload the profile and try again.',
+    back: '← Roles',
+    backMembers: '← Members',
+  },
+} as const;

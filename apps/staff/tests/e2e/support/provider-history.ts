@@ -45,7 +45,11 @@ export async function exerciseProviderHistory(
     assert.equal(await current.getByRole('heading', { name: 'Discord', exact: true }).count(), 1);
     assert.equal(await current.getByText('No access', { exact: true }).isVisible(), true);
     assert.equal(await current.getByText('Discord access granted', { exact: true }).count(), 0);
-    assert.equal(await page.locator('.staff-account-history').getAttribute('open'), null);
+    assert.equal(
+      await page.locator('.staff-account-history').count(),
+      0,
+      'troubleshooting logs are absent from member profiles',
+    );
     const shots = join(fixture.root, 'test-results/staff');
     await mkdir(shots, { recursive: true });
     for (const [name, width] of [
@@ -70,18 +74,21 @@ export async function exerciseProviderHistory(
       path: join(shots, 'access-current-dark.png'),
     });
     await page.emulateMedia({ colorScheme: 'light' });
-    const disclosure = page.getByText('Access history', { exact: true });
-    for (let tab = 0; tab < 35; tab++) {
-      if (await disclosure.evaluate((element) => element === document.activeElement)) break;
-      await page.keyboard.press('Tab');
-    }
-    assert.equal(await disclosure.evaluate((element) => element.matches(':focus-visible')), true);
-    await page.keyboard.press('Enter');
+    await page.goto(`${ORIGIN}/access/?view=all`);
+    await page.locator('.staff-account-history > summary').click();
 
     assert.equal(await page.getByText('Discord access granted', { exact: true }).isVisible(), true);
     assert.equal(await page.getByText('Discord access removed', { exact: true }).isVisible(), true);
-    assert.equal(await page.getByText('Membership changed', { exact: false }).isVisible(), true);
-    const attribution = await page.locator('.staff-account-history-list').innerText();
+    assert.equal(
+      await page
+        .locator('.staff-account-history .staff-history-reason')
+        .getByText('Membership changed', { exact: true })
+        .isVisible(),
+      true,
+    );
+    const attribution = await page
+      .locator('.staff-account-history .staff-account-history-list')
+      .innerText();
     assert.match(attribution, /By LVBT/);
     assert.doesNotMatch(attribution, /Automatic Discord update|Automatic Google update/);
     for (const [name, width] of [
@@ -110,9 +117,9 @@ export async function exerciseProviderHistory(
     const facts = page.getByRole('region', { name: 'Member summary', exact: true });
     assert.equal(await facts.getByText('Former member', { exact: true }).isVisible(), true);
     assert.equal(await facts.getByText(/^Unsubscribed from LVBT updates /).isVisible(), true);
-    await page.getByText('Access history', { exact: true }).click();
-    assert.equal(await page.getByText('Discord access granted', { exact: true }).isVisible(), true);
-    assert.equal(await page.getByText('Discord access removed', { exact: true }).isVisible(), true);
+    assert.equal(await page.getByText('Access history', { exact: true }).count(), 0);
+    assert.equal(await page.getByText('Discord access granted', { exact: true }).count(), 0);
+    assert.equal(await page.getByText('Discord access removed', { exact: true }).count(), 0);
   } finally {
     await browser.close();
   }

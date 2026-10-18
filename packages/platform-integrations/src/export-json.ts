@@ -6,6 +6,7 @@ const direct = [
   'engagement_events',
   'field_sources',
   'committee_assignments',
+  'person_organization_roles',
   'consent_withdrawals',
   'person_corrections',
   'roster_import_records',
@@ -27,6 +28,7 @@ export function nestedExport(data: FullExport) {
         engagement_events: [],
         field_sources: [],
         committee_assignments: [],
+        person_organization_roles: [],
         consent_withdrawals: [],
         person_corrections: [],
         roster_import_records: [],
@@ -56,6 +58,7 @@ export function nestedExport(data: FullExport) {
     formatVersion: data.formatVersion,
     exportedAt: data.exportedAt,
     people: [...people.values()],
+    organization_roles: data.organization_roles,
     unassigned_roster_import_records: data.unassigned_roster_import_records,
   };
 }

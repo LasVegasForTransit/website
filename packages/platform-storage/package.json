@@ -4,6 +4,7 @@
   "private": true,
   "type": "module",
   "exports": {
+    "./organization-roles": "./src/organization-roles.ts",
     "./roster-import-resolve": "./src/roster-import-resolve.ts",
     "./membership-roll": "./src/membership-roll.ts",
     "./roster-import-reviews": "./src/roster-import-reviews.ts",
@@ -39,6 +40,8 @@
     "./form-tokens": "./src/form-tokens.ts",
     "./staff-people": "./src/staff-people.ts",
     "./staff-history": "./src/staff-history.ts",
+    "./staff-participation": "./src/staff-participation.ts",
+    "./person-attendance": "./src/person-attendance.ts",
     "./staff-scope": "./src/staff-scope.ts",
     "./welcome": "./src/welcome.ts",
     "./corrections": "./src/corrections.ts",

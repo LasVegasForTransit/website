@@ -813,3 +813,23 @@ selection and shared completion use indexed opaque person keys, whose deletion s
 updates, so an idle queue does not materialize the full reconciliation view. Provider ownership,
 generation, fresh-receipt and archived-merge guards remain required. Follow the retention operator
 guide to verify the index and applications before enabling minute schedules.
+
+### Organization roles (0047)
+
+`organization_roles` is the administrator-maintained catalog of descriptive roles. Names are
+normalized, limited to 100 characters and unique without case distinctions. Renaming updates the
+label for every assignment. Retiring a definition prevents new assignments while preserving its
+existing associations and history. No role is seeded or inferred from committee leadership.
+
+`person_organization_roles` associates any number of roles with a person, independently from
+committee associations, staff administrator designation and access permissions. One association per
+person and role can be current; ended associations retain their dates. Administrator mutations use
+current-authority guards, operation receipts and atomic audit writes. New assignments require a
+current member and active definition. Existing associations can be removed after membership ends.
+
+Merge and undo track each association by its original ID and owner. Conflicting current associations
+for the same role refuse a combination rather than discard history. Erasure immediately deletes the
+person's associations and prevents their recreation; the shared catalog remains. Personal downloads
+include role names and dates without the assigning staff identifiers. Administrator archives retain
+the catalog once and role association history with each person. Applying this additive migration
+before activating the corresponding applications leaves existing permissions unchanged.

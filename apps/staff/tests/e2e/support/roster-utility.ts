@@ -85,7 +85,7 @@ export async function exerciseRosterUtility(page: Page, fixture: Fixture) {
     page.waitForResponse(
       (response) => response.request().method() === 'POST' && response.url().includes('/people/'),
     ),
-    page.getByRole('button', { name: 'Add another committee', exact: true }).click(),
+    page.getByRole('button', { name: 'Add to committee', exact: true }).click(),
   ]);
   assert.equal(addedAgain.status(), 303);
   await page.waitForURL(`${search}#main`);

@@ -26,6 +26,7 @@ function equalRows(a: MergeRow | null, b: MergeRow | null): boolean {
 const STABLE_FIELDS: Partial<Record<RelatedTable, readonly string[]>> = {
   identities: ['platform', 'external_id'],
   committee_assignments: ['committee_id', 'started_at', 'assigned_by'],
+  person_organization_roles: ['role_id', 'assigned_at', 'assigned_by'],
   consent_records: ['scope', 'given_at', 'source', 'method', 'wording_version', 'created_at'],
   workspace_link_operations: ['workspace_subject', 'created_at'],
 };

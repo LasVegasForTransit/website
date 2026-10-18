@@ -1,0 +1,101 @@
+---
+import StaffLayout from '../../../layouts/StaffLayout.astro';
+import Button from '../../../../../site/src/components/app/Button.astro';
+import { can } from '@lasvegasfortransit/platform-core/permissions';
+import { t } from '@lasvegasfortransit/platform-core/messages';
+import { ulid } from '@lasvegasfortransit/platform-core/ids';
+import { paperToday } from '@lasvegasfortransit/platform-core/paper';
+import { getStaffPerson } from '@lasvegasfortransit/platform-storage/staff-people';
+import { issueFormToken } from '@lasvegasfortransit/platform-storage/form-tokens';
+import {
+  attendanceTokenAction,
+  submitPersonAttendance,
+  type AttendanceFeedback,
+} from '../../../lib/person-attendance';
+import { personName } from '../../../lib/people';
+import { messageResponse } from '../../../lib/responses';
+import { rosterReturn } from '../../../lib/roster-return';
+const staff = Astro.locals.staff;
+if (!staff || !can(staff.actor, 'attendance.record'))
+  return messageResponse(t('staff.common.accessDenied'), 403);
+const personId = Astro.params.id ?? '';
+const profile = await getStaffPerson(staff.db, staff.actor, personId);
+if (!profile) return messageResponse(t('staff.common.accessDenied'), 404);
+if (profile.person.id !== personId)
+  return Astro.redirect(`/people/${profile.person.id}/attendance/`, 303);
+let feedback: AttendanceFeedback | undefined;
+if (Astro.request.method === 'POST') {
+  const result = await submitPersonAttendance(Astro.request, staff, personId);
+  if (result instanceof Response) return result;
+  feedback = result;
+  Astro.response.status = result.status;
+}
+const token = await issueFormToken(staff.db, staff.actor, attendanceTokenAction(personId));
+const returnTo = rosterReturn(Astro.url.searchParams.get('return_to'));
+const query = returnTo ? `?return_to=${encodeURIComponent(returnTo)}` : '';
+const profileUrl = `/people/${personId}/${query}#participation-heading`;
+---
+
+<StaffLayout title={t('staff.participation.record')} description={personName(profile.person)}>
+  <a slot="breadcrumb" href={profileUrl} class="staff-back">{t('staff.navigation.backProfile')}</a>
+  {
+    feedback && (
+      <p role="alert" class="staff-error mb-5">
+        {feedback.message}
+      </p>
+    )
+  }
+  <form
+    method="post"
+    action={`/people/${personId}/attendance/${query}`}
+    class="staff-form staff-editor"
+    novalidate
+  >
+    <input type="hidden" name="token" value={token} />
+    <input type="hidden" name="operation_id" value={feedback?.input.operationId ?? ulid()} />
+    <div>
+      <label for="event_name">{t('staff.participation.eventName')}</label>
+      <input
+        id="event_name"
+        name="event_name"
+        required
+        maxlength="160"
+        value={feedback?.input.eventName ?? ''}
+        aria-invalid={feedback?.errors.eventName ? 'true' : undefined}
+        aria-describedby={feedback?.errors.eventName ? 'event-name-error' : undefined}
+      />
+      {
+        feedback?.errors.eventName && (
+          <p id="event-name-error" class="staff-error">
+            {feedback.errors.eventName}
+          </p>
+        )
+      }
+    </div>
+    <div>
+      <label for="event_date">{t('staff.participation.eventDate')}</label>
+      <input
+        id="event_date"
+        name="event_date"
+        type="date"
+        required
+        max={paperToday()}
+        value={feedback?.input.eventDate ?? ''}
+        aria-invalid={feedback?.errors.eventDate ? 'true' : undefined}
+        aria-describedby={feedback?.errors.eventDate ? 'event-date-error' : undefined}
+      />
+      {
+        feedback?.errors.eventDate && (
+          <p id="event-date-error" class="staff-error">
+            {feedback.errors.eventDate}
+          </p>
+        )
+      }
+    </div>
+    <p class="staff-help">{t('staff.participation.recordHelp')}</p>
+    <div class="flex flex-wrap items-center gap-5">
+      <Button>{t('staff.participation.record')}</Button>
+      <a href={profileUrl} class="staff-muted-link">{t('staff.common.cancel')}</a>
+    </div>
+  </form>
+</StaffLayout>

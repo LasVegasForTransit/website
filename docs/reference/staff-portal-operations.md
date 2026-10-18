@@ -1245,6 +1245,33 @@ fields. Account IDs and role observations remain for access cleanup. A completed
 rows that no longer need review. Application rollback keeps this additive migration and its erasure
 trigger in place.
 
+## Organization roles
+
+Organization roles describe a person's LVBT responsibilities independently of committee
+associations. Staff define the available names in **Members → Member records → Manage roles**, then
+assign them in the person's **Roles** section. See
+[Manage member roles](../guides/manage-member-roles.md) and
+[Manage a person's committees](../guides/manage-member-committees.md).
+
+Before activating a release that uses organization roles:
+
+1. Back up the selected membership database with the normal protected release procedure.
+2. Apply the saved release's canonical migrations through the website publication path, including
+   `0047_organization_roles.sql`, before activating its staff and jobs applications.
+3. Verify the selected applications against the updated schema. Confirm an authorized administrator
+   can define a role and assign it to a consenting member without changing their committees.
+4. Confirm role definitions and that member's assignments appear in the appropriate administrator
+   download, and that a member download contains only that member's assignments.
+
+The catalog starts empty; old committee-lead assignments are not organization roles. Defining or
+assigning a role does not grant staff permissions or change provider roles. Existing administrator
+and committee-lead access remains separate. Retiring a definition prevents new assignments while
+preserving existing assignments and their history.
+
+An application rollback retains this additive migration and its erasure guards. Do not reverse the
+migration or restore erased assignments. Use the normal recorded-version recovery procedure when an
+activation outcome is uncertain.
+
 ## Google committee access
 
 The Google Directory adapter reconciles verified linked accounts against current and retained

@@ -3,6 +3,29 @@
 This guide explains how event volunteers record a paper signup sheet in the staff portal. Use it
 after an event to record attendance and the mailing-list choices people made on the sheet.
 
+Staff who can open a person's profile can see **Events** there: recorded attendance and RSVPs, with
+event names and dates when available. Totals include the full recorded history; the list shows up to
+10 recent participation records, independently of other activity. Missing names are labeled rather
+than inferred. An empty record does not prove that someone has never attended. Corrected entries are
+excluded. Dates show when attendance happened or when an RSVP was recorded; an RSVP date is not the
+event's start time. The profile does not provide event rosters, QR check-in or RSVP import.
+
+## Record attendance for someone already known
+
+1. Open the person's profile and choose **Record attendance** under **Events**.
+2. Enter the event's name and the date they attended. Future dates are not accepted.
+3. Select **Record attendance**. The profile's Events section shows the saved entry.
+
+This records attendance against that exact person, without re-entering their contact information or
+changing membership or consent. You need both access to their profile and permission to record
+attendance. Repeating the same person, event name and day does not add a second staff attendance
+record. Use a consistent event name; distinct events on the same day need distinguishable names. The
+entry records who saved it and keeps day precision rather than claiming an exact arrival time.
+
+If a form expires, check Events before reloading and trying again. If saving fails, entered values
+remain on the form; retry after the service recovers. Use paper signup entry below for new people or
+when transcribing the mailing-list choices on a sheet.
+
 ## Before you start
 
 - Use your own linked LVBT Workspace account and current membership. You need permission to record

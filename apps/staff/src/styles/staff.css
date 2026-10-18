@@ -40,7 +40,7 @@ html {
 .staff-shell .press {
   min-height: 2.75rem;
   max-width: 100%;
-  padding: 0.625rem 1.25rem;
+  padding: 0.5rem 0.75rem;
   font-size: var(--text-body-md);
   line-height: var(--text-body-md--line-height);
   overflow-wrap: anywhere;
@@ -55,9 +55,9 @@ html {
   border: 2px solid var(--color-primary);
   background: var(--color-primary);
   color: var(--color-on-primary);
-  font-size: var(--text-body-sm);
+  font-size: var(--text-body-md);
   font-weight: 700;
-  line-height: 1.25;
+  line-height: var(--text-body-md--line-height);
   text-align: center;
   text-decoration: none;
 }
@@ -89,9 +89,9 @@ html {
   background: transparent;
   color: var(--color-on-surface);
   font: inherit;
-  font-size: var(--text-body-sm);
+  font-size: var(--text-body-md);
   font-weight: 700;
-  line-height: 1.25;
+  line-height: var(--text-body-md--line-height);
   text-align: center;
   text-decoration: none;
   cursor: pointer;

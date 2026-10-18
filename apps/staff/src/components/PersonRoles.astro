@@ -1,0 +1,106 @@
+---
+import { can } from '@lasvegasfortransit/platform-core/permissions';
+import { t } from '@lasvegasfortransit/platform-core/messages';
+import { ulid } from '@lasvegasfortransit/platform-core/ids';
+import {
+  listOrganizationRoles,
+  listPersonOrganizationRoles,
+} from '@lasvegasfortransit/platform-storage/organization-roles';
+import { issueFormToken } from '@lasvegasfortransit/platform-storage/form-tokens';
+import Button from '../../../site/src/components/app/Button.astro';
+import { personRoleTokenAction, type RoleFeedback } from '../lib/organization-roles';
+import { rosterReturn } from '../lib/roster-return';
+import '../styles/organization-roles.css';
+interface Props {
+  personId: string;
+  currentMember: boolean;
+  feedback?: RoleFeedback;
+}
+const { personId, currentMember, feedback } = Astro.props;
+const staff = Astro.locals.staff!;
+const editable = can(staff.actor, 'person.update');
+const roles = await listPersonOrganizationRoles(staff.db, staff.actor, personId);
+const available =
+  editable && currentMember
+    ? (await listOrganizationRoles(staff.db, staff.actor)).filter(
+        (role) => !roles.some((assigned) => assigned.roleId === role.id),
+      )
+    : [];
+const token = editable
+  ? await issueFormToken(staff.db, staff.actor, personRoleTokenAction(personId))
+  : null;
+const returnTo = rosterReturn(Astro.url.searchParams.get('return_to'));
+const action = `/people/${personId}/${returnTo ? `?return_to=${encodeURIComponent(returnTo)}` : ''}#roles-heading`;
+---
+
+<section class="staff-person-roles" aria-labelledby="roles-heading">
+  <div class="staff-role-section-heading">
+    <h2 id="roles-heading">{t('staff.organizationRoles.heading')}</h2>{
+      editable && (
+        <a href="/roles/" class="staff-person-link">
+          {t('staff.organizationRoles.manage')}
+        </a>
+      )
+    }
+  </div>
+  {
+    feedback && (
+      <p role="alert" class="staff-error">
+        {feedback.message}
+      </p>
+    )
+  }
+  {
+    roles.length ? (
+      <ul class="staff-role-list">
+        {roles.map((role) => (
+          <li class="staff-role-row">
+            <div>
+              <strong>{role.name}</strong>
+              {role.retiredAt && <p class="staff-help">{t('staff.organizationRoles.retired')}</p>}
+            </div>
+            {editable && (
+              <form method="post" action={action}>
+                <input type="hidden" name="token" value={token} />
+                <input type="hidden" name="operation_id" value={ulid()} />
+                <input type="hidden" name="action" value="organization_role" />
+                <input type="hidden" name="role_action" value="remove" />
+                <input type="hidden" name="role_id" value={role.roleId} />
+                <button type="submit" class="staff-secondary-button">
+                  {t('staff.organizationRoles.remove')}
+                  <span class="sr-only"> {role.name}</span>
+                </button>
+              </form>
+            )}
+          </li>
+        ))}
+      </ul>
+    ) : (
+      <p class="staff-help">{t('staff.organizationRoles.personEmpty')}</p>
+    )
+  }
+  {
+    available.length > 0 && (
+      <form method="post" action={action} class="staff-form staff-person-role-add">
+        <>
+          <input type="hidden" name="token" value={token} />
+          <input type="hidden" name="operation_id" value={ulid()} />
+          <input type="hidden" name="action" value="organization_role" />
+          <input type="hidden" name="role_action" value="assign" />
+          <div>
+            <>
+              <label for="member-role">{t('staff.organizationRoles.choose')}</label>
+              <select name="role_id" id="member-role" required>
+                <option value="">{t('staff.organizationRoles.choose')}</option>
+                {available.map((role) => (
+                  <option value={role.id}>{role.name}</option>
+                ))}
+              </select>
+            </>
+          </div>
+          <Button>{t('staff.organizationRoles.assign')}</Button>
+        </>
+      </form>
+    )
+  }
+</section>

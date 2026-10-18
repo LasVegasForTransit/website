@@ -39,10 +39,15 @@ export async function exerciseCommittees(page: Page, fixture: Fixture) {
   await page.goto(new URL('/people/?q=New&committee=unassigned', page.url()).href);
   assert.equal(await page.getByRole('link', { name: 'New Member', exact: true }).count(), 0);
   await page.goto(profileUrl);
-  await current.getByText('Change role or remove', { exact: true }).click();
-  await page.getByLabel('Role in Events Committee', { exact: true }).selectOption('lead');
-  await submit(page, 'Save role');
-  assert.ok((await current.locator('li > p').first().textContent())?.includes('Committee lead'));
+  await page.locator('.staff-person-committee-access > summary').click();
+  await page.getByLabel('Access for Events Committee', { exact: true }).selectOption('lead');
+  await submit(page, 'Save access');
+  assert.equal(
+    await page.getByLabel('Access for Events Committee', { exact: true }).inputValue(),
+    'lead',
+  );
+  assert.equal((await current.innerText()).includes('Committee lead'), false);
+  assert.equal(await page.locator('.staff-assignment-form select[name=role]').count(), 0);
   await page.screenshot({
     path: `${fixture.root}/test-results/staff/person-desktop.png`,
     animations: 'disabled',
@@ -54,7 +59,7 @@ export async function exerciseCommittees(page: Page, fixture: Fixture) {
     fullPage: true,
   });
   assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
-  await current.getByText('Change role or remove', { exact: true }).click();
+  await current.locator('.staff-assignment-actions > summary').click();
   await page
     .getByLabel('Reason for leaving Events Committee', { exact: true })
     .selectOption('stepped_back');
@@ -89,22 +94,22 @@ export async function exerciseLeadCommittees(page: Page, fixture: Fixture) {
   });
   assert.equal(outside.kind, 'ok');
   await page.reload();
-  assert.equal(await page.getByText('Change role or remove', { exact: true }).count(), 1);
-  await page.getByText('Change role or remove', { exact: true }).click();
+  assert.equal(await page.locator('.staff-committee-access-form').count(), 1);
+  await page.locator('.staff-person-committee-access > summary').click();
   const form = page
     .locator('form')
-    .filter({ has: page.getByRole('button', { name: 'Save role', exact: true }) });
+    .filter({ has: page.getByRole('button', { name: 'Save access', exact: true }) });
   await form.evaluate((element, id) => {
     const input = element.querySelector<HTMLInputElement>('input[name="assignment_id"]');
     if (!input) throw new Error('Assignment form is missing its target');
     input.value = id;
   }, outside.value.id);
-  await page.getByLabel('Role in Events Committee', { exact: true }).selectOption('lead');
+  await page.getByLabel('Access for Events Committee', { exact: true }).selectOption('lead');
   const [denied] = await Promise.all([
     page.waitForResponse(
       (response) => response.request().method() === 'POST' && response.url().includes('/people/'),
     ),
-    page.getByRole('button', { name: 'Save role', exact: true }).click(),
+    page.getByRole('button', { name: 'Save access', exact: true }).click(),
   ]);
   assert.equal(denied.status(), 403);
   assert.equal(

@@ -138,7 +138,9 @@ export async function exerciseAccountAccess(page: Page, fixture: Fixture) {
     )?.ended_at,
     ended.ended_at,
   );
-  await page.getByText('Access history', { exact: true }).click();
+  assert.equal(await page.getByText('Access history', { exact: true }).count(), 0);
+  await page.goto(`${ORIGIN}/access/?view=all`);
+  await page.locator('.staff-account-history > summary').click();
   assert.equal(await page.getByText('Account update retried', { exact: true }).count(), 2);
   await page.setViewportSize({ width: 1440, height: 1000 });
 }

@@ -8,14 +8,17 @@ import { formatPhone } from '@lasvegasfortransit/platform-core/join-form';
 import { regionName } from '@lasvegasfortransit/platform-core/regions';
 import { languageLabel } from '../../../lib/presentation';
 import { personMerges } from '@lasvegasfortransit/platform-storage/merge-views';
-import { listAccess, accessHistory } from '@lasvegasfortransit/platform-storage/access-view';
-import AccessHistory from '../../../components/AccessHistory.astro';
+import { listAccess } from '@lasvegasfortransit/platform-storage/access-view';
 import PersonCommittees from '../../../components/PersonCommittees.astro';
+import PersonRoles from '../../../components/PersonRoles.astro';
+import PersonParticipation from '../../../components/PersonParticipation.astro';
+import { staffParticipation } from '@lasvegasfortransit/platform-storage/staff-participation';
 import PersonRecord from '../../../components/PersonRecord.astro';
 import PersonSummary from '../../../components/PersonSummary.astro';
 import MemberAccess from '../../../components/MemberAccess.astro';
 import { submitAccessAction, type AccessFeedback } from '../../../lib/account-access';
 import { submitCommittee, type CommitteeFeedback } from '../../../lib/committees';
+import { submitPersonRole, type RoleFeedback } from '../../../lib/organization-roles';
 import { messageResponse } from '../../../lib/responses';
 import { can, PermissionDenied } from '@lasvegasfortransit/platform-core/permissions';
 import { rosterReturn } from '../../../lib/roster-return';
@@ -40,10 +43,16 @@ if (profile.person.id !== Astro.params.id) {
   return Astro.redirect(`/people/${profile.person.id}/?${context}`, 303);
 }
 let feedback: CommitteeFeedback | undefined;
+let roleFeedback: RoleFeedback | undefined;
 let accessFeedback: AccessFeedback | undefined;
 if (Astro.request.method === 'POST') {
   const action = (await Astro.request.clone().formData()).get('action');
-  if (action === 'retry' || action === 'remove') {
+  if (action === 'organization_role') {
+    const result = await submitPersonRole(Astro.request, staff, profile.person.id);
+    if (result instanceof Response) return result;
+    roleFeedback = result;
+    Astro.response.status = result.status;
+  } else if (action === 'retry' || action === 'remove') {
     const result = await submitAccessAction(Astro.request, staff);
     if (result instanceof Response) return result;
     accessFeedback = result;
@@ -56,6 +65,8 @@ if (Astro.request.method === 'POST') {
   }
 }
 const { person } = profile;
+const participation = await staffParticipation(staff.db, staff.actor.personId, person.id);
+if (!participation) return messageResponse(t('staff.common.accessDenied'), 404);
 const discordConnected = profile.identities.some((identity) => identity.platform === 'discord');
 let accountAccess, server;
 try {
@@ -83,21 +94,6 @@ const nextAccess = new URL(Astro.url);
 if (accountAccess.nextCursor)
   nextAccess.searchParams.set('access_cursor', accountAccess.nextCursor);
 const combinations = await personMerges(staff.db, staff.actor, person.id);
-let providerHistory;
-if (can(staff.actor, 'access.recover')) {
-  try {
-    providerHistory = await accessHistory(staff.db, staff.actor, {
-      personId: person.id,
-      administratorsOnly: true,
-      cursor: Astro.url.searchParams.get('history_cursor') ?? undefined,
-    });
-  } catch (error) {
-    if (error instanceof InvalidCursor) return messageResponse(t('staff.people.invalidLink'), 400);
-    if (error instanceof PermissionDenied)
-      return messageResponse(t('staff.common.accessDenied'), 403);
-    throw error;
-  }
-}
 ---
 
 <StaffLayout title={personName(person)}>
@@ -190,7 +186,17 @@ if (can(staff.actor, 'access.recover')) {
         </dl>
       </section>
       <div class="staff-profile-involvement">
+        <PersonRoles
+          personId={person.id}
+          currentMember={person.membership_status === 'member'}
+          feedback={roleFeedback}
+        />
         <PersonCommittees profile={profile} feedback={feedback} />
+        <PersonParticipation
+          personId={person.id}
+          participation={participation}
+          canRecordAttendance={can(staff.actor, 'attendance.record')}
+        />
         {
           server && (
             <MemberAccess
@@ -209,16 +215,6 @@ if (can(staff.actor, 'access.recover')) {
       </div>
     </div>
     <div class="staff-profile-history">
-      {
-        providerHistory &&
-          (providerHistory.items.length > 0 || Astro.url.searchParams.has('history_cursor')) && (
-            <AccessHistory
-              page={providerHistory}
-              personId={person.id}
-              title={t('staff.profile.accessHistory')}
-            />
-          )
-      }
       <PersonRecord profile={profile} />
     </div>
     {
