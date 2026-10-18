@@ -207,6 +207,11 @@ const hasMemberTasks =
             )}
             {can(staff.actor, 'staff_admin.manage') && (
               <li>
+                <a href="/administrators/">{t('staff.administrators.title')}</a>
+              </li>
+            )}
+            {can(staff.actor, 'staff_admin.manage') && (
+              <li>
                 <a href="/access/">{t('staff.people.checkAccess')}</a>
               </li>
             )}

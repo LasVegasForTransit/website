@@ -16,6 +16,11 @@ const next = safeNext(
 <StaffLayout title="Sign in to LVBT staff" signIn>
   <div class="max-w-[30rem] space-y-6">
     {
+      Astro.url.searchParams.get('administrator_removed') === '1' && (
+        <p role="status">{t('staff.administrators.selfRemoved')}</p>
+      )
+    }
+    {
       Astro.url.searchParams.get('deleted') === '1' && (
         <p role="status">{t('staff.deletion.selfDeleted')}</p>
       )

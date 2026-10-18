@@ -41,6 +41,8 @@ just say guides.)
   membership choices, and check the saved result.
 - [Welcome a new member](./guides/welcome-a-new-member.md) — claim an introduction, contact the
   person, and record their welcome.
+- [Manage staff administrators](./guides/manage-staff-administrators.md) — add or remove
+  administrator access through the portal and verify the Google sign-in prerequisites.
 - [Operate member data retention](./guides/operate-member-data-retention.md) — review deletion,
   daily retention, and Google accounts that need attention.
 - [Automate member database backups](./guides/member-database-backups.md) — operate daily private

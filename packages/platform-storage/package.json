@@ -33,6 +33,7 @@
     "./workspace-link": "./src/workspace-link.ts",
     "./audits": "./src/audits.ts",
     "./staff-roles": "./src/staff-roles.ts",
+    "./staff-administrators": "./src/staff-administrators.ts",
     "./outbox": "./src/outbox.ts",
     "./committees": "./src/committees.ts",
     "./form-tokens": "./src/form-tokens.ts",
