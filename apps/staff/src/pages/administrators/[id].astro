@@ -1,0 +1,108 @@
+---
+import { env } from 'cloudflare:workers';
+import { t } from '@lasvegasfortransit/platform-core/messages';
+import { can, PermissionDenied } from '@lasvegasfortransit/platform-core/permissions';
+import { ulid } from '@lasvegasfortransit/platform-core/ids';
+import { staffAdministratorView } from '@lasvegasfortransit/platform-storage/staff-administrators';
+import { issueFormToken } from '@lasvegasfortransit/platform-storage/form-tokens';
+import StaffLayout from '../../layouts/StaffLayout.astro';
+import Button from '../../../../site/src/components/app/Button.astro';
+import {
+  administratorAction,
+  administratorName,
+  administratorTokenAction,
+  submitStaffAdministrator,
+  type AdministratorFeedback,
+} from '../../lib/staff-administrators';
+import { messageResponse } from '../../lib/responses';
+import type { StaffEnv } from '../../lib/context';
+const staff = Astro.locals.staff;
+if (!staff || !can(staff.actor, 'staff_admin.manage'))
+  return messageResponse(t('staff.common.accessDenied'), 403);
+if (!['GET', 'POST'].includes(Astro.request.method))
+  return messageResponse(t('staff.common.accessDenied'), 405);
+const action = administratorAction(Astro.url.searchParams.get('action'));
+if (!action) return messageResponse(t('staff.administrators.invalid'), 400);
+const personId = Astro.params.id ?? '';
+let feedback: AdministratorFeedback | undefined;
+if (Astro.request.method === 'POST') {
+  const result = await submitStaffAdministrator(
+    Astro.request,
+    staff,
+    personId,
+    (env as unknown as StaffEnv).LVBT_SIGN_IN_SECRET,
+  );
+  if (result instanceof Response) return result;
+  feedback = result;
+  Astro.response.status = result.status;
+}
+let person;
+try {
+  person = await staffAdministratorView(staff.db, staff.actor, personId);
+} catch (error) {
+  if (error instanceof PermissionDenied)
+    return messageResponse(t('staff.common.accessDenied'), 403);
+  throw error;
+}
+if (!person) return messageResponse(t('staff.common.accessDenied'), 404);
+const grant = action === 'grant';
+const unavailable = grant
+  ? person.designated_at
+    ? t('staff.administrators.alreadyAdministrator')
+    : person.membership_status !== 'member'
+      ? t('staff.administrators.currentMemberRequired')
+      : !person.has_workspace
+        ? t('staff.administrators.connectGoogle')
+        : null
+  : !person.designated_at
+    ? t('staff.administrators.noLongerAdministrator')
+    : null;
+const confirmationUrl = `/administrators/${person.id}/?action=${action}`;
+const token =
+  feedback || unavailable
+    ? null
+    : await issueFormToken(staff.db, staff.actor, administratorTokenAction(person.id, action));
+const name = administratorName(person);
+const title = grant
+  ? t('staff.administrators.grantQuestion', { name })
+  : t('staff.administrators.revokeQuestion', { name });
+const impact = grant
+  ? t('staff.administrators.grantImpact')
+  : t('staff.administrators.revokeImpact');
+---
+
+<StaffLayout title={title}>
+  <a slot="breadcrumb" href="/administrators/" class="staff-back"
+    >{t('staff.administrators.back')}</a
+  >
+  <section class="max-w-2xl space-y-6 [overflow-wrap:anywhere]" aria-label={title}>
+    <p>{person.email ?? t('staff.profile.noEmail')}</p>
+    <p>{impact}</p>
+    {!grant && person.id === staff.actor.personId && <p>{t('staff.administrators.selfImpact')}</p>}
+    {
+      feedback ? (
+        <p role="alert" class="staff-error">
+          {feedback.message} <a href={confirmationUrl}>{t('staff.administrators.reviewAgain')}</a>
+        </p>
+      ) : unavailable ? (
+        <p role="status">{unavailable}</p>
+      ) : null
+    }
+    <form method="post" action={confirmationUrl} class="flex flex-wrap items-center gap-5">
+      {
+        token && (
+          <>
+            <input type="hidden" name="token" value={token} />
+            <input type="hidden" name="operation_id" value={ulid()} />
+            <input type="hidden" name="expected_updated_at" value={person.updated_at} />
+            <input type="hidden" name="expected_designated_at" value={person.designated_at ?? ''} />
+            <Button variant={grant ? 'primary' : 'destructive'} name="action" value={action}>
+              {t(grant ? 'staff.administrators.grant' : 'staff.administrators.revoke')}
+            </Button>
+          </>
+        )
+      }
+      <a href="/administrators/" class="staff-muted-link">{t('staff.common.cancel')}</a>
+    </form>
+  </section>
+</StaffLayout>

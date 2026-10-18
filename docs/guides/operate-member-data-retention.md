@@ -118,11 +118,11 @@ member and their current accounts. If administrator access was withdrawn, sign i
 authorized account instead; an old confirmation cannot preserve former permissions.
 
 The final active administrator cannot be deleted, even when another former member still has an
-administrator designation. Ask the maintainer responsible for staff authorization to arrange an
-approved transfer to another current member first. The portal does not provide an administrator
-designation screen. Verify that person can sign in, then reopen the deletion confirmation. If you
-delete your own record while another active administrator remains, your sessions and cookies are
-cleared. You return to sign-in with confirmation that your member record was deleted.
+administrator designation. Use [Manage staff administrators](./manage-staff-administrators.md) to
+add another approved current administrator first. Verify that person can sign in, then reopen the
+deletion confirmation. If you delete your own record while another active administrator remains,
+your sessions and cookies are cleared. You return to sign-in with confirmation that your member
+record was deleted.
 
 ### Verify erasure and connected-service cleanup
 

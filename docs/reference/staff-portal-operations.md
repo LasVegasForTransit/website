@@ -16,6 +16,10 @@ and promotion workflows do not provision or promote these applications. Use the 
 private acceptance record to determine what is deployed and verified. Keep automatic production
 provider writes disabled until configuration and live acceptance pass.
 
+For routine administrator changes after first-time setup, use
+[Manage staff administrators](../guides/manage-staff-administrators.md). It covers adding and
+removing people through the portal and the separate Google Group prerequisite.
+
 ## Read-only configuration check
 
 From the repository root:

@@ -1,0 +1,135 @@
+---
+import { t } from '@lasvegasfortransit/platform-core/messages';
+import { can, PermissionDenied } from '@lasvegasfortransit/platform-core/permissions';
+import {
+  listStaffAdministrators,
+  searchStaffAdministratorCandidates,
+} from '@lasvegasfortransit/platform-storage/staff-administrators';
+import StaffLayout from '../../layouts/StaffLayout.astro';
+import Button from '../../../../site/src/components/app/Button.astro';
+import { administratorName } from '../../lib/staff-administrators';
+import { messageResponse } from '../../lib/responses';
+const staff = Astro.locals.staff;
+if (!staff || !can(staff.actor, 'staff_admin.manage'))
+  return messageResponse(t('staff.common.accessDenied'), 403);
+if (Astro.request.method !== 'GET') return messageResponse(t('staff.common.accessDenied'), 405);
+const query = Astro.url.searchParams.get('q')?.trim().slice(0, 254) ?? '';
+let administrators, candidates;
+try {
+  administrators = await listStaffAdministrators(staff.db, staff.actor);
+  candidates = query ? await searchStaffAdministratorCandidates(staff.db, staff.actor, query) : [];
+} catch (error) {
+  if (error instanceof PermissionDenied)
+    return messageResponse(t('staff.common.accessDenied'), 403);
+  throw error;
+}
+---
+
+<StaffLayout
+  title={t('staff.administrators.title')}
+  description={t('staff.administrators.description')}
+>
+  <a slot="breadcrumb" href="/people/" class="staff-back">{t('staff.navigation.members')}</a>
+  <div class="max-w-3xl space-y-8 [overflow-wrap:anywhere]">
+    {
+      (Astro.url.searchParams.get('added') === '1' ||
+        Astro.url.searchParams.get('removed') === '1') && (
+        <p role="status" class="staff-result-notice">
+          {Astro.url.searchParams.get('added') === '1'
+            ? t('staff.administrators.added')
+            : t('staff.administrators.removed')}
+        </p>
+      )
+    }
+    <section aria-labelledby="current-administrators" class="space-y-4">
+      <h2 id="current-administrators" class="text-title-lg">{t('staff.administrators.current')}</h2>
+      {
+        administrators.length ? (
+          <ul class="divide-y divide-outline border-y border-outline">
+            {administrators.map((person) => (
+              <li class="flex flex-wrap items-center justify-between gap-x-6 gap-y-2 py-4">
+                <div class="min-w-0 flex-[1_1_16rem]">
+                  <p class="font-bold">{administratorName(person)}</p>
+                  <p>{person.email ?? t('staff.profile.noEmail')}</p>
+                  {person.membership_status !== 'member' && (
+                    <p>
+                      {t(
+                        person.membership_status === 'former_member'
+                          ? 'staff.people.formerMember'
+                          : 'staff.people.notMember',
+                      )}
+                    </p>
+                  )}
+                </div>
+                <a href={`/administrators/${person.id}/?action=revoke`} class="staff-muted-link">
+                  {t('staff.administrators.revoke')}
+                  <span class="sr-only">: {administratorName(person)}</span>
+                </a>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p>{t('staff.administrators.empty')}</p>
+        )
+      }
+    </section>
+    <section aria-labelledby="add-administrator" class="space-y-4">
+      <h2 id="add-administrator" class="text-title-lg">{t('staff.administrators.add')}</h2>
+      <p>{t('staff.administrators.find')}</p>
+      <form
+        method="get"
+        action="/administrators/"
+        class="staff-search"
+        role="search"
+        aria-label={t('staff.administrators.search')}
+      >
+        <div class="staff-search-row">
+          <div class="staff-search-query">
+            <label for="q">{t('staff.people.nameOrEmail')}</label>
+            <input id="q" name="q" type="search" value={query} maxlength="254" />
+          </div>
+          <Button>{t('staff.people.search')}</Button>
+        </div>
+      </form>
+      {!query && <p>{t('staff.administrators.connectGoogle')}</p>}
+      {
+        query && (
+          <section aria-label={t('staff.people.results')}>
+            {candidates.length ? (
+              <ul class="divide-y divide-outline border-y border-outline">
+                {candidates.map((person) => (
+                  <li class="flex flex-wrap items-center justify-between gap-x-6 gap-y-2 py-4">
+                    <div class="min-w-0 flex-[1_1_16rem]">
+                      <p class="font-bold">{administratorName(person)}</p>
+                      <p>{person.email ?? t('staff.profile.noEmail')}</p>
+                      {!person.has_workspace && !person.designated_at && (
+                        <p>{t('staff.administrators.connectGoogle')}</p>
+                      )}
+                    </div>
+                    {person.designated_at ? (
+                      <p>{t('staff.administrators.alreadyAdministrator')}</p>
+                    ) : person.has_workspace ? (
+                      <a
+                        href={`/administrators/${person.id}/?action=grant`}
+                        class="staff-muted-link"
+                      >
+                        {t('staff.administrators.grant')}
+                        <span class="sr-only">: {administratorName(person)}</span>
+                      </a>
+                    ) : null}
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <>
+                <p>{t('staff.administrators.noMatches')}</p>
+                <p>{t('staff.administrators.tryAnother')}</p>
+                <p>{t('staff.administrators.connectGoogle')}</p>
+              </>
+            )}
+          </section>
+        )
+      }
+    </section>
+  </div>
+</StaffLayout>
