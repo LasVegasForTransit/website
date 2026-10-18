@@ -227,6 +227,27 @@ The command supplies a unique request ID. If the dispatch response is lost, it f
 request's run. An unconfirmed dispatch or timed-out run reports its ID/URL and stops without a
 second dispatch.
 
+### Diagnose dashboard metadata failures
+
+When Wrangler reports **Unable to fetch bindings, routes, or services metadata from the dashboard**,
+first inspect the failed promotion's receipt and the current Worker version. This error alone does
+not establish whether production changed. Do not retry publication until its outcome is reconciled.
+
+For a failure before upload, run **Inspect website deployment metadata** from `main` in GitHub
+Actions. It uses the existing `worker-candidate` environment and the same website deployment key as
+promotion. The workflow makes one read-only request to each of Wrangler's six dashboard metadata
+endpoints for `lvbt-website`: bindings, routes, custom domains, subdomain settings, environment
+metadata, and schedules. It does not deploy, migrate, change settings, or retry requests.
+
+Read the diagnostic step's result for each resource. It reports only HTTP status, success, and
+numeric Cloudflare error codes; provider response data and credentials are never printed. All
+resources must succeed. A denied resource identifies the boundary to investigate with Cloudflare's
+permission documentation or support. Do not broaden the deployment key based on the generic error,
+replace it with another service's key, or disable Wrangler's configuration-conflict check.
+
+After correcting the identified prerequisite, reconcile the failed promotion again and follow the
+recorded release's supported recovery path. Keep its selected artifact and current-version guard.
+
 ## Manual recovery deployment
 
 `pnpm run deploy` builds the site and uses `cf` with the typed configuration in
