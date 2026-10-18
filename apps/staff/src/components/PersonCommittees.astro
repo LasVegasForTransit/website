@@ -9,6 +9,7 @@ import { visibleCommittees } from '../lib/people';
 import { displayLabel } from '../lib/presentation';
 import type { CommitteeFeedback } from '../lib/committees';
 import { rosterReturn } from '../lib/roster-return';
+import PersonCommitteeAccess from './PersonCommitteeAccess.astro';
 interface Props {
   profile: StaffPerson;
   feedback?: CommitteeFeedback;
@@ -46,50 +47,30 @@ const endReasons = {
   <ul class="staff-current-assignments">
     {
       current.map((item) => (
-        <li>
-          <p>
+        <li class="staff-committee-association">
+          <div class="staff-committee-association-name">
             {can(staff.actor, 'committee.view', { committeeId: item.committee_id }) ? (
               <a href={`/committees/${item.committee_id}/`} class="staff-person-link">
                 {item.committee_name}
               </a>
             ) : (
               <strong>{item.committee_name}</strong>
-            )}{' '}
-            · {displayLabel(item.role)}
-          </p>
-          <p class="staff-help">
-            <time datetime={item.started_at}>
-              {t('staff.assignments.since', { date: formatFullDate(new Date(item.started_at)) })}
-            </time>
-          </p>
-          {item.account_update_state === 'retry' && (
-            <p class="staff-help">
-              <a href="#accounts">{t('staff.assignments.attention')}</a>
-            </p>
-          )}
+            )}
+            {item.account_update_state === 'retry' && (
+              <p class="staff-help">
+                <a href="#accounts">{t('staff.assignments.attention')}</a>
+              </p>
+            )}
+          </div>
           {can(staff.actor, 'committee.assign', { committeeId: item.committee_id }) && (
             <details class="staff-assignment-actions">
-              <summary>{t('staff.assignments.change')}</summary>
-              <form method="post" action={action} class="staff-form staff-inline-form">
-                <input type="hidden" name="token" value={token} />
-                <input type="hidden" name="operation_id" value={ulid()} />
-                <input type="hidden" name="action" value="change" />
-                <input type="hidden" name="assignment_id" value={item.id} />
-                <div>
-                  <label for={`role-${item.id}`}>
-                    {t('staff.assignments.roleIn', { committee: item.committee_name })}
-                  </label>
-                  <select id={`role-${item.id}`} name="role">
-                    <option value="member" selected={item.role === 'member'}>
-                      {t('staff.common.member')}
-                    </option>
-                    <option value="lead" selected={item.role === 'lead'}>
-                      {t('staff.common.lead')}
-                    </option>
-                  </select>
-                </div>
-                <Button>{t('staff.assignments.saveRole')}</Button>
-              </form>
+              <summary class="staff-secondary-button">
+                {t('staff.assignments.removeShort')}
+                <span class="sr-only">
+                  {' '}
+                  {t('staff.assignments.fromCommittee', { committee: item.committee_name })}
+                </span>
+              </summary>
               <form method="post" action={action} class="staff-form staff-inline-form">
                 <input type="hidden" name="token" value={token} />
                 <input type="hidden" name="operation_id" value={ulid()} />
@@ -123,7 +104,6 @@ const endReasons = {
   {
     available.length > 0 && profile.person.membership_status === 'member' && (
       <>
-        {current.length > 0 && <p class="staff-help">{t('staff.assignments.multiple')}</p>}
         <form method="post" action={action} class="staff-form staff-assignment-form">
           <input type="hidden" name="token" value={token} />
           <input type="hidden" name="operation_id" value={ulid()} />
@@ -139,20 +119,7 @@ const endReasons = {
               ))}
             </select>
           </div>
-          <div>
-            <label for="assignment_role">{t('staff.assignments.role')}</label>
-            <select id="assignment_role" name="role">
-              <option value="member" selected={feedback?.role !== 'lead'}>
-                {t('staff.common.member')}
-              </option>
-              <option value="lead" selected={feedback?.role === 'lead'}>
-                {t('staff.common.lead')}
-              </option>
-            </select>
-          </div>
-          <Button>
-            {current.length ? t('staff.people.addAnother') : t('staff.assignments.add')}
-          </Button>
+          <Button>{t('staff.assignments.add')}</Button>
         </form>
       </>
     )
@@ -164,7 +131,7 @@ const endReasons = {
         <ul class="staff-past-assignments mt-3 space-y-3">
           {past.map((item) => (
             <li>
-              <strong>{item.committee_name}</strong> · {displayLabel(item.role)}
+              <strong>{item.committee_name}</strong>
               <p class="staff-help">
                 {formatFullDate(new Date(item.started_at))}–
                 {formatFullDate(new Date(item.ended_at!))} ·{' '}
@@ -177,3 +144,4 @@ const endReasons = {
     )
   }
 </section>
+<PersonCommitteeAccess profile={profile} token={token} action={action} />

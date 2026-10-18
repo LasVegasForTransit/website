@@ -63,7 +63,7 @@ export async function submitCommittee(
     result = await service.assign({
       personId: profile.person.id,
       committeeId,
-      role: role as AssignmentRole,
+      role: 'member',
       actorId: staff.actor.personId,
       operationId,
     });

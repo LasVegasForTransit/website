@@ -156,17 +156,20 @@ export function mergeConflicts(
     )
   )
     return true;
-  const assignments = stateRows(state, 'committee_assignments').filter(
-    (row) => row.ended_at === null,
-  );
-  if (
-    assignments.some(
-      (a) =>
-        a.person_id === survivor.id &&
-        assignments.some((b) => b.person_id === merged.id && a.committee_id === b.committee_id),
+  for (const [table, key] of [
+    ['committee_assignments', 'committee_id'],
+    ['person_organization_roles', 'role_id'],
+  ] as const) {
+    const assignments = stateRows(state, table).filter((row) => row.ended_at === null);
+    if (
+      assignments.some(
+        (a) =>
+          a.person_id === survivor.id &&
+          assignments.some((b) => b.person_id === merged.id && a[key] === b[key]),
+      )
     )
-  )
-    return true;
+      return true;
+  }
   const events = stateRows(state, 'engagement_events').filter((row) => row.reference !== null);
   return events.some(
     (a) =>

@@ -1,0 +1,111 @@
+---
+import { can } from '@lasvegasfortransit/platform-core/permissions';
+import { t } from '@lasvegasfortransit/platform-core/messages';
+import { ulid } from '@lasvegasfortransit/platform-core/ids';
+import { listOrganizationRoles } from '@lasvegasfortransit/platform-storage/organization-roles';
+import { issueFormToken } from '@lasvegasfortransit/platform-storage/form-tokens';
+import StaffLayout from '../../layouts/StaffLayout.astro';
+import Button from '../../../../site/src/components/app/Button.astro';
+import { messageResponse } from '../../lib/responses';
+import {
+  submitOrganizationRole,
+  roleTokenAction,
+  type RoleFeedback,
+} from '../../lib/organization-roles';
+import '../../styles/organization-roles.css';
+const staff = Astro.locals.staff;
+if (!staff || !can(staff.actor, 'person.update'))
+  return messageResponse(t('staff.common.accessDenied'), 403);
+let feedback: RoleFeedback | undefined;
+if (Astro.request.method === 'POST') {
+  const result = await submitOrganizationRole(Astro.request, staff, 'define');
+  if (result instanceof Response) return result;
+  feedback = result;
+  Astro.response.status = result.status;
+}
+const roles = await listOrganizationRoles(staff.db, staff.actor, { includeRetired: true });
+const current = roles.filter((role) => !role.retiredAt),
+  retired = roles.filter((role) => role.retiredAt);
+const token = await issueFormToken(staff.db, staff.actor, roleTokenAction('define'));
+---
+
+<StaffLayout
+  title={t('staff.organizationRoles.title')}
+  description={t('staff.organizationRoles.description')}
+>
+  <a slot="breadcrumb" href="/people/" class="staff-back"
+    >{t('staff.organizationRoles.backMembers')}</a
+  >
+  <div class="staff-organization-roles">
+    {
+      feedback && (
+        <p role="alert" class="staff-error">
+          {feedback.message}
+        </p>
+      )
+    }
+    <ul class="staff-role-list">
+      {
+        current.map((role) => (
+          <li class="staff-role-row">
+            <>
+              <strong>{role.name}</strong>
+              <div class="staff-role-actions">
+                <>
+                  <a class="staff-role-link" href={`/roles/${role.id}/?action=rename`}>
+                    {t('staff.organizationRoles.rename')}
+                    <span class="sr-only"> {role.name}</span>
+                  </a>
+                  <a class="staff-role-link" href={`/roles/${role.id}/?action=retire`}>
+                    {t('staff.organizationRoles.stopUsing')}
+                    <span class="sr-only"> {role.name}</span>
+                  </a>
+                </>
+              </div>
+            </>
+          </li>
+        ))
+      }
+    </ul>
+    {!current.length && <p>{t('staff.organizationRoles.empty')}</p>}
+    <section class="staff-role-create" aria-labelledby="create-role-heading">
+      <h2 id="create-role-heading">{t('staff.organizationRoles.addHeading')}</h2>
+      <form method="post" action="/roles/" class="staff-form">
+        <input type="hidden" name="token" value={token} /><input
+          type="hidden"
+          name="operation_id"
+          value={ulid()}
+        />
+        <div>
+          <label for="role-name">{t('staff.organizationRoles.name')}</label><input
+            id="role-name"
+            name="name"
+            required
+            maxlength="100"
+            value={feedback?.name ?? ''}
+            aria-describedby="role-name-hint"
+          /><p id="role-name-hint" class="staff-help">{t('staff.organizationRoles.nameHint')}</p>
+        </div>
+        <Button>{t('staff.organizationRoles.create')}</Button>
+      </form>
+    </section>
+    {
+      retired.length > 0 && (
+        <details class="staff-retired-roles">
+          <>
+            <summary>{t('staff.organizationRoles.retiredHeading')}</summary>
+            <p class="staff-help">{t('staff.organizationRoles.retiredHint')}</p>
+            <ul class="staff-role-list">
+              {retired.map((role) => (
+                <li class="staff-role-row">
+                  <span>{role.name}</span>
+                  <span class="staff-help">{t('staff.organizationRoles.retired')}</span>
+                </li>
+              ))}
+            </ul>
+          </>
+        </details>
+      )
+    }
+  </div>
+</StaffLayout>

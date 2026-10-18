@@ -29,6 +29,8 @@ export interface FullExport {
   engagement_events: ExportRow[];
   field_sources: ExportRow[];
   committee_assignments: ExportRow[];
+  organization_roles: ExportRow[];
+  person_organization_roles: ExportRow[];
   consent_withdrawals: ExportRow[];
   person_corrections: ExportRow[];
   discord_identity_profiles: ExportRow[];
@@ -45,6 +47,18 @@ function profileQueries(db: Db, actorId: string): Statement[] {
       )
       .bind(actorId),
   );
+}
+function roleArchiveQueries(db: Db, actorId: string): Statement[] {
+  return [
+    db
+      .prepare(`SELECT * FROM organization_roles WHERE ${STAFF_ADMIN_SCOPE} ORDER BY id`)
+      .bind(actorId),
+    db
+      .prepare(
+        `SELECT r.* FROM person_organization_roles r JOIN people p ON p.id=r.person_id WHERE p.deleted_at IS NULL AND ${STAFF_ADMIN_SCOPE} ORDER BY r.id`,
+      )
+      .bind(actorId),
+  ];
 }
 function rows(result: unknown): ExportRow[] {
   if (
@@ -123,6 +137,7 @@ export async function collectFullExport(
         `SELECT r.* FROM roster_import_records r JOIN people p ON p.id=r.person_id WHERE p.deleted_at IS NULL AND ${STAFF_ADMIN_SCOPE} ORDER BY r.id`,
       )
       .bind(actor.personId),
+    ...roleArchiveQueries(db, actor.personId),
     exportAudit(db, actor, exportedAt),
   ]);
   if (
@@ -160,5 +175,7 @@ function exportRows(result: unknown[], exportedAt: string): FullExport {
     membership_roll: rows(result[10]),
     roster_import_records: rows(result[12]),
     unassigned_roster_import_records: rows(result[11]),
+    organization_roles: rows(result[13]),
+    person_organization_roles: rows(result[14]),
   };
 }

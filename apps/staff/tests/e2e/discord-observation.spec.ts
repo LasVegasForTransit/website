@@ -110,10 +110,10 @@ try {
   assert.equal((await profile(welcomeSearch)).includes('In LVBT Discord'), true);
   assert.equal(
     confirmedProfile.includes('Discord access granted'),
-    true,
-    'administrators need the confirmed access history on the member profile',
+    false,
+    'member profiles show current account access without troubleshooting history',
   );
-  const granted = await profile();
+  const granted = await profile('/access/?view=all');
   assert.equal(granted.includes('Discord access granted'), true);
   assert.equal(granted.includes('Automatic Discord update'), false);
   await people.withdrawConsent(personId, {
@@ -131,8 +131,10 @@ try {
   assert.equal((await reconcileDiscordPending(fixture.db, options)).confirmed, 1);
   assert.equal((await profile()).includes('No access'), true);
   const removed = await profile();
-  assert.equal(removed.includes('Discord access removed'), true);
-  assert.equal(removed.includes('Membership changed'), true);
+  assert.equal(removed.includes('Discord access removed'), false);
+  const removalHistory = await profile('/access/?view=all');
+  assert.equal(removalHistory.includes('Discord access removed'), true);
+  assert.equal(removalHistory.includes('Membership changed'), true);
   assert.equal(
     removed.includes('Removing access…'),
     false,
@@ -181,7 +183,7 @@ try {
         'withdrawal hides stale confirmation immediately',
         'confirmed removal preserves unrelated role',
         'actual confirmed access changes render with automatic attribution and plain reasons',
-        'administrator profile exposes confirmed history with native disclosure',
+        'administrator troubleshooting page retains confirmed history outside member profiles',
         'actual bounded provider timeout renders unknown instead of old role proof',
       ],
       provider: 'isolated fixture',

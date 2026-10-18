@@ -37,7 +37,6 @@ export const staffCommon = {
     reload: 'Reload this page and try again.',
     loadFailed: 'We couldn’t load this page. Please try again.',
     member: 'Member',
-    lead: 'Lead',
     email: 'Email',
     phone: 'Phone',
     zip: 'ZIP code',

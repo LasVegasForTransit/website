@@ -42,9 +42,28 @@ export async function exerciseMemberSummary(
       source: 'fixture',
       reference: `history-summary-${i}`,
       occurredAt: '2025-01-11T12:00:00Z',
+      details: { eventName: `Member meeting ${i}` },
+    });
+  }
+  for (let i = 0; i < 55; i++) {
+    await people.recordEngagement(person.id, {
+      type: 'form_response',
+      source: 'fixture',
+      occurredAt: '2026-10-01T12:00:00Z',
     });
   }
   await page.reload();
+  const participation = page.getByRole('region', { name: 'Events', exact: true });
+  assert.equal(
+    await participation.getByText(/^51 events attended\b/).isVisible(),
+    true,
+    'participation is visible without opening record history and includes older events',
+  );
+  assert.equal(
+    await participation.getByText('Event name not recorded', { exact: true }).isVisible(),
+    true,
+  );
+  assert.ok((await participation.innerText()).includes('Member meeting'));
   assert.equal(await page.getByText('Email confirmed', { exact: true }).isVisible(), true);
   const summary = page.getByRole('region', { name: 'Member summary', exact: true });
   assert.equal(
@@ -115,7 +134,7 @@ export async function exerciseMemberSummary(
   assert.equal(await summary.getByText(/^Left LVBT /).count(), 0);
   await page.getByText('Record history', { exact: true }).click();
   assert.equal(
-    await page.getByText('51 events attended', { exact: true }).count(),
+    await page.locator('.staff-records').getByText('51 events attended', { exact: true }).count(),
     1,
     'activity totals cover older history beyond the current page',
   );
@@ -124,9 +143,9 @@ export async function exerciseMemberSummary(
     true,
   );
   assert.equal(
-    await page.getByText('Attended an event', { exact: true }).first().isVisible(),
+    await participation.getByText(/^51 events attended\b/).isVisible(),
     true,
-    'meaningful engagement stays in the record history',
+    'older participation remains visible despite newer unrelated record activity',
   );
   await people.recordConsent(person.id, { ...consent, givenAt: '2026-01-20T12:00:00Z' });
   await page.reload();
@@ -161,6 +180,56 @@ export async function exerciseMemberSummary(
       await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth),
       true,
     );
+    const associationForm = page.locator('.staff-assignment-form');
+    assert.equal(
+      await associationForm.locator('select[name=role]').count(),
+      0,
+      'committee association is independent of person roles and lead access',
+    );
+    assert.equal(
+      await associationForm.evaluate((el) => getComputedStyle(el).paddingInlineStart),
+      '0px',
+      'the add control has no nested panel padding',
+    );
+    assert.equal(
+      await associationForm.evaluate((el) => getComputedStyle(el).backgroundColor),
+      'rgba(0, 0, 0, 0)',
+    );
+    assert.deepEqual(
+      await page.locator('.staff-person-committee-access').evaluate((el) => {
+        const style = getComputedStyle(el);
+        return [
+          style.marginBlockStart,
+          style.marginBlockEnd,
+          style.paddingBlockStart,
+          style.paddingBlockEnd,
+        ];
+      }),
+      ['0px', '0px', '0px', '0px'],
+      'the compact profile disclosure does not inherit full-page section spacing',
+    );
+    for (const row of await page.locator('.staff-current-assignments > li').all()) {
+      assert.equal((await row.innerText()).includes('Since '), false);
+      assert.equal((await row.innerText()).includes('· Member'), false);
+      const link = await row.locator('.staff-person-link').boundingBox();
+      const remove = await row.locator('.staff-assignment-actions > summary').boundingBox();
+      assert.ok(link && remove);
+      assert.ok(link.height >= 44 && remove.height >= 44);
+      const add = await associationForm
+        .getByRole('button', { name: 'Add to committee', exact: true })
+        .boundingBox();
+      const signOut = await page
+        .getByRole('button', { name: 'Sign out', exact: true })
+        .boundingBox();
+      assert.ok(add && signOut);
+      assert.equal(
+        remove.height,
+        add.height,
+        'primary and secondary buttons share one control size',
+      );
+      assert.equal(remove.height, signOut.height, 'header and row buttons share one control size');
+      assert.ok(link.x + link.width <= remove.x, 'committee and remove action do not collide');
+    }
     await page.screenshot({
       animations: 'disabled',
       fullPage: true,
@@ -239,4 +308,44 @@ export async function exerciseMemberSummary(
   await page.getByRole('button', { name: 'Save changes', exact: true }).click();
   await page.getByRole('heading', { name: 'Ana Reyes', exact: true }).waitFor();
   assert.equal(await page.getByText('Email confirmed', { exact: true }).count(), 0);
+  assert.equal(await page.getByText('Access history', { exact: true }).count(), 0);
+  await page.setViewportSize({ width: 320, height: 900 });
+  await page.getByRole('link', { name: 'Record attendance', exact: true }).click();
+  await page.getByRole('heading', { name: 'Record attendance', exact: true }).waitFor();
+  await page.getByLabel('Event name', { exact: true }).fill('Member orientation');
+  await page.getByLabel('Event date', { exact: true }).fill('2025-02-03');
+  assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
+  await page.screenshot({
+    path: `${fixture.root}/test-results/staff/person-attendance-mobile.png`,
+    fullPage: true,
+  });
+  await Promise.all([
+    page.waitForURL((url) => url.pathname === `/people/${person.id}/`),
+    page.getByRole('button', { name: 'Record attendance', exact: true }).click(),
+  ]);
+  const events = page.getByRole('region', { name: 'Events', exact: true });
+  assert.equal(await events.getByText('Member orientation', { exact: true }).isVisible(), true);
+  assert.equal(await events.getByText(/^52 events attended\b/).isVisible(), true);
+  const attendance = await fixture.db
+    .prepare(
+      "SELECT count(*) AS n FROM engagement_events WHERE person_id=? AND type='attended' AND source='staff'",
+    )
+    .bind(person.id)
+    .first<{ n: number }>();
+  assert.equal(attendance?.n, 1);
+  await page.getByRole('link', { name: 'Record attendance', exact: true }).click();
+  await page.getByLabel('Event name', { exact: true }).fill('Member orientation');
+  await page.getByLabel('Event date', { exact: true }).fill('2025-02-03');
+  await Promise.all([
+    page.waitForURL((url) => url.pathname === `/people/${person.id}/`),
+    page.getByRole('button', { name: 'Record attendance', exact: true }).click(),
+  ]);
+  assert.equal(
+    await page
+      .getByRole('region', { name: 'Events', exact: true })
+      .getByText(/^52 events attended\b/)
+      .isVisible(),
+    true,
+  );
+  await page.setViewportSize({ width: 1440, height: 1000 });
 }

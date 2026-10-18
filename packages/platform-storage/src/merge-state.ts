@@ -39,6 +39,10 @@ export const RELATED_TABLES = {
     columns:
       'id,person_id,committee_id,role,started_at,ended_at,end_reason,assigned_by,ended_by,updated_at',
   },
+  person_organization_roles: {
+    key: 'id',
+    columns: 'id,person_id,role_id,assigned_at,assigned_by,ended_at,ended_by,updated_at',
+  },
   person_corrections: {
     key: 'id',
     columns: 'id,person_id,actor_id,reason,changes,operation_id,corrected_at',

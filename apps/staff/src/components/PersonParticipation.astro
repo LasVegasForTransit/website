@@ -1,0 +1,62 @@
+---
+import { t, formatFullDate } from '@lasvegasfortransit/platform-core/messages';
+import type { StaffParticipation } from '@lasvegasfortransit/platform-storage/staff-participation';
+interface Props {
+  personId: string;
+  participation: StaffParticipation;
+  canRecordAttendance: boolean;
+}
+const { personId, participation, canRecordAttendance } = Astro.props;
+const total = participation.attendedTotal + participation.rsvpTotal;
+---
+
+<section aria-labelledby="participation-heading" class="staff-profile-participation">
+  <h2 id="participation-heading">{t('staff.participation.title')}</h2>
+  {
+    participation.items.length ? (
+      <>
+        <p class="staff-participation-totals">
+          {t('staff.participation.attendedTotal', { count: participation.attendedTotal })} ·{' '}
+          {t('staff.participation.rsvpTotal', { count: participation.rsvpTotal })}
+        </p>
+        {total > participation.items.length && (
+          <p class="staff-help">
+            {t('staff.participation.recent', { count: participation.items.length })}
+          </p>
+        )}
+        <ol class="staff-participation-events">
+          {participation.items.map((item) => (
+            <li class="[overflow-wrap:anywhere]">
+              <strong class="staff-participation-event-name">
+                {item.eventName ?? t('staff.participation.unknownName')}
+              </strong>
+              <p class="staff-participation-event-meta">
+                {item.type === 'attended'
+                  ? t('staff.participation.attended')
+                  : t('staff.participation.rsvp')}{' '}
+                {Number.isFinite(Date.parse(item.occurredAt)) ? (
+                  <time datetime={item.occurredAt}>
+                    {formatFullDate(new Date(item.occurredAt))}
+                  </time>
+                ) : (
+                  t('staff.participation.unknownDate')
+                )}
+              </p>
+            </li>
+          ))}
+        </ol>
+      </>
+    ) : (
+      <p class="staff-help">{t('staff.participation.empty')}</p>
+    )
+  }
+  {
+    canRecordAttendance && (
+      <p class="mt-3">
+        <a href={`/people/${personId}/attendance/`} class="staff-person-link">
+          {t('staff.participation.record')}
+        </a>
+      </p>
+    )
+  }
+</section>

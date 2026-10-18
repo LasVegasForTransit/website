@@ -1,0 +1,50 @@
+---
+import Button from '../../../site/src/components/app/Button.astro';
+import { can } from '@lasvegasfortransit/platform-core/permissions';
+import { ulid } from '@lasvegasfortransit/platform-core/ids';
+import { t } from '@lasvegasfortransit/platform-core/messages';
+import type { StaffPerson } from '@lasvegasfortransit/platform-storage/staff-people';
+interface Props {
+  profile: StaffPerson;
+  token: string;
+  action: string;
+}
+const { profile, token, action } = Astro.props;
+const actor = Astro.locals.staff!.actor;
+const editable = profile.assignments.filter(
+  (item) => !item.ended_at && can(actor, 'committee.assign', { committeeId: item.committee_id }),
+);
+---
+
+{
+  editable.length > 0 && (
+    <details class="staff-person-committee-access">
+      <summary>{t('staff.assignments.accessHeading')}</summary>
+      <p class="staff-help">{t('staff.assignments.accessHint')}</p>
+      <div class="staff-committee-access-list">
+        {editable.map((item) => (
+          <form method="post" action={action} class="staff-form staff-committee-access-form">
+            <input type="hidden" name="token" value={token} />
+            <input type="hidden" name="operation_id" value={ulid()} />
+            <input type="hidden" name="action" value="change" />
+            <input type="hidden" name="assignment_id" value={item.id} />
+            <div>
+              <label for={`access-${item.id}`}>
+                {t('staff.assignments.accessFor', { committee: item.committee_name })}
+              </label>
+              <select id={`access-${item.id}`} name="role">
+                <option value="member" selected={item.role === 'member'}>
+                  {t('staff.assignments.standardAccess')}
+                </option>
+                <option value="lead" selected={item.role === 'lead'}>
+                  {t('staff.assignments.leadAccess')}
+                </option>
+              </select>
+            </div>
+            <Button variant="secondary">{t('staff.assignments.saveAccess')}</Button>
+          </form>
+        ))}
+      </div>
+    </details>
+  )
+}

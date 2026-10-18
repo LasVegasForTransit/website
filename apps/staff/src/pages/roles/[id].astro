@@ -1,0 +1,90 @@
+---
+import { can } from '@lasvegasfortransit/platform-core/permissions';
+import { t } from '@lasvegasfortransit/platform-core/messages';
+import { ulid } from '@lasvegasfortransit/platform-core/ids';
+import { listOrganizationRoles } from '@lasvegasfortransit/platform-storage/organization-roles';
+import { issueFormToken } from '@lasvegasfortransit/platform-storage/form-tokens';
+import StaffLayout from '../../layouts/StaffLayout.astro';
+import Button from '../../../../site/src/components/app/Button.astro';
+import { messageResponse } from '../../lib/responses';
+import {
+  submitOrganizationRole,
+  roleTokenAction,
+  type RoleFeedback,
+} from '../../lib/organization-roles';
+import '../../styles/organization-roles.css';
+const staff = Astro.locals.staff;
+if (!staff || !can(staff.actor, 'person.update'))
+  return messageResponse(t('staff.common.accessDenied'), 403);
+const action = Astro.url.searchParams.get('action');
+if (action !== 'rename' && action !== 'retire')
+  return messageResponse(t('staff.organizationRoles.conflict'), 400);
+const roleId = Astro.params.id ?? '';
+let feedback: RoleFeedback | undefined;
+if (Astro.request.method === 'POST') {
+  const result = await submitOrganizationRole(Astro.request, staff, action, roleId);
+  if (result instanceof Response) return result;
+  feedback = result;
+  Astro.response.status = result.status;
+}
+const role = (await listOrganizationRoles(staff.db, staff.actor, { includeRetired: true })).find(
+  (item) => item.id === roleId,
+);
+if (!role) return messageResponse(t('staff.common.accessDenied'), 404);
+const title =
+  action === 'rename'
+    ? t('staff.organizationRoles.renameHeading', { name: role.name })
+    : t('staff.organizationRoles.retireHeading', { name: role.name });
+const token = await issueFormToken(staff.db, staff.actor, roleTokenAction(action, role.id));
+---
+
+<StaffLayout title={title}>
+  <a slot="breadcrumb" href="/roles/" class="staff-back">{t('staff.organizationRoles.back')}</a>
+  <div class="staff-organization-roles">
+    {
+      feedback && (
+        <p role="alert" class="staff-error">
+          {feedback.message}
+        </p>
+      )
+    }
+    {
+      role.retiredAt ? (
+        <p>{t('staff.organizationRoles.retired')}</p>
+      ) : (
+        <form method="post" action={`/roles/${role.id}/?action=${action}`} class="staff-form">
+          <>
+            <input type="hidden" name="token" value={token} />
+            <input type="hidden" name="operation_id" value={ulid()} />
+          </>
+          {action === 'rename' ? (
+            <div>
+              <label for="role-name">{t('staff.organizationRoles.name')}</label>
+              <input
+                id="role-name"
+                name="name"
+                maxlength="100"
+                required
+                value={feedback?.name ?? role.name}
+              />
+            </div>
+          ) : (
+            <p>{t('staff.organizationRoles.retireHint')}</p>
+          )}
+          <div class="staff-role-actions">
+            <>
+              <Button>
+                {action === 'rename'
+                  ? t('staff.organizationRoles.save')
+                  : t('staff.organizationRoles.retire')}
+              </Button>
+              <a href="/roles/" class="staff-muted-link">
+                {t('staff.common.cancel')}
+              </a>
+            </>
+          </div>
+        </form>
+      )
+    }
+  </div>
+</StaffLayout>

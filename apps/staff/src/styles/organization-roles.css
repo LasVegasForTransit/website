@@ -1,0 +1,105 @@
+@layer components {
+  .staff-organization-roles {
+    max-width: 48rem;
+    overflow-wrap: anywhere;
+  }
+  .staff-role-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+  }
+  .staff-role-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem 1.5rem;
+    flex-wrap: wrap;
+    padding-block: 1rem;
+    border-bottom: 1px solid var(--color-outline-variant);
+  }
+  .staff-role-row > strong,
+  .staff-role-row > div {
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+  .staff-person-roles .staff-role-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 0.5rem 1rem;
+    padding-block: 0.625rem;
+  }
+  .staff-role-actions {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+  }
+  .staff-role-link {
+    display: inline-flex;
+    align-items: center;
+    min-height: 2.75rem;
+    padding: 0.5rem 0.75rem;
+    border: 1px solid var(--color-outline);
+    font-weight: 600;
+    text-decoration: none;
+  }
+  .staff-role-link:hover {
+    background: var(--color-surface-container);
+  }
+  .staff-role-link:focus-visible {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 3px;
+  }
+  .staff-role-create {
+    margin-top: 2rem;
+    padding-top: 1rem;
+    border-top: 2px solid var(--color-on-surface);
+  }
+  .staff-role-create h2 {
+    font-weight: 700;
+    font-size: var(--text-title-lg);
+  }
+  .staff-retired-roles {
+    margin-top: 2rem;
+  }
+  .staff-retired-roles summary {
+    min-height: 2.75rem;
+    cursor: pointer;
+  }
+  .staff-role-section-heading {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 0.5rem 1rem;
+  }
+  .staff-role-section-heading a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 2.75rem;
+  }
+  .staff-role-section-heading h2 {
+    font-weight: 700;
+    font-size: var(--text-title-lg);
+  }
+  .staff-person-role-add {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: end;
+    gap: 0.75rem;
+    margin-top: 1rem;
+  }
+  .staff-person-role-add select {
+    width: 100%;
+    min-width: 0;
+  }
+  @media (max-width: 40rem) {
+    .staff-person-role-add {
+      grid-template-columns: minmax(0, 1fr);
+    }
+    .staff-person-role-add button {
+      justify-self: start;
+    }
+  }
+}

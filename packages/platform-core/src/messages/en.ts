@@ -5,6 +5,8 @@ import { staffPaper } from './staff-paper';
 import { staffAccess } from './staff-access';
 import { staffImports } from './staff-imports';
 import { staffAdministrators } from './staff-administrators';
+import { staffParticipation } from './staff-participation';
+import { staffRoles } from './staff-roles';
 
 // English messages for member and staff screens. Keys are grouped by screen.
 // `{name}` fills in a value. A message that depends on a count is an object
@@ -20,6 +22,8 @@ export const en = {
     ...staffWelcome,
     ...staffImports,
     ...staffAdministrators,
+    ...staffParticipation,
+    ...staffRoles,
   },
   workspace: {
     signIn: 'Sign in with Google',
