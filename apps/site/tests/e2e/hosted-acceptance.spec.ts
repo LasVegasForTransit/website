@@ -1,4 +1,5 @@
 import { expect, test } from '../../scripts/deploy/access-browser';
+import { isProviderSpeculationResponse } from '../../scripts/deploy/hosted-preview-protection';
 import {
   boundHostedBrowserRequests,
   createHostedRequestBudget,
@@ -23,9 +24,10 @@ test('serves the selected release with working assets, navigation and missing-pa
     const kind = response.request().resourceType();
     if (response.ok()) assetTypes.add(kind);
     else if (kind !== 'document') failures.push(`${kind}: ${response.status()}`);
-    if (preview && response.headers()['cache-control'] !== 'private, no-store')
+    const checkPreviewProtection = preview && !isProviderSpeculationResponse(response);
+    if (checkPreviewProtection && response.headers()['cache-control'] !== 'private, no-store')
       failures.push(`${kind}: preview cache protection missing`);
-    if (preview && !response.headers()['x-robots-tag']?.includes('noindex'))
+    if (checkPreviewProtection && !response.headers()['x-robots-tag']?.includes('noindex'))
       failures.push(`${kind}: preview indexing protection missing`);
   });
   await boundHostedBrowserRequests(context, accessRequest, budget, {
