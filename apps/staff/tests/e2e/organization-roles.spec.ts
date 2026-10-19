@@ -51,7 +51,7 @@ try {
     body: createBody.toString(),
   });
   assert.equal(crossOrigin.status, 403);
-  await page.getByRole('button', { name: 'Create role', exact: true }).click();
+  await page.getByRole('button', { name: 'Add role', exact: true }).click();
   await page.getByRole('heading', { name: 'Roles', exact: true }).waitFor();
   assert.equal(
     await page
@@ -60,6 +60,22 @@ try {
       .count(),
     1,
   );
+  for (const [name, width] of [
+    ['desktop', 1024],
+    ['mobile', 320],
+  ] as const) {
+    await page.setViewportSize({ width, height: 900 });
+    assert.equal(
+      await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth),
+      true,
+    );
+    await page.screenshot({
+      path: `${fixture.root}/test-results/staff/organization-roles-${name}-current.png`,
+      fullPage: true,
+      animations: 'disabled',
+    });
+  }
+  await page.setViewportSize({ width: 1280, height: 900 });
   const replay = await fixture.simulator.dispatchFetch(`${ORIGIN}/roles/`, {
     method: 'POST',
     headers: adminHeaders,
@@ -74,7 +90,7 @@ try {
     .getByRole('link', { name: 'Rename Member welcome coordinator', exact: true })
     .waitFor();
   await page.getByLabel('Role name', { exact: true }).fill('Treasurer');
-  await page.getByRole('button', { name: 'Create role', exact: true }).click();
+  await page.getByRole('button', { name: 'Add role', exact: true }).click();
   await page.goto(`${ORIGIN}/people/${fixture.inside.id}/`);
   const roles = page.getByRole('region', { name: 'Roles', exact: true });
   await roles
@@ -99,16 +115,14 @@ try {
     'Role assignment preserves committee membership',
   );
   await page.goto(`${ORIGIN}/roles/`);
-  await page
-    .getByRole('link', { name: 'Stop using Member welcome coordinator', exact: true })
-    .click();
-  await page.getByRole('button', { name: 'Stop using this role', exact: true }).click();
+  await page.getByRole('link', { name: 'Archive Member welcome coordinator', exact: true }).click();
+  await page.getByRole('button', { name: 'Archive role', exact: true }).click();
   await page.goto(`${ORIGIN}/people/${fixture.inside.id}/`);
   await roles
     .locator('.staff-role-list strong')
     .filter({ hasText: 'Member welcome coordinator' })
     .waitFor();
-  await roles.getByText('No longer offered', { exact: true }).waitFor();
+  await roles.getByText('Archived', { exact: true }).waitFor();
   assert.equal(
     await roles.locator('select option').filter({ hasText: 'Member welcome coordinator' }).count(),
     0,

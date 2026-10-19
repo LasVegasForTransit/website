@@ -285,7 +285,7 @@ html {
     grid-template-columns: minmax(0, 1fr) auto;
     align-items: start;
     gap: 1rem 1.5rem;
-    margin-bottom: 2rem;
+    margin-bottom: 1.5rem;
   }
 
   .staff-heading-copy {
@@ -293,16 +293,16 @@ html {
   }
 
   .staff-page-heading h1 {
-    font-size: var(--text-headline-lg);
-    font-weight: var(--text-headline-lg--font-weight);
-    line-height: var(--text-headline-lg--line-height);
-    letter-spacing: var(--text-headline-lg--letter-spacing);
+    font-size: var(--text-headline-md);
+    font-weight: var(--text-headline-md--font-weight);
+    line-height: var(--text-headline-md--line-height);
+    letter-spacing: var(--text-headline-md--letter-spacing);
     overflow-wrap: anywhere;
   }
 
   .staff-heading-copy > p {
     max-width: 60ch;
-    margin-top: 1rem;
+    margin-top: 0.5rem;
     font-size: var(--text-body-md);
     color: var(--color-on-surface-variant);
   }
