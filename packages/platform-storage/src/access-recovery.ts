@@ -34,6 +34,14 @@ export async function requestAccessRetry(
       SELECT ?,?,'access.retry',person_id,json_object('targetId',target_id,'reason','staff_retry'),? FROM integration_outbox WHERE id=? AND changes()>0`,
       )
       .bind(auditId, actor.personId, stamp, operationId),
+    db
+      .prepare(
+        `DELETE FROM provider_operation_receipts WHERE operation_id=? AND provider='discord' AND state='done'
+      AND EXISTS(SELECT 1 FROM staff_audits a JOIN integration_outbox o ON o.id=provider_operation_receipts.operation_id
+        WHERE a.id=? AND a.action='access.retry' AND a.actor_id=? AND a.target_id=o.person_id
+        AND json_extract(a.details,'$.targetId')=o.target_id)`,
+      )
+      .bind(operationId, auditId, actor.personId),
   ]);
   const row = await db
     .prepare(

@@ -125,11 +125,12 @@ export async function runMaintenance(
           limit,
           deletedBefore: new Date(now.getTime() - 30 * 86_400_000).toISOString(),
         });
-  const result = await db.batch([
+  const writes = [
     ...records,
     ...profiles,
     ...(records.length ? [db.prepare('DELETE FROM audit_retention_scope WHERE id=1')] : []),
-  ]);
+  ];
+  const result = writes.length ? await db.batch(writes) : [];
   return {
     viewsRemoved: records.length ? changed(result[1]) : 0,
     auditsRemoved: records.length ? changed(result[2]) : 0,

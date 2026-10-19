@@ -52,22 +52,37 @@ void test('idle Discord selection does not scan retained profiles or opaque pers
   );
 });
 
-void test('legacy erasure seeks unerased profiles without revisiting retained erased profiles', async (context) => {
+void test('idle profile retention probes indexed erasure and purge queues without revisiting retained profiles', async (context) => {
   const db = memoryDb();
   context.after(() => db.raw.close());
   retainedProfiles(db);
-  const plans = queryPlans(db, (sql) => sql.includes('WITH RECURSIVE affected(id) AS ('));
+  const plans = queryPlans(
+    db,
+    (sql) => sql.startsWith('SELECT 1,') && sql.includes('AS newsletter_inbox'),
+  );
+  const snapshots = queryPlans(db, (sql) => sql.includes('WITH RECURSIVE affected(id) AS ('));
 
   const result = await runMaintenance(db, { now: new Date(stamp), category: 'profiles' });
   assert.equal(result.profilesErased, 0);
   assert.equal(result.profilesRemoved, 0);
   assert.equal(db.raw.prepare('SELECT count(*) AS n FROM people').get()?.n, 5000);
-  assert.equal(plans.length, 2);
-  for (const plan of plans)
-    assert.ok(
-      plan.some((step) => /SEARCH p USING .+\(erased_at=\? AND deleted_at>\?\)/.test(step)),
-      'each ownership snapshot must seek the unerased deletion range in an index',
-    );
+  assert.equal(plans.length, 1);
+  assert.equal(snapshots.length, 0, 'an idle pass must not read erasure ownership snapshots');
+  const [plan] = plans;
+  assert.ok(plan);
+  assert.ok(
+    plan.some((step) => /SEARCH p USING .+\(erased_at=\? AND deleted_at>\?\)/.test(step)),
+    'the candidate probe must seek the unerased deletion range in an index',
+  );
+  assert.ok(
+    plan.some((step) => /SEARCH p USING .+\(deleted_at<\?\)/.test(step)),
+    'the candidate probe must seek the expired deletion range in an index',
+  );
+  assert.deepEqual(
+    plan.filter((step) => /^SCAN (?:people|p)(?: |$)/.test(step)),
+    [],
+    'neither candidate queue may scan retained profiles',
+  );
 });
 
 void test('purged profiles retain due Discord removal and wait for confirmed provider completion', async (context) => {

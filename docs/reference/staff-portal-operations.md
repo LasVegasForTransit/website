@@ -113,6 +113,42 @@ local tests does not establish hosted processing. Keep synchronization disabled 
 incoming dispatcher, staff resolution of review cases, and approved live provider acceptance have
 all been verified.
 
+## Keep background work within the shared database allowance
+
+Cloudflare's [D1 pricing reference](https://developers.cloudflare.com/d1/platform/pricing/) defines
+the Free plan's account-wide daily row allowance and midnight UTC reset. Production, preview,
+imports, backups and console queries share that allowance. Count rows scanned by writes and triggers
+as well as reads; limiting query count or returned results does not bound scanned rows.
+
+1. Open **Cloudflare → Storage & databases → D1 SQLite Database → Daily**. Check account-wide rows
+   read and written before an import, migration or release. Keep the approved Free plan.
+2. Open the canonical database's **Overview → Queries**. Compare **Count**, **Rows read** and **Rows
+   written** for the same time range. A frequently executed write with high read volume can indicate
+   an expensive trigger. Preserve only concise diagnostics privately, without member data.
+3. For Discord observation inserts, verify migration **0048** is installed. Its provider-resource
+   index lets the mismatch trigger find newer observations without scanning that person's retained
+   history. Do not drop the trigger, erase observations or remove ownership checks to reduce usage.
+4. Successful Discord work waiting for another provider is revisited hourly. Five-minute account
+   observation expiry controls what the portal can confirm; it does not require repeating unchanged
+   background work every five minutes. New membership changes, disconnects and failed work remain
+   eligible promptly. An accepted staff retry also rechecks Discord promptly while preserving other
+   providers' receipts. Shared completion still requires its existing provider checks.
+5. Profile maintenance uses indexed candidate checks before assembling erasure and purge work. An
+   idle tick skips the full cleanup batch. Due work retains its bounded batches and resumes on
+   subsequent ticks; immediate account erasure and retention rules remain in force.
+6. Run `pnpm -C apps/jobs test` and `pnpm -C packages/platform-storage test` locally. The real local
+   D1 tests measure observation and idle-maintenance rows read with long histories; storage tests
+   cover a full day of cross-provider scheduling and immediate membership changes. These tests use
+   synthetic, local data. Do not run the fixtures against production or preview databases.
+7. If the daily allowance is exhausted, stop manual retries and keep the selected saved release.
+   Wait for the documented reset. Afterward, make one bounded availability check, take the required
+   backup, apply canonical migrations through the normal release flow, then activate the matching
+   protected staff/jobs build. Recover uncertain deployments through their receipts. Do not bypass
+   database gates, toggle production schedules in the dashboard or upgrade the plan implicitly.
+8. After release, inspect actual row usage over several scheduled ticks and again over a full day.
+   Leave headroom for member/staff traffic, imports and backups. Confirm sign-in, member search and
+   provider processing separately. Passing local budgets does not establish a healthy live day.
+
 ## Scheduled newsletter processing
 
 This procedure is for a maintainer preparing newsletter synchronization. Keep Beehiiv on Free and

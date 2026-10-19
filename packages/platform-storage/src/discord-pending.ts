@@ -2,6 +2,7 @@ import type { Db } from './db';
 import { PERSON_OPERATION_ELIGIBLE } from './outbox';
 /** One due operation per verified account; other providers retain their own completion state.
  * Opaque keys mirror deletion state without materializing every retained profile.
+ * Successful unchanged work refreshes hourly; display freshness does not schedule retries.
  */
 export async function pendingDiscordOperations(
   db: Db,
@@ -23,11 +24,16 @@ export async function pendingDiscordOperations(
       AND EXISTS(SELECT 1 FROM identities WHERE person_id=p.id AND platform='discord' AND link_method IN ('self_linked','staff_confirmed'))
       AND (
         EXISTS(SELECT 1 FROM identities i JOIN discord_disconnects d ON d.identity_record_id=i.id WHERE i.person_id=p.id AND i.platform='discord')
-        OR NOT EXISTS(SELECT 1 FROM provider_operation_receipts r WHERE r.operation_id=o.id AND r.provider='discord' AND r.state='done' AND r.expires_at>?)
+        OR NOT EXISTS(SELECT 1 FROM provider_operation_receipts r WHERE r.operation_id=o.id AND r.provider='discord' AND r.state='done' AND r.observed_at>? AND r.observed_at<=?)
       )
     ) WHERE position=1 ORDER BY last_observed,created_at,id LIMIT ?`,
     )
-    .bind(now.toISOString(), now.toISOString(), limit)
+    .bind(
+      now.toISOString(),
+      new Date(now.getTime() - 3_600_000).toISOString(),
+      now.toISOString(),
+      limit,
+    )
     .all<{ id: string }>();
   return results.map((row) => row.id);
 }
