@@ -41,7 +41,7 @@ void test('idle Discord selection does not scan retained profiles or opaque pers
   const db = memoryDb();
   context.after(() => db.raw.close());
   retainedProfiles(db);
-  const plans = queryPlans(db, (sql) => sql.startsWith('SELECT id FROM ('));
+  const plans = queryPlans(db, (sql) => sql.startsWith('WITH candidate_page AS MATERIALIZED'));
 
   assert.deepEqual(await pendingDiscordOperations(db, new Date(stamp), 1), []);
   assert.equal(plans.length, 1);

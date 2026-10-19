@@ -121,7 +121,9 @@ imports, backups and console queries share that allowance. Count rows scanned by
 as well as reads; limiting query count or returned results does not bound scanned rows.
 
 1. Open **Cloudflare → Storage & databases → D1 SQLite Database → Daily**. Check account-wide rows
-   read and written before an import, migration or release. Keep the approved Free plan.
+   read and written before an import, migration or release. Use the approved Workers Paid capacity
+   plan for the staff availability target. Verify the subscription before treating Free daily
+   cutoffs as removed.
 2. Open the canonical database's **Overview → Queries**. Compare **Count**, **Rows read** and **Rows
    written** for the same time range. A frequently executed write with high read volume can indicate
    an expensive trigger. Preserve only concise diagnostics privately, without member data.
@@ -133,21 +135,33 @@ as well as reads; limiting query count or returned results does not bound scanne
    background work every five minutes. New membership changes, disconnects and failed work remain
    eligible promptly. An accepted staff retry also rechecks Discord promptly while preserving other
    providers' receipts. Shared completion still requires its existing provider checks.
-5. Profile maintenance uses indexed candidate checks before assembling erasure and purge work. An
+5. Profile maintenance uses indexed candidate checks before assembling erasure and purge work.
+   Migration **0049** indexes audit targets so due erasure does not scan unrelated audit history. An
    idle tick skips the full cleanup batch. Due work retains its bounded batches and resumes on
    subsequent ticks; immediate account erasure and retention rules remain in force.
-6. Run `pnpm -C apps/jobs test` and `pnpm -C packages/platform-storage test` locally. The real local
+6. Migration **0050** gives provider selectors fixed pages: 16 urgent removals, 16 other explicit
+   changes and 32 periodic operations per call. Each selector advances its own cursor atomically
+   with its eligibility checks. Blocked work cannot force a scan of the whole queue. A large backlog
+   within one lane takes multiple calls to revisit. Apply the migration before activating the
+   matching jobs release; the backfill and index creation themselves consume database allowance.
+7. Run `pnpm -C apps/jobs test` and `pnpm -C packages/platform-storage test` locally. The real local
    D1 tests measure observation and idle-maintenance rows read with long histories; storage tests
    cover a full day of cross-provider scheduling and immediate membership changes. These tests use
    synthetic, local data. Do not run the fixtures against production or preview databases.
-7. If the daily allowance is exhausted, stop manual retries and keep the selected saved release.
+8. If the daily allowance is exhausted, stop manual retries and keep the selected saved release.
    Wait for the documented reset. Afterward, make one bounded availability check, take the required
    backup, apply canonical migrations through the normal release flow, then activate the matching
    protected staff/jobs build. Recover uncertain deployments through their receipts. Do not bypass
    database gates, toggle production schedules in the dashboard or upgrade the plan implicitly.
-8. After release, inspect actual row usage over several scheduled ticks and again over a full day.
-   Leave headroom for member/staff traffic, imports and backups. Confirm sign-in, member search and
-   provider processing separately. Passing local budgets does not establish a healthy live day.
+9. Inspect `job_database_usage` records for each scheduled database job. Each record includes
+   executed statements, `rows_read`, `rows_written`, `metadata_missing` and `quota_exhausted`.
+   Missing metadata or a failed query means the row totals are incomplete; do not treat them as a
+   daily account total. A recognized D1 quota failure stops subsequent database work in that
+   invocation and aborts the remaining scheduled steps. Later cron invocations still run; this is
+   not an account-wide cooldown.
+10. After release, inspect actual row usage over several scheduled ticks and again over a full day.
+    Leave headroom for member/staff traffic, imports and backups. Confirm sign-in, member search and
+    provider processing separately. Passing local budgets does not establish a healthy live day.
 
 ## Scheduled newsletter processing
 
@@ -1544,3 +1558,29 @@ deployment, or staff usability. Record real administrator, committee-lead and re
 outcomes, provider readback and recovery, three staff sessions including assistive technology, and
 the agreed week of production use before declaring launch complete. Keep member contact data and
 private task tracking out of public release evidence.
+
+## Staff request failures
+
+For maintainers investigating an unavailable staff page, check Worker logs for
+`staff_request_failed`. The record includes the request layer, a generated request ID and a fixed
+failure category. `database_read_limit` identifies an exhausted D1 read allowance, including a
+nested database error. `database_write_limit` identifies exhausted writes. `unexpected` requires
+further investigation. Logs deliberately omit exception text, SQL, request URLs, cookies and member
+details.
+
+The staff gateway replaces server errors and unknown pages with an LVBT recovery page. The page
+contains its own styles, Public Sans font and LVBT marks and needs no database, scripts or asset
+requests. Its brand data is generated from the normal staff and public-site sources. After changing
+those sources, run `pnpm -C apps/staff brand:recovery` and review light and dark desktop and phone
+renders. Staff builds and synchronization reject stale generated brand data. Staff and volunteers
+get contact and navigation links without provider diagnostics. After a failed submission, they must
+check the saved record before submitting again because a response failure does not prove that the
+write failed.
+
+For `database_read_limit`, follow the allowance recovery steps above. A new error page does not
+restore database availability. After the allowance resets, verify sign-in and member search through
+the protected release flow, then inspect usage across scheduled ticks. Do not upgrade billing or
+bypass release gates as an incident workaround.
+
+The [staff availability target](staff-availability.md) defines the measurement and release evidence
+needed before claiming 99.9% availability.

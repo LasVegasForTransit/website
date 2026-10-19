@@ -1,3 +1,4 @@
+import { messageResponse } from './responses';
 import {
   discordProviderConfiguration,
   type DiscordRuntimeEnv,
@@ -67,7 +68,7 @@ export async function resolveStaffContext(
     return new Response(null, { status: 303, headers: { Location: '/paper/' } });
   if (!actor || route === 'denied') {
     if (actor) await auditDenied(env.PLATFORM_DB, actor.personId, 'console.enter');
-    return new Response("You don't have access to this", { status: 403 });
+    return messageResponse("You don't have access to this", 403);
   }
   return {
     actor,

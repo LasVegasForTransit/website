@@ -1,5 +1,6 @@
 import type { Db } from './db';
 import { PERSON_OPERATION_ELIGIBLE } from './outbox';
+import { OUTBOX_CANDIDATES, claimOutboxSelection } from './outbox-selection';
 
 export interface ProviderCompletionOptions {
   limit?: number;
@@ -18,11 +19,13 @@ export async function completeProviderOperations(
   if (!Number.isInteger(limit) || limit < 1 || limit > 100 || !Number.isFinite(now.getTime()))
     throw new Error('Invalid provider completion configuration');
 
-  const result = await db
-    .prepare(
-      `UPDATE integration_outbox SET state='done',last_failure=NULL,updated_at=?
+  const result = await db.batch([
+    claimOutboxSelection(db, 'completion', now.toISOString()),
+    db
+      .prepare(
+        `${OUTBOX_CANDIDATES} UPDATE integration_outbox SET state='done',last_failure=NULL,updated_at=?
     WHERE id IN (
-      SELECT o.id FROM integration_outbox o
+      SELECT o.id FROM candidate_page candidate CROSS JOIN integration_outbox o ON o.id=candidate.id
       JOIN reconcile_generations g ON g.person_id=o.person_id
         AND g.target_id=o.target_id AND g.generation=o.generation
       JOIN person_keys p ON p.id=o.person_id
@@ -60,18 +63,20 @@ export async function completeProviderOperations(
           SELECT 1 FROM identities i WHERE i.person_id=o.person_id
             AND i.platform NOT IN ('discord','google_workspace')
         )
-      ORDER BY o.created_at,o.id LIMIT ?
-    ) AND state IN ('queued','running','retry')`,
-    )
-    .bind(
-      now.toISOString(),
-      now.toISOString(),
-      now.toISOString(),
-      now.toISOString(),
-      now.toISOString(),
-      now.toISOString(),
-      limit,
-    )
-    .run();
-  return result.meta.changes;
+      ORDER BY candidate.lane,o.created_at,o.id LIMIT ?
+    )`,
+      )
+      .bind(
+        'completion',
+        now.toISOString(),
+        now.toISOString(),
+        now.toISOString(),
+        now.toISOString(),
+        now.toISOString(),
+        now.toISOString(),
+        limit,
+      ),
+  ]);
+  const completed = result[1] as { meta: { changes: number } };
+  return completed.meta.changes;
 }

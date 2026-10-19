@@ -1,3 +1,4 @@
+import { messageResponse } from './responses';
 import { t } from '@lasvegasfortransit/platform-core/messages';
 import { readCookie, sessionCookies } from '@lasvegasfortransit/platform-core/web-auth';
 import {
@@ -70,6 +71,9 @@ export async function workspaceLinkPage(
       ? await submitEmail(context, form)
       : action === 'confirm' && email
         ? await submitCode(context, form, email)
-        : new Response('Unknown action.', { status: 400 });
+        : messageResponse(
+            'We couldn’t complete this sign-in step. Return to staff home to start again.',
+            400,
+          );
   return result instanceof Response ? result : { ...page, ...result };
 }

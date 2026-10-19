@@ -1,3 +1,4 @@
+import { messageResponse } from './responses';
 import { t } from '@lasvegasfortransit/platform-core/messages';
 import { digestToken } from '@lasvegasfortransit/platform-core/random-token';
 import { signToken, verifyToken } from '@lasvegasfortransit/platform-core/signing';
@@ -40,7 +41,7 @@ export async function requestLinkCode(
   });
   if (result.kind === 'expired') return expiredWorkspaceConfirmation();
   if (result.kind === 'rate_limited')
-    return new Response('Too many attempts. Please try again later.', { status: 429 });
+    return messageResponse('Please wait before requesting another sign-in email.', 429);
   if (result.kind === 'issued') {
     const body = t('workspace.emailBody', { code: result.issued.code });
     input.waitUntil(

@@ -1,4 +1,5 @@
 ---
+import { messageResponse } from '../../lib/responses';
 import { env } from 'cloudflare:workers';
 import Button from '../../../../site/src/components/app/Button.astro';
 import StaffLayout from '../../layouts/StaffLayout.astro';
@@ -7,7 +8,7 @@ import { bootstrapInitialStaffAdmin, getInitialStaffAdminState } from '../../lib
 
 const staffEnv = env as unknown as StaffEnv;
 const access = Astro.locals.access;
-if (!access) return new Response("You don't have access to this", { status: 403 });
+if (!access) return messageResponse("You don't have access to this", 403);
 
 let state =
   Astro.request.method === 'POST'

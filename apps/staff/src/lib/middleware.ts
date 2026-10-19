@@ -1,3 +1,4 @@
+import { requestFailure, recoverStaffResponse } from './request-failure';
 import { t } from '@lasvegasfortransit/platform-core/messages';
 import { verifyAccessAssertion } from '@lasvegasfortransit/platform-integrations/access-identity';
 import { resolveStaffContext, type StaffEnv, type StaffLocals } from './context';
@@ -46,8 +47,11 @@ export async function staffMiddleware(
     }
     if (request.method === 'POST' && request.headers.get('Origin') !== new URL(request.url).origin)
       return messageResponse(t('staff.common.reload'), 403);
-    return privateResponse(await context.next(), new URL(request.url).pathname);
-  } catch {
-    return messageResponse(t('staff.common.loadFailed'), 503);
+    return privateResponse(
+      recoverStaffResponse(await context.next()),
+      new URL(request.url).pathname,
+    );
+  } catch (error) {
+    return requestFailure(error, 'middleware');
   }
 }

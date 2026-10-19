@@ -162,7 +162,7 @@ void test('linked volunteers without a current lead or admin designation receive
     },
   });
   assert.equal(response.status, 403);
-  assert.equal(await response.text(), "You don't have access to this");
+  assert.match(await response.text(), /You can’t open this page/);
   privateHeaders(response);
   db.raw.close();
 });

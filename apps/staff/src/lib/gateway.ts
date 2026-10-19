@@ -1,3 +1,4 @@
+import { requestFailure, recoverStaffResponse } from './request-failure';
 import { t } from '@lasvegasfortransit/platform-core/messages';
 import { verifyAccessAssertion } from '@lasvegasfortransit/platform-integrations/access-identity';
 import { staffOriginAllowed } from './middleware';
@@ -14,8 +15,11 @@ export async function guardStaffGateway(
       !(await verifyAccessAssertion(request, env, { fetch: context.fetch }))
     )
       return messageResponse(t('staff.common.accessDenied'), 403);
-    return privateResponse(await context.next(), new URL(request.url).pathname);
-  } catch {
-    return messageResponse(t('staff.common.loadFailed'), 503);
+    return privateResponse(
+      recoverStaffResponse(await context.next()),
+      new URL(request.url).pathname,
+    );
+  } catch (error) {
+    return requestFailure(error, 'gateway');
   }
 }

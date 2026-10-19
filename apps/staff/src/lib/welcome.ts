@@ -8,7 +8,7 @@ import type { StaffContext } from './context';
 import { STAFF_PERSON_SCOPE } from '@lasvegasfortransit/platform-storage/staff-scope';
 import type { Db } from '@lasvegasfortransit/platform-storage/db';
 import { field } from './forms';
-import { privateResponse } from './responses';
+import { messageResponse } from './responses';
 export const METHOD_LABELS = {
   email: 'Email',
   phone: 'Phone',
@@ -40,13 +40,7 @@ export async function fullProfileAllowed(
   );
 }
 function welcomeFailure(message: string, status: number): Response {
-  const text = message.replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;');
-  return privateResponse(
-    new Response(
-      `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Welcome follow-up · LVBT staff</title></head><body><main><h1>Welcome follow-up</h1><p role="alert">${text}</p><a href="/welcome/">Back to welcome members</a></main></body></html>`,
-      { status, headers: { 'Content-Type': 'text/html; charset=utf-8' } },
-    ),
-  );
+  return messageResponse(message, status, 'welcome');
 }
 export async function welcomeAction(
   request: Request,

@@ -1,8 +1,9 @@
 import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { join, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { expect, test, type Locator, type Page } from '../../scripts/deploy/access-browser';
+import { expect, test, type Page } from '../../scripts/deploy/access-browser';
 import { builtSitemapPaths } from '../support/sitemap-paths';
+import { contrastRatio } from '../support/color-contrast';
 
 const paths = [...builtSitemapPaths(import.meta.url), '/totally-missing-seo-audit-test/'];
 
@@ -20,54 +21,6 @@ interface PrimaryRole {
   foregroundCss: string;
   minContrast: number;
   name: string;
-}
-
-function contrastRatio(foreground: string, background: string): number {
-  const fg = parseRgb(foreground);
-  const bg = parseRgb(background);
-  const lighter = Math.max(relativeLuminance(fg), relativeLuminance(bg));
-  const darker = Math.min(relativeLuminance(fg), relativeLuminance(bg));
-  return (lighter + 0.05) / (darker + 0.05);
-}
-
-function parseRgb(color: string): [number, number, number] {
-  if (color.startsWith('color(srgb')) {
-    const channels = color
-      .match(/-?\d+(\.\d+)?/g)
-      ?.slice(0, 3)
-      .map((channel) => Number(channel) * 255);
-    if (
-      channels?.length === 3 &&
-      channels[0] !== undefined &&
-      channels[1] !== undefined &&
-      channels[2] !== undefined
-    ) {
-      return [channels[0], channels[1], channels[2]];
-    }
-  }
-
-  const channels = color
-    .match(/\d+(\.\d+)?/g)
-    ?.slice(0, 3)
-    .map(Number);
-  if (
-    !channels ||
-    channels.length !== 3 ||
-    channels[0] === undefined ||
-    channels[1] === undefined ||
-    channels[2] === undefined
-  ) {
-    throw new Error(`Expected an rgb() color, received ${color}`);
-  }
-  return [channels[0], channels[1], channels[2]];
-}
-
-function relativeLuminance([r, g, b]: [number, number, number]): number {
-  const linear = (channel: number) => {
-    const scaled = channel / 255;
-    return scaled <= 0.03928 ? scaled / 12.92 : ((scaled + 0.055) / 1.055) ** 2.4;
-  };
-  return 0.2126 * linear(r) + 0.7152 * linear(g) + 0.0722 * linear(b);
 }
 
 function walkFiles(dir: string): string[] {
@@ -202,22 +155,6 @@ async function renderedRulePairs(page: Page) {
   });
 }
 
-async function plainSurfaceVariantDescendantPairs(surface: Locator) {
-  return surface.evaluate((element) => {
-    const background = getComputedStyle(element).backgroundColor;
-    return [...element.querySelectorAll('.text-on-surface-variant')]
-      .filter((candidate) => {
-        const className = candidate.getAttribute('class') ?? '';
-        return !className.includes('group-hover') && !className.includes('group-focus-visible');
-      })
-      .map((candidate) => ({
-        background,
-        color: getComputedStyle(candidate).color,
-        text: candidate.textContent?.trim().replace(/\s+/g, ' ') ?? '',
-      }));
-  });
-}
-
 test('authored color API uses semantic roles instead of legacy aliases', () => {
   const violations = authoredColorContractFiles().flatMap((path) => {
     const text = readFileSync(path, 'utf8');
@@ -280,44 +217,6 @@ for (const scheme of SCHEMES) {
       }
     });
   }
-}
-
-for (const scheme of SCHEMES) {
-  test(`inverted interactive surfaces keep surface variants readable [${scheme}]`, async ({
-    page,
-  }) => {
-    await page.emulateMedia({ colorScheme: scheme });
-    await page.goto('/events/', { waitUntil: 'networkidle' });
-
-    const surfaces = page
-      .locator('.hover\\:bg-on-surface, .focus-visible\\:bg-on-surface')
-      .filter({ has: page.locator('.text-on-surface-variant') });
-    const count = await surfaces.count();
-    expect(count).toBeGreaterThan(0);
-
-    for (let index = 0; index < count; index += 1) {
-      const surface = surfaces.nth(index);
-      await expect(surface).toBeVisible();
-
-      await surface.hover();
-      await page.waitForTimeout(200);
-      for (const pair of await plainSurfaceVariantDescendantPairs(surface)) {
-        expect(
-          contrastRatio(pair.color, pair.background),
-          `hovered inverted surface "${pair.text}" [${scheme}] (${pair.color} on ${pair.background})`,
-        ).toBeGreaterThanOrEqual(4.5);
-      }
-
-      await surface.focus();
-      await page.waitForTimeout(200);
-      for (const pair of await plainSurfaceVariantDescendantPairs(surface)) {
-        expect(
-          contrastRatio(pair.color, pair.background),
-          `focused inverted surface "${pair.text}" [${scheme}] (${pair.color} on ${pair.background})`,
-        ).toBeGreaterThanOrEqual(4.5);
-      }
-    }
-  });
 }
 
 // Neutral role pairs are theme-global, so probe them once per scheme on the

@@ -236,7 +236,12 @@ try {
   );
   const removed = await page.goto(`${ORIGIN}/people/`);
   assert.equal(removed?.status(), 403);
-  assert.equal((await page.textContent('body'))?.trim(), "You don't have access to this");
+  assert.equal(await page.getByRole('heading', { name: 'You can’t open this page' }).count(), 1);
+  assert.equal(await page.getByText("You don't have access to this", { exact: true }).count(), 1);
+  assert.equal(
+    await page.getByRole('link', { name: 'Return to staff home', exact: true }).count(),
+    1,
+  );
   await context.setExtraHTTPHeaders({ 'Cf-Access-Jwt-Assertion': fixture.admin.assertion });
   await context.clearCookies();
   await context.addCookies([

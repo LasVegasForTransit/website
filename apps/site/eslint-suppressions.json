@@ -298,10 +298,7 @@
   },
   "tests/e2e/color-contracts.spec.ts": {
     "@typescript-eslint/no-unnecessary-condition": {
-      "count": 5
-    },
-    "@typescript-eslint/prefer-optional-chain": {
-      "count": 1
+      "count": 3
     }
   },
   "tests/e2e/event-metadata.spec.ts": {
