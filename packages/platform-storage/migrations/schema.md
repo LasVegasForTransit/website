@@ -833,3 +833,12 @@ person's associations and prevents their recreation; the shared catalog remains.
 include role names and dates without the assigning staff identifiers. Administrator archives retain
 the catalog once and role association history with each person. Applying this additive migration
 before activating the corresponding applications leaves existing permissions unchanged.
+
+### Observation read budget (0048)
+
+`access_observation_resource_latest` indexes a person's provider, server context, resource and
+observation time. The Discord mismatch trigger compares shared role observations by that resource
+rather than by committee target. Its newer-observation check therefore remains an indexed range
+lookup as historical snapshots accumulate. The existing trigger, equal-time row ordering, ownership,
+generation, lease and expected-access guards remain unchanged. Apply the index before accepting the
+corresponding scheduled release; query counts alone do not measure rows read by triggers.

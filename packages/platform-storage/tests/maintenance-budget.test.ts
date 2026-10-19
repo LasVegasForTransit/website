@@ -3,6 +3,7 @@ import test from 'node:test';
 import { memoryDb } from './support/db';
 import { queryBudget } from '../src/query-budget';
 import { runMaintenance } from '../src/retention';
+import { newsletterErasureWrites } from '../src/newsletter-erasure';
 
 void test('atomic profile erasure fits its own Free invocation without unrelated audit statements', async () => {
   const native = memoryDb();
@@ -41,6 +42,58 @@ void test('audit maintenance fits its own budget and leaves profile erasure to i
       'Legacy private',
     );
     assert.equal(native.raw.prepare('SELECT count(*) AS n FROM audit_retention_scope').get()?.n, 0);
+  } finally {
+    native.raw.close();
+  }
+});
+
+void test('a pre-inbox schema can reuse its observed absence without newsletter cleanup', async () => {
+  const native = memoryDb('0035_newsletter_write_recovery.sql');
+  try {
+    const inboxPresent = Boolean(
+      await native
+        .prepare("SELECT 1 FROM sqlite_master WHERE name='newsletter_inbound_events'")
+        .first(),
+    );
+    assert.equal(inboxPresent, false);
+    assert.deepEqual(
+      await newsletterErasureWrites(
+        native,
+        {
+          sql: 'SELECT id FROM people WHERE id=? AND erased_at IS NULL',
+          values: ['person'],
+          knownInboxPresence: inboxPresent,
+        },
+        'erasure',
+        '2026-10-18',
+      ),
+      [],
+    );
+    assert.deepEqual(await newsletterErasureWrites(native, 'person', 'erasure', '2026-10-18'), []);
+  } finally {
+    native.raw.close();
+  }
+});
+void test('an observed inbox still requires its erasure migration', async () => {
+  const native = memoryDb('0036_newsletter_inbound.sql');
+  try {
+    const inboxPresent = Boolean(
+      await native
+        .prepare("SELECT 1 FROM sqlite_master WHERE name='newsletter_inbound_events'")
+        .first(),
+    );
+    assert.equal(inboxPresent, true);
+    const writes = await newsletterErasureWrites(
+      native,
+      {
+        sql: 'SELECT id FROM people WHERE id=? AND erased_at IS NULL',
+        values: ['person'],
+        knownInboxPresence: inboxPresent,
+      },
+      'erasure',
+      '2026-10-18',
+    );
+    await assert.rejects(native.batch(writes), /no such table: newsletter_erasure_checks/);
   } finally {
     native.raw.close();
   }
