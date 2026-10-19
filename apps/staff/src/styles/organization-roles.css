@@ -1,6 +1,6 @@
 @layer components {
   .staff-organization-roles {
-    max-width: 48rem;
+    max-width: 36rem;
     overflow-wrap: anywhere;
   }
   .staff-role-list {
@@ -9,12 +9,11 @@
     margin: 0;
   }
   .staff-role-row {
-    display: flex;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
     align-items: center;
-    justify-content: space-between;
     gap: 0.75rem 1.5rem;
-    flex-wrap: wrap;
-    padding-block: 1rem;
+    padding-block: 0.75rem;
     border-bottom: 1px solid var(--color-outline-variant);
   }
   .staff-role-row > strong,
@@ -33,35 +32,34 @@
     display: flex;
     align-items: center;
     flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+  .staff-form.staff-role-create {
+    max-width: 30rem;
+    margin-top: 0;
+    gap: 0.5rem;
+  }
+  .staff-role-create > label {
+    margin: 0;
+  }
+  .staff-role-create-controls {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: end;
     gap: 0.75rem;
   }
-  .staff-role-link {
-    display: inline-flex;
-    align-items: center;
-    min-height: 2.75rem;
+  .staff-role-create-controls input {
     padding: 0.5rem 0.75rem;
-    border: 1px solid var(--color-outline);
-    font-weight: 600;
-    text-decoration: none;
   }
-  .staff-role-link:hover {
-    background: var(--color-surface-container);
+  .staff-organization-roles > .staff-role-list {
+    margin-top: 1.5rem;
+    border-top: 1px solid var(--color-outline-variant);
   }
-  .staff-role-link:focus-visible {
-    outline: 2px solid var(--color-primary);
-    outline-offset: 3px;
-  }
-  .staff-role-create {
-    margin-top: 2rem;
-    padding-top: 1rem;
-    border-top: 2px solid var(--color-on-surface);
-  }
-  .staff-role-create h2 {
-    font-weight: 700;
-    font-size: var(--text-title-lg);
+  .staff-role-empty {
+    margin-top: 1.5rem;
   }
   .staff-retired-roles {
-    margin-top: 2rem;
+    margin-top: 1.5rem;
   }
   .staff-retired-roles summary {
     min-height: 2.75rem;
@@ -100,6 +98,12 @@
     }
     .staff-person-role-add button {
       justify-self: start;
+    }
+  }
+  @media (max-width: 36rem) {
+    .staff-organization-roles .staff-role-row {
+      grid-template-columns: minmax(0, 1fr);
+      gap: 0.5rem;
     }
   }
 }

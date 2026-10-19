@@ -8,7 +8,7 @@ several roles and belong to several committees. Assign these independently.
 1. Sign in to the staff portal as an administrator.
 2. Open **Members**, then **Member records → Manage roles**. You can also select **Manage roles**
    beside the Roles section on a member's profile.
-3. Enter a short, distinct **Role name**, then select **Create role**. The name is now available on
+3. Enter a short, distinct **Role name**, then select **Add role**. The name is now available on
    member profiles.
 
 ## Assign or remove a role
@@ -27,9 +27,9 @@ continue to control those permissions.
 
 - Select **Rename** beside a role, enter the new name, and select **Save name**. Existing member
   assignments show the new name.
-- Select **Stop using** beside a role and confirm **Stop using this role**. It disappears from new
-  assignment choices. Members who already have it keep it, marked **No longer offered**, until you
-  remove it from their profiles.
+- Select **Archive** beside a role and confirm **Archive role**. It disappears from new assignment
+  choices. Members who already have it keep it, marked **Archived**, until you remove it from their
+  profiles.
 
 If a form expires, reload the current page before trying again. If a name is already in use, choose
 a distinct name. Staff actions record who changed the role or assignment; you do not need to enter
