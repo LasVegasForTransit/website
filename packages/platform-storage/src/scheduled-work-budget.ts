@@ -1,6 +1,6 @@
 import type { Db } from './db';
 
-export const SCHEDULED_RESERVATION = { reads: 50_000, writes: 2_000 };
+export const SCHEDULED_RESERVATION = { reads: 50_000, writes: 4_000 };
 // Both settlement statements touch one singleton primary-key row; charge their allowance before release.
 export const SCHEDULED_CONTROL_ALLOWANCE = { reads: 8, writes: 8 };
 export interface ScheduledWorkLease {

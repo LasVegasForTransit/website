@@ -290,8 +290,6 @@ try {
     .prepare("UPDATE provider_scan_checkpoints SET next_scan_at='2000-01-01T00:00:00.000Z'")
     .run();
   await worker.scheduled({ cron: '* * * * *' });
-  assert.equal(roles.has(memberRoleId), false, 'an idle queue does not receive a second poll');
-  await worker.scheduled({ cron: '* * * * *' });
   assert.equal(
     roles.has(memberRoleId),
     true,
@@ -329,7 +327,6 @@ try {
   await db
     .prepare("UPDATE provider_scan_checkpoints SET next_scan_at='2000-01-01T00:00:00.000Z'")
     .run();
-  await worker.scheduled({ cron: '* * * * *' });
   await worker.scheduled({ cron: '* * * * *' });
   assert.deepEqual(
     [...roles],

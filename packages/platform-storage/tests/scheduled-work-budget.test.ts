@@ -6,6 +6,7 @@ import {
   reserveScheduledWork,
   settleScheduledWork,
   SCHEDULED_CONTROL_ALLOWANCE,
+  SCHEDULED_RESERVATION,
 } from '../src/scheduled-work-budget';
 
 function fixture() {
@@ -116,8 +117,8 @@ void test('old UTC day settlement cannot alter the next day ledger', async () =>
 });
 void test('preview and production retain separate conservative daily caps', async () => {
   for (const [environment, runs] of [
-    ['production', 20],
-    ['preview', 2],
+    ['production', 10],
+    ['preview', 1],
   ] as const) {
     const f = fixture();
     try {
@@ -368,6 +369,27 @@ void test('lost final-release acknowledgment reports uncertainty after verified 
     );
     assert.ok(logs.some((line) => line.includes('scheduled_budget_release_uncertain')));
     assert.ok(!logs.some((line) => line.includes('scheduled_budget_settled')));
+  } finally {
+    f.native.raw.close();
+  }
+});
+
+void test('the next invocation requires its full write reservation below the daily allocation', async () => {
+  const f = fixture();
+  try {
+    const lease = await reserveScheduledWork(f.db, 'production', at(), 'first');
+    assert.ok(lease);
+    await settleScheduledWork(f.db, lease, usage, { failed: false, now: at() });
+    const boundary = 40_000 - SCHEDULED_RESERVATION.writes;
+    f.native.raw.prepare('UPDATE scheduled_work_budget SET charged_writes=?').run(boundary + 1);
+    assert.equal(await reserveScheduledWork(f.db, 'production', at(), 'above'), null);
+    f.native.raw.prepare('UPDATE scheduled_work_budget SET charged_writes=?').run(boundary);
+    assert.ok(await reserveScheduledWork(f.db, 'production', at(), 'exact'));
+    assert.equal(
+      f.native.raw.prepare('SELECT charged_writes FROM scheduled_work_budget').get()
+        ?.charged_writes,
+      40_000,
+    );
   } finally {
     f.native.raw.close();
   }

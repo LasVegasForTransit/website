@@ -49,12 +49,14 @@ day. Preview jobs use 250,000 reads and 5,000 writes. Together those allocations
 Free account allowance outside these scheduled jobs. Staff/member requests, imports, backups and
 other databases are not counted by this ledger and can still exhaust that remaining allowance.
 
-Each cron invocation reserves 50,000 reads and 2,000 writes atomically before starting its jobs. A
+Each cron invocation reserves 50,000 reads and 4,000 writes atomically before starting its jobs. A
 120-second lease prevents overlapping parent runs. Jobs return actual D1 row counters. Successful
 settlement refunds unused capacity and charges the guard plus a conservative allowance for its own
-settlement. A crash keeps its reservation. A stale run cannot refund a newer lease or another UTC
-day. One bounded database statement can exceed a reservation before D1 reports its cost; an overrun
-charges the measured amount and closes background work for the day.
+settlement. A crash keeps its reservation. Admission requires room for the full reservation, so work
+can stop with fewer than 50,000 reads or 4,000 writes left in its allocation. A stale run cannot
+refund a newer lease or another UTC day. One bounded database statement can exceed a reservation
+before D1 reports its cost; an overrun charges the measured amount and closes background work for
+the day.
 
 Missing job telemetry, database errors and unverified RPC results close background work through the
 UTC reset. Settlement keeps the full reservation and admission closed while verifying its first
@@ -80,9 +82,9 @@ stateDiagram-v2
 ```
 
 Budget deferral can delay scheduled reconciliation and retention work. Admitted runs process
-incoming choices and a prioritized account pass before optional scans. Existing consent, ownership
-and provider leases still apply. Direct staff/member requests do not enter this scheduled-work
-budget. Do not promise immediate background revocations after the budget closes.
+incoming choices, provider scans and saved poll choices before outgoing account changes. Existing
+consent, ownership and provider leases still apply. Direct staff/member requests do not enter this
+scheduled-work budget. Do not promise immediate background revocations after the budget closes.
 
 Records cleanup runs on the hourly tick, rather than every minute. It removes expired claims, stale
 snapshots and records past their retention period in bounded batches. Reads must reject expired
