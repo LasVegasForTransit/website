@@ -339,6 +339,8 @@ void test('an ambiguous creation survives restart and erasure using only an encr
     assert.equal(typeof intent?.encrypted_email, 'string');
     assert.equal(intent?.subscription_id, null);
     assert.equal(everyStoredText(f.db).includes('durable@example.invalid'), false);
+    // Erasure queues cleanup with wall time; the frozen runner must reach that time.
+    f.now.setTime(Math.max(f.now.getTime(), Date.now()));
     assert.equal((await reconcile(f.db, f.person.id, f.options)).kind, 'confirmed');
     assert.equal(f.subscriptions.has('sub_created'), false);
     assert.equal(f.calls.filter((call) => call.method === 'POST').length, 1);

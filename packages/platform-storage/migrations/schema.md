@@ -842,3 +842,31 @@ rather than by committee target. Its newer-observation check therefore remains a
 lookup as historical snapshots accumulate. The existing trigger, equal-time row ordering, ownership,
 generation, lease and expected-access guards remain unchanged. Apply the index before accepting the
 corresponding scheduled release; query counts alone do not measure rows read by triggers.
+
+### Erasure audit read budget (0049)
+
+`staff_audit_target` indexes affected audit targets for profile erasure. Together with the existing
+operation index, it lets cleanup find audits of affected people, combinations and corrections
+without scanning unrelated retained history. The audit guard still permits only authorized redaction
+of personal details and preserves the recorded actor, action and time. Apply this additive index
+before activating the matching staff/jobs release. Creating the index itself reads the retained
+audit table, so include that migration in the account's daily database allowance.
+
+### Provider selection pages (0050)
+
+`integration_outbox_selection` indexes three active operation lanes by due time and ID. Canonical
+membership revocations receive a removal marker when queued. Deletion, disconnection and committee
+removal also use the urgent lane. The migration classifies existing active membership revocations
+before creating the index.
+
+Discord selection and shared completion each claim at most 16 urgent, 16 other explicit and 32
+periodic operations. Each selector saves opaque operation keys and its position in
+`outbox_selection_cursors` before checking current generation, ownership and provider receipts in
+the same transaction. Indexed ranges wrap within that fixed page budget. Completion checks every
+required provider and cannot close an unfinished operation. Provider leases still guard external
+effects.
+
+A blocked backlog no longer requires a full scan on each minute tick. Large backlogs within one lane
+take several calls to revisit; the selector orders by observation age inside its current page rather
+than across all stored operations. Apply this migration before activating the matching jobs release.
+Backfill and index creation consume database reads and writes during migration.

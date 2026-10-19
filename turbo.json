@@ -65,6 +65,28 @@
     "release": {
       "cache": false,
       "passThroughEnv": ["CLOUDFLARE_ACCOUNT_ID", "CLOUDFLARE_API_TOKEN"]
+    },
+    "@lasvegasfortransit/staff#sync": {
+      "inputs": [
+        "$TURBO_DEFAULT$",
+        "$TURBO_ROOT$/apps/site/src/styles/global.css",
+        "$TURBO_ROOT$/apps/site/public/fonts/public-sans-latin.woff2",
+        "$TURBO_ROOT$/apps/site/public/brand/lvbt-logo.svg",
+        "$TURBO_ROOT$/apps/site/public/brand/lvbt-logo-dark.svg"
+      ],
+      "outputs": [".astro/**"]
+    },
+    "@lasvegasfortransit/staff#build": {
+      "dependsOn": ["^build"],
+      "inputs": [
+        "$TURBO_DEFAULT$",
+        "$TURBO_ROOT$/apps/site/src/styles/global.css",
+        "$TURBO_ROOT$/apps/site/public/fonts/public-sans-latin.woff2",
+        "$TURBO_ROOT$/apps/site/public/brand/lvbt-logo.svg",
+        "$TURBO_ROOT$/apps/site/public/brand/lvbt-logo-dark.svg",
+        ".env*"
+      ],
+      "outputs": ["dist/**", ".wrangler/worker/**"]
     }
   },
   "globalDependencies": [".lvbt/web-platform.json", ".lvbt/tooling.json", ".github/workflows/**"],

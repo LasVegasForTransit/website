@@ -35,7 +35,6 @@ export const staffCommon = {
     accessDenied: "You don't have access to this",
     signInUnavailable: 'Staff sign-in is unavailable. Please try again later.',
     reload: 'Reload this page and try again.',
-    loadFailed: 'We couldn’t load this page. Please try again.',
     member: 'Member',
     email: 'Email',
     phone: 'Phone',

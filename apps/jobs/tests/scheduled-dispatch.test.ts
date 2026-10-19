@@ -12,6 +12,7 @@ function fixture(
     scheduledTime?: number;
     commandFailed?: boolean;
     discordDisabled?: boolean;
+    failureError?: Error;
   } = {},
 ) {
   const visits: string[] = [];
@@ -20,7 +21,9 @@ function fixture(
       visits.push(name);
       onStep?.(name);
       return name === failedStep
-        ? Promise.reject(new Error('private provider error must not be logged'))
+        ? Promise.reject(
+            options.failureError ?? new Error('private provider error must not be logged'),
+          )
         : Promise.resolve(result);
     },
   });
@@ -174,4 +177,14 @@ void test('disabled Discord synchronization never invokes command registration',
   assert.equal(f.visits.includes('discord_commands'), false);
   assert.equal(f.visits.includes('discord_account'), false);
   assert.ok(f.visits.includes('newsletter_account'));
+});
+
+void test('daily D1 quota exhaustion stops the invocation before any further maintenance or provider work', async () => {
+  const f = fixture('records', undefined, {
+    failureError: new Error(
+      "D1_ERROR: Your account has exceeded D1's free tier daily row read limit. Upgrade to a paid plan or wait until tomorrow (midnight UTC) to continue. [code:7500]",
+    ),
+  });
+  await assert.rejects(f.run(), /D1 account quota exhausted/);
+  assert.deepEqual(f.visits, ['records']);
 });

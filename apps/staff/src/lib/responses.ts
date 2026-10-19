@@ -1,3 +1,4 @@
+import { messagePage, messagePageStyleHash } from './message-page';
 export function privateResponse(response: Response, path = ''): Response {
   const headers = new Headers(response.headers);
   headers.set('Cache-Control', 'private, no-store');
@@ -8,7 +9,7 @@ export function privateResponse(response: Response, path = ''): Response {
   const scripts = path === '/paper/' ? "'self'" : "'none'";
   headers.set(
     'Content-Security-Policy',
-    `default-src 'none'; style-src 'self'; font-src 'self'; img-src 'self'; script-src ${scripts}; connect-src 'self'; form-action 'self'; base-uri 'none'; frame-ancestors 'none'`,
+    `default-src 'none'; style-src 'self' 'sha256-${messagePageStyleHash}'; font-src 'self' data:; img-src 'self'; script-src ${scripts}; connect-src 'self'; form-action 'self'; base-uri 'none'; frame-ancestors 'none'`,
   );
   return new Response(response.body, {
     status: response.status,
@@ -16,8 +17,15 @@ export function privateResponse(response: Response, path = ''): Response {
     headers,
   });
 }
-export function messageResponse(message: string, status: number) {
+export function messageResponse(
+  message: string,
+  status: number,
+  destination: 'home' | 'welcome' = 'home',
+) {
   return privateResponse(
-    new Response(message, { status, headers: { 'Content-Type': 'text/plain; charset=utf-8' } }),
+    new Response(messagePage(message, status, destination), {
+      status,
+      headers: { 'Content-Type': 'text/html; charset=utf-8' },
+    }),
   );
 }

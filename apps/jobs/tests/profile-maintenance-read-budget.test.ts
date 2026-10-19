@@ -81,8 +81,8 @@ void test('idle profile maintenance reads stay bounded as unrelated retained his
       await db
         .prepare(
           `WITH RECURSIVE seq(n) AS (SELECT 1 UNION ALL SELECT n+1 FROM seq WHERE n<?)
-        INSERT INTO staff_audits(id,actor_id,action,occurred_at)
-        SELECT 'history-'||?||'-'||n,'platform:discord','access.granted','2026-01-01T00:00:00.000Z' FROM seq`,
+        INSERT INTO staff_audits(id,actor_id,action,target_id,details,occurred_at)
+        SELECT 'history-'||?||'-'||n,'platform:discord','access.granted','unrelated','{"retained":true}','2026-01-01T00:00:00.000Z' FROM seq`,
         )
         .bind(history - previousHistory, history)
         .run();
@@ -116,10 +116,25 @@ void test('idle profile maintenance reads stay bounded as unrelated retained his
       )
       .bind(cutoff)
       .run();
+    await db
+      .prepare(
+        `INSERT INTO staff_audits(id,actor_id,action,target_id,details,occurred_at)
+        VALUES('erased-audit','staff','person.correct','new-deletion','{"private":"fixture"}','2026-01-01')`,
+      )
+      .run();
+    await assert.rejects(
+      db
+        .prepare(
+          `UPDATE staff_audits SET details='{"personalDataErased":true}' WHERE id='erased-audit'`,
+        )
+        .run(),
+      /staff audits cannot be changed/,
+    );
     reads = 0;
     const erasureBudget = queryBudget(measuredDb, 50);
     const erased = await runMaintenance(erasureBudget.db, { now, category: 'profiles' });
     t.diagnostic(JSON.stringify({ operation: 'erasure', queries: erasureBudget.queries, reads }));
+    assert.ok(reads < 1000, `due erasure scanned ${reads} rows of unrelated history`);
     assert.equal(erasureBudget.queries, 50);
     assert.equal(erased.profilesErased, 1);
     assert.equal(erased.profilesRemoved, 0);
@@ -129,6 +144,23 @@ void test('idle profile maintenance reads stay bounded as unrelated retained his
         .first(),
       { given_name: null, email: null, erased_at: now.toISOString() },
     );
+    assert.equal(
+      (await db.prepare("SELECT details FROM staff_audits WHERE id='erased-audit'").first())
+        ?.details,
+      '{"personalDataErased":true}',
+    );
+    assert.equal(
+      (
+        await db
+          .prepare("SELECT details FROM staff_audits WHERE target_id='unrelated' LIMIT 1")
+          .first()
+      )?.details,
+      '{"retained":true}',
+    );
+    await assert.rejects(
+      db.prepare("UPDATE staff_audits SET actor_id='changed' WHERE id='erased-audit'").run(),
+      /staff audits cannot be changed/,
+    );
     reads = 0;
     const purgeBudget = queryBudget(measuredDb, 50);
     const removed = await runMaintenance(purgeBudget.db, {
@@ -136,6 +168,7 @@ void test('idle profile maintenance reads stay bounded as unrelated retained his
       category: 'profiles',
     });
     t.diagnostic(JSON.stringify({ operation: 'purge', queries: purgeBudget.queries, reads }));
+    assert.ok(reads < 1000, `due purge scanned ${reads} rows of unrelated history`);
     assert.equal(purgeBudget.queries, 50);
     assert.equal(removed.profilesErased, 0);
     assert.equal(removed.profilesRemoved, 1);

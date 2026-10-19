@@ -86,7 +86,7 @@
   "scripts": {
     "lint": "eslint . --max-warnings 0",
     "check-types": "tsc --noEmit",
-    "test": "node --import tsx --test tests/*.test.ts"
+    "test": "node --import tsx --test --test-concurrency=2 tests/*.test.ts"
   },
   "devDependencies": {
     "@lasvegasfortransit/eslint-config": "file:../../.lvbt/web-platform/packages/eslint-config",
