@@ -70,6 +70,23 @@ class SnapshotTests(unittest.TestCase):
             self.assertTrue(snapshot.restore(captured, pathlib.Path(directory) / 'fresh.sqlite')['typedValuesMatch'])
         db.close()
 
+    def test_wide_typed_rows_preserve_every_column_after_query_compaction(self):
+        db = sqlite3.connect(':memory:')
+        names = ['field' + str(i) for i in range(45)]
+        db.execute('CREATE TABLE wide(' + ','.join(snapshot.quote(name) + ' BLOB' for name in names) + ')')
+        examples = [None, '', 'é\x00text', b'\x00\xff', 2**63-1, -(2**63), 1.2345678901234567, -1e-200, 2**53+1]
+        values = tuple(examples[i % len(examples)] for i in range(len(names)))
+        db.execute('INSERT INTO wide VALUES(' + ','.join('?' for _ in names) + ')', values)
+        captured = snapshot.capture_local(db)
+        with tempfile.TemporaryDirectory() as directory:
+            path = pathlib.Path(directory) / 'wide.sqlite'
+            self.assertTrue(snapshot.restore(captured, path)['typedValuesMatch'])
+            recovered = sqlite3.connect(path)
+            self.assertEqual(recovered.execute('SELECT * FROM wide').fetchone(), values)
+            self.assertEqual(snapshot.capture_local(recovered), captured)
+            recovered.close()
+        db.close()
+
     def test_rejects_appended_sql_before_any_external_file_write(self):
         db = self.fixture(); captured = snapshot.capture_local(db); db.close()
         with tempfile.TemporaryDirectory() as directory:

@@ -12,6 +12,7 @@ import subprocess
 import sys
 import tarfile
 import tempfile
+import urllib.error
 import urllib.request
 import uuid
 
@@ -22,6 +23,47 @@ DATABASE = 'dcde8dbd-d827-4405-85b4-97bc2accc906'
 BUCKET = 'lvbt-member-backups'
 LATEST = 'production/latest.json'
 MAX_BYTES = 100 * 1024 * 1024
+MAX_ERROR_BYTES = 8192
+MAX_ERROR_CODES = 8
+QUOTA_MESSAGE = re.compile(
+    r"account has exceeded D1['’]s (?:free tier daily row (?:read|write)|maximum daily rows? (?:read|written)) limit",
+    re.IGNORECASE)
+
+
+class D1HttpError(Exception):
+    def __init__(self, diagnostic):
+        super().__init__('D1 request failed')
+        self.diagnostic = diagnostic
+
+
+def d1_http_failure(error):
+    status = error.code if type(error.code) is int and 100 <= error.code <= 599 else None
+    category = 'provider_authorization' if status in (401, 403) else 'provider_http_error'
+    codes = []
+    try:
+        raw = error.read(MAX_ERROR_BYTES)
+        payload = json.loads(raw)
+        entries = payload.get('errors', []) if isinstance(payload, dict) else []
+        if isinstance(entries, list):
+            for entry in entries[:32]:
+                if not isinstance(entry, dict):
+                    continue
+                code = entry.get('code')
+                if type(code) is int and 0 <= code <= 2**31 - 1 and code not in codes and len(codes) < MAX_ERROR_CODES:
+                    codes.append(code)
+                message = entry.get('message')
+                if category != 'provider_authorization' and isinstance(message, str) and QUOTA_MESSAGE.search(message):
+                    category = 'database_daily_quota'
+    except Exception:
+        # Error bodies are untrusted and may be truncated, invalid or unreadable.
+        pass
+    finally:
+        try:
+            error.close()
+        except Exception:
+            pass
+    return D1HttpError({'event': 'member_backup_d1_http_error', 'http_status': status,
+                        'category': category, 'cloudflare_error_codes': codes})
 
 
 def required(name):
@@ -36,8 +78,11 @@ def request_json(token, sql):
         f'https://api.cloudflare.com/client/v4/accounts/{ACCOUNT}/d1/database/{DATABASE}/query',
         data=json.dumps({'sql': sql, 'params': []}).encode(),
         headers={'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json'}, method='POST')
-    with urllib.request.urlopen(request, timeout=120) as response:
-        raw = response.read(MAX_BYTES + 1)
+    try:
+        with urllib.request.urlopen(request, timeout=120) as response:
+            raw = response.read(MAX_BYTES + 1)
+    except urllib.error.HTTPError as error:
+        raise d1_http_failure(error) from None
     if len(raw) > MAX_BYTES:
         raise ValueError('Snapshot API response exceeds capacity; review backup design')
     return json.loads(raw)
@@ -204,6 +249,9 @@ def main():
         parser.error('Only restore tests can select an older receipt')
     try:
         print(json.dumps(run(args.mode, args.receipt), sort_keys=True))
+    except D1HttpError as error:
+        print(json.dumps(error.diagnostic, sort_keys=True), file=sys.stderr)
+        return 1
     except Exception as error:
         # Provider exceptions can contain raw SQL or data. Never print them in public CI.
         print('Member backup operation failed (' + type(error).__name__ + '). Check configuration, capacity and provider access; see the recovery guide.', file=sys.stderr)

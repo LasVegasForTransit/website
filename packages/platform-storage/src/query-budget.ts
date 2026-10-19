@@ -37,6 +37,7 @@ class Meter {
   rowsWritten = 0;
   metadataMissing = 0;
   quotaExhausted = false;
+  databaseErrors = 0;
   constructor(
     readonly limit: number,
     readonly measureRows: boolean,
@@ -53,6 +54,7 @@ class Meter {
       }
       return result;
     } catch (error) {
+      this.databaseErrors++;
       if (isD1QuotaExceeded(error)) {
         this.quotaExhausted = true;
         throw new D1QuotaExceeded();
@@ -136,6 +138,7 @@ export function queryBudget(database: Db, limit = 50, options: { measureRows?: b
         rows_written: meter.rowsWritten,
         metadata_missing: meter.metadataMissing,
         quota_exhausted: meter.quotaExhausted,
+        database_errors: meter.databaseErrors,
       };
     },
     get queries() {
@@ -161,3 +164,12 @@ export function queryBudget(database: Db, limit = 50, options: { measureRows?: b
     },
   };
 }
+
+export {
+  reserveScheduledWork,
+  settleScheduledWork,
+  SCHEDULED_RESERVATION,
+  SCHEDULED_CONTROL_ALLOWANCE,
+  type ScheduledWorkLease,
+  type ScheduledWorkUsage,
+} from './scheduled-work-budget';

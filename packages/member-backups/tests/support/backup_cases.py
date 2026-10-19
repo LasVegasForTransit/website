@@ -1,3 +1,4 @@
+import contextlib
 import datetime as dt
 import io
 import json
@@ -9,6 +10,7 @@ import sys
 import tarfile
 import tempfile
 import unittest
+import urllib.error
 from unittest.mock import patch
 
 sys.path.insert(0, str(pathlib.Path(__file__).parents[2] / 'src'))
@@ -17,6 +19,73 @@ import snapshot
 
 
 class BackupTests(unittest.TestCase):
+    def http_failure_log(self, status, payload):
+        body = io.BytesIO(payload if isinstance(payload, bytes) else json.dumps(payload).encode())
+        error = urllib.error.HTTPError('https://invalid.example/private@example.invalid', status,
+                                       'SELECT secret FROM people; secret-token', {}, body)
+        output = io.StringIO()
+        with patch.object(backup.urllib.request, 'urlopen', side_effect=error), \
+             patch.object(backup, 'run', side_effect=lambda *_: backup.request_json('secret-token', 'SELECT secret FROM people')), \
+             patch.object(sys, 'argv', ['backup.py', 'backup']), contextlib.redirect_stderr(output):
+            self.assertEqual(backup.main(), 1)
+        logged = output.getvalue()
+        self.assertTrue(logged.startswith('{'), logged)
+        return json.loads(logged), logged
+
+    def test_d1_quota_diagnostic_requires_recognized_message(self):
+        quota = "Your account has exceeded D1's free tier daily row read limit. SELECT secret FROM people; private@example.invalid"
+        diagnostic, logged = self.http_failure_log(400, {'errors': [{'code': 7500, 'message': quota}]})
+        self.assertEqual(diagnostic, {'event': 'member_backup_d1_http_error', 'http_status': 400,
+                                     'category': 'database_daily_quota', 'cloudflare_error_codes': [7500]})
+        for private in ('SELECT', 'private@example.invalid', 'secret-token', quota):
+            self.assertNotIn(private, logged)
+        diagnostic, _ = self.http_failure_log(400, {'errors': [{'code': 7500, 'message': 'Unrelated provider failure'}]})
+        self.assertEqual(diagnostic['category'], 'provider_http_error')
+        self.assertEqual(diagnostic['cloudflare_error_codes'], [7500])
+
+    def test_d1_auth_diagnostic_uses_status_without_exposing_body(self):
+        for status in (401, 403):
+            diagnostic, logged = self.http_failure_log(status, {'errors': [{'code': 10000,
+                'message': 'Authorization failed for private@example.invalid; token=secret-token; SELECT * FROM people'}]})
+            self.assertEqual(diagnostic['category'], 'provider_authorization')
+            self.assertEqual(diagnostic['http_status'], status)
+            self.assertEqual(diagnostic['cloudflare_error_codes'], [10000])
+            for private in ('private@example.invalid', 'secret-token', 'SELECT', 'Authorization failed'):
+                self.assertNotIn(private, logged)
+
+    def test_d1_invalid_json_and_unexpected_shapes_remain_safe(self):
+        for payload in (b'not json: SELECT private@example.invalid secret-token', b'[]', b'null',
+                        b'{"errors": "private@example.invalid"}', b'\xff'):
+            diagnostic, logged = self.http_failure_log(502, payload)
+            self.assertEqual(diagnostic['category'], 'provider_http_error')
+            self.assertEqual(diagnostic['http_status'], 502)
+            self.assertEqual(diagnostic['cloudflare_error_codes'], [])
+            for private in ('private@example.invalid', 'secret-token', 'SELECT'):
+                self.assertNotIn(private, logged)
+
+    def test_d1_codes_are_bounded_numbers_and_response_read_is_capped(self):
+        entries = [{'code': code, 'message': 'private@example.invalid'}
+                   for code in (True, '7500', -1, 1.5, 2**40, *range(1000, 1020))]
+        diagnostic, logged = self.http_failure_log(400, {'errors': entries})
+        self.assertEqual(diagnostic['cloudflare_error_codes'], list(range(1000, 1008)))
+        self.assertNotIn('private@example.invalid', logged)
+        class Body(io.BytesIO):
+            def __init__(self):
+                super().__init__(b'x' * 100_000)
+                self.requested = []
+            def read(self, size=-1):
+                self.requested.append(size)
+                return super().read(size)
+        body = Body()
+        error = urllib.error.HTTPError('https://invalid.example', 500, 'private reason', {}, body)
+        with patch.object(backup.urllib.request, 'urlopen', side_effect=error):
+            with self.assertRaises(backup.D1HttpError) as caught:
+                backup.request_json('secret-token', 'SELECT secret FROM people')
+        self.assertEqual(body.requested, [backup.MAX_ERROR_BYTES])
+        self.assertLessEqual(backup.MAX_ERROR_BYTES, 8192)
+        self.assertTrue(body.closed)
+        self.assertEqual(caught.exception.diagnostic['category'], 'provider_http_error')
+
     def test_pointer_rejects_stale_future_wrong_target_and_uncommitted_keys(self):
         now = dt.datetime.now(dt.timezone.utc)
         good = {'formatVersion': 2, 'accountId': backup.ACCOUNT, 'databaseId': backup.DATABASE,

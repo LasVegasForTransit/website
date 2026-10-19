@@ -60,7 +60,8 @@ def snapshot_query(inventory):
         order = alias or ','.join(quote(c['name']) for c in sorted(columns, key=lambda c: c['pk']) if c['pk'])
         if not order:
             raise ValueError('Snapshot table has no stable ordering')
-        aliases = ['c' + str(i) for i in range(len(expressions))]
+        # Each alias repeats in the exact-value guard; short names preserve D1 query headroom.
+        aliases = [chr(ord('a') + i) if i < 26 else 'c' + str(i) for i in range(len(expressions))]
         projection = ','.join(e + ' AS ' + a for e, a in zip(expressions, aliases))
         rows = ("(SELECT json_group_array(json_array(" + ','.join(typed(a) for a in aliases)
                 + ')) FROM (SELECT ' + projection + ' FROM ' + quote(name) + ' ORDER BY ' + order + '))')

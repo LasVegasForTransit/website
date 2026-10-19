@@ -1,4 +1,10 @@
 import {
+  SCHEDULED_CONTROL_ALLOWANCE,
+  reserveScheduledWork,
+  settleScheduledWork,
+  isD1QuotaExceeded,
+} from '@lasvegasfortransit/platform-storage/query-budget';
+import {
   beehiivRuntime,
   type BeehiivRuntimeEnv,
 } from '@lasvegasfortransit/platform-integrations/beehiiv-runtime';
@@ -6,7 +12,13 @@ import {
   discordRuntime,
   type DiscordRuntimeEnv,
 } from '@lasvegasfortransit/platform-integrations/discord-runtime';
-import { membershipStep, canContinueMembership, type ScheduledBudget } from './scheduled-budget';
+import {
+  membershipStep,
+  canContinueMembership,
+  type ScheduledBudget,
+  emptyScheduledUsage,
+  ScheduledWorkDeferred,
+} from './scheduled-budget';
 import { memberPrivacySchedule } from '@lasvegasfortransit/platform-storage/member-privacy-schedule';
 
 interface EnabledProviders {
@@ -71,6 +83,7 @@ async function runAccount(context: ExecutionContext, newsletter: boolean, budget
     return {
       stop: !result || result.kind === 'idle' || result.paused || result.kind === 'failed',
       failed: !result || result.kind === 'failed',
+      scanAllowed: Boolean(result && !result.paused && result.kind !== 'failed'),
     };
   }
   const result = await membershipStep(
@@ -81,6 +94,7 @@ async function runAccount(context: ExecutionContext, newsletter: boolean, budget
   return {
     stop: !result?.selected || result.paused || result.failed,
     failed: !result || result.failed,
+    scanAllowed: Boolean(result && !result.paused && !result.failed),
   };
 }
 
@@ -91,9 +105,27 @@ async function processProviderQueues(
 ) {
   const incomingFailed = enabled.newsletter ? await processIncoming(context, budget) : false;
   const newsletterReady = enabled.newsletter;
-  const scanFailed = await scanProviders(context, enabled, budget);
+  // Scans still run for idle queues; their new work can wait for the next minute tick.
+  const scans = { ...enabled };
+  // Current removals and member choices run before optional roster scans.
+  let priorityFailed = false;
+  if (enabled.discord && canContinueMembership(budget)) {
+    const result = await runAccount(context, false, budget);
+    priorityFailed = result.failed;
+    enabled.discord = !result.stop;
+    scans.discord = result.scanAllowed;
+  }
+  if (enabled.newsletter && canContinueMembership(budget)) {
+    const result = await runAccount(context, true, budget);
+    priorityFailed ||= result.failed;
+    enabled.newsletter = !result.stop;
+    scans.newsletter = result.scanAllowed;
+  }
+  const scanFailed = await scanProviders(context, scans, budget);
+  enabled.discord &&= scans.discord;
+  enabled.newsletter &&= scans.newsletter;
   const pollingFailed = newsletterReady ? await processIncoming(context, budget, true) : false;
-  return [incomingFailed, scanFailed, pollingFailed].some(Boolean);
+  return [incomingFailed, scanFailed, pollingFailed, priorityFailed].some(Boolean);
 }
 async function registerDiscordCommand(
   context: ExecutionContext,
@@ -106,16 +138,19 @@ async function registerDiscordCommand(
   );
   return !result || result.kind === 'failed';
 }
-export async function runScheduledMembership(
+async function runAdmittedMembership(
   controller: ScheduledController,
   env: Env & BeehiivRuntimeEnv & DiscordRuntimeEnv,
   context: ExecutionContext,
+  budget: ScheduledBudget,
 ): Promise<void> {
   // The scheduled parent is one of the 32 invocations; completion always gets a reserved call.
-  const budget = { remaining: 31, deadline: Date.now() + 50_000 };
-  const records = await membershipStep(budget, 'staff_maintenance', () =>
-    context.exports.StaffMaintenance.run(controller.scheduledTime),
-  );
+  const records =
+    new Date(controller.scheduledTime).getUTCMinutes() === 0
+      ? await membershipStep(budget, 'staff_maintenance', () =>
+          context.exports.StaffMaintenance.run(controller.scheduledTime),
+        )
+      : true;
   const profiles = await membershipStep(budget, 'profile_maintenance', () =>
     context.exports.ProfileMaintenance.run(controller.scheduledTime),
   );
@@ -145,4 +180,67 @@ export async function runScheduledMembership(
     context.exports.ProviderCompletion.run(controller.scheduledTime),
   );
   if (failed || !completion) throw new Error('Scheduled membership work failed');
+}
+
+export async function runScheduledMembership(
+  controller: ScheduledController,
+  env: Env & BeehiivRuntimeEnv & DiscordRuntimeEnv,
+  context: ExecutionContext,
+): Promise<void> {
+  let lease;
+  try {
+    lease = await reserveScheduledWork(
+      env.PLATFORM_DB,
+      env.LVBT_DEPLOYMENT_ENV,
+      new Date(),
+      crypto.randomUUID(),
+    );
+  } catch (error) {
+    console.log(
+      JSON.stringify({
+        event: 'scheduled_work_deferred',
+        reason: isD1QuotaExceeded(error) ? 'account_quota' : 'guard_unavailable',
+      }),
+    );
+    return;
+  }
+  if (!lease) {
+    console.log(
+      JSON.stringify({ event: 'scheduled_work_deferred', reason: 'budget_closed_or_leased' }),
+    );
+    return;
+  }
+  const budget = {
+    remaining: 31,
+    deadline: Date.now() + 50_000,
+    usage: emptyScheduledUsage(),
+    controlReads: lease.guardReads + SCHEDULED_CONTROL_ALLOWANCE.reads,
+    controlWrites: lease.guardWrites + SCHEDULED_CONTROL_ALLOWANCE.writes,
+  };
+  let failed = lease.metadataMissing > 0;
+  let failure: Error | undefined;
+  try {
+    if (failed) throw new ScheduledWorkDeferred();
+    await runAdmittedMembership(controller, env, context, budget);
+  } catch (error) {
+    failed = true;
+    failure = error instanceof Error ? error : new ScheduledWorkDeferred();
+    budget.usage.quota_exhausted ||= isD1QuotaExceeded(error);
+    console.log(
+      JSON.stringify({
+        event: 'scheduled_work_deferred',
+        reason: budget.usage.quota_exhausted ? 'account_quota' : 'unverified_or_spent_budget',
+      }),
+    );
+  } finally {
+    try {
+      await settleScheduledWork(env.PLATFORM_DB, lease, budget.usage, { failed, now: new Date() });
+    } catch {
+      console.log(
+        JSON.stringify({ event: 'scheduled_work_deferred', reason: 'settlement_unavailable' }),
+      );
+      failure ??= new ScheduledWorkDeferred();
+    }
+  }
+  if (failure) throw failure;
 }

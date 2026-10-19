@@ -26,7 +26,7 @@ try {
   const response = await request('/people/');
   const html = await response.text();
   assert.equal(response.status, 503);
-  assert.match(html, /Staff tools are temporarily unavailable/);
+  assert.match(html, /We’re having trouble with staff tools/);
   assert.doesNotMatch(
     html.replace(/<style>[\s\S]*?<\/style>/g, ''),
     /D1_ERROR|no such table|unavailable_session_fixture|SQLITE/,

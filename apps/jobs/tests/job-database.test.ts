@@ -50,6 +50,7 @@ void test('job telemetry measures D1 rows for first, all, run and batches withou
         rows_written: 4,
         metadata_missing: 0,
         quota_exhausted: false,
+        database_errors: 0,
       },
     ],
   );
@@ -125,6 +126,7 @@ void test('nested account quota failures stay fatal while bind errors remain ord
   await assert.rejects(
     runMeteredJob(database(quota), 'nested', async (budget) => {
       await budget.db.prepare('private').all();
+      return {};
     }),
     /D1 account quota exhausted/,
   );
@@ -157,6 +159,7 @@ void test('missing or invalid metadata is marked as unknown rather than accepted
       budget.db.prepare('two'),
       budget.db.prepare('three'),
     ]);
+    return {};
   });
   assert.deepEqual(
     (JSON.parse(logs[0] ?? '{}') as { metadata_missing: number }).metadata_missing,

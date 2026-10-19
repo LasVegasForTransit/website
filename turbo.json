@@ -26,6 +26,10 @@
     "test": {
       "dependsOn": ["^build"]
     },
+    "@lasvegasfortransit/member-backups#test": {
+      "dependsOn": ["^build"],
+      "inputs": ["$TURBO_DEFAULT$", "$TURBO_ROOT$/packages/platform-storage/migrations/**"]
+    },
     "validate": {
       "dependsOn": ["^build"],
       "cache": false

@@ -1,4 +1,4 @@
-import { runMeteredJob } from './job-database';
+import { runMeteredJob, idleDatabaseJob } from './job-database';
 import { WorkerEntrypoint } from 'cloudflare:workers';
 import {
   beehiivRuntime,
@@ -15,7 +15,7 @@ import { QueryBudgetExceeded } from '@lasvegasfortransit/platform-storage/query-
 export class NewsletterAccount extends WorkerEntrypoint<Env & BeehiivRuntimeEnv> {
   async run() {
     const runtime = beehiivRuntime(this.env);
-    if (!runtime) return { kind: 'idle' as const, queries: 0, paused: false };
+    if (!runtime) return idleDatabaseJob({ kind: 'idle' as const, queries: 0, paused: false });
     return await runMeteredJob(this.env.PLATFORM_DB, 'NewsletterAccount', async (budget) => {
       try {
         const [personId] = await pendingNewsletterPeople(budget.db, new Date(), 1);
@@ -40,7 +40,7 @@ export class NewsletterAccount extends WorkerEntrypoint<Env & BeehiivRuntimeEnv>
 export class NewsletterScan extends WorkerEntrypoint<Env & BeehiivRuntimeEnv> {
   async run() {
     const runtime = beehiivRuntime(this.env);
-    if (!runtime) return { ready: false, kind: 'idle' as const, queries: 0 };
+    if (!runtime) return idleDatabaseJob({ ready: false, kind: 'idle' as const, queries: 0 });
     return await runMeteredJob(this.env.PLATFORM_DB, 'NewsletterScan', async (budget) => {
       if (await newsletterPause(budget.db, runtime.configuration.publicationId, new Date()))
         return { ready: true, kind: 'paused' as const, queries: budget.queries };
@@ -53,7 +53,7 @@ export class NewsletterScan extends WorkerEntrypoint<Env & BeehiivRuntimeEnv> {
 export class NewsletterIncoming extends WorkerEntrypoint<Env & BeehiivRuntimeEnv> {
   async run() {
     const runtime = beehiivRuntime(this.env);
-    if (!runtime) return { kind: 'idle' as const, queries: 0, more: false };
+    if (!runtime) return idleDatabaseJob({ kind: 'idle' as const, queries: 0, more: false });
     return await runMeteredJob(this.env.PLATFORM_DB, 'NewsletterIncoming', async (budget) => {
       try {
         const result = await processNewsletterSourceEvents(budget.db, {
@@ -80,7 +80,7 @@ export class NewsletterPollingChoices extends WorkerEntrypoint<Env & BeehiivRunt
     const runtime = beehiivRuntime(env),
       policy = env.LVBT_BEEHIIV_CONFLICT_POLICY;
     if (!runtime || (policy !== 'keep_unsubscribed' && policy !== 'staff_review'))
-      return { kind: 'idle' as const, queries: 0, more: false };
+      return idleDatabaseJob({ kind: 'idle' as const, queries: 0, more: false });
     return await runMeteredJob(this.env.PLATFORM_DB, 'NewsletterPollingChoices', async (budget) => {
       try {
         const result = await new PersonService(budget.db).processNewsletterPollChoices({
