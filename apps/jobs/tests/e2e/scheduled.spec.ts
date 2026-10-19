@@ -1,3 +1,8 @@
+import {
+  assertBudgetMissing,
+  assertBudgetUsage,
+  assertDeletionEvidence,
+} from './support/scheduled-budget';
 import assert from 'node:assert/strict';
 import { commandFixture } from './support/discord-commands';
 import { assertReviewAccount, rosterFixture } from './support/discord-roster';
@@ -92,6 +97,8 @@ const simulator = new Miniflare(
   }),
 );
 try {
+  const worker = await simulator.getWorker();
+  await assertBudgetMissing(worker, calls, commands.calls);
   const db = await simulator.getD1Database('PLATFORM_DB');
   await db.prepare('SELECT 1').first();
   const files = await readdir(data, { recursive: true });
@@ -152,10 +159,10 @@ try {
     generation: 1,
     payload: {},
   });
-  const worker = await simulator.getWorker();
   assert.equal((await worker.fetch('https://jobs.example.invalid/')).status, 404);
   assert.equal((await worker.scheduled({ cron: '* * * * *' })).outcome, 'ok');
   assert.deepEqual(commands.calls, ['GET', 'POST', 'GET']);
+  await assertBudgetUsage(db);
   assert.deepEqual([...roles].sort(), [memberRoleId, committeeRoleId, unrelatedRoleId].sort());
   assertReviewAccount(
     await db
@@ -283,6 +290,8 @@ try {
     .prepare("UPDATE provider_scan_checkpoints SET next_scan_at='2000-01-01T00:00:00.000Z'")
     .run();
   await worker.scheduled({ cron: '* * * * *' });
+  assert.equal(roles.has(memberRoleId), false, 'an idle queue does not receive a second poll');
+  await worker.scheduled({ cron: '* * * * *' });
   assert.equal(
     roles.has(memberRoleId),
     true,
@@ -321,6 +330,7 @@ try {
     .prepare("UPDATE provider_scan_checkpoints SET next_scan_at='2000-01-01T00:00:00.000Z'")
     .run();
   await worker.scheduled({ cron: '* * * * *' });
+  await worker.scheduled({ cron: '* * * * *' });
   assert.deepEqual(
     [...roles],
     [unrelatedRoleId],
@@ -354,23 +364,7 @@ try {
     [unrelatedRoleId],
     'deletion must automatically remove managed roles',
   );
-  assert.equal((await db.prepare('SELECT count(*) AS n FROM discord_profiles').first())?.n, 0);
-  assert.equal((await db.prepare('SELECT count(*) AS n FROM access_observations').first())?.n, 0);
-  assert.equal(
-    (await db.prepare('SELECT count(*) AS n FROM provider_access_intents').first())?.n,
-    0,
-  );
-  assert.equal(
-    (
-      await db
-        .prepare(
-          "SELECT count(*) AS n FROM staff_audits WHERE action='access.revoked' AND json_extract(details,'$.source')='person_deleted'",
-        )
-        .first()
-    )?.n,
-    3,
-    'deletion needs confirmed cleanup evidence for each removed role',
-  );
+  await assertDeletionEvidence(db);
   console.log(
     JSON.stringify({
       runtime: 'compiled scheduled jobs Worker',

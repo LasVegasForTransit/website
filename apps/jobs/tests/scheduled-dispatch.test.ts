@@ -1,3 +1,5 @@
+import { memoryDb } from '@lasvegasfortransit/platform-storage/test-db';
+import type { Db, Statement } from '@lasvegasfortransit/platform-storage/db';
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { runScheduledMembership } from '../src/scheduled';
@@ -13,8 +15,27 @@ function fixture(
     commandFailed?: boolean;
     discordDisabled?: boolean;
     failureError?: Error;
+    missingUsage?: boolean;
+    guardDenied?: boolean;
+    rowsRead?: number;
+    idleAccounts?: boolean;
   } = {},
 ) {
+  const native = memoryDb();
+  const wrap = (statement: Statement): Statement => ({
+    bind: (...values) => wrap(statement.bind(...values)),
+    first: () => statement.first(),
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-parameters -- mirrors D1 row typing
+    all: async <T>() => ({
+      ...(await statement.all<T>()),
+      meta: { rows_read: 1, rows_written: 1 },
+    }),
+    run: () => statement.run(),
+  });
+  const database: Db = {
+    prepare: (sql) => wrap(native.prepare(sql)),
+    batch: (statements) => native.batch(statements),
+  };
   const visits: string[] = [];
   const step = (name: string, result: object) => ({
     run: () => {
@@ -24,7 +45,16 @@ function fixture(
         ? Promise.reject(
             options.failureError ?? new Error('private provider error must not be logged'),
           )
-        : Promise.resolve(result);
+        : Promise.resolve({
+            ...result,
+            databaseUsage: {
+              rows_read: options.rowsRead ?? 1,
+              rows_written: 1,
+              metadata_missing: options.missingUsage ? 1 : 0,
+              database_errors: 0,
+              quota_exhausted: false,
+            },
+          });
     },
   });
   const context = {
@@ -46,11 +76,23 @@ function fixture(
         more: options.busyInbox ?? false,
       }),
       NewsletterPollingChoices: step('newsletter_poll_choices', { kind: 'idle', more: false }),
-      DiscordAccount: step('discord_account', { selected: 1, failed: false, paused: false }),
-      NewsletterAccount: step('newsletter_account', { kind: 'progress', paused: false }),
+      DiscordAccount: step('discord_account', {
+        selected: options.idleAccounts ? 0 : 1,
+        failed: false,
+        paused: false,
+      }),
+      NewsletterAccount: step('newsletter_account', {
+        kind: options.idleAccounts ? 'idle' : 'progress',
+        paused: false,
+      }),
     },
   } as unknown as ExecutionContext;
+  if (options.guardDenied)
+    database.prepare = () => {
+      throw new Error("Your account has exceeded D1's free tier daily row read limit");
+    };
   const env = {
+    PLATFORM_DB: database,
     LVBT_DEPLOYMENT_ENV: 'preview',
     LVBT_DISCORD_SYNC_ENABLED: options.discordDisabled ? 'false' : 'true',
     LVBT_DISCORD_APPLICATION_ID: '555555555555555555',
@@ -65,9 +107,39 @@ function fixture(
     LVBT_NEWSLETTER_INTENT_KEY: 'a'.repeat(43),
     LVBT_BEEHIIV_WEBHOOK_SECRET: `whsec_${btoa('fixture-event-key-only')}`,
   } as unknown as Env;
-  const controller = { scheduledTime: options.scheduledTime ?? Date.now() } as ScheduledController;
-  return { visits, run: () => runScheduledMembership(controller, env, context) };
+  const controller = {
+    scheduledTime: options.scheduledTime ?? Date.parse('2026-10-19T20:00:00Z'),
+  } as ScheduledController;
+  return { visits, database: native, run: () => runScheduledMembership(controller, env, context) };
 }
+void test('ordinary minutes skip record cleanup while privacy and member queues keep moving', async () => {
+  const f = fixture(undefined, undefined, {
+    scheduledTime: Date.parse('2026-10-19T20:37:00Z'),
+    idleAccounts: true,
+  });
+  await f.run();
+  assert.equal(f.visits.includes('records'), false);
+  for (const name of [
+    'profiles',
+    'inactive_profiles',
+    'newsletter_incoming',
+    'discord_account',
+    'newsletter_account',
+    'completion',
+  ])
+    assert.ok(f.visits.includes(name), name);
+});
+
+void test('the scheduled UTC hour runs record cleanup even when dispatch arrives later', async (t) => {
+  t.mock.method(Date, 'now', () => Date.parse('2026-10-19T20:37:00Z'));
+  const f = fixture(undefined, undefined, {
+    scheduledTime: Date.parse('2026-10-19T20:00:00Z'),
+    idleAccounts: true,
+  });
+  await f.run();
+  assert.equal(f.visits.filter((name) => name === 'records').length, 1);
+});
+
 void test('daily privacy work starts at03:00 Pacific and remains inside the invocation allowance', async () => {
   for (const [time, expected] of [
     ['2026-10-14T09:59:00Z', false],
@@ -114,16 +186,16 @@ void test('a provider pause stops outgoing newsletter calls but still processes 
   const f = fixture(undefined, undefined, { busyInbox: true, paused: true });
   await f.run();
   assert.ok(f.visits.includes('newsletter_incoming'));
-  assert.equal(f.visits.includes('newsletter_account'), false);
+  assert.equal(f.visits.filter((name) => name === 'newsletter_account').length, 1);
   assert.ok(f.visits.includes('discord_account'));
   assert.equal(f.visits.at(-1), 'completion');
 });
-void test('incoming storage failure still allows unrelated outgoing work and final completion', async () => {
+void test('incoming storage failure closes background work without outgoing effects', async () => {
   const f = fixture('newsletter_incoming');
-  await assert.rejects(f.run(), /Scheduled membership work failed/);
-  assert.ok(f.visits.includes('discord_account'));
-  assert.ok(f.visits.includes('newsletter_account'));
-  assert.equal(f.visits.at(-1), 'completion');
+  await assert.rejects(f.run(), /Scheduled (?:membership work failed|database work deferred)/);
+  assert.equal(f.visits.includes('discord_account'), false);
+  assert.equal(f.visits.includes('newsletter_account'), false);
+  assert.equal(f.visits.at(-1), 'newsletter_incoming');
 });
 void test('slow account work stops new steps after the selection deadline and still completes', async (t) => {
   let clock = Date.now();
@@ -136,37 +208,36 @@ void test('slow account work stops new steps after the selection deadline and st
   assert.equal(f.visits.at(-1), 'completion');
 });
 for (const provider of ['discord', 'newsletter']) {
-  void test(`${provider} scan exceptions still allow the other provider and completion`, async () => {
+  void test(`${provider} scan exceptions retain the reservation and stop remaining work`, async () => {
     const f = fixture(`${provider}_scan`);
-    await assert.rejects(f.run(), /Scheduled membership work failed/);
+    await assert.rejects(f.run(), /Scheduled (?:membership work failed|database work deferred)/);
     const other = provider === 'discord' ? 'newsletter' : 'discord';
     assert.equal(f.visits.includes(`${other}_account`), true);
-    assert.equal(f.visits.includes(`${provider}_account`), false);
-    assert.equal(f.visits.at(-1), 'completion');
+    assert.equal(f.visits.at(-1), `${provider}_scan`);
   });
-  void test(`${provider} account exceptions still allow the other provider and completion`, async () => {
+  void test(`${provider} account exceptions close the day before later provider effects`, async () => {
     const f = fixture(`${provider}_account`);
-    await assert.rejects(f.run(), /Scheduled membership work failed/);
+    await assert.rejects(f.run(), /Scheduled (?:membership work failed|database work deferred)/);
     const other = provider === 'discord' ? 'newsletter' : 'discord';
-    assert.equal(f.visits.includes(`${other}_account`), true);
+    assert.equal(f.visits.includes(`${other}_account`), provider === 'newsletter');
     assert.equal(f.visits.filter((name) => name === `${provider}_account`).length, 1);
-    assert.equal(f.visits.at(-1), 'completion');
+    assert.equal(f.visits.at(-1), `${provider}_account`);
   });
 }
 
-void test('command registration exceptions do not stop membership work or completion', async () => {
+void test('command RPC exceptions close background work without provider effects', async () => {
   const f = fixture('discord_commands');
-  await assert.rejects(f.run(), /Scheduled membership work failed/);
-  assert.ok(f.visits.includes('discord_scan'));
-  assert.ok(f.visits.includes('discord_account'));
-  assert.ok(f.visits.includes('newsletter_account'));
-  assert.equal(f.visits.at(-1), 'completion');
+  await assert.rejects(f.run(), /Scheduled (?:membership work failed|database work deferred)/);
+  assert.equal(f.visits.includes('discord_scan'), false);
+  assert.equal(f.visits.includes('discord_account'), false);
+  assert.equal(f.visits.includes('newsletter_account'), false);
+  assert.equal(f.visits.at(-1), 'discord_commands');
   assert.ok(f.visits.length + 1 <= 32);
 });
 
 void test('a failed registration result leaves both membership queues enabled', async () => {
   const f = fixture(undefined, undefined, { commandFailed: true });
-  await assert.rejects(f.run(), /Scheduled membership work failed/);
+  await assert.rejects(f.run(), /Scheduled (?:membership work failed|database work deferred)/);
   assert.ok(f.visits.includes('discord_account'));
   assert.ok(f.visits.includes('newsletter_account'));
   assert.equal(f.visits.at(-1), 'completion');
@@ -187,4 +258,48 @@ void test('daily D1 quota exhaustion stops the invocation before any further mai
   });
   await assert.rejects(f.run(), /D1 account quota exhausted/);
   assert.deepEqual(f.visits, ['records']);
+});
+
+void test('a quota-denied guard never invokes any scheduled RPC', async () => {
+  const f = fixture(undefined, undefined, { guardDenied: true });
+  await f.run();
+  assert.deepEqual(f.visits, []);
+});
+void test('unverified metadata closes future cron invocations through UTC reset', async () => {
+  const f = fixture(undefined, undefined, { missingUsage: true });
+  await assert.rejects(f.run(), /Scheduled database work deferred/);
+  assert.deepEqual(f.visits, ['records']);
+  await f.run();
+  assert.deepEqual(f.visits, ['records']);
+});
+void test('a spent measured reservation stops between RPCs and closes the daily ledger', async () => {
+  const f = fixture(undefined, undefined, { rowsRead: 50_001 });
+  await assert.rejects(f.run(), /Scheduled database work deferred/);
+  assert.deepEqual(f.visits, ['records']);
+  await f.run();
+  assert.deepEqual(f.visits, ['records']);
+});
+void test('current member choices and first account work run ahead of optional roster scans', async () => {
+  const f = fixture();
+  await f.run();
+  assert.ok(f.visits.indexOf('newsletter_incoming') < f.visits.indexOf('discord_account'));
+  assert.ok(f.visits.indexOf('discord_account') < f.visits.indexOf('discord_scan'));
+  assert.ok(f.visits.indexOf('newsletter_account') < f.visits.indexOf('newsletter_scan'));
+});
+
+void test('a missing budget migration refuses background work before provider calls', async () => {
+  const f = fixture();
+  f.database.raw.exec('DROP TABLE scheduled_work_budget');
+  await f.run();
+  assert.deepEqual(f.visits, []);
+});
+
+void test('idle account queues are checked once while optional scans still run', async () => {
+  const f = fixture(undefined, undefined, { idleAccounts: true });
+  await f.run();
+  assert.equal(f.visits.filter((name) => name === 'discord_account').length, 1);
+  assert.equal(f.visits.filter((name) => name === 'newsletter_account').length, 1);
+  assert.ok(f.visits.includes('discord_scan'));
+  assert.ok(f.visits.includes('newsletter_scan'));
+  assert.equal(f.visits.at(-1), 'completion');
 });

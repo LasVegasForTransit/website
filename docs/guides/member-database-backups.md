@@ -111,6 +111,24 @@ remains visible to the freshness check. Inspect credentials, account access, lif
 receipt age and provider availability without copying member data into logs. Retry manually after
 correcting the cause.
 
+D1 HTTP failures print a JSON diagnostic with the event `member_backup_d1_http_error`, HTTP status,
+a fixed category and numeric Cloudflare error codes. They never print provider messages, SQL or
+member values. Use the category to choose the next step:
+
+- `database_daily_quota` means the provider explicitly reported a daily D1 limit. Check the
+  account-wide row totals and scheduled-work limits. Preserve the existing archive, stop repeated
+  capture attempts and retry once capacity is available after the UTC daily reset. A successful
+  `check` verifies an existing archive; it does not create a new backup.
+- `provider_authorization` means HTTP 401 or 403. Verify the dedicated `D1_READ_TOKEN` permission
+  and LVBT account scope in the `member-backups` environment. Follow the credential authorization
+  and rotation procedure above before retrying.
+- `provider_http_error` means the tool could not classify the response. Check Cloudflare service
+  health and the HTTP status. Error code 7500 alone does not establish quota exhaustion. Keep raw
+  response bodies out of public logs and investigate through authorized provider tools.
+
+A failed capture does not satisfy a pre-migration backup requirement. Resolve the failure and verify
+a successful `backup` receipt before continuing a release that requires a fresh capture.
+
 The snapshot fails closed when schema, response size or SQLite features exceed the supported format.
 Generated or virtual tables and values that cannot round-trip exactly require a reviewed format
 change; do not omit them to make a run pass. Keep restore tests aligned with schema changes.

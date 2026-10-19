@@ -870,3 +870,17 @@ A blocked backlog no longer requires a full scan on each minute tick. Large back
 take several calls to revisit; the selector orders by observation age inside its current page rather
 than across all stored operations. Apply this migration before activating the matching jobs release.
 Backfill and index creation consume database reads and writes during migration.
+
+### Scheduled database budget (0051)
+
+`scheduled_work_budget` holds one UTC-day accounting row per canonical database. Atomic reservations
+and a token-fenced parent lease prevent concurrent cron invocations from spending the same scheduled
+allowance. Verified job row counters settle actual usage. Missing counters, database failures and
+reservation overruns retain a conservative charge and close work until the next UTC day. A crashed
+run retains its reservation. Old owners cannot refund newer runs or another day.
+
+The ledger contains no member data. Apply it before activating the matching jobs release. Keep it
+when rolling application code back; dropping it discards capacity accounting. The ledger covers
+scheduled work in that database, not the account-wide usage of staff/member requests, imports,
+backups or other databases. See [staff availability](../../../docs/reference/staff-availability.md)
+for allocations, remaining limits and deferral recovery.

@@ -11,7 +11,7 @@ void test('staff failures remain usable without the database, scripts or asset r
   assert.match(html, /<main/);
   assert.match(html, /Las Vegans for Better Transit/);
   assert.match(html, /href="mailto:hello@lasvegasfortransit.org"/);
-  assert.match(html, /href="https:\/\/lasvegasfortransit.org\/"/);
+  assert.match(html, /href="https:\/\/lasvegasfortransit.org\/events\/"/);
   assert.match(html, /<style>/);
   assert.doesNotMatch(html, /<script|<link|<img/);
   assert.match(response.headers.get('Content-Security-Policy') ?? '', /style-src 'self' 'sha256-/);

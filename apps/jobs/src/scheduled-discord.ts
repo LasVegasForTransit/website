@@ -1,4 +1,4 @@
-import { runMeteredJob } from './job-database';
+import { runMeteredJob, idleDatabaseJob } from './job-database';
 import { WorkerEntrypoint } from 'cloudflare:workers';
 import { runDiscordCommandRegistration } from '@lasvegasfortransit/platform-integrations/discord-command-registration';
 import {
@@ -15,7 +15,7 @@ import { QueryBudgetExceeded } from '@lasvegasfortransit/platform-storage/query-
 export class DiscordAccount extends WorkerEntrypoint<Env & DiscordRuntimeEnv> {
   async run() {
     const runtime = discordRuntime(this.env);
-    if (!runtime) return { selected: 0, failed: false, paused: false, queries: 0 };
+    if (!runtime) return idleDatabaseJob({ selected: 0, failed: false, paused: false, queries: 0 });
     return await runMeteredJob(this.env.PLATFORM_DB, 'DiscordAccount', async (budget) => {
       try {
         const result = await reconcileDiscordPending(budget.db, {
@@ -39,7 +39,7 @@ export class DiscordAccount extends WorkerEntrypoint<Env & DiscordRuntimeEnv> {
 export class DiscordScan extends WorkerEntrypoint<Env & DiscordRuntimeEnv> {
   async run() {
     const runtime = discordRuntime(this.env);
-    if (!runtime) return { ready: false, queries: 0 };
+    if (!runtime) return idleDatabaseJob({ ready: false, queries: 0 });
     return await runMeteredJob(this.env.PLATFORM_DB, 'DiscordScan', async (budget) => {
       const drift = await queueDiscordDrift(budget.db, { guildId: runtime.configuration.guildId });
       const client = new DiscordAccess(runtime.configuration, {
@@ -57,7 +57,7 @@ export class DiscordScan extends WorkerEntrypoint<Env & DiscordRuntimeEnv> {
 export class DiscordCommands extends WorkerEntrypoint<Env & DiscordRuntimeEnv> {
   async run() {
     const runtime = discordRuntime(this.env);
-    if (!runtime) return { kind: 'idle' as const, queries: 0 };
+    if (!runtime) return idleDatabaseJob({ kind: 'idle' as const, queries: 0 });
     return await runMeteredJob(this.env.PLATFORM_DB, 'DiscordCommands', async (budget) => {
       const result = await runDiscordCommandRegistration(budget.db, {
         applicationId: runtime.applicationId,

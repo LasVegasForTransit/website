@@ -121,9 +121,9 @@ imports, backups and console queries share that allowance. Count rows scanned by
 as well as reads; limiting query count or returned results does not bound scanned rows.
 
 1. Open **Cloudflare → Storage & databases → D1 SQLite Database → Daily**. Check account-wide rows
-   read and written before an import, migration or release. Use the approved Workers Paid capacity
-   plan for the staff availability target. Verify the subscription before treating Free daily
-   cutoffs as removed.
+   read and written before an import, migration or release. Keep the existing Free plan. Reserve
+   allowance for staff and member requests, and defer bulk work when remaining capacity is low. A
+   reliability request does not authorize a billing change.
 2. Open the canonical database's **Overview → Queries**. Compare **Count**, **Rows read** and **Rows
    written** for the same time range. A frequently executed write with high read volume can indicate
    an expensive trigger. Preserve only concise diagnostics privately, without member data.
@@ -138,7 +138,11 @@ as well as reads; limiting query count or returned results does not bound scanne
 5. Profile maintenance uses indexed candidate checks before assembling erasure and purge work.
    Migration **0049** indexes audit targets so due erasure does not scan unrelated audit history. An
    idle tick skips the full cleanup batch. Due work retains its bounded batches and resumes on
-   subsequent ticks; immediate account erasure and retention rules remain in force.
+   subsequent ticks; immediate account erasure and retention rules remain in force. Records cleanup
+   runs on the UTC hour, with bounded batches of expired claims, stale snapshots and expired audit
+   records. Expiration checks on reads remain mandatory. Monitor old records left after each batch;
+   a large backlog needs several hourly passes. Profile cleanup and access removal queues keep their
+   minute cadence.
 6. Migration **0050** gives provider selectors fixed pages: 16 urgent removals, 16 other explicit
    changes and 32 periodic operations per call. Each selector advances its own cursor atomically
    with its eligibility checks. Blocked work cannot force a scan of the whole queue. A large backlog
@@ -154,11 +158,14 @@ as well as reads; limiting query count or returned results does not bound scanne
    protected staff/jobs build. Recover uncertain deployments through their receipts. Do not bypass
    database gates, toggle production schedules in the dashboard or upgrade the plan implicitly.
 9. Inspect `job_database_usage` records for each scheduled database job. Each record includes
-   executed statements, `rows_read`, `rows_written`, `metadata_missing` and `quota_exhausted`.
-   Missing metadata or a failed query means the row totals are incomplete; do not treat them as a
-   daily account total. A recognized D1 quota failure stops subsequent database work in that
-   invocation and aborts the remaining scheduled steps. Later cron invocations still run; this is
-   not an account-wide cooldown.
+   executed statements, `rows_read`, `rows_written`, `metadata_missing`, `database_errors` and
+   `quota_exhausted`. Missing metadata or a failed query means the row totals are incomplete; do not
+   treat them as a daily account total. A recognized D1 quota failure stops subsequent database work
+   in that invocation and aborts the remaining scheduled steps. Migration **0051** adds a durable
+   daily reservation for scheduled work. Missing usage or an overrun closes that database’s
+   background work through the next UTC reset. If D1 rejects the guard itself, no provider jobs run.
+   This budget does not account for staff/member requests or other databases. See the exact caps and
+   [deferral recovery procedure](staff-availability.md#reserve-database-capacity-for-people).
 10. After release, inspect actual row usage over several scheduled ticks and again over a full day.
     Leave headroom for member/staff traffic, imports and backups. Confirm sign-in, member search and
     provider processing separately. Passing local budgets does not establish a healthy live day.
