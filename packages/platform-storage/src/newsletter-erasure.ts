@@ -20,18 +20,21 @@ const RELATED = `email_key IN (SELECT value FROM json_each((SELECT email_keys FR
 /** Capture addresses before erasure and verify that exact ownership inside its transaction. */
 export async function newsletterErasureWrites(
   db: Db,
-  selection: string | { sql: string; values: SqlValue[] },
+  selection: string | { sql: string; values: SqlValue[]; knownInboxPresence?: boolean },
   operationId: string,
   stamp: string,
 ): Promise<Statement[]> {
   // Historical upgrade fixtures predate the inbox. An installed inbox requires
   // the erasure migration; missing current tables fail rather than skip cleanup.
-  if (
-    !(await db
-      .prepare("SELECT 1 FROM sqlite_master WHERE name='newsletter_inbound_events'")
-      .first())
-  )
-    return [];
+  // Maintenance can reuse the schema presence read by its candidate probe.
+  const inboxPresent =
+    (typeof selection === 'string' ? undefined : selection.knownInboxPresence) ??
+    Boolean(
+      await db
+        .prepare("SELECT 1 FROM sqlite_master WHERE name='newsletter_inbound_events'")
+        .first(),
+    );
+  if (!inboxPresent) return [];
   const seeds =
     typeof selection === 'string'
       ? { sql: 'SELECT id FROM people WHERE id=? AND erased_at IS NULL', values: [selection] }

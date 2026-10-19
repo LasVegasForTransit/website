@@ -87,14 +87,15 @@ export async function inactivePersonRetentionWrites(
     db.prepare('DELETE FROM person_erasure_scope WHERE operation_id=?').bind(run.operationId),
   ];
 }
+const PURGE_SEEDS = `SELECT p.id FROM people p WHERE p.deleted_at<? AND p.erased_at IS NOT NULL
+  AND NOT EXISTS(SELECT 1 FROM merges m WHERE m.merged_person_id=p.id
+    AND m.unmerged_at IS NULL AND m.erased_at IS NULL)
+  ORDER BY p.deleted_at,p.id LIMIT ?`;
 function purgeScope(db: Db, run: RetentionRun): Statement {
   return db
     .prepare(
       `INSERT INTO person_retention_scope(operation_id,person_id,run_at,deleted_before)
-    SELECT ?,p.id,?,? FROM people p WHERE p.deleted_at<? AND p.erased_at IS NOT NULL
-      AND NOT EXISTS(SELECT 1 FROM merges m WHERE m.merged_person_id=p.id
-        AND m.unmerged_at IS NULL AND m.erased_at IS NULL)
-    ORDER BY p.deleted_at,p.id LIMIT ?`,
+    SELECT ?,id,?,? FROM (${PURGE_SEEDS})`,
     )
     .bind(run.operationId, run.stamp, run.deletedBefore, run.deletedBefore, run.limit);
 }
@@ -131,10 +132,24 @@ function purgePersonalCopies(db: Db, run: RetentionRun): Statement[] {
 }
 /** All selection, redaction and physical cleanup share the maintenance transaction. */
 export async function personRetentionWrites(db: Db, run: RetentionRun): Promise<Statement[]> {
+  // Empty scopes still scan unrelated history during redaction. Probe the indexed
+  // candidate queues first; the transaction below repeats the exact selections.
+  const candidate = await db
+    .prepare(
+      `SELECT 1,(SELECT count(*) FROM sqlite_master WHERE name='newsletter_inbound_events') AS newsletter_inbox
+      FROM (SELECT 1 FROM (${LEGACY_SEEDS}) UNION ALL SELECT 1 FROM (${PURGE_SEEDS}) LIMIT 1)`,
+    )
+    .bind(1, run.deletedBefore, 1)
+    .first<{ newsletter_inbox: number }>();
+  if (!candidate) return [];
   const people = '(SELECT person_id FROM person_retention_scope WHERE operation_id=?)';
   const newsletter = await newsletterErasureWrites(
     db,
-    { sql: LEGACY_SEEDS, values: [run.limit] },
+    {
+      sql: LEGACY_SEEDS,
+      values: [run.limit],
+      knownInboxPresence: candidate.newsletter_inbox > 0,
+    },
     run.operationId,
     run.stamp,
   );

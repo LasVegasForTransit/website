@@ -195,9 +195,14 @@ account's current revision.
   to stop the minute schedule while investigating. A result limit or query-count budget does not
   bound scanned rows. Confirm migration 0045 and the saved applications are installed together; an
   idle provider selection must not scan all profiles and opaque keys, and legacy erasure must seek
-  only unerased deletions. Repeated roster dry runs cannot clear the account-wide quota. After quota
-  recovery, verify low idle read usage over several scheduled ticks before accepting the repaired
-  schedule; preserve pending privacy and provider work throughout.
+  only unerased deletions. Confirm migration 0048 as well: the newer-observation check in the
+  Discord mismatch trigger needs its provider-resource index. An observation insert can otherwise
+  scan the person's entire retained observation history even when its outer query uses indexes. Use
+  the Queries table's **Rows read** column to identify expensive statements; include writes and
+  their triggers, rather than counting only SELECT statements. Repeated roster dry runs cannot clear
+  the account-wide quota. After quota recovery, verify low idle read usage over several scheduled
+  ticks before accepting the repaired schedule; preserve pending privacy and provider work
+  throughout.
 - **The review form expired or changed:** reload `/offboarding/`, inspect the current flag, and
   submit its new form. If access is denied, verify current administrator membership rather than
   granting access through a submitted actor identifier.
