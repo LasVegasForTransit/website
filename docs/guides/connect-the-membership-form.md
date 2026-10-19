@@ -13,7 +13,22 @@ submission fails, is in [membership-intake.md](../reference/membership-intake.md
 > with `pnpm bootstrap --production`. Never use the value in your own `apps/site/.env.local`; it is
 > a local test value only.
 
----
+## Check every submission path
+
+1. Open **Questions**. Put the existing question **Finishing this form will sign you up for our
+   email newsletter. Is this okay?** in the first section, before that section can submit or branch
+   elsewhere. Move the existing question rather than duplicating or replacing it, so historical
+   answers stay attached to it. Keep its wording unchanged for the intake adapter.
+2. Select that question and confirm **Required** is on. The respondent must choose **Yes**; the form
+   description alone does not supply the affirmative answer the adapter expects. Never preselect an
+   answer or treat a skipped question as consent.
+3. Open **Preview** and check each route through the form. The shortest route must show the required
+   question before **Submit**. Any optional volunteer or additional-information route must also pass
+   through it. Confirm the published responder link shows the same placement.
+4. Preserve existing responses, response IDs and dates. Do not submit a fictional member to test the
+   form. Use an approved response for the end-to-end check below, when intake is available.
+
+## Connect the script
 
 1. Open the membership Google Form. In its settings, confirm **Collect email addresses** is on — the
    email is read via `getRespondentEmail()`, not a form question, so without this the pipeline has
