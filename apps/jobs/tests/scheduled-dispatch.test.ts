@@ -186,7 +186,7 @@ void test('a provider pause stops outgoing newsletter calls but still processes 
   const f = fixture(undefined, undefined, { busyInbox: true, paused: true });
   await f.run();
   assert.ok(f.visits.includes('newsletter_incoming'));
-  assert.equal(f.visits.filter((name) => name === 'newsletter_account').length, 1);
+  assert.equal(f.visits.filter((name) => name === 'newsletter_account').length, 0);
   assert.ok(f.visits.includes('discord_account'));
   assert.equal(f.visits.at(-1), 'completion');
 });
@@ -212,7 +212,7 @@ for (const provider of ['discord', 'newsletter']) {
     const f = fixture(`${provider}_scan`);
     await assert.rejects(f.run(), /Scheduled (?:membership work failed|database work deferred)/);
     const other = provider === 'discord' ? 'newsletter' : 'discord';
-    assert.equal(f.visits.includes(`${other}_account`), true);
+    assert.equal(f.visits.includes(`${other}_account`), false);
     assert.equal(f.visits.at(-1), `${provider}_scan`);
   });
   void test(`${provider} account exceptions close the day before later provider effects`, async () => {
@@ -279,12 +279,17 @@ void test('a spent measured reservation stops between RPCs and closes the daily 
   await f.run();
   assert.deepEqual(f.visits, ['records']);
 });
-void test('current member choices and first account work run ahead of optional roster scans', async () => {
+void test('source scans and saved choices precede outgoing account changes', async () => {
   const f = fixture();
   await f.run();
   assert.ok(f.visits.indexOf('newsletter_incoming') < f.visits.indexOf('discord_account'));
-  assert.ok(f.visits.indexOf('discord_account') < f.visits.indexOf('discord_scan'));
-  assert.ok(f.visits.indexOf('newsletter_account') < f.visits.indexOf('newsletter_scan'));
+  for (const provider of ['discord', 'newsletter']) {
+    assert.ok(f.visits.indexOf('discord_scan') < f.visits.indexOf(`${provider}_account`));
+    assert.ok(f.visits.indexOf('newsletter_scan') < f.visits.indexOf(`${provider}_account`));
+    assert.ok(
+      f.visits.indexOf('newsletter_poll_choices') < f.visits.indexOf(`${provider}_account`),
+    );
+  }
 });
 
 void test('a missing budget migration refuses background work before provider calls', async () => {

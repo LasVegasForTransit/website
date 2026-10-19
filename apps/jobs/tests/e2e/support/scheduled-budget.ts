@@ -1,3 +1,4 @@
+import { SCHEDULED_RESERVATION } from '@lasvegasfortransit/platform-storage/query-budget';
 import assert from 'node:assert/strict';
 import type { Db } from '@lasvegasfortransit/platform-storage/db';
 
@@ -15,8 +16,10 @@ export async function assertBudgetUsage(db: Db): Promise<void> {
   const ledger = await db
     .prepare('SELECT charged_reads,charged_writes,blocked FROM scheduled_work_budget')
     .first<{ charged_reads: number; charged_writes: number; blocked: number }>();
-  assert.ok(ledger && ledger.charged_reads > 0 && ledger.charged_reads < 50_000);
-  assert.ok(ledger.charged_writes > 0 && ledger.charged_writes < 2_000);
+  assert.ok(
+    ledger && ledger.charged_reads > 0 && ledger.charged_reads < SCHEDULED_RESERVATION.reads,
+  );
+  assert.ok(ledger.charged_writes > 0 && ledger.charged_writes < SCHEDULED_RESERVATION.writes);
   assert.equal(ledger.blocked, 0, 'compiled RPC telemetry must permit verified usage settlement');
 }
 

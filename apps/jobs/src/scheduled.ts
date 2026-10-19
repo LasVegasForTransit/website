@@ -83,7 +83,6 @@ async function runAccount(context: ExecutionContext, newsletter: boolean, budget
     return {
       stop: !result || result.kind === 'idle' || result.paused || result.kind === 'failed',
       failed: !result || result.kind === 'failed',
-      scanAllowed: Boolean(result && !result.paused && result.kind !== 'failed'),
     };
   }
   const result = await membershipStep(
@@ -94,7 +93,6 @@ async function runAccount(context: ExecutionContext, newsletter: boolean, budget
   return {
     stop: !result?.selected || result.paused || result.failed,
     failed: !result || result.failed,
-    scanAllowed: Boolean(result && !result.paused && !result.failed),
   };
 }
 
@@ -103,29 +101,11 @@ async function processProviderQueues(
   enabled: EnabledProviders,
   budget: ScheduledBudget,
 ) {
-  const incomingFailed = enabled.newsletter ? await processIncoming(context, budget) : false;
   const newsletterReady = enabled.newsletter;
-  // Scans still run for idle queues; their new work can wait for the next minute tick.
-  const scans = { ...enabled };
-  // Current removals and member choices run before optional roster scans.
-  let priorityFailed = false;
-  if (enabled.discord && canContinueMembership(budget)) {
-    const result = await runAccount(context, false, budget);
-    priorityFailed = result.failed;
-    enabled.discord = !result.stop;
-    scans.discord = result.scanAllowed;
-  }
-  if (enabled.newsletter && canContinueMembership(budget)) {
-    const result = await runAccount(context, true, budget);
-    priorityFailed ||= result.failed;
-    enabled.newsletter = !result.stop;
-    scans.newsletter = result.scanAllowed;
-  }
-  const scanFailed = await scanProviders(context, scans, budget);
-  enabled.discord &&= scans.discord;
-  enabled.newsletter &&= scans.newsletter;
+  const incomingFailed = newsletterReady ? await processIncoming(context, budget) : false;
+  const scanFailed = await scanProviders(context, enabled, budget);
   const pollingFailed = newsletterReady ? await processIncoming(context, budget, true) : false;
-  return [incomingFailed, scanFailed, pollingFailed, priorityFailed].some(Boolean);
+  return [incomingFailed, scanFailed, pollingFailed].some(Boolean);
 }
 async function registerDiscordCommand(
   context: ExecutionContext,
