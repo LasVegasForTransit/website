@@ -53,16 +53,20 @@ export function messagePage(
           : 'This step needs your attention';
   const detail =
     status >= 500
-      ? 'Sorry for the interruption. The team can help on Discord.'
+      ? 'Please flag the issue in Discord.'
       : escapeHtml(
           message || 'Return to staff home to find the page you need, or contact LVBT for help.',
         );
   const actions =
     status >= 500
-      ? `<a class="staff-action-link" href="https://discord.com/channels/1509298455896522823">Ask in Discord</a><a class="staff-secondary-button" href="${back.href}">${back.label}</a>`
+      ? `<a class="staff-action-link" href="https://discord.com/channels/1509298455896522823">Open Discord</a><a class="staff-secondary-button" href="${back.href}">${back.label}</a>`
       : `<a class="staff-action-link" href="${back.href}">${back.label}</a>`;
+  const help =
+    status >= 500
+      ? ''
+      : `<p class="staff-recovery-help">Need a hand? <a class="staff-muted-link" href="mailto:hello@lasvegasfortransit.org">Email the team</a></p>`;
   return `<!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="robots" content="noindex, nofollow"><title>${title} · Las Vegans for Better Transit</title><style>${messagePageStyles}</style></head>
-<body class="staff-shell staff-recovery"><main id="main" class="staff-recovery-panel"><header><a class="staff-identity" href="/" aria-label="LVBT staff home"><span class="staff-identity-mark staff-logo-light" aria-hidden="true">${recoveryLightLogo}</span><span class="staff-identity-mark staff-logo-dark" aria-hidden="true">${recoveryDarkLogo.replaceAll('clip0_1_687', 'dark_clip0_1_687').replaceAll('clip1_1_687', 'dark_clip1_1_687').replaceAll('clip2_1_687', 'dark_clip2_1_687')}</span><span>Staff</span></a></header>
-<h1>${title}</h1><p class="staff-recovery-detail">${detail}</p><nav class="staff-recovery-actions" aria-label="Next steps">${actions}</nav><p class="staff-recovery-help">Need a hand? <a class="staff-muted-link" href="mailto:hello@lasvegasfortransit.org">Email the team</a></p></main></body></html>`;
+<body class="staff-shell staff-recovery"><main id="main" class="staff-recovery-panel"><header><a class="staff-identity" href="/" aria-label="LVBT staff home"><span class="staff-identity-mark staff-logo-light" aria-hidden="true">${recoveryLightLogo}</span><span class="staff-identity-mark staff-logo-dark" aria-hidden="true">${recoveryDarkLogo.replaceAll('clip0_1_687', 'dark_clip0_1_687').replaceAll('clip1_1_687', 'dark_clip1_1_687').replaceAll('clip2_1_687', 'dark_clip2_1_687')}</span></a></header>
+<h1>${title}</h1><p class="staff-recovery-detail">${detail}</p><nav class="staff-recovery-actions" aria-label="Next steps">${actions}</nav>${help}</main></body></html>`;
 }
