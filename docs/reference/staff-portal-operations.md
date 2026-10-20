@@ -1589,5 +1589,8 @@ restore database availability. After the allowance resets, verify sign-in and me
 the protected release flow, then inspect usage across scheduled ticks. Do not upgrade billing or
 bypass release gates as an incident workaround.
 
+Use [Investigate a staff failure](../guides/investigate-staff-failures.md) to look up a reported
+reference and interpret its private diagnostics.
+
 The [staff availability target](staff-availability.md) defines the measurement and release evidence
 needed before claiming 99.9% availability.
