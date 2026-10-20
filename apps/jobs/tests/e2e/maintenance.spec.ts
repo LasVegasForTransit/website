@@ -20,7 +20,7 @@ const simulator = new Miniflare(
     cf: false,
     telemetry: { enabled: false },
     d1Databases: { PLATFORM_DB: 'maintenance-fixture' },
-    bindings: { LVBT_DEPLOYMENT_ENV: 'preview', LVBT_DISCORD_SYNC_ENABLED: 'false' },
+    bindings: { LVBT_DEPLOYMENT_ENV: 'production', LVBT_DISCORD_SYNC_ENABLED: 'false' },
     outboundService: () => {
       throw new Error('Maintenance must not need external providers');
     },
@@ -40,6 +40,10 @@ try {
     raw.close();
   }
   const stamp = new Date().toISOString();
+  const ordinaryMinute = new Date(stamp);
+  ordinaryMinute.setUTCHours(ordinaryMinute.getUTCHours() + 1, 34, 0, 0);
+  const hourlyStart = new Date(ordinaryMinute);
+  hourlyStart.setUTCHours(hourlyStart.getUTCHours() + 1, 0, 0, 0);
   await db.batch([
     db.prepare(
       "WITH RECURSIVE seq(n) AS (SELECT 1 UNION ALL SELECT n+1 FROM seq WHERE n<105) INSERT INTO staff_audits(id,actor_id,action,occurred_at) SELECT 'old-'||n,'platform:discord','access.granted','2000-01-01T00:00:00.000Z' FROM seq",
@@ -72,14 +76,38 @@ try {
       "INSERT INTO welcome_claims VALUES('expired','person','person','2000-01-01T00:00:00.000Z','2000-01-08T00:00:00.000Z')",
     ),
   ]);
+  const worker = await simulator.getWorker();
+  assert.equal((await worker.fetch('https://jobs.example.invalid/')).status, 404);
+  assert.equal(
+    (
+      await worker.scheduled({
+        cron: '* * * * *',
+        scheduledTime: ordinaryMinute,
+      })
+    ).outcome,
+    'ok',
+  );
+  for (const table of ['staff_audits', 'person_views'])
+    assert.equal(
+      (await db.prepare(`SELECT count(*) AS n FROM ${table}`).first())?.n,
+      106,
+      'ordinary minutes must leave record cleanup for the hourly schedule',
+    );
+  assert.equal((await db.prepare('SELECT count(*) AS n FROM welcome_claims').first())?.n, 1);
   await db
     .prepare(
       "WITH RECURSIVE seq(n) AS (SELECT 1 UNION ALL SELECT n+1 FROM seq WHERE n<105) INSERT INTO people(id,given_name,email,created_at,updated_at,deleted_at) SELECT 'deleted-'||n,'Legacy private','deleted-'||n||'@example.invalid','2000-01-01T00:00:00.000Z','2000-01-01T00:00:00.000Z','2000-01-01T00:00:00.000Z' FROM seq",
     )
     .run();
-  const worker = await simulator.getWorker();
-  assert.equal((await worker.fetch('https://jobs.example.invalid/')).status, 404);
-  assert.equal((await worker.scheduled({ cron: '* * * * *' })).outcome, 'ok');
+  assert.equal(
+    (
+      await worker.scheduled({
+        cron: '* * * * *',
+        scheduledTime: hourlyStart,
+      })
+    ).outcome,
+    'ok',
+  );
   assert.equal(
     (await db.prepare("SELECT state FROM integration_outbox WHERE id='no-provider'").first())
       ?.state,
@@ -98,8 +126,16 @@ try {
     6,
     'profile cleanup must remain bounded',
   );
-  for (let tick = 0; tick < 2; tick++)
-    assert.equal((await worker.scheduled({ cron: '* * * * *' })).outcome, 'ok');
+  for (const hoursAfter of [1, 2])
+    assert.equal(
+      (
+        await worker.scheduled({
+          cron: '* * * * *',
+          scheduledTime: new Date(hourlyStart.getTime() + hoursAfter * 3_600_000),
+        })
+      ).outcome,
+      'ok',
+    );
   for (const table of ['staff_audits', 'person_views']) {
     assert.equal((await db.prepare(`SELECT count(*) AS n FROM ${table}`).first())?.n, 1);
     assert.equal((await db.prepare(`SELECT id FROM ${table}`).first())?.id, 'recent');
