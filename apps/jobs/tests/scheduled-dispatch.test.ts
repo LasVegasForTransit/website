@@ -1,117 +1,7 @@
-import { memoryDb } from '@lasvegasfortransit/platform-storage/test-db';
-import type { Db, Statement } from '@lasvegasfortransit/platform-storage/db';
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { runScheduledMembership } from '../src/scheduled';
+import { fixture } from './support/scheduled-fixture';
 
-function fixture(
-  failedStep?: string,
-  onStep?: (name: string) => void,
-  options: {
-    busyInbox?: boolean;
-    scanComplete?: boolean;
-    paused?: boolean;
-    scheduledTime?: number;
-    commandFailed?: boolean;
-    discordDisabled?: boolean;
-    failureError?: Error;
-    missingUsage?: boolean;
-    guardDenied?: boolean;
-    rowsRead?: number;
-    idleAccounts?: boolean;
-  } = {},
-) {
-  const native = memoryDb();
-  const wrap = (statement: Statement): Statement => ({
-    bind: (...values) => wrap(statement.bind(...values)),
-    first: () => statement.first(),
-    // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-parameters -- mirrors D1 row typing
-    all: async <T>() => ({
-      ...(await statement.all<T>()),
-      meta: { rows_read: 1, rows_written: 1 },
-    }),
-    run: () => statement.run(),
-  });
-  const database: Db = {
-    prepare: (sql) => wrap(native.prepare(sql)),
-    batch: (statements) => native.batch(statements),
-  };
-  const visits: string[] = [];
-  const step = (name: string, result: object) => ({
-    run: () => {
-      visits.push(name);
-      onStep?.(name);
-      return name === failedStep
-        ? Promise.reject(
-            options.failureError ?? new Error('private provider error must not be logged'),
-          )
-        : Promise.resolve({
-            ...result,
-            databaseUsage: {
-              rows_read: options.rowsRead ?? 1,
-              rows_written: 1,
-              metadata_missing: options.missingUsage ? 1 : 0,
-              database_errors: 0,
-              quota_exhausted: false,
-            },
-          });
-    },
-  });
-  const context = {
-    exports: {
-      StaffMaintenance: step('records', {}),
-      ProfileMaintenance: step('profiles', {}),
-      InactiveProfileMaintenance: step('inactive_profiles', {}),
-      ProviderCompletion: step('completion', {}),
-      DiscordCommands: step('discord_commands', {
-        kind: options.commandFailed ? 'failed' : 'complete',
-      }),
-      DiscordScan: step('discord_scan', {}),
-      NewsletterScan: step('newsletter_scan', {
-        kind: options.paused ? 'paused' : 'scanned',
-        complete: options.scanComplete ?? true,
-      }),
-      NewsletterIncoming: step('newsletter_incoming', {
-        kind: options.busyInbox ? 'progress' : 'idle',
-        more: options.busyInbox ?? false,
-      }),
-      NewsletterPollingChoices: step('newsletter_poll_choices', { kind: 'idle', more: false }),
-      DiscordAccount: step('discord_account', {
-        selected: options.idleAccounts ? 0 : 1,
-        failed: false,
-        paused: false,
-      }),
-      NewsletterAccount: step('newsletter_account', {
-        kind: options.idleAccounts ? 'idle' : 'progress',
-        paused: false,
-      }),
-    },
-  } as unknown as ExecutionContext;
-  if (options.guardDenied)
-    database.prepare = () => {
-      throw new Error("Your account has exceeded D1's free tier daily row read limit");
-    };
-  const env = {
-    PLATFORM_DB: database,
-    LVBT_DEPLOYMENT_ENV: 'preview',
-    LVBT_DISCORD_SYNC_ENABLED: options.discordDisabled ? 'false' : 'true',
-    LVBT_DISCORD_APPLICATION_ID: '555555555555555555',
-    LVBT_DISCORD_GUILD_ID: '111111111111111111',
-    LVBT_DISCORD_PRODUCTION_GUILD_ID: '999999999999999999',
-    LVBT_DISCORD_MEMBER_ROLE_ID: '333333333333333333',
-    LVBT_DISCORD_BOT_TOKEN: 'fixture-only',
-    LVBT_BEEHIIV_SYNC_ENABLED: 'true',
-    LVBT_BEEHIIV_PUBLICATION_ID: 'pub_preview',
-    LVBT_BEEHIIV_PRODUCTION_PUBLICATION_ID: 'pub_production',
-    LVBT_BEEHIIV_API_KEY: 'fixture-only',
-    LVBT_NEWSLETTER_INTENT_KEY: 'a'.repeat(43),
-    LVBT_BEEHIIV_WEBHOOK_SECRET: `whsec_${btoa('fixture-event-key-only')}`,
-  } as unknown as Env;
-  const controller = {
-    scheduledTime: options.scheduledTime ?? Date.parse('2026-10-19T20:00:00Z'),
-  } as ScheduledController;
-  return { visits, database: native, run: () => runScheduledMembership(controller, env, context) };
-}
 void test('ordinary minutes skip record cleanup while privacy and member queues keep moving', async () => {
   const f = fixture(undefined, undefined, {
     scheduledTime: Date.parse('2026-10-19T20:37:00Z'),
@@ -307,4 +197,82 @@ void test('idle account queues are checked once while optional scans still run',
   assert.ok(f.visits.includes('discord_scan'));
   assert.ok(f.visits.includes('newsletter_scan'));
   assert.equal(f.visits.at(-1), 'completion');
+});
+
+void test('a quiet tick uses one statement without writes or child jobs', async () => {
+  const f = fixture(undefined, undefined, { idleAccounts: true });
+  await f.run();
+  f.visits.length = 0;
+  f.statements.count = 0;
+  const before = f.database.raw.prepare('SELECT total_changes() AS n').get()?.n;
+  await f.run();
+  assert.deepEqual(f.visits, [], 'idle jobs must remain asleep');
+  assert.equal(f.statements.count, 1, 'quiet ticks must only read the indexed schedule');
+  assert.equal(f.database.raw.prepare('SELECT total_changes() AS n').get()?.n, before);
+});
+
+void test('missing control telemetry stops before acknowledging a group or running providers', async () => {
+  const f = fixture(undefined, undefined, {
+    idleAccounts: true,
+    missingControlPattern: /AS pending/,
+  });
+  await assert.rejects(f.run(), /Missing scheduled database usage metadata/);
+  assert.deepEqual(f.visits, ['records', 'profiles']);
+  assert.equal(
+    f.database.raw
+      .prepare("SELECT configuration FROM scheduled_work_signals WHERE name='profiles'")
+      .get()?.configuration,
+    '',
+  );
+  assert.equal(
+    f.database.raw.prepare('SELECT blocked FROM scheduled_work_budget').get()?.blocked,
+    1,
+  );
+});
+void test('blocked candidate pages cannot delay later due explicit work until a scan deadline', async () => {
+  const { pendingDiscordOperations, outboxSelectionHasMore } =
+    await import('@lasvegasfortransit/platform-storage/discord-pending');
+  const f = fixture(undefined, undefined, { idleAccounts: true });
+  f.database.raw.exec(`UPDATE integration_outbox SET state='done';
+    WITH RECURSIVE seq(n) AS (SELECT 1 UNION ALL SELECT n+1 FROM seq WHERE n<90)
+    INSERT INTO people(id,membership_status,created_at,updated_at) SELECT printf('blocked-%04d',n),'member','2026-10-19','2026-10-19' FROM seq;
+    INSERT INTO reconcile_generations(person_id,target_id,generation) SELECT id,'person',1 FROM people WHERE id LIKE 'blocked-%';
+    INSERT INTO integration_outbox(id,kind,person_id,target_id,generation,payload,next_attempt_at,created_at,updated_at)
+      SELECT id,'person_reconcile',id,'person',1,'{"source":"committee.assign"}','2026-01-01','2026-01-01','2026-01-01' FROM people WHERE id LIKE 'blocked-%';
+    INSERT INTO identities(id,person_id,platform,external_id,linked_at,link_method,created_at,updated_at)
+      VALUES('target','blocked-0090','discord','222222222222222222','2026-01-01','self_linked','2026-01-01','2026-01-01');`);
+  const selected: string[] = [];
+  let pages = 0;
+  Object.assign(f.context.exports, {
+    DiscordAccount: {
+      run: async () => {
+        pages++;
+        const now = new Date('2026-10-19T20:00:00.000Z');
+        const operations = await pendingDiscordOperations(f.database, now, 1);
+        selected.push(...operations);
+        for (const id of operations)
+          f.database.raw
+            .prepare(
+              "INSERT INTO provider_operation_receipts(operation_id,provider,state,revision_hash,lease_token,observed_at,expires_at) VALUES(?,'discord','done','revision','lease',?,'2026-10-20T00:00:00.000Z') ON CONFLICT(operation_id,provider) DO UPDATE SET observed_at=excluded.observed_at",
+            )
+            .run(id, now.toISOString());
+        return {
+          selected: operations.length,
+          paused: false,
+          failed: false,
+          more: await outboxSelectionHasMore(f.database, 'discord'),
+          databaseUsage: {
+            rows_read: 1,
+            rows_written: 1,
+            metadata_missing: 0,
+            database_errors: 0,
+            quota_exhausted: false,
+          },
+        };
+      },
+    },
+  });
+  await f.run();
+  assert.deepEqual(selected, ['blocked-0090']);
+  assert.ok(pages >= 6 && pages <= 20, `bounded page progress: ${pages}`);
 });

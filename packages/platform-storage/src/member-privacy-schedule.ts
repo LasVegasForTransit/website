@@ -39,3 +39,14 @@ export function memberPrivacySchedule(now: Date): { day: string; cutoff: string 
     ).toISOString(),
   };
 }
+
+/** Find the next daily window without assuming a fixed UTC offset. */
+export function nextMemberPrivacyTime(now: Date): Date {
+  const local = parts(now);
+  const today = pacificThree(Number(local.year), Number(local.month), Number(local.day));
+  if (today.getTime() > now.getTime()) return today;
+  const tomorrow = new Date(
+    Date.UTC(Number(local.year), Number(local.month) - 1, Number(local.day) + 1, 12),
+  );
+  return pacificThree(tomorrow.getUTCFullYear(), tomorrow.getUTCMonth() + 1, tomorrow.getUTCDate());
+}

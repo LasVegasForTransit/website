@@ -141,8 +141,8 @@ as well as reads; limiting query count or returned results does not bound scanne
    subsequent ticks; immediate account erasure and retention rules remain in force. Records cleanup
    runs on the UTC hour, with bounded batches of expired claims, stale snapshots and expired audit
    records. Expiration checks on reads remain mandatory. Monitor old records left after each batch;
-   a large backlog needs several hourly passes. Profile cleanup and access removal queues keep their
-   minute cadence.
+   a backlog continues on later minute ticks after migration **0053**. Profile cleanup and access
+   removal queues wake from accepted changes.
 6. Migration **0050** gives provider selectors fixed pages: 16 urgent removals, 16 other explicit
    changes and 32 periodic operations per call. Each selector advances its own cursor atomically
    with its eligibility checks. Blocked work cannot force a scan of the whole queue. A large backlog
@@ -152,16 +152,22 @@ as well as reads; limiting query count or returned results does not bound scanne
    before verifying the daily privacy run. It preserves date-offset comparisons and every consent,
    identity and engagement exclusion. Provider cursor claims skip unchanged values, so empty queues
    do not rewrite their cursors on each minute tick.
-8. Run `pnpm -C apps/jobs test` and `pnpm -C packages/platform-storage test` locally. The real local
+8. Migration **0053** adds persisted scheduler wakes, bounded sweep markers and due-time indexes.
+   Apply it after **0052** and before activating its matching jobs release. The additive migration
+   starts existing queues awake. Index creation and initial wake rows consume allowance, so use the
+   verified backup and canonical migration workflow. Do not create a separate schema in the
+   dashboard. Keep the wake table, triggers and indexes during code rollback; older code ignores
+   them safely.
+9. Run `pnpm -C apps/jobs test` and `pnpm -C packages/platform-storage test` locally. The real local
    D1 tests measure observation and idle-maintenance rows read with long histories; storage tests
    cover a full day of cross-provider scheduling and immediate membership changes. These tests use
    synthetic, local data. Do not run the fixtures against production or preview databases.
-9. If the daily allowance is exhausted, stop manual retries and keep the selected saved release.
-   Wait for the documented reset. Afterward, make one bounded availability check, take the required
-   backup, apply canonical migrations through the normal release flow, then activate the matching
-   protected staff/jobs build. Recover uncertain deployments through their receipts. Do not bypass
-   database gates, toggle production schedules in the dashboard or upgrade the plan implicitly.
-10. Inspect `job_database_usage` records for each scheduled database job. Each record includes
+10. If the daily allowance is exhausted, stop manual retries and keep the selected saved release.
+    Wait for the documented reset. Afterward, make one bounded availability check, take the required
+    backup, apply canonical migrations through the normal release flow, then activate the matching
+    protected staff/jobs build. Recover uncertain deployments through their receipts. Do not bypass
+    database gates, toggle production schedules in the dashboard or upgrade the plan implicitly.
+11. Inspect `job_database_usage` records for each scheduled database job. Each record includes
     executed statements, `rows_read`, `rows_written`, `metadata_missing`, `database_errors` and
     `quota_exhausted`. Missing metadata or a failed query means the row totals are incomplete; do
     not treat them as a daily account total. A recognized D1 quota failure stops subsequent database
@@ -171,9 +177,33 @@ as well as reads; limiting query count or returned results does not bound scanne
     run. This budget does not account for staff/member requests or other databases. See the exact
     caps and
     [deferral recovery procedure](staff-availability.md#reserve-database-capacity-for-people).
-11. After release, inspect actual row usage over several scheduled ticks and again over a full day.
+12. After release, inspect actual row usage over several scheduled ticks and again over a full day.
     Leave headroom for member/staff traffic, imports and backups. Confirm sign-in, member search and
     provider processing separately. Passing local budgets does not establish a healthy live day.
+
+## Inspect scheduled wakes
+
+Maintainers need read access to the selected database and its active release before diagnosing a
+wake. Use the normal read-only database tools to run:
+
+```sql
+SELECT name, revision, next_run_at, configuration FROM scheduled_work_signals ORDER BY name;
+SELECT utc_day, charged_reads, charged_writes, lease_until, blocked FROM scheduled_work_budget;
+```
+
+Expect four signal rows. The configuration contains public provider identifiers and the command
+fingerprint; it contains no credentials. An overdue signal can mean queued work, an unfinished
+batch, a held budget lease or a closed daily budget. Inspect the corresponding sanitized job logs
+and queue before changing anything. Do not clear the signal or reset the budget to make the
+dashboard look healthy. A writer can increment the revision while a pass runs; that wake must
+survive its earlier acknowledgment. Repeated checkpoint writes during a provider pause indicate a
+regression.
+
+After activating the matching release, compare actual D1 account usage and job counters over several
+ticks and a full UTC day. Run the local idle-hour regression when changing triggers, queue
+selectors, checkpoint timing or maintenance categories. The expected local budgets and scheduler
+component diagram are in
+[staff availability](staff-availability.md#reserve-database-capacity-for-people).
 
 ## Scheduled newsletter processing
 

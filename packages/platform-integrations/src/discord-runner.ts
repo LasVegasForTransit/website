@@ -1,5 +1,8 @@
 import type { Db } from '@lasvegasfortransit/platform-storage/db';
-import { pendingDiscordOperations } from '@lasvegasfortransit/platform-storage/discord-pending';
+import {
+  pendingDiscordOperations,
+  outboxSelectionHasMore,
+} from '@lasvegasfortransit/platform-storage/discord-pending';
 import { DiscordAccess } from './discord-access';
 import { DiscordApiFailure, discordChangeLimit, type DiscordConfiguration } from './discord-types';
 import { discordRateLimit } from './discord-rate-limit';
@@ -22,6 +25,7 @@ export interface DiscordRunCounts {
   notReady: number;
   stale: number;
   paused: boolean;
+  more: boolean;
 }
 /** Bounded scheduled work. A Discord receipt never completes shared Google/mail work. */
 export async function reconcileDiscordPending(
@@ -44,6 +48,7 @@ export async function reconcileDiscordPending(
     notReady: 0,
     stale: 0,
     paused: false,
+    more: false,
   };
   const client = new DiscordAccess(options.configuration, {
     ...(options.fetch ? { fetch: options.fetch } : {}),
@@ -69,5 +74,6 @@ export async function reconcileDiscordPending(
     else counts[result.kind] += 1;
   }
   counts.paused = Boolean(await rateLimit.current());
+  counts.more = !counts.paused && (await outboxSelectionHasMore(db, 'discord'));
   return counts;
 }
