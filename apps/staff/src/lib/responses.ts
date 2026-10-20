@@ -48,7 +48,8 @@ export function messageResponse(
 ) {
   const details = status >= 500 ? (report ?? createStaffErrorReport()) : undefined;
   if (details && !report)
-    console.error('staff_request_failed', {
+    console.error({
+      event: 'staff_request_failed',
       layer: 'response',
       category: 'http_error',
       status,

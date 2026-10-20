@@ -28,8 +28,17 @@ When a colleague flags an outage in Discord, find the displayed reference in the
 `staff_request_failed` log entry under `requestId`. Use `occurredAt` to match the Pacific time shown
 on the page. Ask which page failed and what the person was trying to do. The response keeps the same
 reference through middleware and gateway recovery, so the reported reference identifies the logged
-failure. Generation uses no database queries, and the page excludes exception contents and member
-data. A failure before the request reaches the Worker may have no reference.
+failure. Inspect `diagnostics.causeCode` for a known cause such as `missing_table`,
+`diagnostics.errorType` for a safe error type, and `diagnostics.frames` for bounded code locations.
+Locations omit full filesystem paths, exception messages and call arguments. Framework responses
+without a captured exception retain the HTTP status and platform invocation context instead.
+Generation uses no database queries, and the page excludes exception contents and member data. A
+failure before the request reaches the Worker may have no reference.
+
+Investigate reports promptly. Cloudflare currently retains Workers Free logs for
+[three days](https://developers.cloudflare.com/workers/observability/logs/workers-logs/#pricing).
+The reference is a log lookup key, and it does not create a durable incident record. The Free log
+retention does not satisfy the 30-day availability-record target above.
 
 ## Remove the recurring capacity failure
 
