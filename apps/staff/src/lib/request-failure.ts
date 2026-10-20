@@ -1,4 +1,4 @@
-import { messageResponse } from './responses';
+import { createStaffErrorReport, readStaffErrorReport, messageResponse } from './responses';
 
 export function staffFailureCategory(
   error: unknown,
@@ -22,18 +22,20 @@ export function staffFailureCategory(
   return 'unexpected';
 }
 export function requestFailure(error: unknown, layer: 'gateway' | 'middleware'): Response {
+  const report = createStaffErrorReport();
   // Exception messages can contain SQL, contact details and provider responses.
   console.error('staff_request_failed', {
     layer,
     category: staffFailureCategory(error),
-    requestId: crypto.randomUUID(),
+    requestId: report.reference,
+    occurredAt: report.occurredAt,
   });
-  return messageResponse('', 503);
+  return messageResponse('', 503, 'home', report);
 }
 export function recoverStaffResponse(response: Response): Response {
   if (response.status >= 500 || response.status === 404) {
     void response.body?.cancel().catch(() => undefined);
-    return messageResponse('', response.status);
+    return messageResponse('', response.status, 'home', readStaffErrorReport(response));
   }
   return response;
 }
