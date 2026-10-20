@@ -24,6 +24,7 @@ packageExtensions:
 # Temporary transitive pins for published security fixes not yet selected by
 # their direct dependents.
 overrides:
+  'vite@>=8.2.0 <8.2.4': 8.2.4
   '@astrojs/cloudflare>@cloudflare/vite-plugin': 1.53.0
   devalue: 5.9.4
   postcss-selector-parser: 7.1.6
