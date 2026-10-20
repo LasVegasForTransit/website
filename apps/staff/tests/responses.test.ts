@@ -42,7 +42,8 @@ void test('framework error responses cannot expose internal pages through the ga
 });
 
 void test('operators can identify exhausted reads without logging exception contents', async () => {
-  const { requestFailure, staffFailureCategory } = await import('../src/lib/request-failure');
+  const { requestFailure, recoverStaffResponse, staffFailureCategory } =
+    await import('../src/lib/request-failure');
   const { mock } = await import('node:test');
   const logger = mock.method(console, 'error', () => undefined);
   try {
@@ -55,11 +56,26 @@ void test('operators can identify exhausted reads without logging exception cont
       ),
       'database_write_limit',
     );
-    const response = requestFailure(error, 'middleware');
+    const response = privateResponse(
+      recoverStaffResponse(
+        privateResponse(recoverStaffResponse(requestFailure(error, 'middleware'))),
+      ),
+    );
+    const reference = response.headers.get('X-LVBT-Error-Reference');
+    const occurredAt = response.headers.get('X-LVBT-Error-Time');
+    assert.ok(reference);
+    assert.match(reference, /^[A-F0-9]{4}(?:-[A-F0-9]{4}){2}$/);
+    assert.ok(occurredAt);
+    assert.equal(new Date(occurredAt).toISOString(), occurredAt);
     assert.equal(response.status, 503);
     const visibleHtml = (await response.text()).replace(/<style>[\s\S]*?<\/style>/g, '');
-    assert.doesNotMatch(visibleHtml, /SQL|private@example.invalid|D1/);
+    assert.doesNotMatch(visibleHtml, /SQL|private@example.invalid|\bD1(?:_ERROR)?\b/);
     const logged = JSON.stringify(logger.mock.calls);
+    assert.equal(logger.mock.calls.length, 1);
+    assert.ok(logged.includes(reference));
+    assert.ok(logged.includes(occurredAt));
+    assert.ok(visibleHtml.includes(reference));
+    assert.ok(visibleHtml.includes(`datetime="${occurredAt}"`));
     assert.match(logged, /database_read_limit/);
     assert.doesNotMatch(logged, /SQL|private@example.invalid|daily row read limit/);
   } finally {
@@ -73,4 +89,23 @@ void test('welcome conflicts keep a direct route back to the welcome list', asyn
   assert.match(html, /href="\/welcome\/">Back to welcome members/);
   assert.match(html, /<style>/);
   assert.equal(response.status, 409);
+});
+
+void test('unrecognized failure metadata cannot leak into a recovery report', async () => {
+  const { recoverStaffResponse } = await import('../src/lib/request-failure');
+  const response = recoverStaffResponse(
+    new Response('SQL private@example.invalid', {
+      status: 500,
+      headers: {
+        'X-LVBT-Error-Reference': '<script>private@example.invalid</script>',
+        'X-LVBT-Error-Time': 'private@example.invalid',
+      },
+    }),
+  );
+  const reference = response.headers.get('X-LVBT-Error-Reference');
+  assert.ok(reference);
+  assert.match(reference, /^[A-F0-9]{4}(?:-[A-F0-9]{4}){2}$/);
+  const html = await response.text();
+  assert.ok(html.includes(reference));
+  assert.doesNotMatch(html, /private@example.invalid|<script>|SQL/);
 });

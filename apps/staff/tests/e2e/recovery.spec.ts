@@ -27,6 +27,13 @@ try {
   const html = await response.text();
   assert.equal(response.status, 503);
   assert.match(html, /Staff tools are unavailable/);
+  const reference = response.headers.get('X-LVBT-Error-Reference');
+  const occurredAt = response.headers.get('X-LVBT-Error-Time');
+  assert.ok(reference);
+  assert.match(reference, /^[A-F0-9]{4}(?:-[A-F0-9]{4}){2}$/);
+  assert.ok(occurredAt);
+  assert.ok(html.includes(reference));
+  assert.ok(html.includes(`datetime="${occurredAt}"`));
   assert.doesNotMatch(
     html.replace(/<style>[\s\S]*?<\/style>/g, ''),
     /D1_ERROR|no such table|unavailable_session_fixture|SQLITE/,

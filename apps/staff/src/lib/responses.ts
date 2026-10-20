@@ -1,4 +1,27 @@
-import { messagePage, messagePageStyleHash } from './message-page';
+import { messagePage, messagePageStyleHash, type StaffErrorReport } from './message-page';
+export function createStaffErrorReport(): StaffErrorReport {
+  const reference = crypto.randomUUID().replaceAll('-', '').slice(0, 12).toUpperCase();
+  return {
+    reference: `${reference.slice(0, 4)}-${reference.slice(4, 8)}-${reference.slice(8)}`,
+    occurredAt: new Date().toISOString(),
+  };
+}
+
+export function readStaffErrorReport(response: Response): StaffErrorReport | undefined {
+  const reference = response.headers.get('X-LVBT-Error-Reference');
+  const occurredAt = response.headers.get('X-LVBT-Error-Time');
+  if (
+    !reference ||
+    !/^[A-F0-9]{4}(?:-[A-F0-9]{4}){2}$/.test(reference) ||
+    !occurredAt ||
+    !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/.test(occurredAt)
+  )
+    return undefined;
+  const date = new Date(occurredAt);
+  if (!Number.isFinite(date.valueOf()) || date.toISOString() !== occurredAt) return undefined;
+  return { reference, occurredAt };
+}
+
 export function privateResponse(response: Response, path = ''): Response {
   const headers = new Headers(response.headers);
   headers.set('Cache-Control', 'private, no-store');
@@ -21,11 +44,26 @@ export function messageResponse(
   message: string,
   status: number,
   destination: 'home' | 'welcome' = 'home',
+  report?: StaffErrorReport,
 ) {
-  return privateResponse(
-    new Response(messagePage(message, status, destination), {
+  const details = status >= 500 ? (report ?? createStaffErrorReport()) : undefined;
+  if (details && !report)
+    console.error('staff_request_failed', {
+      layer: 'response',
+      category: 'http_error',
       status,
-      headers: { 'Content-Type': 'text/html; charset=utf-8' },
+      requestId: details.reference,
+      occurredAt: details.occurredAt,
+    });
+  const headers = new Headers({ 'Content-Type': 'text/html; charset=utf-8' });
+  if (details) {
+    headers.set('X-LVBT-Error-Reference', details.reference);
+    headers.set('X-LVBT-Error-Time', details.occurredAt);
+  }
+  return privateResponse(
+    new Response(messagePage(message, status, destination, details), {
+      status,
+      headers,
     }),
   );
 }

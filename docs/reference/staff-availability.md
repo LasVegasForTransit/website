@@ -22,6 +22,15 @@ External authenticated probes and alerts require a configured identity, schedule
 application changes do not provision those services. Until maintainers verify that setup and collect
 results, report availability as unmeasured. Worker logs alone omit edge and sign-in failures.
 
+## Investigate a reported failure
+
+When a colleague flags an outage in Discord, find the displayed reference in the staff Worker's
+`staff_request_failed` log entry under `requestId`. Use `occurredAt` to match the Pacific time shown
+on the page. Ask which page failed and what the person was trying to do. The response keeps the same
+reference through middleware and gateway recovery, so the reported reference identifies the logged
+failure. Generation uses no database queries, and the page excludes exception contents and member
+data. A failure before the request reaches the Worker may have no reference.
+
 ## Remove the recurring capacity failure
 
 Cloudflare D1 Free limits the whole account to 5 million rows read and 100,000 rows written per day.
