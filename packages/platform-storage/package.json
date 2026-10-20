@@ -10,6 +10,7 @@
     "./roster-import-reviews": "./src/roster-import-reviews.ts",
     "./person-export": "./src/person-export.ts",
     "./workspace-offboarding": "./src/workspace-offboarding.ts",
+    "./scheduled-wake": "./src/scheduled-wake.ts",
     "./member-privacy-schedule": "./src/member-privacy-schedule.ts",
     "./newsletter-reviews": "./src/newsletter-reviews.ts",
     "./newsletter-poll-choices": "./src/newsletter-poll-choices.ts",

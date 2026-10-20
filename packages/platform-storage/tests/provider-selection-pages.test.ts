@@ -100,3 +100,55 @@ void test('overlapping selectors claim different pages atomically', async (t) =>
   assert.equal(pages[1].length, 16);
   assert.equal(new Set(pages.flat()).size, 32);
 });
+
+for (const selector of ['discord', 'completion'] as const) {
+  void test(`${selector} finishes a wrapped sweep before sleeping behind blocked work`, async (t) => {
+    const { outboxSelectionHasMore } = await import('../src/outbox-selection');
+    const db = memoryDb();
+    t.after(() => db.raw.close());
+    queuedPeople(db, 90, true);
+    if (selector === 'discord')
+      db.raw.exec(
+        "DELETE FROM provider_operation_receipts WHERE operation_id='p00007' AND provider='discord'",
+      );
+    else
+      db.raw
+        .prepare(
+          "INSERT INTO provider_operation_receipts(operation_id,provider,state,revision_hash,lease_token,observed_at,expires_at) VALUES('p00007','google_workspace','done','r','l',?,?)",
+        )
+        .run(now.toISOString(), new Date(now.getTime() + 300000).toISOString());
+    db.raw
+      .prepare(
+        "INSERT INTO outbox_selection_cursors(selector,lane,next_attempt_at,operation_id,page_ids) VALUES(?,1,'2026-01-01','p00080','[]')",
+      )
+      .run(selector);
+    const select = async () =>
+      selector === 'discord'
+        ? await pendingDiscordOperations(db, now, 100)
+        : await completeProviderOperations(db, { now });
+    assert.deepEqual(await select(), selector === 'discord' ? [] : 0);
+    assert.equal(await outboxSelectionHasMore(db, selector), true);
+    assert.deepEqual(await select(), selector === 'discord' ? ['p00007'] : 1);
+    if (selector === 'discord') confirm(db, 'p00007');
+    let pages = 2;
+    while (await outboxSelectionHasMore(db, selector)) {
+      assert.ok(pages++ < 8, 'a blocked sweep must terminate');
+      await select();
+    }
+  });
+}
+
+void test('a wrapped sweep terminates when its start key and tail disappear', async (t) => {
+  const { outboxSelectionHasMore } = await import('../src/outbox-selection');
+  const db = memoryDb();
+  t.after(() => db.raw.close());
+  queuedPeople(db, 90, true);
+  db.raw.exec(
+    "INSERT INTO outbox_selection_cursors(selector,lane,next_attempt_at,operation_id,page_ids) VALUES('discord',1,'2026-01-01','p00080','[]'); UPDATE integration_outbox SET state='done' WHERE id>='p00071'",
+  );
+  let pages = 0;
+  do {
+    assert.ok(pages++ < 7, 'missing sweep boundary cannot keep the queue awake');
+    assert.deepEqual(await pendingDiscordOperations(db, now, 100), []);
+  } while (await outboxSelectionHasMore(db, 'discord'));
+});

@@ -42,7 +42,7 @@ async function advance(
     db
       .prepare(
         `INSERT INTO reconcile_generations(person_id,target_id,generation)
-      SELECT p.id,'person',1 FROM people p JOIN json_each(?) chosen ON chosen.value=p.id
+      SELECT p.id,'person',1 FROM json_each(?) chosen CROSS JOIN people p ON chosen.value=p.id
       WHERE ${ELIGIBLE} AND ${SCAN_CURRENT} ON CONFLICT(person_id,target_id) DO NOTHING`,
       )
       .bind(selected, ...guard),
@@ -50,7 +50,7 @@ async function advance(
       .prepare(
         `INSERT INTO integration_outbox(id,kind,person_id,target_id,generation,payload,next_attempt_at,created_at,updated_at)
       SELECT ? || ':' || p.id || ':' || g.generation,'person_reconcile',p.id,'person',g.generation,?,?,?,?
-      FROM people p JOIN json_each(?) chosen ON chosen.value=p.id JOIN reconcile_generations g ON g.person_id=p.id AND g.target_id='person'
+      FROM json_each(?) chosen CROSS JOIN people p ON chosen.value=p.id JOIN reconcile_generations g ON g.person_id=p.id AND g.target_id='person'
       WHERE ${ELIGIBLE} AND ${SCAN_CURRENT}
       AND NOT EXISTS(SELECT 1 FROM integration_outbox o JOIN reconcile_generations current ON current.person_id=o.person_id AND current.target_id=o.target_id AND current.generation=o.generation
         WHERE o.person_id=p.id AND o.kind IN ('person_reconcile','committee_reconcile') AND o.state IN ('queued','running','retry'))
@@ -104,7 +104,10 @@ export async function queueDiscordDrift(db: Db, options: Options): Promise<Disco
   if (typeof scan === 'string') return { kind: scan, scanned: 0, queued: 0, complete: false };
   try {
     const { results } = await db
-      .prepare(`SELECT p.id FROM people p WHERE ${ELIGIBLE} AND p.id>? ORDER BY p.id LIMIT ?`)
+      .prepare(
+        `SELECT DISTINCT i.person_id AS id FROM identities i CROSS JOIN people p ON p.id=i.person_id
+        WHERE i.platform='discord' AND i.person_id>? AND ${ELIGIBLE} ORDER BY i.person_id LIMIT ?`,
+      )
       .bind(scan.cursor ?? '', limit + 1)
       .all<{ id: string }>();
     return await advance(

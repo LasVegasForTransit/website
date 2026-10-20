@@ -42,3 +42,5 @@ export async function pendingDiscordOperations(
   const selected = result[1] as { results: { id: string }[] };
   return selected.results.map((row) => row.id);
 }
+
+export { outboxSelectionHasMore } from './outbox-selection';

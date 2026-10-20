@@ -15,7 +15,14 @@ import { QueryBudgetExceeded } from '@lasvegasfortransit/platform-storage/query-
 export class DiscordAccount extends WorkerEntrypoint<Env & DiscordRuntimeEnv> {
   async run() {
     const runtime = discordRuntime(this.env);
-    if (!runtime) return idleDatabaseJob({ selected: 0, failed: false, paused: false, queries: 0 });
+    if (!runtime)
+      return idleDatabaseJob({
+        selected: 0,
+        failed: false,
+        paused: false,
+        more: false,
+        queries: 0,
+      });
     return await runMeteredJob(this.env.PLATFORM_DB, 'DiscordAccount', async (budget) => {
       try {
         const result = await reconcileDiscordPending(budget.db, {
@@ -27,6 +34,7 @@ export class DiscordAccount extends WorkerEntrypoint<Env & DiscordRuntimeEnv> {
       } catch (error) {
         return {
           selected: 0,
+          more: false,
           failed: true,
           paused: false,
           queries: budget.queries,

@@ -41,6 +41,7 @@ class Meter {
   constructor(
     readonly limit: number,
     readonly measureRows: boolean,
+    readonly strictRows: boolean,
   ) {}
   assertAvailable(): void {
     if (this.quotaExhausted) throw new D1QuotaExceeded();
@@ -52,6 +53,8 @@ class Meter {
       if (this.measureRows) {
         for (const item of Array.isArray(result) ? result : [result]) this.measure(item);
       }
+      if (this.strictRows && this.metadataMissing)
+        throw new Error('Missing scheduled database usage metadata');
       return result;
     } catch (error) {
       this.databaseErrors++;
@@ -125,10 +128,18 @@ class BudgetStatement implements Statement {
 }
 
 /** Count each executed statement, including every statement in atomic batches. */
-export function queryBudget(database: Db, limit = 50, options: { measureRows?: boolean } = {}) {
+export function queryBudget(
+  database: Db,
+  limit = 50,
+  options: { measureRows?: boolean; strictRows?: boolean } = {},
+) {
   if (!Number.isInteger(limit) || limit < 1 || limit > 1000)
     throw new Error('Invalid account query budget');
-  const meter = new Meter(limit, options.measureRows ?? false);
+  const meter = new Meter(
+    limit,
+    options.measureRows === true || options.strictRows === true,
+    options.strictRows ?? false,
+  );
   return {
     assertAvailable: () => meter.assertAvailable(),
     get usage() {

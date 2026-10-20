@@ -19,13 +19,16 @@ export async function pendingNewsletterSources(
 ): Promise<PendingNewsletterSource[]> {
   const { results } = await db
     .prepare(
-      `SELECT publication_id AS publicationId,id,subscription_id AS subscriptionId,
-      email_key AS emailKey,encrypted_email AS encryptedEmail,fingerprint
-      FROM newsletter_inbound_events WHERE publication_id=? AND state='pending'
-      AND (julianday(occurred_at) IS NULL OR julianday(occurred_at)<=julianday(?))
-      ORDER BY occurred_at,received_at,id LIMIT ?`,
+      `SELECT publicationId,id,subscriptionId,emailKey,encryptedEmail,fingerprint FROM (
+        SELECT * FROM (SELECT publication_id AS publicationId,id,subscription_id AS subscriptionId,email_key AS emailKey,encrypted_email AS encryptedEmail,fingerprint,julianday(occurred_at) AS clock,received_at FROM newsletter_inbound_events
+          WHERE publication_id=? AND state='pending' AND julianday(occurred_at) IS NULL
+          ORDER BY clock,received_at,id LIMIT ?)
+        UNION ALL SELECT * FROM (SELECT publication_id AS publicationId,id,subscription_id AS subscriptionId,email_key AS emailKey,encrypted_email AS encryptedEmail,fingerprint,julianday(occurred_at) AS clock,received_at FROM newsletter_inbound_events
+          WHERE publication_id=? AND state='pending' AND julianday(occurred_at)<=julianday(?)
+          ORDER BY clock,received_at,id LIMIT ?)
+      ) ORDER BY clock,received_at,id LIMIT ?`,
     )
-    .bind(publicationId, now.toISOString(), limit)
+    .bind(publicationId, limit, publicationId, now.toISOString(), limit, limit)
     .all<PendingNewsletterSource>();
   return results;
 }

@@ -204,9 +204,13 @@ export async function pendingNewsletterPeople(db: Db, now: Date, limit = 25): Pr
   const stamp = now.toISOString();
   const { results } = await db
     .prepare(
-      `SELECT person_id FROM newsletter_sync_jobs WHERE state IN ('queued','running','retry') AND next_attempt_at<=? AND (lease_expires_at IS NULL OR lease_expires_at<=?) ORDER BY next_attempt_at,requested_at,person_id LIMIT ?`,
+      `SELECT person_id FROM (
+        SELECT * FROM (SELECT person_id,max(next_attempt_at,coalesce(lease_expires_at,next_attempt_at)) AS due,requested_at FROM newsletter_sync_jobs WHERE state='queued' AND max(next_attempt_at,coalesce(lease_expires_at,next_attempt_at))<=? ORDER BY due,requested_at,person_id LIMIT ?)
+        UNION ALL SELECT * FROM (SELECT person_id,max(next_attempt_at,coalesce(lease_expires_at,next_attempt_at)) AS due,requested_at FROM newsletter_sync_jobs WHERE state='running' AND max(next_attempt_at,coalesce(lease_expires_at,next_attempt_at))<=? ORDER BY due,requested_at,person_id LIMIT ?)
+        UNION ALL SELECT * FROM (SELECT person_id,max(next_attempt_at,coalesce(lease_expires_at,next_attempt_at)) AS due,requested_at FROM newsletter_sync_jobs WHERE state='retry' AND max(next_attempt_at,coalesce(lease_expires_at,next_attempt_at))<=? ORDER BY due,requested_at,person_id LIMIT ?)
+      ) ORDER BY due,requested_at,person_id LIMIT ?`,
     )
-    .bind(stamp, stamp, limit)
+    .bind(stamp, limit, stamp, limit, stamp, limit, limit)
     .all<{ person_id: string }>();
   return results.map((row) => row.person_id);
 }

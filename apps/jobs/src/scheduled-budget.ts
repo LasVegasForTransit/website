@@ -11,6 +11,8 @@ export class ScheduledWorkDeferred extends Error {
 }
 export interface ScheduledBudget {
   remaining: number;
+  more?: boolean;
+  controlUsage?: () => ScheduledWorkUsage;
   deadline: number;
   usage: ScheduledWorkUsage;
   controlReads: number;
@@ -26,9 +28,15 @@ export function emptyScheduledUsage(): ScheduledWorkUsage {
   };
 }
 function available(budget: ScheduledBudget): boolean {
+  const control = budget.controlUsage?.();
   return (
-    budget.usage.rows_read + budget.controlReads < SCHEDULED_RESERVATION.reads &&
-    budget.usage.rows_written + budget.controlWrites < SCHEDULED_RESERVATION.writes
+    !control?.metadata_missing &&
+    !control?.database_errors &&
+    !control?.quota_exhausted &&
+    budget.usage.rows_read + (control?.rows_read ?? 0) + budget.controlReads <
+      SCHEDULED_RESERVATION.reads &&
+    budget.usage.rows_written + (control?.rows_written ?? 0) + budget.controlWrites <
+      SCHEDULED_RESERVATION.writes
   );
 }
 function jobUsage(result: object): ScheduledWorkUsage | null {

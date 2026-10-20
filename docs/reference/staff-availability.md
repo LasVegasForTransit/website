@@ -70,23 +70,23 @@ day. Preview jobs use 250,000 reads and 5,000 writes. Together those allocations
 Free account allowance outside these scheduled jobs. Staff/member requests, imports, backups and
 other databases are not counted by this ledger and can still exhaust that remaining allowance.
 
-Each cron invocation reserves 50,000 reads and 4,000 writes atomically before starting its jobs. A
-120-second lease prevents overlapping parent runs. Jobs return actual D1 row counters. Successful
-settlement refunds unused capacity and charges the guard plus a conservative allowance for its own
-settlement. A crash keeps its reservation. Admission requires room for the full reservation, so work
-can stop with fewer than 50,000 reads or 4,000 writes left in its allocation. A stale run cannot
-refund a newer lease or another UTC day. One bounded database statement can exceed a reservation
-before D1 reports its cost; an overrun charges the measured amount and closes background work for
-the day.
+Each admitted cron invocation reserves 50,000 reads and 4,000 writes atomically before starting its
+jobs. A 120-second lease prevents overlapping parent runs. Jobs return actual D1 row counters.
+Successful settlement refunds unused capacity and charges the guard plus a conservative allowance
+for its own settlement. A crash keeps its reservation. Admission requires room for the full
+reservation, so work can stop with fewer than 50,000 reads or 4,000 writes left in its allocation. A
+stale run cannot refund a newer lease or another UTC day. One bounded database statement can exceed
+a reservation before D1 reports its cost; an overrun charges the measured amount and closes
+background work for the day.
 
 Missing job telemetry, database errors and unverified RPC results close background work through the
 UTC reset. Settlement keeps the full reservation and admission closed while verifying its first
 write. Only verified accounting permits the final refund and release. If the final release commits
 but its acknowledgment is lost, its outcome is uncertain; verified work and both control writes
 remain charged. Inspect the ledger before manual recovery. A denied guard performs no provider
-calls. If D1 cannot accept even the guard or settlement, subsequent ticks attempt only the singleton
-guard before returning. This cannot establish an account-wide cooldown when the database refuses to
-store state.
+calls. If D1 cannot accept even the guard or settlement, subsequent ticks attempt only the due-work
+read and, when work is due, the singleton guard before returning. This cannot establish an
+account-wide cooldown when the database refuses to store state.
 
 The following state machine describes the persisted budget. An outstanding lease must expire before
 a new day can admit another run.
@@ -107,11 +107,46 @@ incoming choices, provider scans and saved poll choices before outgoing account 
 consent, ownership and provider leases still apply. Direct staff/member requests do not enter this
 scheduled-work budget. Do not promise immediate background revocations after the budget closes.
 
-Records cleanup runs on the hourly tick, rather than every minute. It removes expired claims, stale
-snapshots and records past their retention period in bounded batches. Reads must reject expired
-credentials and snapshots independently of that cleanup. Profile erasure, incoming choices and
-provider queues retain their minute cadence. A records backlog can require several hourly batches;
-inspect its age before increasing throughput within the daily allocation.
+Migration **0053** adds four persisted wake signals for providers, profile cleanup, daily inactivity
+cleanup and records cleanup. Quiet minutes execute one measured statement, invoke no child jobs and
+write nothing. Input triggers wake work in the same transaction as the accepted change. A revision
+number prevents a running job from clearing a newer signal. Job progress can retain one follow-up
+drain; unchanged checkpoints do not wake work. Provider readiness checks skip completed commands,
+future scans, empty queues and active provider backoffs before invoking child jobs.
+
+Provider processing retains this order: incoming newsletter events, source scans, saved poll
+choices, outgoing accounts and shared completion. Scans retain their existing hourly Discord and
+fifteen-minute Beehiiv schedules. Future events, retries, held leases and receipt freshness retain
+deadlines. An idle provider pass sets a fifteen-minute reconciliation deadline for blocked or
+historical work. A full candidate page continues its bounded sweep within the invocation allowance
+or on the next minute. Each lane records its sweep start and logical page end across wraparound. A
+selected-row limit must never replace that continuation signal.
+
+Profile erasure runs when deletion or merge eligibility changes. Physical purge retains the
+thirty-day delay. Daily inactivity cleanup starts at03:00 Pacific and resumes unfinished batches. A
+completed day sleeps until the next Pacific window, including daylight-saving changes. Records
+cleanup begins on the UTC hour and continues remaining batches on subsequent minutes. The backlog
+check includes Google snapshots, Google check failures and unassigned roster evidence. Reads still
+reject expired credentials and snapshots independently of cleanup.
+
+The following component diagram shows the scheduler modules. Storage writers update the wake store
+inside their existing transactions. Admission reads the wake store before reserving capacity. The
+provider and maintenance dispatchers acknowledge only the revision they captured.
+
+```mermaid
+flowchart LR
+    Inputs[Input storage writers] --> Wakes[Wake storage]
+    Admission[Scheduled admission] --> Wakes
+    Admission --> Budget[Daily budget guard]
+    Admission --> Providers[Provider dispatcher]
+    Admission --> Maintenance[Maintenance dispatcher]
+    Providers --> Wakes
+    Maintenance --> Wakes
+```
+
+The daily ledger includes measured child work and control statements for admitted passes. Quiet
+probes run outside its reservation. The due table contains four rows, so those probes add a small
+fixed daily read cost. This ledger still cannot bound other databases or interactive requests.
 
 Monitor `scheduled_work_deferred`, `scheduled_budget_guard` and `scheduled_budget_settled` alongside
 account-wide D1 usage. On deferral, inspect the selected database's singleton budget, actual row
@@ -125,13 +160,45 @@ The real local D1 fixtures cover growing observation history, blocked provider q
 maintenance. Run the checks without production credentials:
 
 ```sh
-pnpm -C apps/jobs exec node --import tsx --test --test-concurrency=1 tests/access-observation-read-budget.test.ts tests/profile-maintenance-read-budget.test.ts tests/provider-selection-read-budget.test.ts tests/scheduled-budget-d1.test.ts
+pnpm -C apps/jobs exec node --import tsx --test --test-concurrency=1 tests/access-observation-read-budget.test.ts tests/profile-maintenance-read-budget.test.ts tests/provider-selection-read-budget.test.ts tests/scheduled-budget-d1.test.ts tests/scheduled-wake-d1.test.ts
 ```
 
-An unchanged empty Discord/completion selector pass must write zero cursor rows after initial
-creation. Six avoided writes per minute save 8,640 writes over 24 hours of empty queues. Cursor
-updates still occur when a page advances or selected work changes. This does not remove budget
-accounting writes or guarantee zero writes for the whole scheduled invocation.
+The complete idle-hour fixture runs actual storage and provider-processing functions against local
+D1 with synthetic data. It includes both providers, scheduled scans, hourly cleanup, control queries
+and guard settlement. It enforces ceilings of **200 statements, 1,100 rows read and 100 rows
+written** for that hour after initialization. Every quiet minute must execute exactly one statement
+with zero writes and zero child calls. The fixture also checks that active backoffs leave
+checkpoints untouched. These are fixture budgets, not a production traffic cap.
+
+The 2026-10-20 fixture used 100,000 synthetic profiles, 100,000 held newsletter jobs and 10,000
+future inbound events. It measured **194 statements, 991 rows read and 84 rows written** after
+initialization. The complete hour includes 52 quiet ticks and eight admitted passes, including
+retained wakes after scan progress. The statement breakdown is:
+
+| Work                                   | Statements per fixture hour |
+| -------------------------------------- | --------------------------: |
+| Quiet-minute probes                    |                          52 |
+| Due probes for admitted passes         |                           8 |
+| Budget admission and settlement        |                          24 |
+| Provider readiness reads               |                          24 |
+| Future provider deadline reads         |                          16 |
+| Provider wake acknowledgments          |                           8 |
+| Record backlog read and acknowledgment |                           2 |
+| Four Beehiiv roster scans              |                          36 |
+| One Discord drift and roster scan      |                          15 |
+| One records cleanup batch              |                           9 |
+| **Total**                              |                     **194** |
+
+This excludes fixture seeding, initialization and assertions that inspect database state. Those
+operations do not run in production cron handlers. Real changes, backlog drains, provider retries
+and daily privacy work add costs. The earlier 1,389-statements/hour calculation described an idle
+minute-polling baseline rather than a measured live hour.
+
+Discord drift selection starts from indexed Discord identities. It must not scan unrelated people.
+Newsletter selection uses indexed effective due times that include held job leases. Each state
+contributes a bounded candidate page before the final ordering. Future inbound events use the same
+parsed date comparison as source processing. Do not replace these checks with small empty-table
+fixtures or returned-row counts.
 
 Migration **0052** indexes the exact parsed creation-date expression in inactive-profile selection.
 In a synthetic fixture with 10,000 recent profiles, the first daily inactive pass fell from 30,431
