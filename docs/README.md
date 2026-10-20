@@ -27,6 +27,8 @@ just say guides.)
 
 - [Connect a form tool](./guides/connect-a-form-tool.md) — send sign-ups from any outside form to
   LVBT's member list
+- [Investigate a staff failure](./guides/investigate-staff-failures.md) — look up outage references,
+  interpret private diagnostics and verify a repair
 - [Set up the protected staff preview](./guides/set-up-staff-preview.md) — prepare access, sign-in,
   the preview database, a saved deployment, and the first administrator
 - [Export a member record](./guides/export-a-member-record.md) — download one person's complete

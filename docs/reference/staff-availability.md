@@ -24,6 +24,9 @@ results, report availability as unmeasured. Worker logs alone omit edge and sign
 
 ## Investigate a reported failure
 
+Follow [Investigate a staff failure](../guides/investigate-staff-failures.md) for log access, field
+definitions, missing-evidence handling and local verification commands.
+
 When a colleague flags an outage in Discord, find the displayed reference in the staff Worker's
 `staff_request_failed` log entry under `requestId`. Use `occurredAt` to match the Pacific time shown
 on the page. Ask which page failed and what the person was trying to do. The response keeps the same

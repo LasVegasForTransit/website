@@ -60,7 +60,7 @@ export function messagePage(
           : 'This step needs your attention';
   const detail =
     status >= 500
-      ? 'In Discord, share which page failed, what you were trying to do, and the reference below.'
+      ? 'In Discord, share which page failed, what you were trying to do and the reference below.'
       : escapeHtml(
           message || 'Return to staff home to find the page you need, or contact LVBT for help.',
         );
