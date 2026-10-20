@@ -75,9 +75,11 @@ jobs. A 120-second lease prevents overlapping parent runs. Jobs return actual D1
 Successful settlement refunds unused capacity and charges the guard plus a conservative allowance
 for its own settlement. A crash keeps its reservation. Admission requires room for the full
 reservation, so work can stop with fewer than 50,000 reads or 4,000 writes left in its allocation. A
-stale run cannot refund a newer lease or another UTC day. One bounded database statement can exceed
-a reservation before D1 reports its cost; an overrun charges the measured amount and closes
-background work for the day.
+large initial roster can therefore defer later provider cleanup until the next UTC budget day; this
+guard protects interactive capacity but does not guarantee immediate provider cleanup. A stale run
+cannot refund a newer lease or another UTC day. One bounded database statement can exceed a
+reservation before D1 reports its cost; an overrun charges the measured amount and closes background
+work for the day.
 
 Missing job telemetry, database errors and unverified RPC results close background work through the
 UTC reset. Settlement keeps the full reservation and admission closed while verifying its first
@@ -168,12 +170,14 @@ D1 with synthetic data. It includes both providers, scheduled scans, hourly clea
 and guard settlement. It enforces ceilings of **200 statements, 1,100 rows read and 100 rows
 written** for that hour after initialization. Every quiet minute must execute exactly one statement
 with zero writes and zero child calls. The fixture also checks that active backoffs leave
-checkpoints untouched. These are fixture budgets, not a production traffic cap.
+checkpoints untouched. Completed operations do not wake the scheduler when their historical receipts
+expire. These are fixture budgets, not a production traffic cap.
 
 The 2026-10-20 fixture used 100,000 synthetic profiles, 100,000 held newsletter jobs and 10,000
-future inbound events. It measured **194 statements, 991 rows read and 84 rows written** after
-initialization. The complete hour includes 52 quiet ticks and eight admitted passes, including
-retained wakes after scan progress. The statement breakdown is:
+future inbound events plus 60 completed operations with staggered receipt deadlines. It measured
+**194 statements, 992 rows read and 84 rows written** after initialization. The complete hour
+includes 52 quiet ticks and eight admitted passes, including retained wakes after scan progress. The
+statement breakdown is:
 
 | Work                                   | Statements per fixture hour |
 | -------------------------------------- | --------------------------: |

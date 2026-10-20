@@ -82,7 +82,7 @@ export async function claimDiscordLease(
       now.toISOString(),
     )
     .run();
-  return result.meta.changes === 1 ? lease : null;
+  return result.meta.changes > 0 ? lease : null;
 }
 export async function renewDiscordLease(
   db: Db,
@@ -95,7 +95,7 @@ export async function renewDiscordLease(
     )
     .bind(new Date(now.getTime() + 30_000).toISOString(), ...leaseValues(lease, now))
     .run();
-  return result.meta.changes === 1;
+  return result.meta.changes > 0;
 }
 export async function releaseDiscordLease(db: Db, lease: DiscordLease): Promise<void> {
   await db

@@ -111,7 +111,7 @@ export async function failBeehiivPoll(
       ...values(scan, input.now),
     )
     .run();
-  return result.meta.changes === 1;
+  return result.meta.changes > 0;
 }
 
 async function rejectCursorCycle(

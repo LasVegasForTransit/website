@@ -30,7 +30,8 @@ async function scanProviders(
       failed = true;
     }
   }
-  for (let page = 0; page < 5 && enabled.newsletter && canContinueMembership(budget); page++) {
+  // Keep roster writes within the shared reservation alongside incoming choices and removals.
+  for (let page = 0; page < 3 && enabled.newsletter && canContinueMembership(budget); page++) {
     const result = await membershipStep(
       budget,
       'newsletter_scan',
@@ -103,7 +104,12 @@ async function processDueInputs(
   admission: ScheduledAdmission,
 ) {
   const { db, budget, providers } = admission;
-  const ready = await readyProviderScans(db, now, providers);
+  // Incoming withdrawals already eligible at dispatch must precede outgoing work.
+  const ready = await readyProviderScans(
+    db,
+    new Date(Math.max(now.getTime(), Date.now())),
+    providers,
+  );
   const commandFailed = await registerDiscordCommand(
     context,
     Boolean(providers.guildId && ready.command),
@@ -116,7 +122,12 @@ async function processDueInputs(
     newsletter: Boolean(providers.publicationId && ready.newsletter),
   };
   const scanFailed = await scanProviders(context, scans, budget);
-  const queues = await readyProviderQueues(db, now, providers);
+  // Scans save choices after the cron timestamp within this invocation.
+  const queues = await readyProviderQueues(
+    db,
+    new Date(Math.max(now.getTime(), Date.now())),
+    providers,
+  );
   const choiceFailed =
     providers.publicationId && queues.choices
       ? await processIncoming(context, budget, true)
@@ -145,7 +156,12 @@ async function processDueAccounts(
   paused: boolean,
 ) {
   const { db, budget, providers } = admission;
-  const queues = await readyProviderQueues(db, now, providers);
+  // Scans can enqueue work after the cron timestamp within this invocation.
+  const queues = await readyProviderQueues(
+    db,
+    new Date(Math.max(now.getTime(), Date.now())),
+    providers,
+  );
   const enabled = outgoingProviders(providers, queues, paused);
   let failed = false;
   for (

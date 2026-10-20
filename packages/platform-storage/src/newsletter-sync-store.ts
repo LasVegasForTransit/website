@@ -195,7 +195,7 @@ export async function saveNewsletterOutcome(
     )
     .run();
   if (result.meta.changes) await releaseNewsletterLease(db, lease);
-  return result.meta.changes === 1;
+  return result.meta.changes > 0;
 }
 
 export async function pendingNewsletterPeople(db: Db, now: Date, limit = 25): Promise<string[]> {

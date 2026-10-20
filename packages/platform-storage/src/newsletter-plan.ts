@@ -175,7 +175,7 @@ export async function deferPendingNewsletterChoice(
       ...pending.values,
     )
     .run();
-  return result.meta.changes === 1;
+  return result.meta.changes > 0;
 }
 
 export async function newsletterPlanIsCurrent(

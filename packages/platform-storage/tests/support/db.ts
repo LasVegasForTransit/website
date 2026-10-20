@@ -38,8 +38,11 @@ class MemoryStatement implements Statement {
     const prepared = this.database.prepare(this.sql);
     if (prepared.columns().length)
       return { meta: { changes: 0 }, results: prepared.all(...(this.values as SQLInputValue[])) };
-    const result = this.database.prepare(this.sql).run(...(this.values as SQLInputValue[]));
-    return { meta: { changes: Number(result.changes) } };
+    const before = this.database.prepare('SELECT total_changes() AS n').get()?.n;
+    this.database.prepare(this.sql).run(...(this.values as SQLInputValue[]));
+    const after = this.database.prepare('SELECT total_changes() AS n').get()?.n;
+    // D1 counts trigger writes in addition to the statement's direct changes.
+    return { meta: { changes: Number(after) - Number(before) } };
   }
 }
 

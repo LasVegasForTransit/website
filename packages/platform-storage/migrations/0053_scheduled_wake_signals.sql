@@ -258,8 +258,6 @@ BEGIN
   UPDATE scheduled_work_signals SET revision=revision+1,next_run_at='1970-01-01T00:00:00.000Z'
     WHERE name='providers';
 END;
-CREATE INDEX provider_receipt_expiry ON provider_operation_receipts(expires_at);
-CREATE INDEX provider_receipt_freshness ON provider_operation_receipts(provider,observed_at);
 CREATE INDEX newsletter_inbound_effective_due ON newsletter_inbound_events(state,julianday(occurred_at));
 CREATE INDEX identities_provider_people ON identities(platform,person_id,link_method);
 CREATE INDEX integration_outbox_active_due ON integration_outbox(next_attempt_at)
@@ -269,3 +267,45 @@ ALTER TABLE outbox_selection_cursors ADD COLUMN sweep_next_attempt_at TEXT NOT N
 ALTER TABLE outbox_selection_cursors ADD COLUMN sweep_operation_id TEXT NOT NULL DEFAULT '';
 ALTER TABLE outbox_selection_cursors ADD COLUMN sweep_wrapped INTEGER NOT NULL DEFAULT 0 CHECK(sweep_wrapped IN (0,1));
 ALTER TABLE outbox_selection_cursors ADD COLUMN sweep_complete INTEGER NOT NULL DEFAULT 1 CHECK(sweep_complete IN (0,1));
+-- Completed operations must not keep waking scheduled work as old receipts expire.
+CREATE TABLE scheduled_receipt_deadlines (
+  operation_id TEXT NOT NULL REFERENCES integration_outbox(id) ON DELETE CASCADE,
+  provider TEXT NOT NULL CHECK(provider IN ('discord','google_workspace')),
+  observed_at TEXT NOT NULL,
+  expires_at TEXT NOT NULL,
+  PRIMARY KEY(operation_id,provider)
+);
+CREATE INDEX scheduled_receipt_expiry ON scheduled_receipt_deadlines(expires_at);
+CREATE INDEX scheduled_receipt_freshness ON scheduled_receipt_deadlines(provider,observed_at);
+INSERT INTO scheduled_receipt_deadlines
+  SELECT r.operation_id,r.provider,r.observed_at,r.expires_at
+  FROM provider_operation_receipts r JOIN integration_outbox o ON o.id=r.operation_id
+  WHERE r.state='done' AND o.state IN ('queued','running','retry');
+CREATE TRIGGER scheduled_receipt_insert AFTER INSERT ON provider_operation_receipts
+WHEN NEW.state='done' AND EXISTS(SELECT 1 FROM integration_outbox WHERE id=NEW.operation_id AND state IN ('queued','running','retry'))
+BEGIN
+  INSERT INTO scheduled_receipt_deadlines VALUES(NEW.operation_id,NEW.provider,NEW.observed_at,NEW.expires_at)
+    ON CONFLICT(operation_id,provider) DO UPDATE SET observed_at=excluded.observed_at,expires_at=excluded.expires_at;
+END;
+CREATE TRIGGER scheduled_receipt_update AFTER UPDATE OF operation_id,provider,state,observed_at,expires_at ON provider_operation_receipts
+WHEN OLD.operation_id IS NOT NEW.operation_id OR OLD.provider IS NOT NEW.provider OR OLD.state IS NOT NEW.state
+  OR OLD.observed_at IS NOT NEW.observed_at OR OLD.expires_at IS NOT NEW.expires_at
+BEGIN
+  DELETE FROM scheduled_receipt_deadlines WHERE operation_id=OLD.operation_id AND provider=OLD.provider;
+  INSERT INTO scheduled_receipt_deadlines
+    SELECT NEW.operation_id,NEW.provider,NEW.observed_at,NEW.expires_at
+    WHERE NEW.state='done' AND EXISTS(SELECT 1 FROM integration_outbox WHERE id=NEW.operation_id AND state IN ('queued','running','retry'))
+    ON CONFLICT(operation_id,provider) DO UPDATE SET observed_at=excluded.observed_at,expires_at=excluded.expires_at;
+END;
+CREATE TRIGGER scheduled_receipt_delete AFTER DELETE ON provider_operation_receipts
+BEGIN
+  DELETE FROM scheduled_receipt_deadlines WHERE operation_id=OLD.operation_id AND provider=OLD.provider;
+END;
+CREATE TRIGGER scheduled_receipt_outbox_state AFTER UPDATE OF state ON integration_outbox
+WHEN (OLD.state IN ('queued','running','retry'))<>(NEW.state IN ('queued','running','retry'))
+BEGIN
+  DELETE FROM scheduled_receipt_deadlines WHERE operation_id=NEW.id;
+  INSERT INTO scheduled_receipt_deadlines
+    SELECT operation_id,provider,observed_at,expires_at FROM provider_operation_receipts
+    WHERE operation_id=NEW.id AND state='done' AND NEW.state IN ('queued','running','retry');
+END;

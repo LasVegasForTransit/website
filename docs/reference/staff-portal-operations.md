@@ -154,10 +154,10 @@ as well as reads; limiting query count or returned results does not bound scanne
    do not rewrite their cursors on each minute tick.
 8. Migration **0053** adds persisted scheduler wakes, bounded sweep markers and due-time indexes.
    Apply it after **0052** and before activating its matching jobs release. The additive migration
-   starts existing queues awake. Index creation and initial wake rows consume allowance, so use the
-   verified backup and canonical migration workflow. Do not create a separate schema in the
-   dashboard. Keep the wake table, triggers and indexes during code rollback; older code ignores
-   them safely.
+   starts existing queues awake and backfills receipt deadlines for active operations only. Index
+   creation, the deadline backfill and initial wake rows consume allowance, so use the verified
+   backup and canonical migration workflow. Do not create a separate schema in the dashboard. Keep
+   the wake table, triggers and indexes during code rollback; older code ignores them safely.
 9. Run `pnpm -C apps/jobs test` and `pnpm -C packages/platform-storage test` locally. The real local
    D1 tests measure observation and idle-maintenance rows read with long histories; storage tests
    cover a full day of cross-provider scheduling and immediate membership changes. These tests use
@@ -189,6 +189,8 @@ wake. Use the normal read-only database tools to run:
 ```sql
 SELECT name, revision, next_run_at, configuration FROM scheduled_work_signals ORDER BY name;
 SELECT utc_day, charged_reads, charged_writes, lease_until, blocked FROM scheduled_work_budget;
+SELECT operation_id, provider, observed_at, expires_at FROM scheduled_receipt_deadlines
+ORDER BY expires_at LIMIT 20;
 ```
 
 Expect four signal rows. The configuration contains public provider identifiers and the command
@@ -197,7 +199,15 @@ batch, a held budget lease or a closed daily budget. Inspect the corresponding s
 and queue before changing anything. Do not clear the signal or reset the budget to make the
 dashboard look healthy. A writer can increment the revision while a pass runs; that wake must
 survive its earlier acknowledgment. Repeated checkpoint writes during a provider pause indicate a
-regression.
+regression. The receipt deadline index must contain only queued, running or retry operations with a
+completed provider receipt. Completed operations must not keep deadlines in this index. Canonical
+provider receipts still control authorization and completion; never edit the deadline index to
+change access evidence.
+
+D1 affected-row metadata includes trigger writes. A guarded single-row mutation succeeds when its
+change count is positive. Task counters use returned task IDs rather than that metadata. The local
+storage test database models trigger-inclusive counts, and the compiled provider tests verify lease
+ownership and same-invocation processing after scans.
 
 After activating the matching release, compare actual D1 account usage and job counters over several
 ticks and a full UTC day. Run the local idle-hour regression when changing triggers, queue
@@ -363,10 +373,10 @@ limit. The parent and its loopback calls together stay within 32 invocations, wi
 for completion. Optional work stops after its 50-second dispatch deadline; unfinished work resumes
 on the next tick.
 
-The roster scan handles up to five pages of 100 accounts per tick. A 5,000-account roster therefore
-needs at least ten successful ticks, and longer during pauses or a slow provider. Check actual queue
-age and scan completion during hosted acceptance before relying on that capacity. A roster status
-observation does not establish when someone gave or withdrew consent.
+The roster scan handles up to three pages of 100 accounts per tick. A 5,000-account roster therefore
+needs at least seventeen successful ticks, and longer during pauses or a slow provider. Check actual
+queue age and scan completion during hosted acceptance before relying on that capacity. A roster
+status observation does not establish when someone gave or withdrew consent.
 
 A linked inactive status withdraws consent automatically only when a prior active observation or
 confirmed active delivery establishes that the signup preceded the unsubscribe interval. Its

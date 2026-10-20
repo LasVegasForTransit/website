@@ -52,7 +52,7 @@ export async function claimGoogleLease(
       now.toISOString(),
     )
     .run();
-  return result.meta.changes === 1 ? lease : null;
+  return result.meta.changes > 0 ? lease : null;
 }
 export async function renewGoogleLease(db: Db, input: GoogleSyncWrite): Promise<boolean> {
   const guard = googleSyncGuard(input);
@@ -68,7 +68,7 @@ export async function renewGoogleLease(db: Db, input: GoogleSyncWrite): Promise<
       ...guard.values,
     )
     .run();
-  return result.meta.changes === 1;
+  return result.meta.changes > 0;
 }
 export async function releaseGoogleLease(db: Db, lease: GoogleLease): Promise<void> {
   await db
@@ -160,7 +160,13 @@ export async function saveGoogleGroup(
 function changed(result: unknown): boolean {
   if (typeof result !== 'object' || result === null || !('meta' in result)) return false;
   const meta = result.meta;
-  return typeof meta === 'object' && meta !== null && 'changes' in meta && meta.changes === 1;
+  return (
+    typeof meta === 'object' &&
+    meta !== null &&
+    'changes' in meta &&
+    typeof meta.changes === 'number' &&
+    meta.changes > 0
+  );
 }
 function receiptWrite(
   db: Db,

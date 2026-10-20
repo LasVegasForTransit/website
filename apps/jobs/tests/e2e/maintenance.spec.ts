@@ -178,6 +178,12 @@ try {
     db.prepare(`INSERT INTO engagement_events(id,person_id,type,occurred_at,source,created_at)
       VALUES('recent-event','recent-excluded','attended','2024-09-08T10:00:00.000Z','check_in','2024-09-08T10:00:00.000Z')`),
   ]);
+  // These privacy cases use an earlier calendar than the retention cases above.
+  await db
+    .prepare(
+      "UPDATE scheduled_work_signals SET next_run_at='2026-03-08T09:59:00.000Z' WHERE name='inactive'",
+    )
+    .run();
   assert.equal(
     (await worker.scheduled({ cron: '* * * * *', scheduledTime: new Date('2026-03-08T09:59:00Z') }))
       .outcome,
