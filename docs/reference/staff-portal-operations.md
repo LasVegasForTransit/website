@@ -148,25 +148,30 @@ as well as reads; limiting query count or returned results does not bound scanne
    with its eligibility checks. Blocked work cannot force a scan of the whole queue. A large backlog
    within one lane takes multiple calls to revisit. Apply the migration before activating the
    matching jobs release; the backfill and index creation themselves consume database allowance.
-7. Run `pnpm -C apps/jobs test` and `pnpm -C packages/platform-storage test` locally. The real local
+7. Migration **0052** indexes the parsed creation date used by inactive-profile retention. Apply it
+   before verifying the daily privacy run. It preserves date-offset comparisons and every consent,
+   identity and engagement exclusion. Provider cursor claims skip unchanged values, so empty queues
+   do not rewrite their cursors on each minute tick.
+8. Run `pnpm -C apps/jobs test` and `pnpm -C packages/platform-storage test` locally. The real local
    D1 tests measure observation and idle-maintenance rows read with long histories; storage tests
    cover a full day of cross-provider scheduling and immediate membership changes. These tests use
    synthetic, local data. Do not run the fixtures against production or preview databases.
-8. If the daily allowance is exhausted, stop manual retries and keep the selected saved release.
+9. If the daily allowance is exhausted, stop manual retries and keep the selected saved release.
    Wait for the documented reset. Afterward, make one bounded availability check, take the required
    backup, apply canonical migrations through the normal release flow, then activate the matching
    protected staff/jobs build. Recover uncertain deployments through their receipts. Do not bypass
    database gates, toggle production schedules in the dashboard or upgrade the plan implicitly.
-9. Inspect `job_database_usage` records for each scheduled database job. Each record includes
-   executed statements, `rows_read`, `rows_written`, `metadata_missing`, `database_errors` and
-   `quota_exhausted`. Missing metadata or a failed query means the row totals are incomplete; do not
-   treat them as a daily account total. A recognized D1 quota failure stops subsequent database work
-   in that invocation and aborts the remaining scheduled steps. Migration **0051** adds a durable
-   daily reservation for scheduled work. Missing usage or an overrun closes that database’s
-   background work through the next UTC reset. If D1 rejects the guard itself, no provider jobs run.
-   This budget does not account for staff/member requests or other databases. See the exact caps and
-   [deferral recovery procedure](staff-availability.md#reserve-database-capacity-for-people).
-10. After release, inspect actual row usage over several scheduled ticks and again over a full day.
+10. Inspect `job_database_usage` records for each scheduled database job. Each record includes
+    executed statements, `rows_read`, `rows_written`, `metadata_missing`, `database_errors` and
+    `quota_exhausted`. Missing metadata or a failed query means the row totals are incomplete; do
+    not treat them as a daily account total. A recognized D1 quota failure stops subsequent database
+    work in that invocation and aborts the remaining scheduled steps. Migration **0051** adds a
+    durable daily reservation for scheduled work. Missing usage or an overrun closes that database’s
+    background work through the next UTC reset. If D1 rejects the guard itself, no provider jobs
+    run. This budget does not account for staff/member requests or other databases. See the exact
+    caps and
+    [deferral recovery procedure](staff-availability.md#reserve-database-capacity-for-people).
+11. After release, inspect actual row usage over several scheduled ticks and again over a full day.
     Leave headroom for member/staff traffic, imports and backups. Confirm sign-in, member search and
     provider processing separately. Passing local budgets does not establish a healthy live day.
 

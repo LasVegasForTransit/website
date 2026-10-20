@@ -119,6 +119,31 @@ usage, queued work and active release. Preserve the row and diagnose the cause; 
 reset it to force another run. The next UTC day can admit work again after the lease expires. A
 same-day code rollback must retain this additive table and its privacy-independent accounting.
 
+## Query-cost regression checks
+
+The real local D1 fixtures cover growing observation history, blocked provider queues and idle
+maintenance. Run the checks without production credentials:
+
+```sh
+pnpm -C apps/jobs exec node --import tsx --test --test-concurrency=1 tests/access-observation-read-budget.test.ts tests/profile-maintenance-read-budget.test.ts tests/provider-selection-read-budget.test.ts tests/scheduled-budget-d1.test.ts
+```
+
+An unchanged empty Discord/completion selector pass must write zero cursor rows after initial
+creation. Six avoided writes per minute save 8,640 writes over 24 hours of empty queues. Cursor
+updates still occur when a page advances or selected work changes. This does not remove budget
+accounting writes or guarantee zero writes for the whole scheduled invocation.
+
+Migration **0052** indexes the exact parsed creation-date expression in inactive-profile selection.
+In a synthetic fixture with 10,000 recent profiles, the first daily inactive pass fell from 30,431
+reads to 433 reads. The test requires fewer than 1,000 reads for each measured selector or
+maintenance pass and also checks a newly queued removal. Keep consent, identity and
+recent-engagement exclusions unchanged. Do not substitute string date comparisons for parsed dates.
+
+These measurements describe local fixtures. Compare deployed row counters after applying canonical
+migrations and activating the matching saved release. Creating the index also consumes allowance;
+follow the backup and migration procedure before applying it. Retain the additive index during a
+code rollback; it does not change retention eligibility.
+
 ## Verify a recovery
 
 Follow
