@@ -10,6 +10,10 @@ void test('staff failures remain usable without the database, scripts or asset r
   assert.match(html, /<!doctype html>/i);
   assert.match(html, /<main/);
   assert.match(html, /Las Vegans for Better Transit/);
+  assert.match(
+    html,
+    /href="https:\/\/discord.com\/channels\/1509298455896522823">Ask in Discord<\/a><a class="staff-secondary-button" href="\/">Try again/,
+  );
   assert.match(html, /href="mailto:hello@lasvegasfortransit.org"/);
   assert.doesNotMatch(html, /href="https:\/\/lasvegasfortransit.org/);
   assert.match(html, /<style>/);
