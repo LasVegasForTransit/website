@@ -80,7 +80,17 @@ void test('provider selectors read bounded pages of blocked shared work', async 
   };
   const now = new Date('2026-10-18T12:00:00.000Z');
   const measurements: { count: number; selector: string; reads: number; writes: number }[] = [];
-  for (const count of [1000, 10_000]) {
+  const idle: { pass: number; reads: number; writes: number }[] = [];
+  for (const pass of [0, 1]) {
+    reads = 0;
+    writes = 0;
+    assert.deepEqual(await pendingDiscordOperations(measuredDb, now, 1), []);
+    assert.equal(await completeProviderOperations(measuredDb, { now }), 0);
+    idle.push({ pass, reads, writes });
+  }
+  t.diagnostic(JSON.stringify({ idle }));
+  assert.equal(idle[1]?.writes, 0, 'unchanged empty provider queues must not rewrite cursors');
+  for (const count of [1000, 10_000, 100_000]) {
     await db
       .prepare(
         `WITH RECURSIVE seq(n) AS (SELECT 1 UNION ALL SELECT n+1 FROM seq WHERE n<?)
@@ -123,7 +133,7 @@ void test('provider selectors read bounded pages of blocked shared work', async 
     measurements.push({ count, selector: 'completion', reads, writes });
   }
   await db
-    .prepare("UPDATE people SET membership_status='former_member',updated_at=? WHERE id='p10000'")
+    .prepare("UPDATE people SET membership_status='former_member',updated_at=? WHERE id='p100000'")
     .bind(now.toISOString())
     .run();
   reads = 0;
@@ -139,11 +149,11 @@ void test('provider selectors read bounded pages of blocked shared work', async 
     .bind(operationId)
     .first();
   assert.ok(removal);
-  assert.equal(removal.person_id, 'p10000');
+  assert.equal(removal.person_id, 'p100000');
   const payload = JSON.parse(String(removal.payload)) as Record<string, unknown>;
   assert.equal(payload.removal, 1);
   measurements.push({
-    count: 10_000,
+    count: 100_000,
     selector: 'fresh_removal',
     reads: removalReads,
     writes: removalWrites,
@@ -152,10 +162,9 @@ void test('provider selectors read bounded pages of blocked shared work', async 
     reads = 0;
     writes = 0;
     await runMaintenance(measuredDb, { now, category });
-    measurements.push({ count: 10_000, selector: category, reads, writes });
+    measurements.push({ count: 100_000, selector: category, reads, writes });
   }
   t.diagnostic(JSON.stringify(measurements));
   for (const measurement of measurements)
-    if (measurement.selector !== 'inactive')
-      assert.ok(measurement.reads < 1000, JSON.stringify(measurement));
+    assert.ok(measurement.reads < 1000, JSON.stringify(measurement));
 });

@@ -40,7 +40,10 @@ export function claimOutboxSelection(
       coalesce((SELECT id FROM candidate_page WHERE lane=lanes.lane ORDER BY next_attempt_at DESC,id DESC LIMIT 1),''),
       (SELECT json_group_array(id) FROM candidate_page WHERE lane=lanes.lane)
     FROM selection CROSS JOIN lanes WHERE 1
-    ON CONFLICT(selector,lane) DO UPDATE SET next_attempt_at=excluded.next_attempt_at,operation_id=excluded.operation_id,page_ids=excluded.page_ids`,
+    ON CONFLICT(selector,lane) DO UPDATE SET next_attempt_at=excluded.next_attempt_at,operation_id=excluded.operation_id,page_ids=excluded.page_ids
+    WHERE outbox_selection_cursors.next_attempt_at IS NOT excluded.next_attempt_at
+      OR outbox_selection_cursors.operation_id IS NOT excluded.operation_id
+      OR outbox_selection_cursors.page_ids IS NOT excluded.page_ids`,
     )
     .bind(selector, stamp);
 }
