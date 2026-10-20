@@ -61,8 +61,8 @@ async function futureProviderDeadlines(db: Db, now: Date, input: ProviderSchedul
       ('local',(SELECT observed_at FROM newsletter_poll_choices WHERE publication_id=? AND state='pending' AND observed_at>? ORDER BY observed_at LIMIT 1)),
       ('discord',(SELECT expires_at FROM provider_account_leases WHERE expires_at>? ORDER BY expires_at LIMIT 1)),
       ('newsletter',(SELECT expires_at FROM newsletter_account_leases WHERE expires_at>? ORDER BY expires_at LIMIT 1)),
-      ('local',(SELECT expires_at FROM provider_operation_receipts WHERE expires_at>? ORDER BY expires_at LIMIT 1)),
-      ('local',(SELECT strftime('%Y-%m-%dT%H:%M:%fZ',observed_at,'+1 hour') FROM provider_operation_receipts WHERE provider='discord' AND observed_at>? ORDER BY observed_at LIMIT 1))
+      ('local',(SELECT expires_at FROM scheduled_receipt_deadlines WHERE expires_at>? ORDER BY expires_at LIMIT 1)),
+      ('local',(SELECT strftime('%Y-%m-%dT%H:%M:%fZ',observed_at,'+1 hour') FROM scheduled_receipt_deadlines WHERE provider='discord' AND observed_at>? ORDER BY observed_at LIMIT 1))
     ) SELECT kind,due FROM candidates`,
     )
     .bind(

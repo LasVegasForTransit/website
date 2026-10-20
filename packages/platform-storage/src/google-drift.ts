@@ -94,6 +94,14 @@ async function releaseScan(db: Db, scan: GoogleScanLease): Promise<void> {
     .run();
 }
 
+function returnedRows(result: unknown): number {
+  return typeof result === 'object' &&
+    result !== null &&
+    'results' in result &&
+    Array.isArray(result.results)
+    ? result.results.length
+    : 0;
+}
 async function advance(
   db: Db,
   scan: GoogleScanLease,
@@ -120,7 +128,7 @@ async function advance(
       WHERE ${ELIGIBLE} AND ${SCAN_CURRENT}
       AND NOT EXISTS(SELECT 1 FROM integration_outbox o JOIN reconcile_generations current ON current.person_id=o.person_id AND current.target_id=o.target_id AND current.generation=o.generation
         WHERE o.person_id=p.id AND o.kind IN ('person_reconcile','committee_reconcile') AND o.state IN ('queued','running','retry'))
-      ON CONFLICT(id) DO NOTHING`,
+      ON CONFLICT(id) DO NOTHING RETURNING id`,
       )
       .bind(
         `google-drift:${scan.customerId}:${scan.startedAt}`,
@@ -148,7 +156,7 @@ async function advance(
     ? {
         kind: 'scanned',
         scanned: ids.length,
-        queued: changes(result[1]),
+        queued: returnedRows(result[1]),
         complete: !more,
       }
     : { kind: 'stale', scanned: 0, queued: 0, complete: false };

@@ -244,14 +244,14 @@ try {
     )
     .run();
 
-  for (let pass = 0; pass < 10; pass++) {
+  for (let pass = 0; pass < 17; pass++) {
     if (pass === 3) {
       pauseNextList = true;
       await tick();
       assert.equal(
         (await db.prepare('SELECT accounts_read FROM beehiiv_poll_checkpoints').first())
           ?.accounts_read,
-        1500,
+        900,
       );
       await simulator.dispose();
       simulator = createRuntime();
@@ -280,11 +280,11 @@ try {
     }
     const before = calls.filter((call) => call.list).length;
     await tick();
-    assert.equal(calls.filter((call) => call.list).length - before, 5);
+    assert.equal(calls.filter((call) => call.list).length - before, Math.min(3, 50 - pass * 3));
     assert.equal(
       (await db.prepare('SELECT accounts_read FROM beehiiv_poll_checkpoints').first())
         ?.accounts_read,
-      (pass + 1) * 500,
+      Math.min((pass + 1) * 300, 5000),
     );
     if (pass === 0) {
       assert.equal((await people.getPerson(person.id))?.membership_status, 'former_member');
@@ -355,6 +355,17 @@ try {
     calls.every((call) => call.method === 'GET' || call.method === 'DELETE'),
     true,
   );
+  assert.equal(calls.filter((call) => call.method === 'DELETE').length, 0);
+  const spent = await db
+    .prepare('SELECT charged_writes FROM scheduled_work_budget')
+    .first<{ charged_writes: number }>();
+  assert.ok(
+    spent && spent.charged_writes <= 40_000 && spent.charged_writes + 4_000 > 40_000,
+    'the large roster must defer subsequent work rather than exceed its daily allocation',
+  );
+  // Advance the isolated ledger day after proving that the real daily guard refused work.
+  await db.prepare("UPDATE scheduled_work_budget SET utc_day='2000-01-01'").run();
+  await tick();
   assert.equal(calls.filter((call) => call.method === 'DELETE').length, 1);
   assert.equal(deletedSubscriptions.has(known.id), true);
   console.log(
@@ -364,7 +375,8 @@ try {
       checks: [
         'authenticated source choices change canonical membership and Discord access',
         'damaged address review',
-        '5000-account resumable scan in ten successful ticks',
+        '5000-account resumable scan in seventeen successful ticks',
+        'daily allocation defers work and resumes deletion cleanup on the next UTC budget day',
         'rate-limit and Worker restart recovery',
         'incoming choices during a provider pause',
         'repeat safety',

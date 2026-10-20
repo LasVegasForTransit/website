@@ -61,10 +61,10 @@ void test('ready newsletter choices are processed before any outgoing provider w
     assert.ok(f.visits.indexOf('newsletter_incoming') < f.visits.indexOf(`${provider}_account`));
   assert.equal(f.visits.at(-1), 'completion');
 });
-void test('a large roster advances five pages while a busy inbox and both providers keep moving within the request limit', async () => {
+void test('a large roster advances three pages while a busy inbox and both providers keep moving within the request limit', async () => {
   const f = fixture(undefined, undefined, { busyInbox: true, scanComplete: false });
   await f.run();
-  assert.equal(f.visits.filter((name) => name === 'newsletter_scan').length, 5);
+  assert.equal(f.visits.filter((name) => name === 'newsletter_scan').length, 3);
   assert.equal(f.visits.filter((name) => name === 'newsletter_incoming').length, 6);
   assert.ok(f.visits.length + 1 <= 32);
   const discord = f.visits.filter((name) => name === 'discord_account').length;
@@ -275,4 +275,25 @@ void test('blocked candidate pages cannot delay later due explicit work until a 
   await f.run();
   assert.deepEqual(selected, ['blocked-0090']);
   assert.ok(pages >= 6 && pages <= 20, `bounded page progress: ${pages}`);
+});
+
+void test('an incoming withdrawal eligible after cron start runs before outgoing accounts', async (t) => {
+  const start = Date.parse('2026-10-19T20:37:00.000Z');
+  t.mock.method(Date, 'now', () => start + 2);
+  const f = fixture(undefined, undefined, { scheduledTime: start, idleAccounts: true });
+  f.database.raw.exec(`
+    UPDATE newsletter_inbound_events SET occurred_at='2026-10-19T20:37:00.001Z';
+    UPDATE beehiiv_poll_checkpoints SET next_scan_at='2026-10-20T20:00:00.000Z';
+    INSERT INTO provider_scan_checkpoints(provider,context_id,started_at,next_scan_at,in_progress)
+      VALUES('discord','111111111111111111','2026-10-19','2026-10-20',0),
+      ('discord','guild-roster:111111111111111111','2026-10-19','2026-10-20',0);
+  `);
+  await f.run();
+  assert.equal(f.visits.includes('discord_scan'), false);
+  assert.equal(f.visits.includes('newsletter_scan'), false);
+  assert.ok(f.visits.includes('newsletter_incoming'));
+  for (const provider of ['discord', 'newsletter']) {
+    assert.ok(f.visits.includes(`${provider}_account`));
+    assert.ok(f.visits.indexOf('newsletter_incoming') < f.visits.indexOf(`${provider}_account`));
+  }
 });

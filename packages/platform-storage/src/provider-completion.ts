@@ -64,7 +64,7 @@ export async function completeProviderOperations(
             AND i.platform NOT IN ('discord','google_workspace')
         )
       ORDER BY candidate.lane,o.created_at,o.id LIMIT ?
-    )`,
+    ) RETURNING id`,
       )
       .bind(
         'completion',
@@ -77,6 +77,6 @@ export async function completeProviderOperations(
         limit,
       ),
   ]);
-  const completed = result[1] as { meta: { changes: number } };
-  return completed.meta.changes;
+  const completed = result[1] as { results: unknown[] };
+  return completed.results.length;
 }

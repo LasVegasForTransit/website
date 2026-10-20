@@ -250,3 +250,50 @@ void test('hidden record categories drain in bounded minute batches', async () =
   await runMaintenance(db, { now, category: 'records' });
   assert.equal(await nextRecordWork(db, now), '2026-10-20T13:00:00.000Z');
 });
+
+void test('receipt deadlines follow active operations without retaining completed history', async () => {
+  const db = memoryDb();
+  db.raw
+    .exec(`INSERT INTO people(id,created_at,updated_at) VALUES('person','2026-10-20','2026-10-20');
+    INSERT INTO integration_outbox(id,kind,person_id,target_id,generation,payload,next_attempt_at,created_at,updated_at)
+      VALUES('operation','person_reconcile','person','person',1,'{}','2026-10-20','2026-10-20','2026-10-20');
+    INSERT INTO provider_operation_receipts(operation_id,provider,state,revision_hash,lease_token,observed_at,expires_at)
+      VALUES('operation','discord','done','revision','lease','2026-10-20T11:40:00.000Z','2026-10-20T12:45:00.000Z')`);
+  const count = () =>
+    db.raw.prepare('SELECT count(*) AS n FROM scheduled_receipt_deadlines').get()?.n;
+  assert.equal(count(), 1);
+  db.raw.exec("UPDATE integration_outbox SET state='done'");
+  assert.equal(count(), 0);
+  db.raw.exec("UPDATE provider_operation_receipts SET expires_at='2026-10-20T12:39:00.000Z'");
+  assert.equal(count(), 0);
+  assert.equal(await nextProviderWork(db, now, providers, false), '2026-10-20T12:50:00.000Z');
+  db.raw.exec("UPDATE integration_outbox SET state='queued'");
+  assert.equal(count(), 1);
+  assert.equal(await nextProviderWork(db, now, providers, false), '2026-10-20T12:39:00.000Z');
+  db.raw.exec(
+    "UPDATE provider_operation_receipts SET state='retry',failure='provider_unavailable'",
+  );
+  assert.equal(count(), 0);
+  db.raw.exec("UPDATE provider_operation_receipts SET state='done',failure=NULL");
+  assert.equal(count(), 1);
+  db.raw.exec('DELETE FROM provider_operation_receipts');
+  assert.equal(count(), 0);
+});
+void test('the receipt deadline migration backfills active successes only', () => {
+  const db = memoryDb('0052_inactive_profile_selection.sql');
+  db.raw
+    .exec(`INSERT INTO people(id,created_at,updated_at) VALUES('person','2026-10-20','2026-10-20');
+    INSERT INTO integration_outbox(id,kind,person_id,target_id,generation,payload,state,next_attempt_at,created_at,updated_at)
+      VALUES('active','person_reconcile','person','person',1,'{}','queued','2026-10-20','2026-10-20','2026-10-20'),
+        ('finished','person_reconcile','person','person',1,'{}','done','2026-10-20','2026-10-20','2026-10-20');
+    INSERT INTO provider_operation_receipts(operation_id,provider,state,revision_hash,lease_token,observed_at,expires_at)
+      SELECT id,'discord','done','revision','lease','2026-10-20T11:40:00.000Z','2026-10-20T12:45:00.000Z' FROM integration_outbox;`);
+  applyMigrations(db.raw);
+  assert.deepEqual(
+    db.raw
+      .prepare('SELECT operation_id FROM scheduled_receipt_deadlines')
+      .all()
+      .map((row) => row.operation_id),
+    ['active'],
+  );
+});

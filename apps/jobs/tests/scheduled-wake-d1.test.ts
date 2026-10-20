@@ -23,7 +23,7 @@ import { LINK_COMMAND } from '@lasvegasfortransit/platform-integrations/discord-
 import { runScheduledMembership } from '../src/scheduled';
 import { runMeteredJob } from '../src/job-database';
 
-void test('a real D1 idle hour stays bounded with both providers and 100000 unrelated profiles', async (t) => {
+void test('a real D1 idle hour stays bounded with both providers and 100000 synthetic profiles', async (t) => {
   const logs: string[] = [];
   t.mock.method(console, 'log', (line: string) => logs.push(line));
 
@@ -57,8 +57,15 @@ void test('a real D1 idle hour stays bounded with both providers and 100000 unre
     WITH RECURSIVE seq(n) AS (SELECT 1 UNION ALL SELECT n+1 FROM seq WHERE n<10000)
     INSERT INTO newsletter_inbound_events(publication_id,id,type,subscription_id,email_key,fingerprint,occurred_at,received_at)
       SELECT 'pub_preview','future-'||n,'subscription.deleted','sub-'||n,'opaque','hash','2026-10-21T00:00:00.000Z','2026-10-20T00:00:00.000Z' FROM seq;`);
+  raw.exec(`WITH RECURSIVE seq(n) AS (SELECT 1 UNION ALL SELECT n+1 FROM seq WHERE n<60)
+    INSERT INTO integration_outbox(id,kind,person_id,target_id,generation,payload,state,next_attempt_at,created_at,updated_at)
+      SELECT 'historical-'||n,'person_reconcile','unrelated-'||n,'person',1,'{}','done','2026-10-20','2026-10-20','2026-10-20' FROM seq;
+    WITH RECURSIVE seq(n) AS (SELECT 1 UNION ALL SELECT n+1 FROM seq WHERE n<60)
+    INSERT INTO provider_operation_receipts(operation_id,provider,state,revision_hash,lease_token,observed_at,expires_at)
+      SELECT 'historical-'||n,'discord','done','revision','lease','2026-10-20T12:00:00.000Z',strftime('%Y-%m-%dT%H:%M:%fZ','2026-10-20T12:00:00Z','+'||n||' minutes') FROM seq;`);
   raw.close();
   let now = new Date('2026-10-20T12:00:00.000Z');
+  t.mock.method(Date, 'now', () => now.getTime());
   const guildId = '111111111111111111',
     applicationId = '555555555555555555',
     memberRoleId = '333333333333333333',

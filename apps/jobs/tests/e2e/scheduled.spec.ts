@@ -346,6 +346,9 @@ try {
     [memberRoleId, committeeRoleId, leadRoleId, unrelatedRoleId].sort(),
   );
   assert.equal((await db.prepare('SELECT count(*) AS n FROM discord_profiles').first())?.n, 1);
+  await assertBudgetUsage(db);
+  // The retention scenario advances a month while the Worker wall clock stays fixed.
+  await db.prepare("UPDATE scheduled_work_budget SET utc_day='2000-01-01'").run();
   await people.deletePerson(person.id);
   await worker.scheduled({
     cron: '* * * * *',
