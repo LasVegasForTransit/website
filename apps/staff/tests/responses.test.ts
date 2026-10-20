@@ -109,3 +109,30 @@ void test('unrecognized failure metadata cannot leak into a recovery report', as
   assert.ok(html.includes(reference));
   assert.doesNotMatch(html, /private@example.invalid|<script>|SQL/);
 });
+
+void test('a reported reference identifies a useful cause without logging private error text', async () => {
+  const { requestFailure } = await import('../src/lib/request-failure');
+  const { mock } = await import('node:test');
+  const logger = mock.method(console, 'error', () => undefined);
+  try {
+    const cause = new Error('D1_ERROR: no such table: sensitive_table_name: SQLITE_ERROR');
+    const error = new TypeError(
+      'SQL private@example.invalid\n    at injected (/secret-person.mjs:1:2)',
+      { cause },
+    );
+    const response = requestFailure(error, 'middleware');
+    const reference = response.headers.get('X-LVBT-Error-Reference');
+    assert.ok(reference);
+    assert.equal(typeof logger.mock.calls[0]?.arguments[0], 'object');
+    const logged = JSON.stringify(logger.mock.calls);
+    assert.ok(logged.includes(reference));
+    assert.match(logged, /"causeCode":"missing_table"/);
+    assert.match(logged, /"errorType":"TypeError"/);
+    assert.match(logged, /responses\.test\.ts:\d+:\d+/);
+    assert.doesNotMatch(logged, /private@example.invalid|secret-person|SQL|sensitive_table_name/);
+    const html = await response.text();
+    assert.doesNotMatch(html, /missing_table|TypeError|responses\.test|private@example.invalid/);
+  } finally {
+    logger.mock.restore();
+  }
+});
