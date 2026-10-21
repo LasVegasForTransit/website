@@ -49,7 +49,7 @@ export async function reserveScheduledWork(
   const day = now.toISOString().slice(0, 10);
   const caps =
     environment === 'production'
-      ? { reads: 2_000_000, writes: 40_000 }
+      ? { reads: 2_000_000, writes: 45_000 }
       : { reads: 250_000, writes: 5_000 };
   const result = await db
     .prepare(

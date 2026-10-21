@@ -54,6 +54,8 @@ export default defineConfig((ctx) => {
             LVBT_NOTION_TASK_PRODUCTION_SOURCE_ID: bindings.text(''),
             LVBT_DISCORD_JOBS: bindings.worker({ worker: 'lvbt-jobs-preview' }),
             LVBT_DISCORD_APPLICATION_ID: bindings.text('1552481672945999872'),
+            LVBT_DISCORD_GUILD_ID: bindings.text('1560146082640568350'),
+            LVBT_DISCORD_PRODUCTION_GUILD_ID: bindings.text('1509298455896522823'),
             LVBT_DISCORD_PUBLIC_KEY: bindings.text(
               '21422dba5d410653b6e1b21fedffbf8cdbccaa94fc221d81d767712d2f6faef9',
             ),
@@ -81,6 +83,8 @@ export default defineConfig((ctx) => {
             LVBT_NOTION_TASK_PRODUCTION_SOURCE_ID: bindings.text(''),
             LVBT_DISCORD_JOBS: bindings.worker({ worker: 'lvbt-jobs' }),
             LVBT_DISCORD_APPLICATION_ID: bindings.text('1552481672945999872'),
+            LVBT_DISCORD_GUILD_ID: bindings.text('1509298455896522823'),
+            LVBT_DISCORD_PRODUCTION_GUILD_ID: bindings.text('1509298455896522823'),
             LVBT_DISCORD_PUBLIC_KEY: bindings.text(
               '21422dba5d410653b6e1b21fedffbf8cdbccaa94fc221d81d767712d2f6faef9',
             ),

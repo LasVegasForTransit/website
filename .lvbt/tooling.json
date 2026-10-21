@@ -195,6 +195,14 @@
       },
       "LVBT_LINK_SIGNING_SECRET": {
         "type": "secret"
+      },
+      "LVBT_DISCORD_GUILD_ID": {
+        "type": "text",
+        "value": "1560146082640568350"
+      },
+      "LVBT_DISCORD_PRODUCTION_GUILD_ID": {
+        "type": "text",
+        "value": "1509298455896522823"
       }
     },
     "migrations": [

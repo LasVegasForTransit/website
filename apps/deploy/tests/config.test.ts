@@ -65,6 +65,11 @@ void test('saved releases retain matching Discord applications and isolated jobs
     const vars = built.vars as Record<string, unknown>;
     assert.equal(vars.LVBT_DISCORD_APPLICATION_ID, '1552481672945999872');
     assert.equal(
+      vars.LVBT_DISCORD_GUILD_ID,
+      worker === 'lvbt-jobs' ? '1509298455896522823' : '1560146082640568350',
+    );
+    assert.equal(vars.LVBT_DISCORD_PRODUCTION_GUILD_ID, '1509298455896522823');
+    assert.equal(
       vars.LVBT_DISCORD_PUBLIC_KEY,
       '21422dba5d410653b6e1b21fedffbf8cdbccaa94fc221d81d767712d2f6faef9',
     );

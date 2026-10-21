@@ -69,7 +69,7 @@ function privateNotionUrl(value: unknown): string | null {
   try {
     const url = new URL(value);
     return url.protocol === 'https:' &&
-      ['notion.so', 'www.notion.so'].includes(url.hostname) &&
+      ['notion.so', 'www.notion.so', 'app.notion.com'].includes(url.hostname) &&
       !url.username &&
       !url.password
       ? url.href

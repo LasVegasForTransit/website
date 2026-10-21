@@ -47,6 +47,19 @@ async function modules() {
   return { ...reader, ...client };
 }
 
+void test('current Notion app links remain deliverable while lookalike domains are rejected', async () => {
+  const { parseNotionTaskPage } = await modules();
+  const url = `https://app.notion.com/${pageId.replaceAll('-', '')}`;
+  assert.equal(parseNotionTaskPage({ ...page(), url }, options)?.snapshot.url, url);
+  assert.equal(
+    parseNotionTaskPage(
+      { ...page(), url: url.replace('app.notion.com', 'app.notion.com.example.invalid') },
+      options,
+    )?.snapshot.url,
+    '',
+  );
+});
+
 void test('normalizes guest IDs and dates without copying unapproved private content or user profiles', async () => {
   const { parseNotionTaskPage } = await modules();
   const task = parseNotionTaskPage(page(), options);
