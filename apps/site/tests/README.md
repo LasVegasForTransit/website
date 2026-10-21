@@ -91,6 +91,11 @@ macOS and Linux need separate baselines because their text rendering differs. Th
 `tests/snapshots/<platform>/<project>/`. macOS uses `darwin`; the CI runner uses `linux`. Screenshot
 tests read and update the matching directory automatically.
 
+The visual job and **Seed baselines** cache only Linux LFS objects. On an empty cache, they can
+reuse images from a saved baseline run. Each image must match the current Git pointer's size and
+SHA-256 hash before entering the cache. Git LFS downloads only objects still missing afterward.
+General build and release jobs do not need these screenshot files.
+
 ### Seeding linux baselines
 
 Run the **Seed baselines** workflow in GitHub Actions against your branch. Download its

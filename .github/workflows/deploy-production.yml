@@ -16,7 +16,7 @@ concurrency:
 jobs:
   build:
     name: Build
-    uses: LasVegasForTransit/repository-tooling/.github/workflows/release-build.yml@71bd6ea8a314417be4d85829480444bb61bba232
+    uses: LasVegasForTransit/repository-tooling/.github/workflows/release-build.yml@94842f40fa6d912249860b34a61d314adcaa19b6
     with:
       artifact-source: typed-worker
       require-analytics: true
@@ -40,7 +40,6 @@ jobs:
         with:
           ref: ${{ github.sha }}
           persist-credentials: false
-          lfs: true
       - name: Validate retained interface
         uses: ./.github/actions/validate-retained-ui
         with:

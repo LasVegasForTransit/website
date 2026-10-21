@@ -22,7 +22,7 @@ void test('retained staging requires dispatch instead of deploying every main pu
 void test('manual retained staging preserves artifact verification and publication gates', async () => {
   const source = await workflow('deploy-production');
   assert.match(source, /group: website-staging\n {2}cancel-in-progress: false/);
-  assert.match(source, /release-build\.yml@71bd6ea8a314417be4d85829480444bb61bba232/);
+  assert.match(source, /release-build\.yml@94842f40fa6d912249860b34a61d314adcaa19b6/);
   assert.match(source, /artifact-source: typed-worker/);
   assert.match(source, /require-analytics: true/);
   assert.match(source, /artifact-validation:\n[\s\S]*?needs: build/);

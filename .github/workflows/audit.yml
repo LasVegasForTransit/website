@@ -15,6 +15,7 @@ on:
 
 permissions:
   contents: read
+  actions: read
   packages: read
 
 concurrency:
@@ -303,13 +304,8 @@ jobs:
         with:
           persist-credentials: false
 
-      # The baselines are Git LFS objects; as pointer files they fail as
-      # "Could not decode expected image as PNG". Only this runner's
-      # platform is compared, so pull that subtree rather than every object
-      # under apps/site/tests/snapshots (~110 MB against a 1 GB/month LFS allowance).
-      - name: Fetch the Linux baselines from LFS
-        working-directory: .
-        run: git lfs pull --include "apps/site/tests/snapshots/linux/**"
+      - name: Restore Linux screenshot baselines
+        uses: ./.github/actions/linux-baselines
 
       - name: Setup Node + pnpm
         uses: ./.github/actions/setup-node-pnpm
