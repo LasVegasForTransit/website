@@ -31,8 +31,8 @@ steps below define that contract; they do not authorize improvising SQL against 
    membership, Google link, and administrator designation. Check for committee assignments, other
    linked providers, and duplicate people. Resolve unexpected real data or relationships before
    selecting a repair.
-4. Compare the identifier with the canonical ULID contract used by member profiles. A ULID is a
-   26-character record identifier. The database can accept a text value that the portal refuses.
+4. Compare the identifier with the ULID format required by member profiles. A ULID is a 26-character
+   record identifier. The database can accept a text value that the portal refuses.
 
 Do not remove the Google link, repeat administrator setup, rename the person's primary key, relax
 profile validation, or edit immutable audit records to make the page load.
@@ -52,8 +52,9 @@ original verified copy unchanged.
 3. Prepare three private files: preparation, one invocation, and cleanup. Preparation creates a
    uniquely named temporary gate table and trigger. A trigger is database work performed by another
    statement. In this repair, one insert into the gate runs creation and the normal merge together.
-   A final aborting check must require the applied merge and an active surviving administrator. This
-   prevents a refused snapshot from leaving a second person behind.
+   A final check must stop and undo the operation unless the merge completed and the surviving
+   person remains an active administrator. This prevents a refused snapshot from leaving a second
+   person behind.
 4. Test that exact bundle against a fresh copy of the backup. Confirm profile loading, one active
    test person, the transferred Google link and consent evidence, retained administrator access,
    unchanged existing audit rows, and no broken database relationships.
@@ -65,8 +66,9 @@ original verified copy unchanged.
    or statements requires another rehearsal and review.
 
 The temporary gate keeps the entire repair in one database statement. Do not assume a dashboard
-editor executes a pasted multi-statement file atomically. Cleanup must name only the temporary
-objects created for this repair; it must not delete membership or audit data.
+editor applies a file of several statements as one operation that can be undone on failure. Cleanup
+must name only the temporary objects created for this repair; it must not delete membership or audit
+data.
 
 ## 3. Apply the reviewed bundle once
 
@@ -88,7 +90,7 @@ For the dashboard path:
 4. Execute the reviewed invocation exactly once. It inserts the fixed operation identifier into the
    gate. Do not rerun after an ambiguous response: inspect the operation, survivor, and source
    first. A query error can follow a provider write.
-5. Verify the postconditions from step 2 against the hosted database. Compare existing consent and
+5. Verify the expected results from step 2 against the hosted database. Compare existing consent and
    audit evidence with the backup privately; do not print session or authentication values.
 6. Remove the reviewed temporary trigger and gate after successful verification. If preparation or
    invocation failed, inspect actual state before cleanup or retry. Remove any harmless diagnostic

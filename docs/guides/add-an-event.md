@@ -5,8 +5,8 @@ it whenever you want a new event to appear on the site.
 
 Events live in the LVBT (Las Vegans for Better Transit) Google Calendar, not in the repo. Keeping
 them in the calendar means non-developers can add and edit events without touching code, and the
-site stays in sync automatically. The site rebuilds against the calendar on a schedule, so a
-calendar change shows up on the site on its own.
+maintainers can review the calendar changes in a scheduled website build. The public website changes
+only after a maintainer publishes that reviewed release.
 
 ## Before you start
 
@@ -24,22 +24,24 @@ calendar change shows up on the site on its own.
    - **Location** — a meeting URL (virtual), a full physical address (in-person), or both (hybrid —
      put the address in Location and the meeting URL in Description). For physical events, use the
      full Google-style address so the site can publish a real postal address in structured data.
-   - **Description** — the first paragraph becomes the card / lede summary (keep it to one
+   - **Description** — the first paragraph becomes the summary on the event listing (keep it to one
      sentence). Everything after that paragraph becomes the body on the detail page; format it
      however you want with GCal's rich-text editor (the toolbar for bold, lists, links — like a mini
      word processor). Add `RSVP: https://…` if registration goes through an external sign-up form.
      Add `ADMISSION: https://…` or `TICKETS: https://…` only when the link is where people get
      admission or tickets, even for a free event.
-3. Save. The scheduled rebuild runs twice a day. For a same-day correction, run the `cron-rebuild`
-   workflow from GitHub Actions; it dispatches the production build.
+3. Save. The scheduled rebuild runs twice a day and updates the private review site. For a same-day
+   correction, ask a maintainer to run the `cron-rebuild` workflow in GitHub Actions, review the
+   refreshed event, and publish that staging release. Follow
+   [calendar refresh and publication](./test-the-workers-candidate.md#refresh-calendar-content-or-roll-back).
 
 ## When an event needs more than what GCal can hold
 
-Most events ship as GCal-only — the description carries both the summary and the long-form body.
-Reach for an MDX body fragment (a small `.mdx` file holding just the rich body content for one
-event) under `apps/site/src/content/event-bodies/<slug>.mdx` only when you need things GCal's
-rich-text editor can't do: custom components, glossary tooltips, typed internal links, etc. The
-fragment takes priority over the calendar description.
+Most events need only Google Calendar (GCal) — the description carries both the summary and the
+long-form body. Reach for an MDX body fragment (a small `.mdx` file holding just the rich body
+content for one event) under `apps/site/src/content/event-bodies/<slug>.mdx` only when you need
+things GCal's rich-text editor can't do: custom components, glossary tooltips, typed internal links,
+etc. The fragment takes priority over the calendar description.
 
 The slug (the URL-safe id for the event, used as its filename) is `<YYYY-MM-DD>-<slugified-title>`
 using the event's Pacific-time start date — lowercased, spaces turned into hyphens. For "General
@@ -49,8 +51,8 @@ Meeting" on 2026-05-28 → `2026-05-28-general-meeting`.
 pnpm -C apps/site event:new
 ```
 
-walks you through it: it prints the GCal field checklist, then optionally scaffolds the body
-fragment for you.
+The command prints the calendar field checklist and can create the body file for you. Preview the
+event locally, run `pnpm check`, and share the file change through a pull request.
 
 ## Common failures
 

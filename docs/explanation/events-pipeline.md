@@ -1,16 +1,16 @@
 # Events pipeline
 
-This page explains how events get onto the site — for anyone adding an event or touching the events
-code. The short version: you create events in Google Calendar, and the site pulls them in when a
-rebuilt release is promoted.
+Contributors who add events or change event code use this page to understand how calendar entries
+become website pages. You create events in Google Calendar. A build reads the calendar, and a
+maintainer publishes the reviewed release.
 
 Events on the site come from a public Google Calendar. The site rebuilds against the calendar on a
-schedule; the calendar is the source of truth for both event metadata (title, time, location, join
-URL) and event body copy (the rich-text description). MDX fragments (Markdown files that can embed
-interactive components — see [glossary](../reference/glossary.md#mdx)) under
+schedule; the calendar supplies both event details (title, time, location, join URL) and event body
+copy (the rich-text description). Optional MDX body files (Markdown files that can embed interactive
+components — see [glossary](../reference/glossary.md#mdx)) under
 [`apps/site/src/content/event-bodies/`](../../apps/site/src/content/event-bodies/) are an optional
-override for events that need MDX features (components, typed links) — most events ship as just
-GCal.
+replacement for descriptions that need components or checked internal links. Most events need only
+Google Calendar (GCal).
 
 ## The flow
 
@@ -57,16 +57,16 @@ events/index.astro · events/[...slug].astro · events/[...slug].ics.ts · go.as
 The description is two pieces of content in one field, separated by paragraph breaks:
 
 - **First paragraph** → `summary`. Plain text, stripped of any inline formatting, used on event
-  cards and as the detail-page lede. One sentence is ideal. If you write nothing, the summary falls
-  back to the title — that's ugly on cards.
+  cards and as the opening summary on the detail page. One sentence is ideal. If you write nothing,
+  the summary falls back to the title — that's ugly on cards.
 - **Everything after** → `body`. Rendered as HTML below the event header on the detail page, with
   whatever rich formatting (lists, bold, links) you applied in Google Calendar's description editor.
 
-Google Calendar's auto-appended footer ("Join with Google Meet: …", phone numbers, "Learn more about
-Meet at: …") is detected by its boundary and dropped before either field is derived — you never have
-to scrub it manually.
+Google Calendar's automatically added footer ("Join with Google Meet: …", phone numbers, "Learn more
+about Meet at: …") is removed before the site creates the summary and body. You do not need to
+remove it manually.
 
-Two other conventions the build watches for:
+The build also recognizes these description conventions:
 
 - **A Meet / Zoom / Teams / Webex / Whereby URL on its own line** is picked up as `joinUrl` if the
   Location field is a physical address. Use this for hybrid events.
@@ -81,7 +81,7 @@ Two other conventions the build watches for:
 
 ### Format inference
 
-`format` is derived, not authored:
+The loader sets `format` from the location and meeting link; you do not enter it separately:
 
 | Join URL | Venue | Result                                         |
 | -------- | ----- | ---------------------------------------------- |
@@ -92,11 +92,12 @@ Two other conventions the build watches for:
 
 ## Structured data
 
-Each event detail page emits Schema.org `Event` JSON-LD. The site includes the event title, summary,
-canonical URL, stable event id, start and end times, duration, attendance mode, organizer, language,
-default image, accessibility/free-attendance flag, transit-related topics, and location when the
-calendar provides one. `RSVP:` links publish as a registration action; `ADMISSION:` and `TICKETS:`
-links publish as event offers.
+Each event detail page includes machine-readable event details using Schema.org's `Event` format and
+JSON-LD, a structured text format that search engines can read. The site includes the event title,
+summary, main page address, stable event identifier, start and end times, duration, attendance mode,
+organizer, language, default image, accessibility/free-attendance flag, transit-related topics, and
+location when the calendar provides one. `RSVP:` links publish as a registration action;
+`ADMISSION:` and `TICKETS:` links publish as event offers.
 
 Virtual and hybrid events use Schema.org `VirtualLocation`, which is valid structured data. Google's
 Event rich-result feature is narrower: virtual-only events and events with no physical location are
@@ -115,7 +116,7 @@ Both parts derived in **Pacific Time**. Example: a "General Meeting" at 6:30 PM 
 `2026-05-28-general-meeting`.
 
 If you rename a calendar event, the URL changes. That's working as intended — past URLs may break,
-the calendar's UID isn't user-friendly enough to use as the slug.
+the calendar's own identifier is not useful to readers as part of the page address.
 
 ## Rebuild cadence
 
@@ -132,17 +133,17 @@ than that.
 
 Why GitHub Actions and not a Cloudflare Worker: the trigger needs zero long-lived credentials this
 way. The workflow uses the auto-issued `GITHUB_TOKEN`, scope-limited to `actions: write` on this
-repo. No PATs, no Worker secrets, no API token rotation. Logs surface in the Actions UI alongside
-every other deploy.
+repo. It needs no personal access token (PAT), Worker secret, or separately rotated API credential.
+Logs surface in the Actions UI alongside every other deploy.
 
 For a same-day correction, push a commit or click **Run workflow** on the `cron-rebuild` (or
 `Deploy staging`) workflow page. Review the updated event information on staging, then promote that
 run to publish the correction.
 
 Staging refresh delay: ~12 hours (gap between the morning and evening rebuilds) + however long
-Google's ICS edge cache holds (typically near-instant, can be a few hours for public calendars). For
-anything time-sensitive, build and promote an updated release in the Actions UI. Production has no
-automatic freshness guarantee while a release awaits review.
+Google keeps an older copy of its ICS feed (typically near-instant, can be a few hours for public
+calendars). For anything time-sensitive, build and promote an updated release in the Actions UI.
+Production has no automatic freshness guarantee while a release awaits review.
 
 ## Failure modes the build will surface
 
@@ -157,12 +158,12 @@ automatic freshness guarantee while a release awaits review.
   Huntridge Park location. Full calendar addresses take precedence; unknown venues are never
   assigned a guessed address. The catalog does not change calendar titles, dates or occurrence
   identities.
-- **End time missing** → currently allowed (the schema's `endDate` is optional), but downstream
-  behavior degrades: `.ics` falls back to a 1-hour duration and "Live now" never fires correctly.
-  Always set an end time.
-- **ICS fetch fails (network / Google returns non-2xx)** → loader throws with the status. Retry the
-  deploy; if persistent, check the calendar's "Make available to public" setting in GCal share
-  settings.
+- **End time missing** → currently allowed (the schema's `endDate` is optional), but downstream some
+  features no longer work as expected: `.ics` falls back to a 1-hour duration and "Live now" never
+  fires correctly. Always set an end time.
+- **ICS fetch fails (network / Google returns an unsuccessful response)** → loader throws with the
+  status. Retry the deploy; if persistent, check the calendar's "Make available to public" setting
+  in GCal share settings.
 
 ## What's deliberately NOT supported
 

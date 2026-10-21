@@ -1,8 +1,8 @@
 # Bootstrap and preflight reference
 
-Run these commands from the repository root. They come from the shared `@lasvegasfortransit/cli`
-package, pinned by the repository standard. Website-specific requirements are data in
-[`.lvbt/tooling.json`](../../.lvbt/tooling.json) and
+Contributors use `bootstrap` to prepare a checkout and `preflight` to check whether it is ready. Run
+both from the repository root. The shared `@lasvegasfortransit/cli` package provides them.
+Website-specific requirements are data in [`.lvbt/tooling.json`](../../.lvbt/tooling.json) and
 [`apps/site/platform.json`](../../apps/site/platform.json).
 
 ## Local setup
@@ -53,17 +53,18 @@ authorize the account, scopes, and destination before credential setup or rotati
 perform an authorized setup on their behalf. Ordinary publication uses the credentials already
 installed in GitHub Actions and does not require local Cloudflare sign-in.
 
-Production setup is separate from publication. Merging a reviewed pull request updates protected
-staging. A team member with the required repository and Actions access can review that saved release
-and run `pnpm promote`, or ask an agent to run it on their behalf. See the
-[deployment pipeline](./deployment-pipeline.md). Bootstrap does not publish the website.
+Production setup is separate from publication. Merging a reviewed pull request runs source checks. A
+separate **Deploy staging** workflow dispatch updates protected staging. A team member with the
+required repository and Actions access can review that saved release and run `pnpm promote`, or ask
+an agent to run it on their behalf. See the [deployment pipeline](./deployment-pipeline.md).
+Bootstrap does not publish the website.
 
 ## Requirements and implementation
 
 - `.lvbt/tooling.json` names the local environment example, destination, and optional integrations.
 - `apps/site/platform.json` lists production resources, required and future credentials, how to find
   each value, and settings forbidden in production.
-- `apps/deploy/cloudflare.config.ts` is the canonical Cloudflare project configuration. The
+- `apps/deploy/cloudflare.config.ts` defines the Cloudflare deployment settings. The
   `apps/site/wrangler.jsonc` mirror supports the local runtime and explicit recovery fallback.
   Regenerate it through the shared adapter with `pnpm -C apps/deploy compat:generate`; do not edit
   its bindings or routes separately.

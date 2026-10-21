@@ -15,16 +15,20 @@ You also need an editor and a terminal. For unfamiliar words, keep the
 ## Clone and bootstrap
 
 ```sh
-git clone https://github.com/LasVegasForTransit/website.git
+GIT_LFS_SKIP_SMUDGE=1 git clone git@github.com:LasVegasForTransit/website.git
 cd website
 pnpm bootstrap
 pnpm dev
 ```
 
-Bootstrap installs the pinned packages, enables the commit hooks, and creates `apps/site/.env.local`
-from its example. It preserves a local file you already have. Open `https://lvbt.localhost` after
-the development server starts, then edit a page and watch it update. Press `Ctrl+C` to stop the
-server.
+The clone skips screenshot files to save LVBT's shared download allowance. Local development does
+not need them. For visual comparisons, follow the
+[screenshot setup](../../apps/site/tests/README.md#first-time-setup).
+
+`pnpm bootstrap` installs the project's required packages, enables automatic commit checks, and
+creates `apps/site/.env.local` from its example. It preserves a local file you already have. Open
+`https://lvbt.localhost` after the development server starts, then edit a page and watch it update.
+Press `Ctrl+C` to stop the server.
 
 If package installation reports a GitHub Packages authentication error, ask a maintainer for the
 organization's package-read setup. The registry setting is already in `.npmrc`; keep credentials in
@@ -64,7 +68,9 @@ pnpm preflight --production
 The report checks [the platform manifest](../../apps/site/platform.json). Missing credentials or
 provider access are named separately from missing resources. A maintainer can then run
 `pnpm bootstrap --production` to work through missing platform configuration. This is not required
-for contributing or running the local site. Agents do not create or change production credentials.
+for contributing or running the local site. Creating or changing production credentials requires a
+maintainer to authorize the account, permissions, and destination. An agent can carry out that
+authorized setup.
 
 Routine publication uses the [deployment pipeline](../reference/deployment-pipeline.md); production
 bootstrap does not deploy a new release. The [bootstrap reference](../reference/bootstrap.md)

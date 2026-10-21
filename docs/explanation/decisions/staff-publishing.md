@@ -13,13 +13,18 @@ contributor joins.
 
 **Date:** 2026-05-01 (decision deferred)
 
+This record preserves the options, prices, and staffing assumptions from that date. It does not
+report current staffing or authorize a content editor build. The Ghost newsletter assumption below
+was superseded by the
+[Beehiiv addendum](./newsletter-platform.md#addendum-lvbt-uses-beehiiv-2026-09-23).
+
 ## Context
 
-Site content is MDX in `apps/site/src/content/`. Editing requires git knowledge today. Future
-contributors will not all be technical. LVBT staff have Google Workspace identities
+Site content is MDX in `apps/site/src/content/`. At decision time, editing required git knowledge.
+Future contributors will not all be technical. LVBT staff have Google Workspace identities
 (`@lasvegasfortransit.org`); not all have GitHub accounts.
 
-The newsletter side of this is solved by Ghost(Pro)'s native auth and editor (see
+The original plan treated Ghost(Pro)'s built-in sign-in and editor as the newsletter solution (see
 [newsletter-platform.md](./newsletter-platform.md)). The site side is the open question — when a
 non-technical contributor joins, how do they edit project pages, fact sheets, About content, etc.,
 without learning git?
@@ -28,8 +33,8 @@ without learning git?
 
 ### Git-backed CMS, browser editor
 
-Content stays as MDX in repo. CMS provides a WYSIWYG editor in the browser; saves commit through
-git.
+Content stays as MDX in repo. The CMS provides a visual editor in the browser and saves each edit as
+a git commit.
 
 | Tool                                 | Notes                                                                                                                                                                                                                                                                                |
 | ------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
@@ -39,14 +44,15 @@ git.
 | **TinaCMS**                          | Visual editing on top of MDX. Hosted backend ($29/mo team) or self-hostable. Slickest editor of this group.                                                                                                                                                                          |
 | **Pages CMS**                        | Cloudflare-Pages-native, lightweight. GitHub-auth-based. Newer, less mature.                                                                                                                                                                                                         |
 
-**Key constraint:** all of these auth via GitHub. Each contributor needs a free GitHub account (~5
-min one-time signup using their Workspace email, added to a `lasvegasfortransit` GitHub org).
+**Key constraint at decision time:** these options used GitHub sign-in. Each contributor needs a
+free GitHub account (~5 min one-time signup using their Workspace email, added to a
+`lasvegasfortransit` GitHub org).
 
 ### Headless CMS, content in vendor's database
 
-| Tool                              | Notes                                                                                                                                                                             |
-| --------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Sanity, Contentful, Storyblok** | Database-backed. Content fetched via API at build time. Loses the MDX-in-repo benefit; introduces vendor lock-in for content. Not aligned with the project's portability posture. |
+| Tool                              | Notes                                                                                                                                                                                         |
+| --------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Sanity, Contentful, Storyblok** | Database-backed. The site reads content from the service when it builds. Content leaves the repository and becomes harder to move to another host, which conflicts with the portability goal. |
 
 ### Custom admin gated by Cloudflare Access
 
@@ -56,9 +62,9 @@ commits to git via a service-account PAT (personal access token — a secret, pa
 that lets a script act on GitHub on a "bot" account's behalf) — git authorship shows "LVBT-bot" with
 the actual editor captured in the commit body.
 
-**Pros:** No GitHub accounts needed. Leverages existing Cloudflare + Workspace stack. Maintains
-MDX-in-repo. **Cons:** Custom plumbing — Keystatic and similar CMSes don't ship this mode
-out-of-the-box. Real engineering investment.
+**Pros:** Contributors need no GitHub account. This uses the existing Cloudflare and Workspace
+services and keeps MDX files in the repository. **Cons:** Developers must build the connection
+between Workspace sign-in and git commits. Keystatic and similar tools do not supply that setup.
 
 ### Ghost headless feeding Astro
 
@@ -71,8 +77,8 @@ hybrid decision). Costs scale by staff seat.
 
 ## Why deferred
 
-There's no second contributor today. Building a CMS now solves a problem that doesn't exist yet, and
-the right answer depends on:
+On 2026-05-01, the founder was the only contributor. The decision deferred a CMS until another
+contributor needed one. The eventual choice would depend on:
 
 - How many contributors join, how often
 - Whether they're tech-comfortable enough for Keystatic + GitHub OAuth (likely yes for most
@@ -87,9 +93,9 @@ When the second contributor joins, pick based on:
 - **If contributor is tech-comfortable:** Keystatic with GitHub OAuth. Lowest engineering work;
   preserves MDX-in-repo. Each contributor creates a free GitHub account using their Workspace email
   — ~5 min one-time onboarding, then they only ever touch the CMS UI.
-- **If contributors are not tech-comfortable AND there's engineering bandwidth for the auth
-  plumbing:** Cloudflare-Access-gated custom admin with service-account commits. Workspace SSO; no
-  GitHub. ~3–4 days engineering vs. ~1–2 days for Keystatic.
+- **If contributors are not tech-comfortable AND there's engineering bandwidth for the sign-in
+  integration:** Cloudflare-Access-gated custom admin with service-account commits. Workspace SSO;
+  no GitHub. ~3–4 days engineering vs. ~1–2 days for Keystatic.
 - **If 3+ contributors quickly AND content shape moves toward structured (scorecards, events,
   dashboards):** consider whether a structured CMS makes sense for those content types specifically,
   while keeping MDX for long-form.

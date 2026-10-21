@@ -26,7 +26,7 @@ production. This guide does not authorize a deployment, database change or billi
 4. Open the matching invocation. Record its deployed version and inspect the fields below. Keep
    detailed evidence in a private incident record before logs expire.
 
-This synthetic example shows an exception captured by the gateway:
+This made-up example shows an error caught by the gateway, the code that handles incoming requests:
 
 ```json
 {
@@ -112,9 +112,9 @@ pnpm -C apps/staff exec node --import tsx tests/e2e/recovery.spec.ts
 ```
 
 The tests check reference continuity, private diagnostics and a simulated database failure through
-the compiled Worker. They do not prove production log ingestion or availability. Never break a live
-table to reproduce the fixture. Review the recovery page on desktop and phone when changing its copy
-or layout. After an authorized release, verify sign-in and member search in the affected
-environment. Follow the
+the compiled Worker. They do not prove that production collects the logs or that the live service is
+available. Never break a live table to reproduce the fixture. Review the recovery page on desktop
+and phone when changing its copy or layout. After an authorized release, verify sign-in and member
+search in the affected environment. Follow the
 [availability reference](../reference/staff-availability.md#verify-a-recovery) for the remaining
 recovery evidence and the 30-day availability target.

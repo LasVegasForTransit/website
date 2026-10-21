@@ -1,48 +1,74 @@
 # Platform database schema
 
-This page describes every table and column in the Organizing Platform's database, in one plain
-sentence each. The database is Cloudflare D1 (see the
-[glossary](../../../docs/reference/glossary.md#d1)). The numbered `.sql` files beside this page are
-the migrations that build it; running them in order on an empty database creates everything below.
+Contributors use this reference to check what the platform database stores and which rules protect
+it. Read the relevant table or migration section before changing storage code. Cloudflare D1 is the
+hosted database that accepts Structured Query Language (SQL) commands; see the
+[glossary](../../../docs/reference/glossary.md#d1).
 
-No table stores a street address. Location is a ZIP code and a census block only.
+The numbered `.sql` files beside this page create and update the schema. This page describes the
+checked-in schema, not the migrations installed on a live database. Maintainers must inspect the
+selected database and release before deployment. Historical local-test results below do not prove
+hosted performance or production readiness.
+
+No table stores a street address. The platform keeps a ZIP code and census block instead.
 
 ## Apply the migrations
 
+For local work, complete [project setup](../../../docs/tutorials/start-here.md), then run this
+command from the repository root:
+
 ```sh
-pnpm exec wrangler d1 migrations apply lvbt-platform --remote                      # production
-pnpm exec wrangler d1 migrations apply lvbt-platform-preview --env preview --remote  # previews
-pnpm exec wrangler d1 migrations apply lvbt-platform --local                       # your machine
+pnpm -C apps/site exec wrangler d1 migrations apply lvbt-platform --local
 ```
 
-Wrangler records which migrations have run in a `d1_migrations` table, so running the command again
-changes nothing. `pnpm exec wrangler d1 migrations list lvbt-platform --remote` reports what has
-run.
+Wrangler, Cloudflare's command-line tool, records completed migrations in `d1_migrations`. Repeating
+the command applies only migrations that have not run.
+
+Maintainers apply remote migrations only through the selected release's
+[staff release procedure](../../../docs/reference/staff-portal-operations.md#release-order-and-rollback).
+That procedure covers backups, preview checks, application order and recovery. Do not apply a newer
+checkout's migrations to an older deployed app.
+
+## Terms used below
+
+A **transaction** saves a group of changes together. If one change fails, the database undoes the
+group. A **guard** is a check that rejects a write when its required conditions no longer hold. A
+**trigger** runs a database rule when a row changes.
+
+An **identity** links a person to an outside account. A **provider** is an outside service such as
+Discord or Beehiiv. The **outbox** stores accepted work waiting for a provider. A **generation** is
+a revision number for the current membership or assignment. A **lease** gives one worker temporary
+control of a task. A **receipt** records a completed operation; a provider confirmation requires a
+separate read from that provider. **Reconciliation** checks that provider access matches the saved
+membership and assignments, then repairs differences.
+
+An **archive** keeps a merged profile available for undo. **Erasure** removes personal information
+irreversibly. **Physical removal** later deletes the erased profile row. These are different steps.
 
 ## people
 
 One row per human LVBT knows about, whether or not they are a member.
 
-| Column                      | Meaning                                                                                                               |
-| --------------------------- | --------------------------------------------------------------------------------------------------------------------- |
-| `id`                        | The person's sortable unique identifier (a ULID).                                                                     |
-| `given_name`, `family_name` | Their first and last name, if they gave them.                                                                         |
-| `email`                     | Their email address, trimmed and lowercased; unique among people who are not deleted.                                 |
-| `email_verified_at`         | When they proved they own the email address, if they have.                                                            |
-| `phone`                     | Their phone number in international form, such as `+17025550123`.                                                     |
-| `zip`                       | Their 5-digit ZIP code.                                                                                               |
-| `census_block`              | The 15-digit code of the 2020 census block they live in, worked out once from an address that was then thrown away.   |
-| `census_block_vintage`      | The census year of that block, `2020`.                                                                                |
-| `place_name`                | The Census place their block is in, such as `Paradise CDP` or `Henderson city`.                                       |
-| `region_id`                 | Their LVBT region, from the `regions` table.                                                                          |
-| `region_source`             | How the region was set: `address`, `member_choice`, `zip` or `staff`.                                                 |
-| `region_set_at`             | When the region was last set.                                                                                         |
-| `preferred_language`        | The language they read LVBT's screens in; `en` for now.                                                               |
-| `membership_status`         | `member`, `former_member` or `not_member`, computed from their consent under the membership rules and never typed in. |
-| `membership_rules_version`  | Which version of the membership rules computed that status.                                                           |
-| `created_at`, `updated_at`  | When the row was created and last changed.                                                                            |
-| `deleted_at`                | When the entry was archived by a merge or explicitly deleted. The thirty-day physical-removal job is still pending.   |
-| `erased_at`                 | When explicit deletion erased personal fields and saved copies; merge archival alone leaves this empty.               |
+| Column                      | Meaning                                                                                                                                         |
+| --------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
+| `id`                        | The person's sortable identifier, a Universally Unique Lexicographically Sortable Identifier (ULID).                                            |
+| `given_name`, `family_name` | Their first and last name, if they gave them.                                                                                                   |
+| `email`                     | Their email address, trimmed and lowercased; unique among people who are not deleted.                                                           |
+| `email_verified_at`         | When they proved they own the email address, if they have.                                                                                      |
+| `phone`                     | Their phone number in international form, such as `+17025550123`.                                                                               |
+| `zip`                       | Their 5-digit ZIP code.                                                                                                                         |
+| `census_block`              | The 15-digit code of the 2020 census block they live in, worked out once from an address that was then thrown away.                             |
+| `census_block_vintage`      | The census year of that block, `2020`.                                                                                                          |
+| `place_name`                | The Census place their block is in, such as `Paradise CDP` or `Henderson city`.                                                                 |
+| `region_id`                 | Their LVBT region, from the `regions` table.                                                                                                    |
+| `region_source`             | How the region was set: `address`, `member_choice`, `zip` or `staff`.                                                                           |
+| `region_set_at`             | When the region was last set.                                                                                                                   |
+| `preferred_language`        | The language they read LVBT's screens in; `en` for now.                                                                                         |
+| `membership_status`         | `member`, `former_member` or `not_member`, computed from their consent under the membership rules and never typed in.                           |
+| `membership_rules_version`  | Which version of the membership rules computed that status.                                                                                     |
+| `created_at`, `updated_at`  | When the row was created and last changed.                                                                                                      |
+| `deleted_at`                | When the entry was archived by a merge or explicitly deleted. Erased ordinary deletions become eligible for physical removal after thirty days. |
+| `erased_at`                 | When explicit deletion erased personal fields and saved copies; merge archival alone leaves this empty.                                         |
 
 ## consent_records
 
@@ -93,8 +119,8 @@ A possible match between two people that a staff member confirms (`merged`) or r
 (`kept_separate`). `reason` says why the pair was queued, and `details` holds anything the incoming
 record said that couldn't be stored on the new person, such as an email another person already has.
 Each pair is queued once per reason. Keeping a pair separate resolves all of its pending reasons and
-prevents any reason from queuing that pair again, in either direction. The rules are in
-`platform/storage/person-service.md`, "Matching".
+prevents any reason from queuing that pair again, in either direction. See the
+[matching rules](../src/person-service.md#matching).
 
 ## onboarding_actions
 
@@ -102,11 +128,11 @@ Featured actions for the member welcome email and welcome page. `id` identifies 
 `referral_source` optionally names its campaign or partner; someone arriving from that source sees a
 different action instead of being sent back. `interest` optionally targets one of the join form
 interests, so an event or public meeting can reach the people who selected it. `title`,
-`description`, `label`, and `href` are the visible action. `starts_at` and `ends_at` are UTC ISO
-timestamps; `priority` selects among overlapping actions; `active` allows staff to turn one off
-without deleting it. Add or edit rows in D1 to change the featured action without changing
-application code. Migrations 0007 and 0008 seed Week Without Driving as the first time-limited
-action and assign its referral source.
+`description`, `label`, and `href` are the visible action. `starts_at` and `ends_at` are Coordinated
+Universal Time (UTC) timestamps in ISO 8601 format; `priority` selects among overlapping actions;
+`active` allows staff to turn one off without deleting it. Add or edit rows in D1 to change the
+featured action without changing application code. Migrations 0007 and 0008 seed Week Without
+Driving as the first time-limited action and assign its referral source.
 
 ## merges
 
@@ -139,8 +165,9 @@ with the answer LVBT gave. A repeat within 30 days gets the same answer and chan
 
 ## Workspace sign-in and linking
 
-Migration 0009 adds `workspace_oauth_states`, with ten-minute state hashes, PKCE verifiers, nonces,
-fixed callbacks and the initiating deployment origin. A state is consumed atomically.
+Migration 0009 adds `workspace_oauth_states`, with ten-minute state hashes, Proof Key for Code
+Exchange (PKCE) verifiers, one-use values called nonces, fixed callback addresses and the initiating
+deployment origin. The database accepts each state once, even if two requests arrive together.
 `workspace_callback_tickets` carries verified claims for at most one minute; the initiating browser
 must prove its original state cookie before a ticket can create a session or start linking. Google
 access and refresh tokens are not retained.
@@ -207,7 +234,7 @@ batch. Retry identities are scoped to the actor, person, action and exact payloa
 
 Migration 0012 adds `person_corrections`: each row records the affected person, administrator,
 required reason, exact old/new field values and previous sources, operation ID and correction time.
-Corrections are append-only and share a transaction with the canonical field write, `staff` field
+Corrections are append-only and share a transaction with the person-field update, `staff` field
 sources, attributed engagement event, audit receipt and pending `person_reconcile` outbox entry. The
 `person` reconciliation target has a generation so a newer correction invalidates older work.
 Provider success is not implied by this pending operation.
@@ -218,30 +245,30 @@ invalidates existing sessions and codes; it does not change a linked Workspace i
 consent. Changing ZIP clears derived geographic facts while preserving a region explicitly chosen by
 staff or the member. Membership and consent cannot be edited through the correction field API.
 
-A keep-separate decision is administrator-only. It atomically resolves every pending review reason
-for the unordered pair, records the deciding actor/time and optional note, and adds one
-`duplicate_reviewed` event per person. Repeated identical operation IDs return the same decision;
-changed payloads conflict. Comparison reads audit both person views and never grant a lead access to
-the duplicate queue.
+Only an administrator can decide to keep two records separate. One transaction resolves all pending
+review reasons for the pair, records who decided and when, saves any note, and adds one
+`duplicate_reviewed` event per person. The pair is the same regardless of which record appears
+first. Repeated identical operation IDs return the same decision; changed payloads conflict.
+Comparison reads audit both person views and never grant a lead access to the duplicate queue.
 
-A combination archives one person and keeps the other as the live member profile. `merges` stores
-its administrator, required reason, operation ID, exact moved row IDs and original values. Consents,
-withdrawal evidence, identities, engagement events, committee assignments, corrections and signup
-receipts move by their original keys. Existing contact details on the chosen entry remain; blank
-fields can receive the other entry's details and source. Original field sources and administrator
-designations remain on the archived entry for undo; a needed designation is copied to the survivor.
-Historical audit actors and targets remain unchanged. An intake submission stores no person ID and
-needs no ownership change.
+A combination archives one person and keeps the other as the live member profile. `merges` records
+who approved the combination, why, its operation ID, the moved row IDs and their original values.
+Consents, withdrawal evidence, identities, engagement events, committee assignments, corrections and
+signup receipts move by their original keys. Existing contact details on the chosen entry remain;
+blank fields can receive the other entry's details and source. Original field sources and
+administrator designations remain on the archived entry for undo; a needed designation is copied to
+the survivor. Historical audit actors and targets remain unchanged. An intake submission stores no
+person ID and needs no ownership change.
 
-The transaction compares complete, ordered snapshots and checks current administrator authority
-before accepting a receipt. Conflicting contact emails, external platforms, current assignments or
-unique event references cause no partial change. Engagement and correction content stays immutable;
-only a recorded ownership movement during a pending merge or undo receipt is permitted by their
-triggers. Merge bookkeeping rejects ordinary edits; explicit deletion can irreversibly erase
-personal copies as described below. Sessions, codes, affected form tokens and welcome claims are
-invalidated, and pending provider work for both people is superseded and replaced with current
-person-reconciliation jobs. The archived person's cleanup job is valid only while its recorded
-combination remains active; undo advances both generations.
+Before saving the result, the transaction compares complete, ordered copies of the records and
+checks that the administrator still has permission. Conflicting contact emails, external platforms,
+current assignments or unique event references cause no partial change. Engagement and correction
+content stays immutable; only a recorded ownership movement during a pending merge or undo receipt
+is permitted by their triggers. Merge bookkeeping rejects ordinary edits; explicit deletion can
+irreversibly erase personal copies as described below. Sessions, codes, affected form tokens and
+welcome claims are invalidated, and pending provider work for both people is superseded and replaced
+with current person-reconciliation jobs. The archived person's cleanup job is valid only while its
+recorded combination remains active; undo advances both generations.
 
 `consent_withdrawals` records each actual withdrawal request even when there is already no active
 consent. Its original request owner is immutable, so two entries with the same withdrawal retain
@@ -297,12 +324,13 @@ Worker immediately before changed role mappings are saved.
 assignments or completed outbox writes. Each row binds a person, target, provider, stable external
 account (and Workspace email), mapped resource, server/domain context, generation, expected access,
 read time and expiry. States are granted, absent or unknown; errors use a small failure enum, never
-raw provider responses. The writer rejects changed accounts, changed committee mappings, newer
-assignment generations, membership changes, ambiguous account links, future reads and confirmations
-lasting more than five minutes. The read view also requires current runtime provider configuration.
-An expired or superseded observation cannot prove access. Rows cannot be updated; a new read appends
-an observation. Retention must erase these account references with the person's personal data and
-remove obsolete observations independently of the three-year attributed access audit.
+raw provider responses. The writer rejects a confirmation if the account, committee mapping,
+assignment generation or membership has changed. It also rejects ambiguous account links, reads
+dated in the future and confirmations lasting more than five minutes. The read view also requires
+current runtime provider configuration. An expired or superseded observation cannot prove access.
+Rows cannot be updated; a new read appends an observation. Retention must erase these account
+references with the person's personal data and remove obsolete observations independently of the
+three-year attributed access audit.
 
 Access recovery requeues only the current failed reconciliation and audits the retry atomically.
 Administrator removals use the committee assignment transaction, ending the authoritative assignment
@@ -310,11 +338,12 @@ and queuing the new removal generation. Retrying removal never reinstates an ass
 
 ### Discord synchronization (0015)
 
-`provider_account_leases` serializes provider requests for a stable account and server across Worker
-instances. A lease lasts thirty seconds and must be renewed before each mutation; expired workers
-cannot save observations, retries, profile data or receipts, or release a newer worker's lease.
-Discord requests have a separate bounded timeout, including response-body reads. A timeout cannot
-prove whether a remote write applied; retries and periodic reconciliation must read actual state.
+`provider_account_leases` allows only one worker at a time to make provider requests for a stable
+account and server across Worker instances. A lease lasts thirty seconds and must be renewed before
+each mutation; expired workers cannot save observations, retries, profile data or receipts, or
+release a newer worker's lease. Discord requests have a separate bounded timeout, including
+response-body reads. A timeout cannot prove whether a remote write applied; retries and periodic
+reconciliation must read actual state.
 
 `discord_profiles` holds Discord username, display name, avatar and server nickname, presence and
 screening state. It references the existing identity row and is erased when that identity is erased.
@@ -323,13 +352,13 @@ remain in `access_observations`; an API write acknowledgment alone does not esta
 Equal-time observations use database insertion order so a later failed read cannot lose to a random
 identifier from an earlier granted read.
 
-`provider_operation_receipts` records each provider's independent result, the canonical-plan digest
-and lease token. A Discord success does not finish a shared outbox job while other provider work is
-unproven. The Discord plan includes current membership, stable identity ownership, all assignment
-generations and all current and retired managed role mappings. Preview and production server IDs are
-separately pinned. Requests remove retired roles individually and preserve unrelated roles; grants
-wait until server screening is complete. Saving a result rechecks current identity, membership,
-generation, job and lease inside the database transaction.
+`provider_operation_receipts` records each provider's independent result, the fingerprint of the
+current access plan and lease token. A Discord success does not finish a shared outbox job while
+other provider work is unproven. The Discord plan includes current membership, stable identity
+ownership, all assignment generations and all current and retired managed role mappings. Preview and
+production server IDs are separately pinned. Requests remove retired roles individually and preserve
+unrelated roles; grants wait until server screening is complete. Saving a result rechecks current
+identity, membership, generation, job and lease inside the database transaction.
 
 The adapter, storage pipeline and scheduled Worker have local fixture coverage. Complete provider
 orchestration, maintainer release setup and live server acceptance remain required before this can
@@ -339,9 +368,10 @@ be claimed operational.
 
 `discord_link_states` binds a ten-minute, one-use authorization to a hashed browser state, the
 member's live session and the exact public or preview origin. Claiming the state precedes the OAuth
-exchange. Completing it rechecks session, current membership, expiry and exclusive stable-account
-ownership inside the transaction. Sign-out deletes the bound flow; withdrawal prevents completion.
-An authorization cannot replace a different connected account or resolve ambiguous identities.
+account-authorization exchange. Completing it rechecks session, current membership, expiry and
+exclusive stable-account ownership inside the transaction. Sign-out deletes the bound flow;
+withdrawal prevents completion. An authorization cannot replace a different connected account or
+resolve ambiguous identities.
 
 `discord_identity_profiles` keeps the verified username, display name and avatar separate from LVBT
 contact information and consent. Member downloads include only their own account and server
@@ -352,7 +382,7 @@ saved.
 Linking saves the verified identity and profile, attributed audit, new reconciliation generations
 and replacement person/committee jobs atomically. An audit failure rolls back the entire write.
 Prior outstanding generations are superseded. Linking establishes account ownership; only an actual
-server read can establish presence or roles. Migration 0016 has not been applied to production.
+server read can establish presence or roles.
 
 ### Shared provider pauses (0017, 0028)
 
@@ -375,7 +405,7 @@ The scheduled Discord dispatcher selects only current, due work with unambiguous
 links. It avoids fresh completed Discord receipts without marking other provider work complete.
 Never-confirmed accounts are processed ahead of expired confirmations. Deletion and archived merge
 cleanup use the additional ownership guards described below. Complete shared-provider orchestration
-remains unfinished. Migrations 0017 and 0018 have not been applied to production.
+remains unfinished.
 
 ### Periodic provider scans (0019)
 
@@ -385,11 +415,12 @@ identity, including former members. A completed scan starts again at the next UT
 scans resume their existing cursor. Each queued job uses the current person generation. Existing
 current person or committee work is reused, including deferred retries.
 
-Generation initialization, queue insertion and checkpoint advancement commit together and recheck
-the current scan lease, cursor, server and identity eligibility. Failed writes cannot skip a page;
-expired workers cannot overwrite resumed scans or release a successor lease. The checkpoint stores
-no contact or provider profile fields. Scan completion proves queue coverage, not provider
-convergence. Migration 0019 has not been applied to production.
+The database saves the generation, queued work and next page position together. It checks the
+current scan lease, page position, server and eligible identities again before saving. Failed writes
+cannot skip a page; expired workers cannot overwrite resumed scans or release a successor lease. The
+checkpoint stores no contact or provider profile fields. Finishing a scan means that eligible
+accounts reached the queue. It does not mean that the provider has confirmed or repaired their
+access.
 
 Migration 0030 adds a separate `guild-roster:<guild-id>` checkpoint alongside the existing linked
 person scan. The guild scan reads Discord's member list one 1,000-account page per scheduled run,
@@ -426,27 +457,26 @@ verified identity still owned by that record. Deleted plans grant no roles and r
 mappings for removal. Ownership transfer or merge undo invalidates delayed work before mutation or
 receipt persistence. Cleanup writes neither profiles nor access observations for a deleted person;
 failures retain sanitized retry state. Independent receipts do not complete other providers' work.
-Migration 0020 has not been applied to production.
 
 ### Confirmed provider access changes (0021)
 
 `provider_access_intents` stores a Discord role's pre-write state and expected change, stable
-person, account, server and role IDs, canonical revision, operation, reason and optional requesting
+person, account, server and role IDs, current revision, operation, reason and optional requesting
 staff person. Preparation rechecks the current job lease, identity ownership, membership, target
 generation and managed mapping. It stores no provider response body, contact details or credentials.
-Repeating the same attempt preserves its intent; a changed canonical revision replaces an obsolete
+Repeating the same attempt preserves its intent; a changed current revision replaces an obsolete
 intent.
 
-A validated provider read matching the intended result appends an `access.granted` or
-`access.revoked` entry to the existing shared `staff_audits` table and removes the corresponding
-intent atomically. An audit failure preserves the intent for a later read. Unchanged roles produce
-no entry; an actual later drift repair produces its own entry. Pending or denied writes do not imply
-access was granted. Deleted-record cleanup records stable IDs without recreating profile or access
-observation data. Administrator profiles show actual provider changes; committee leads receive only
-their authorized committee history on the account-updates page.
+After a provider read confirms the intended result, one transaction adds an `access.granted` or
+`access.revoked` entry to `staff_audits` and removes the matching intent. An audit failure preserves
+the intent for a later read. Unchanged roles produce no entry; an actual later drift repair produces
+its own entry. Pending or denied writes do not imply access was granted. Deleted-record cleanup
+records stable IDs without recreating profile or access observation data. Administrator profiles
+show actual provider changes; committee leads receive only their authorized committee history on the
+account-updates page.
 
 The common writer for other systems remains unfinished. Audit retention and deletion protection are
-described below. Migration 0021 has not been applied to production.
+described below.
 
 ### Audit retention and expired welcome claims (0022)
 
@@ -464,8 +494,7 @@ database authorization system.
 `runMaintenance` removes at most 100 entries per category by default, with a maximum requested bound
 of 1,000. It also expires welcome claims at or before their current deadline in the same
 transaction, leaving renewed claims intact. Profile cleanup is described under migration 0025 below.
-The scheduled Worker runs this independently of Discord readiness and logs only counts. Migration
-0022 has not been applied to production.
+The scheduled Worker runs this independently of Discord readiness and logs only counts.
 
 ### Paper signup batches (0023)
 
@@ -489,8 +518,7 @@ from renewing membership; the saved receipt explains affected signups. A withdra
 Pacific day permits renewal, including across UTC midnight and daylight-saving changes. The twelve
 row sheet prints on one US-letter page. The native browser suite verifies the protected compiled
 Worker, keyboard field order, a 320-pixel viewport and the rendered print artifact. These are local
-checks; migration 0023 has not been applied to production and external mailing-list delivery is not
-confirmed by an intake receipt.
+checks; an intake receipt does not confirm external mailing-list delivery.
 
 ### Staff record downloads
 
@@ -502,20 +530,20 @@ members and other undeleted contacts retain their recorded membership status.
 
 The protected `/export/` page uses a same-origin POST and a single-use form. The download has
 exactly six entries: `people.csv`, `consent_records.csv`, `identities.csv`, `engagement_events.csv`,
-`export.json` and `README.txt`. The CSV files contain the same primary records as JSON. JSON also
-preserves field sources, committee assignments, withdrawal requests, corrections and stored Discord
-profiles. Formula-like spreadsheet cells receive an added apostrophe; JSON retains the original
-values. Quoted commas, quotes and line breaks are preserved. Authentication credentials, sign-in
-codes, sessions and OAuth state are excluded.
+`export.json` and `README.txt`. The comma-separated values (CSV) files contain the same primary
+records as JSON. JSON also preserves field sources, committee assignments, withdrawal requests,
+corrections and stored Discord profiles. Formula-like spreadsheet cells receive an added apostrophe;
+JSON retains the original values. Quoted commas, quotes and line breaks are preserved.
+Authentication credentials, sign-in codes, sessions and OAuth state are excluded.
 
-The ZIP uses the pinned browser entry of `fflate` and streams file chunks without Node workers. The
-filename uses the Pacific calendar date and responses forbid caching.
-`pnpm -C apps/staff test:export` verifies an actual browser download from the compiled HTTPS Worker
-with JavaScript disabled, consent records, current lead denial, expired forms, same-origin
-enforcement and an attributed audit. The local fixture exported 5,005 people within the
-thirty-second target; hosted preview performance and production release are still unverified.
-Independent ZIP CRC and CSV/JSON comparison checks passed on that generated artifact. This does not
-complete deletion retention.
+The download uses the pinned browser version of the `fflate` compression library. It streams ZIP
+archive chunks without Node worker processes. The filename uses the Pacific calendar date and
+responses forbid caching. `pnpm -C apps/staff test:export` verifies an actual browser download from
+the compiled HTTPS Worker with JavaScript disabled, consent records, current lead denial, expired
+forms, same-origin enforcement and an attributed audit. The local fixture exported 5,005 people
+within the thirty-second target; hosted preview performance and production release are still
+unverified. Independent ZIP integrity and CSV/JSON content checks passed on that generated file.
+This does not complete deletion retention.
 
 ### Explicit profile erasure (0024)
 
@@ -548,9 +576,9 @@ Concurrent merge/undo receipts compare current snapshots before applying and can
 information. Completion writes for corrections, reviews, combinations and committee settings update
 only their own operation receipt, preserving unrelated saved results and retries.
 
-These guarantees have local storage and compiled HTTPS staff/Discord runtime checks. Migration 0024
-has not been applied to production. The next migration adds physical profile removal and legacy
-erasure backfill; old unconfirmed provider-intent retention remains unfinished.
+These guarantees have local storage and compiled HTTPS staff/Discord runtime checks. The next
+migration adds physical profile removal and legacy erasure backfill; old unconfirmed provider-intent
+retention remains unfinished.
 
 ### Expired profiles and stable internal keys (0025)
 
@@ -586,10 +614,9 @@ origin and actor attribution, and pending removal after purge. An upgrade fixtur
 existing row, including pending intents and receipts, before exercising undo and restored membership
 and audit guards. Compiled scheduled-Worker checks additionally exercise bounded actual D1 cleanup
 and Discord removal after physical profile cleanup against an isolated provider fixture. These are
-local acceptance checks. Large connected merge groups still need Worker-budget validation. Migration
-0025 has not been applied to production. Retiring retained operational keys, identities and old
-unconfirmed intents after all providers finish remains open; pending removals must not be silently
-discarded to meet a storage deadline.
+local acceptance checks. Large connected merge groups still need Worker-budget validation. Retiring
+retained operational keys, identities and old unconfirmed intents after all providers finish remains
+open; pending removals must not be silently discarded to meet a storage deadline.
 
 ### Google group reconciliation (0026)
 
@@ -609,21 +636,21 @@ members; unverified and ambiguous links are excluded. Checkpoints contain only t
 person-ID cursor, scan times and a short lease. Generation initialization, outbox insertion and
 cursor advancement are one D1 batch, so a failed page cannot be skipped and an expired scan cannot
 overwrite its successor. Scans repeat hourly after completion. Queue coverage does not prove that
-Google access has converged. Migration 0027 has not been applied in production.
+Google access matches saved membership and assignments.
 
 ### Google customer quota pauses (0028)
 
 `provider_backoffs` now accepts the Workspace provider and stores its customer ID in the generic
 provider-context column. The migration preserves existing Discord application deadlines. A Google
 rate-limit response pauses that customer's runner across restarts; shorter later responses cannot
-reduce the saved deadline. Migration 0028 has not been applied in production.
+reduce the saved deadline.
 
 `provider_access_intents` now accepts Google as well as Discord. The upgrade preserves outstanding
 Discord intents, their opaque person-key references and identity foreign keys. Remote changes are
-prepared under a current account lease and full canonical snapshot, then audited only after a
-validated provider read. Access observations and receipts use the same conditional-write guard so a
-superseded request cannot overwrite newer membership or failure state. Hosted migration and provider
-acceptance remain separate requirements.
+prepared under a current account lease and complete snapshot of current membership and account
+settings, then audited only after a validated provider read. Access observations and receipts use
+the same conditional-write guard so a superseded request cannot overwrite newer membership or
+failure state. Hosted migration and provider acceptance remain separate requirements.
 
 ### Complete Google group inventories (0032)
 
@@ -661,12 +688,12 @@ An accepted withdrawal therefore retains retry work even when the mailing provid
 Historical imports and missing consent never authorize a new subscription. Permission from a fresh
 consent remains tied to that exact, still-active record and is cleared on successful completion.
 
-`newsletter_account_leases` serializes requests for a publication and subscription across people and
-generations. Email reservations use opaque digests; neither table stores contact details. Account
-leases remain held when a newer request supersedes a running one. Completion requires the same
-canonical consent, profile, identity ownership, generation and live lease. A stale worker cannot
-save success or release its successor's reservation. Erased profiles retain stable subscription IDs
-for provider cleanup without restoring personal details.
+`newsletter_account_leases` allows only one worker at a time to make requests for a publication and
+subscription across people and generations. Email reservations use opaque digests; neither table
+stores contact details. Account leases remain held when a newer request supersedes a running one.
+Completion requires the same saved consent, profile, identity ownership, generation and live lease.
+A stale worker cannot save success or release its successor's reservation. Erased profiles retain
+stable subscription IDs for provider cleanup without restoring personal details.
 
 A verified address change can carry an existing active mailing preference to the confirmed inbox.
 The request retains an exact consent reference, an address digest and the matching inbox
@@ -677,15 +704,16 @@ Original consent dates and methods remain intact.
 
 `newsletter_write_intents` retains a purpose-encrypted target address before a subscription creation
 request. Its authenticated encryption binds the intent, publication and original person. Once a
-separate provider read supplies the stable subscription ID, the address cipher is cleared. A stopped
-worker or erased profile can therefore leave recoverable cleanup work without retaining clear-text
+separate provider read supplies the stable subscription ID, the address cipher is cleared. If a
+worker stops or a profile is erased, later work can still finish cleanup without storing unencrypted
 contact details. Unconfirmed creation cannot be dismissed merely because one lookup finds no result.
 
-`newsletter_target_receipts` records completed targets within the exact canonical generation and
+`newsletter_target_receipts` records completed targets within the exact current generation and
 revision. Bounded cleanup can resume without repeatedly revisiting earlier addresses. These receipts
-are operation progress, not consent evidence or a continuously current delivery status. Canonical
-changes and provider drift must advance the generation before a new reconciliation pass.
-`newsletter_provider_backoffs` retains publication-wide retry deadlines across workers and restarts.
+are operation progress, not consent evidence or a continuously current delivery status. Changes to
+saved membership or account settings and provider drift must advance the generation before a new
+reconciliation pass. `newsletter_provider_backoffs` retains publication-wide retry deadlines across
+workers and restarts.
 
 ### Newsletter changes and deletion (0036–0038)
 
@@ -746,7 +774,7 @@ remain available for staff follow-up without creating a person or consent.
 consent, history, and membership changes. A changed owner, consent, or observation invalidates the
 whole write. A prior active observation or verified outgoing delivery can bound an unsubscribe
 interval; otherwise the configured policy retains a staff review. A signup after the observation
-wins. Pending inactive differences fence older outgoing grants in their own publication.
+wins. Pending inactive differences block older outgoing grants in their own publication.
 
 `consent_records.withdrawn_time_basis` and `consent_withdrawals.time_basis` distinguish an original
 choice date from the effective date of a status observation. An observed withdrawal leaves
@@ -765,10 +793,10 @@ the stored erasure time as its completion, and leaves `requested_at` null becaus
 request time is unknown. It cannot recover an unknown original requester. Erasure clears remaining
 local consent, form, link-operation, and committee histories while preserving provider retry work.
 
-`member_privacy_runs` records a Pacific calendar day and fixed18-month cutoff. The separate bounded
-maintenance invocation starts at03:00 Pacific and resumes incomplete batches during the day. Any
+`member_privacy_runs` records a Pacific calendar day and fixed 18-month cutoff. The separate bounded
+maintenance invocation starts at 03:00 Pacific and resumes incomplete batches during the day. Any
 consent, including withdrawn consent of any scope, a non-check-in identity, or recent engagement
-excludes a profile. Completed days do not repeat erasure; ordinary30-day purge remains a separate
+excludes a profile. Completed days do not repeat erasure; ordinary 30-day purge remains a separate
 bounded pass.
 
 `workspace_offboarding_queue` flags a connected Google account when membership ends or the person is
@@ -782,11 +810,12 @@ verification, receipt interpretation, and recovery.
 `roster_import_records` retains bounded matching and signup facts from each original source. An
 unverified email match stays unlinked with `suggested_person_id`, without creating a second profile;
 a current administrator must confirm the displayed source and person before attachment. Its source,
-source ID and evidence hash make unchanged repeats safe. A row belongs to a person when the matching
-rules can establish one; otherwise an administrator can review the unassigned source row. `held`
-means staff need to confirm missing or conflicting information. It does not create consent or assert
-a joining date. `applied` means that version was handled; `superseded` preserves an earlier hold
-after newer evidence applied; `erased` retains only the replay marker without personal evidence.
+source ID and evidence hash make unchanged repeats safe. Matching rules attach the row to a person
+only when they identify that person. An administrator reviews source rows that remain unassigned.
+`held` means staff need to confirm missing or conflicting information. It does not create consent or
+assert a joining date. `applied` means that version was handled; `superseded` preserves an earlier
+hold after newer evidence applied; `erased` retains only the replay marker without personal
+evidence.
 
 Original answer, wording, method and timestamps remain distinct from observation and import times.
 The table contains an explicit allowlist, not arbitrary provider payloads. It follows person merge
@@ -873,11 +902,12 @@ Backfill and index creation consume database reads and writes during migration.
 
 ### Scheduled database budget (0051)
 
-`scheduled_work_budget` holds one UTC-day accounting row per canonical database. Atomic reservations
-and a token-fenced parent lease prevent concurrent cron invocations from spending the same scheduled
-allowance. Verified job row counters settle actual usage. Missing counters, database failures and
-reservation overruns retain a conservative charge and close work until the next UTC day. A crashed
-run retains its reservation. Old owners cannot refund newer runs or another day.
+`scheduled_work_budget` records each database's scheduled usage for one UTC day. A scheduled run
+reserves allowance before starting. A lease tied to that run prevents two scheduled runs from
+spending the same allowance. Verified row counters replace the reservation with actual usage.
+Missing counters, database failures and reservation overruns retain a conservative charge and close
+work until the next UTC day. A run that crashes keeps its reservation. A worker whose lease expired
+cannot refund a newer run's allowance or another day's allowance.
 
 The ledger contains no member data. Apply it before activating the matching jobs release. Keep it
 when rolling application code back; dropping it discards capacity accounting. The ledger covers

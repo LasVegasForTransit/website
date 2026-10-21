@@ -1,12 +1,12 @@
 # Design system
 
-The brand color system and the rules behind it. For the token look-up table — hex values, utilities,
-the canvas/band machinery — see [Design tokens](../reference/design-tokens.md).
+Use this page when choosing colors or placing styles in the website. It explains the brand colors
+and the rules behind them. For exact color values, named CSS settings (tokens), and shared style
+classes, see [Design tokens](../reference/design-tokens.md).
 
 ## The palette
 
-A warm, editorial palette: cream paper, near-black ink, and a saturated transit orange that carries
-almost all of the color in the interface.
+The site uses cream backgrounds, near-black text, and transit orange for most colored accents.
 
 | Name  | Token                          | Hex       | Role                            |
 | ----- | ------------------------------ | --------- | ------------------------------- |
@@ -21,7 +21,7 @@ almost all of the color in the interface.
 | Stone | `--color-on-surface-variant`   | `#4a4e57` | Secondary text on surface       |
 
 Friendly names are for the brand kit (Canva/Figma swatch names, design conversation). In code, the
-semantic token names are the source of truth.
+named CSS roles define how the colors are used.
 
 ## How to use color
 
@@ -30,31 +30,31 @@ constraints, not defaults.
 
 - **Use color in pairs.** Ember surfaces use Ink through `on-primary`; Peach surfaces use Ink
   through `on-primary-container`.
-- **Skew heavily to the primary.** Ember is the one color. Reach for it for emphasis and action
+- **Use mostly the primary color.** Ember is the one color. Reach for it for emphasis and action
   before anything else. The palette is intentionally narrow.
 - **Minimize colored surfaces.** Color is for ink-on-cream type, primary marks, and the occasional
-  full-bleed Ember or ink band — not for filling cards and panels. Large areas are cream or ink;
-  color earns its place.
-- **Don't introduce new surfaces.** The surface model is cream ↔ ink (the canvas/band system),
-  expressed in code as the `surface` / `on-surface` / `slab` roles. Resist adding tinted "container"
-  fills or extra elevation layers; they read as a different, busier design language. Dark mode adds
-  exactly **one** raised tone (a warm charcoal for the slab and cards) — the minimum needed to keep
-  the section rhythm; it is not a licence for a multi-step elevation ladder.
+  full-width Ember or ink section — not for filling cards and panels. Large areas are cream or ink;
+  use color only where it helps people understand or act.
+- **Don't introduce new surfaces.** Page backgrounds and emphasis sections alternate between cream
+  and ink, expressed in code as the `surface` / `on-surface` / `slab` roles. Resist adding tinted
+  "container" fills or extra raised surfaces; they make the page busier. Dark mode adds exactly
+  **one** raised tone (a warm charcoal for the slab and cards) — the minimum needed to distinguish
+  the sections; do not add more shades for more levels of depth.
 - **Sharp corners.** No border radius. Shapes are square.
-- **Divide with lines, occasionally.** Structure comes from rules and outlines (`outline-variant`,
+- **Divide with lines, occasionally.** Separate content with lines and outlines (`outline-variant`,
   `.rule-thick`/`.rule-thin`, semantic borders), used sparingly — not from background blocks. A
   hairline does the job a filled box would do elsewhere.
 
 A rough proportion to aim for: cream and ink dominate, Stone/neutrals support, Ember is the small,
 deliberate primary. Never flood a viewport with saturated Ember (e.g. a full-screen orange
-background) — it vibrates and cheapens; use it as the highlight.
+background) — it makes long pages harder to read; use it for emphasis.
 
 ## Why the primary roles are split
 
 The bright Ember (`#e5471a`) is only ~3.6:1 on Cream. Ember surfaces use Ink as `on-primary` so
-small button and status text clears WCAG AA. Primary surfaces should be short action or emphasis
-moments, not long reading surfaces. Links and inline primary text on light surfaces use a darkened
-Rust (`primary-ink`, ~5.0:1).
+small button and status text meets the Web Content Accessibility Guidelines (WCAG) AA contrast
+requirement. Primary surfaces should be short action or emphasis moments, not long reading surfaces.
+Links and inline primary text on light surfaces use a darkened Rust (`primary-ink`, ~5.0:1).
 
 The split keeps Ember bright as a fill, uses Ink for readable foreground text on Ember, and uses
 Rust when orange itself is the text.
@@ -62,17 +62,15 @@ Rust when orange itself is the text.
 ## Dark theme
 
 The site ships a device-driven dark theme ("Valley after dark") via
-`@media (prefers-color-scheme: dark)` — no manual toggle. It follows MD3's dark-theme method rather
-than a bespoke scheme: warm low-tone neutrals (never pure black, matching the brand rule), elevation
-expressed by progressively lighter warm-charcoal surfaces rather than drop shadows, and the primary
-tone lightening for text (Rust → a brighter Ember) while the Ember fill stays saturated.
+`@media (prefers-color-scheme: dark)` — no manual toggle. It follows Material Design 3's dark-theme
+method: warm dark grays rather than pure black, lighter charcoal for raised surfaces rather than
+shadows, and a brighter orange for text. Ember backgrounds keep their saturated color.
 
 The cream ↔ ink rhythm is preserved by re-reading it per theme: the base surface goes cream →
 near-black, and the emphasis "slab" (the near-black band in light) becomes a _slightly raised_ warm
 charcoal in dark — dark in both themes, never inverted to a bright panel. Ember remains the single
-accent, used just as sparingly, with a restrained glow on primary CTAs standing in for the "light in
-the dark." Token values and the machinery live in
-[Design tokens](../reference/design-tokens.md#dark-theme).
+accent, used just as sparingly, with a restrained glow on primary action buttons. The exact CSS
+settings live in [Design tokens](../reference/design-tokens.md#dark-theme).
 
 ## Reserved colors (defined, not yet shipped)
 
@@ -85,18 +83,17 @@ of them to `global.css` is a deliberate decision, not a default.
   minimal-surface look.
 - **Transit Blue** (~`#1f6f9c`) — a third color for wayfinding and, with Spruce, the basis of a
   data-visualization palette.
-- **Data-viz palette** — for maps and charts (coverage, frequency, ridership): a categorical set
-  anchored by Ember / Spruce / Transit Blue plus distinct supporting hues, and a single-hue
-  sequential ramp for choropleths. To be specified when the first chart or map is built.
+- **Data-viz palette** — for maps and charts (coverage, frequency, ridership): distinct colors based
+  on Ember / Spruce / Transit Blue for categories, and light-to-dark shades of one color for maps
+  that color areas by a value. To be specified when the first chart or map is built.
 
 ## Where a style lives
 
-Four styling mechanisms coexist in the codebase. A style goes in the first bucket it qualifies for,
-top to bottom:
+The site stores styles in four places. Choose the first place below that fits the style:
 
 1. **Tokens** — raw palette values in `:root`, semantic roles and the type scale in `@theme` (both
-   in `apps/site/src/styles/global.css`). If a value will ever be reused or theme-flipped, it starts
-   here.
+   in `apps/site/src/styles/global.css`). If a value will be reused or change with the theme, it
+   starts here.
 2. **`@layer components` in `global.css`** — patterns shared by more than one page or component
    (`.press`, `.lift`, `.prose-doc`, containers). Nothing page-specific.
 3. **Scoped `<style>` in the component or page** — rules only that file needs. Prefer utility
@@ -117,9 +114,10 @@ For graphics made outside the codebase:
 - **Use the friendly names** above as swatch names in Canva/Figma brand kits.
 - **No pure black or white.** Use Ink `#0f1115` and Cream `#f7f4ec`; Canva defaults to
   `#000`/`#fff`, which read cold against the warm palette.
-- **Print values are proof-pending.** Hex is screen-only. CMYK and Pantone equivalents must be
-  confirmed against a physical proof before any print run — saturated orange-reds like Ember shift
-  duller and browner in CMYK and cannot be eyeballed.
+- **Print values are proof-pending.** Hex values describe screen colors. CMYK (four-color printing)
+  and Pantone (standardized ink) equivalents must be confirmed against a physical proof before any
+  print run — saturated orange-reds like Ember shift duller and browner in CMYK and cannot be
+  eyeballed.
 - **Carry the constraints over.** Skew to Ember, minimize colored fills, sharp corners, thin rules
   for structure — the same rules that govern the site govern the graphics.
 

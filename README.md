@@ -1,179 +1,128 @@
 # lasvegasfortransit.org
 
-The website for **Las Vegans for Better Transit**, a grassroots advocacy organization fighting for
-world-class public transit and supportive land use in the Las Vegas Valley.
+This repository contains the website and membership tools for **Las Vegans for Better Transit**. Use
+it to edit public pages, improve the member and staff tools, or help with tests and documentation.
 
-> **New contributor?** You don't need to know our stack to help. Start at
-> [`docs/tutorials/start-here.md`](./docs/tutorials/start-here.md), and keep the
-> [glossary](./docs/reference/glossary.md) open for any unfamiliar term.
+<a id="getting-started"></a>
 
-## Stack
+## Start here
 
-New to any of these? Each links to its [glossary](./docs/reference/glossary.md) entry.
-
-- [Astro](./docs/reference/glossary.md#astro) — the framework that builds the site into fast
-  [static](./docs/reference/glossary.md#static-site) HTML
-- [MDX](./docs/reference/glossary.md#mdx)
-  [content collections](./docs/reference/glossary.md#content-collection) (Markdown-plus-components
-  content) with [Zod](./docs/reference/glossary.md#zod)-validated
-  [frontmatter](./docs/reference/glossary.md#frontmatter), so a typo fails the build instead of
-  shipping
-- [Tailwind](./docs/reference/glossary.md#tailwind) CSS v4 (via `@tailwindcss/vite`)
-- [Public Sans](https://public-sans.digital.gov/) (USWDS font, self-hosted; Latin woff2 vendored
-  from `@fontsource-variable/public-sans`)
-- Hosted on Cloudflare Workers with static assets and server routes.
-
----
-
-## Getting started
-
-To preview the site on your own computer — all most contributors ever need:
+Read [Start here](./docs/tutorials/start-here.md) if this is your first contribution. The
+[first-time setup guide](./docs/tutorials/first-time-setup.md) covers the tools you need before
+running these commands from the repository root:
 
 ```sh
-pnpm bootstrap # one-time: dependencies, hooks, and missing local settings
-pnpm dev       # start the local site at https://lvbt.localhost
+pnpm bootstrap # install dependencies and prepare local settings
+pnpm dev       # open the local site at https://lvbt.localhost
 ```
 
-That's it: edit a file, see it update live. New to the project or our tools?
-[`docs/tutorials/start-here.md`](./docs/tutorials/start-here.md) walks through this from scratch,
-and the [glossary](./docs/reference/glossary.md) defines any unfamiliar term.
+You can edit pages and content without signing in to Cloudflare, Beehiiv, or Notion. Some features
+that use those services need separate setup. Local setup preserves settings you already have.
 
-### Setup and production readiness
-
-`pnpm bootstrap` prepares a local checkout and preserves existing local environment files. Empty
-Beehiiv or Notion integration settings produce warnings; page and content work needs no provider
-login. The [first-time setup tutorial](./docs/tutorials/first-time-setup.md) covers clone,
-bootstrap, development, checks, and the pull request path.
+Before submitting a change, run:
 
 ```sh
-pnpm preflight              # read local readiness without changing anything
-pnpm preflight --production # read the existing production platform requirements
+pnpm check
 ```
 
-Production setup is a separate maintainer operation, `pnpm bootstrap --production`. It uses
-[`apps/site/platform.json`](./apps/site/platform.json) and never publishes a website release.
-Reviewed changes merge through pull requests, update protected staging, and reach the public site
-only through explicit promotion. See the [bootstrap reference](./docs/reference/bootstrap.md).
+This runs the checks used by GitHub, including formatting, documentation links, code checks, tests,
+and the build. Use `pnpm check:fix` for automatic formatting and lint fixes. If setup fails, run
+`pnpm preflight` to find missing requirements.
 
----
+<a id="editing-content"></a>
 
-## Day-to-day commands
+<a id="adding-an-event"></a>
 
-Run these from the repository root. They are the same commands every LVBT repository uses.
+## Choose a task
 
-| Command            | Action                                                                             |
-| ------------------ | ---------------------------------------------------------------------------------- |
-| `pnpm dev`         | Local dev server at <https://lvbt.localhost>                                       |
-| `pnpm build`       | Build the site to `apps/site/dist/` and its Worker to `apps/site/.wrangler/worker` |
-| `pnpm preview`     | Build, then serve the site and Worker locally                                      |
-| `pnpm check`       | Everything CI checks: formatting, docs, lint, types, tests, the build              |
-| `pnpm check:fix`   | Apply formatting and lint fixes                                                    |
-| `pnpm check-types` | Type-check the site and its scripts                                                |
-| `pnpm lint`        | Lint the code, stylesheets, and brand tokens                                       |
-| `pnpm format`      | Format the codebase with Prettier                                                  |
-| `pnpm test`        | Run the unit tests                                                                 |
-| `pnpm test:e2e`    | Run the Playwright suites, including the visual-regression sweep                   |
-| `pnpm preflight`   | Re-check readiness without making changes                                          |
+| You want to…                     | Start with…                                                                                                                 |
+| -------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
+| Edit a public page or article    | [Edit a long-form page](./docs/guides/edit-a-long-form-doc.md) and [content files](./docs/reference/content-collections.md) |
+| Add an event                     | [Add an event](./docs/guides/add-an-event.md). Events start in Google Calendar.                                             |
+| Add a project                    | [Add a project](./docs/guides/add-a-project.md)                                                                             |
+| Change member or staff features  | [Platform design](./docs/explanation/decisions/organizing-platform.md)                                                      |
+| Change scheduled background work | [Jobs README](./apps/jobs/README.md)                                                                                        |
+| Run browser or screenshot tests  | [Test guide](./apps/site/tests/README.md)                                                                                   |
+| Publish or recover a release     | [Deployment reference](./docs/reference/deployment-pipeline.md)                                                             |
 
-Commands only the site has live in [`apps/site/package.json`](./apps/site/package.json). Run them
-with `pnpm -C apps/site <command>`, for example `pnpm -C apps/site test:update` to refresh the
-visual-regression baselines (see [`apps/site/tests/README.md`](./apps/site/tests/README.md)) or
-`pnpm -C apps/site test:install` to download the Chromium build Playwright uses.
+The [docs index](./docs/README.md) lists the full set of guides. The
+[glossary](./docs/reference/glossary.md) explains unfamiliar terms. You do not need to read every
+operator reference before making a small contribution.
 
-## Editing content
+<a id="project-structure"></a>
 
-The full docs live in [`docs/`](./docs/), organized so you can find things by what you're trying to
-do (the [Diátaxis](https://diataxis.fr/) system). New here? Begin at
-[**Start here**](./docs/tutorials/start-here.md); for everything else, the
-[docs index](./docs/README.md) lists it all. Common entry points:
+<a id="stack"></a>
 
-- [Start here](./docs/tutorials/start-here.md) — the new-contributor on-ramp
-- [Glossary](./docs/reference/glossary.md) — plain-English definitions of every tool and acronym
-- [Add an event](./docs/guides/add-an-event.md)
-- [Add a project](./docs/guides/add-a-project.md)
-- [Edit a long-form doc](./docs/guides/edit-a-long-form-doc.md)
-- [Voice and tone](./docs/explanation/voice-and-tone.md) — read before drafting
-- [Content collections reference](./docs/reference/content-collections.md)
+## Find the code
 
-### Adding an event
-
-Events live in the LVBT Google Calendar, not in this repo. Create the event there; the site rebuilds
-against the calendar hourly. For events that need long-form copy on their detail page, scaffold an
-optional MDX body fragment with `pnpm -C apps/site event:new`. Full reference:
-[docs/explanation/events-pipeline.md](./docs/explanation/events-pipeline.md).
-
-## Project structure
-
-The repository is a [Turborepo](https://turborepo.com) workspace that follows the organization's
-repository standard. The site lives in `apps/site`; the root holds the repository's own tooling.
+The repository has three applications and shared code:
 
 ```text
-apps/site/                  # The website (package @lasvegasfortransit/site)
-  src/
-    content/                # All editable content (MDX + JSON)
-      docs/                 # Long-form essays
-      pages/                # Page body copy
-      event-bodies/         # Optional long-form body per event (events live in Google Calendar)
-      projects/             # Project briefs
-      initiatives/          # Project tags (JSON)
-    layouts/                # BaseLayout, DocLayout
-    components/             # Reusable UI
-    pages/                  # Astro file-based routing
-    lib/site.ts             # Single source of truth for org metadata (reads from PUBLIC_LVBT_*)
-    styles/global.css       # Tailwind + design tokens
-    content.config.ts       # Zod schemas for content collections
-  public/                   # Static assets, favicon, robots.txt
-  functions/                # The Worker routes (join, sign-in, account, intake APIs)
-  platform/                 # The Organizing Platform code and database migrations
-  platform.json             # Production resources and credentials checked by the shared CLI
-  scripts/audit/            # Build, bundle, and Worker audits
-  tests/                    # Unit tests; tests/e2e holds the Playwright suites (see tests/README.md)
-  astro.config.mjs          # Astro + integrations
-  wrangler.jsonc            # The Cloudflare Worker that serves the site
-  playwright.config.ts      # Playwright config (webserver, viewports, snapshot path)
-  .env.example              # Documents PUBLIC_LVBT_* env vars
-docs/                       # Repository documentation
-.lvbt/                      # Commit scopes and the vendored repository standard
-turbo.json                  # The tasks every package runs, in order
+apps/site/                  Public website and member pages
+  src/content/              Editable Markdown, MDX, and JSON content
+  src/pages/                Page routes
+  src/components/           Reusable page elements
+  functions/                Server routes for forms, sign-in, and other requests
+  public/                   Images, fonts, and other public files
+apps/staff/                 Private staff tools
+apps/jobs/                  Scheduled membership and cleanup work
+packages/platform-core/     Membership rules and shared messages
+packages/platform-storage/  Database queries and numbered schema changes
+packages/platform-integrations/  Connections to outside services
+docs/                       Contributor guides and operator references
+.lvbt/                      Shared repository tools; do not edit the vendored standard
 ```
 
-## Deployment
+[Astro](./docs/reference/glossary.md#astro) builds the pages. Markdown and
+[MDX](./docs/reference/glossary.md#mdx) hold most editable content.
+[Tailwind](./docs/reference/glossary.md#tailwind) supplies styling classes. Cloudflare Workers
+serves the applications. See the [design system](./docs/explanation/design-system.md) before
+changing colors, typography, or shared styles.
 
-Pushes to `main` update `preview.lasvegasfortransit.org` behind Cloudflare Access. Explicit
-promotion publishes the selected saved release at `lasvegasfortransit.org`. Same-repository PRs
-receive independent, protected Worker preview URLs. Full pipeline (build settings, env vars,
-rollback, manual deploys) is documented in
-[`docs/reference/deployment-pipeline.md`](./docs/reference/deployment-pipeline.md).
+<a id="day-to-day-commands"></a>
 
-If anything breaks in your environment, run `pnpm preflight` first — it usually points at the
-missing piece.
+## Useful commands
 
-## CI/CD
+Run these from the repository root:
 
-Several workflows in [`.github/workflows/`](./.github/workflows/) build on three reusable composites
-in [`.github/actions/`](./.github/actions/) (`setup-node-pnpm`, `build-site`,
-`deploy-cloudflare-pages`). The ones that talk to Cloudflare:
+| Command          | What it does                                       |
+| ---------------- | -------------------------------------------------- |
+| `pnpm dev`       | Start the site locally at <https://lvbt.localhost> |
+| `pnpm build`     | Build the applications and their server code       |
+| `pnpm preview`   | Build and serve a local preview                    |
+| `pnpm check`     | Run the required repository checks                 |
+| `pnpm test`      | Run unit tests                                     |
+| `pnpm test:e2e`  | Run browser tests, including screenshots           |
+| `pnpm preflight` | Check local setup without changing it              |
 
-| Workflow                                                | Trigger                                        | What it does                                        |
-| ------------------------------------------------------- | ---------------------------------------------- | --------------------------------------------------- |
-| `deploy-production.yml` (Deploy staging)                | Workflow dispatch (including calendar refresh) | Save a release and verify protected staging         |
-| `deploy-worker-preview.yml`                             | Same-repository PR updates                     | Verify and comment an independent protected preview |
-| `deploy-worker-candidate.yml` (Promote website release) | Explicit selection of a successful staging run | Publish the saved release after candidate checks    |
+For a command belonging to one application, use `pnpm -C apps/site <command>`, or replace
+`apps/site` with the application you are working on. Its `package.json` lists its commands.
 
-`ci.yml` (the required `Validate` check runs `pnpm check`, including the required uncached
-production dependency audit and full-history secret scan), `audit.yml`, `audit-scheduled.yml`,
-`cron-rebuild.yml`, `seed-baselines.yml` and `standard-update.yml` (daily: opens a pull request when
-a newer repository standard is released) need no Cloudflare credentials. The full pipeline — every
-setting and the exact dashboard clicks for each token — is in
-[`docs/reference/deployment-pipeline.md`](./docs/reference/deployment-pipeline.md) and
-[`docs/guides/test-the-workers-candidate.md`](./docs/guides/test-the-workers-candidate.md).
+<a id="deployment"></a>
 
-Workers credentials are scoped to the `worker-preview` and `worker-candidate` GitHub environments.
-The preview environment also needs a Cloudflare Access service token. Credentials remain outside
-release artifacts; the account ID is a repository variable. See the linked pipeline reference for
-exact secret names and review/promotion steps.
+<a id="cicd"></a>
+
+## Submit and publish changes
+
+Work on a branch and open a pull request. Follow the [Git guide](./docs/standards/git-guidelines.md)
+and [commit message rules](./docs/standards/commit-messages.md). GitHub checks the change before it
+can merge.
+
+An explicit or scheduled **Deploy staging** run updates `preview.lasvegasfortransit.org`. Merging
+alone does not deploy. A maintainer separately selects a saved, checked release to publish at
+`lasvegasfortransit.org`. A build or merge alone does not publish the public website. Pull requests
+from this repository receive their own protected previews. See the
+[deployment reference](./docs/reference/deployment-pipeline.md) for credentials, verification, and
+recovery.
+
+<a id="setup-and-production-readiness"></a>
+
+Production setup is also separate from publishing. `pnpm preflight --production` checks readiness;
+an authorized maintainer uses `pnpm bootstrap --production` to configure missing requirements.
+Neither command replaces the release workflow. See the
+[setup reference](./docs/reference/bootstrap.md).
 
 ## License
 
-Site code: MIT. Editorial content (the org's vision, strategy, etc.): all rights reserved by Las
-Vegans for Better Transit.
+Site code uses the MIT license. Editorial content, including LVBT's vision and strategy, remains all
+rights reserved by Las Vegans for Better Transit.

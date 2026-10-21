@@ -3,6 +3,12 @@
 Use roles to record responsibilities such as Treasurer or Volunteer coordinator. A member can have
 several roles and belong to several committees. Assign these independently.
 
+## Before you start
+
+Sign in to the intended staff portal as a current LVBT member and administrator with your linked
+LVBT Google account. Use test members in preview. Confirm the responsibility with the member before
+changing their roles.
+
 ## Create a role
 
 1. Sign in to the staff portal as an administrator.

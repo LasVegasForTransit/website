@@ -1,8 +1,8 @@
 # Local development reference
 
-What you need to run the site on your own computer and how to fix the dev server when it won't
-start. Reach for this when `pnpm dev` (see [glossary](./glossary.md#pnpm-dev)) fails or a local
-`/api/*` route misbehaves.
+Contributors use this page to run the site on their own computer and fix local server failures.
+Reach for this when `pnpm dev` (see [glossary](./glossary.md#pnpm-dev)) fails or a local `/api/*`
+route misbehaves.
 
 ## Starting the dev server
 
@@ -55,14 +55,15 @@ server.
 
 ### "Address already in use" on startup
 
-A previous dev session left processes on ports 4320 or 4321. Kill the servers with `lsof` (a tool
-that lists which process is using a port) piped into `kill`:
+Another process is using port 4320 or 4321. List the processes before stopping anything:
 
 ```sh
-lsof -ti:4320,4321 | xargs kill -9
+lsof -nP -iTCP:4320 -iTCP:4321 -sTCP:LISTEN
 ```
 
-Then re-run `pnpm dev`.
+If the process is your previous dev server, press Ctrl+C in its terminal. If that terminal has
+closed, run `kill <PID>` with the process ID from `lsof`. Then run `pnpm dev` again. Leave unrelated
+processes running.
 
 ### Try the join form locally
 
@@ -74,9 +75,10 @@ pnpm -C apps/site exec wrangler d1 migrations apply lvbt-platform --local   # on
 pnpm -C apps/site worker:dev
 ```
 
-Then open `/join/member` at the printed address. Joining needs the Beehiiv secrets in
-`apps/site/.dev.vars` (Wrangler's local secrets file, which git ignores); without them the form
-shows "We couldn't finish joining you just now", which is the right behavior.
+Then open `/join/member` at the printed address. Set a local `LVBT_LINK_SIGNING_SECRET` in
+`apps/site/.dev.vars`, Wrangler's ignored local settings file. Joining saves the member and queues
+newsletter delivery in the local database. It does not need Beehiiv credentials. Checking delivery
+requires the separately configured jobs Worker; use isolated provider fixtures for ordinary tests.
 
 ### Sign in and try the account pages locally
 
@@ -94,8 +96,8 @@ terminal running `pnpm -C apps/site worker:dev` instead of being sent, for examp
 `email (development) to ana@example.org: 123456 is your LVBT sign-in code`. Never set
 `LVBT_DEV_LOG_CODES` on a deployed Worker.
 
-To have someone to sign in as, join at `/join/member` (with the Beehiiv secrets), or add a person to
-the local database:
+To have someone to sign in as, join at `/join/member` with the local signing secret, or add a person
+to the local database:
 
 ```sh
 pnpm -C apps/site exec wrangler d1 execute lvbt-platform --local --command "INSERT INTO people (id, given_name, email, membership_status, created_at, updated_at) VALUES ('01LOCALTESTPERSON000000000', 'Ana', 'ana@example.org', 'member', datetime('now'), datetime('now'))"
@@ -106,13 +108,10 @@ Then open `/sign-in`, enter that email and type the code from the terminal. Each
 
 ### Notion-backed pages have no data locally
 
-Wrangler reads the membership and press Notion settings from `apps/site/.env.local`:
+Wrangler reads the optional press and transit-news Notion settings from `apps/site/.env.local`:
 
 ```text
-LVBT_BEEHIIV_API_KEY=...
-LVBT_BEEHIIV_PUBLICATION_ID=pub_...
 LVBT_NOTION_API_KEY=...
-LVBT_NOTION_DATA_SOURCE_ID=...
 LVBT_PRESS_DATA_SOURCE_ID=...
 ```
 

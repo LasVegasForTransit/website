@@ -36,7 +36,7 @@ private connection between applications; it does not require making the jobs app
 reachable.
 
 Check `apps/site/wrangler.jsonc`, `apps/staff/wrangler.jsonc`, and `apps/jobs/wrangler.jsonc` under
-their `preview` environment. Each must select the preview database and the canonical migration
+their `preview` environment. Each must select the preview database and the shared migration
 directory, `packages/platform-storage/migrations`. Check the deployed settings as well as the files.
 The production database is `lvbt-platform`; do not select it for this procedure.
 
@@ -47,10 +47,10 @@ and select `lvbt-platform-preview`. If the database itself is missing, create th
 under **Storage & databases → D1** first, and record its assigned ID in each reviewed preview
 configuration. Never replace an existing database because its bindings are incomplete.
 
-Existing Workers must exist before a saved version can be uploaded. A placeholder Worker is only a
-provisioning step: a page saying **Hello World!** means the staff application is not serving that
-hostname yet. The saved release supplies the application; do not paste application code into the
-dashboard editor.
+Existing Workers must exist before a saved version can be uploaded. Creating a placeholder prepares
+the named Worker for deployment: a page saying **Hello World!** means the staff application is not
+serving that hostname yet. The saved release supplies the application; do not paste application code
+into the dashboard editor.
 
 ## 2. Prepare the preview database
 
@@ -133,9 +133,9 @@ pnpm -C apps/staff exec wrangler d1 execute lvbt-platform-preview --remote --env
 pnpm -C apps/staff exec wrangler d1 execute lvbt-platform-preview --remote --env preview --command "SELECT p.id, p.given_name, p.membership_status, c.wording_version, c.withdrawn_at FROM people p JOIN consent_records c ON c.person_id = p.id WHERE p.id = '01J00000000000000000000001'"
 ```
 
-The readback must show the intended test person, `member`, `preview-test-only`, and no withdrawal.
-The two inserts do not create a Google link, session, or administrator designation; the human
-sign-in steps below establish those. The fixed IDs are canonical ULIDs, the identifier format
+The SELECT result must show the intended test person, `member`, `preview-test-only`, and no
+withdrawal. The two inserts do not create a Google link, session, or administrator designation; the
+human sign-in steps below establish those. The fixed IDs use valid ULIDs, the identifier format
 required by member profiles and roster pagination. Keep them unchanged; a repeat fails rather than
 silently overwriting an existing person. If either insert fails, inspect both rows privately before
 continuing; do not rerun or change an existing person's consent to make setup pass. Keep fixture
@@ -144,7 +144,7 @@ duplicate review. After linking and administrator setup, search for this record,
 and confirm its committees and accounts load; a successful SQL insert alone does not establish a
 usable test membership.
 
-If an existing fixture uses a noncanonical identifier, stop using it for acceptance. Preserve its
+If an existing test record uses an invalid identifier, stop using it for acceptance. Preserve its
 account links, consents, and administrator audit history. Do not rename its key, disable identifier
 validation, edit immutable history, or delete the record to restart setup. Follow
 [linked preview membership recovery](./recover-a-preview-test-membership.md) to prepare, rehearse,
@@ -225,8 +225,8 @@ Verify these settings explicitly; naming an environment in a workflow does not c
 rules.
 
 Set the environment variable `CLOUDFLARE_ACCOUNT_ID` and encrypted secret
-`CLOUDFLARE_STAFF_PREVIEW_API_TOKEN`. The deployment credential needs edit permission only for the
-two preview staff/jobs Workers. Its read permissions cover the database migration inventory, Access
+`CLOUDFLARE_STAFF_PREVIEW_API_TOKEN`. The deployment token needs edit permission only for the two
+preview staff/jobs Workers. Its read permissions cover the database migration inventory, Access
 settings, and domain/route inventory. Workers Metadata Read-Only also exposes production Worker
 metadata, so that scope needs explicit approval. Set and record an expiration and a renewal owner in
 the approved private credential record.
@@ -247,8 +247,8 @@ Never revoke an in-use credential to test its replacement.
 
 Use the
 [operations reference](../reference/staff-portal-operations.md#read-only-configuration-check) for
-the exact permission contract. A denied inventory is an unverified check; do not broaden the
-credential until the maintainer approves the necessary scope.
+the exact permission contract. If the token cannot read the required settings, the check remains
+unverified; do not broaden the credential until the maintainer approves the necessary scope.
 
 ## 6. Deploy one selected saved build in setup mode
 
@@ -273,26 +273,26 @@ From the repository root, run:
 pnpm staff:preflight --preview --setup
 ```
 
-An authenticated preflight checks remote configuration. Without an approved Cloudflare credential,
-remote checks remain unverified. A successful setup check permits protected preview testing; live
-provider acceptance is still separate.
+With an approved credential, preflight checks the deployed configuration. Without an approved
+Cloudflare credential, remote checks remain unverified. A successful setup check permits protected
+preview testing; live provider acceptance is still separate.
 
 In GitHub **Actions**, find a successful **Build staff release** run for the exact reviewed `main`
 commit. Open **Deploy staff preview → Run workflow**. Select `main`, enter that saved build's run
 ID, and choose **setup**. The default is **launch**, which requires additional provider
 configuration.
 
-When upgrading an older staff preview, setup mode may defer the check for its missing newsletter
-service binding. Before activation, the workflow verifies that the uploaded staff version binds
-`LVBT_NEWSLETTER_JOBS` to `lvbt-jobs-preview`. A different destination stops deployment. Launch mode
-requires the active binding to match too.
+When upgrading an older staff preview, setup mode may postpone checking its missing private
+connection to the newsletter jobs Worker. Before activation, the workflow verifies that the uploaded
+staff version binds `LVBT_NEWSLETTER_JOBS` to `lvbt-jobs-preview`. A different destination stops
+deployment. Launch mode requires the active binding to match too.
 
 The environment reviewer checks the selected build and approves that deployment. Wait for the
 workflow's final configuration check and saved deployment receipt. Confirm that both selected
 Workers are active. Retain the receipt privately with the build record; it is needed for recovery.
 
 For a failed upload or activation, follow
-[release recovery](../reference/staff-portal-operations.md#recover-a-failed-preview-activation).
+[release recovery](../reference/staff-release-operations.md#recover-a-failed-preview-activation).
 Inspect actual active versions first. Resume activation with the same saved artifact and receipt
 when its checks permit it; a new upload creates different versions and loses that recovery context.
 The **Recover staff preview** workflow defaults to read-only inspection and uses the existing

@@ -5,18 +5,18 @@ Use it when you're starting a new project and want it on the site.
 
 ## Before you start
 
-- A local copy of the repo you can edit and commit to.
+- Complete [local setup](../tutorials/first-time-setup.md) and create a branch for your change.
 - Know which initiative(s) the project belongs under (see step 2 for how to find them).
 
-Steps:
+Run commands from the repository root. Follow these steps:
 
 1. Copy `apps/site/src/content/projects/_template.mdx`.
 2. Slug = filename. The slug is the URL-safe id for the project, taken from the file's name (so
-   `maryland-brt.mdx` has the slug `maryland-brt`). Initiatives must reference existing JSON
-   (JavaScript Object Notation, a plain-text data format) files in
-   `apps/site/src/content/initiatives/` — list the existing ones with `ls src/content/initiatives/`,
-   and use a filename without its `.json` extension as the slug. See
-   [add-an-initiative.md](./add-an-initiative.md) if you need a new one.
+   `maryland-brt.mdx` has the slug `maryland-brt` and appears at `/projects/maryland-brt`).
+   Initiatives must reference existing JSON (JavaScript Object Notation, a plain-text data format)
+   files in `apps/site/src/content/initiatives/` — list the existing ones with
+   `ls apps/site/src/content/initiatives/`, and use a filename without its `.json` extension as the
+   slug. See [add-an-initiative.md](./add-an-initiative.md) if you need a new one.
 3. Required frontmatter (the settings block fenced by `---` lines at the top of the file — see
    [glossary](../reference/glossary.md#frontmatter)):
 
@@ -44,9 +44,9 @@ Steps:
    plan. Use these sections:
    1. **`## Overview`** — what the project is, who it involves, and what people will see.
    2. **`## Motivation`** — the public need, who feels it, why LVBT is acting, and why the work
-      matters now. This section carries the nonprofit-reporting logic, but write it like a person.
-   3. **`## Approach`** — how the work runs: main activities, partners or audiences, cadence, and
-      coordination with related LVBT projects.
+      matters now. Explain the public benefit in ordinary words.
+   3. **`## Approach`** — how the work runs: main activities, partners or audiences, how often
+      activities happen, and coordination with related LVBT projects.
    4. **`## Activities`** — the concrete things the page will eventually point to: events held,
       people reached, reports published, testimony, briefs, evidence logs, chapters, coalitions,
       campaign materials, media packages, relationships, or other recorded results.
@@ -59,4 +59,8 @@ Steps:
 6. **Three statuses, kept simple.** `planned` (committed but not started), `in-progress` (working on
    it), `done` (achieved). If a goal genuinely changes scope, edit the text or remove it. Misses and
    scope changes go in `## Updates`, not in new status types.
-7. Commit. Push to `main`. GitHub Actions builds the site and deploys the verified Worker version.
+7. Preview `/projects` and the new project page with `pnpm dev`, then run `pnpm check`. Fix any
+   reported content or link errors. Commit and push your branch, then open a pull request for
+   review. Merging updates the private review site; a maintainer separately publishes the reviewed
+   release. See
+   [saving and sharing a change](../tutorials/start-here.md#5-saving-and-sharing-your-change).

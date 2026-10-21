@@ -1,6 +1,7 @@
 # Voice and tone
 
-Read this before drafting any LVBT copy.
+Read this before drafting LVBT copy. Use these rules to keep articles, public pages, and organizing
+messages consistent. Keep quoted founder language intact when using it as a reference.
 
 LVBT's voice is **principled but sharp**:
 
@@ -26,9 +27,9 @@ meeting in a union hall?"_ If yes, ship it.
 
 ## Founder voice patterns
 
-Distilled from Willie's April 2026 founder letter — the canonical reference for LVBT's first-person
-voice. The unifying move is **concrete-then-frame**: lead with a specific lived moment; let the
-thesis arrive as its inevitable conclusion. Almost never start with the thesis.
+These patterns come from Willie's April 2026 founder letter, the reference for LVBT's first-person
+voice. Start with a specific experience, then explain the larger point it supports. Almost never
+start with the abstract argument.
 
 ### Personal grounding
 
@@ -43,9 +44,9 @@ thesis arrive as its inevitable conclusion. Almost never start with the thesis.
 
 ### Frank framing
 
-- **Candor about the odds, used as a credibility marker.** _"borderline impossible,"_ _"Frankly, I'm
-  unsure whether … a lot of our vision is doable within a generational timespan."_ Undersell while
-  still committing — the mismatch is the voice. Most founder copy oversells; ours doesn't.
+- **Be honest about the odds.** _"borderline impossible,"_ _"Frankly, I'm unsure whether … a lot of
+  our vision is doable within a generational timespan."_ Undersell while still committing — the
+  mismatch is the voice. Most founder copy oversells; ours doesn't.
 - **"Frankly" as a recurring sincerity tic.** Reads as "dropping the polish for a second."
 - **Vegas-scoped honesty about what's possible.** _"We live in the Mojave Desert. Pushing for New
   York City-style subway and density here is likely not practical."_ Refuses to pretend Vegas is
@@ -55,17 +56,17 @@ thesis arrive as its inevitable conclusion. Almost never start with the thesis.
 
 ### Rhetorical engines
 
-- **Anaphoric stacks of concrete wants.** _"I want tree-lined bike paths. I want bus stops with
-  shade. I want buildings on streets that invite me and my friends to stay in … I want to see hubs
-  instead of strip malls."_ And _"It's time we X. It's time we Y. It's time we fight."_ Lists of
-  concrete wants in repeated grammar.
+- **Repeat a sentence opening with specific examples.** _"I want tree-lined bike paths. I want bus
+  stops with shade. I want buildings on streets that invite me and my friends to stay in … I want to
+  see hubs instead of strip malls."_ And _"It's time we X. It's time we Y. It's time we fight."_
+  Lists of concrete wants in repeated grammar.
 - **Stacked semicolon lists with concrete examples.** _"neighborhoods where it's often 5–10 times
   quicker to drive than to walk to the grocery store; where seniors who can't drive are effectively
   trapped in their homes; and where children regularly get injured or killed trying to cross the
   street."_ Three escalating specifics, semicolon-separated.
-- **External authority as moral anchor — same form, used twice.** Gustavo Petro: _"A developed
-  country is not a place where the poor have cars. It's where the rich use public transportation."_
-  Once as a teaching moment, again at the close.
+- **Quote a named person to support the point, then return to the quote.** Gustavo Petro: _"A
+  developed country is not a place where the poor have cars. It's where the rich use public
+  transportation."_ Once as a teaching moment, again at the close.
 - **Long compound sentences punctuated by short declaratives.** A packed sentence with semicolons
   and qualifications, then _"But it was possible."_ Short ones land like punctuation marks.
 
@@ -74,8 +75,8 @@ thesis arrive as its inevitable conclusion. Almost never start with the thesis.
 - **Startup-meets-civic vocabulary.** _"moonshot thinking,"_ _"more of a mission-driven startup
   that's willing to think creatively."_ Tech/founder vocabulary imported into nonprofit advocacy
   without irony.
-- **Class lens on transit.** _"Transit isn't just 'something poor people have to use.'"_ Reframes
-  political valence: transit as freedom-for-everyone.
+- **Class lens on transit.** _"Transit isn't just 'something poor people have to use.'"_ Explains
+  the political position: transit as freedom-for-everyone.
 - **Generational time-scale.** _"truly generational, transformational change,"_ _"the children who
   will grow up here,"_ _"generational timespan."_ The argument is sized in lifetimes.
 - **"Oasis in the desert"** as the destination image — the antonym of _"a city that caters to
@@ -94,7 +95,7 @@ expects:
 
 - **Power-aware language.** Name actual decision-makers, programs, and constraints. _"RTC board,"_
   _"state interim committees,"_ _"FTA Capital Investment Grants"_ are credibility, not jargon, for
-  this audience. Gloss once on first use; don't strip.
+  this audience. Explain each term once on first use; keep the specific names.
 - **Long-haul honesty.** Organizers know strategies don't always work. Saying so is a credibility
   move: _"Frankly, we don't know if this works on the timeline that matters. We're going to push for
   it anyway."_
@@ -110,11 +111,11 @@ performative:
   lobby"_ as undifferentiated villains. Real organizing names _which_ developer is fighting _which_
   project — not the abstract class.
 - **No grievance shorthand.** _"They want us to drive,"_ _"the system is designed to keep us…"_ Even
-  when partly true, this register doesn't build the coalition we need.
+  when partly true, this tone makes it harder to work with potential partners.
 - **No romanticizing "the people."** _"The people are demanding…"_ reads as performative.
   Organizer-honest is _"a constituency we don't currently have."_
-- **No vilifying opponents.** Differentiate via reframe, not via villain. Model: _"We are not
-  anti-car. We are anti-car-dependence. The point is choice."_
+- **No vilifying opponents.** Explain how our position differs without treating the opponent as a
+  villain. Model: _"We are not anti-car. We are anti-car-dependence. The point is choice."_
 
 **Test:** would a Marshall Ganz–trained organizer (Ganz is a Harvard lecturer and longtime community
 organizer whose framework — public narrative, relational organizing — is foundational to modern
@@ -133,16 +134,16 @@ Distinct things — easy to confuse, but only one of them violates the voice.
   transportation,"_ _"the safest place to bike in the Southwest,"_ _"a system Phoenix or Salt Lake
   City would recognize as functional."_ These name a target measurable against external benchmarks
   (peer cities, frequency, mode share — the share of trips taken by each travel mode, e.g. what
-  percentage of commutes are by bus vs. car — fatality rates). They state a normative position the
-  org will defend — not a vague feel-good claim.
+  percentage of commutes are by bus vs. car — fatality rates). They state a position the
+  organization will defend — not a vague feel-good claim.
 
 **Test:** can the claim be checked against an external standard? If yes, it's anchored opinion —
 keep it. If no, it's overselling — replace with something specific.
 
 ## Specific patterns to avoid
 
-- **Technocratic urbanism vocab as the lead.** Mixed-use, mode share, TOD (Transit-Oriented
-  Development: dense housing and shops clustered around transit stops — see
+- **Do not open with planning jargon.** Mixed-use, mode share, TOD (Transit-Oriented Development:
+  dense housing and shops clustered around transit stops — see
   [glossary](../reference/glossary.md#tod)), VMT (Vehicle Miles Traveled: total miles driven, a
   measure of car dependence — see [glossary](../reference/glossary.md#vmt)), frequency hours — these
   belong in body text or captions, never in headlines or ledes.
@@ -150,10 +151,10 @@ keep it. If no, it's overselling — replace with something specific.
   it.
 - **Abstractions without specific examples following.** Every general claim should be followed by a
   named instance within two sentences.
-- **Generic CTAs as button labels.** _Get involved_, _Take action_, _Learn more_ are lazy. Use
-  specific verbs: Subscribe, RSVP, Donate, Read the brief.
+- **Generic calls to action (CTAs) as button labels.** _Get involved_, _Take action_, _Learn more_
+  are lazy. Use specific verbs: Subscribe, RSVP, Donate, Read the brief.
 - **Slogans on utility pages.** _"Show up. Things change."_ on /events is the wrong job for a
-  calendar listing. Plain page-job nouns belong on utility pages; slogans, when used at all, belong
-  on persuasion pages.
+  calendar listing. Use plain descriptions of the task on utility pages; slogans, when used at all,
+  belong on persuasion pages.
 - **Templated card grammar.** Three identical label → headline → body cards in a row reads
-  AI-generated. Vary composition deliberately.
+  AI-generated. Vary the layout when the content calls for it.

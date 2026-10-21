@@ -1,6 +1,7 @@
 # The Week Without Driving campaign host
 
-`lvwwd.org` is not part of this repository. It's its own site, built and deployed from
+Contributors changing the Week Without Driving campaign must use the `week-without-driving`
+repository. `lvwwd.org` is not part of this repository. It's its own site, built and deployed from
 [`LasVegasForTransit/week-without-driving`](https://github.com/LasVegasForTransit/week-without-driving),
 and served by the `lvwwd` [Cloudflare Worker](./glossary.md#cloudflare-workers) on the LVBT
 Cloudflare account.

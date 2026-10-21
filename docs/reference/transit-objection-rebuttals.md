@@ -1,13 +1,13 @@
 # Transit objection rebuttals (reference)
 
-A bank of short answers to the most common objections people raise about funding transit. It isn't
-published as its own page — instead, designers pull these rebuttals into the Vision and other site
-pages (for example as an accordion or aside), and writers reuse them in social posts and pamphlets.
+Writers and volunteers use these draft answers when preparing site copy, social posts, pamphlets or
+public-meeting notes. They are not a published webpage. Check every number, forecast and claim
+against a current source before quoting it. [Key facts](./key-facts.md) lists figures reused across
+the site, but it does not verify every claim below.
 
 **This is reference material, not site content.** It used to live as
 `apps/site/src/content/docs/quick-pitch.mdx` and render at `/vision/quick-pitch`, but that route was
-always meant to be source material for designing an objection-rebuttal experience inside the main
-pages — not its own dumping-ground page.
+intended as source material for answers placed within the main pages.
 
 Use these answers to:
 
@@ -16,8 +16,8 @@ Use these answers to:
 - Quote individual rebuttals in social posts, newsletter copy, or printed pamphlets.
 - Brief volunteers and coalition partners ahead of public meetings.
 
-When you're ready to surface this on the site, build the right design treatment for whichever page
-it belongs on. Don't reinstate a generic `/quick-pitch` route.
+When adding an answer to the site, place it beside the claim or question it addresses. Don't
+reinstate a generic `/quick-pitch` route.
 
 ---
 

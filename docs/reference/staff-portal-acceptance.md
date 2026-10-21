@@ -1,8 +1,8 @@
 # Staff portal acceptance
 
-Use this checklist to decide whether the staff portal is ready for real work. It covers the deployed
-application, outside services, and staff experience; keep release receipts and test results in the
-private acceptance record or the build system.
+The maintainer leading launch uses this checklist to decide whether the staff portal is ready for
+real work. It covers the deployed application, outside services, and staff experience; keep release
+receipts and test results in the private acceptance record or the build system.
 
 Start with [the protected preview setup guide](../guides/set-up-staff-preview.md). The
 [operations reference](./staff-portal-operations.md) explains configuration checks, release
@@ -64,7 +64,7 @@ or staff Google-group membership alone does not establish a portal administrator
    and original consent times with the source records.
 3. Resolve ambiguous rows through the approved review process. Preserve staff corrections and later
    withdrawals; do not substitute import time for missing evidence.
-4. Obtain authorization for the reviewed apply operation. Verify the resulting canonical records and
+4. Obtain authorization for the reviewed apply operation. Verify the resulting member records and
    totals, then repeat the operation to confirm it creates no duplicates.
 
 Success means the accepted roster is complete for the reviewed evidence and unresolved rows remain
@@ -101,8 +101,9 @@ subscription creation time and delivery-check time do not prove when a later cho
 Delayed echoes of the platform's own writes must not manufacture fresh consent. Delivery pauses must
 not change membership.
 
-Success requires actual provider readback, recovery, and revocation for every enabled integration.
-Local fixtures establish code behavior and remain separate evidence.
+Success requires independent checks in the outside service, recovery after failures, and removal of
+access for every enabled integration. Local fixtures establish code behavior and remain separate
+evidence.
 
 ## 5. Observe staff completing real tasks
 

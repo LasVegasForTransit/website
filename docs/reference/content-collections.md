@@ -1,8 +1,9 @@
 # Content collections reference
 
-What lives in each content folder and the exact shape each file must follow. Reach for this when
-you're adding or editing a page, project, event, or initiative and need to know which fields are
-required.
+Content contributors use this reference to choose a content folder and supply its required fields.
+Start with the folder table, then find that collection under **Frontmatter shapes**. You need a
+working local checkout to validate an edit with `pnpm check`; content editing needs no production
+credentials.
 
 A _content collection_ is Astro's name for a folder of content files that all share the same shape
 (see [glossary](./glossary.md#content-collection)). All site content lives under
@@ -30,9 +31,9 @@ see [glossary](./glossary.md#mdx)).
 | _(newsletter)_                        | Beehiiv RSS     | Newsletter issues. Pulled at build time by the loader in `apps/site/src/lib/newsletter-loader.ts` from the feed at `PUBLIC_LVBT_NEWSLETTER_FEED_URL`. Drives `/newsletter`; each card links out to the Beehiiv post (issues are never hosted on this site). |
 | `apps/site/src/content/initiatives/`  | JSON            | Project tags. Drives the chips on `/projects`.                                                                                                                                                                                                              |
 
-Press coverage on `/press` lives in the **LVBT Press** Notion database and is rendered into the page
-HTML by a Cloudflare Pages Function. See [add press coverage](../guides/add-press-coverage.md) for
-the one-time setup and the staff publishing workflow.
+Press coverage on `/press` lives in the **LVBT Press** Notion database. A backend handler fetches
+those records and renders the page HTML. See [add press coverage](../guides/add-press-coverage.md)
+for the one-time setup and the staff publishing workflow.
 
 ## Frontmatter shapes
 
@@ -178,22 +179,23 @@ venue: # optional standing or proposed meeting place for an ongoing program
 One program file holds the purpose and identity that persist across events, yearly editions, or
 ongoing projects. For example, LVBT Labs builds civic tech tools for urbanism and transit advocacy;
 it has a catalog and contribution path rather than a recurring meeting schedule. The filename is its
-stable `/programs/[slug]` URL. The summary is the short introduction for the directory, metadata,
-and detail page. Each program has its own page section, with a heading, icon, short summary, and
-explicit link to its program page. On desktop, sections occupy at least the usable viewport below
-the header and use native proximity snapping; longer content expands normally. Images share an 8:5
-area beside the text. Photos use a centered crop; screenshots fit completely with a muted border. On
-mobile, images appear between the program name and introduction, with natural section height and no
+stable `/programs/[slug]` URL. Use the summary as the short introduction in the program directory
+and detail page. The site also uses it in page metadata, such as the description shown in search
+results. Each program has its own page section, with a heading, icon, short summary, and explicit
+link to its program page. On desktop, sections occupy at least the usable viewport below the header
+and use native proximity snapping; longer content expands normally. Images share an 8:5 area beside
+the text. Photos use a centered crop; screenshots fit completely with a muted border. On mobile,
+images appear between the program name and introduction, with natural section height and no
 snapping. Images have no visible captions; required credits are collected on the colophon. A program
 with a calendar series and no image uses that column for its selected occurrence: the authored
 discussion topic, date, time, venue, and an action to the LVBT event page. Without an authored
 topic, the occurrence's date becomes the focal text. Without an occurrence, the recurring schedule
 and events-calendar fallback remain available. Topic copy comes from the matching event body's
 optional `discussionTopic` and never carries into another occurrence. Full descriptions belong in
-the program's MDX body and detail page. Designation is an editorial classification, not a displayed
-label, parent route, or layout selector. A program may name a recurring meeting place with its
-confirmation status. Put dates, final venues, and registration for a particular occurrence in the
-events calendar or the linked participant site.
+the program's MDX body and detail page. The `designation` field classifies the program for editors.
+It does not add a visible label, change the URL or choose a page layout. A program may name a
+recurring meeting place with its confirmation status. Put dates, final venues, and registration for
+a particular occurrence in the events calendar or the linked participant site.
 
 For a program with `calendarSeriesUid`, its page selects an ongoing occurrence, then the nearest
 upcoming one, then the most recent completed one. Cancelled occurrences are excluded. Selection runs
@@ -205,10 +207,10 @@ LVBT event page. An upcoming or ongoing occurrence offers **RSVP**; a completed 
 **View last event**, using `eventNoun` when provided (for example, **View last meetup**). This
 destination is independent of any signup URL on the event. Without a matching occurrence, the page
 shows the standing schedule and an events-calendar link. `participationUrl` takes precedence for
-programs with their own participant site. Only programs with `calendarSeriesUid` render an event
+programs with their own participant site. Only programs with `calendarSeriesUid` show an event
 panel. Other programs use their MDX body and optional participation action, without a schedule,
-venue, or calendar fallback being invented for them. The shared template provides the shell, not a
-universal program format.
+venue, or calendar fallback being invented for them. The shared template supplies the page
+structure. Write the program's own purpose and participation steps in its MDX body.
 
 ### Work area
 
@@ -264,11 +266,12 @@ source of truth, not this page.
 
 ## Templates
 
-Each MDX/JSON-backed collection has a `_template.mdx` (or `_template.json`) showing the canonical
-shape. Copy it when adding new content. The leading underscore is a convention: for collections that
-use it (currently `projects`, `programs`, `letters`), the collection's `glob()` loader pattern in
-`apps/site/src/content.config.ts` excludes `_`-prefixed files at the source, so the template never
-enters the content store and never needs per-page filtering to keep it out of listings, sitemaps, or
-`/llms-full.txt`. A new MDX/JSON collection that wants this convention needs to opt in the same way
-— the underscore prefix alone does nothing on its own. Events have no template — they're created in
-Google Calendar; `pnpm -C apps/site event:new` scaffolds an optional body fragment.
+Each MDX/JSON-backed collection has a `_template.mdx` (or `_template.json`) showing the required
+fields. Copy it when adding new content. The leading underscore is a convention: for collections
+that use it (currently `projects`, `programs`, `letters`), the collection's `glob()` loader pattern
+in `apps/site/src/content.config.ts` excludes `_`-prefixed files at the source, so the template
+never enters the content store and never needs per-page filtering to keep it out of listings,
+sitemaps, or `/llms-full.txt`. For a new MDX/JSON collection, configure its loader to exclude
+underscore-prefixed files too. Naming a file `_template` alone does not exclude it. Events have no
+template — they're created in Google Calendar; `pnpm -C apps/site event:new` scaffolds an optional
+body fragment.

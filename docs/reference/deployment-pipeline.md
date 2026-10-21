@@ -1,9 +1,26 @@
 # Deployment pipeline
 
+Maintainers use this reference to select a website release, publish it and recover a failed
+publication. Staging is a protected test copy; promotion publishes its reviewed build to the public
+website.
+
 An explicit staging dispatch, including the existing calendar refresh, builds one release from
 `main`, deploys it to protected staging, and stores its files for explicit production promotion.
 Merging a pull request runs source checks and saves staff build artifacts without updating retained
 staging or publishing the public website.
+
+Before publication, you need a reviewed staging release and GitHub Actions write access. A local
+Cloudflare login is unnecessary for ordinary promotion. Credential setup requires separate
+maintainer authorization. Keep the selected build and its receipt, which records publication
+attempts, until you have verified the result.
+
+Choose the section for your task:
+
+- [Main and PR deployment](#main-and-pr-deployment) explains when previews update.
+- [Production promotion](#production-promotion) explains `pnpm promote` and release selection.
+- [Dashboard metadata failures](#diagnose-dashboard-metadata-failures) covers denied configuration
+  reads.
+- [Rollback](#rollback) explains which saved releases can restore service.
 
 ## Hosts and environments
 
@@ -34,14 +51,14 @@ outputs require another pass. `pnpm build` writes static assets and Pagefind to 
 and compiled Pages Functions to `apps/site/.wrangler/worker/`.
 
 `Deploy staging` calls the shared build workflow with required analytics and the site's existing
-browser acceptance checks. New artifacts use `apps/deploy/cloudflare.config.ts` as their canonical
-typed configuration. The shared adapter bundles the existing compiled Pages Functions entry point,
-preserves both production domains and preview settings, and retains a `website-release-<run-id>`
-Actions artifact for 90 days. It contains the compiled Worker, static assets, reviewed configuration
-and binding declarations, exact database migration SQL, and `release.json`. The manifest records the
-commit, release ID, sorted file inventory, and SHA-256 hashes. The `/lvbt-release.json` response
-identifies the deployed release. Prototype routes and the audit-only language cannot enter a
-promotable artifact.
+browser acceptance checks. New artifacts use `apps/deploy/cloudflare.config.ts` as their reviewed
+deployment configuration. The shared adapter bundles the existing compiled Pages Functions entry
+point, preserves both production domains and preview settings, and retains a
+`website-release-<run-id>` Actions artifact for 90 days. It contains the compiled Worker, static
+assets, reviewed configuration and binding declarations, exact database migration SQL, and
+`release.json`. The manifest records the commit, release ID, sorted file inventory, and SHA-256
+hashes. The `/lvbt-release.json` response identifies the deployed release. Prototype routes and the
+audit-only language cannot enter a promotable artifact.
 
 Promotion downloads this artifact from its originating run, verifies its identity and all files, and
 uploads a temporary copy with bundling disabled. It performs no site or Worker rebuild. Production
@@ -90,9 +107,9 @@ is served outside the Worker. Only the exact `/cdn-cgi/speculation` response, cl
 browser as `other` with the speculation-rules JSON content type, is excluded from those header
 assertions. Its HTTP status, request allowance, and redirect checks still apply.
 
-A failed staging job can be retried with **Re-run failed jobs**. Each run ID identifies one
-immutable artifact; **Re-run all jobs** cannot replace an artifact that already exists. Dispatch a
-new staging run when a rebuild is needed.
+A failed staging job can be retried with **Re-run failed jobs**. Each run ID identifies one saved
+artifact that cannot be replaced; **Re-run all jobs** cannot replace an artifact that already
+exists. Dispatch a new staging run when a rebuild is needed.
 
 ## Main and PR deployment
 
@@ -129,10 +146,10 @@ Each stage counts direct marker/access/navigation checks and every browser resou
 it, and aborts excess requests. Test and network retries are zero. Candidate identity is read once;
 activation can read identity at most five times over 20 seconds, within its 32-request allowance.
 Unexpected browser redirects fail without following them. Public smoke renders the actual root in a
-browser and checks the nested route and canonical `www` redirect with non-following HTTP requests;
-hosted acceptance also verifies real browser navigation to a nested page. Every publication still
-fails when any required check fails. Access denial, private cache and indexing headers, analytics
-isolation and selected-release identity remain required.
+browser and checks the nested route and `www` redirect to the primary hostname with non-following
+HTTP requests; hosted acceptance also verifies real browser navigation to a nested page. Every
+publication still fails when any required check fails. Access denial, private cache and indexing
+headers, analytics isolation and selected-release identity remain required.
 
 After the shared build packages and retains one artifact, a required local job downloads that exact
 run artifact and verifies its commit, release ID, manifest and file hashes. It runs exhaustive
@@ -167,10 +184,10 @@ when requested as part of that task.
 
 By default, the workflow reads the authenticated marker currently served by preview, using the
 existing `worker-preview` environment's Access service credentials. It pins that identity once, then
-validates its successful main `Deploy staging` run, matching full commit SHA and retained artifact.
-If preview was just activated, it waits for that same staging run's final checks to finish. It never
-substitutes the newest main commit or run. An optional `run_id` input selects a specific reviewed
-release; the command accepts it as `pnpm promote --run-id <id>`.
+validates its successful main `Deploy staging` run, the same full Git commit ID and saved build
+files. If preview was just activated, it waits for that same staging run's final checks to finish.
+It never substitutes the newest main commit or run. An optional `run_id` input selects a specific
+reviewed release; the command accepts it as `pnpm promote --run-id <id>`.
 
 The source must be a completed, successful main staging run from this repository, triggered by a
 push or manual dispatch. PR runs, failed runs, foreign repositories, missing artifacts, and expired
@@ -178,8 +195,9 @@ artifacts are rejected. Both jobs use trusted verification tools from the dispat
 revision, so fixes to promotion tooling also apply to older retained releases. The manifest lists
 the exact 16 unexpired unsigned releases retained at attestation adoption, with their run ID, source
 commit, artifact ID and original expiry. The shared verifier downloads and checks their retained
-bytes and remote provenance before accepting them. New artifacts require signed proof; this bounded
-compatibility does not extend retention or permit replacement artifacts.
+bytes and GitHub records of which workflow produced them before accepting them. New artifacts
+require signed proof; this bounded compatibility does not extend retention or permit replacement
+artifacts.
 
 The optional `expected_version` dispatch input prevents publication if the active production Worker
 version changes. First adoption requires this reviewed current version when production has no shared
@@ -278,13 +296,14 @@ recorded release's supported recovery path. Keep its selected artifact and curre
 
 ## Manual recovery deployment
 
-`pnpm run deploy` builds the site and uses `cf` with the typed configuration in
-`apps/deploy/cloudflare.config.ts`. Set `CLOUDFLARE_ACCOUNT_ID` in the deployment environment.
-Generate the local and recovery mirror with `pnpm -C apps/deploy compat:generate` after changing the
-canonical configuration or its declarations in `.lvbt/tooling.json`. The shared generator writes
-`apps/site/wrangler.jsonc`, including separate databases, runtime variables, migration paths, and
-Worker-first routes. Do not edit this mirror directly. Application secrets must already be stored on
-the selected Worker; this command does not create them.
+`pnpm run deploy` refuses direct publication because this repository requires a saved staging
+release. Use `pnpm promote --run-id <id>` to recover a reviewed release. The dry run below can
+inspect the bundle without publishing it. Generate the local and recovery mirror with
+`pnpm -C apps/deploy compat:generate` after changing the deployment configuration or its
+declarations in `.lvbt/tooling.json`. The shared generator writes `apps/site/wrangler.jsonc`,
+including separate databases, runtime variables, migration paths, and Worker-first routes. Do not
+edit this mirror directly. Regenerating configuration does not install application secrets or
+publish a release.
 
 Use `pnpm run deploy --dry-run` to review the production bundle without uploading it. Preview mode
 uses `pnpm -C apps/deploy exec cf deploy --mode preview --dry-run` after the site is built. Normal

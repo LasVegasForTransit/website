@@ -27,11 +27,12 @@ Conflicting email addresses, linked accounts or current committee assignments ca
 combination. Stop and review those conflicts; do not remove accounts or assignments just to force
 the operation through. Already-combined entries cannot be combined again to form a loop.
 
-The combined-away profile keeps its identifier with personal fields cleared. The private merge
-record preserves original fields and sources needed for undo. Sessions and pending sign-in codes for
-both entries are invalidated, and the staff member and time are recorded. The database changes
-together or rolls back together. Provider access updates remain separate work; a successful
-combination does not prove that Discord or Google has finished updating.
+The removed profile keeps its identifier, but LVBT clears its personal fields. A private record of
+the combination preserves the original fields and sources needed for undo. Sessions and pending
+sign-in codes for both entries are invalidated, and the staff member and time are recorded. The
+database applies all changes together or leaves all of them unapplied. Provider access updates
+remain separate work; a successful combination does not prove that Discord or Google has finished
+updating.
 
 ## Undo a mistaken combination
 
@@ -39,9 +40,10 @@ combination does not prove that Discord or Google has finished updating.
 2. Enter **Reason for undoing**, then select **Undo combination**.
 3. Confirm **Combination undone**. Review both restored profiles before making further changes.
 
-Undo restores original row ownership and saved profile fields. Activity or accounts added to the
-surviving person afterward remain there. Later withdrawals continue to take precedence; undo does
-not invent consent, recreate a disconnected account, or restore erased personal data.
+Undo returns the original records to each person and restores their saved profile fields. Activity
+or accounts added to the surviving person afterward remain there. Later withdrawals continue to take
+precedence; undo does not invent consent, recreate a disconnected account, or restore erased
+personal data.
 
 If a surviving entry was combined again, undo the later combination first. Then return to the
 earlier combination. This order keeps each operation's original history intact. An entry whose
@@ -56,6 +58,7 @@ personal data has been erased cannot be restored through undo.
 - **Access denied or the form expired:** sign in again or reopen the current page. Existing sessions
   are intentionally ended by a completed combination or undo.
 
-An operation identifier is bound to its requester and exact request. A retry of the same authorized
-request returns its existing result; a different request cannot reuse that receipt. If the result is
-unclear, inspect the current combination and profiles before submitting a new decision.
+Each combination or undo has an operation identifier tied to the person requesting it and the exact
+action they submitted. A retry of the same authorized request returns its existing result; a
+different request cannot reuse that receipt. If the result is unclear, inspect the current
+combination and profiles before submitting a new decision.

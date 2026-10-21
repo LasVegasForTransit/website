@@ -1,73 +1,60 @@
-# Commit Scope Reference
+# Commit scope reference
 
-> **The five scopes valid for commits in this repo, and why nothing else qualifies.**
-
-The **scope** is the optional part in parentheses in a commit title — the `content` in
-`fix(content): …`. It names which part of the project a commit touches. This page lists the only
-five scopes you may use here, and why the list is so short.
-
-Why only five? This is a single Astro (the framework that builds the site — see
-[glossary](../reference/glossary.md#astro)) site with the Worker routes behind it, not a sprawling
-platform with many independent subsystems. Only true architectural boundaries — parts that change on
-their own, over and over — get a scope; everything else stays scopeless. The list is short on
-purpose: if a scope wouldn't appear on at least five future commits, it isn't a real boundary and
-shouldn't exist. A long scope list just becomes noise nobody can keep straight.
+Use this page when choosing the optional name in a commit title, such as `functions` in
+`fix(functions): Reject an expired sign-in link`. A scope names a lasting part of this repository.
+Leave it out when the change crosses parts or no listed scope fits.
 
 ## Allowed scopes
 
-| Scope                 | What it covers                                            | Typical commits                                       |
-| --------------------- | --------------------------------------------------------- | ----------------------------------------------------- |
-| `site`                | The Astro site: pages, layouts, components, styles        | `fix(site): keep the header readable at 320 pixels`   |
-| `content`             | MDX and copy under `apps/site/src/content/`               | `fix(content): rewrite about copy and § 02 layout`    |
-| `apps/site/functions` | The Worker routes and the platform code behind them       | `fix(functions): reject an expired sign-in link`      |
-| `docs`                | Repo documentation under `docs/` (NOT site copy)          | `docs(docs): add commit-messages standard`            |
-| `dx`                  | Hooks, lint and format settings, dev scripts, local tools | `chore(dx): wire pre-commit and pre-push enforcement` |
+The complete list lives in [`.lvbt/commit-scopes.txt`](../../.lvbt/commit-scopes.txt). The commit
+message check reads that file.
 
-Source of truth: [`../../.lvbt/commit-scopes.txt`](../../.lvbt/commit-scopes.txt). The commit‑msg
-hook reads that file at validation time.
+| Scope       | What it covers                                         | Example                                           |
+| ----------- | ------------------------------------------------------ | ------------------------------------------------- |
+| `site`      | Pages, components, layouts, and styles in `apps/site`  | `fix(site): Keep the header readable on phones`   |
+| `content`   | Public copy and content in `apps/site/src/content`     | `fix(content): Clarify how to join LVBT`          |
+| `functions` | Server routes and the platform code behind them        | `fix(functions): Reject an expired sign-in link`  |
+| `docs`      | Repository documentation, rather than public site copy | `docs(docs): Explain first-time setup`            |
+| `dx`        | Local development tools, hooks, lint, and formatting   | `chore(dx): Check commit messages before pushing` |
 
-Workflow and composite-action changes under `.github/` are chores with no scope:
-`chore: run the audit from apps/site`. The `ci` type and scope are deprecated across the
-organization.
+Workflow and reusable-action changes under `.github/` use `chore` without a scope. Use `chore` for
+workflow changes rather than the deprecated `ci` type or scope.
 
-Empty scope is valid — and it's the common case. Just leave the parentheses off entirely:
-`feat: add Beehiiv newsletter subscribe Pages Function`. Use an empty scope whenever none of the
-five above fit, or when a change crosses them. Reach for one only when the change really is confined
-to that boundary.
+## What does not become a scope
 
-## What does **not** become a scope
+A page, component, task, short-lived feature, dependency, or vendor does not get its own scope. For
+example, use `fix(site): Repair the event header`, not `fix(EventHeader): …`. Explain the specific
+change in the subject instead.
 
-| Anti‑pattern         | Why we reject it                                                  | What to write instead                              |
-| -------------------- | ----------------------------------------------------------------- | -------------------------------------------------- |
-| Page slugs           | A page is not a separable subsystem; the title can name it        | `feat: public projects roadmap …`                  |
-| Component names      | Same — too fine a grain, churns with every refactor               | `fix: restore header data-stuck observer …`        |
-| Short‑lived features | A feature with 3–5 commits isn't a subsystem                      | `feat: add Beehiiv newsletter subscribe …`         |
-| `deps`               | Dep bumps are inherently cross‑cutting                            | `chore: bump astro to 4.16`                        |
-| Vendor tags          | `cf`, `gcp`, etc. lock the log to a particular provider           | `chore: add wrangler.jsonc for pages dev`          |
-| Subsystem aliases    | `csp`, `seo`, `audit` describe slices of one site, not boundaries | `chore: remove Beehiiv iframe allowances from CSP` |
+Changing the allowed list requires a separate decision. Do not add a scope just to make one commit
+title fit.
 
-Adding a sixth scope is a deliberate act. Don't slip one in alongside a feature commit.
+<a id="crosscutting-changes"></a>
 
-## Cross‑cutting changes
+## Cross-cutting changes
 
-Sometimes one commit touches two of the five boundaries at once — say, a hook change (`dx`) that
-also edits the join page (`site`). When that happens, the tie-break is: **pick the scope where most
-of the change lives** (the dominant one), or, if it's a genuine even split, **omit the scope
-entirely**. Don't stack two scopes in one title — there's no `feat(site,dx):` form.
+Use the scope that describes most of the change when one part clearly dominates. Omit the scope when
+the change spans several parts without one clear owner. Never combine scopes as `feat(site,dx): …`.
+
+An empty scope is valid:
+
+```text
+feat: Add newsletter signup
+chore: Update the repository standard
+```
 
 ## Examples
 
-```bash
-git commit -m "feat: add Beehiiv newsletter subscribe Pages Function"
-git commit -m "chore: drop github expression from composite action description"
-git commit -m "chore(dx): adopt lovelace commit-msg / pre-commit / pre-push enforcement"
-git commit -m "refactor(content): rewrite about copy and § 02 layout"
-git commit -m "docs(docs): add commit-messages standard"
-git commit -m "chore: NBSP between \"Las Vegas\" in display contexts"
+These are message subjects, not commands to run:
+
+```text
+fix(functions): Preserve a member's saved consent
+chore(dx): Check filenames before committing
+docs(docs): Explain how to run a local preview
+chore: Update shared dependencies
 ```
 
 ## Related
 
-- [`commit-messages.md`](./commit-messages.md) — full message standards
-- [`../../.lvbt/commit-scopes.txt`](../../.lvbt/commit-scopes.txt) — runtime scope list
-- The validator is the organization's shared commit-msg hook in `@lasvegasfortransit/cli`
+Read [commit messages](./commit-messages.md) for subjects and bodies, and
+[Git guidelines](./git-guidelines.md) for staging, hooks, and submitting a change.

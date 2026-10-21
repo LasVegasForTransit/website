@@ -12,8 +12,17 @@ description: >-
 
 # Add Transit News
 
-Add articles to the Notion Transit News database (configured via `LVBT_TRANSIT_NEWS_DB_ID` in
-`apps/site/.env.local`).
+Use this skill to add articles when the user asks for intake. A search request alone does not
+authorize writing to Notion. Follow the [contributor guide](../../docs/guides/add-transit-news.md)
+for setup and recovery. The commands below write to the database selected by
+`LVBT_TRANSIT_NEWS_DB_ID` in `apps/site/.env.local`.
+
+## Prerequisites
+
+- `LVBT_NOTION_API_KEY` and `LVBT_TRANSIT_NEWS_DB_ID` must be set in `apps/site/.env.local`
+- The integration must be connected to the Transit News database: open the DB in Notion → ••• →
+  Connections → add your integration
+- Run `pnpm install` once if you haven't (wires hooks and tsx)
 
 ## When invoked with URLs
 
@@ -22,7 +31,10 @@ For each URL the user provides:
 1. Run `pnpm -C apps/site add:transit-news <url> [url ...]` from the repository root.
 2. Show the terminal output verbatim — the script prints per-URL status (✓ created / — skipped / ✖
    error).
-3. If any URL errored, report why (HTTP status, missing metadata, etc.) and suggest a fix.
+3. Check the new page in Notion, including its article text. The script prints `✓ created` before
+   appending the body and does not check whether each append succeeded. Repeating the URL normally
+   skips the existing page; it does not repair missing text. Inspect and repair that page instead.
+4. Report any failed URL and its cause. Keep token values out of the report.
 
 ```bash
 pnpm -C apps/site add:transit-news https://nevadacurrent.com/2026/06/01/example/
@@ -32,7 +44,8 @@ pnpm -C apps/site add:transit-news https://nevadacurrent.com/2026/06/01/example/
 
 If the user says something like "find transit news from the past week" or "search for BRT articles":
 
-1. Use WebSearch to find relevant Las Vegas transit news articles. Search terms to try:
+1. Use the available web search tool to find relevant Las Vegas transit news articles. Search terms
+   to try:
    - `"Las Vegas" transit site:nevadacurrent.com OR site:reviewjournal.com OR site:lasvegassun.com`
    - `"Las Vegas" "bus rapid transit" OR "RTC" OR "Maryland Parkway" news`
    - `"Las Vegas transit" after:YYYY-MM-DD` (use today minus 7 days)
@@ -62,10 +75,3 @@ If a publication or topic isn't being inferred correctly, edit:
   `LOCATION_PATTERNS`
 
 No config file needed — it's plain TypeScript, takes effect immediately on the next run.
-
-## Prerequisites
-
-- `LVBT_NOTION_API_KEY` and `LVBT_TRANSIT_NEWS_DB_ID` must be set in `apps/site/.env.local`
-- The integration must be connected to the Transit News database: open the DB in Notion → ••• →
-  Connections → add your integration
-- Run `pnpm install` once if you haven't (wires hooks and tsx)

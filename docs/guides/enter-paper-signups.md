@@ -3,12 +3,28 @@
 This guide explains how event volunteers record a paper signup sheet in the staff portal. Use it
 after an event to record attendance and the mailing-list choices people made on the sheet.
 
-Staff who can open a person's profile can see **Events** there: recorded attendance and RSVPs, with
-event names and dates when available. Totals include the full recorded history; the list shows up to
-10 recent participation records, independently of other activity. Missing names are labeled rather
-than inferred. An empty record does not prove that someone has never attended. Corrected entries are
-excluded. Dates show when attendance happened or when an RSVP was recorded; an RSVP date is not the
-event's start time. The profile does not provide event rosters, QR check-in or RSVP import.
+Staff who can open a person's profile can see **Events** there: recorded attendance and responses to
+event invitations (RSVPs), with event names and dates when available. Totals include the full
+recorded history; the list shows up to 10 recent participation records, independently of other
+activity. Missing names are labeled rather than inferred. An empty record does not prove that
+someone has never attended. Corrected entries are excluded. Dates show when attendance happened or
+when an RSVP was recorded; an RSVP date is not the event's start time. The profile does not provide
+event rosters, check-in by scanning a code, or RSVP import.
+
+## Before you start
+
+- Use your own linked LVBT Workspace account and current membership. You need permission to record
+  attendance. Ask an administrator if access is denied.
+- Have the original sheet, its event or place, its date, and its signup wording available. Do not
+  send a photo of the sheet through public chat or add contact details to task descriptions.
+- Choose the intended environment. Use only clearly marked test people in the protected preview;
+  record real signups only in the approved live portal.
+
+An authorized Workspace volunteer can open `/paper/` and `/paper/sheet/` without general staff
+console access. Their sign-in lands on paper signups and the header offers only their authorized
+tools and sign-out. This does not grant member search, profiles, exports, welcome or administration.
+The same Cloudflare Access sign-in gate, current membership, and verified LVBT Google sign-in are
+required on each request; a revoked session or ended membership removes paper access too.
 
 ## Record attendance for someone already known
 
@@ -25,21 +41,6 @@ entry records who saved it and keeps day precision rather than claiming an exact
 If a form expires, check Events before reloading and trying again. If saving fails, entered values
 remain on the form; retry after the service recovers. Use paper signup entry below for new people or
 when transcribing the mailing-list choices on a sheet.
-
-## Before you start
-
-- Use your own linked LVBT Workspace account and current membership. You need permission to record
-  attendance. Ask an administrator if access is denied.
-- Have the original sheet, its event or place, its date, and its signup wording available. Do not
-  send a photo of the sheet through public chat or add contact details to task descriptions.
-- Choose the intended environment. Use only clearly marked test people in the protected preview;
-  record real signups only in the approved live portal.
-
-An authorized Workspace volunteer can open `/paper/` and `/paper/sheet/` without general staff
-console access. Their sign-in lands on paper signups and the header offers only their authorized
-tools and sign-out. This does not grant member search, profiles, exports, welcome or administration.
-The same Access gate, current membership and matching verified Workspace session are required on
-each request; a revoked session or ended membership removes paper access too.
 
 ## Print a blank sheet
 

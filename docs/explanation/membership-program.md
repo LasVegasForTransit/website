@@ -1,40 +1,42 @@
 # Membership program
 
-**Status: proposed.** This is a program design, not a built system. It specs the membership _ladder_
-— how someone goes from an email address to an organizer who runs part of LVBT — so a future
-contributor can implement it without re-deriving the model. The intake plumbing it sits on top of
-already exists; see [membership-intake.md](../reference/membership-intake.md).
+**Status: proposed program design.** Program leads and contributors use this page to review how a
+supporter could become a regular participant and then a leader. Some supporting software now exists,
+but that does not make the proposed engagement levels an approved or implemented membership model.
+See [membership intake](../reference/membership-intake.md) for signup behavior and the
+implementation notes below for the distinction.
 
-Read [voice-and-tone.md](./voice-and-tone.md) first if you're writing any member-facing copy off
-this.
+Read [voice-and-tone.md](./voice-and-tone.md) first if you're writing member-facing text based on
+this design.
 
 ---
 
 ## What this is, and what it isn't
 
-This document is about **engagement** — turning supporters into participants and participants into
-leaders. It is the answer to two questions:
+This document is about **engagement** — helping supporters participate and helping participants take
+on leadership. It is the answer to two questions:
 
 1. How do we get members to actually show up — to events, to comment periods, to the work?
 2. How does a member become a lead, with real ownership of a slice of LVBT?
 
-It is **not** the donation/perks system. Money and engagement are deliberately **separate axes**
-(see [The donation axis](#the-donation-axis-keep-it-separate)). A broke college student can be our
-best organizer; a generous donor may never attend a thing. Conflating the two corrupts both.
+It is **not** the donation/perks system. We consider donations and participation **separately** (see
+[The donation axis](#the-donation-axis-keep-it-separate)). A broke college student can be our best
+organizer; a generous donor may never attend a thing. Using donations to measure participation
+misrepresents both.
 
 ---
 
 ## Principles
 
-These constrain every design choice below. When a mechanic violates one, cut it.
+These constrain every design choice below. Remove a proposed feature if it violates one.
 
 - **The ladder rewards contribution, not consumption.** Status comes from showing up and doing the
   work, never from paying for it.
-- **Don't instrumentalize people.** Members are organizers and neighbors, not "conversion funnel"
-  units. Every mechanic should make sense to the person it's applied to and read as recognition, not
-  extraction.
-- **Every rung is a real door, not a label.** Advancing should unlock something concrete — access,
-  responsibility, belonging — or it's just a badge.
+- **Do not treat people as a means to an end.** Members are organizers and neighbors, not
+  "conversion funnel" units. People should understand why a program feature applies to them and how
+  it recognizes their contribution.
+- **Each level must offer something useful.** Advancing should give a person access, responsibility,
+  or a stronger connection to the group. A label alone is not enough.
 - **Recognition is opt-in and public; tracking is quiet.** We celebrate people by name only with
   their say-so. Internal participation records stay internal.
 - **Leadership is sustainable or it's a liability.** A lead who burns out is worse than no lead.
@@ -46,8 +48,8 @@ These constrain every design choice below. When a mechanic violates one, cut it.
 
 ## The ladder
 
-LVBT membership is a **ladder of engagement** (the standard organizing model: each rung is a deeper
-commitment, and the program's job is to make the next rung easy to step onto). Five rungs:
+The proposed **ladder of engagement** has five levels of participation. Each level involves a larger
+commitment. The program should make it easy for someone to choose a next step:
 
 | Rung               | Who they are             | How they got here                             | What it unlocks                                                                                        |
 | ------------------ | ------------------------ | --------------------------------------------- | ------------------------------------------------------------------------------------------------------ |
@@ -57,28 +59,28 @@ commitment, and the program's job is to make the next rung easy to step onto). F
 | **3 · Lead**       | Owns a slice of the work | Promoted (see [criteria](#promotion-to-lead)) | Responsibility, access, a defined role, a say in direction                                             |
 | **4 · Core**       | Ongoing leadership       | Sustained lead + invited                      | Steering the org; cross-team direction                                                                 |
 
-The whole program is the **machinery that moves people up a rung** — and that catches them when they
-drift down one (see [Lifecycle](#lifecycle-and-states)).
+The program should support people who take on more work and people who need to step back. See
+[Lifecycle](#lifecycle-and-states).
 
-Most orgs have a fat rung 0–1 and almost nobody above. The design goal here is a healthy **flow
-rate** from Member → Regular → Lead, because leads are what let LVBT do more than one founder can.
+The design aims to help people move beyond levels 0–1: Members can become Regulars, and willing
+Regulars can become Leads. More leads would let LVBT do work beyond what one founder can manage.
 
 ---
 
 ## Incentivizing attendance
 
-Event attendance is the hinge of the whole ladder: it's both the main thing we want Members to do
-_and_ the main signal that someone is ready to be a Regular, then a Lead. So the attendance
-incentives and the promotion criteria are the same flywheel viewed from two angles.
+Event attendance is the main activity this design encourages. Repeated participation also helps
+leads judge whether someone is ready for a larger role. Attendance support and promotion criteria
+therefore need to work together.
 
 What actually gets people to show up, roughly in order of power:
 
-1. **Belonging.** People come back for people. A named cohort, familiar faces, a Discord where the
-   planning happens, an in-person community that's genuinely warm. This is the strongest lever and
-   the cheapest. Everything else is secondary.
+1. **Belonging.** People come back for people. A named group, familiar faces, a Discord where the
+   planning happens, an in-person community that's genuinely warm. This costs little and gives
+   people a reason to return. Everything else is secondary.
 2. **A clear, personal ask.** "Come to the RTC meeting Thursday, we need bodies in the room and I
-   saved you a seat" beats a calendar blast. Leads making direct asks is the single highest-yield
-   tactic; the system's job is to _enable_ those asks (who to ask, who's lapsing), not replace them.
+   saved you a seat" beats a calendar blast. Leads should make direct asks. The software should help
+   them see whom to contact and who has stopped attending. It should not replace that conversation.
 3. **Visible impact.** People attend when showing up obviously matters — a comment period that
    swings a vote, a turnout number that makes the paper. Tie events to stakes, and report back what
    the turnout _did_.
@@ -97,13 +99,13 @@ one.
 
 ## Promotion to lead
 
-This is the part most orgs never systematize, and it's where the leverage is. Promotion should feel
-like an _invitation earned_, not an application processed.
+This is the part most orgs never systematize, and it's where the leverage is. An existing lead
+should offer the role through a personal conversation that recognizes the person's contributions.
 
 ### Criteria
 
 A Member is ready to be offered a lead role when, roughly, all of these hold. Treat them as signals
-for a human judgment call, not a scoring rubric:
+for a human judgment call, not an automatic score:
 
 - **Shows up.** A track record of attendance over a sustained window — they're a Regular, not a
   one-timer.
@@ -120,8 +122,8 @@ They can say no and stay a Regular with no penalty.
 
 ### What a "lead" actually is
 
-A lead **owns a defined slice** with real authority over it. The slices map to LVBT's actual work —
-examples, not a fixed list:
+A lead is responsible for a defined part of LVBT's work and can make decisions about it. These
+examples are not a fixed list:
 
 - **Event lead** — hosts a recurring event or owns turnout for a campaign moment.
 - **Working-group lead** — runs a team (events, comms, data/tools, coalition, research). See
@@ -129,8 +131,8 @@ examples, not a fixed list:
 - **Corridor/campaign lead** — owns a specific fight (e.g. a BRT corridor, the 2027 funding push),
   end to end.
 
-A role isn't real unless it has: a **scope** (what's yours), a **mandate** (what you can decide
-without asking), and an **ask** (the recurring commitment).
+Each role needs a **scope** (the work they own), a **mandate** (the decisions they can make without
+asking), and an **ask** (the recurring commitment).
 
 ### Onboarding a lead
 
@@ -158,8 +160,8 @@ Recruiting leads is easy; keeping them is the whole game.
 
 ## Lifecycle and states
 
-A member isn't a fixed rung; they move. The system tracks a current **state** and the program
-responds to transitions:
+A member isn't a fixed rung; they move. The proposed program would track their current **state**,
+then respond when their participation changes:
 
 ```text
 Prospective → Member → Regular → Lead → Core
@@ -170,8 +172,8 @@ Prospective → Member → Regular → Lead → Core
 - **Lapsing** — was active, hasn't shown up in a while. The trigger for a personal re-engagement ask
   (from a lead, ideally), _before_ they're gone.
 - **Lapsed** — disengaged. Stays on the roster; gets occasional warm re-entry invites, never guilt.
-- **Re-engagement** is a first-class path, not an afterthought. Winning back a former Regular is
-  cheaper than a cold signup and they ramp faster.
+- **Re-engagement** needs its own planned support. A former Regular already knows the group and may
+  need less help to return than a newcomer needs to get started.
 
 The single most valuable operational habit this enables: **someone notices when a Regular goes
 quiet, and reaches out as a person.** That's the whole point of tracking state — not metrics for
@@ -181,8 +183,8 @@ their own sake.
 
 ## Roles and teams
 
-Leadership has somewhere to _go_ only if there are slices to own. The likely teams (again,
-illustrative — let them form around real work and real people):
+People need defined work they can lead. The likely teams (again, illustrative — let them form around
+real work and real people):
 
 - **Events** — meetups, RTC-meeting turnout, tabling, social.
 - **Comms** — newsletter, social, press, the editorial voice.
@@ -204,10 +206,11 @@ Track it as an independent attribute, not a rung on this ladder:
 - **Engagement rung** (Member → Lead) answers _"how involved are they?"_
 - **Donor status** answers _"have they given, and how much?"_
 
-They're orthogonal. A person can be high on one and zero on the other. Donor perks (recognition
-wall, donor newsletter segment, etc.) attach to the donor attribute; ladder unlocks attach to the
-rung. The one hard rule: **donating never buys a rung.** Money can earn thanks and perks; it cannot
-earn organizer status, because the moment it does, leadership stops meaning what we need it to mean.
+The two measures are independent. A person can be high on one and zero on the other. Donor perks
+(recognition wall, donor newsletter segment, etc.) attach to the donor attribute; ladder unlocks
+attach to the rung. The one hard rule: **donating never buys a rung.** Money can earn thanks and
+perks; it cannot earn organizer status, because the moment it does, leadership stops meaning what we
+need it to mean.
 
 (The technical pipeline for detecting donations and tiering perks is a separate build; it's sketched
 in the membership-intake reference's neighborhood, not here.)
@@ -216,14 +219,16 @@ in the membership-intake reference's neighborhood, not here.)
 
 ## What we'd measure
 
-Organizer-PM metrics, not vanity numbers. The point of each is a decision it would drive:
+Program leads should track a measure only when it helps them make a decision:
 
 - **Activation rate** — Subscriber → Member. Is the front door working?
 - **Attendance rate** — share of Members who attend in a given window. Is the community alive?
-- **Repeat rate** — Member → Regular. Are first-timers coming back? (The flywheel's health check.)
+- **Repeat rate** — Member → Regular. Are first-timers coming back? (This shows whether the program
+  helps people return.)
 - **Ladder conversion** — Regular → Lead. Are we growing leaders or hoarding work?
 - **Active leads** — count, and trend. The real capacity number.
-- **Member-led events** — events not run by the founder/Core. The leverage metric.
+- **Member-led events** — events not run by the founder/Core. This shows whether more people can
+  organize events.
 - **Lead retention / lapse** — are we keeping leaders or burning them?
 
 If a metric wouldn't change a decision, don't track it.
@@ -232,24 +237,25 @@ If a metric wouldn't change a decision, don't track it.
 
 ## How this maps to what we already have
 
-Deliberately thin — this is a PM spec, not an implementation plan. This section was written before
-the [Organizing Platform](./decisions/organizing-platform.md) (the decision record that fixes how
-the platform is built) existed; it's updated here to say what that platform actually provides today,
-and what's still planned.
+This section connects the proposed program to code in this repository. It does not certify what is
+active in production. The [Organizing Platform decision](./decisions/organizing-platform.md) sets
+the software architecture; operator guides describe how staff use implemented features.
 
 - **The roster lives in the person record**, one row per person LVBT knows about, in the platform's
   Cloudflare D1 database — not in Notion. It's read and written only through the
   [person service](../../packages/platform-storage/src/person-service.md), and every sign-up, from
-  any form, lands there (see [membership-intake.md](../reference/membership-intake.md)). Adding
-  `Stage`, `Role`, an events-attended signal, and a `Lapsing` flag to that record still covers most
-  of this spec's state model — the record just isn't Notion anymore. The staff console provides
-  member search, profiles, review and a **Welcome** queue where staff claim and record follow-up.
-  The older Google Form endpoint still writes Notion follow-up pages for compatibility; that does
-  not make Notion the roster. Retiring that process requires an accepted operational transition.
+  any form, lands there (see [membership-intake.md](../reference/membership-intake.md)). Staff can
+  already record organization roles and attendance. Those responsibilities and event records remain
+  separate from this design's proposed `Stage`, Regular thresholds, and `Lapsing` flag. The staff
+  console provides member search, profiles, review and a **Welcome** queue where staff claim and
+  record follow-up. The Google Form handler saves member records without creating new Notion welcome
+  pages. Retiring the former Notion process still requires the
+  [approved operational transition](../reference/membership-intake.md#staff-follow-up-in-notion).
 - **Events already flow through a public calendar** ([events-pipeline.md](./events-pipeline.md)).
-  Attendance capture — a check-in that writes back to the person record — is not built yet. It's
-  planned as the **Event Attendance Record** project. That single signal will power attendance
-  metrics, Regular detection, and lapse alerts, same as this document originally described.
+  Staff can [record attendance and enter paper signups](../guides/enter-paper-signups.md). Those
+  records do not implement the proposed Regular level, automatic lapse alerts, or every planned
+  check-in method. The **Event Attendance Record** work and this program design must keep those
+  distinctions clear.
 - **Discord Account Linking and Role Sync** implements optional Discord account linking and
   reconciliation of member and committee access. It does not implement this proposed engagement
   ladder. Joining Discord is optional and does not establish or end LVBT membership. A person can
@@ -284,10 +290,11 @@ to rung 0, **Subscriber**, in the ladder above. Don't assume the two match until
 Model Design project says they do. Until then, "member" in the platform's data and "Member" on this
 ladder are two different things that happen to share a word.
 
-Sign-in, account management and the staff console exist; this proposed engagement ladder and event
-attendance capture remain separate work. Production activation and provider acceptance must be
-verified against the [staff acceptance checklist](../reference/staff-portal-acceptance.md), rather
-than inferred from available source code.
+The source includes sign-in, account management, staff tools, and manual attendance recording. Those
+features do not establish the proposed engagement levels. Production activation and provider
+acceptance must be verified against the
+[staff acceptance checklist](../reference/staff-portal-acceptance.md), rather than inferred from
+available source code.
 
 ---
 
@@ -295,8 +302,9 @@ than inferred from available source code.
 
 Decisions intentionally left open — resolve with whoever owns the program:
 
-- **How is attendance captured?** QR check-in, manual, RSVP-based? This is the load-bearing
-  primitive; pick the lowest-friction option people will actually use.
+- **How is attendance captured?** QR check-in, manual, RSVP-based? Manual attendance recording now
+  exists. Decide which additional methods the program needs and choose ones people can use without
+  extra work.
 - **What are the rung thresholds?** "Regular" = how many events, over what window? Start loose and
   human; tighten only if it needs automating.
 - **Who owns promotions?** Founder-only at first, or any Core/Lead can nominate?
@@ -308,7 +316,7 @@ Decisions intentionally left open — resolve with whoever owns the program:
 
 ## Phasing
 
-Don't build it all. Crawl, then walk:
+Test the program in these stages before adding automation:
 
 1. **Crawl** — Add `Stage`/`Role` to the member record and capture attendance. Manually mark
    Regulars. Make direct asks. No automation. This alone unlocks the most important behavior:

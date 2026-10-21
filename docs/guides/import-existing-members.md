@@ -12,10 +12,11 @@ through the [protected preview setup](./set-up-staff-preview.md) before using th
 provider jobs disabled during the first preview rehearsal. Production is a separate operation: the
 president reviews its dry run before any production import.
 
-Use an owner-only folder outside the repository on an encrypted disk. The original exports and
-normalized input contain personal information. Never add them to Git, a public build artifact, an
-issue description, or a shared terminal transcript. Set the folder permissions to `700` and files to
-`600`; record who owns the copies and when they must be deleted in the private import record.
+Use a folder that only you can open outside the repository on an encrypted disk. The original
+exports and prepared import file contain personal information. Never add them to Git, a public build
+artifact, an issue description, or a shared terminal transcript. Set the folder permissions to `700`
+and files to `600`; record who owns the copies and when they must be deleted in the private import
+record.
 
 The importer uses the existing `CLOUDFLARE_API_TOKEN` environment variable. A dry run needs D1 Read
 for the chosen database; applying needs authorized D1 Write. A read-only deployment key cannot apply
@@ -101,6 +102,9 @@ observation time when normalizing the same export; it is different from a histor
 
 ## 2. Normalize without changing the originals
 
+Normalization converts the provider exports into one input format. It preserves the source evidence;
+it does not change the original files or provider records.
+
 For an API export:
 
 ```sh
@@ -150,10 +154,10 @@ pnpm --filter @lasvegasfortransit/site roster:import \
   --plan /private/lvbt-import/preview-plan.json
 ```
 
-This reads the actual database into memory, including matching and replay state, then runs the same
-person-service import on an isolated copy. It writes nothing to the target database. It saves an
-owner-only plan containing counts and fingerprints, without names or email addresses. The terminal
-report has this shape:
+This reads the selected database and tests the import on a separate temporary copy. It checks
+existing matches and which records were already imported. It writes nothing to the target database.
+It saves an owner-only plan containing counts and fingerprints (checksums that detect changed inputs
+or database state), without names or email addresses. The terminal report has this shape:
 
 ```text
 Import report (dry run: yes)
@@ -207,10 +211,10 @@ reviewed input. To reconsider identical held evidence after a staff resolution, 
 cannot invent missing answers or override an opt-out. Previously applied records stay skipped.
 
 Personal evidence follows person erasure and retention. Unassigned evidence is cleared after 30
-days. Member downloads omit unrelated acquisition metadata and internal source-sheet links; the
-administrator's full export retains the bounded review evidence. Original provider exports are
-separate private copies: honor their recorded owner, retention period and any deletion request there
-too.
+days. Member downloads omit unrelated source-import details and internal source-sheet links; the
+administrator's full export retains the limited source evidence needed for review. Original provider
+exports are separate private copies: honor their recorded owner, retention period and any deletion
+request there too.
 
 Repeat the backup, dry-run review and repeat verification separately for production. Preview results
 alone do not authorize or prove a production import. If a provider permission, a source export or an

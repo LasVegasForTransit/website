@@ -1,20 +1,22 @@
 # Design tokens reference
 
-The look-up table for the site's color and type tokens. For the _why_ — brand philosophy, usage
-rules, the colors we've reserved but not shipped — see
-[Design system](../explanation/design-system.md).
+Contributors use this reference to choose colors and text sizes for site components. A token is a
+named CSS value, such as `--color-surface`; using the name keeps components consistent when the
+site's theme changes. For the _why_ — brand philosophy, usage rules, the colors we've reserved but
+not shipped — see [Design system](../explanation/design-system.md).
 
 The color system has **two tiers**, both in
 [`apps/site/src/styles/global.css`](../../apps/site/src/styles/global.css):
 
-1. **Brand primitives** — raw hex (`--ink`, `--paper`, `--ember`, the warm-charcoal ramp, …) in a
-   plain `:root`. They generate **no** utilities; they are the palette that the roles below
-   reference. Non-flipping: the same value in light and dark.
-2. **Semantic role tokens** — MD3-style roles (`--color-surface`, `--color-on-surface`,
-   `--color-primary`, …) in the Tailwind v4 `@theme` block. Tailwind auto-generates utilities from
-   them (`--color-surface` → `bg-surface`; `--color-on-surface` → `text-on-surface`,
-   `border-on-surface`). These are **re-pointed under `@media (prefers-color-scheme: dark)`**, so
-   overriding a role once flips every consumer. See [Dark theme](#dark-theme).
+1. **Brand primitives** are the base colors, written as hex values (`--ink`, `--paper`, `--ember`,
+   the warm-charcoal ramp, …) in a plain `:root`. They generate **no** utilities; they are the
+   palette that the roles below reference. These values stay the same in light and dark themes.
+2. **Semantic role tokens** name a color's purpose. They follow Material Design 3 (MD3) roles
+   (`--color-surface`, `--color-on-surface`, `--color-primary`, …) in the Tailwind v4 `@theme`
+   block. Tailwind auto-generates utilities from them (`--color-surface` → `bg-surface`;
+   `--color-on-surface` → `text-on-surface`, `border-on-surface`). The dark-theme rules under
+   `@media (prefers-color-scheme: dark)` change these values, so components using the role change
+   together. See [Dark theme](#dark-theme).
 
 **The contract:** components reference colors through the semantic utilities (`bg-surface`,
 `text-primary`, `border-outline`) or the `--color-*` variables — never raw hex, and never the
@@ -69,11 +71,10 @@ Rust on light (~5:1), brightened to `#ff8a5c` on dark. Do not use `primary-ink` 
 ## Dark theme
 
 Device-driven only, via `@media (prefers-color-scheme: dark)` — **no manual toggle, no JS, no
-`localStorage`**. The media block re-points the role tokens (and sets `color-scheme: dark`).
-Character is "Valley after dark": a warm near-black canvas, MD3 tonal elevation (lighter
-warm-charcoal containers, not drop shadows), and Ember reading like a light in the dark — including
-a `.press.bg-primary` glow applied only in dark. Neutral/content role pairs are held ≥4.5:1, rules
-≥3:1, and the primary/on-primary brand pair ≥4.5:1 by
+`localStorage`**. The media block re-points the role tokens (and sets `color-scheme: dark`). The
+dark theme uses a warm near-black page background and lighter charcoal containers. The
+`.press.bg-primary` glow applies only in dark mode. Neutral/content role pairs are held ≥4.5:1,
+rules ≥3:1, and the primary/on-primary brand pair ≥4.5:1 by
 [`apps/site/tests/e2e/color-contracts.spec.ts`](../../apps/site/tests/e2e/color-contracts.spec.ts),
 which runs in both schemes.
 
@@ -92,8 +93,8 @@ which runs in both schemes.
 
 Pages opt into an **immersive dark hero** via the `canvas` prop on
 [`BaseLayout.astro`](../../apps/site/src/layouts/BaseLayout.astro) (sets `data-canvas` on `<body>`).
-This is orthogonal to the theme — it forces an always-dark rooted hero (transparent header) in
-_both_ schemes, using fixed primitives.
+This setting works independently of the device's theme. It keeps the top section dark and its header
+transparent in both light and dark themes, using fixed base colors.
 
 | `canvas`          | Background        | Used by                 |
 | ----------------- | ----------------- | ----------------------- |

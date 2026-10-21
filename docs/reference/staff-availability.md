@@ -2,8 +2,9 @@
 
 Maintainers use this reference to measure staff access, investigate failures and verify recovery.
 The target is **99.9% availability over a rolling 30 days**. This allows 43 minutes and 12 seconds
-of unavailability. This target is an operational SLO; it does not establish a contractual SLA or
-prove that production already meets it.
+of unavailability. This service-level objective (SLO) is the team's operating target. It is not a
+contractual service-level agreement (SLA), and it does not prove that production already meets the
+target.
 
 ## Measure the task people need
 
@@ -35,8 +36,8 @@ failure. Inspect `diagnostics.causeCode` for a known cause such as `missing_tabl
 `diagnostics.errorType` for a safe error type, and `diagnostics.frames` for bounded code locations.
 Locations omit full filesystem paths, exception messages and call arguments. Framework responses
 without a captured exception retain the HTTP status and platform invocation context instead.
-Generation uses no database queries, and the page excludes exception contents and member data. A
-failure before the request reaches the Worker may have no reference.
+Creating the failure reference uses no database queries, and the page excludes exception contents
+and member data. A failure before the request reaches the Worker may have no reference.
 
 Investigate reports promptly. Cloudflare currently retains Workers Free logs for
 [three days](https://developers.cloudflare.com/workers/observability/logs/workers-logs/#pricing).
@@ -58,17 +59,18 @@ maintainers must choose a capacity change explicitly. Neither a plan nor local q
 the availability target.
 
 Keep the observation-history index, erasure audit index and bounded provider selection migrations
-with the matching jobs release. Retain ownership, consent, generation and erasure checks. Test real
-D1 read costs with long histories and blocked queues before changing these paths. A returned-row
-limit or statement budget does not bound the rows SQLite scans.
+with the matching jobs release. Retain checks for account ownership, consent, the latest operation
+revision and erasure. Test real D1 read costs with long histories and blocked queues before changing
+these paths. A returned-row limit or statement budget does not bound the rows SQLite scans.
 
 ## Reserve database capacity for people
 
-Migration **0051** adds a persistent budget for the scheduled jobs in each canonical database.
-Production jobs admit reservations within an allocation of 2,000,000 reads and 40,000 writes per UTC
-day. Preview jobs use 250,000 reads and 5,000 writes. Together those allocations leave 55% of the
-Free account allowance outside these scheduled jobs. Staff/member requests, imports, backups and
-other databases are not counted by this ledger and can still exhaust that remaining allowance.
+Migration **0051** adds a persistent budget for the scheduled jobs in each environment's membership
+database. Production jobs admit reservations within an allocation of 2,000,000 reads and 40,000
+writes per UTC day. Preview jobs use 250,000 reads and 5,000 writes. Together those allocations
+leave 55% of the Free account allowance outside these scheduled jobs. Staff/member requests,
+imports, backups and other databases are not counted by this ledger and can still exhaust that
+remaining allowance.
 
 Each admitted cron invocation reserves 50,000 reads and 4,000 writes atomically before starting its
 jobs. A 120-second lease prevents overlapping parent runs. Jobs return actual D1 row counters.
@@ -125,13 +127,14 @@ or on the next minute. Each lane records its sweep start and logical page end ac
 selected-row limit must never replace that continuation signal.
 
 Profile erasure runs when deletion or merge eligibility changes. Physical purge retains the
-thirty-day delay. Daily inactivity cleanup starts at03:00 Pacific and resumes unfinished batches. A
+thirty-day delay. Daily inactivity cleanup starts at 03:00 Pacific and resumes unfinished batches. A
 completed day sleeps until the next Pacific window, including daylight-saving changes. Records
 cleanup begins on the UTC hour and continues remaining batches on subsequent minutes. The backlog
 check includes Google snapshots, Google check failures and unassigned roster evidence. Reads still
 reject expired credentials and snapshots independently of cleanup.
 
-The following component diagram shows the scheduler modules. Storage writers update the wake store
+A wake signal is a saved instruction to check a category of background work. The following component
+diagram shows which modules save and consume those signals. Storage writers update the wake store
 inside their existing transactions. Admission reads the wake store before reserving capacity. The
 provider and maintenance dispatchers acknowledge only the revision they captured.
 
@@ -210,17 +213,17 @@ reads to 433 reads. The test requires fewer than 1,000 reads for each measured s
 maintenance pass and also checks a newly queued removal. Keep consent, identity and
 recent-engagement exclusions unchanged. Do not substitute string date comparisons for parsed dates.
 
-These measurements describe local fixtures. Compare deployed row counters after applying canonical
-migrations and activating the matching saved release. Creating the index also consumes allowance;
-follow the backup and migration procedure before applying it. Retain the additive index during a
-code rollback; it does not change retention eligibility.
+These measurements describe local fixtures. Compare deployed row counters after applying the
+reviewed database migrations and activating the matching saved release. Creating the index also
+consumes allowance; follow the backup and migration procedure before applying it. Retain the
+additive index during a code rollback; it does not change retention eligibility.
 
 ## Verify a recovery
 
 Follow
-[staff operations](staff-portal-operations.md#keep-background-work-within-the-shared-database-allowance)
-for account usage, backups, canonical migrations and the protected release flow. Preserve the
-selected release and existing deployment receipts. Stop manual retry loops during exhaustion.
+[staff operations](staff-background-work.md#keep-background-work-within-the-shared-database-allowance)
+for account usage, backups, reviewed database migrations and the protected release flow. Preserve
+the selected release and existing deployment receipts. Stop manual retry loops during exhaustion.
 
 After release, verify real authorized sign-in, member search and provider processing. Inspect
 `job_database_usage` records across scheduled ticks and compare them with account-wide D1 usage over

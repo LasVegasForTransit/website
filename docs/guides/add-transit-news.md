@@ -1,16 +1,26 @@
 # Add transit news to the database
 
-Three paths get articles into the Transit News database in Notion (the team's database/wiki app —
-see [glossary](../reference/glossary.md#notion)) — pick whichever fits the moment. The database's ID
-lives in an environment variable (a named setting kept outside the code — see
-[glossary](../reference/glossary.md#env-var)), `LVBT_TRANSIT_NEWS_DB_ID`; each path lists its own
-prerequisites below.
+Use this guide to add articles to Transit News in Notion, the team's shared database app. Use Path 1
+for article links you already have, Path 2 to search with Claude Code, or Path 3 to submit a link
+through a public form without installing tools. The database's ID lives in an environment variable
+(a named setting kept outside the code — see [glossary](../reference/glossary.md#env-var)),
+`LVBT_TRANSIT_NEWS_DB_ID`; each path lists its own prerequisites below.
 
 ---
 
 ## Path 1 — pnpm script (one command, any URLs)
 
-The fastest way to add specific articles you already have.
+Use this command when you already have the article links. Complete
+[local setup](../tutorials/first-time-setup.md) first, then configure these values in
+`apps/site/.env.local`:
+
+1. `LVBT_NOTION_API_KEY` is the secret that allows the script to use Notion. Keep it private.
+2. `LVBT_TRANSIT_NEWS_DB_ID` is the 32-character ID from the database's Notion address.
+3. Connect the integration to Transit News: open the database in Notion, select the **•••** menu,
+   then **Connections**, and add the integration.
+
+Run commands from the repository root. These commands add rows to the connected database. The
+article addresses below are examples; replace them with real article links.
 
 ```bash
 pnpm -C apps/site add:transit-news https://nevadacurrent.com/2026/06/01/some-article/
@@ -24,11 +34,8 @@ pnpm -C apps/site add:transit-news \
   https://reviewjournal.com/2026/06/02/another/
 ```
 
-The script:
-
-- Fetches each article and extracts headline, date, publication, topics, location from HTML
-- Skips duplicates automatically (checks if the URL already exists in the database)
-- Adds the full article body as Notion paragraph blocks
+The script reads each article's web page and fills in its headline, date, publication, topics, and
+location. It skips a link already in the database and adds the article text as paragraphs.
 
 **What you see:**
 
@@ -41,13 +48,9 @@ Adding 2 article(s) to Transit News database…
 Done.
 ```
 
-**Prerequisites (in `apps/site/.env.local`):**
-
-1. `LVBT_NOTION_API_KEY` — an internal integration token (an API key: a secret, password-like string
-   that lets our code call Notion on our behalf — see [glossary](../reference/glossary.md#api-key))
-2. `LVBT_TRANSIT_NEWS_DB_ID` — the 32-char ID from the database's Notion URL
-3. The integration must be connected to the Transit News database: open the DB in Notion → the •••
-   (more options) menu → Connections → add your integration
+Check the new Notion page, including the article text. `✓ created` confirms page creation, not that
+every body paragraph was saved. Repeating the URL skips an existing page rather than repairing it.
+Inspect a partial page before deciding how to repair it.
 
 ---
 
@@ -55,7 +58,7 @@ Done.
 
 Use this when you want to search for articles first, or want Claude to handle a batch of URLs from a
 message. (This path needs Claude Code — Anthropic's AI assistant that runs in your terminal —
-installed and open in this repo.)
+installed and open in this repo, with the same Notion settings as Path 1.)
 
 In Claude Code, type:
 
@@ -75,12 +78,12 @@ Claude will search, show you a list, ask for confirmation, then run the script o
 
 ## Path 3 — Notion form (anyone, no CLI)
 
-A public Notion form where anyone — volunteers, the public — pastes an article URL. An API function
-compiled into the production Worker (`/api/transit-news-intake`) enriches the submission
-automatically: it fetches the URL and fills in headline, date, publication, topics, location, and
-the full article body.
+Anyone can paste an article link into the public Notion form. The website's server-side
+`/api/transit-news-intake` handler fills in the submission: it fetches the URL and fills in
+headline, date, publication, topics, location, and the full article body.
 
-**The submitter only needs to paste a URL.** Everything else fills in within seconds.
+The submitter needs only the form link and an article address. The remaining setup is for a
+maintainer with permission to change the database automation and website secrets.
 
 ### How it works
 
@@ -118,10 +121,10 @@ triggers it (see [glossary](../reference/glossary.md#notion-automation)).
 #### 3. Create the Notion automation
 
 - In the database → the ••• (more options) menu → **Automations** → New automation
-- Trigger: **Page added** (⚠️ _not_ "edited" — the function edits properties, and an "edited"
-  trigger would re-fire on its own write)
+- Trigger: **Page added**. Do not choose **edited**: the handler edits the row, which would trigger
+  the automation again.
 - Action: **Send webhook**
-  - URL: `https://<your-pages-domain>/api/transit-news-intake`
+  - URL: `https://lasvegasfortransit.org/api/transit-news-intake`
   - Add custom header → Key `Authorization`, Value `Bearer <the secret>` (a bearer token: a secret
     sent in this header to prove the caller is allowed — see
     [glossary](../reference/glossary.md#bearer-token))
@@ -133,10 +136,9 @@ Submit the form with any Las Vegas transit article URL. Within a few seconds the
 in with headline, date, topics, and the body text.
 
 > Notion doesn't let you preview the webhook payload. If enrichment doesn't fire, watch the
-> function's live logs by running `wrangler pages deployment tail`
-> ([wrangler](../reference/glossary.md#wrangler) is Cloudflare's command-line tool; needs Cloudflare
-> access) — the function logs the raw payload when it can't find the page ID, so you can confirm the
-> exact shape.
+> production website Worker's logs in the LVBT Cloudflare account. The handler logs the submitted
+> message when it cannot find the page ID. Inspect it privately; do not paste raw messages or
+> credentials into an issue or public chat.
 
 ---
 
@@ -145,9 +147,9 @@ in with headline, date, topics, and the body text.
 **"LVBT_NOTION_API_KEY is not set"** — add the key to `apps/site/.env.local`. Get it from Notion →
 Settings → My connections → your integration.
 
-**"✖ fetch failed"** — the article's site blocked the bot user-agent or returned a non-200. Try
-opening the URL in a browser; if it loads, the site may require JS. Fall back to Path 2 (Claude
-Code) which uses a browser to fetch.
+**"✖ fetch failed"** — the article's site blocked the bot user-agent or returned an unsuccessful
+response. Try opening the URL in a browser; if it loads, the site may require JavaScript. Fall back
+to Path 2 (Claude Code) which uses a browser to fetch.
 
 **Headline / date extracted wrong** — the site uses non-standard markup. Open an issue or edit
 `apps/site/scripts/notion/lib/article-extract.ts` to add a site-specific extractor. The extraction
@@ -155,7 +157,8 @@ priority order is in
 [`docs/reference/transit-news-pipeline.md`](../reference/transit-news-pipeline.md).
 
 **Publication / topic not inferred** — add the domain or keyword to
-`apps/site/scripts/notion/lib/transit-topics.ts`. The maps are self-documenting.
+`apps/site/scripts/notion/lib/transit-topics.ts`. These lists match domains and words to
+publications and topics. Check the existing entries before adding one.
 
 ---
 

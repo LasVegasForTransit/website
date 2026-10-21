@@ -1,160 +1,137 @@
 # Performance monitoring
 
-This page explains how we measure whether the site is fast — what we track, where the limits live,
-and how the automated checks enforce them. It matters because a slow site loses visitors, and a
-college-student volunteer team can't eyeball speed by hand; the numbers have to be measured and
-guarded automatically.
+Contributors use this page to check page speed, download size and memory use before a change ships.
+Start with the failed check's report, reproduce the measurement, then decide what to change.
+Complete [local setup](../tutorials/first-time-setup.md) before running the commands below.
 
-We watch speed two complementary ways:
+We use two kinds of measurement:
 
-- **Synthetic monitoring** — speed measured in a controlled lab: a test tool loads the site in a
-  fixed, repeatable environment and times it. We run this in CI (Continuous Integration — automation
-  that runs on every push, see [glossary](../reference/glossary.md#ci)) against a build artifact
-  (the finished site files produced by a build). It gives a stable number that catches regressions
-  (speed getting worse) before they merge.
-- **Real-user monitoring (RUM)** — speed measured from actual visitors' browsers as they use the
-  live site, via Cloudflare Web Analytics. It's noisier (every visitor's device and network differ)
-  but it's the only number that matters in the end — what visitors actually experience.
+- **Synthetic monitoring** loads pages with test tools under controlled conditions. Continuous
+  integration (CI), the automated checks on GitHub, uses these measurements to catch slowdowns
+  before merging.
+- **Real-user monitoring (RUM)** measures visits to the live site through Cloudflare Web Analytics.
+  Those results include the range of devices, networks and locations visitors use.
 
 ## Budgets
 
-A "budget" here is a hard upper limit on some performance number — exceed it and a check fails. They
-keep the site from slowly getting heavier over time. All numeric ceilings live in
-[`apps/site/perf-budgets.json`](../../apps/site/perf-budgets.json) at the repo root.
+A performance budget is a limit that fails a check when a measurement exceeds it. File-size and
+memory limits live in [`apps/site/perf-budgets.json`](../../apps/site/perf-budgets.json).
+Lighthouse's page-speed limits live separately in
+[`apps/site/lighthouserc.cjs`](../../apps/site/lighthouserc.cjs).
 
-A few terms used in the table below:
+The file checks measure **gzipped** size: the number of bytes after gzip compression. This provides
+one repeatable measure of download size; a server can use a different compression method. The
+scripts label 1,024 bytes as one KB.
 
-- **Gzipped** — the file size after compression. Servers send files compressed (gzip is the common
-  method) and browsers unzip them, so the gzipped size is what visitors actually download. It's
-  smaller than the raw file on disk.
-- **Build peak RSS** — RSS (Resident Set Size) is how much memory a program is using; "peak" is the
-  most it used at any moment. Here it's the high-water memory mark while building the site.
-  Report-only means we record it but don't fail on it.
-- **usedJsHeapSize** — how much memory the page's JavaScript is holding in the browser while the
-  page is open. A runaway number means a memory leak that can make the page sluggish.
+| Measurement                               | Current limit                            | Check                                      |
+| ----------------------------------------- | ---------------------------------------- | ------------------------------------------ |
+| All Cascading Style Sheets (CSS), gzipped | 30 KB                                    | `apps/site/scripts/audit/bundle-size.ts`   |
+| All JavaScript (JS), gzipped              | 17 KB                                    | `apps/site/scripts/audit/bundle-size.ts`   |
+| CSS and JS combined, gzipped              | 46 KB                                    | `apps/site/scripts/audit/bundle-size.ts`   |
+| One gzipped file                          | 14 KB, with exceptions below             | `apps/site/scripts/audit/bundle-size.ts`   |
+| PNG/JPG image without a WebP copy         | 20 KB, unless listed in `webpExemptions` | `apps/site/scripts/audit/asset-budget.ts`  |
+| Build peak resident set size (RSS)        | Report only (`null`); local measurement  | `apps/site/scripts/audit/build-profile.ts` |
+| Browser JavaScript memory per page        | 30 MB                                    | `apps/site/tests/e2e/perf-memory.spec.ts`  |
 
-| Bucket                                           | Budget             | Enforced by                                |
-| ------------------------------------------------ | ------------------ | ------------------------------------------ |
-| Gzipped CSS (total)                              | 20 KB              | `apps/site/scripts/audit/bundle-size.ts`   |
-| Gzipped JS (total)                               | 12 KB              | `apps/site/scripts/audit/bundle-size.ts`   |
-| Gzipped combined                                 | 24 KB              | `apps/site/scripts/audit/bundle-size.ts`   |
-| Any single gzipped file                          | 14 KB              | `apps/site/scripts/audit/bundle-size.ts`   |
-| Raster image (PNG/JPG) without `.webp` companion | 20 KB              | `apps/site/scripts/audit/asset-budget.ts`  |
-| Build peak RSS                                   | report-only (null) | `apps/site/scripts/audit/build-profile.ts` |
-| Runtime usedJsHeapSize per page                  | 30 MB              | `apps/site/tests/e2e/perf-memory.spec.ts`  |
+`perFileExceptions` gives files whose names start with `BaseLayout.` a 21 KB ceiling and files
+starting with `app-enhance.` a 3 KB ceiling. These replace the general per-file limit for those
+files; the combined limits still apply.
 
-Trend data lands in `apps/site/audits/build-stats.jsonl` (one row per successful audit run) so
-memory and wall-clock (real elapsed time) drift is visible without git archaeology. JSONL = "JSON
-Lines": a plain-text file with one self-contained JSON record per line, easy to append to and scan.
+RSS measures memory held by a process. The local build profiler samples the `pnpm build` process and
+records its highest observed RSS and elapsed time. It does not measure the entire process tree.
+After a successful build, it appends a record to `apps/site/audits/build-stats.jsonl`. JSON Lines
+(JSONL) stores one JavaScript Object Notation (JSON) record per line. Compare several runs on the
+same machine before treating a memory change as a trend. This measurement is not a CI merge gate.
+
+The browser check samples `performance.memory.usedJSHeapSize`, the memory JavaScript still holds
+after the test loads and scrolls a page and asks Chromium to free unused objects. A failed limit
+requires investigation; the number alone does not identify a memory leak.
 
 ## Synthetic checks (CI)
 
-This is the lab side: automated speed and size checks that run on every code change, before it
-ships. **Lighthouse** is Google's open-source tool that loads a page and scores its performance;
-**Core Web Vitals (CWV)** are Google's headline speed metrics — most notably **LCP (Largest
-Contentful Paint)**, the time until the biggest piece of content (usually the hero image or heading)
-appears on screen. Lower LCP = the page feels like it loaded sooner.
+[The Audit workflow](../../.github/workflows/audit.yml) runs on pull requests and pushes to `main`.
+These performance checks must pass:
 
-A "hard gate" below means the check must pass or the build fails; a "soft-fail" reports problems
-without blocking.
+- **Lighthouse desktop and mobile** load a sample from the built sitemap. The config keeps one
+  detail page under each of `/events/`, `/join/` and `/projects/`, plus the other routes. Both
+  presets block merging on failure. Mobile uses the Moto G4 and slow-4G test settings.
+- **Runtime memory** checks sitemap pages in Chromium. It scrolls the page and requests garbage
+  collection, which frees unused objects, before comparing memory with the 30 MB limit.
+- **Bundle size** compresses CSS and JS from `dist/_astro` and `dist/scripts`, then checks the
+  totals and each file.
+- **Image size** checks PNG/JPG files in `public/` for the required WebP copies or listed
+  exceptions.
 
-[`.github/workflows/audit.yml`](../../.github/workflows/audit.yml) runs on every PR (pull request —
-a proposed change opened on GitHub) and push to `main`. The performance-relevant jobs:
+Lighthouse reports page-speed metrics including Largest Contentful Paint (LCP), the time until the
+largest visible content appears. LCP is one of the Core Web Vitals (CWV), Google's measures of
+loading, responsiveness and layout stability. A score or an LCP value is evidence from that test
+run, not a measurement of every visitor.
 
-- **Lighthouse (desktop)** — `apps/site/lighthouserc.cjs` default preset; CWV thresholds tuned for
-  the build artifact. The URL list is derived from the built sitemap (every static route plus one
-  representative detail page per collection), so new pages are covered without editing the config.
-  Hard gate.
-- **Lighthouse (mobile)** — same config, `LIGHTHOUSE_PRESET=mobile`; Moto G4 on slow 4G. Soft-fail
-  at first; promoted once one clean run is in.
-- **Runtime memory** — Playwright Chromium project; navigates every sitemap URL, scrolls
-  bottom-to-top, triggers a CDP GC (forces the browser to garbage-collect — free unused memory — via
-  the Chrome DevTools Protocol, the API for controlling Chrome), then asserts
-  `performance.memory.usedJSHeapSize` under the budget. Hard gate.
-- **Bundle size budget** — gzips `apps/site/dist/_astro` and `apps/site/dist/scripts` assets, checks
-  each bucket. Hard gate.
-- **Image asset budget** — walks `apps/site/public/**/*.{png,jpg,jpeg}` and requires a sibling
-  `.webp` for anything over the raster ceiling. Hard gate.
+Run the local baseline audit from the repository root:
 
-The orchestrator is `pnpm -C apps/site check:baseline` (locally) or the
-[`audit.yml`](../../.github/workflows/audit.yml) workflow (CI). The build itself runs through
-[`apps/site/scripts/audit/build-profile.ts`](../../apps/site/scripts/audit/build-profile.ts) so
-memory + wall-clock land in the trend file with no extra build cost.
+```sh
+pnpm -C apps/site check:baseline
+```
 
-[`.github/workflows/audit-scheduled.yml`](../../.github/workflows/audit-scheduled.yml) runs weekly
-with `LIGHTHOUSE_PRESET=prod` against the live production URLs (no `staticDistDir`). Regressions
-trigger `notify-on-failure`, which opens a GitHub issue labelled `audit, maintenance`.
+It builds once through the local memory profiler, runs the file checks, then runs browser checks in
+sequence. It writes a dated report under `apps/site/audits/`. GitHub runs the corresponding checks
+as separate jobs; its build does not use the local memory profiler.
 
-The production preset treats Lighthouse's `robots-txt` audit as a known exception only because
-Cloudflare may inject a managed `Content-Signal` line into the live `robots.txt` response. That line
-is intentional policy for AI crawler use, but Lighthouse currently reports it as an unknown robots
-directive. The config still checks the other production SEO audits directly.
+[The scheduled workflow](../../.github/workflows/audit-scheduled.yml) runs each Monday at 14:00 UTC
+(Coordinated Universal Time) and can also be started manually. It calls the pinned shared audit
+workflow on the default branch. That workflow runs `pnpm run audit --target production`, using
+[`.lvbt/tooling.json`](../../.lvbt/tooling.json) to select dependency, live-link and Lighthouse
+checks. The configured Lighthouse command sets `LIGHTHOUSE_PRESET=prod` and checks live production
+URLs. The shared workflow retains reports, previews the proposed issue actions, then reconciles
+verified findings with GitHub issues through `pnpm run audit report`.
+
+The production Lighthouse preset disables only the `robots-txt` audit because Cloudflare's managed
+`Content-Signal` line is an intentional crawler policy that Lighthouse does not recognize. The
+preset checks the other search-engine requirements separately. Do not remove the crawler policy to
+make that one audit pass.
 
 ## Real-user monitoring (CWA)
 
-This is the field side: speed measured from real visitors. CWA = Cloudflare Web Analytics, a
-privacy-respecting RUM tool (no cookies, no fingerprinting — it doesn't track individuals). It works
-via a **beacon**: a tiny script that quietly sends measurements back to a server. The site ships
-`beacon.min.js` from `static.cloudflareinsights.com` and POSTs (sends) CWV samples to
-`cloudflareinsights.com`. The shared LVBT analytics client also sends declared interaction events to
-`events.lasvegasfortransit.org`. All three origins are **allow-listed** (explicitly permitted) in
-[`apps/site/public/_headers`](../../apps/site/public/_headers) under our CSP (Content Security
-Policy — a security header that whitelists which outside servers the page may talk to, see
-[glossary](../reference/glossary.md#csp)): `script-src` lists where scripts may load from,
-`connect-src` lists where the page may send data. Without these two entries, the browser would block
-the beacon.
+Cloudflare Web Analytics (CWA) collects browser measurements through a small script called a
+**beacon**. The shared LVBT analytics package also sends declared interaction events to
+`events.lasvegasfortransit.org`. The site's Content Security Policy (CSP), which limits script and
+network destinations, permits the beacon at `static.cloudflareinsights.com` and measurements sent to
+`cloudflareinsights.com` and the LVBT collector. See the
+[security terms](../reference/glossary.md#csp).
 
-Activation:
+Maintainers configure the site's public token as the GitHub Actions variable
+`PUBLIC_LVBT_CWA_TOKEN`. This token identifies the analytics site; it is not an account password or
+account credential. The release build sets `LVBT_REQUIRE_ANALYTICS=1`, which loads the shared Astro
+integration and fails the build if the token is missing. Ordinary local and pull-request builds omit
+that flag and the integration. A retained release can contain the analytics code while preview
+runtime protections prevent it from reporting production traffic. The release smoke test checks that
+preview sends no requests to either collector.
 
-- Get the site token from the Cloudflare dashboard (Analytics → Web Analytics → your site →
-  "Token").
-- Add it as the `PUBLIC_LVBT_CWA_TOKEN` GitHub Actions variable (a named setting kept outside the
-  code, see [glossary](../reference/glossary.md#env-var)).
-- The production workflow sets `LVBT_REQUIRE_ANALYTICS=1`, which both enables the shared analytics
-  integration and fails the build when the token is absent.
-- Preview, CI, and local builds do not set that production gate, so they omit both the analytics
-  client and the Cloudflare beacon.
-
-[`apps/site/astro.config.mjs`](../../apps/site/astro.config.mjs) loads
-`@lasvegasfortransit/analytics/astro` only for that gated production build. The package owns the
-beacon and the shared LVBT event collector; individual layouts do not carry analytics scripts.
-
-Token rotation (replacing the secret token with a fresh one and retiring the old): rotate yearly or
-sooner if a leak is suspected. Generate a new token in the dashboard, swap the Pages env var,
-redeploy; old beacons stop reporting within minutes. The token is not a credential, so a leak is
-low-impact, but visible inflated traffic is worth catching.
+Contributors do not need a token to run local checks. Maintainers use
+[bootstrap](../reference/bootstrap.md) for production configuration. If the public token changes,
+they update the GitHub Actions variable and build a new reviewed release through the usual release
+process. Changing the variable does not modify an already built release.
 
 ## Why both?
 
-Neither signal alone is enough — each is blind to things the other catches, so we run both and
-cross-check them.
+Lab checks catch slowdowns before merging and provide controlled runs for investigation. Live
+measurements show the experience of visitors using different devices and networks. Neither result
+explains the other's cause by itself.
 
-Synthetic alone misses:
-
-- Real network variance (a CI runner on a fast wired link is not a visitor on Cox cable mid-storm).
-- Long-tail device performance (Lighthouse mobile preset is one fixed Moto G4 profile; real visitors
-  land on Pixels, iPhones, four-year-old Galaxies).
-- Geographic latency (LCP looks great from us-east-1; what about a visitor in Henderson on a
-  coffee-shop Wi-Fi?).
-
-RUM alone misses:
-
-- Pre-merge regressions. By the time RUM shows it, every visitor has already paid the cost.
-- Controlled-environment debugging. RUM tells you that the median LCP jumped 400 ms; Lighthouse on a
-  reproducible artifact tells you which asset caused it.
-
-Together: CI catches what visitors would feel, RUM confirms what they actually felt.
+For example, a Lighthouse run can reveal a larger image in the proposed build. Live data can show
+whether visitors on mobile connections also take longer to see that image. Compare the reports
+before attributing a change to code, network conditions or hosting.
 
 ## When numbers diverge
 
-When the lab (synthetic) and the field (RUM) disagree, this section is how to read which one to
-trust and where to look first.
+First check that the measurements cover the same release, page and time period. Compare device,
+network and location groups rather than assuming a whole-site average describes every visitor.
 
-If synthetic stays green but RUM regresses, the cause is usually infrastructure — Cloudflare edge
-cache, image-format negotiation, a plugin on the dashboard mis-set. Check the CWA dashboard's "by
-country" and "by browser" splits first; a single country/browser bar climbing is often a cache or
-A/B-test artifact, not a code regression.
+If CI passes but live measurements worsen, inspect the affected pages and visitor groups. Reproduce
+those conditions where possible. A cache change, a slower outside service, a different visitor mix
+or a code change can each affect the result; the disagreement does not identify one automatically.
 
-If synthetic regresses but RUM stays green, the budget is too tight for the real-world variance —
-adjust [`apps/site/perf-budgets.json`](../../apps/site/perf-budgets.json) upward only after
-confirming the synthetic number reflects a real visitor experience and not a Lighthouse quirk.
+If CI worsens but live measurements stay steady, inspect the failed report and repeat the controlled
+measurement. Live traffic may not yet include the proposed change or enough affected visits. Keep
+the budget in place while investigating. A budget change needs evidence that the added cost is
+acceptable; a passing live average alone is not that evidence.
