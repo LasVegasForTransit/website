@@ -90,7 +90,7 @@ export function taskNotionLink(value: string): string {
   const url = new URL(value);
   if (
     url.protocol !== 'https:' ||
-    !['notion.so', 'www.notion.so'].includes(url.hostname) ||
+    !['notion.so', 'www.notion.so', 'app.notion.com'].includes(url.hostname) ||
     url.username ||
     url.password ||
     value.length > 512

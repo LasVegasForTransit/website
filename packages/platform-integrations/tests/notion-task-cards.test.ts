@@ -16,7 +16,7 @@ function taskCardButtons(message: { components: DiscordTaskComponent[] }): Disco
 const token = 'a'.repeat(43);
 const task: NotionTaskSnapshot = {
   title: 'Prepare @everyone agenda <@123456789012345678>',
-  url: 'https://www.notion.so/10000000000040008000000000000002',
+  url: 'https://app.notion.com/10000000000040008000000000000002',
   description: null,
   assigneeIds: ['guest'],
   projectIds: [],

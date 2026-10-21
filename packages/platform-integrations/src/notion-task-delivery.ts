@@ -201,18 +201,14 @@ export async function processTaskDelivery(
       return;
     }
     if (!(await reserveDelivery(db, operation, clock()))) return;
+    const message = renderTaskCard({
+      token: card.token,
+      task: current.task,
+      policy: current.policy,
+      active: true,
+    });
     effectStarted = true;
-    const sent = await discord.sendCard(
-      channelId,
-      current.context.discord_user_id,
-      renderTaskCard({
-        token: card.token,
-        task: current.task,
-        policy: current.policy,
-        active: true,
-      }),
-      id,
-    );
+    const sent = await discord.sendCard(channelId, current.context.discord_user_id, message, id);
     if (
       !(await confirmTaskDelivery(db, operation, { channelId, messageId: sent.messageId }, clock()))
     )
