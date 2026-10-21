@@ -1,167 +1,118 @@
-# Newsletter operations
+# Newsletter publishing
 
-How to publish, send, and maintain the LVBT newsletter on Ghost(Pro) (the hosted
-publishing/newsletter platform chosen for the long-form journal; see
-[glossary](./glossary.md#ghost)). Reach for this when you're sending an issue or setting up email
-deliverability. For strategic framing, see [comms-strategy.md](../explanation/comms-strategy.md).
-For why we picked Ghost, see
-[decisions/newsletter-platform.md](../explanation/decisions/newsletter-platform.md).
+<a id="newsletter-operations"></a>
 
-> **Platform note.** The on-site subscribe form currently submits to **Beehiiv** (a different
-> newsletter platform; see [glossary](./glossary.md#beehiiv)), not Ghost — see
-> [newsletter-signup.md](./newsletter-signup.md). This ops guide (and the decision record) still
-> describe Ghost(Pro). Reconcile the platform choice; until then, treat the Ghost authoring/send
-> workflow below as aspirational, and Beehiiv as the live signup system.
+Newsletter editors use Beehiiv to publish LVBT Updates. Contributors use this reference to
+distinguish issue publishing from the website's signup and delivery code. The repository fetches
+published issues from Beehiiv's RSS feed, a list of recent posts, and links to them from
+`/newsletter`.
+
+The [earlier Ghost proposal](../explanation/decisions/newsletter-platform.md) is a historical
+decision record. Use the Beehiiv instructions here for current publishing.
+
+For the current implementation, use these references:
+
+- [Joining LVBT](./newsletter-signup.md) explains how the website saves consent and queues delivery.
+- [Scheduled newsletter processing](./staff-newsletter-operations.md#scheduled-newsletter-processing)
+  explains Beehiiv configuration, polling, rollout limits and failure recovery.
+- [Newsletter follow-up](./staff-newsletter-operations.md#resolve-newsletter-follow-up) explains how
+  staff resolve differences between the mailing list and a member record.
+- [Content collections](./content-collections.md#newsletter-issue) explains how published issues
+  appear on the website.
+
+Before sending an issue, you need authorized access to the LVBT Updates publication and permission
+to send to its audience. Website repository access does not grant either permission. Confirm the
+publication and recipients in Beehiiv before sending.
 
 ## Surface
 
-- **Domain:** `journal.lasvegasfortransit.org` (Cloudflare CNAME → Ghost(Pro) alias domain)
-- **Platform:** Ghost(Pro) Starter ($9/mo, 1 staff user, up to 500 members)
-- **Sender domain:** `@lasvegasfortransit.org` — must be authenticated via SPF, DKIM, DMARC (three
-  DNS records that prove your email really comes from your domain so it lands in inboxes instead of
-  spam; see [glossary](./glossary.md#email-auth))
+Beehiiv hosts the published newsletter. `PUBLIC_LVBT_NEWSLETTER_FEED_URL` selects the feed used at
+build time; `PUBLIC_LVBT_NEWSLETTER_URL` selects the newsletter home link. Both settings are listed
+in [`apps/site/.env.example`](../../apps/site/.env.example). A new issue appears on the public
+website after a refreshed build is promoted.
 
 ## Authoring/send workflow
 
-The agreed pattern is **hand-sent with RSS auto-import** (Ghost watches the site's RSS feed — an
-auto-generated list of recent posts — and turns each new post into a draft email automatically, so
-you don't copy-paste content): site content is canonical (MDX in repo); Ghost auto-creates a draft
-from the latest site post; the sender adds a 1–2 sentence framing intro and clicks send. Workflow
-per issue:
+Write and review the issue in the selected Beehiiv publication. Use the pre-send checklist below
+before an authorized sender publishes or sends it. Confirm that a linked website article is live on
+the public hostname; a preview link is not a published article.
 
-1. **Site post (if any) goes live** via the normal MDX-in-repo workflow. Verify it renders correctly
-   on the live site.
-2. **Ghost's RSS automation picks up the post** and creates a draft campaign in Ghost's admin.
-3. **Open the draft.** Add a 1–2 sentence framing intro at the top — what we want the reader to take
-   away from this issue. (This is what makes a newsletter feel human vs. robotic. Don't skip it.)
-4. **Send a test** to your own inbox. Verify: rendering, all links, unsubscribe footer, mailing
-   address footer.
-5. **Send.**
-
-Issues that don't tie to a site post (org-only updates, retrospectives, internal milestones) —
-compose directly in Ghost without an RSS import.
-
-Cadence: monthly to bi-weekly. Don't send less than monthly (subscribers forget who you are). Don't
-send weekly until there's enough substance to fill weekly.
+Publishing a website post does not send an email. Send the reviewed issue through Beehiiv.
 
 ## Domain authentication (one-time setup)
 
-**Required for deliverability.** Without these, emails go to spam regardless of content quality.
+A maintainer must configure the records shown by the selected sending provider. Domain Name System
+(DNS) records identify the servers and keys allowed to send mail for LVBT. SPF lists allowed sending
+servers, DKIM signs messages, and DMARC tells receivers how to handle messages that fail checks. See
+[email authentication](./glossary.md#email-auth).
 
-| Record | Type                                   | Notes                                                                                                                                                                       |
-| ------ | -------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| SPF    | TXT on root or sender subdomain        | Ghost provides exact value (`v=spf1 include:_spf.ghost.io ~all` or similar)                                                                                                 |
-| DKIM   | TXT (CNAME on Ghost(Pro))              | Ghost provides — add to Cloudflare DNS                                                                                                                                      |
-| DMARC  | TXT on `_dmarc.lasvegasfortransit.org` | Start at `v=DMARC1; p=none; rua=mailto:dmarc@lasvegasfortransit.org` (monitor mode); tighten to `p=quarantine` once aggregate reports show clean alignment, then `p=reject` |
-
-DMARC aggregate reports arrive weekly at the `rua=` mailbox. Configure that mailbox before going
-live or you'll lose the signal.
+Inspect the existing Beehiiv setup and obtain authorization before changing records. The website's
+separate Resend sending domain has its own
+[setup procedure](./platform-secrets.md#resend-sending-email).
 
 ## CAN-SPAM compliance
 
-CAN-SPAM is the US anti-spam law governing commercial and advocacy email; it requires the following
-in every such email. Ghost handles most automatically; verify after any theme change.
-
-- ✅ **Unsubscribe link** in every email (Ghost auto-includes; verify after theme tuning)
-- ✅ **Sender identity** (Ghost auto-includes from publication settings)
-- ⚠️ **Physical mailing address** — must be set in Ghost publication settings. Founder's address
-  until LVBT secures a PO box or coworking-space mail handling.
-- ✅ **Truthful subject lines** — editorial discipline, not a platform feature
+CAN-SPAM is a United States email law. This reference is not a legal determination of which
+requirements apply to a particular LVBT message. An authorized sender must use the organization's
+approved sender identity, mailing address and unsubscribe footer. Verify those fields in the test
+message; do not assume a template includes them after an edit.
 
 ## Subscriber data
 
-- **Ownership:** LVBT owns the list. Ghost is a data processor (a company that stores and handles
-  the data on our behalf but doesn't own it — a privacy-law term) under the publication's terms.
-- **Export:** Ghost admin → Members → Export. CSV with email, name, subscription state, signup
-  source, last-seen.
-- **Unsubscribe and bounce handling:** Ghost auto-flags hard bounces and processes unsubscribes; no
-  manual intervention.
-- **Migration off Ghost(Pro):** see
-  [decisions/newsletter-platform.md](../explanation/decisions/newsletter-platform.md) "Migration
-  paths."
+Use the membership database to establish the person's consent and membership. Beehiiv's current
+subscription status describes delivery and can require staff review; it does not establish the
+original date or wording of a person's choice.
+
+Use the approved [member export](../guides/export-a-member-record.md) and
+[data retention](../guides/operate-member-data-retention.md) procedures for privacy requests. Keep
+exports, contact details and provider credentials private.
 
 ## Subscribe form on the main site
 
-Native HTML form posting to Ghost's `/members/api/send-magic-link` endpoint (a magic link is a
-one-time sign-in/confirm link emailed to the user, so there's no password to set; no third-party JS
-embed — fits the minimalist aesthetic, no extra runtime).
-
-- **Component:** `apps/site/src/components/SubscribeForm.astro` (when built — see v0 plan)
-- **Footer slot:** every page on the site
-- **Dedicated page:** `/subscribe`
-- **Magic-link / double-opt-in:** handled by Ghost; site form just submits the email
-
-The site's `/privacy` page must mention:
-
-- What data is collected (email, optional name)
-- Third-party processor: Ghost
-- How to unsubscribe (link in every email + member account settings)
+The join form and newsletter box submit to `POST /join/member/`. They save a member record and
+newsletter consent, then queue delivery. See [Joining LVBT](./newsletter-signup.md) for the request
+flow and verification.
 
 ## Cost ladder
 
-Ghost(Pro) is sold in _tiers_ — pricing plans that raise the member cap and number of staff seats as
-you pay more. We start on the cheapest and move up only when a limit forces it:
-
-| Tier    | Monthly | Members | Staff seats | When                                        |
-| ------- | ------- | ------- | ----------- | ------------------------------------------- |
-| Starter | $9      | 500     | 1           | v0                                          |
-| Creator | $25     | 1,000   | 2           | When 2nd contributor joins                  |
-| Team    | $50     | 1,000   | 5           | When 3rd–5th contributor joins              |
-| Custom  | Higher  | More    | More        | Probably never; revisit self-hosted instead |
-
-When the next tier becomes warranted (subscriber count or staff seat), revisit whether Ghost(Pro)
-still wins vs. self-hosted Ghost — see
-[decisions/newsletter-platform.md](../explanation/decisions/newsletter-platform.md) "Trigger
-conditions."
+Keep the current Beehiiv Free-plan constraint for scheduled membership processing. An integration
+failure does not authorize a paid upgrade. A platform or plan change needs a separate maintainer
+decision and a migration plan that preserves consent and unsubscribe history.
 
 ## Pre-send checklist
 
-Before clicking Send on any issue:
+The authorized sender checks the actual test message before sending:
 
-- [ ] Subject line: clear, specific, no clickbait
-- [ ] Framing intro present (the human-voice paragraph at the top)
-- [ ] All links open the right page (don't trust auto-imported links from RSS — Ghost sometimes
-      mangles relative URLs)
-- [ ] Images load (Ghost-hosted or R2-hosted; never from a private/dev URL or a temporary blob)
-- [ ] Unsubscribe footer present
-- [ ] Mailing address footer present
-- [ ] Test sent to founder's inbox; checked on phone + desktop
-- [ ] Test sent to a Gmail address (confirms not in Promotions tab)
-- [ ] If linking to a site piece: site piece is published (not just on a preview deployment) and
-      `noindex` is off
+- [ ] The selected publication and recipients match the approved audience.
+- [ ] The subject accurately describes the issue, and the introduction explains its purpose.
+- [ ] Every link opens the intended public page, including links imported from a feed.
+- [ ] Images load from permanent public addresses.
+- [ ] The sender identity, unsubscribe link and approved mailing address appear.
+- [ ] The test reads correctly on a phone and a desktop, including a Gmail inbox.
+- [ ] Every linked website article is public and has no preview indexing restriction.
+
+Gmail's Promotions tab does not by itself mean delivery failed. Check the received message and
+provider status separately.
 
 ## Common failure modes
 
-- **Email lands in Promotions / Spam:** check SPF, DKIM, DMARC alignment. New sender domains take
-  2–4 weeks to build reputation; expect some Promotions placement until then. Don't link-shorten —
-  use full URLs. Don't include `https://bit.ly` etc.
-- **Ghost RSS import drops formatting:** Ghost's importer doesn't handle every MDX component. For
-  pieces with custom Astro components (callouts, embeds, scrollytelling fragments), write a
-  stand-alone post in Ghost rather than relying on auto-import. Link back to the full piece on the
-  site.
-- **Subscribers report not getting issues:** check spam folder first, then verify the email isn't
-  flagged in Ghost's Members admin (Ghost auto-flags hard bounces).
-- **Theme update breaks layout in Outlook:** Outlook uses Word's HTML renderer, which is unforgiving
-  (no flexbox, limited CSS). Test there before declaring a theme change done.
-- **Custom domain stops resolving:** check Cloudflare DNS — Ghost(Pro) periodically rotates
-  infrastructure and CNAME targets shift. If Ghost emails about a DNS update, do it; their grace
-  period is short.
+If the website omits an issue, check whether Beehiiv published it, whether the configured feed
+contains it and whether a refreshed release reached production. A feed change cannot update an
+already built page.
 
-## Future / out of scope
+If a new member is missing from Beehiiv, inspect the saved member record and scheduled delivery
+status using [newsletter operations](./staff-newsletter-operations.md). Do not submit another signup
+with a new consent time to hide a failed delivery.
 
-- **Urgent / mobilization stream** (action alerts that don't need permanent posts): bias toward same
-  Ghost list with a "rapid alerts" tag/segment, OR Bluesky/IG for time-sensitive blasts. Decide when
-  needed.
-- **Paid memberships / donations:** not a Ghost feature we use. Donations go through external
-  Givebutter/Donorbox.
-- **Newsletter analytics beyond Ghost defaults:** Ghost provides open/click rates. If we need deeper
-  analytics, evaluate then; don't bolt on third-party tracking pixels (privacy-hostile, hurts
-  deliverability).
+If messages fail to arrive, inspect the selected publication's delivery status and sending-domain
+checks. Do not reactivate an unsubscribed address without a newer valid signup. If a test renders
+badly, correct the issue before sending it to the list.
+
+<a id="future--out-of-scope"></a>
 
 ## Related
 
-- [Comms strategy](../explanation/comms-strategy.md) — strategic frame
-- [Decision: newsletter platform](../explanation/decisions/newsletter-platform.md) — alternatives
-  considered, why Ghost(Pro)
-- [Decision: staff publishing](../explanation/decisions/staff-publishing.md) — how non-tech
-  contributors edit site content (separate from newsletter authoring)
+- [Comms strategy](../explanation/comms-strategy.md) explains the editorial goals.
+- [Newsletter platform decision](../explanation/decisions/newsletter-platform.md) records the
+  earlier Ghost proposal.
+- [Staff publishing decision](../explanation/decisions/staff-publishing.md) covers website editing.

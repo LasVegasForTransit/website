@@ -1,9 +1,10 @@
 # Innovation ideas registry
 
-A living list of media, tools, and content formats LVBT could publish. Captured during the comms
-strategy brainstorm; reference when planning new work.
+Contributors use this list when proposing media, tools, or content formats LVBT could publish. The
+entries came from communications planning and remain ideas unless their status says otherwise.
 
-This file is a memory aid, not a roadmap. Don't delete entries — promote/demote as priorities shift.
+This file is a memory aid, not a roadmap. Don't delete entries — change their status as priorities
+shift.
 
 **Status legend:**
 
@@ -15,8 +16,9 @@ This file is a memory aid, not a roadmap. Don't delete entries — promote/demot
 
 ## Personalized civic engagement tools 🎯 (pillar 2 — `/tools/`)
 
-Most advocacy CTAs are generic. LVBT's are personal — they know your address, commute, and reps.
-This is the most distinctive angle vs. typical advocacy orgs.
+The proposed tools would make a call to action (CTA) specific to a person's location, commute, or
+elected representatives. This section describes intended behavior, not existing access to a reader's
+personal information.
 
 - 📋 **Find-your-reps + take action** — ZIP → RTC (Regional Transportation Commission of Southern
   Nevada, the agency that runs Las Vegas's buses — see [glossary](../reference/glossary.md#rtc))
@@ -26,11 +28,11 @@ This is the most distinctive angle vs. typical advocacy orgs.
   road and highway agency), RTC, or the county opens public input, drafts a personalized comment
   from the user's stance and submits it.
 - 💭 **Route-impact calculator** — input home + work → see your commute today vs. post-route-cut
-  scenario. Personal stakes via personalization.
+  scenario. Show how a route change would affect the person's own trip.
 - 💭 **"Build your transit budget" simulator** — slider/allocation tool. See what $X M does for
   routes/frequency/coverage. Educational and persuasive.
 - 💭 **Commute time compare** — your trip by car vs. transit, today and 10 years from now if X
-  happens. Visceral.
+  happens. Show the difference in minutes.
 - 💭 **RTC meeting tracker** — upcoming agenda items, past votes, calendar export, comment-period
   alerts, reminder signup.
 - 💭 **Petition / pledge tools** — built into the site; one-click sign; share back to social.
@@ -43,8 +45,8 @@ This is the most distinctive angle vs. typical advocacy orgs.
 
 ## Public data infrastructure 🎯 (pillar 3 — `/data/`)
 
-Build the dashboards and data access RTC should have built. Become the citation reflex for
-journalists. Open-source so other small-city advocates can fork.
+Build the dashboards and data access RTC should have built. Give journalists a source they can cite.
+Publish the code so advocates in other cities can copy and adapt it.
 
 - 📋 **Live RTC ridership dashboard** — updated nightly via Cloudflare Worker cron pulling GTFS
   (General Transit Feed Specification, the standard format agencies publish routes and schedules in
@@ -55,15 +57,16 @@ journalists. Open-source so other small-city advocates can fork.
   they go. Comparison to highway spending.
 - 💭 **Scorecards** — RTC board members, state legislators, council members, with voting records on
   transit. Updated regularly.
-- 💭 **GTFS data exposure** — for researchers, civic tech enthusiasts, journalists. Make our
-  cleaned/normalized version queryable.
+- 💭 **GTFS data exposure** — for researchers, civic tech enthusiasts, journalists. Let them search
+  and download data after we check it and put it in a consistent format.
 - 💭 **Synthesis-of-journalism page** — everything published about Vegas transit this month,
-  summarized. Sticky resource for journalists and decision-makers.
+  summarized. Give journalists and decision-makers a reason to return.
 
 ## Data journalism / scrollytelling 🎯 (pillar 1 — `/explainers/`)
 
-Pudding-style narrative explainers. Define LVBT's editorial voice. Big-bang shareable; press
-magnets; canonical explainer pieces journalists cite.
+Interactive explainers in the style of The Pudding, which combines stories with data. Use these
+pieces to establish LVBT's editorial voice and give readers and journalists explanations they can
+share and cite.
 
 - 📋 **"The Valley We Could Build"** — first piece, defines the editorial voice. Paint urgency for
   the LVBT vision; show how transformative real transit could be for the region. Story arc: Valley
@@ -87,27 +90,27 @@ magnets; canonical explainer pieces journalists cite.
   Distinct from text.
 - 💭 **Photo essays** — riders' stories, corridor before/after, RTC meeting documentation.
 - 💭 **Short visual videos for Bluesky/IG** — commute portraits, route walkthroughs, council member
-  soundbites. Drives social → site → newsletter conversion.
+  soundbites. Give viewers a reason to visit the site and subscribe to the newsletter.
 
 ## Community / participatory
 
 - 💭 **Reader-submitted "Transit diaries"** — riders' commute logs, hardships, why they care.
   Curated and published as a series.
-- 💭 **Annotated maps** — "tell us where transit fails you" — user submissions on a public map.
-  Crowdsourced ground truth.
+- 💭 **Annotated maps** — "tell us where transit fails you" — user submissions on a public map. Use
+  residents' reports to understand problems on the ground.
 - 💭 **Op-ed templates** — supporters can adapt and submit to the Sun, R-J, etc. Pre-written,
   cite-ready.
 
 ## Movement infrastructure (long-term)
 
 - ❄️ **Open-source the toolkit** — package the route impact calculator, comment mobilizer, scorecard
-  scaffold, dashboard for transit advocates in Phoenix, OKC, Sacramento, Tampa. Network effect for
-  the broader movement; LVBT becomes the standard-bearer brand. Quietly the most powerful long-term
-  lever. Revisit once 1–2 of LVBT's own tools are stable.
+  scaffold, dashboard for transit advocates in Phoenix, OKC, Sacramento, Tampa. Other advocacy
+  groups could reuse the tools and contribute improvements. Revisit once 1–2 of LVBT's own tools are
+  stable.
 
 ## Reference / canonical content (always-on, table stakes)
 
-Not "innovation" — listed for completeness so future planning doesn't reinvent the baseline.
+These recurring content needs remain part of planning even though they are not new product ideas.
 
 - Project pages: Maryland Pkwy BRT, Charleston LRT, Brightline West, RTC funding fight (2027
   session)

@@ -5,12 +5,12 @@ open on their own phone. Every screen in the Organizing Platform is prototyped a
 [tested with real people](./run-a-usability-test.md) before it is built, and the finished feature
 starts from the prototype's pages rather than redrawing them.
 
-A **prototype** is a coded version of one flow, built from the app patterns (see the pattern gallery
-at `/patterns/` on any preview), using made-up data. It saves nothing and calls no outside service.
-Prototypes live under `/prototypes/`, which exists only on pull request previews and in local
-development: the production build deletes the folder, and the production deploy fails if it is ever
-there. Every prototype page shows a banner saying it is a test version and tells search engines not
-to index it.
+A **prototype** is a coded version of one flow, built from the shared app components (see the
+examples at `/patterns/` on any preview), using made-up data. It saves nothing and calls no outside
+service. Prototypes live under `/prototypes/`, which exists only on pull request previews and in
+local development: the production build deletes the folder, and the production deploy fails if it is
+ever there. Every prototype page shows a banner saying it is a test version and tells search engines
+not to index it.
 
 > **Before you start.** You need the website running locally (see
 > [local development](../reference/local-dev.md)).
@@ -55,8 +55,8 @@ import Button from '../../../components/app/Button.astro';
 </PrototypeLayout>
 ```
 
-Use made-up data such as "Ana" and `ana@example.org`, never real people. Write every text to the
-[copy standard](../explanation/app-copy.md) and run its checklist.
+Use made-up data such as "Ana" and `ana@example.org`, never real people. Write all visible text
+using the [copy standard](../explanation/app-copy.md) and run its checklist.
 
 A form can simply move to the next page with `method="get"`, as above. When testers need to see
 error messages, give the prototype a small handler in `apps/site/functions/prototypes/<name>/` that
@@ -71,8 +71,9 @@ Run `pnpm dev` and open `/prototypes/`. Your prototype is listed; click through 
 window, with the keyboard only, and with JavaScript turned off.
 
 Push your branch and open a pull request. The preview deployment's address appears in the pull
-request, and your prototype is at that address plus `/prototypes/<name>/`. The CI checks run the
-same accessibility and reflow checks on every prototype page as on the pattern gallery.
+request, and your prototype is at that address plus `/prototypes/<name>/`. The continuous
+integration (CI) checks run the same accessibility and narrow-screen layout checks on every
+prototype page as on the pattern gallery.
 
 ## 4. Move it through its statuses
 

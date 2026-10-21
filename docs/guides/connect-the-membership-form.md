@@ -1,10 +1,10 @@
 # Connect the membership form to the intake pipeline
 
-The membership Google Form records signups in the canonical platform through a small Apps Script
+The membership Google Form saves signups in LVBT's member database through a small Apps Script
 attached to the form (Apps Script is Google's built-in JavaScript automation; see
-[glossary](../reference/glossary.md#apps-script)). This guide wires that script up. Do it once per
-form, or again if the form is recreated. How the rest of the pipeline works, and what to do when a
-submission fails, is in [membership-intake.md](../reference/membership-intake.md).
+[glossary](../reference/glossary.md#apps-script)). This guide connects the script to the website. Do
+it once per form, or again if the form is recreated. How the rest of the pipeline works, and what to
+do when a submission fails, is in [membership-intake.md](../reference/membership-intake.md).
 
 > **Before you start.** You need edit access to the form and the value of
 > `LVBT_MEMBERSHIP_INTAKE_SECRET` that the live site uses. If the form is being connected for the
@@ -70,16 +70,16 @@ submission fails, is in [membership-intake.md](../reference/membership-intake.md
 > makes an external request and reads the respondent's email — actions a simple trigger isn't
 > authorized to do, so it would silently fail.
 
-If the endpoint returns a non-2xx response, the script throws. Apps Script records the failed
-execution and sends the trigger owner the standard failure email.
+If the website returns a failure response, the script records an error. Apps Script records the
+failed execution and sends the trigger owner the standard failure email.
 
 ## Check it works
 
-Submit a test response from the live form, then confirm in **Executions** (the list icon in the Apps
-Script sidebar) that `onMembershipFormSubmit` completed. A failed execution shows the endpoint's
-status and body; the
+Use an approved response from the live form for this check. Do not create a fictional member.
+Confirm in **Executions** (the list icon in the Apps Script sidebar) that `onMembershipFormSubmit`
+completed. A failed execution shows the endpoint's status and body; the
 [recovery section](../reference/membership-intake.md#failure-handling-and-recovery) of the reference
-explains what each one means. Confirm the canonical profile has the original consent time and Google
+explains what each one means. Confirm the member profile has the original consent time and Google
 Form attribution, then find the eligible member in the staff Welcome queue. Newsletter delivery runs
 separately. The endpoint creates no Notion page and needs no Notion credentials. Follow the
 [retirement procedure](../reference/membership-intake.md#staff-follow-up-in-notion) before marking

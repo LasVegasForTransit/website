@@ -1,18 +1,24 @@
 # Back up and recover the member database
 
-The **Member database backups** GitHub Actions workflow saves a daily, encrypted copy of the
-production member database to the private `lvbt-member-backups` R2 bucket. Objects under
-`production/` expire after 30 days. The bucket uses Standard storage and has no public access.
-Backups contain the complete application schema and stored values, including consent, identities,
-sessions and synchronization state. They exclude Cloudflare internal tables, external mailing lists
-and other databases.
+Maintainers use the **Member database backups** GitHub Actions workflow to keep a recovery copy of
+member data. The workflow saves a daily, encrypted copy of the production member database to the
+private `lvbt-member-backups` R2 bucket. Objects under `production/` expire after 30 days. The
+bucket uses Standard storage and has no public access. Backups contain the complete application
+schema and stored values, including consent, identities, sessions and synchronization state. They
+exclude Cloudflare internal tables, external mailing lists and other databases.
+
+## Before you start
+
+You need maintainer access to the website repository's GitHub Actions and permission to manage the
+backup credentials below. Use the GitHub workflow for routine backups and checks. Use a private
+workstation only for the local test or a separately approved recovery. Keep member data private.
 
 ## Schedule and checks
 
 The workflow runs from `main` at these UTC times:
 
 - Daily at 10:17: capture production, restore locally, encrypt and upload, then download and compare
-  the ciphertext before publishing a success receipt.
+  the encrypted file before publishing a success receipt.
 - Daily at 12:43: fail if the latest committed backup is older than 26 hours, unavailable or
   damaged.
 - January, April, July and October 1 at 14:17: download the latest backup, decrypt it and restore
@@ -43,7 +49,8 @@ branch, with no tag patterns. Do not use repository-wide secrets or production d
 Create an account-owned Cloudflare token with only **D1 Read** on the LVBT account. This permission
 covers that account's D1 databases; the backup tool fixes the production database ID in code. Create
 R2 object read/write and object read-only credentials scoped only to `lvbt-member-backups`. The
-daily job receives the public age recipient, never the private recovery identity.
+daily job receives only the public age recipient (the key used to encrypt files), never the private
+recovery identity (the key needed to decrypt them).
 
 Keep an owner-only recovery identity outside GitHub and the bucket, with a recovery copy accessible
 to the organization's authorized maintainer. Losing all copies makes backups unrecoverable. To
@@ -76,11 +83,11 @@ Load the appropriate credentials from secure storage into the environment variab
 /private/path/backup-tools/bin/python -B packages/member-backups/src/backup.py restore-test
 ```
 
-A retained backup has an encrypted `.age` object and a matching `.age.json` receipt. To test an
-older copy, select its receipt from the private bucket and pass its complete `production/…` object
-key with `restore-test --receipt`. The tool refuses expired backups, wrong database targets, invalid
-receipts, unsafe archives and existing restore destinations. It restores with reviewed code and
-never executes scripts from an archive.
+A retained backup has an encrypted `.age` file and a matching `.age.json` receipt that identifies
+and checks the saved file. To test an older copy, select its receipt from the private bucket and
+pass its complete `production/…` object key with `restore-test --receipt`. The tool refuses expired
+backups, wrong database targets, invalid receipts, unsafe archives and existing restore
+destinations. It restores with reviewed code and never executes scripts from an archive.
 
 ## Recover production after an incident
 
@@ -91,7 +98,8 @@ not overwrite production to test a backup.
 1. Pause member writes, outgoing mail and role synchronization. Preserve the current database and
    record the incident boundary in private operational notes.
 2. Select a backup preceding the incident. Download its ciphertext and receipt into an owner-only
-   directory, verify the receipt's SHA-256 and decrypt with the separately held identity.
+   directory, verify the file against the receipt's SHA-256 checksum and decrypt with the separately
+   held identity.
 3. Restore into a new isolated SQLite database using the reviewed `snapshot.restore` function. Check
    integrity, foreign keys and exact typed values before considering an import.
 4. Reconcile all deletions, consent withdrawals and access revocations since the backup from current
@@ -106,10 +114,10 @@ not overwrite production to test a backup.
 
 ## Troubleshoot failures and control costs
 
-A failure never publishes a success receipt until encrypted upload readback passes. An older receipt
-remains visible to the freshness check. Inspect credentials, account access, lifecycle settings,
-receipt age and provider availability without copying member data into logs. Retry manually after
-correcting the cause.
+A failure never publishes a success receipt until it downloads and verifies the encrypted upload. An
+older receipt remains visible to the freshness check. Inspect credentials, account access, lifecycle
+settings, receipt age and provider availability without copying member data into logs. Retry
+manually after correcting the cause.
 
 D1 HTTP failures print a JSON diagnostic with the event `member_backup_d1_http_error`, HTTP status,
 a fixed category and numeric Cloudflare error codes. They never print provider messages, SQL or
@@ -129,9 +137,10 @@ member values. Use the category to choose the next step:
 A failed capture does not satisfy a pre-migration backup requirement. Resolve the failure and verify
 a successful `backup` receipt before continuing a release that requires a fresh capture.
 
-The snapshot fails closed when schema, response size or SQLite features exceed the supported format.
-Generated or virtual tables and values that cannot round-trip exactly require a reviewed format
-change; do not omit them to make a run pass. Keep restore tests aligned with schema changes.
+The backup stops when the table definitions, response size, or SQLite features exceed the supported
+format. It does not save a partial backup. Generated or virtual tables and values that cannot
+round-trip exactly require a reviewed format change; do not omit them to make a run pass. Keep
+restore tests aligned with schema changes.
 
 Standard GitHub-hosted runners are free for this public repository. R2 Standard includes a shared
 free allowance; usage must fit alongside other buckets. Keep 30-day retention enabled, avoid

@@ -1,7 +1,7 @@
 # Decision: Newsletter platform
 
 > **Superseded on 2026-09-23.** Beehiiv supplies LVBT's newsletter while the Organizing Platform
-> keeps the canonical member record and queues delivery separately. See the
+> keeps the main member record and queues delivery separately. See the
 > [Organizing Platform decision record](./organizing-platform.md) and the dated addendum below.
 
 This decision record explains which service we send the newsletter through and why — read it before
@@ -15,31 +15,37 @@ serial newsletter.
 
 **Date:** 2026-05-01
 
+The comparison through Migration paths records the assumptions, prices, and options considered on
+2026-05-01. It is historical reasoning, not a current vendor comparison. The 2026-09-23 addendum
+records the separate choice LVBT used in practice.
+
 ## Context
 
-Brand-new advocacy org. Founder is technical; future contributors likely won't be. Year 1 newsletter
-ceiling realistically ~500 subscribers. Tight budget. Need: long-form analysis + monthly/bi-weekly
-org updates, with the option to grow.
+At decision time, LVBT was a new advocacy organization. The founder could maintain code, but future
+contributors might not. The expected first-year newsletter audience was ~500 subscribers. The
+organization needed long-form analysis and monthly/bi-weekly updates on a small budget, with room to
+grow.
 
 Initial v0 plan called for "Beehiiv embed" on the site. Reopened the decision because:
 
 1. The subscriber list is a core organizational asset that's painful to migrate later.
-2. The website's highest-leverage role for an advocacy org is **a tools/data/journalism platform**,
-   not a publication wrapper. Engineering effort spent on "make the newsletter look beautiful in
-   MDX" is better spent on interactive tools, public data infrastructure, and data journalism.
+2. The most useful role for the advocacy website is **a tools/data/journalism platform**, not a
+   publication wrapper. Engineering effort spent on "make the newsletter look beautiful in MDX" is
+   better spent on interactive tools, public data infrastructure, and data journalism.
 3. Newsletter authoring needs to be staff-friendly. Staff have Workspace identities, not necessarily
    GitHub.
 
 ## Decisions made along the way
 
-The path the analysis took, in order — useful so future-you can spot when an assumption changed:
+These were the options considered in order. Keep them to show which assumptions led to the choice:
 
-1. **Email-only ESP + canonical-on-site** (publish on lvbt.org, email is push). Initially favored
-   Buttondown for its markdown-native composer and indie posture. Then reconsidered when we agreed
-   the website should focus on tools/data/journalism, freeing the newsletter to live elsewhere with
-   its own reader experience.
-2. **Hybrid model** (newsletter has its own surface; site is canonical for everything else).
-   Email-only services dropped out of the running because they don't provide a reader experience.
+1. **Email-sending service with original articles on the website** (publish on lvbt.org, email is
+   push). Initially favored Buttondown for its markdown-native composer and indie posture. Then
+   reconsidered when we agreed the website should focus on tools/data/journalism, freeing the
+   newsletter to live elsewhere with its own reader experience.
+2. **Hybrid model** (newsletter has its own reading site; other original content stays on the
+   website). Email-only services dropped out of the running because they don't provide a reader
+   experience.
 3. **Ghost(Pro) over Substack/Beehiiv** for brand control + portability + ethics fit.
 
 ## Alternatives considered
@@ -124,19 +130,20 @@ trade vs. \$9/mo for zero ops. Documented as a future option — see "Trigger co
 
 ## Addendum: LVBT uses Beehiiv (2026-09-23)
 
-The comparison above is kept as written, as the record of how this decision was first reached. In
-practice, LVBT's newsletter has run on Beehiiv, not Ghost(Pro), since the website's first newsletter
-sign-up form, and it still does. Its web address is `mail.lasvegasfortransit.org`. This record
-doesn't capture why the recommendation wasn't followed; if that matters for a future decision, ask
-the people who set up the newsletter.
+The comparison above preserves the original decision and its reasoning. In practice, LVBT's
+newsletter has run on Beehiiv, not Ghost(Pro), since the website's first newsletter sign-up form,
+and it still does. Its web address is `mail.lasvegasfortransit.org`. This record doesn't capture why
+the recommendation wasn't followed; if that matters for a future decision, ask the people who set up
+the newsletter.
 
 The website's code works with Beehiiv because that's where LVBT's mailing list lives. An accepted
-signup first saves the person's record and original consent and queues durable delivery work. The
-scheduled jobs Worker then reconciles Beehiiv; a provider outage does not discard the accepted
-signup (see [membership intake](../../reference/membership-intake.md)). Newsletter-based membership
-remains the interim rule. Reviewed current-roll imports recognize active Beehiiv subscribers without
-inventing absent historical consent, while conflicting unsubscribe chronology is held for staff
-review before a mailing-list change. The
+signup first saves the person's record and original consent and saves delivery work that the
+background service can retry. The scheduled jobs Worker then updates Beehiiv to match the saved
+choice; a provider outage does not discard the accepted signup (see
+[membership intake](../../reference/membership-intake.md)). Newsletter-based membership remains the
+interim rule. Reviewed current-roll imports recognize active Beehiiv subscribers without inventing
+absent historical consent, while conflicting evidence about when someone unsubscribed is held for
+staff review before a mailing-list change. The
 [Organizing Platform decision record](./organizing-platform.md) keeps Beehiiv behind its own
 integration, so the newsletter could move to another service later without changing the platform's
 rules.

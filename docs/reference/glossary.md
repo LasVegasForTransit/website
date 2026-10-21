@@ -1,8 +1,7 @@
 # Glossary
 
-Plain-English definitions of the tools, acronyms, and jargon used across this repo's docs. New to
-the project? Skim this once, then keep it open in a tab — other docs link here the first time they
-use a term.
+Contributors use this page to look up an unfamiliar term while following a guide. Each definition
+explains the term in the context of this repository.
 
 If you hit a word in any doc that isn't explained and isn't here, that's a doc bug — please add it
 (see [writing-docs.md](../standards/writing-docs.md)).
@@ -39,7 +38,7 @@ If you hit a word in any doc that isn't explained and isn't here, that's a doc b
 ## Running & shipping (the developer tools)
 
 - **Node** <a id="node"></a> — the program that runs JavaScript/TypeScript outside a browser. You
-  need it installed to run anything here (version 24.18.0 or newer in the 24.x line).
+  need it installed to run anything here (version 24.20 or newer in the 24.x line).
 - **pnpm** <a id="pnpm"></a> — the package manager we use (an alternative to npm). It installs
   dependencies and runs project commands like `pnpm dev`. If you know npm, it's the same idea.
 - **`pnpm dev`** <a id="pnpm-dev"></a> — starts the site on your own computer so you can preview
@@ -57,16 +56,17 @@ If you hit a word in any doc that isn't explained and isn't here, that's a doc b
   `apps/site/.env.example` is a committed template listing which env vars exist (no real secret
   values). `apps/site/.env.local` is your private copy with the real values; it's git-ignored and
   never committed.
-- **CI / CI-CD** <a id="ci"></a> — "Continuous Integration / Delivery": automation that runs on
-  GitHub every time you push, to build the site and run checks (and, for us, deploy it). Lives in
-  `.github/workflows/`.
+- **CI / CI-CD** <a id="ci"></a> — "Continuous Integration / Delivery": automation in
+  `.github/workflows/` that builds and checks changes on GitHub. Staging and production publication
+  require explicit workflow dispatches.
 - **lockfile** <a id="lockfile"></a> — `pnpm-lock.yaml`, which pins the exact version of every
   dependency so everyone gets an identical install.
 - **git hook** <a id="git-hook"></a> — a script Git runs automatically at a certain moment (e.g. on
   every commit). Ours check your commit message and docs before a commit is accepted, and tell you
   what to fix if something's off.
-- **gh** <a id="gh"></a> — the GitHub command-line tool. The setup script uses it to create the repo
-  and sign in to GitHub.
+- **gh** <a id="gh"></a> — the GitHub command-line tool. Maintainers use it to inspect workflow runs
+  and other repository state. Agents must use the approved helper when creating issues or pull
+  requests.
 - **dig** <a id="dig"></a> — a command-line tool that looks up DNS records, used to check that a
   domain points where it should.
 - **SSH key / SSH URL** <a id="ssh"></a> — SSH keys are a passwordless way to prove who you are to
@@ -75,13 +75,16 @@ If you hit a word in any doc that isn't explained and isn't here, that's a doc b
 
 ## Hosting & DNS (how the site gets online)
 
-- **Cloudflare Pages** <a id="cloudflare-pages"></a> — the former website host. Its `pages.dev`
-  deployment remains available for emergency rollback.
+- **Cloudflare Pages** <a id="cloudflare-pages"></a> — the former website host. Do not assume its
+  older `pages.dev` deployment is a verified recovery option. Follow the saved-release recovery
+  procedure.
 - **Pages Function** <a id="pages-function"></a> — a backend script in `apps/site/functions/api/`.
   Wrangler compiles these scripts into the production Worker; each handles a request that static
   HTML cannot, such as a form submission.
-- **Wrangler** <a id="wrangler"></a> — Cloudflare's command-line tool, used to run the functions
-  locally and to deploy. `pnpm dev` runs it for you.
+- **Wrangler** <a id="wrangler"></a> — Cloudflare's Worker development tool. This repository still
+  uses it for local runtime and build work. Use the shared release commands for publication.
+- **Cloudflare CLI (`cf`)** <a id="cf"></a> — the newer Cloudflare command-line tool used for
+  provider operations. A signed-in profile identifies the account the command may inspect or change.
 - **Cloudflare Workers** <a id="cloudflare-workers"></a> — Cloudflare's runtime for the production
   website. The `lvbt-website` Worker serves prebuilt pages and runs the compiled API functions.
 - **rendering on request** <a id="rendering-on-request"></a> — building a page's HTML on the server
@@ -96,10 +99,11 @@ If you hit a word in any doc that isn't explained and isn't here, that's a doc b
 - **cron trigger** <a id="cron-trigger"></a> — a Cloudflare setting that starts a Worker on a
   timetable, such as every 15 minutes.
 - **Cloudflare Access** <a id="cloudflare-access"></a> — a Cloudflare service that makes people sign
-  in before they can reach a website at all. Free for up to 50 users; it guards the staff console.
+  in before they can reach a protected website. It also supports service credentials for CI. It
+  guards the staff console and protected staging hosts.
 - **ULID** <a id="ulid"></a> — a unique identifier that sorts by the time it was created.
 - **DNS** <a id="dns"></a> — the system that maps a domain name (`lasvegasfortransit.org`) to a
-  server. The "phone book" of the internet.
+  server.
 - **CNAME** <a id="cname"></a> — a type of DNS record that points one domain name at another (e.g.
   our domain → Cloudflare's servers).
 - **apex domain** <a id="apex-domain"></a> — the bare domain with no subdomain
@@ -107,12 +111,43 @@ If you hit a word in any doc that isn't explained and isn't here, that's a doc b
 - **zone** <a id="zone"></a> — Cloudflare's term for a domain it manages, plus all that domain's DNS
   records.
 
-## Notion (where staff data lives)
+## Database and background work
 
-- **Notion** <a id="notion"></a> — the app the team uses for databases and notes (like a shared
-  spreadsheet-meets-wiki). The site reads from and writes to it.
-- **Notion integration** <a id="notion-integration"></a> — a mini-app you create in Notion so our
-  code can access a database. It produces an **API key**.
+- **person record** <a id="person-record"></a> — the membership database record for one person. A
+  sign-in account, a membership choice, newsletter consent, and a staff role are separate facts.
+- **query** <a id="query"></a> — one request to the database. One query may inspect thousands of
+  rows. Counting queries alone does not measure D1 cost.
+- **rows read** <a id="rows-read"></a> — database rows examined while running a query. A query can
+  read more rows than it returns. An index can reduce the number examined.
+- **transaction** <a id="transaction"></a> — a group of database changes that either all succeed or
+  all fail. This prevents a partially applied change.
+- **trigger** <a id="database-trigger"></a> — SQL the database runs in response to a specified
+  operation, either before or after it. Check triggers when a write has effects beyond its immediate
+  table.
+- **background job** <a id="background-job"></a> — saved work that a Worker performs after the
+  original request, such as sending a newsletter preference to Beehiiv.
+- **generation** <a id="generation"></a> — a job's version number. A newer version prevents older
+  work from replacing a more recent choice.
+- **lease** <a id="lease"></a> — a temporary claim on work. Another worker may claim it after the
+  lease expires. The old worker must prove it still owns the claim before saving its result.
+- **receipt** <a id="receipt"></a> — saved evidence that an operation completed, such as a provider
+  response identifier. A receipt does not replace checks of current provider state.
+- **reconciliation** <a id="reconciliation"></a> — comparing the requested state with the current
+  state and applying the changes still needed. For example, a job checks a person's Discord role
+  before deciding whether to add or remove it.
+- **release artifact** <a id="artifact"></a> — the saved output of a build. Promotion publishes that
+  saved build instead of rebuilding newer source code.
+- **release marker** <a id="release-marker"></a> — a deployed value that identifies the release
+  serving a request. Release checks compare it with the selected build.
+
+<a id="notion-where-staff-data-lives"></a>
+
+## Notion (editorial databases and notes)
+
+- **Notion** <a id="notion"></a> — the app the team uses for editorial databases and notes,
+  including transit news and press coverage. Membership records live in D1.
+- **Notion integration** <a id="notion-integration"></a> — a connection you configure in Notion so
+  our code can access an explicitly shared database. It produces an **API key**.
 - **API key / token** <a id="api-key"></a> — a secret password-like string that lets code call a
   service (Notion, Beehiiv, etc.) on our behalf. Kept in env vars, never committed.
 - **rotate (a secret)** <a id="rotate"></a> — replace a secret with a new value everywhere it is
@@ -134,12 +169,12 @@ If you hit a word in any doc that isn't explained and isn't here, that's a doc b
 - **bearer token** <a id="bearer-token"></a> — a secret sent in a request's
   `Authorization: Bearer <token>` header to prove the caller is allowed. If it doesn't match, the
   function returns `401`.
-- **timing-safe comparison** <a id="timing-safe"></a> — comparing two secrets in a way that always
-  takes the same amount of time, so an attacker can't guess the secret character-by-character by
-  measuring how fast it's rejected.
-- **idempotent** <a id="idempotent"></a> — an operation you can safely run more than once with the
-  same result (e.g. "add this article" skips if it already exists, so re-running never creates
-  duplicates).
+- **timing-safe comparison** <a id="timing-safe"></a> — comparing secret values without revealing
+  how many characters match through the comparison time. Callers must also handle unequal lengths
+  safely.
+- **idempotent** <a id="idempotent"></a> — an operation designed so repeating the same request does
+  not apply its effect twice. Check the operation's documented retry rules. A partially saved news
+  article can still need inspection before retrying.
 - **CSP (Content Security Policy)** <a id="csp"></a> — a security rule, sent as an HTTP header, that
   lists which sources a page may load scripts/images/etc. from. Blocks injected/malicious code.
 
@@ -147,16 +182,18 @@ If you hit a word in any doc that isn't explained and isn't here, that's a doc b
 
 - **Beehiiv** <a id="beehiiv"></a> — the newsletter platform we currently send email through (via
   its API).
-- **Ghost(Pro)** <a id="ghost"></a> — the hosted publishing/newsletter platform chosen for the
-  long-form journal. See the [decision record](../explanation/decisions/newsletter-platform.md).
+- **Ghost(Pro)** <a id="ghost"></a> — the hosted publishing/newsletter platform proposed for the
+  long-form journal. That proposal does not describe the current Beehiiv setup. See the
+  [decision record](../explanation/decisions/newsletter-platform.md).
 - **RSS** <a id="rss"></a> — "Really Simple Syndication": a standard XML feed a site or newsletter
   publishes to list its recent posts. We read Beehiiv's RSS feed at build time to list recent issues
   on `/newsletter`.
 - **double opt-in** <a id="double-opt-in"></a> — requiring a new subscriber to click a confirmation
   link in an email before they're fully subscribed. Confirms the address is real and consenting.
-- **SPF / DKIM / DMARC** <a id="email-auth"></a> — three DNS records that prove your email is really
-  from your domain, so it lands in inboxes instead of spam. SPF lists allowed senders; DKIM signs
-  messages; DMARC tells inboxes what to do if a message fails the first two.
+- **SPF / DKIM / DMARC** <a id="email-auth"></a> — email authentication settings published through
+  DNS. SPF lists allowed senders. DKIM lets recipients verify a message signature. DMARC declares
+  how recipients should handle failed domain authentication. These settings do not guarantee inbox
+  delivery.
 - **Apps Script** <a id="apps-script"></a> — Google's built-in JavaScript automation for Forms,
   Sheets, and Docs. A script attached to a form can run on every submission (a _trigger_) and call
   outside services; that is how the membership form reaches our intake endpoint. Open it via

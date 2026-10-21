@@ -1,10 +1,13 @@
 # Message catalog
 
-Use this catalog for copy on member and staff screens, so LVBT can add a language later without
-rebuilding screens. English (`en.ts`) is the only published language. Spanish isn't offered until a
-volunteer can write and review it; machine translation is never published.
+Contributors put text for member and staff screens in this message catalog, a shared collection of
+named messages. Use it when you add or change screen text so a translator can add a language without
+rewriting each screen. English (`en.ts`) is the only published language. LVBT will offer Spanish
+when volunteers can write and review it; LVBT does not publish machine translation.
 
-The catalog runs on the server and at build time only, so it adds no JavaScript to pages.
+The server and build process read the catalog. The catalog adds no JavaScript to pages. Run the
+commands below from the repository root after
+[local setup](../../../../docs/tutorials/start-here.md).
 
 ## Use a message
 
@@ -40,20 +43,21 @@ t('screen.tries', { count: 4 }); // "You have 4 tries left."
 
 ## Test with longer text
 
-The pseudo-language `en-XA` renders every message about 40 percent longer, with accented letters,
-like `[Ĵöïñ ĹVBŢ · · ·]`. It shows where a layout would break in a longer language without anyone
-needing to speak one.
+The test language `en-XA` makes each message about 40 percent longer and adds accented letters, like
+`[Ĵöïñ ĹVBŢ · · ·]`. It shows where a layout would break in a longer language without anyone needing
+to speak one.
 
 To see the whole site in it, build with `LVBT_PSEUDO_LOCALE=1`:
 
 ```sh
-LVBT_PSEUDO_LOCALE=1 pnpm build && pnpm preview
+LVBT_PSEUDO_LOCALE=1 pnpm -C apps/site build
+pnpm -C apps/site preview
 ```
 
-Every page built this way says `lang="en-XA"`. The audit's "Long text (en-XA)" job builds the site
-like this on every pull request and checks that the join and sign-in pages still fit a 320-pixel
-phone with nothing cut off. The production deploy refuses a build in `en-XA`. Messages the server
-fills in on request, such as an error after a wrong code, stay in English in this build.
+Every page built this way says `lang="en-XA"`. The automated audit's "Long text (en-XA)" job builds
+the site like this on every pull request and checks that the join and sign-in pages still fit a
+320-pixel phone with nothing cut off. The production deploy refuses a build in `en-XA`. Messages the
+server fills in on request, such as an error after a wrong code, stay in English in this build.
 
 ## Add a language later
 

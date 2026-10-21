@@ -62,16 +62,16 @@ does not change membership, consent, account links, committee assignments, or pr
 - **The file names someone else:** do not send it. Delete the mistaken local download, return to
   **Members**, and verify the correct profile against the request.
 
-The server checks current ownership or administrator access while collecting the record and again
-before returning it. If access or account ownership changes during collection, start a new download
-after resolving the change. Download responses are private and instruct browsers and intermediaries
-not to cache them.
+The server checks that the requester still owns the account or has administrator access while
+collecting the record and again before returning it. If access or account ownership changes during
+collection, start a new download after resolving the change. Download responses are private and
+instruct browsers and intermediaries not to cache them.
 
-Per-person export receipts live in the existing append-only `staff_audits` table under action
-`person.export`. Each records the authenticated requester ID, exported person ID and time, with
+Maintainers can check the export audit records in `staff_audits` under action `person.export`. Each
+identifies who requested the file, whose record they exported, and when. It records
 `details.requested_by` set to `member` for a self-download or the administrator's person ID for an
 on-behalf download. Administrator receipts also identify permission `export.full`. Receipts contain
-no contact details, export contents or session secrets. The final authorization check and receipt
-insert are one guarded statement; a refused or revoked request creates no export receipt.
+no contact details, export contents or session secrets. The database saves the receipt only if the
+final access check passes. A refused or revoked request creates no export receipt.
 
 For staff access setup, see [staff portal operations](../reference/staff-portal-operations.md).

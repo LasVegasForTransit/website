@@ -1,17 +1,18 @@
 # Design specs (historical)
 
-The dated files in this folder are **internal design records** — snapshots of how a specific feature
-was thought through at the time it was built. They're kept for reference, not as instructions.
+Contributors can read these dated records to understand a past design decision. Use the current
+[docs index](../../README.md) for setup, contribution and release instructions.
 
-**These are not contributor documentation.** They:
+These files record what people proposed, approved or checked at the time. The adjacent
+[implementation plans](../plans/2026-10-05-programs-page-composition.md) also preserve work in
+progress and local review results. Neither folder establishes how the current application behaves or
+which release is live. An unchecked task or an old publication request does not authorize new work.
 
-- describe one feature's design at one moment, not how the system works today;
-- may be **out of date** — the code has moved on, the specs haven't;
-- assume context a newcomer won't have, and don't meet the
-  [writing-docs](../../standards/writing-docs.md) readability bar (on purpose — see its "Out of
-  scope" note).
+The records may use old commands, paths or tools. Keep their original dates, decisions and evidence
+when consulting them. For example, the June 14 membership-form design was superseded on September
+23, 2026; current intake instructions live in the
+[membership reference](../../reference/membership-intake.md).
 
-If you're new, start here instead:
-
-- [Start here](../../tutorials/start-here.md) — the new-contributor on-ramp.
-- [Docs index](../../README.md) — everything else, organized by what you need.
+New contributors should begin with [Start here](../../tutorials/start-here.md). Historical records
+assume the original discussion's context and are excluded from the contributor readability
+requirements in [Writing docs](../../standards/writing-docs.md#out-of-scope).

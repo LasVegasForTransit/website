@@ -1,7 +1,9 @@
 # Key facts
 
-These numbers anchor the home page, the vision, the why-now case, and the objection-rebuttal
-reference. **Verify them before changing.** They're time-sensitive — they will drift.
+Writers use these figures on the home page, the vision page, and in advocacy material. Check the
+original source and its reporting period before reusing a number. This table records existing copy;
+it does not establish that a forecast or ranking is current. Update the uses listed below when a
+verified figure changes.
 
 Acronyms used below: **RTC** (Regional Transportation Commission of Southern Nevada — the agency
 that runs Las Vegas's buses; see [glossary](./glossary.md#rtc)), **APTA** (American Public

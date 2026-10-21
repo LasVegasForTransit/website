@@ -1,17 +1,17 @@
 # Working in this repository
 
-Run `pnpm check` after every change. It is the same command CI runs, and a failing check names the
-command that fixes it (`pnpm check:fix` repairs everything a machine can).
+Contributors and agents use these rules when changing this repository. Run `pnpm check` after every
+change. CI runs the same checks. Use `pnpm check:fix` for fixes the tools can apply, then read and
+resolve any remaining failures.
 
 This repository is the Astro site for Las Vegans for Better Transit, in `apps/site`, inside a
 Turborepo workspace that follows the organization's repository standard. Cloudflare Workers serves
 production through explicit promotion of a saved, reviewed staging release. Changes land through
 pull requests with linear history and the current `Validate` check.
 
-New to the project (human or agent)?
-[`docs/tutorials/start-here.md`](./docs/tutorials/start-here.md) orients you, and the
-[`glossary`](./docs/reference/glossary.md) defines every tool and acronym used across these docs.
-Contributors here are often students and junior devs — keep docs and explanations accessible (see
+Start with [`docs/tutorials/start-here.md`](./docs/tutorials/start-here.md) for setup. The
+[`glossary`](./docs/reference/glossary.md) defines unfamiliar terms. Write for contributors who may
+be new to the stack. Explain the reason for a choice as well as the steps (see
 [`docs/standards/writing-docs.md`](./docs/standards/writing-docs.md)).
 
 ## Standard commands
@@ -21,27 +21,29 @@ Follow the shared
 for common setup, validation, audit and release commands. This site's `pnpm dev` starts
 `https://lvbt.localhost`; `pnpm test:e2e` runs product browser acceptance against a local build.
 
-`pnpm bootstrap` and `pnpm preflight` use the shared `@lasvegasfortransit/cli` implementation. Local
-requirements are declared in `.lvbt/tooling.json`; local development requires no Cloudflare or
-GitHub provider sign-in. `apps/site/platform.json` declares production requirements.
-`pnpm preflight --production` reads provider readiness; a maintainer runs
-`pnpm bootstrap --production` to configure what is missing. Credential setup or rotation requires a
-maintainer to authorize the account, scopes, and destination. An agent may carry out that authorized
-setup. Ordinary promotion uses the existing GitHub Actions credentials and needs no local Cloudflare
-login. See [`docs/reference/bootstrap.md`](./docs/reference/bootstrap.md). Production normally
-deploys through the explicit Promote website release workflow in GitHub Actions, which verifies a
-saved staging release before it goes live. Retained recovery uses `pnpm promote --run-id <id>` with
-an explicit `--expected-version <current-version>` when production lacks a shared release marker.
-Direct `pnpm run deploy` is rejected by the shared release contract. An explicit request to promote
-preview to production authorizes dispatching `pnpm promote` from this repository. The command
-resolves the current preview in GitHub Actions, using the existing `worker-preview` Access
-credentials, and publishes through `worker-candidate`. Local Cloudflare sign-in, Studio presence, a
-browser session, and fresh route screenshots are not prerequisites. Existing Actions/environment
-permissions and CI release checks still apply. Use `pnpm promote --run-id <id>` when the request
-selects a specific reviewed staging release. Never silently substitute newest main, redispatch an
-uncertain publication, or bypass a failed check. A request to inspect/review changes is separate
-from a request to publish; perform the requested review without imposing a new approval on an
-already authorized publication.
+`pnpm bootstrap` sets up local tools. `pnpm preflight` checks them. Both use the shared
+`@lasvegasfortransit/cli` and read `.lvbt/tooling.json`. Local development needs no Cloudflare or
+GitHub sign-in. Site-specific commands live in `apps/site/package.json`.
+
+Production setup is separate. `apps/site/platform.json` declares the requirements.
+`pnpm preflight --production` checks provider readiness. A maintainer authorizes the account,
+scopes, and destination before an agent runs `pnpm bootstrap --production` or rotates credentials.
+See [bootstrap and preflight](./docs/reference/bootstrap.md).
+
+Production publication uses **Promote website release** in GitHub Actions. It verifies and publishes
+a saved staging build. An explicit request to promote preview to production authorizes
+`pnpm promote` here. The command resolves the current preview through GitHub Actions and uses the
+existing `worker-preview` Access credentials to publish through `worker-candidate`.
+
+Ordinary promotion needs no local Cloudflare sign-in, Studio session, or new route screenshots.
+Actions permissions and release checks still apply. Use `pnpm promote --run-id <id>` when the user
+selects a specific reviewed staging build. Recovery also needs
+`--expected-version <current-version>` when production has no shared release marker. Direct
+`pnpm run deploy` is rejected.
+
+Never substitute the newest main build for the selected build. Reconcile provider versions before
+retrying an uncertain publication. Never bypass a failed check. A review request does not authorize
+publication. Do not add another approval requirement after the user has authorized publication.
 
 Commands only the site has, such as `event:new` or `worker:dev`, live in `apps/site/package.json`:
 run them with `pnpm -C apps/site <command>`.
@@ -53,7 +55,7 @@ run them with `pnpm -C apps/site <command>`.
 - **[`docs/standards/commit-scopes.md`](./docs/standards/commit-scopes.md)** — the allowed scopes
   and why nothing else qualifies.
 - **[`docs/standards/git-guidelines.md`](./docs/standards/git-guidelines.md)** — staging discipline,
-  the atomic commit pattern, hooks.
+  explicit staging, hooks, and safe undo commands.
 - **[`.lvbt/commit-scopes.txt`](./.lvbt/commit-scopes.txt)** — source of truth for the scope list
   (what the commit‑msg hook reads).
 
@@ -77,64 +79,22 @@ release is vendored in `.lvbt/web-platform/` and updated by the `Standard update
 
 ## Commit messages: the rule you will be tempted to break
 
-> **Write for someone reading `git log` a year from now — not as a chronicle of how you got here.**
-
-The biggest failure mode for an AI writing commits is treating the body as a narration of the
-refactor:
-
-```text
-❌ refactor(dx): clean up validate-commit-scope.ts
-
-Refactored for noUncheckedIndexedAccess without scattering non-null
-assertions: indexOf+slice for first-line, named regex groups, .entries()
-for indexed loops. A single die(...) helper replaces five
-near-identical console.error+exit blocks. header.type narrows to an
-AllowedType union; the stringly-typed cast is gone.
-```
-
-That is a diary entry. It tells the reader what _the author thought about_, not what _the system
-does differently_.
-
-The right shape:
-
-```text
-✅ refactor(dx): clean up validate-commit-scope.ts
-
-Validator output and behavior unchanged; internal cleanup so future
-edits start from a typed, narrowed baseline rather than scattered
-assertions. No caller-visible change.
-```
-
-Or — for a genuine refactor with no caller-visible change — just the title and nothing else. Only
-`feat` and `fix` commits need a body.
+Write for a maintainer reading `git log` a year later. Explain the result and the reason for the
+choice. The diff already shows which helpers moved or variables changed.
 
 ### Specific things to never write in a commit body
 
-- **Internal identifier names** (`createSubscribeMiddleware`, `die`, `firstLineOf`, `PHASE_BY_ID`)
-  unless they're a public exported API.
-- **TypeScript / language mechanics** (narrowing, union types, type guards, `as`, non-null
-  assertions, generics, `noUncheckedIndexedAccess`).
-- **Shell / regex idioms** (`here-doc`, `IFS=$'\\t'`, named capture groups, `Promise.all` over
-  `spawnSync`). Describe the resulting behavior, not the technique.
-- **Refactor mechanics phrased as outcomes** ("collapses X into Y", "replaces A with B", "switched X
-  to Y"). The diff shows replacement; the message should say _what works differently_ or — if
-  nothing does — let the title carry the change.
-- **Comparison to prior implementation** ("the old code did X; now we do Y"). Say what the code does
-  now.
-- **Test counts, coverage percentages, lint warning counts.** Mention what scenarios are now
-  covered, not the numbers.
+Leave out private phase names, unexplained task IDs, internal identifier lists, language mechanics,
+shell tricks, test totals, and lists of silenced warnings. Name a public API when its contract
+changes. Describe the scenarios that tests protect.
 
 ### What does belong
 
-- Behavior changes a maintainer or visitor would notice.
-- Bugs fixed, with root cause.
-- Performance wins, with numbers ("Lighthouse LCP 3.2 s → 1.4 s").
-- Contract changes (API endpoints, env-var keys, breaking changes).
-- Removals, with the reason.
+Explain changed behavior, a bug's cause, a measured improvement, a changed public setting or API, or
+the reason for a removal. Include a limitation when it affects use or operation. A local test result
+does not establish production behavior.
 
-Full spec and more examples in [`commit-messages.md`](./docs/standards/commit-messages.md).
-
----
+Follow [commit-messages.md](./docs/standards/commit-messages.md) for examples and body requirements.
 
 ## Commit format quick reference
 
@@ -165,6 +125,9 @@ a new maintainer needs no chat history. Keep private planning, credentials, memb
 detailed execution receipts out of public docs. Follow
 [Writing docs](docs/standards/writing-docs.md).
 
+- Prefix fresh clones and worktrees with `GIT_LFS_SKIP_SMUDGE=1` to avoid unnecessary screenshot
+  downloads. Follow the [screenshot guide](apps/site/tests/README.md#first-time-setup) when images
+  are needed.
 - Work on a branch and use a pull request for every change to `main`. Never force-push or delete the
   default branch.
 - **Don't `git add .` / `-A` / `*`.** Stage explicit paths.
@@ -219,8 +182,8 @@ markers or GitHub-side prose checks.
   the `lvwwd` Worker; this repo only redirects `/wwd`, `/wwd/` and `/week-without-driving` there —
   see
   [`docs/reference/week-without-driving-site.md`](./docs/reference/week-without-driving-site.md).
-- Membership intake: website, versioned form, or original Google Form intake → canonical person
-  record → staff Welcome flow and durable scheduled Beehiiv delivery, without new Notion pages — see
+- Membership intake: the website and supported forms save a person record in D1. Staff use the
+  Welcome flow, and scheduled jobs deliver newsletter choices to Beehiiv — see
   [`docs/reference/membership-intake.md`](./docs/reference/membership-intake.md).
 - Transit news intake: three ways to push articles into a Notion database (pnpm script, Claude Code
   skill, public Notion form + Cloudflare enrichment) — see
@@ -231,7 +194,7 @@ markers or GitHub-side prose checks.
 
 ## Related
 
-- [`docs/tutorials/start-here.md`](./docs/tutorials/start-here.md) — new-contributor on-ramp
+- [`docs/tutorials/start-here.md`](./docs/tutorials/start-here.md) — first contributor task
 - [`docs/reference/glossary.md`](./docs/reference/glossary.md) — tools & acronyms defined
 - [`docs/standards/writing-docs.md`](./docs/standards/writing-docs.md) — keep docs accessible
 - [`docs/standards/commit-messages.md`](./docs/standards/commit-messages.md)

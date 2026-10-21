@@ -4,15 +4,20 @@ Use an account section when a member needs to view or change something about the
 Keep the heading, explanation and actions focused on that person's choices. Connection processing,
 role assignment and other implementation details belong in developer documentation.
 
+## Before you start
+
+Complete [local setup](../tutorials/first-time-setup.md), create a branch, and identify the member
+action this section supports. Use test members when checking personal values or forms.
+
 ## Create the section
 
 Add an Astro component under `apps/site/src/components/account/`. It contains the heading and
 content; the account layout supplies its outer section and anchor. Use the shared app components and
-semantic color tokens, and put all visible text in the
-[message catalog](../../packages/platform-core/src/messages/en.ts).
+named theme colors so the section works with the rest of the account page. Put all visible text in
+the [message catalog](../../packages/platform-core/src/messages/en.ts).
 
-The account is built as a template and filled on each signed-in request. For personal values, give
-the component a `data-slot` and fill it through
+The account is built as a template and filled on each signed-in request. For personal values, mark
+the place where each value belongs with a `data-slot` attribute, then fill it through
 [`functions/account/index.ts`](../../apps/site/functions/account/index.ts). Derive those values from
 the current session. Never put a member record in a build-time component or public asset.
 

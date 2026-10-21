@@ -4,6 +4,12 @@ Use this guide to add a news story or interview featuring Las Vegans for Better 
 public [LVBT in the press](https://lasvegasfortransit.org/press/) page. After the one-time setup,
 staff add and edit coverage in Notion; no code change or website deploy is needed.
 
+## Before you start
+
+Staff need edit access to **LVBT Press** in the LVBT Notion workspace. If the database is not
+connected yet, a maintainer needs permission to configure the website's Notion integration and
+production settings. Creating a credential or changing production settings requires authorization.
+
 ## One-time setup
 
 Create a database named **LVBT Press** in the LVBT Notion workspace with these properties:
@@ -27,5 +33,6 @@ from the database menu and set `LVBT_PRESS_DATA_SOURCE_ID` alongside the existin
 3. Once all four fields are valid, the article appears on `/press`, newest first. Incomplete rows
    stay off the public page.
 
-Changes usually appear within five minutes. Editing a row updates its listing; deleting a row
-removes it after the same cache period.
+If an entry does not appear, check all four fields and ask a maintainer to check the database
+connection. Do not copy integration credentials into a report. Changes usually appear within five
+minutes. Editing a row updates its listing; deleting a row removes it after the same cache period.

@@ -4,10 +4,11 @@ This page explains how someone becomes an LVBT member on lasvegasfortransit.org,
 form at `/join/member` or the newsletter box shown across the site. Read it before changing either
 form, or when a new member says something went wrong.
 
-For now, being on LVBT's mailing list is what makes someone a member. Both forms subscribe the
-person in [Beehiiv](./glossary.md#beehiiv) (the newsletter platform) and record them, with evidence
-of their consent, in the platform database. The Google Form still works as a fallback; see
-[membership intake](./membership-intake.md).
+Newsletter consent establishes LVBT membership. Both forms save the person and their consent in the
+platform database, then queue delivery to [Beehiiv](./glossary.md#beehiiv), the newsletter platform.
+The join handler does not call Beehiiv or create Notion follow-up pages. These statements describe
+this checkout; verify the deployed release and jobs configuration before promising delivery. The
+Google Form still works as a fallback; see [membership intake](./membership-intake.md).
 
 ## How it works
 
@@ -18,10 +19,9 @@ newsletter box            ─┴─> POST /join/member/
                                  2. refuse the 11th join from one connection in an hour
                                  3. check the fields
                                  4. an address? turn it into a census block, then forget it
-                                 5. subscribe in Beehiiv
-                                 6. record the person, their consent and "joined" in the database
-                                 7. set their region from the address, if it shows one
-                                 8. send the confirmation email and add a Notion row for staff
+                                 5. save the person, consent and "joined" event; queue delivery
+                                 6. set their region from the address, if it shows one
+                                 7. attempt the confirmation email through Resend
                                -> /join/member/region/   when their region is still unknown
                                -> /join/member/welcome/  "You're in."
 ```
@@ -45,9 +45,9 @@ newsletter box            ─┴─> POST /join/member/
 
 ## What is stored, and what isn't
 
-The person's email address, any name, phone number and ZIP code they typed, and their interests.
-Their consent is recorded with the exact wording version (`join-form-v1` or `newsletter-box-v1`), so
-LVBT can always show what someone agreed to.
+The database keeps the person's email address, any name, phone number and ZIP code they typed, and
+their interests. Their consent is recorded with the exact wording version (`join-form-v1` or
+`newsletter-box-v1`), so LVBT can always show what someone agreed to.
 
 A street address is never stored. It is sent once to the free
 [US Census Geocoder](https://geocoding.geo.census.gov/geocoder/), which returns the census block the
@@ -67,34 +67,43 @@ into the `zip_regions` table.
 ## Confirmation email and removal link
 
 The confirmation email is sent through Resend when `LVBT_RESEND_API_KEY` is set (see
-[platform secrets](./platform-secrets.md)). Until then, Beehiiv's own welcome email confirms the
-subscription instead.
+[platform secrets](./platform-secrets.md)). Without the Resend key, this handler does not send its
+confirmation email. Beehiiv delivery and any provider welcome email depend on the separate scheduled
+worker; a saved membership does not prove either message arrived.
 
-The email's "Not you? Remove this email" link is signed and lasts 30 days. Opening it only shows a
-button, because email security scanners open links automatically. Pressing the button withdraws the
-newsletter consent, unsubscribes the address in Beehiiv, and deletes the person if joining was the
-only thing they ever did with LVBT.
+The email's "Not you? Remove this email" link is signed and lasts 730 days, as defined by
+`REMOVAL_LINK_DAYS` in `apps/site/platform/join.ts`. Opening it only shows a button, because email
+security scanners open links automatically. Pressing the button withdraws newsletter consent and
+queues provider cleanup. It also deletes the person if joining was their only LVBT activity. An
+unsubscribe keeps the Beehiiv subscriber inactive; account deletion requires permanent provider
+cleanup. Check that outcome separately with the
+[cleanup procedure](./staff-newsletter-operations.md#verify-newsletter-cleanup-after-account-deletion).
 
 ## Verify it works
 
-1. Join at `https://lasvegasfortransit.org/join/member` with a test address you control.
+Before a hosted test, obtain approval for the exact test address and membership changes. Use local
+fixtures for ordinary development. To check the selected deployed release:
+
+1. Join at `https://lasvegasfortransit.org/join/member` with the approved test address.
 2. The welcome page says "You're in." and names your address.
-3. In Beehiiv → Subscribers, the address shows as `active`.
+3. If scheduled processing is enabled, wait for the queued delivery and confirm the address shows as
+   `active` in Beehiiv → Subscribers. The welcome page alone does not prove delivery.
 4. Check the database:
 
    ```sh
    pnpm -C apps/site exec wrangler d1 execute lvbt-platform --remote --command "SELECT id, membership_status, region_id FROM people ORDER BY created_at DESC LIMIT 5"
    ```
 
-5. Open the removal link from the email and press the button, so the test member is removed again.
+5. Open the removal link and press the button. Verify local withdrawal and scheduled provider
+   cleanup separately. Use only the approved disposable test identity.
 
 ## Troubleshooting
 
 | Symptom                                      | Cause                                                                | Fix                                                                                                                                 |
 | -------------------------------------------- | -------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
-| "We couldn't finish joining you just now"    | Beehiiv refused the subscription, or its secrets are missing         | Check the `lvbt-website` Worker logs for "Beehiiv subscribe failed" and run `pnpm preflight --production`                           |
+| "We couldn't finish joining you just now"    | The member could not be saved or the join handler failed             | Inspect the `lvbt-website` Worker logs and saved member record before submitting again                                              |
 | Every join shows that message                | The `PLATFORM_DB` binding or `LVBT_LINK_SIGNING_SECRET` is missing   | The logs say which; the binding is declared in `apps/deploy/cloudflare.config.ts`, the secret through `pnpm bootstrap --production` |
-| No confirmation email                        | `LVBT_RESEND_API_KEY` isn't set, or the Resend domain isn't verified | Set the key; until then Beehiiv's welcome email is sent instead                                                                     |
+| No confirmation email                        | `LVBT_RESEND_API_KEY` isn't set, or the Resend domain isn't verified | Check the Resend key and verified sending domain; check scheduled Beehiiv delivery separately                                       |
 | The region step says it has expired          | More than an hour passed, or cookies are blocked                     | The person is already a member; they can set their region later from their account                                                  |
 | A join returns a server error after a deploy | A migration wasn't applied                                           | Run the migrations in the [schema](../../packages/platform-storage/migrations/schema.md)                                            |
 

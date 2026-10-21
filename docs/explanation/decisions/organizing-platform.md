@@ -1,9 +1,8 @@
 # Decision: Organizing platform architecture
 
-This record fixes how the Organizing Platform is built: where its code lives, how its pages render,
-where its data is kept, how its scheduled jobs run, and which speed budgets every screen must meet.
-Read it before you pick up any platform task. Dozens of tasks depend on these answers, and they
-should never have to be worked out twice.
+Contributors use this decision record before changing the Organizing Platform. It sets the
+application boundaries, page rendering, data storage, scheduled work, and speed budgets so each
+feature uses the same rules.
 
 The Organizing Platform is the set of signed-in tools LVBT is adding to this website: joining and
 managing a membership, one record per supporter, event check-in, Discord roles, volunteer management
@@ -16,25 +15,31 @@ Everything stays on Cloudflare's free plan.
 
 **Date:** 2026-09-22
 
+This record preserves the choices and assumptions made on that date, with the dated Google Workspace
+addition below. Statements about the site at the time, provider prices, and future work are
+historical context. They do not establish current deployment or provider readiness. Use the
+[deployment reference](../../reference/deployment-pipeline.md) and
+[staff operations](../../reference/staff-portal-operations.md) for current operating procedures.
+
 ## Context
 
-Today this website is a static site (see the [glossary](../../reference/glossary.md#static-site)).
-Every page is built into HTML ahead of time. It has no database, no sign-in, no sessions and no
-message catalog. Its only server code is three
-[Pages Functions](../../reference/glossary.md#pages-function): newsletter subscribe, membership
-intake from the Google Form, and the transit-news intake from Notion.
+On 2026-09-22, this website was described as a static site (see the
+[glossary](../../reference/glossary.md#static-site)). At that time, every page was built into HTML
+ahead of time. The site had no database, sign-in, sessions, or message catalog. Its server code
+consisted of three [Pages Functions](../../reference/glossary.md#pages-function): newsletter
+subscribe, membership intake from the Google Form, and the transit-news intake from Notion.
 
 The platform needs things a static site cannot do. It has to show a member their own record,
 remember who is signed in, store people and their consent, and run jobs on a schedule. The choices
-below add those things while keeping the public site as fast and cheap as it is today.
+below add those things while keeping the public site as fast and cheap as it was at decision time.
 
 Two facts shaped the hosting decision:
 
 1. Astro's Cloudflare adapter no longer supports Cloudflare Pages. It deploys only to Cloudflare
    Workers with static assets. (An adapter is the plug-in that lets Astro run on a particular host.)
-2. That move is already under way. The
-   [Workers candidate](../../guides/test-the-workers-candidate.md) runs beside the Pages site today,
-   and it is checked against Pages on every production deploy.
+2. That move was already under way. The
+   [Workers candidate](../../guides/test-the-workers-candidate.md) ran beside the Pages site at
+   decision time, and was checked against Pages on each production deployment.
 
 ## Terms used in this record
 
@@ -44,8 +49,8 @@ Two facts shaped the hosting decision:
 - **Rendering on request:** producing a page's HTML on the server when someone asks for it, instead
   of once at build time. Astro calls this on-demand rendering. A page that stays the same for
   everyone is still built ahead of time, which Astro calls prerendering.
-- **D1:** Cloudflare's serverless SQL database. It runs next to Workers, and its free plan covers
-  LVBT's needs.
+- **D1:** Cloudflare's hosted database. It uses SQL, the language for reading and changing database
+  records. It runs next to Workers, and the design assumes its free plan covers LVBT's needs.
 - **Binding:** the name a Worker uses to reach a Cloudflare resource, such as a database. Code asks
   for `PLATFORM_DB` rather than holding a connection string.
 - **Migration:** a numbered SQL file that changes the database's structure one step at a time.
@@ -59,8 +64,8 @@ Two facts shaped the hosting decision:
   membership and committees.
 - **Integration:** shared code that translates between one outside service, such as Beehiiv or
   Discord, and the domain core.
-- **Idempotent:** safe to repeat. Submitting an idempotent form twice gives the same result as
-  submitting it once.
+- **Idempotent:** safe to repeat under the action's documented retry rules. A repeated submission
+  does not apply the same change twice.
 
 ## The decisions
 
@@ -69,8 +74,8 @@ Two facts shaped the hosting decision:
 The public site, the staff console and the job runner are three apps in this repository. The shared
 code is split into packages that the apps import:
 
-- one domain core package;
-- one storage package;
+- one domain core package for LVBT's rules;
+- one storage package for database reads and writes;
 - one integration package for each outside service: Beehiiv, Notion, Google Workspace, Discord,
   Givebutter, Resend and the US Census Geocoder.
 
@@ -98,21 +103,22 @@ without touching the core.
 What this rules out:
 
 - calling Beehiiv, Discord or any other service from inside the domain core;
-- an outside service's data shapes, such as a Beehiiv subscriber object, appearing in the core's
-  types.
+- the core requiring the exact fields and types returned by an outside service, such as Beehiiv's
+  subscriber response.
 
 ### 3. Public pages stay prebuilt, and member and staff pages render on request
 
-Public pages are prebuilt exactly as they are today. Member pages render on request inside the
-website app. These are the join confirmation, sign-in, account and check-in pages. Event pages also
-render on request, from the calendar feed. The staff console renders every page on request.
+The design keeps public pages prebuilt, as they were at decision time. Member pages render on
+request inside the website app. These are the join confirmation, sign-in, account and check-in
+pages. Event pages also render on request, from the calendar feed. The staff console renders every
+page on request.
 
 To do this, the site uses Astro's Cloudflare adapter (`@astrojs/cloudflare` version 14, which
 supports Astro 7.2 and later). Astro prebuilds every page by default. A page that must render on
 request declares `export const prerender = false`. The site sets the adapter's
-`prerenderEnvironment: 'node'` option, so public pages build in Node exactly as they do now. It also
-sets `imageService: 'compile'`, so images are still processed at build time and never through
-Cloudflare's metered image service.
+`prerenderEnvironment: 'node'` option, so public pages build in Node as they did at decision time.
+It also sets `imageService: 'compile'`, so images are still processed at build time and never
+through Cloudflare's metered image service.
 
 Rendering on the server sends finished HTML in one round trip, with no loading spinners and no extra
 requests from the browser. That is the fastest and most battery-friendly way to show a page on a
@@ -163,12 +169,13 @@ What this rules out:
 ### 6. Code reaches people through typed functions, and outside tools through one intake interface
 
 Inside this repository, code reads and writes people through typed functions in the domain core and
-the storage package. Apps do not call each other over HTTP. This internal person service has a
-version made of two parts: the database's schema version, which is the number of its latest
-migration, and the storage package's version.
+the storage package. Apps call the shared functions directly rather than sending web requests to
+each other. This internal person service has a version made of two parts: the database's schema
+version, which is the number of its latest migration, and the storage package's version.
 
 Outside form tools reach the platform only through one documented, versioned HTTP intake interface.
-The Google Form uses it today. Any other form tool can use it later without code changes.
+At decision time, the Google Form supplied the existing intake path. Any other form tool can use it
+later without code changes.
 
 What this rules out:
 
@@ -205,16 +212,21 @@ as a Workspace admin to create accounts and manage Google Groups. The usual way 
 key: a downloaded file that works like a password that never expires. LVBT keeps Google's default
 policy that blocks creating these keys (`iam.disableServiceAccountKeyCreation`), because a leaked
 copy would give control of every LVBT Workspace account and group. Instead, when the feature is
-built, a GitHub Actions job will use Workload Identity Federation. GitHub vouches for the job to
-Google, Google lets the job act as the `lvbt-website-admin` service account in the LVBT Core
-project, and Google's IAM Credentials API signs the request that lets that account act for the
-organization's own root super-admin account (domain-wide delegation). At LVBT that is
-`root@lasvegasfortransit.org`. The job acts as that account, never as a person's own admin account,
-so it keeps working through staff turnover, the audit log shows its changes as the system's rather
-than a volunteer's, and misuse could not reach any person's mailbox or files. The job runs in GitHub
-Actions because a Cloudflare Worker cannot prove its identity to Google this way. Until then,
-Workspace admins manage accounts and groups by hand, and `LVBT_GOOGLE_SERVICE_ACCOUNT_KEY` and
-`LVBT_GOOGLE_ADMIN_SUBJECT` stay empty.
+built, a GitHub Actions job will use Workload Identity Federation, a way for Google to trust a
+specific GitHub job without a downloaded key file. GitHub identifies the job to Google. Google then
+lets it use the `lvbt-website-admin` service account in the LVBT Core project. Google's IAM
+Credentials API signs a request that lets that account act for the organization's root super-admin
+account. Google calls this domain-wide delegation. At LVBT, that account is
+`root@lasvegasfortransit.org`.
+
+The design uses that shared account rather than a volunteer's administrator account so staff
+turnover does not interrupt it. The audit log should identify the system's actions. The intended
+permission boundary excludes people's mailboxes and files; implementation and provider acceptance
+must verify that boundary.
+
+The job runs in GitHub Actions because a Cloudflare Worker cannot prove its identity to Google this
+way. Until then, Workspace admins manage accounts and groups by hand, and
+`LVBT_GOOGLE_SERVICE_ACCOUNT_KEY` and `LVBT_GOOGLE_ADMIN_SUBJECT` stay empty.
 
 What this rules out:
 
@@ -227,8 +239,8 @@ What this rules out:
 Every record has a ULID as its identifier. ULIDs sort in the order they were made and do not reveal
 how many records exist.
 
-Every time is stored in UTC, the world standard time that has no daylight saving. Times are shown in
-Pacific Time (`America/Los_Angeles`).
+Every time is stored in Coordinated Universal Time (UTC), the world standard time that has no
+daylight saving. Times are shown in Pacific Time (`America/Los_Angeles`).
 
 What this rules out:
 
@@ -291,7 +303,7 @@ What this rules out:
 
 Every piece of text on member and staff screens comes from a message catalog, a single list of every
 message keyed by name. That keeps the platform ready for translation. English is the only published
-language, because nobody on the team can review another language today.
+language, because the team had no reviewer for another language at decision time.
 
 What this rules out:
 
@@ -307,7 +319,7 @@ ship.
 
 ## Costs and limits
 
-Everything in this record runs on free plans:
+The decision used these free-plan limits on 2026-09-22:
 
 - Workers free plan: 100,000 requests a day, not counting requests for static assets. Each request
   gets 10 milliseconds of CPU time, and each account gets five cron triggers.
@@ -323,13 +335,14 @@ approval before anything is changed.
 
 ## Confirmed against documentation
 
-These points were checked against current documentation on 2026-09-22:
+These points were checked against documentation available on 2026-09-22. They are dated
+verification, not a fresh check of provider versions or limits:
 
 - The adapter deploys only to Workers with static assets, and Pages support has been removed. See
   the
   [Astro Cloudflare adapter guide](https://docs.astro.build/en/guides/integrations-guide/cloudflare/).
   The npm registry lists `@astrojs/cloudflare` 14.3.3 with a peer requirement of `astro ^7.2.0`, and
-  this site uses Astro 7.2.10.
+  the site used Astro 7.2.10 at that time.
 - Pages prebuild by default, and `export const prerender = false` makes a page render on request.
   See [Astro on-demand rendering](https://docs.astro.build/en/guides/on-demand-rendering/).
 - Bindings are read with `import { env } from 'cloudflare:workers'`. A custom Worker entry file

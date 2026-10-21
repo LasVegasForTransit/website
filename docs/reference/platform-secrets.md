@@ -1,13 +1,30 @@
 # Platform secrets
 
-This page lists every server-side secret the website and the Organizing Platform use, what each one
-is for, and where to get it. Read it when you set up a new deployment, rotate a key, or see a
-`503 service_unavailable` that names a missing secret.
+Maintainers use this page to find, install or replace server-side secrets. It lists every secret the
+website and the Organizing Platform use, what each one is for, and where to get it. Read it when you
+set up a new deployment, rotate a key, or see a `503 service_unavailable` that names a missing
+secret.
 
 A secret is a value, such as an API key, that lets the site act on LVBT's behalf in another service.
 Secrets are never committed. Runtime integration secrets are stored on the production Cloudflare
 Worker and read at request time. GitHub stores only the credentials used by trusted release steps
 (see the [glossary](./glossary.md#env-var)).
+
+Choose the section for your task:
+
+- [Set them with bootstrap](#set-them-with-bootstrap) checks and fills missing website settings.
+- [Save new credentials](#save-new-credentials-before-closing-the-provider-dialog) explains how to
+  preserve values shown only once.
+- [Replace a secret](#replace-a-secret-on-purpose) explains rotation and which links or codes it
+  invalidates.
+- [Where each secret lives](#where-each-secret-lives) separates website, staff, jobs and release
+  credentials.
+- [The secrets](#the-secrets) lists exact names.
+- [Set up each service](#set-up-each-service-from-scratch) gives service-specific steps.
+
+Before you start, you need authorized access to the selected LVBT service and the team's approved
+secret store. Match the environment and destination Worker before installing a value. IDs and public
+keys identify resources; API keys and client secrets authorize actions. Keep the latter private.
 
 ## Set them with bootstrap
 
@@ -31,7 +48,7 @@ production report separates live features, future features, and requirements tha
 because no code consumes them yet.
 
 Website bootstrap does not install credentials on staff or jobs. Use
-[the first staff production setup](./staff-portal-operations.md#prepare-the-first-production-baseline)
+[the first staff production setup](staff-release-operations.md#prepare-the-first-production-baseline)
 for those Workers, including the dedicated staff Google client and sending key documented below.
 
 Credentials are entered through hidden input and never printed. IDs, domains and public keys are
@@ -54,9 +71,9 @@ once, and Cloudflare Workers cannot reveal an encrypted value after it is instal
 2. Install it on every approved destination while the value is available. A staff-only credential
    goes only to `lvbt-staff`; shared preview credentials go only to their approved preview Workers.
    Never expand the destinations just because another Worker uses the same setting name.
-3. Read back each Worker's setting names and types, then verify the sign-in or sending operation.
-   Metadata confirms that a setting exists, not that its value works. Record only the outcome in the
-   private operational record and remove any temporary local copy after transfer.
+3. Inspect each Worker's saved setting names and types, then verify the sign-in or sending
+   operation. Metadata confirms that a setting exists, not that its value works. Record only the
+   outcome in the private operational record and remove any temporary local copy after transfer.
 
 If a destination is missing a value, first look in the approved secret store. Do not reset a working
 credential merely to copy it: resetting can break the Workers already using it. If the value was
@@ -93,10 +110,10 @@ Runtime integration credentials are forbidden in the GitHub release environments
 credentials stay on `lvbt-website`; dedicated staff credentials stay on `lvbt-staff`; the Discord
 role bot token belongs only on `lvbt-jobs`. Version uploads preserve Worker secrets without sending
 their values through CI. Each environment has its own per-Worker `CLOUDFLARE_WORKERS_API_TOKEN` and
-a separate `CLOUDFLARE_MIGRATIONS_API_TOKEN` for trusted retained SQL. D1 write access may be
-account-wide, so it is not added to the Worker deployment token. Only `worker-preview` needs the
-Access service pair. Both environments accept only the selected branch `main`; bootstrap detects
-drift and preserves existing reviewer and timer protections when applying this restriction.
+a separate `CLOUDFLARE_MIGRATIONS_API_TOKEN` for the SQL saved with the reviewed release. D1 write
+access may be account-wide, so it is not added to the Worker deployment token. Only `worker-preview`
+needs the Access service pair. Both environments accept only the selected branch `main`; bootstrap
+detects drift and preserves existing reviewer and timer protections when applying this restriction.
 
 Public build values remain GitHub Actions variables. The manifest checks their presence and the
 release environments' account IDs against the declared Cloudflare account. It never overwrites an
@@ -149,17 +166,23 @@ website.
 It is not part of website bootstrap and must never be stored on `lvbt-website` or in a GitHub
 environment. Install the approved token on the jobs Worker before its protected release, following
 the
-[staff and jobs setup procedure](./staff-portal-operations.md#prepare-the-first-production-baseline).
+[staff and jobs setup procedure](staff-release-operations.md#prepare-the-first-production-baseline).
 Keep synchronization disabled until the matching release and live provider acceptance permit it. The
 `/link` registrar uses the token already installed on jobs after approved Discord synchronization
 activation; it does not need a copy on the website or in a local process.
 
-"Now" means a feature on the live site uses it. "Later" means no live production feature depends on
-the value yet. The feature may already exist in code but still need setup or deployment, so it is
-always fine to skip a "Later" value; bootstrap asks again next time. "Not asked" means nothing reads
-the value yet, so bootstrap lists it but never asks for it. Skipping a "Now" value leaves the
-feature in the "Used for" column broken until it is set. Bootstrap shows the click-by-click steps
-for each value, with the link, and offers to open the page in your browser.
+"Now", "Later" and "Not asked" are the manifest's setup categories. "Now" means production preflight
+requires the value. "Later" means bootstrap can ask for it on another run. "Not asked" means
+bootstrap lists it without requesting it. These labels do not prove which release is live or which
+staff/jobs features passed acceptance.
+
+The manifest still lists website Beehiiv credentials under joining. In this checkout, the join
+handler saves membership and queues delivery without calling Beehiiv. Scheduled delivery needs its
+own approved jobs credentials below. Do not copy production keys into a local checkout merely to try
+the join form, or treat website bootstrap as setup for the jobs Worker.
+
+Bootstrap shows the value-finding steps and offers to open the service in your browser. Review the
+selected service, environment and destination before installing a value.
 
 The sending domain `notify.lasvegasfortransit.org` uses Resend's Forge DNS layout: DNS-only CNAME
 `rsend.notify` → `rsend.forge.rmta.net`, CNAME `send.notify` → `send.forge.rmta.net`, and the
@@ -207,11 +230,11 @@ it changes no ID, token or URL, so fixing it never breaks anything already confi
    Resend and paste it into the Name box, then copy its content (or mail server) and paste it into
    the matching box, set TTL "Auto" and Proxy status "DNS only", and click **Save** before starting
    the next record. Use each name exactly as Resend shows it; Cloudflare adds
-   `.lasvegasfortransit.org` by itself. Today the records are an MX record (mail server) named
-   `send.notify` pointing to `feedback-smtp.us-east-1.amazonses.com` with priority `10`, a TXT
-   record (text) named `send.notify` with `v=spf1 include:amazonses.com ~all`, and a TXT record
-   named `resend._domainkey.notify` with the long `p=...` value Resend shows. These are the SPF and
-   DKIM records described in the [glossary](./glossary.md#email-auth).
+   `.lasvegasfortransit.org` by itself. For this domain's Forge setup, use the DNS-only CNAME
+   records `rsend.notify` → `rsend.forge.rmta.net` and `send.notify` → `send.forge.rmta.net`, plus
+   the provider's DKIM TXT value. Confirm the records against the existing domain and
+   `apps/site/platform.json`. Do not add the older Amazon SES MX/SPF records to this setup. See
+   [email authentication](./glossary.md#email-auth) for what these records do.
 6. Resend also recommends a DMARC record, a TXT record with `v=DMARC1; p=none;`. If Cloudflare
    already lists a TXT record named `_dmarc`, keep it and skip this one: it covers the `notify`
    subdomain too. Otherwise add it with the name Resend shows. Then click **Verify DNS Records** and
@@ -237,7 +260,7 @@ must already be verified using the steps above.
    `notify.lasvegasfortransit.org` under **Domain**. Review these choices before selecting **Add**.
 3. [Save the revealed key](#save-new-credentials-before-closing-the-provider-dialog), then install
    it as `LVBT_RESEND_API_KEY` only on `lvbt-staff`, following
-   [production staff setup](./staff-portal-operations.md#prepare-the-first-production-baseline).
+   [production staff setup](staff-release-operations.md#prepare-the-first-production-baseline).
 4. Confirm the setting is encrypted on staff and complete an approved real staff confirmation-code
    delivery. If delivery fails, check the selected Resend organization, key permission, verified
    sending domain and installed destination before considering replacement. A successful save alone
@@ -266,8 +289,8 @@ The jobs Worker needs its own approved Beehiiv configuration. Website bootstrap 
 these credentials on jobs. Production uses `lvbt-jobs` and LVBT Updates. Hosted preview uses
 `lvbt-jobs-preview` with no live Beehiiv key and a blank selected publication; ordinary tests use
 isolated local fixtures. Follow
-[Scheduled newsletter processing](./staff-portal-operations.md#scheduled-newsletter-processing) for
-setup, callback reachability, verification, and recovery before enabling synchronization.
+[Scheduled newsletter processing](staff-newsletter-operations.md#scheduled-newsletter-processing)
+for setup, callback reachability, verification, and recovery before enabling synchronization.
 
 | Jobs setting                             | Storage         | Purpose                                                    |
 | ---------------------------------------- | --------------- | ---------------------------------------------------------- |
@@ -301,7 +324,7 @@ code asks for a new one; a new link-signing secret means links already sent by e
 Staff sessions and confirmation cookies are scoped to the staff hostname. Provision an independent
 `LVBT_SIGN_IN_SECRET` on `lvbt-staff` when it has no approved value; preserve the website's working
 key and member sessions. Website bootstrap does not provision this staff key. Follow
-[production staff setup](./staff-portal-operations.md#prepare-the-first-production-baseline).
+[production staff setup](staff-release-operations.md#prepare-the-first-production-baseline).
 
 ### Google sign-in for the website
 
@@ -375,12 +398,11 @@ the basic `openid`, `email` and `profile` permissions; Google Directory administ
 4. [Save the new credentials](#save-new-credentials-before-closing-the-provider-dialog) while the
    dialog is open. Install the Client ID as `LVBT_GOOGLE_OAUTH_CLIENT_ID` and the matching client
    secret as `LVBT_GOOGLE_OAUTH_CLIENT_SECRET` only on `lvbt-staff`, following
-   [production staff setup](./staff-portal-operations.md#prepare-the-first-production-baseline).
+   [production staff setup](staff-release-operations.md#prepare-the-first-production-baseline).
    Website bootstrap does not install either value on staff.
-5. Reopen the saved client and confirm its sole redirect exactly matches the address above. Read
-   back the encrypted staff setting names, then complete real Google sign-in, membership
-   confirmation and staff access through the protected hostname. Keep the website and preview
-   credentials unchanged.
+5. Reopen the saved client and confirm its sole redirect exactly matches the address above. Inspect
+   the encrypted staff setting names, then complete real Google sign-in, membership confirmation and
+   staff access through the protected hostname. Keep the website and preview credentials unchanged.
 
 If Google reports `redirect_uri_mismatch`, compare the staff client's saved redirect with the exact
 staff hostname and callback path; do not add arbitrary callbacks. If the client secret was lost,
@@ -407,11 +429,18 @@ Free plan. It asks for payment details but does not charge for the Free plan.
 ### The staff console: Google Group, Google sign-in and the Access application
 
 `LVBT_ACCESS_AUD` tells the staff console which Cloudflare Access application guards it, so it
-accepts only that application's sign-ins. The staff console is not live yet, so it is fine to leave
-this empty now; bootstrap asks again next time. The value only exists once the Access application in
-part 4 is created. That takes about 20 minutes and needs a Google Workspace super admin. Do the
-parts in order; each needs the one before it. After showing these steps, bootstrap asks once whether
-part 1 is done and remembers a "yes".
+accepts only that application's sign-ins. The manifest classifies this website setting as a later
+requirement. That classification does not establish the staff deployment's current state. Staff has
+its own required Access audience; check the selected staff environment before changing it. The value
+only exists once the Access application in part 4 is created. That takes about 20 minutes and needs
+a Google Workspace super admin. Do the parts in order; each needs the one before it. After showing
+these steps, bootstrap asks once whether part 1 is done and remembers a "yes".
+
+The manifest still contains older bootstrap prompt text naming `staff@lasvegasfortransit.org`. That
+prompt does not replace the dedicated `console-users@lasvegasfortransit.org` group required by the
+staff setup and configuration checks. Use the exact group below for the staff portal. Correcting
+that manifest text requires a separate configuration change; this reference does not authorize a
+broader Access policy.
 
 **Part 1, the Console users Google Group.** Cloudflare Access uses the dedicated
 `console-users@lasvegasfortransit.org` group for approved portal users. Each person must already be
@@ -693,15 +722,15 @@ Workspace delegation. Continue approved manual account and group administration 
 
 `LVBT_GOOGLE_ADMIN_SUBJECT` is a deprecated configuration placeholder, not a functioning runner
 setting; leave it empty. Any setup must separately authorize the exact matching private jobs
-principal, environment and audience, Google-managed signing permission, dedicated delegated
-Workspace administrator and scope set. Historical delegated-account choices are not that approval.
-The adapter needs Directory user-read, group-read and group-membership scopes for its data
+principal, environment and audience, permission for Google to sign short-lived tokens, dedicated
+delegated Workspace administrator and scope set. Historical delegated-account choices are not that
+approval. The adapter needs Directory user-read, group-read and group-membership scopes for its data
 operations; those API requirements are not an approved delegation grant. A dedicated organization
 account does not itself restrict access to mail or files: the granted scopes and administrator
 privileges define that boundary.
 
 Follow
-[the read-only Google setup inspection](./staff-portal-operations.md#inspect-google-setup-without-granting-access)
+[the read-only Google setup inspection](staff-account-integrations.md#inspect-google-setup-without-granting-access)
 to check the existing service account, identity trust, and Workspace delegation without granting
 permissions. Google sign-in succeeding does not prove group automation is configured.
 

@@ -1,116 +1,124 @@
 # Visual-regression screenshots
 
-Playwright harness that screenshots every page in the site and compares against committed baselines.
-A diff means the visual output of a page changed — either intentionally (in which case you refresh
-the baseline) or unintentionally (in which case you have a regression to fix).
+The screenshot tests compare the website with saved reference images, called baselines. Run them
+when you change a page's appearance. Review each difference before accepting a new baseline. The
+tests use Playwright, a tool that controls a browser.
 
 ## What it covers
 
-- Every URL emitted in `dist/sitemap-0.xml` (so dynamic project routes stay in sync automatically —
-  no hand-maintained list)
-- Six viewports, parameterized as Playwright **projects** — one per device band × orientation the
-  site is designed to look good on. Widths align to the Tailwind breakpoints actually used in the
-  codebase (`md:` 768, `lg:` 1024), so each viewport lands in a distinct layout band:
-  - `mobile-portrait` — iPhone 14, viewport 390×664, rendered in Chromium — below `md:`
-  - `mobile-landscape` — iPhone 14 rotated, viewport 750×340, rendered in Chromium — also below
-    `md:`, since 750 < 768
-  - `tablet-portrait` — iPad Air portrait, 820×1180 — between `md:` and `lg:`
-  - `tablet-landscape` — iPad Air landscape, 1180×820 — above `lg:`
-  - `desktop` — Desktop Chrome, 1280×720 — above `lg:`
-  - `desktop-xl` — Full-HD external display, 1920×1080 — wide monitors
-- **Two captures per route** in each viewport:
-  - `*-viewport.png` — initial load, no scroll (above the fold only)
-  - `*-full.png` — entire scroll length (full-page screenshot)
-- Chromium only (this is a screenshot harness, not a cross-browser conformance suite)
-- Animations disabled, fonts awaited
+The suite reads routes from the built `dist/sitemap-0.xml`. It keeps one example per detail-page
+family, such as project pages. It excludes `/events` and `/newsletter` because their outside sources
+and dates can change without a code change. The number of screenshots changes with the sitemap.
 
-The suite covers 19 representative routes × 6 viewports × 2 captures = **228 baseline PNGs**.
+Each route gets an initial-screen image (`*-viewport.png`) and a whole-page image (`*-full.png`).
+All six device configurations use Chromium. These tests do not check other browser engines. The
+tests wait for fonts and disable animations to reduce unrelated differences.
+
+| Playwright project | Width × height in pixels | Layout tested                                       |
+| ------------------ | ------------------------ | --------------------------------------------------- |
+| `mobile-portrait`  | 390 × 664                | Below the 768-pixel `md:` breakpoint.               |
+| `mobile-landscape` | 750 × 340                | Also below `md:`.                                   |
+| `tablet-portrait`  | 820 × 1180               | Between `md:` and the 1,024-pixel `lg:` breakpoint. |
+| `tablet-landscape` | 1180 × 820               | Above `lg:`.                                        |
+| `desktop`          | 1280 × 720               | Desktop.                                            |
+| `desktop-xl`       | 1920 × 1080              | Wide desktop.                                       |
+
+A breakpoint is a screen width at which the site's layout rules change. A Playwright project is a
+named browser configuration; it is not another application in this repository.
 
 ## First-time setup
 
-The baseline PNGs are stored in **Git LFS** (`tests/snapshots/**/*.png`) so they stay out of the git
-pack. Install git-lfs before the baselines will materialize — without it a clone gets pointer files
-instead of images and Playwright can't compare. Local bootstrap installs project packages; install
-Git LFS separately for visual comparisons. The commands on this page run from `apps/site`:
+The baseline PNGs use Git LFS, which stores large files separately from source code. Every image
+download uses LVBT's shared bandwidth allowance. Fetch only the images for your operating system; an
+unrestricted `git lfs pull` downloads both sets. Local previews and `pnpm check` need neither set.
+
+Install Git LFS only when you need screenshot comparisons. Run these setup commands from the
+**repository root**. On macOS, install Git LFS and fetch the Mac images:
 
 ```sh
-brew install git-lfs && git lfs install   # macOS (apt-get install git-lfs on Linux)
-git lfs pull                              # materialize the baseline images
-pnpm install                              # picks up @playwright/test
-pnpm test:install                         # downloads chromium (~150 MB, one-time)
+brew install git-lfs
+git lfs pull --include="apps/site/tests/snapshots/darwin/**" --exclude=""
 ```
+
+On Linux, install your distribution's `git-lfs` package and fetch the Linux images instead:
+
+```sh
+git lfs pull --include="apps/site/tests/snapshots/linux/**" --exclude=""
+```
+
+Then install the browser used by the screenshot tests:
+
+```sh
+pnpm --dir apps/site test:install
+```
+
+If GitHub reports exhausted LFS bandwidth, stop repeated pulls and ask a maintainer to check the
+allowance.
+
+Run the remaining commands on this page from `apps/site`. The
+[repository hooks](../../../docs/standards/git-guidelines.md#pre-push) already handle LFS uploads.
 
 ## Day-to-day
 
+Run these commands from `apps/site`:
+
 ```sh
-pnpm test:e2e tests/e2e/screenshots.spec.ts
-pnpm test:e2e tests/e2e/screenshots.spec.ts --update-snapshots
-pnpm exec playwright show-report   # open the HTML report (diffs included)
+pnpm test:e2e tests/e2e/screenshots.spec.ts --workers=2
+pnpm exec playwright show-report
 ```
+
+Playwright normally builds and starts the local preview on port 4321. It can reuse a server already
+running on that port, so stop another checkout's server first. To use a different port, run
+`AUDIT_PORT=4322 pnpm test:e2e tests/e2e/screenshots.spec.ts --workers=2`.
+
+The report shows the expected, actual and difference images for each failure. Fix an unintended
+change in the page code. If the new appearance is correct, update your operating system's baselines:
+
+```sh
+pnpm test:e2e tests/e2e/screenshots.spec.ts --workers=2 --update-snapshots
+```
+
+Review every changed image before including it with the page change. A passing comparison alone does
+not show that the page is understandable or usable.
 
 ## CI status
 
-`snapshotPathTemplate` includes `{platform}`, so each OS keeps its own committed baselines under
-`tests/snapshots/<platform>/`. The macOS (`darwin/`) and CI (`linux/`) sets are committed. The
-`visual-regression` job in `.github/workflows/audit.yml` runs every viewport as a merge gate.
+Continuous integration (CI) runs automated checks on GitHub. The `visual-regression` job in
+`.github/workflows/audit.yml` checks every screenshot viewport before merging.
+
+macOS and Linux need separate baselines because their text rendering differs. The
+`snapshotPathTemplate` setting in `../playwright.config.ts` puts images under
+`tests/snapshots/<platform>/<project>/`. macOS uses `darwin`; the CI runner uses `linux`. Screenshot
+tests read and update the matching directory automatically.
 
 ### Seeding linux baselines
 
-Run the **Seed baselines** workflow from the Actions tab against your branch, download the
-`baselines-<sha>` artifact it uploads, and commit the images under `tests/snapshots/linux/` with the
-change that required them. The run writes every project, so review the diff before committing.
+Run the **Seed baselines** workflow in GitHub Actions against your branch. Download its
+`baselines-<sha>` artifact and copy the images into `tests/snapshots/linux/`. Review the images and
+include them with the change that requires them. The workflow writes every project, so inspect the
+whole difference before committing.
 
-Do this in CI rather than locally. The images have to come from the same operating system, CPU
-architecture and Chromium build as the `visual-regression` job: a Playwright container on an Apple
-Silicon machine renders on aarch64 while the runners are amd64, and the two rasterize text
-differently, so images seeded on a laptop fail as soon as they reach CI. The workflow also builds
-with the same `PUBLIC_LVBT_*` variables the audit uses, which a local build would otherwise omit.
-
-The Playwright config (`../playwright.config.ts`) starts `pnpm preview` on port 4321 automatically.
-If you already have it running locally it will be reused; in CI it always starts fresh.
-
-## Baseline workflow
-
-1. Make an intentional UI change.
-2. Run `pnpm test:e2e tests/e2e/screenshots.spec.ts`. Failing tests indicate the diffs.
-3. Review the failures via `pnpm exec playwright show-report` — each failed test shows expected /
-   actual / diff side-by-side.
-4. If the new output is correct, rerun the screenshot test with `--update-snapshots`. Commit the
-   regenerated baselines under `tests/snapshots/`.
-5. If the diff is unintentional, fix the code instead.
+Use the workflow for Linux images. Its operating system, processor architecture, Chromium version
+and `PUBLIC_LVBT_*` build values match the screenshot check. A Linux container on an Apple Silicon
+laptop uses a different processor architecture and can produce different text pixels.
 
 ## Folder layout
 
-```text
-tests/
-├── README.md                 # this file
-├── *.test.ts                 # unit tests (node --test), run by `pnpm test`
-├── e2e/                      # Playwright suites, including screenshots.spec.ts
-│   └── screenshots.spec.ts   # the test (one test per sitemap URL)
-├── support/                  # helpers the suites share
-└── snapshots/
-    ├── darwin/               # macOS baselines (current dev machine)
-    │   ├── mobile-portrait/  # two PNGs per route: -viewport and -full
-    │   │   ├── root-viewport.png
-    │   │   ├── root-full.png
-    │   │   ├── about-viewport.png
-    │   │   ├── about-full.png
-    │   │   └── ...
-    │   ├── mobile-landscape/
-    │   ├── tablet-portrait/
-    │   ├── tablet-landscape/
-    │   ├── desktop/
-    │   └── desktop-xl/
-    └── linux/                # seeded by the Seed baselines workflow; see
-                              # "Seeding linux baselines" above
-```
+| Path under `tests/`       | Contents                                    |
+| ------------------------- | ------------------------------------------- |
+| `*.test.ts`               | Unit tests run by `pnpm test`.              |
+| `e2e/`                    | Browser tests run by `pnpm test:e2e`.       |
+| `e2e/screenshots.spec.ts` | Route selection and screenshot comparisons. |
+| `support/`                | Shared test helpers.                        |
+| `snapshots/darwin/`       | macOS baseline images, grouped by project.  |
+| `snapshots/linux/`        | Linux baseline images from the workflow.    |
 
-`{platform}` in `snapshotPathTemplate` (see `../playwright.config.ts`) expands to `darwin` on macOS
-and `linux` on the CI runner — so a `pnpm test` on either platform reads and writes the right tree
-without extra flags.
+## Baseline workflow
+
+Build, run the screenshot test, inspect failures, and update only images that you have reviewed. See
+[Day-to-day](#day-to-day) for the commands.
 
 ## Why baseline comparison
 
-Baseline comparison exposes an unintentional visual change during review. The test fails and
-attaches expected, actual, and diff images without relying on a reviewer's memory of the previous
-page.
+Saved images let reviewers inspect an unintended visual change without remembering every page's
+previous appearance. The report provides the previous image, the new image and their differences.

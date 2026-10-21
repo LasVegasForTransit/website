@@ -1,8 +1,8 @@
 # Operate member data retention
 
 Use this guide to verify member-data erasure, daily inactive-record cleanup, and Google account
-review. It helps a maintainer confirm that personal data disappears locally while unfinished
-provider cleanup stays recoverable.
+review. It helps a maintainer confirm that LVBT removes personal data from its database while
+retaining the information needed to finish cleanup in connected services.
 
 ## Before you start
 
@@ -27,13 +27,13 @@ pnpm -C apps/staff exec wrangler d1 execute lvbt-platform-preview --remote --env
 ```
 
 Confirm that `0041_member_privacy_maintenance.sql` and `0045_scheduled_read_budget.sql` are
-installed alongside every earlier canonical migration before enabling scheduled maintenance. The
-latter adds an index that keeps legacy erasure from repeatedly reading already-erased retained
-profiles. The website, staff portal, and jobs Worker must use that same environment's database and
-compatible saved applications. A Worker is a backend application running on Cloudflare; see the
-[glossary](../reference/glossary.md). A missing migration or mismatched application is a release
-blocker. Use the
-[release recovery procedure](../reference/staff-portal-operations.md#recover-a-failed-preview-activation)
+installed alongside every earlier membership-database migration before enabling scheduled
+maintenance. The latter adds an index that keeps legacy erasure from repeatedly reading
+already-erased retained profiles. The website, staff portal, and jobs Worker must use that same
+environment's database and compatible saved applications. A Worker is a backend application running
+on Cloudflare; see the [glossary](../reference/glossary.md). A missing migration or mismatched
+application is a release blocker. Use the
+[release recovery procedure](../reference/staff-release-operations.md#recover-a-failed-preview-activation)
 instead of changing tables by hand.
 
 For local acceptance, run these commands after building the selected applications:
@@ -47,23 +47,23 @@ pnpm -C apps/staff exec node --import tsx tests/e2e/person-deletion.spec.ts
 ```
 
 The fixtures use isolated databases and simulated providers. They cover irreversible erasure,
-bounded cleanup, retained retry work, and the actual review form. Passing them does not establish
-hosted scheduling or provider deletion.
+cleanup limits, saved retry work, and the actual review form. Passing them does not establish hosted
+scheduling or provider deletion.
 
 ## 2. Check the daily inactive-record pass
 
 The jobs minute schedule starts the daily pass at **03:00 America/Los_Angeles**. It follows Pacific
-daylight-saving time. Each invocation selects at most 100 roots, and later ticks resume an
-unfinished day. Once the day is complete, further ticks perform only a completion check. The cutoff
-stays at that day's 03:00 minus eighteen calendar months, clamped to the last valid day of a shorter
-month.
+daylight-saving time. Each run selects at most 100 root records (the person and any records combined
+with them). Later minute runs resume an unfinished day. Once the day is complete, further ticks
+perform only a completion check. The cutoff stays at that day's 03:00 minus eighteen calendar
+months, using the last valid day when the earlier month is shorter.
 
-A live record qualifies only when it was created before the cutoff, has no consent record in any
-scope, has no withdrawal evidence, has no linked identity other than a check-in identity, and has no
-engagement at or after the cutoff. An unreadable engagement date prevents automatic erasure. The
-current identity schema does not offer a check-in identity type, so every currently supported linked
-identity excludes a record. Withdrawn consent also excludes a record regardless of its age. The pass
-does not infer eligibility from membership status alone.
+A record still in the database qualifies only when it was created before the cutoff, has no consent
+record in any scope, has no withdrawal evidence, has no linked identity other than a check-in
+identity, and has no engagement at or after the cutoff. An unreadable engagement date prevents
+automatic erasure. The current identity schema does not offer a check-in identity type, so every
+currently supported linked identity excludes a record. Withdrawn consent also excludes a record
+regardless of its age. The pass does not infer eligibility from membership status alone.
 
 In the approved private database console, inspect the daily run without printing member details:
 
@@ -75,7 +75,7 @@ SELECT reason, count(*) AS deletions FROM person_deletion_log GROUP BY reason;
 
 For example, an August 31 run can use February 28 of the previous year as its cutoff. A completed
 daily row means that selection drained for that day. A row without `completed_at` means another
-bounded batch is needed. An empty day still records completion. Verify the next tick advances an
+limited batch is needed. An empty day still records completion. Verify the next tick advances an
 unfinished day; do not mark it complete manually. The jobs schedule must be enabled through the
 reviewed launch procedure. A setup release with schedules disabled cannot prove daily operation.
 
@@ -128,8 +128,8 @@ record was deleted.
 
 Confirm that the member can no longer sign in and that the profile's contact fields, consent,
 engagement, private account profiles, saved corrections, and affected merge copies are removed. An
-erased merge cannot restore those details through undo. Record only the opaque member key in the
-private acceptance record.
+erased merge cannot restore those details through undo. Record only the member's identifier, without
+their name or email, in the private acceptance record.
 
 Inspect that key's `person_deletion_log` receipt privately. `requested_by` is `member` for the
 self-service flow, the authenticated staff actor's opaque key for a staff request, or `retention`
@@ -149,10 +149,10 @@ provider identifiers, cleanup jobs, and minimum recovery evidence survive that p
 interrupted cleanup can finish. Reversible merge archives remain protected from ordinary purge.
 
 Follow
-[newsletter cleanup after deletion](../reference/staff-portal-operations.md#verify-newsletter-cleanup-after-account-deletion)
-to verify Beehiiv's permanent deletion and separate absence lookup. Confirm Discord role removal
-through the configured provider readback. A pending provider job is unfinished cleanup, even when
-the local deletion receipt exists.
+[newsletter cleanup after deletion](../reference/staff-newsletter-operations.md#verify-newsletter-cleanup-after-account-deletion)
+to verify Beehiiv's permanent deletion and separate absence lookup. Confirm Discord role removal by
+checking the result returned by Discord. A pending provider job is unfinished cleanup, even when the
+local deletion receipt exists.
 
 ## 4. Review a linked Google account
 
@@ -179,7 +179,7 @@ account's current revision.
 
 - **The daily row is unfinished:** inspect the jobs failure privately and correct the named schema,
   runtime, or permission problem. Allow the next scheduled tick to resume. Failed batches roll back
-  both erasure and the daily claim; completed bounded batches remain completed.
+  both erasure and the daily claim; completed batches remain completed.
 - **The day has no row after 03:00:** verify the deployed jobs version, database binding, and
   enabled minute schedule using
   [staff preflight](../reference/staff-portal-operations.md#read-only-configuration-check). A
@@ -188,25 +188,25 @@ account's current revision.
 - **Provider cleanup is pending:** retain the verified identifiers, attempted writes, encrypted
   recovery data, and provider receipts. Follow the provider recovery procedure. Do not clear a job
   or mark it done because local erasure or thirty-day purge succeeded.
-- **D1 reports daily read quota exhaustion (error 7500):** inspect the selected database's
-  Cloudflare Metrics view and compare query counts with rows read. For an isolated Discord preview,
-  use the
-  [preview shutdown procedure](../reference/staff-portal-operations.md#shut-down-the-isolated-discord-preview)
-  to stop the minute schedule while investigating. A result limit or query-count budget does not
-  bound scanned rows. Confirm migration 0045 and the saved applications are installed together; an
-  idle provider selection must not scan all profiles and opaque keys, and legacy erasure must seek
-  only unerased deletions. Confirm migration 0048 as well: the newer-observation check in the
-  Discord mismatch trigger needs its provider-resource index. An observation insert can otherwise
-  scan the person's entire retained observation history even when its outer query uses indexes. Use
-  the Queries table's **Rows read** column to identify expensive statements; include writes and
-  their triggers, rather than counting only SELECT statements. Repeated roster dry runs cannot clear
-  the account-wide quota. After quota recovery, verify low idle read usage over several scheduled
-  ticks before accepting the repaired schedule; preserve pending privacy and provider work
-  throughout.
+- **D1 reports daily read quota exhaustion:** error code 7500 alone does not establish the cause.
+  Confirm the provider reported a daily read limit, then inspect the selected database's Cloudflare
+  Metrics view and compare query counts with rows read. For an isolated Discord preview, use the
+  [preview shutdown procedure](../reference/staff-release-operations.md#shut-down-the-isolated-discord-preview)
+  to stop the minute schedule while investigating. A query can read many database rows even when it
+  returns few results or runs only once. Confirm migration 0045 and the saved applications are
+  installed together; an idle provider selection must not scan all profiles and opaque keys, and
+  legacy erasure must seek only unerased deletions. Confirm migration 0048 as well: the
+  newer-observation check in the Discord mismatch trigger needs its provider-resource index. An
+  observation insert can otherwise scan the person's entire retained observation history even when
+  its outer query uses indexes. Use the Queries table's **Rows read** column to identify expensive
+  statements; include writes and their triggers, rather than counting only SELECT statements.
+  Repeated roster dry runs cannot clear the account-wide quota. After quota recovery, verify low
+  idle read usage over several scheduled ticks before accepting the repaired schedule; preserve
+  pending privacy and provider work throughout.
 - **The review form expired or changed:** reload `/offboarding/`, inspect the current flag, and
   submit its new form. If access is denied, verify current administrator membership rather than
   granting access through a submitted actor identifier.
 - **A release failed:** recover the saved application through the release procedure. Erasure is
-  irreversible. Do not restore an old member database over current deletion receipts or tombstones;
-  any data recovery needs a separately reviewed plan that preserves subsequent deletions and
-  withdrawals.
+  irreversible. Do not restore an old member database over current deletion receipts or retained
+  deleted-person markers; any data recovery needs a separately reviewed plan that preserves
+  subsequent deletions and withdrawals.

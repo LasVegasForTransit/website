@@ -16,10 +16,11 @@ that only authorized staff can open.
 1. Open **Members**, expand **Member records**, and select **Download member records**.
 2. Select **Download records**. Save `lvbt-people-export-YYYY-MM-DD.zip`; the date is the Las Vegas
    date when you requested the file.
-3. Extract the ZIP. It contains `people.csv`, `consent_records.csv`, `identities.csv`,
+3. Extract the ZIP archive. It contains `people.csv`, `consent_records.csv`, `identities.csv`,
    `engagement_events.csv`, `export.json` and `README.txt`.
-4. Open `README.txt` first. It explains every CSV column and gives worked examples for Google Sheets
-   and a contact-management system. Match related rows using `id` and `person_id`, not row order.
+4. Open `README.txt` first. It explains every column in the comma-separated values (CSV) files and
+   gives worked examples for Google Sheets and a contact-management system. Match related rows using
+   `id` and `person_id`, not row order.
 5. Check that the download describes the intended records before importing or sharing it. Deleted
    people and their related records are excluded. Each successful download records who requested it
    and when.
@@ -66,7 +67,7 @@ table per file, including `member_since` for the current unbroken newsletter sub
 - If the download stops or the page asks you to reload, reload the export page and request a fresh
   download. Reusing the old form is refused; it cannot issue a second copy.
 - If a migration tool expects format 1 JSON, adapt it to format 2 or use the CSV files after
-  checking their headings. Do not silently treat a missing top-level array as an empty dataset.
+  checking their headings. do not treat a missing top-level list as proof that there are no records.
 
 For configuration and recovery, see
 [staff portal operations](../reference/staff-portal-operations.md).

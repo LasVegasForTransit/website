@@ -7,8 +7,9 @@ often on a phone, often in a hurry, sometimes with a screen reader or in a secon
 
 These are rules, not suggestions. If a rule doesn't fit a case, change the rule here first.
 
-Every string goes in the [message catalog](../../packages/platform-core/src/messages/README.md),
-never straight into a page.
+Every piece of visible text goes in the
+[message catalog](../../packages/platform-core/src/messages/README.md), the shared list of named
+messages, never straight into a page.
 
 ## Buttons
 
@@ -109,7 +110,7 @@ defines it. Spell out an acronym the first time it appears on a screen.
 
 ## Checklist before testing a prototype
 
-Every "Prototype, test and build" task runs through this before real people try the prototype:
+Before real people try a test version of a screen (a prototype), check each item below:
 
 1. Every button starts with a verb that says what happens.
 2. Everything is in sentence case.
@@ -121,4 +122,4 @@ Every "Prototype, test and build" task runs through this before real people try 
 8. Dates and times use `formatDate` and `formatTime`.
 9. Link text makes sense on its own.
 10. The screen's text scores grade 8 or below in Hemingway Editor.
-11. Every string is in the message catalog.
+11. Every piece of visible text is in the message catalog.

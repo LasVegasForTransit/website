@@ -3,9 +3,9 @@
 For daily production backups to private R2 and quarterly restore tests, use the
 [automated backup guide](./member-database-backups.md).
 
-Use this procedure before a membership database migration or recovery operation. It creates a
-private SQL backup and checks that it restores into an isolated local database before you depend on
-it.
+Maintainers use this procedure before changing the membership database's structure (a migration) or
+recovering its records. It creates a private SQL backup and checks that it restores into an isolated
+local database before you depend on it.
 
 ## Before you start
 
@@ -22,6 +22,10 @@ its owner, retention period, and permitted location in the private operational r
 The examples select **preview**, `lvbt-platform-preview`. Production is `lvbt-platform` and needs
 its own authorization. In the production export and read-only comparison commands, use
 `lvbt-platform` and omit `--env preview`. Do not change a restore command to use `--remote`.
+
+Cloudflare D1 is the hosted database service. Wrangler is its command-line tool, which the commands
+below run through pnpm. A SQL backup contains the database's table definitions and records. See the
+[glossary](../reference/glossary.md) for these tools.
 
 ## 1. Confirm the source and save its inventory
 
@@ -47,7 +51,7 @@ requests until it finishes. This applies to preview too; production needs a coor
 its real users. Read and accept Wrangler's export prompt only when that window is approved.
 
 Replace `/private/approved-backups/staff-preview.sql` below with a new file in your approved
-directory. Keep schema and data enabled; an export containing only one is not a complete backup.
+directory. Include both the table definitions (schema) and the records (data); a backup needs both.
 
 ```sh
 pnpm -C apps/staff exec wrangler d1 export lvbt-platform-preview --remote --env preview --output /private/approved-backups/staff-preview.sql
@@ -123,9 +127,9 @@ maintainer can repeat the verification.
 This fallback runs ordinary read queries instead of the provider's full export operation. It does
 not copy Cloudflare-managed recovery state, make a live restore safe, or prove that a future
 migration will succeed. A large database may exceed query, response, or browser download limits;
-stop and use the approved Wrangler export path if complete fidelity cannot be verified. Retain the
-source downloads, reconstructed SQL, private program, checksums and verification together under
-step 5. Do not start an application against the restored authentication or pending-job data.
+stop and use the approved Wrangler export path if you cannot verify an exact copy. Retain the source
+downloads, reconstructed SQL, private program, checksums and verification together under step 5. Do
+not start an application against the restored authentication or pending-job data.
 
 ## 3. Restore into a fresh local directory
 
@@ -173,6 +177,6 @@ you created; never delete the hosted database as part of this cleanup.
 A verified backup supports a separately reviewed recovery plan. Do not import it over a live
 database or reverse migrations to undo an application release. Restoring old data can erase newer
 consent withdrawals, staff activity, and access-removal work. Use the
-[release recovery procedure](../reference/staff-portal-operations.md#recover-a-failed-preview-activation)
+[release recovery procedure](../reference/staff-release-operations.md#recover-a-failed-preview-activation)
 for an application activation failure, and obtain a specific data-recovery plan before changing
 hosted records.

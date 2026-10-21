@@ -16,13 +16,13 @@ you can help.
 
 ## 1. What you need installed
 
-Three things. Install them once:
+Install these three tools once:
 
 - **[Node](../reference/glossary.md#node)** version 24.20.0 or newer in the 24.x line — runs the
-  project. Get it from [nodejs.org](https://nodejs.org) (the "LTS" version is fine).
-  `pnpm preflight` tells you if the version you have is too old.
+  project. Get the 24.x version from [nodejs.org](https://nodejs.org). `pnpm preflight` tells you if
+  the version you have is too old.
 - **[pnpm](../reference/glossary.md#pnpm)** — our package manager. After Node is installed, run
-  `npm install -g pnpm`.
+  `npm install -g pnpm@11.25.0`.
 - **git** — version control, for getting the code and saving changes. Most computers have it;
   `git --version` tells you.
 
@@ -36,7 +36,7 @@ them.
 
 ```bash
 # 1. Download the code (clone the repo)
-git clone https://github.com/LasVegasForTransit/website.git
+GIT_LFS_SKIP_SMUDGE=1 git clone git@github.com:LasVegasForTransit/website.git
 cd website
 
 # 2. Set up dependencies, git hooks, and local settings
@@ -46,17 +46,22 @@ pnpm bootstrap
 pnpm dev
 ```
 
+The clone skips screenshot files to save LVBT's shared download allowance. Local development does
+not need them. For visual comparisons, follow the
+[screenshot setup](../../apps/site/tests/README.md#first-time-setup).
+
 `pnpm dev` prints `https://lvbt.localhost`. Open it in your browser — that's the site, running on
-your machine. Edits you make to files show up there within a second or two (that live-update is
-called [HMR](../reference/glossary.md#hmr)). Press `Ctrl+C` in the terminal to stop it.
+your machine. Edits you make to files show up there within a second or two (the development server
+reloads the page for you). Press `Ctrl+C` in the terminal to stop it.
 
-Warnings about empty Beehiiv or Notion settings are expected: page and content work needs no
-provider login. Those integrations are optional locally; their features remain unavailable until you
-configure a test integration. Bootstrap preserves any existing local settings file.
+Warnings about empty Beehiiv or Notion settings are expected. You can edit pages and content without
+signing in to either service. Those integrations are optional locally; their features remain
+unavailable until you configure a test integration. Bootstrap preserves any existing local settings
+file.
 
-Stuck on this step? [local-dev.md](../reference/local-dev.md) covers ports and common errors. (If
-you're also setting up deployment and a domain, that's the longer
-[first-time setup tutorial](./first-time-setup.md) — most contributors don't need it.)
+Stuck on this step? [local-dev.md](../reference/local-dev.md) covers ports and common errors. The
+[first-time setup tutorial](./first-time-setup.md) also explains package-access errors and the
+separate setup maintainers use for production.
 
 ## 3. How the repo is laid out
 
@@ -67,7 +72,7 @@ You'll mostly work in a few places:
 | `apps/site/src/pages/`     | The actual web pages (one file ≈ one URL).                                                                                  |
 | `apps/site/src/content/`   | Editable content: events, projects, long-form docs. See [content collections](../reference/glossary.md#content-collection). |
 | `apps/site/src/lib/`       | Shared site config and helpers (org name, links).                                                                           |
-| `apps/site/functions/api/` | Small backends ([Pages Functions](../reference/glossary.md#pages-function)) — form handling, etc.                           |
+| `apps/site/functions/api/` | Server-side request handlers for forms and other actions. They run in the website Worker.                                   |
 | `apps/site/scripts/`       | Setup and maintenance command-line tools.                                                                                   |
 | `docs/`                    | The documentation you're reading now.                                                                                       |
 
@@ -96,7 +101,7 @@ history stays readable — see [commit-messages.md](../standards/commit-messages
 message and tell you exactly what to fix.
 
 Open a pull request using the repository template and ask a teammate to review it. When the reviewed
-change merges into `main`, GitHub Actions updates protected staging at
+change merges into `main`, GitHub Actions updates staging, the private review site at
 `preview.lasvegasfortransit.org` and saves the release. A maintainer reviews that staging release
 and explicitly promotes it to the live site with `pnpm promote`; merging alone does not publish. See
 [deployment-pipeline.md](../reference/deployment-pipeline.md).

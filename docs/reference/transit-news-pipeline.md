@@ -1,13 +1,16 @@
 # Transit News pipeline reference
 
-Technical reference for the three-layer transit news intake pipeline — read this to understand or
-change how it works. (To just add an article, use the
-[how-to guide](../guides/add-transit-news.md).) That guide calls these same three layers "Paths
-1–3"; the mapping is one-to-one (Layer 1 = Path 1, and so on). Unfamiliar terms like
-[data source](./glossary.md#data-source), [webhook](./glossary.md#webhook), or
+Contributors use this reference to change or debug how articles reach the transit-news database.
+There are three submission paths: a command, a Claude Code skill and a public Notion form. (To just
+add an article, use the [how-to guide](../guides/add-transit-news.md).) That guide calls these same
+three layers "Paths 1–3"; the mapping is one-to-one (Layer 1 = Path 1, and so on). Unfamiliar terms
+like [data source](./glossary.md#data-source), [webhook](./glossary.md#webhook), or
 [bearer token](./glossary.md#bearer-token) are defined in the [glossary](./glossary.md).
 
----
+Before testing, you need a local checkout, approved Notion test records and a Notion connection that
+can edit the selected database. Local requests can still change real Notion pages. Use
+[add transit news](../guides/add-transit-news.md) for credential setup and choose the command path
+for ordinary contributions.
 
 ## Database
 
@@ -100,8 +103,9 @@ Location is left unset.
 ## Deduplication
 
 Layers 1 and 2 query the data source filtering on `URL equals <url>` before creating a page. If a
-match exists, the article is skipped — so re-running the same URL, or mixing manual and scripted
-runs, never produces duplicates.
+match exists, the article is skipped. This is a duplicate check, not a database uniqueness
+guarantee. A failed lookup or concurrent submissions can still create duplicates. Inspect the
+database before retrying an uncertain write.
 
 Layer 3 (the Notion form) enriches the row the submitter just created rather than creating a new
 one, so it does not dedup. If the same article is submitted twice, two rows result; sort the
@@ -133,8 +137,9 @@ non-standard sites by using the browser
 
 ## Layer 3 — Notion form + Cloudflare enrichment
 
-The public, zero-CLI path. A Notion form view collects submissions; a Cloudflare API function
-enriches each one. It runs in the production Worker — no Notion Workers beta required.
+This path lets someone submit an article without running a command. A Notion form view collects
+submissions; a Cloudflare API function enriches each one. It runs in the production Worker — no
+Notion Workers beta required.
 
 **Function:** `apps/site/functions/api/transit-news-intake.ts` **Endpoint:**
 `POST /api/transit-news-intake` **Auth:** `Authorization: Bearer <LVBT_TRANSIT_NEWS_INTAKE_SECRET>`
@@ -168,8 +173,8 @@ somewhere in that body.
 1. Notion form submission creates a database row (URL only)
 2. A Notion database automation (trigger: **page added**) fires a "Send webhook" action at the
    endpoint, with the bearer header
-3. The function extracts the page ID from the payload, then `GET /v1/pages/{id}` to read the
-   authoritative URL — it does **not** trust the webhook's property serialization, whose shape
+3. The function extracts the page ID from the payload, then `GET /v1/pages/{id}` to read the URL
+   saved on the page — it does **not** trust the webhook's property serialization, whose shape
    Notion leaves undocumented
 4. `fetchArticle(url)` → extract headline/date/publication/topics/location/body
 5. `PATCH /v1/pages/{id}` writes inferred properties (Headline only if the submitter left it blank),
@@ -180,10 +185,14 @@ somewhere in that body.
 Notion's automation webhook payload is configurable and not formally documented (Notion suggests
 webhook.site to inspect it). `findPageId()` probes the known candidate paths (`data.id`, `id`,
 `page.id`, `data.page.id`, `entity.id`) and validates against a Notion-ID regex. If none match, the
-function logs the full raw payload and returns 400 so the exact path can be confirmed in
-`wrangler pages deployment tail`.
+function logs the full raw payload and returns 400 so the exact path can be confirmed in the
+production Worker's logs.
 
 ### Loop prevention
+
+A successful `enriched: true` response confirms that the handler finished, but not that every body
+paragraph was saved. A body-append failure is logged and can leave a partial article. Inspect the
+Notion page before retrying; retrying can append the same body again.
 
 The function edits page properties. The automation **must** trigger on _page added_, never _page
 edited_ — otherwise the function's own write re-fires it.
@@ -206,8 +215,10 @@ How to confirm each layer works.
 pnpm -C apps/site add:transit-news https://nevadacurrent.com/<some-article>/
 ```
 
-Expect `✓ created`, then check the new row in the Notion database. Run the same URL again — it
-should print `— already in database, skipping`, which proves deduplication.
+Expect `✓ created`, then check the new row and its article text in Notion. The script prints that
+message before appending the body and does not check each append response. Repeating the URL
+normally prints `— already in database, skipping`; it does not repair missing text. Repair a partial
+page after inspecting what was saved.
 
 **Layer 3 (the Cloudflare function), locally:**
 
@@ -228,16 +239,16 @@ token returns `401`; a body with no page ID returns `400` with `no_page_id` (and
 payload).
 
 **Layer 3, end-to-end:** submit the Notion form with any Las Vegas transit URL; within a few seconds
-the new row should fill in. If it doesn't, tail the logs with `wrangler pages deployment tail`.
+the new row should fill in. If it doesn't, inspect the `lvbt-website` Worker logs in Cloudflare.
 
 ---
 
 ## Parked — Notion Worker scaffold
 
 `apps/site/scripts/workers/transit-news-sync/` contains a Notion Worker (Sync + Tool) that would add
-a weekly Google News RSS pull and a Notion-AI-callable tool. **Notion Workers are in private beta**,
-so this is parked until access lands. When it does: `ntn workers deploy` from that directory.
-Nothing else depends on it.
+a weekly Google News RSS pull and a Notion-AI-callable tool. This scaffold is parked. Its presence
+does not establish that LVBT can deploy or run it. When it does: `ntn workers deploy` from that
+directory. Nothing else depends on it.
 
 A weekly RSS sync could alternatively run as a standalone Cloudflare Worker with a Cron Trigger
 (Pages Functions don't support cron) — not built yet.
