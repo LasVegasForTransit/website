@@ -19,6 +19,8 @@ export const EVENT_TYPES = [
   'volunteer_shift',
   'role_changed',
   'check_in_held',
+  'task_checkin_response',
+  'task_checkin_preference',
   'correction',
   'duplicate_reviewed',
 ] as const;

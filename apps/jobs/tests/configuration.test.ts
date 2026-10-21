@@ -101,3 +101,17 @@ void test('preview Discord settings are enabled only for the isolated server', (
     );
   }
 });
+
+void test('task check-ins remain explicitly disabled with no embedded source credentials in both deployments', () => {
+  for (const app of ['jobs', 'site'])
+    for (const environment of [undefined, 'preview']) {
+      const file = fileURLToPath(new URL(`../../${app}/wrangler.jsonc`, import.meta.url));
+      const config = unstable_readConfig({
+        config: file,
+        ...(environment ? { env: environment } : {}),
+      }) as WorkerConfiguration;
+      assert.equal(config.vars.LVBT_TASK_CHECKINS_ENABLED, 'false');
+      assert.equal(Object.hasOwn(config.vars, 'LVBT_NOTION_TASK_API_KEY'), false);
+      assert.equal(Object.hasOwn(config.vars, 'LVBT_DISCORD_BOT_TOKEN'), false);
+    }
+});

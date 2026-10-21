@@ -7,7 +7,8 @@ import {
 } from '@lasvegasfortransit/platform-storage/discord-command-checkpoint';
 import {
   LINK_COMMAND,
-  registerLinkCommand,
+  registerGuildChatCommand,
+  type GuildChatCommand,
   type RegisterLinkCommandOptions,
 } from './discord-link-command';
 import { discordRateLimit } from './discord-rate-limit';
@@ -15,18 +16,25 @@ import { DiscordApiFailure } from './discord-types';
 
 export async function runDiscordCommandRegistration(
   db: Db,
-  input: Omit<RegisterLinkCommandOptions, 'rateLimit'> & { now?: () => Date },
+  input: Omit<RegisterLinkCommandOptions, 'rateLimit'> & {
+    now?: () => Date;
+    command?: GuildChatCommand;
+  },
 ): Promise<{ kind: 'idle' | 'complete' | 'paused' | 'failed' }> {
   const now = input.now ?? (() => new Date());
-  const digest = await digestToken(JSON.stringify(LINK_COMMAND));
-  const contextId = `command-link:${input.applicationId}:${input.guildId}:${digest}`;
+  const command = input.command ?? LINK_COMMAND;
+  const digest = await digestToken(JSON.stringify(command));
+  const contextId = `command-${command.name}:${input.applicationId}:${input.guildId}:${digest}`;
   const lease = await claimDiscordCommand(db, contextId, now());
   if (!lease) return { kind: 'idle' };
   try {
-    await registerLinkCommand({
-      ...input,
-      rateLimit: discordRateLimit(db, input.applicationId, now),
-    });
+    await registerGuildChatCommand(
+      {
+        ...input,
+        rateLimit: discordRateLimit(db, input.applicationId, now),
+      },
+      command,
+    );
     const saved = await settleDiscordCommand(db, lease, now(), { complete: true });
     return { kind: saved ? 'complete' : 'failed' };
   } catch (error) {

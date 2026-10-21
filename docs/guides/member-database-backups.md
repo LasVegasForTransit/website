@@ -35,6 +35,12 @@ schedule must enable Actions email notifications in GitHub settings and verify r
 manual run. Notification delivery is separate from a successful backup or restore test. Inspect
 recent workflow runs to confirm the schedule remains active.
 
+Before promoting schema changes, run `pnpm check`, which includes a complete schema snapshot and
+local restore test. Capture remains one atomic read, with a 95,000-byte query-size guard. If the
+schema exceeds that guard, review the snapshot query generator before release; do not bypass the
+limit or split capture into separately timed reads. A failed capture must not publish a success
+receipt.
+
 ## Credentials and access
 
 Use dedicated credentials in these GitHub environments. Restrict each environment to the `main`

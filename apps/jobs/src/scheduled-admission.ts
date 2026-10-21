@@ -1,5 +1,6 @@
 import { digestToken } from '@lasvegasfortransit/platform-core/random-token';
 import { LINK_COMMAND } from '@lasvegasfortransit/platform-integrations/discord-link-command';
+import { taskCheckinWorkerRuntime } from '@lasvegasfortransit/platform-integrations/notion-task-runtime';
 import {
   discordRuntime,
   type DiscordRuntimeEnv,
@@ -35,13 +36,15 @@ export interface ScheduledAdmission {
   providers: ProviderSchedule;
   db: Db;
   budget: ScheduledBudget;
+  taskCheckins: boolean;
 }
 function deferred(reason: string) {
   console.log(JSON.stringify({ event: 'scheduled_work_deferred', reason }));
 }
 async function configurationFor(env: ScheduledEnv) {
   const discord = discordRuntime(env),
-    newsletter = beehiivRuntime(env);
+    newsletter = beehiivRuntime(env),
+    tasks = taskCheckinWorkerRuntime(env);
   const digest = await digestToken(JSON.stringify(LINK_COMMAND));
   const providers = {
     guildId: discord?.configuration.guildId ?? null,
@@ -53,10 +56,12 @@ async function configurationFor(env: ScheduledEnv) {
   };
   return {
     providers,
+    taskCheckins: Boolean(tasks),
     configuration: JSON.stringify([
       providers,
       discord?.memberRoleId,
       env.LVBT_BEEHIIV_CONFLICT_POLICY,
+      tasks ? [tasks.sourceId, tasks.applicationId, tasks.guildId] : null,
     ]),
   };
 }
@@ -91,6 +96,7 @@ async function executeAdmission(
     signals: ScheduledSignal[];
     configuration: string;
     providers: ProviderSchedule;
+    taskCheckins: boolean;
   },
   run: (admission: ScheduledAdmission) => Promise<void>,
 ) {

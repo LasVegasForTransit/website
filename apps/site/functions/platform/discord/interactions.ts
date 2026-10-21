@@ -4,10 +4,11 @@ import { t } from '@lasvegasfortransit/platform-core/messages';
 import { isDiscordId } from '@lasvegasfortransit/platform-core/discord-identity';
 import { discordLinkOrigin } from '@lasvegasfortransit/platform-storage/discord-link';
 import type { SignInPagesEnv } from '../../sign-in/_shared';
+import { taskCheckinInteraction, type TaskInteractionEnv } from './_task-checkins';
 
 const MAX_INTERACTION_BYTES = 16 * 1024;
 
-interface DiscordInteractionEnv extends SignInPagesEnv {
+interface DiscordInteractionEnv extends SignInPagesEnv, Omit<TaskInteractionEnv, 'PLATFORM_DB'> {
   LVBT_DISCORD_PUBLIC_KEY?: string;
   LVBT_DISCORD_GUILD_ID?: string;
 }
@@ -85,6 +86,7 @@ async function signatureIsValid(
   const keyBytes = bytesFromHex(publicKey, 32);
   const signatureBytes = bytesFromHex(signature, 64);
   if (!keyBytes || !signatureBytes || !/^\d{1,20}$/.test(timestamp)) return false;
+  if (Math.abs(Date.now() / 1000 - Number(timestamp)) > 300) return false;
   try {
     const key = await crypto.subtle.importKey('raw', arrayBuffer(keyBytes), 'Ed25519', false, [
       'verify',
@@ -184,6 +186,8 @@ export const onRequestPost: PagesFunction<DiscordInteractionEnv> = async ({ requ
   const interaction = parseInteraction(body);
   if (!interaction) return new Response(null, { status: 400 });
   if (interaction.type === 1) return jsonResponse({ type: 1 });
+  const taskResponse = await taskCheckinInteraction(env, interaction);
+  if (taskResponse) return taskResponse;
   if (interaction.type !== 2 || interaction.data?.name !== 'link')
     return new Response(null, { status: 404 });
   return linkInteraction(request, env, interaction);

@@ -38,6 +38,24 @@ class SnapshotTests(unittest.TestCase):
             recovered.close()
         db.close()
 
+    def test_wide_mixed_rows_use_compact_query_without_changing_cell_types(self):
+        db = sqlite3.connect(':memory:')
+        names = ['column"' + str(i) for i in range(120)]
+        db.execute('CREATE TABLE mixed(' + ','.join(snapshot.quote(name) for name in names) + ')')
+        values = [None, 'é\x00text', b'\x00\xff', 2**63-1, -(2**63), 1.25]
+        for offset in range(3):
+            row = [values[(i+offset) % len(values)] for i in range(len(names))]
+            db.execute('INSERT INTO mixed VALUES(' + ','.join('?' for _ in names) + ')', row)
+        inventory = json.loads(db.execute(snapshot.INVENTORY_SQL).fetchone()[0])
+        self.assertLess(len(snapshot.snapshot_query(inventory).encode()), 10000)
+        captured = snapshot.capture_local(db)
+        with tempfile.TemporaryDirectory() as directory:
+            path = pathlib.Path(directory) / 'mixed.sqlite'
+            self.assertTrue(snapshot.restore(captured, path)['typedValuesMatch'])
+            with sqlite3.connect(path) as restored:
+                self.assertEqual(snapshot.capture_local(restored), captured)
+        db.close()
+
     def test_refuses_existing_destination_and_imprecise_real(self):
         db = self.fixture()
         with tempfile.TemporaryDirectory() as directory:

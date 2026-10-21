@@ -32,6 +32,8 @@ overrides:
   source-map-js: 1.2.2
   smol-toml: 1.9.0
   svgo: 4.1.0
+  # GHSA-587h-7wmj-h5pm; remove when the shared catalog carries the fix.
+  vite: 8.2.4
 
   # The organization version baseline. Every LVBT repository carries this same
   # catalog, so a package declares "catalog:" and two repositories cannot drift

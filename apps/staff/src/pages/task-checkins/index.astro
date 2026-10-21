@@ -1,0 +1,314 @@
+---
+import TaskDeliveryRecovery from '../../components/TaskDeliveryRecovery.astro';
+import TaskHeldReview from '../../components/TaskHeldReview.astro';
+import TaskEscalationReview from '../../components/TaskEscalationReview.astro';
+import { taskEscalationReview } from '@lasvegasfortransit/platform-storage/notion-task-escalation-admin';
+import TaskRecoveryActions from '../../components/TaskRecoveryActions.astro';
+import StaffLayout from '../../layouts/StaffLayout.astro';
+import { t, formatDate, formatTime } from '@lasvegasfortransit/platform-core/messages';
+import { PermissionDenied } from '@lasvegasfortransit/platform-core/permissions';
+import {
+  taskCheckinReview,
+  taskCheckinSources,
+} from '@lasvegasfortransit/platform-storage/notion-task-admin';
+import { issueFormToken } from '@lasvegasfortransit/platform-storage/form-tokens';
+import {
+  readTaskCheckinPolicy,
+  inspectTaskCheckinPolicy,
+} from '@lasvegasfortransit/platform-integrations/notion-task-policy';
+import { submitTaskCheckinForm } from '../../lib/task-checkins';
+import { messageResponse } from '../../lib/responses';
+const staff = Astro.locals.staff;
+if (!staff) return messageResponse(t('staff.common.accessDenied'), 403);
+let sources;
+try {
+  sources = await taskCheckinSources(staff.db, staff.actor);
+} catch (error) {
+  if (error instanceof PermissionDenied) return messageResponse(error.message, 403);
+  throw error;
+}
+const sourceId = Astro.url.searchParams.get('source') ?? sources.items[0]?.id ?? '';
+let feedback;
+if (Astro.request.method === 'POST') {
+  const result = await submitTaskCheckinForm(Astro.request, staff, sourceId);
+  if (result instanceof Response) return result;
+  feedback = result;
+  Astro.response.status = result.status;
+}
+let review;
+try {
+  review = await taskCheckinReview(staff.db, staff.actor, sourceId, {
+    cursor: Astro.url.searchParams.get('cursor') ?? '',
+    heldCursor: Astro.url.searchParams.get('heldCursor') ?? '',
+    deliveryCursor: Astro.url.searchParams.get('deliveryCursor') ?? '',
+  });
+} catch (error) {
+  if (error instanceof PermissionDenied) return messageResponse(error.message, 403);
+  throw error;
+}
+const escalations = await taskEscalationReview(
+  staff.db,
+  staff.actor,
+  sourceId,
+  Astro.url.searchParams.get('escalationCursor') ?? '',
+);
+const escalationTokens = {
+  retry: await issueFormToken(staff.db, staff.actor, `task-checkins:${sourceId}:escalation_retry`),
+  close: await issueFormToken(staff.db, staff.actor, `task-checkins:${sourceId}:escalation_close`),
+};
+const source = review.source,
+  policy = source ? readTaskCheckinPolicy(source.policy_json) : null;
+const syncNotice = source?.scan_reason
+  ? ['http_401', 'http_403', 'http_404', 'missing_credential'].includes(source.scan_reason)
+    ? t('taskCheckins.staff.scanAccess')
+    : t('taskCheckins.staff.scanFailed')
+  : source && !source.scan_last_completed_at
+    ? t('taskCheckins.staff.scanPending')
+    : null;
+const providerWait =
+  source?.provider_not_before && Date.parse(source.provider_not_before) > Date.now()
+    ? new Intl.DateTimeFormat('en-US', {
+        timeZone: policy?.timezone ?? 'America/Los_Angeles',
+        month: 'short',
+        day: 'numeric',
+        hour: 'numeric',
+        minute: '2-digit',
+      }).format(new Date(source.provider_not_before))
+    : null;
+const gaps =
+  source && !policy ? inspectTaskCheckinPolicy(JSON.parse(source.policy_json) as unknown).gaps : [];
+const actionLabels: Record<string, string> = {
+  progress: 'Progress update',
+  blocker: 'Help request',
+  extension: 'Deadline request',
+  complete: 'Completion',
+  snooze: 'Snooze',
+  delivery: 'Reminder',
+};
+const deliveryTokens = {
+  aux_retry: await issueFormToken(staff.db, staff.actor, `task-checkins:${sourceId}:aux_retry`),
+  aux_close: await issueFormToken(staff.db, staff.actor, `task-checkins:${sourceId}:aux_close`),
+};
+const tokens = {
+  retry: await issueFormToken(staff.db, staff.actor, `task-checkins:${sourceId}:retry`),
+  reconcile: await issueFormToken(staff.db, staff.actor, `task-checkins:${sourceId}:reconcile`),
+  close: await issueFormToken(staff.db, staff.actor, `task-checkins:${sourceId}:close`),
+};
+---
+
+<StaffLayout title={t('taskCheckins.staff.title')} description={t('taskCheckins.staff.intro')}>
+  <a slot="breadcrumb" href="/people/" class="staff-back">← Members</a>
+  {
+    feedback && (
+      <p role="alert" class="staff-error">
+        {feedback.message}
+      </p>
+    )
+  }
+  {
+    Astro.url.searchParams.get('saved') === '1' && (
+      <p role="status" class="staff-notice">
+        {t('taskCheckins.staff.saved')}
+      </p>
+    )
+  }
+  {
+    sources.items.length > 1 && (
+      <form method="get" class="staff-form">
+        <>
+          <label for="source">Notion source</label>
+          <select id="source" name="source">
+            {sources.items.map((item) => (
+              <option value={item.id} selected={item.id === sourceId}>
+                {item.id}
+              </option>
+            ))}
+          </select>
+          <button type="submit" class="staff-secondary-button">
+            View source
+          </button>
+        </>
+      </form>
+    )
+  }
+  {
+    !source ? (
+      <section class="staff-empty">
+        <>
+          <h2>{t('taskCheckins.staff.configure')}</h2>
+          <p>{t('taskCheckins.staff.noSource')}</p>
+          <a href="/task-checkins/settings/" class="staff-secondary-button">
+            {t('taskCheckins.staff.configure')}
+          </a>
+        </>
+      </section>
+    ) : (
+      <>
+        <section class="staff-checkin-status">
+          <>
+            <div>
+              <>
+                <h2>
+                  {source.enabled && policy
+                    ? t('taskCheckins.staff.allowed')
+                    : t('taskCheckins.staff.paused')}
+                </h2>
+                <p>{t('taskCheckins.staff.consent')}</p>
+              </>
+            </div>
+            <a
+              class="staff-secondary-button"
+              href={`/task-checkins/settings/?source=${encodeURIComponent(sourceId)}`}
+            >
+              {t('taskCheckins.staff.settings')}
+            </a>
+          </>
+        </section>
+        {syncNotice && (
+          <p role="status" class="staff-notice">
+            {syncNotice}
+          </p>
+        )}
+        {source.scan_last_completed_at && (
+          <p class="staff-help">
+            {t('taskCheckins.staff.lastSync')}{' '}
+            <time datetime={source.scan_last_completed_at}>
+              {formatDate(new Date(source.scan_last_completed_at))}{' '}
+              {formatTime(new Date(source.scan_last_completed_at))}
+            </time>
+          </p>
+        )}
+        {providerWait && (
+          <p role="status" class="staff-notice">
+            Notion is waiting until {providerWait} before another check. Saved updates remain
+            queued.
+          </p>
+        )}
+        {gaps.length > 0 && <p class="staff-notice">{t('taskCheckins.staff.incomplete')}</p>}
+        <section class="staff-checkin-section" aria-labelledby="identity-title">
+          <>
+            <h2 id="identity-title">{t('taskCheckins.staff.identities')}</h2>
+            <p class="staff-help">{t('taskCheckins.staff.identitiesIntro')}</p>
+          </>
+          <nav class="staff-task-people-links" aria-label="Task check-in people">
+            <a
+              href={`/task-checkins/mappings/?source=${encodeURIComponent(sourceId)}`}
+              class="staff-secondary-button"
+            >
+              {t('taskCheckins.staff.existingMappings')}
+            </a>
+            <a
+              href={`/task-checkins/participants/?source=${encodeURIComponent(sourceId)}`}
+              class="staff-secondary-button"
+            >
+              {t('taskCheckins.staff.participants')}
+            </a>
+          </nav>
+          {review.unmapped.length === 0 ? (
+            <p>{t('taskCheckins.staff.noIdentities')}</p>
+          ) : (
+            <ul class="staff-checkin-list">
+              {review.unmapped.map((person) => (
+                <li>
+                  <div>
+                    <p>{person.notion_name ?? 'Notion assignee'}</p>
+                    <a
+                      href={`https://www.notion.so/${person.task_id.replaceAll('-', '')}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      View assignment in Notion
+                    </a>
+                  </div>
+                  <a
+                    class="staff-secondary-button"
+                    href={`/task-checkins/people/?source=${encodeURIComponent(sourceId)}&notion=${encodeURIComponent(person.notion_user_id)}`}
+                  >
+                    {t('taskCheckins.staff.choosePerson')}
+                  </a>
+                </li>
+              ))}
+            </ul>
+          )}
+          {review.moreUnmapped && <p class="staff-help">{t('taskCheckins.staff.morePeople')}</p>}
+        </section>
+        <TaskDeliveryRecovery
+          sourceId={sourceId}
+          review={review.deliveryIssues}
+          tokens={deliveryTokens}
+        />
+        <TaskHeldReview sourceId={sourceId} review={review.heldTasks} />
+        <TaskEscalationReview sourceId={sourceId} review={escalations} tokens={escalationTokens} />
+        <section class="staff-checkin-section" aria-labelledby="recovery-title">
+          <h2 id="recovery-title">{t('taskCheckins.staff.recovery')}</h2>
+          {review.operations.items.length === 0 ? (
+            <p>{t('taskCheckins.staff.noRecovery')}</p>
+          ) : (
+            <ul class="staff-checkin-list">
+              {review.operations.items.map((operation) => (
+                <li>
+                  <div>
+                    <h3>
+                      <a
+                        href={`https://www.notion.so/${operation.task_id.replaceAll('-', '')}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
+                        {operation.task_title ?? 'Notion task'}
+                      </a>
+                    </h3>
+                    <p>
+                      {operation.person_name ?? 'LVBT volunteer'} ·{' '}
+                      {actionLabels[operation.kind] ?? 'Task update'} ·{' '}
+                      {formatDate(new Date(operation.updated_at))}
+                    </p>
+                    <p class="staff-help">
+                      {operation.reason === 'retention_expired'
+                        ? t('taskCheckins.staff.responseExpired')
+                        : operation.state === 'held'
+                          ? t('taskCheckins.staff.held')
+                          : operation.safe_retry === 1
+                            ? 'The last attempt failed. A retry checks the current task and account first.'
+                            : t('taskCheckins.staff.notRetryable')}
+                    </p>
+                  </div>
+                  <div>
+                    {['queued', 'processing'].includes(operation.recovery_state ?? '') && (
+                      <p class="staff-help">{t('taskCheckins.staff.checking')}</p>
+                    )}
+                    {operation.recovery_state === 'failed' && (
+                      <p class="staff-help">{t('taskCheckins.staff.checkUnavailable')}</p>
+                    )}
+                    {operation.recovery_reason === 'not_confirmed' && (
+                      <p class="staff-help">{t('taskCheckins.staff.notConfirmed')}</p>
+                    )}
+                    {operation.state === 'held' && (
+                      <p class="staff-help">{t('taskCheckins.staff.closeHelp')}</p>
+                    )}
+                    <TaskRecoveryActions operation={operation} tokens={tokens} />
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
+          {review.operations.nextCursor && (
+            <a
+              class="staff-next"
+              href={`/task-checkins/?source=${encodeURIComponent(sourceId)}&cursor=${encodeURIComponent(review.operations.nextCursor)}`}
+            >
+              {t('taskCheckins.staff.next')}
+            </a>
+          )}
+        </section>
+      </>
+    )
+  }
+</StaffLayout>
+
+<style>
+  .staff-task-people-links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+  }
+</style>

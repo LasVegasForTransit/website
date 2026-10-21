@@ -63,8 +63,13 @@ def snapshot_query(inventory):
         # Each alias repeats in the exact-value guard; short names preserve D1 query headroom.
         aliases = [chr(ord('a') + i) if i < 26 else 'c' + str(i) for i in range(len(expressions))]
         projection = ','.join(e + ' AS ' + a for e, a in zip(expressions, aliases))
-        rows = ("(SELECT json_group_array(json_array(" + ','.join(typed(a) for a in aliases)
-                + ')) FROM (SELECT ' + projection + ' FROM ' + quote(name) + ' ORDER BY ' + order + '))')
+        # Format one scalar expression per table, rather than repeating it for every
+        # column. Ordinals preserve column order and UNION ALL keeps each SQLite type.
+        cells = ' UNION ALL '.join('SELECT ' + a + ' AS v,' + str(i) + ' AS n'
+                                   for i, a in enumerate(aliases))
+        row = '(SELECT json_group_array(' + typed('v') + ') FROM (' + cells + ' ORDER BY n))'
+        rows = ('(SELECT json_group_array(json(' + row + ')) FROM (SELECT '
+                + projection + ' FROM ' + quote(name) + ' ORDER BY ' + order + '))')
         parts.append("json_object('name'," + literal(name) + ",'rowid'," + (literal(alias) if alias else 'NULL')
                      + ",'rows'," + rows + ')')
     schema = "(SELECT json_group_array(json_object('type',type,'name',name,'tbl_name',tbl_name,'sql',sql)) FROM (" + SCHEMA_SQL + '))'

@@ -1,0 +1,60 @@
+---
+import { t } from '@lasvegasfortransit/platform-core/messages';
+import type { HeldTask } from '@lasvegasfortransit/platform-storage/notion-task-admin';
+interface Props {
+  sourceId: string;
+  review: { items: HeldTask[]; nextCursor: string | null };
+}
+const { sourceId, review } = Astro.props;
+const reasons: Record<string, string> = {
+  missing_name: t('taskCheckins.staff.missingName'),
+  invalid_link: t('taskCheckins.staff.invalidLink'),
+  incomplete_assignment: t('taskCheckins.staff.incompleteAssignment'),
+  unassigned: t('taskCheckins.staff.unassigned'),
+  incomplete_project: t('taskCheckins.staff.incompleteProject'),
+  invalid_deadline: t('taskCheckins.staff.invalidDeadline'),
+  unconfirmed_date_range: t('taskCheckins.staff.dateRange'),
+  unsupported_status: t('taskCheckins.staff.unsupportedStatus'),
+};
+---
+
+{
+  review.items.length > 0 && (
+    <section class="staff-checkin-section" aria-labelledby="held-tasks-title">
+      <h2 id="held-tasks-title">{t('taskCheckins.staff.heldTasks')}</h2>
+      <p class="staff-help">{t('taskCheckins.staff.heldIntro')}</p>
+      <ul class="staff-checkin-list staff-task-review-list">
+        {review.items.map((task) => (
+          <li>
+            <div>
+              <h3>
+                <a
+                  href={`https://www.notion.so/${task.task_id.replaceAll('-', '')}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  {task.task_title || 'Untitled task'}
+                </a>
+              </h3>
+              <p>{reasons[task.reason] ?? 'Review the task details in Notion.'}</p>
+            </div>
+          </li>
+        ))}
+      </ul>
+      {review.nextCursor && (
+        <a
+          class="staff-next"
+          href={`/task-checkins/?source=${encodeURIComponent(sourceId)}&heldCursor=${encodeURIComponent(review.nextCursor)}`}
+        >
+          {t('taskCheckins.staff.next')}
+        </a>
+      )}
+    </section>
+  )
+}
+<style>
+  .staff-task-review-list {
+    max-height: 24rem;
+    overflow: auto;
+  }
+</style>

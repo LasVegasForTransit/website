@@ -3,6 +3,7 @@ import type { Db, Statement } from './db';
 import { personRetentionWrites, inactivePersonRetentionWrites } from './person-retention';
 import { memberPrivacySchedule } from './member-privacy-schedule';
 import { googleGroupPruneWrites } from './google-group-snapshots';
+import { taskRetentionWrites } from './notion-task-retention';
 export interface MaintenanceResult {
   viewsRemoved: number;
   auditsRemoved: number;
@@ -115,7 +116,13 @@ export async function runMaintenance(
     ? Math.max(1, Math.min(1000, Math.floor(options.limit ?? 100)))
     : 100;
   if (options.category === 'inactive') return await runInactiveMaintenance(db, now, limit);
-  const records = options.category === 'profiles' ? [] : recordMaintenanceWrites(db, now, limit);
+  const records =
+    options.category === 'profiles'
+      ? []
+      : [
+          ...recordMaintenanceWrites(db, now, limit),
+          ...(await taskRetentionWrites(db, now, limit)),
+        ];
   const profiles =
     options.category === 'records'
       ? []

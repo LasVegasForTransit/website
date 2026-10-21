@@ -1,0 +1,479 @@
+---
+import StaffLayout from '../../layouts/StaffLayout.astro';
+import { t } from '@lasvegasfortransit/platform-core/messages';
+import { PermissionDenied } from '@lasvegasfortransit/platform-core/permissions';
+import {
+  taskCheckinReview,
+  taskCheckinPeople,
+} from '@lasvegasfortransit/platform-storage/notion-task-admin';
+import { issueFormToken } from '@lasvegasfortransit/platform-storage/form-tokens';
+import { notionObject } from '@lasvegasfortransit/platform-integrations/notion-task-types';
+import { submitTaskCheckinForm } from '../../lib/task-checkins';
+import { taskClock } from '../../lib/task-checkin-form';
+import { messageResponse } from '../../lib/responses';
+const staff = Astro.locals.staff;
+if (!staff) return messageResponse(t('staff.common.accessDenied'), 403);
+const sourceId = Astro.url.searchParams.get('source') ?? '';
+let review;
+try {
+  review = await taskCheckinReview(staff.db, staff.actor, sourceId);
+} catch (error) {
+  if (error instanceof PermissionDenied) return messageResponse(error.message, 403);
+  throw error;
+}
+let feedback;
+if (Astro.request.method === 'POST') {
+  const result = await submitTaskCheckinForm(Astro.request, staff, sourceId);
+  if (result instanceof Response) return result;
+  feedback = result;
+  Astro.response.status = result.status;
+}
+const source = review.source;
+const values =
+  feedback?.policy ?? (source ? notionObject(JSON.parse(source.policy_json) as unknown) : {});
+const fields = notionObject(values.fields),
+  actions = notionObject(values.actions);
+const string = (value: unknown, fallback = '') =>
+  typeof value === 'string' || typeof value === 'number' ? String(value) : fallback;
+const ids = (value: unknown) =>
+  Array.isArray(value) ? value.filter((item): item is string => typeof item === 'string') : [];
+const people = await taskCheckinPeople(staff.db, staff.actor, [
+  ...ids(values.cohortPersonIds),
+  ...ids(values.supportPersonIds),
+  string(values.serviceOwnerId),
+]);
+const token = await issueFormToken(
+  staff.db,
+  staff.actor,
+  `task-checkins:${sourceId || 'new'}:configure`,
+);
+const fieldNames = [
+  ['name', 'Task name', 'Task name'],
+  ['description', 'Description', 'Description'],
+  ['assignee', 'Assignees', 'Assignee'],
+  ['due', 'Deadline', 'Due date'],
+  ['status', 'Status', 'Status'],
+  ['project', 'Project', 'Project'],
+];
+const checkboxGroups = [
+  ['cohortPersonIds', 'Trial participants'],
+  ['supportPersonIds', 'People who can help'],
+];
+const gapNames: Record<string, string> = {
+  source: 'Connection and field mapping',
+  timing: 'Timezone, quiet hours and snooze',
+  cadence: 'At least one reminder or digest',
+  actions: 'Permitted actions',
+  content_approval: 'Task content approval',
+  trial_approval: 'Trial approval',
+  cohort: 'Trial participants',
+  service_owner: 'Service owner',
+  support: 'Support and escalation',
+  retention: 'Record retention',
+  success_criteria: 'Trial success criteria',
+  private_delivery: 'Private delivery',
+  configuration: 'Source and workspace',
+};
+---
+
+<StaffLayout
+  title={t('taskCheckins.staff.settings')}
+  description={t('taskCheckins.staff.firstSetup')}
+>
+  <a
+    slot="breadcrumb"
+    class="staff-back"
+    href={`/task-checkins/?source=${encodeURIComponent(sourceId)}`}
+    >← {t('taskCheckins.staff.back')}</a
+  >
+  {
+    feedback && (
+      <section role="alert" class="staff-error">
+        <p>{feedback.message}</p>
+        {feedback.gaps && (
+          <ul>
+            {feedback.gaps.map((gap) => (
+              <li>{gapNames[gap] ?? gap}</li>
+            ))}
+          </ul>
+        )}
+      </section>
+    )
+  }
+  <form method="post" class="staff-form staff-checkin-editor">
+    <input type="hidden" name="action" value="configure" /><input
+      type="hidden"
+      name="token"
+      value={token}
+    /><input type="hidden" name="expectedRevision" value={source?.revision ?? 0} />
+    <fieldset>
+      <legend>{t('taskCheckins.staff.cadence')}</legend>
+      <div class="staff-editor-fields">
+        <div>
+          <label for="timezone">Timezone for reminders and date-only deadlines</label><input
+            id="timezone"
+            name="timezone"
+            value={string(values.timezone, 'America/Los_Angeles')}
+            required
+            maxlength="100"
+          />
+        </div>
+        <div>
+          <label for="digestHour">Daily task summary</label><select
+            id="digestHour"
+            name="digestHour"
+            ><option value="">No daily summary</option>{
+              Array.from({ length: 24 }, (_, hour) => (
+                <option value={hour} selected={values.digestHour === hour}>
+                  {String(hour).padStart(2, '0')}:00
+                </option>
+              ))
+            }</select
+          >
+        </div>
+        <div>
+          <label for="preDeadlineHours">Hours before the deadline</label><input
+            id="preDeadlineHours"
+            name="preDeadlineHours"
+            value={Array.isArray(values.preDeadlineHours) ? values.preDeadlineHours.join(', ') : ''}
+            placeholder="48, 24"
+          /><p class="staff-help">Separate reminder times with commas. Leave empty to skip.</p>
+        </div>
+        <div>
+          <label for="overdueHours">Hours after the deadline</label><input
+            id="overdueHours"
+            name="overdueHours"
+            value={Array.isArray(values.overdueHours) ? values.overdueHours.join(', ') : ''}
+            placeholder="24, 72"
+          />
+        </div>
+        <div>
+          <label for="followupHours">Hours after an unanswered check-in</label><input
+            id="followupHours"
+            name="followupHours"
+            value={Array.isArray(values.followupHours) ? values.followupHours.join(', ') : ''}
+          />
+        </div>
+        <div>
+          <label for="notificationLimit24h">Maximum notifications per person in 24 hours</label>
+          <input
+            type="number"
+            id="notificationLimit24h"
+            name="notificationLimit24h"
+            min="1"
+            max="20"
+            required
+            value={string(values.notificationLimit24h, '4')}
+          />
+          <p class="staff-help">
+            A shared rolling limit for this task source, including reminders, summaries, and support
+            notifications. Unconfirmed sends count toward the limit.
+          </p>
+        </div>
+        <div>
+          <label for="notificationGapMinutes">Minimum minutes between notifications</label>
+          <input
+            type="number"
+            id="notificationGapMinutes"
+            name="notificationGapMinutes"
+            min="1"
+            max="1440"
+            required
+            value={string(values.notificationGapMinutes, '60')}
+          />
+        </div>
+        <div>
+          <label for="snoozeMinutes">Snooze duration in minutes</label><input
+            type="number"
+            id="snoozeMinutes"
+            name="snoozeMinutes"
+            min="15"
+            max="10080"
+            value={string(values.snoozeMinutes, '1440')}
+          />
+        </div>
+        <div>
+          <label for="quietStart">Quiet hours start</label><input
+            type="time"
+            id="quietStart"
+            name="quietStart"
+            value={taskClock(values.quietStartMinute) || '21:00'}
+          />
+        </div>
+        <div>
+          <label for="quietEnd">Quiet hours end</label><input
+            type="time"
+            id="quietEnd"
+            name="quietEnd"
+            value={taskClock(values.quietEndMinute) || '09:00'}
+          />
+        </div>
+      </div><p class="staff-help">
+        The same start and end allows reminders at any time. Date-only deadlines last through the
+        end of their local day.
+      </p>
+    </fieldset>
+    <fieldset>
+      <legend>{t('taskCheckins.staff.permissions')}</legend>
+      <p class="staff-help">{t('taskCheckins.staff.consent')}</p>
+      <div>
+        <label for="serviceOwnerId">Service owner</label><select
+          id="serviceOwnerId"
+          name="serviceOwnerId"
+          ><option value="">Choose a person</option>{
+            people.map((person) => (
+              <option value={person.id} selected={values.serviceOwnerId === person.id}>
+                {person.name}
+              </option>
+            ))
+          }</select
+        >
+      </div>
+      {
+        checkboxGroups.map(([name, label]) => (
+          <fieldset>
+            <>
+              <legend>{label}</legend>
+              <div class="staff-checkin-choices">
+                {people.map((person) => (
+                  <label class="staff-choice">
+                    <input
+                      type="checkbox"
+                      name={name}
+                      value={person.id}
+                      checked={ids(values[name ?? '']).includes(person.id)}
+                    />
+                    <span>
+                      {person.name}
+                      {person.email && <span class="staff-help">{person.email}</span>}
+                    </span>
+                  </label>
+                ))}
+              </div>
+            </>
+          </fieldset>
+        ))
+      }
+      <div>
+        <label class="staff-choice"
+          ><input
+            type="checkbox"
+            name="escalateBlockers"
+            checked={values.escalateBlockers !== false}
+          /><span>Route confirmed help requests to support people</span></label
+        >
+      </div>
+      <div>
+        <label for="escalationAfterHours">Escalate after this many overdue hours</label>
+        <input
+          type="number"
+          id="escalationAfterHours"
+          name="escalationAfterHours"
+          min="1"
+          max="720"
+          value={values.escalationAfterHours === null
+            ? ''
+            : string(values.escalationAfterHours, '72')}
+        />
+        <p class="staff-help">
+          Leave empty to skip overdue escalations. Quiet hours and notification limits still apply.
+        </p>
+      </div>
+      <div>
+        <label for="escalation">When someone needs help</label><select
+          id="escalation"
+          name="escalation"
+          ><option value="support" selected={values.escalation !== 'project_leads'}
+            >Notify the selected support people</option
+          ><option value="project_leads" selected={values.escalation === 'project_leads'}
+            >Notify their Notion project leads</option
+          ></select
+        >
+      </div>
+      <p class="staff-help">
+        Recipients need a verified Discord account and their own opt-in. Unavailable recipients need
+        administrator review.
+      </p>
+      <fieldset>
+        <legend>Volunteer actions</legend>{
+          [
+            ['progress', 'Share progress'],
+            ['blocker', 'Ask for help'],
+            ['complete', 'Mark complete in Notion'],
+            ['extension', 'Request a new deadline'],
+          ].map(([key, label]) => (
+            <label class="staff-choice">
+              <>
+                <input
+                  type="checkbox"
+                  name={`action_${key}`}
+                  checked={actions[key ?? ''] === true}
+                />
+                <span>{label}</span>
+              </>
+            </label>
+          ))
+        }<p class="staff-help">
+          Deadline requests are notes for an organizer. They do not change the deadline.
+        </p>
+      </fieldset>
+    </fieldset>
+    <fieldset>
+      <legend>{t('taskCheckins.staff.rollout')}</legend>
+      <div>
+        <label for="retentionDays">Private task history retention in days</label><input
+          id="retentionDays"
+          name="retentionDays"
+          type="number"
+          min="1"
+          max="365"
+          value={string(values.retentionDays, String(source?.retention_days ?? 30))}
+          aria-describedby="retention-help"
+        />
+        <p id="retention-help" class="staff-help">
+          Private response text and stale task details expire. Current preferences and minimal
+          records that prevent repeated sends remain; copies in Notion and Discord follow those
+          services’ policies. A paused draft keeps the last valid retention period.
+        </p>
+      </div>
+      <div>
+        <label for="successCriteria">What should the trial demonstrate?</label><textarea
+          id="successCriteria"
+          name="successCriteria"
+          rows="3"
+          maxlength="2000">{string(values.successCriteria)}</textarea
+        >
+      </div>
+      <label class="staff-choice"
+        ><input
+          type="checkbox"
+          name="contentApproved"
+          checked={values.contentApproved === true}
+        /><span>Task content is suitable for private delivery to its assignees.</span></label
+      >
+      <label class="staff-choice"
+        ><input
+          type="checkbox"
+          name="escalationContentApproved"
+          checked={values.escalationContentApproved === true}
+        /><span
+          >Task content and help notes may be shared privately with the configured support
+          recipients.</span
+        ></label
+      >
+      <label class="staff-choice"
+        ><input type="checkbox" name="trialApproved" checked={values.trialApproved === true} /><span
+          >The selected participants and schedule are approved for the trial.</span
+        ></label
+      >
+    </fieldset>
+    <details class="staff-checkin-connection" open={!source}>
+      <summary>{t('taskCheckins.staff.connection')}</summary><div
+        class="staff-checkin-connection-fields"
+      >
+        {
+          !source && (
+            <div>
+              <>
+                <label for="sourceId">{t('taskCheckins.staff.source')}</label>
+                <input
+                  id="sourceId"
+                  name="sourceId"
+                  value={feedback?.sourceId ?? ''}
+                  required
+                  maxlength="200"
+                  pattern="[a-fA-F0-9-]{32,36}"
+                />
+              </>
+            </div>
+          )
+        }
+        <div>
+          <label for="workspaceId">{t('taskCheckins.staff.workspace')}</label><input
+            id="workspaceId"
+            name="workspaceId"
+            value={feedback?.workspaceId ?? source?.workspace_id ?? ''}
+            required
+            readonly={Boolean(source)}
+            maxlength="200"
+          />
+        </div>
+        <div>
+          <label for="guildId">Discord server ID</label><input
+            id="guildId"
+            name="guildId"
+            value={string(values.guildId)}
+            maxlength="30"
+          />
+        </div>
+        <fieldset>
+          <legend>Notion task fields</legend><div class="staff-editor-fields">
+            {
+              fieldNames.map(([key, label, fallback]) => (
+                <div>
+                  <>
+                    <label for={`field_${key}`}>{label}</label>
+                    <input
+                      id={`field_${key}`}
+                      name={`field_${key}`}
+                      value={string(fields[key ?? ''], fallback)}
+                      maxlength="100"
+                    />
+                  </>
+                </div>
+              ))
+            }
+          </div>
+        </fieldset>
+        <div>
+          <label for="projectsSourceId">Notion projects source ID</label><input
+            id="projectsSourceId"
+            name="projectsSourceId"
+            value={string(values.projectsSourceId)}
+            maxlength="64"
+          />
+        </div>
+        <div>
+          <label for="projectLeadField">Project lead field</label><input
+            id="projectLeadField"
+            name="projectLeadField"
+            value={string(values.projectLeadField, 'Lead')}
+            maxlength="100"
+          />
+        </div>
+        <div>
+          <label for="rangeBoundary">When a deadline is a date range</label><select
+            id="rangeBoundary"
+            name="rangeBoundary"
+            ><option
+              value="reject"
+              selected={values.rangeBoundary !== 'start' && values.rangeBoundary !== 'end'}
+              >Hold for review</option
+            ><option value="start" selected={values.rangeBoundary === 'start'}>Use the start</option
+            ><option value="end" selected={values.rangeBoundary === 'end'}>Use the end</option
+            ></select
+          >
+        </div>
+        <label class="staff-choice"
+          ><input
+            type="checkbox"
+            name="shareDescription"
+            checked={values.shareDescription === true}
+          /><span>Include task descriptions in private Discord cards.</span></label
+        ><p class="staff-help">
+          Archived tasks are treated as canceled. Provider credentials are managed separately from
+          these settings.
+        </p>
+      </div>
+    </details>
+    <label class="staff-choice"
+      ><input type="checkbox" name="enabled" checked={source?.enabled === 1} /><span
+        >{t('taskCheckins.staff.enable')}</span
+      ></label
+    ><p class="staff-help">
+      People review changed settings in Discord before messages resume. Live delivery also requires
+      the approved provider connection.
+    </p>
+    <button type="submit" class="staff-secondary-button">{t('taskCheckins.staff.save')}</button>
+  </form>
+</StaffLayout>

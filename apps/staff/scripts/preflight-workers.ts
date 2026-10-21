@@ -1,3 +1,4 @@
+import { taskCheckinContext } from '@lasvegasfortransit/platform-integrations/notion-task-runtime';
 import { type MetadataClient, array, object } from './preflight-api';
 import { check, type Check, type Environment } from './preflight-config';
 import {
@@ -9,6 +10,9 @@ import {
   STAFF_WORKER_BINDINGS,
 } from '@lasvegasfortransit/platform-integrations/worker-runtime-config';
 const VERSION_VARIABLES = [
+  'LVBT_TASK_CHECKINS_ENABLED',
+  'LVBT_NOTION_TASK_SOURCE_ID',
+  'LVBT_NOTION_TASK_PRODUCTION_SOURCE_ID',
   'LVBT_ACCESS_AUD',
   'LVBT_ACCESS_TEAM_DOMAIN',
   'LVBT_GOOGLE_OAUTH_CLIENT_ID',
@@ -26,7 +30,23 @@ export function disabledProviderBindings(bindings: Bindings, environment: Enviro
   return (
     value(bindings, 'LVBT_DEPLOYMENT_ENV') === environment &&
     value(bindings, 'LVBT_DISCORD_SYNC_ENABLED') === 'false' &&
+    (value(bindings, 'LVBT_TASK_CHECKINS_ENABLED') ?? 'false') === 'false' &&
     (value(bindings, 'LVBT_BEEHIIV_SYNC_ENABLED') ?? 'false') === 'false'
+  );
+}
+export function taskCheckinBindingsReady(bindings: Bindings, environment: Environment): boolean {
+  const enabled = value(bindings, 'LVBT_TASK_CHECKINS_ENABLED');
+  if (enabled === undefined || enabled === 'false') return true;
+  const vars = Object.fromEntries(
+    bindings
+      .filter((row) => row.type === 'plain_text' && typeof row.name === 'string')
+      .map((row) => [String(row.name), row.text]),
+  );
+  return (
+    taskCheckinContext(vars)?.environment === environment &&
+    ['LVBT_NOTION_TASK_API_KEY', 'LVBT_DISCORD_BOT_TOKEN'].every((name) =>
+      bindings.some((row) => row.name === name && row.type === 'secret_text'),
+    )
   );
 }
 export function newsletterBindingsReady(bindings: Bindings, environment: Environment): boolean {
@@ -113,6 +133,28 @@ function staffBindingChecks(versions: Bindings[], name: string): Check[] {
     ),
   ];
 }
+function jobsBindingChecks(versions: Bindings[], name: string): Check[] {
+  const environment: Environment = name.endsWith('-preview') ? 'preview' : 'production';
+  const checks = [
+    [
+      'jobs.task_checkin_configuration',
+      taskCheckinBindingsReady,
+      'Enabled task check-ins require isolated Notion and Discord targets and their private credentials.',
+    ],
+    [
+      'jobs.newsletter_configuration',
+      newsletterBindingsReady,
+      'Enabled newsletter processing requires matching publication, conflict policy and encrypted jobs credentials.',
+    ],
+  ] as const;
+  return checks.map(([id, ready, message]) =>
+    check(
+      id,
+      versions.every((bindings) => ready(bindings, environment)),
+      message,
+    ),
+  );
+}
 export async function inspectWorker(
   client: MetadataClient,
   name: string,
@@ -169,20 +211,7 @@ export async function inspectWorker(
         ),
       ),
       ...(kind === 'staff' ? staffBindingChecks(versions, name) : []),
-      ...(kind === 'jobs'
-        ? [
-            check(
-              'jobs.newsletter_configuration',
-              versions.every((bindings) =>
-                newsletterBindingsReady(
-                  bindings,
-                  name.endsWith('-preview') ? 'preview' : 'production',
-                ),
-              ),
-              'Enabled newsletter processing requires matching publication, conflict policy and encrypted jobs credentials.',
-            ),
-          ]
-        : []),
+      ...(kind === 'jobs' ? jobsBindingChecks(versions, name) : []),
     ],
   };
 }

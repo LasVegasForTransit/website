@@ -1,0 +1,45 @@
+---
+import { t } from '@lasvegasfortransit/platform-core/messages';
+import type { TaskRecoveryRow } from '@lasvegasfortransit/platform-storage/notion-task-admin';
+interface Props {
+  operation: TaskRecoveryRow;
+  tokens: { retry: string; reconcile: string; close: string };
+}
+const { operation, tokens } = Astro.props;
+const checking = ['queued', 'processing'].includes(operation.recovery_state ?? '');
+const actions: { kind: keyof typeof tokens; label: string; disabled?: boolean }[] =
+  operation.safe_retry === 1
+    ? [{ kind: 'retry', label: t('taskCheckins.staff.retry') }]
+    : operation.state === 'held'
+      ? [
+          ...(operation.can_reconcile === 1
+            ? [
+                {
+                  kind: 'reconcile' as const,
+                  label: t('taskCheckins.staff.recheck'),
+                  disabled: checking,
+                },
+              ]
+            : []),
+          { kind: 'close', label: t('taskCheckins.staff.close') },
+        ]
+      : [];
+---
+
+<div class="staff-checkin-recovery-actions">
+  {
+    actions.map((action) => (
+      <form method="post">
+        <>
+          <input type="hidden" name="action" value={action.kind} />
+          <input type="hidden" name="token" value={tokens[action.kind]} />
+          <input type="hidden" name="operationId" value={operation.id} />
+          <input type="hidden" name="expectedUpdatedAt" value={operation.updated_at} />
+          <button class="staff-secondary-button" type="submit" disabled={action.disabled}>
+            {action.label}
+          </button>
+        </>
+      </form>
+    ))
+  }
+</div>

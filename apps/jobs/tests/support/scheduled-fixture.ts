@@ -18,6 +18,8 @@ export function fixture(
     rowsRead?: number;
     idleAccounts?: boolean;
     missingControlPattern?: RegExp;
+    taskCheckins?: boolean;
+    failedTaskOutcome?: boolean;
   } = {},
 ) {
   const native = memoryDb();
@@ -76,6 +78,16 @@ export function fixture(
   });
   const context = {
     exports: {
+      TaskCheckinCommands: step('task_commands', { kind: 'complete' }),
+      TaskCheckinScan: step('task_scan', {
+        kind: options.failedTaskOutcome ? 'failed' : 'scanned',
+      }),
+      TaskCheckinQueue: step('task_queue', { kind: 'progress' }),
+      TaskCheckinOperation: step('task_operation', { kind: 'progress' }),
+      TaskCheckinRecovery: step('task_recovery', { kind: 'progress' }),
+      TaskCheckinEscalation: step('task_escalation', { kind: 'progress' }),
+      TaskCheckinRefresh: step('task_refresh', { kind: 'progress' }),
+      TaskCheckinDigest: step('task_digest', { kind: 'progress' }),
       StaffMaintenance: step('records', {}),
       ProfileMaintenance: step('profiles', {}),
       InactiveProfileMaintenance: step('inactive_profiles', {}),
@@ -111,6 +123,10 @@ export function fixture(
   const env = {
     PLATFORM_DB: database,
     LVBT_DEPLOYMENT_ENV: 'preview',
+    LVBT_TASK_CHECKINS_ENABLED: options.taskCheckins ? 'true' : 'false',
+    LVBT_NOTION_TASK_SOURCE_ID: '10000000-0000-4000-8000-000000000001',
+    LVBT_NOTION_TASK_PRODUCTION_SOURCE_ID: '20000000-0000-4000-8000-000000000002',
+    LVBT_NOTION_TASK_API_KEY: 'fixture-only',
     LVBT_DISCORD_SYNC_ENABLED: options.discordDisabled ? 'false' : 'true',
     LVBT_DISCORD_APPLICATION_ID: '555555555555555555',
     LVBT_DISCORD_GUILD_ID: '111111111111111111',

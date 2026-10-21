@@ -1,0 +1,89 @@
+---
+import StaffLayout from '../../layouts/StaffLayout.astro';
+import { t } from '@lasvegasfortransit/platform-core/messages';
+import { PermissionDenied } from '@lasvegasfortransit/platform-core/permissions';
+import {
+  taskCheckinReview,
+  type TaskParticipant,
+} from '@lasvegasfortransit/platform-storage/notion-task-admin';
+import { readTaskCheckinPolicy } from '@lasvegasfortransit/platform-integrations/notion-task-policy';
+import { messageResponse } from '../../lib/responses';
+const staff = Astro.locals.staff;
+if (!staff) return messageResponse(t('staff.common.accessDenied'), 403);
+const sourceId = Astro.url.searchParams.get('source') ?? '';
+let review;
+try {
+  review = await taskCheckinReview(staff.db, staff.actor, sourceId, {
+    personCursor: Astro.url.searchParams.get('cursor') ?? '',
+  });
+} catch (error) {
+  if (error instanceof PermissionDenied) return messageResponse(error.message, 403);
+  throw error;
+}
+if (!review.source) return messageResponse('This source is unavailable.', 404);
+const policyReady = Boolean(readTaskCheckinPolicy(review.source.policy_json)),
+  enabled = Boolean(review.source.enabled);
+function choice(person: TaskParticipant): string {
+  if (person.preference_state === 'opted_out') return 'Stopped';
+  if (person.preference_state === 'paused') return 'Paused';
+  if (!person.preference_state) return 'Not enabled';
+  return person.consent_current ? 'Enabled' : 'Needs renewed opt-in';
+}
+function readiness(person: TaskParticipant): string {
+  if (person.preference_state === 'opted_out') return 'This person chose to stop task messages.';
+  if (person.preference_state === 'paused') return 'This person’s check-ins are paused.';
+  if (!person.cohort_ready) return 'Outside the current trial group.';
+  if (!person.identity_ready) return 'Discord account needs confirmation.';
+  if (!person.mapping_ready) return 'Notion account needs a match.';
+  if (!person.preference_state || !person.consent_current)
+    return 'This person must approve the current settings through /checkins.';
+  if (!policyReady) return 'Source setup is incomplete.';
+  if (!enabled) return 'Delivery is paused for this source.';
+  return 'Ready under the current source settings. Provider access and private-message availability are checked before sending.';
+}
+---
+
+<StaffLayout
+  title={t('taskCheckins.staff.participants')}
+  description={t('taskCheckins.staff.participantIntro')}
+>
+  <a
+    slot="breadcrumb"
+    class="staff-back"
+    href={`/task-checkins/?source=${encodeURIComponent(sourceId)}`}
+    >{t('taskCheckins.staff.back')}</a
+  >
+  {
+    review.participants.items.length === 0 ? (
+      <p>No participants are configured for this source.</p>
+    ) : (
+      <ul class="staff-checkin-list">
+        {review.participants.items.map((person) => (
+          <li>
+            <div>
+              <h2>
+                <a href={`/people/${encodeURIComponent(person.person_id)}/`}>
+                  {person.person_name ?? 'LVBT volunteer'}
+                </a>
+              </h2>
+              <p>
+                <strong>{choice(person)}</strong>
+              </p>
+              <p class="staff-help">{readiness(person)}</p>
+            </div>
+          </li>
+        ))}
+      </ul>
+    )
+  }
+  {
+    review.participants.nextCursor && (
+      <a
+        class="staff-next"
+        href={`/task-checkins/participants/?source=${encodeURIComponent(sourceId)}&cursor=${encodeURIComponent(review.participants.nextCursor)}`}
+      >
+        {t('taskCheckins.staff.next')}
+      </a>
+    )
+  }
+</StaffLayout>

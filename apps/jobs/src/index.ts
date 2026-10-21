@@ -1,3 +1,4 @@
+import type { TaskCheckinWorkerEnv } from '@lasvegasfortransit/platform-integrations/notion-task-runtime';
 import type { DiscordRuntimeEnv } from '@lasvegasfortransit/platform-integrations/discord-runtime';
 import type { BeehiivRuntimeEnv } from '@lasvegasfortransit/platform-integrations/beehiiv-runtime';
 import { handleNewsletterEventRequest } from './newsletter-event';
@@ -19,6 +20,16 @@ export {
   InactiveProfileMaintenance,
   ProviderCompletion,
 } from './scheduled-maintenance';
+export {
+  TaskCheckinEscalation,
+  TaskCheckinRefresh,
+  TaskCheckinRecovery,
+  TaskCheckinDigest,
+  TaskCheckinCommands,
+  TaskCheckinScan,
+  TaskCheckinQueue,
+  TaskCheckinOperation,
+} from './notion-task-checkins';
 export default {
   async fetch(request, env) {
     if (request.url === 'https://jobs.internal/discord/committee-roles')
@@ -34,4 +45,4 @@ export default {
   async scheduled(controller, env, context) {
     await runScheduledMembership(controller, env, context);
   },
-} satisfies ExportedHandler<Env & DiscordRuntimeEnv & BeehiivRuntimeEnv>;
+} satisfies ExportedHandler<Env & DiscordRuntimeEnv & BeehiivRuntimeEnv & TaskCheckinWorkerEnv>;

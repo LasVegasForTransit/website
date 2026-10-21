@@ -104,6 +104,8 @@ export const staffCommon = {
     volunteer_shift: 'Volunteered',
     role_changed: 'Committee role changed',
     check_in_held: 'Had a check-in',
+    task_checkin_response: 'Responded to a task check-in',
+    task_checkin_preference: 'Changed task check-in preferences',
     correction: 'Details corrected',
     duplicate_reviewed: 'Possible duplicate checked',
     lead: 'Committee lead',

@@ -1,0 +1,204 @@
+---
+import StaffLayout from '../../layouts/StaffLayout.astro';
+import { t } from '@lasvegasfortransit/platform-core/messages';
+import { PermissionDenied } from '@lasvegasfortransit/platform-core/permissions';
+import { taskCheckinReview } from '@lasvegasfortransit/platform-storage/notion-task-admin';
+import { readTaskCheckinMapping } from '@lasvegasfortransit/platform-storage/notion-task-mapping-admin';
+import { issueFormToken } from '@lasvegasfortransit/platform-storage/form-tokens';
+import { searchStaffPeople } from '@lasvegasfortransit/platform-storage/staff-people';
+import { InvalidCursor } from '@lasvegasfortransit/platform-storage/staff-history';
+import { submitTaskCheckinForm } from '../../lib/task-checkins';
+import { messageResponse } from '../../lib/responses';
+const staff = Astro.locals.staff;
+if (!staff) return messageResponse(t('staff.common.accessDenied'), 403);
+const sourceId = Astro.url.searchParams.get('source') ?? '',
+  notionUserId = Astro.url.searchParams.get('notion') ?? '';
+if (!notionUserId || notionUserId.length > 200)
+  return messageResponse(t('taskCheckins.staff.invalidForm'), 400);
+let review, people, mapping;
+try {
+  review = await taskCheckinReview(staff.db, staff.actor, sourceId);
+  mapping = await readTaskCheckinMapping(staff.db, staff.actor, { sourceId, notionUserId });
+  people = await searchStaffPeople(staff.db, staff.actor, {
+    text: (Astro.url.searchParams.get('q') ?? '').slice(0, 100),
+    cursor: Astro.url.searchParams.get('cursor') ?? undefined,
+    limit: 25,
+  });
+} catch (error) {
+  if (error instanceof PermissionDenied) return messageResponse(error.message, 403);
+  if (error instanceof InvalidCursor)
+    return messageResponse(t('taskCheckins.staff.invalidForm'), 400);
+  throw error;
+}
+if (!review.source) return messageResponse(t('taskCheckins.staff.invalidForm'), 404);
+let feedback;
+if (Astro.request.method === 'POST') {
+  const result = await submitTaskCheckinForm(Astro.request, staff, sourceId);
+  if (result instanceof Response) return result;
+  feedback = result;
+  Astro.response.status = result.status;
+}
+const action = mapping ? 'mapping_change' : 'mapping';
+const token = await issueFormToken(staff.db, staff.actor, `task-checkins:${sourceId}:${action}`);
+const removeToken = mapping
+  ? await issueFormToken(staff.db, staff.actor, `task-checkins:${sourceId}:mapping_remove`)
+  : null;
+const assignment = review.unmapped.find((person) => person.notion_user_id === notionUserId);
+const assignmentTask = mapping?.task_id ?? assignment?.task_id;
+const next = new URL(Astro.url);
+if (people.nextCursor) next.searchParams.set('cursor', people.nextCursor);
+---
+
+<StaffLayout
+  title={mapping ? t('taskCheckins.staff.correctMapping') : t('taskCheckins.staff.choosePerson')}
+  description={t('taskCheckins.staff.mappingHelp')}
+>
+  <a
+    slot="breadcrumb"
+    class="staff-back"
+    href={`/task-checkins/?source=${encodeURIComponent(sourceId)}`}
+    >← {t('taskCheckins.staff.back')}</a
+  >
+  {
+    feedback && (
+      <p role="alert" class="staff-error">
+        {feedback.message}
+      </p>
+    )
+  }
+  <h2>{mapping?.notion_name ?? assignment?.notion_name ?? 'Notion assignee'}</h2>
+  <p>
+    Confirm the person assigned in Notion before linking their LVBT record. Names are display hints,
+    not proof of identity.
+  </p>
+  {
+    mapping && (
+      <section class="staff-checkin-section">
+        <>
+          <h2>Current match</h2>
+          <div class="staff-checkin-account">
+            {mapping.person_record_id ? (
+              <a href={`/people/${encodeURIComponent(mapping.person_record_id)}/`}>
+                {mapping.person_name ?? 'LVBT person record'}
+              </a>
+            ) : (
+              <p>Unavailable person record</p>
+            )}
+            {mapping.person_email && mapping.person_email !== mapping.person_name && (
+              <p class="staff-help">{mapping.person_email}</p>
+            )}
+          </div>
+        </>
+        {mapping.conflicting_notion_user_id && (
+          <p class="staff-notice">
+            This person has another Notion account match.{' '}
+            <a
+              href={`/task-checkins/people/?source=${encodeURIComponent(sourceId)}&notion=${encodeURIComponent(mapping.conflicting_notion_user_id)}`}
+            >
+              Review the other match
+            </a>{' '}
+            before choosing which account to keep.
+          </p>
+        )}
+        <details class="staff-checkin-connection">
+          <summary>Remove this match</summary>
+          <p class="staff-help">{t('taskCheckins.staff.mappingCorrectionHelp')}</p>
+          <form method="post" class="staff-form">
+            <input type="hidden" name="action" value="mapping_remove" />
+            <input type="hidden" name="token" value={removeToken} />
+            <input type="hidden" name="notionUserId" value={notionUserId} />
+            <input type="hidden" name="expectedRevision" value={review.source.revision} />
+            <input type="hidden" name="expectedVersion" value={mapping.version} />
+            <input type="hidden" name="expectedPersonId" value={mapping.person_id} />
+            <button type="submit" class="staff-secondary-button">
+              {t('taskCheckins.staff.removeMapping')}
+            </button>
+          </form>
+        </details>
+      </section>
+    )
+  }
+  {
+    assignmentTask && (
+      <p>
+        <a
+          href={`https://www.notion.so/${assignmentTask.replaceAll('-', '')}`}
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          View assignment in Notion
+        </a>
+      </p>
+    )
+  }
+  <details class="staff-checkin-connection">
+    <summary>Notion account reference</summary><p><code>{notionUserId}</code></p>
+  </details>
+  <form method="get" class="staff-form staff-checkin-search">
+    <input type="hidden" name="source" value={sourceId} /><input
+      type="hidden"
+      name="notion"
+      value={notionUserId}
+    /><label for="q">{t('taskCheckins.staff.searchPeople')}</label><input
+      id="q"
+      name="q"
+      value={Astro.url.searchParams.get('q') ?? ''}
+      maxlength="100"
+      placeholder="Name or email"
+    /><button type="submit" class="staff-secondary-button">{t('taskCheckins.staff.search')}</button>
+  </form>
+  <form method="post" class="staff-form staff-checkin-editor">
+    <input type="hidden" name="action" value={action} /><input
+      type="hidden"
+      name="token"
+      value={token}
+    /><input type="hidden" name="notionUserId" value={notionUserId} /><input
+      type="hidden"
+      name="expectedRevision"
+      value={review.source.revision}
+    />
+    <input type="hidden" name="expectedVersion" value={mapping?.version ?? ''} />
+    <input type="hidden" name="expectedPersonId" value={mapping?.person_id ?? ''} />
+    <fieldset>
+      <legend>Which LVBT record belongs to this person?</legend><div
+        class="staff-checkin-person-results"
+      >
+        {
+          people.items.map((person) => (
+            <label class="staff-choice">
+              <>
+                <input type="radio" name="personId" value={person.id} required />
+                <span>
+                  <strong>
+                    {[person.given_name, person.family_name].filter(Boolean).join(' ') ||
+                      person.email ||
+                      'Unnamed person'}
+                  </strong>
+                  {person.email && <span class="staff-help">{person.email}</span>}
+                </span>
+              </>
+            </label>
+          ))
+        }
+      </div>
+    </fieldset>
+    {people.items.length === 0 && <p>No matching records. Try another name or email.</p>}
+    {
+      people.items.length > 0 && (
+        <>
+          {mapping && <p class="staff-help">{t('taskCheckins.staff.mappingCorrectionHelp')}</p>}
+          <button type="submit" class="staff-secondary-button">
+            {mapping ? t('taskCheckins.staff.correctMapping') : t('taskCheckins.staff.matchPerson')}
+          </button>
+        </>
+      )
+    }
+  </form>
+  {
+    people.nextCursor && (
+      <a class="staff-next" href={next.pathname + next.search}>
+        {t('taskCheckins.staff.next')}
+      </a>
+    )
+  }
+</StaffLayout>

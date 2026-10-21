@@ -1,0 +1,84 @@
+---
+import { t, formatDate } from '@lasvegasfortransit/platform-core/messages';
+import type { TaskDeliveryIssue } from '@lasvegasfortransit/platform-storage/notion-task-delivery-admin';
+interface Props {
+  sourceId: string;
+  review: { items: TaskDeliveryIssue[]; nextCursor: string | null };
+  tokens: { aux_retry: string; aux_close: string };
+}
+const { sourceId, review, tokens } = Astro.props;
+---
+
+{
+  review.items.length > 0 && (
+    <section class="staff-checkin-section" aria-labelledby="delivery-recovery-title">
+      <h2 id="delivery-recovery-title">Summaries and card updates needing attention</h2>
+      <ul class="staff-checkin-list staff-delivery-review-list">
+        {review.items.map((issue) => (
+          <li>
+            <div>
+              <h3>{issue.kind === 'digest' ? 'Daily summary' : 'Card update'}</h3>
+              <p>
+                {issue.person_name ?? 'LVBT volunteer'} ·{' '}
+                {issue.day ?? formatDate(new Date(issue.updated_at))}
+              </p>
+              {issue.task_id && (
+                <a
+                  href={`https://www.notion.so/${issue.task_id.replaceAll('-', '')}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  {issue.task_title ?? 'View task in Notion'}
+                </a>
+              )}
+              <p class="staff-help">
+                {issue.state === 'held'
+                  ? 'Discord could not confirm whether this summary arrived. Check Discord before closing; another send could duplicate it.'
+                  : issue.safe_retry !== 1
+                    ? 'The current account, preferences or source settings prevent a retry. Resolve those before checking again.'
+                    : issue.kind === 'refresh'
+                      ? 'Retrying refreshes the existing private card without repeating a Notion response.'
+                      : 'The last summary attempt failed. A retry checks the current preferences and schedule.'}
+              </p>
+            </div>
+            <div class="staff-checkin-recovery-actions">
+              {(['aux_retry', 'aux_close'] as const)
+                .filter((action) => action === 'aux_close' || issue.safe_retry === 1)
+                .map((action) => (
+                  <form method="post">
+                    <input type="hidden" name="action" value={action} />
+                    <input type="hidden" name="token" value={tokens[action]} />
+                    <input type="hidden" name="auxKind" value={issue.kind} />
+                    <input type="hidden" name="operationId" value={issue.id} />
+                    <input type="hidden" name="expectedUpdatedAt" value={issue.updated_at} />
+                    {issue.generation !== null && (
+                      <input type="hidden" name="expectedGeneration" value={issue.generation} />
+                    )}
+                    <button class="staff-secondary-button" type="submit">
+                      {action === 'aux_retry'
+                        ? t('taskCheckins.staff.retry')
+                        : t('taskCheckins.staff.close')}
+                    </button>
+                  </form>
+                ))}
+            </div>
+          </li>
+        ))}
+      </ul>
+      {review.nextCursor && (
+        <a
+          class="staff-next"
+          href={`/task-checkins/?source=${encodeURIComponent(sourceId)}&deliveryCursor=${encodeURIComponent(review.nextCursor)}`}
+        >
+          {t('taskCheckins.staff.next')}
+        </a>
+      )}
+    </section>
+  )
+}
+<style>
+  .staff-delivery-review-list {
+    max-height: 24rem;
+    overflow: auto;
+  }
+</style>

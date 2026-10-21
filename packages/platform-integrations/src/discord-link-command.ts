@@ -15,32 +15,35 @@ export interface RegisterLinkCommandOptions {
   fetcher?: typeof fetch;
   rateLimit?: DiscordOptions['rateLimit'];
 }
-function existingLinkCommand(commands: unknown): Record<string, unknown> | null {
+function existingGuildCommand(commands: unknown, name: string): Record<string, unknown> | null {
   if (!Array.isArray(commands)) throw new DiscordApiFailure('invalid_response');
   const matching = commands
     .map(object)
-    .filter((command) => command.name === 'link' && command.type === 1);
-  if (matching.length > 1) throw new Error('Discord has multiple guild commands named link.');
+    .filter((command) => command.name === name && command.type === 1);
+  if (matching.length > 1) throw new Error(`Discord has multiple guild commands named ${name}.`);
   const command = matching[0];
   if (!command) return null;
   if (!discordId(command.id)) throw new DiscordApiFailure('invalid_response');
   return command;
 }
-function matches(command: Record<string, unknown> | null): boolean {
+function matches(command: Record<string, unknown> | null, definition: GuildChatCommand): boolean {
   return (
-    command?.description === LINK_COMMAND.description &&
+    command?.description === definition.description &&
     (command.options === undefined ||
       (Array.isArray(command.options) && command.options.length === 0))
   );
 }
-/** Upsert only the guild chat-input command, then confirm its stored definition. */
-export async function registerLinkCommand({
-  applicationId,
-  guildId,
-  botToken,
-  fetcher,
-  rateLimit,
-}: RegisterLinkCommandOptions): Promise<'created' | 'updated' | 'confirmed'> {
+export interface GuildChatCommand {
+  type: number;
+  name: string;
+  description: string;
+  options: readonly never[];
+}
+/** Upsert only the named guild chat-input command, then confirm its stored definition. */
+export async function registerGuildChatCommand(
+  { applicationId, guildId, botToken, fetcher, rateLimit }: RegisterLinkCommandOptions,
+  definition: GuildChatCommand,
+): Promise<'created' | 'updated' | 'confirmed'> {
   if (!discordId(applicationId) || !discordId(guildId) || !/^[\x21-\x7e]{1,2048}$/.test(botToken))
     throw new DiscordApiFailure('not_configured');
   const client = new DiscordHttp({
@@ -49,21 +52,28 @@ export async function registerLinkCommand({
   });
   const path = `/applications/${applicationId}/guilds/${guildId}/commands`;
   const authorization = `Bot ${botToken}`;
-  const read = async () => existingLinkCommand(await client.request(path, { authorization }));
+  const read = async () =>
+    existingGuildCommand(await client.request(path, { authorization }), definition.name);
   const existing = await read();
-  if (matches(existing)) return 'confirmed';
+  if (matches(existing, definition)) return 'confirmed';
   await client.request(existing ? `${path}/${String(existing.id)}` : path, {
     authorization,
     method: existing ? 'PATCH' : 'POST',
     commandRegistration: true,
     jsonBody: existing
       ? {
-          name: LINK_COMMAND.name,
-          description: LINK_COMMAND.description,
-          options: LINK_COMMAND.options,
+          name: definition.name,
+          description: definition.description,
+          options: definition.options,
         }
-      : LINK_COMMAND,
+      : definition,
   });
-  if (!matches(await read())) throw new DiscordApiFailure('invalid_response');
+  if (!matches(await read(), definition)) throw new DiscordApiFailure('invalid_response');
   return existing ? 'updated' : 'created';
+}
+
+export function registerLinkCommand(
+  options: RegisterLinkCommandOptions,
+): Promise<'created' | 'updated' | 'confirmed'> {
+  return registerGuildChatCommand(options, LINK_COMMAND);
 }

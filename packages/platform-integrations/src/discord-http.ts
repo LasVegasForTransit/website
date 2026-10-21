@@ -1,3 +1,4 @@
+import type { DiscordTaskMessage } from './notion-task-cards';
 import {
   DiscordApiFailure,
   object,
@@ -12,6 +13,8 @@ interface RequestInput {
   body?: URLSearchParams;
   jsonBody?:
     | { access_token: string }
+    | { recipient_id: string }
+    | (DiscordTaskMessage & { nonce?: string; enforce_nonce?: true })
     | { type?: number; name: string; description: string; options: readonly unknown[] };
   commandRegistration?: true;
   memberJoin?: true;

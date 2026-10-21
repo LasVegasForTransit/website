@@ -1,4 +1,5 @@
 import { membershipStep, canContinueMembership, type ScheduledBudget } from './scheduled-budget';
+import { runScheduledTaskCheckins } from './scheduled-task-checkins';
 import { withScheduledAdmission, type ScheduledAdmission } from './scheduled-admission';
 import { runDueMaintenance } from './scheduled-privacy';
 import {
@@ -164,6 +165,16 @@ async function processDueAccounts(
   );
   const enabled = outgoingProviders(providers, queues, paused);
   let failed = false;
+  if (admission.taskCheckins) {
+    // Each existing provider gets a turn before task work shares the reservation.
+    for (const provider of ['discord', 'newsletter'] as const) {
+      if (!enabled[provider] || !canContinueMembership(budget)) continue;
+      const result = await runAccount(context, provider === 'newsletter', budget);
+      if (result.stop) enabled[provider] = false;
+      failed ||= result.failed;
+    }
+    failed = (await runScheduledTaskCheckins(context, budget)) || failed;
+  }
   for (
     let slot = 0;
     canContinueMembership(budget) && (enabled.discord || enabled.newsletter);
@@ -199,7 +210,12 @@ async function runAdmittedMembership(
     Boolean(inputs.newsletterPaused),
   );
   if (inputs.failed || accounts.failed) throw new Error('Scheduled membership work failed');
-  const next = await nextProviderWork(admission.db, now, admission.providers, accounts.more);
+  const next = await nextProviderWork(
+    admission.db,
+    now,
+    admission.providers,
+    accounts.more || admission.taskCheckins,
+  );
   await acknowledgeScheduledSignal(admission.db, signal, admission.configuration, next);
 }
 export async function runScheduledMembership(
