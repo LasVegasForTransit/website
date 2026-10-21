@@ -25,8 +25,9 @@ up the intended database and review migration `0054_notion_task_checkins.sql` th
    resources with the connection and review inherited access to their children. Enable **Read
    content**; add **Update content** when marking tasks complete is permitted. Progress, help, and
    extension comments need **Insert comments**, and uncertain-comment recovery needs **Read
-   comments**. Optional readable name hints use user information without email addresses. These are
-   separate [Notion capabilities](https://developers.notion.com/reference/capabilities).
+   comments**. Enable **Read user information without email addresses** so comments can attribute
+   responses to their Notion assignee. Email access is unnecessary. These are separate
+   [Notion capabilities](https://developers.notion.com/reference/capabilities).
 2. Record the task **data source ID**, workspace ID, and the property names or property IDs for the
    task title, description, assignee, deadline, status, and project relation. This implementation
    uses Notion API version `2025-09-03`. The data source ID is not an individual task page ID.
