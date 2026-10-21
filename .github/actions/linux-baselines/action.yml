@@ -1,0 +1,50 @@
+name: Restore Linux screenshot baselines
+description: Cache LFS objects and download only missing Linux screenshot baselines.
+
+runs:
+  using: composite
+  steps:
+    # Checkout must leave LFS pointers in place until this cache is restored.
+    - name: Restore cached Linux LFS objects
+      id: lfs-cache
+      uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
+      with:
+        path: .git/lfs/objects
+        key: linux-lfs-v1-${{ hashFiles('apps/site/tests/snapshots/linux/**/*.png') }}
+        restore-keys: |
+          linux-lfs-v1-
+    - name: Find an existing baseline artifact for an empty cache
+      id: seed-run
+      shell: bash
+      env:
+        GH_TOKEN: ${{ github.token }}
+        GH_REPO: ${{ github.repository }}
+      run: |
+        if [ -d .git/lfs/objects ] && [ -n "$(find .git/lfs/objects -type f -print -quit)" ]; then
+          exit 0
+        fi
+        if seed_run="$(gh run list --workflow seed-baselines.yml --status success --limit 1 --json databaseId --jq '.[0].databaseId // empty')" && [[ "$seed_run" =~ ^[0-9]+$ ]]; then
+          echo "run-id=$seed_run" >> "$GITHUB_OUTPUT"
+        fi
+    - name: Reuse a saved baseline artifact
+      id: baseline-seed
+      if: steps.seed-run.outputs.run-id != ''
+      continue-on-error: true
+      uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+      with:
+        pattern: baselines-*
+        merge-multiple: true
+        run-id: ${{ steps.seed-run.outputs.run-id }}
+        github-token: ${{ github.token }}
+        path: ${{ runner.temp }}/linux-baseline-seed
+    - name: Verify saved images against current Git pointers
+      if: steps.baseline-seed.outcome == 'success'
+      shell: bash
+      env:
+        BASELINE_SEED: ${{ runner.temp }}/linux-baseline-seed
+      run: >-
+        node .github/actions/linux-baselines/seed-cache.mjs --pointers
+        apps/site/tests/snapshots/linux --seed "$BASELINE_SEED" --objects .git/lfs/objects
+    - name: Materialize Linux baselines
+      shell: bash
+      run: git lfs pull --include="apps/site/tests/snapshots/linux/**" --exclude=""

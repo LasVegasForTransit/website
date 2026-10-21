@@ -16,6 +16,7 @@ on:
 
 permissions:
   contents: read
+  actions: read
   packages: read
 
 concurrency:
@@ -49,14 +50,10 @@ jobs:
       - name: Checkout
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
-          lfs: true
           persist-credentials: false
 
-      # Existing baselines are Git LFS objects. Without them every image is
-      # written from scratch instead of only the ones that changed.
-      - name: Fetch the Linux baselines from LFS
-        working-directory: .
-        run: git lfs pull --include "apps/site/tests/snapshots/linux/**"
+      - name: Restore Linux screenshot baselines
+        uses: ./.github/actions/linux-baselines
 
       - name: Setup Node + pnpm
         uses: ./.github/actions/setup-node-pnpm

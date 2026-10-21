@@ -10,7 +10,7 @@ permissions:
 
 jobs:
   preview:
-    uses: LasVegasForTransit/repository-tooling/.github/workflows/release-pr-preview-build.yml@09262d57ffbc0dc03120e15e7f257e1f5a28f43e
+    uses: LasVegasForTransit/repository-tooling/.github/workflows/release-pr-preview-build.yml@94842f40fa6d912249860b34a61d314adcaa19b6
     with:
       enabled: ${{ vars.CLOUDFLARE_WORKERS_PREVIEW_ENABLED == 'true' }}
       artifact-prefix: website-release
@@ -36,7 +36,6 @@ jobs:
         with:
           ref: ${{ github.event.pull_request.head.sha }}
           persist-credentials: false
-          lfs: true
       - name: Validate retained interface
         uses: ./.github/actions/validate-retained-ui
         with:
