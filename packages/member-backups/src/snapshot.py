@@ -64,10 +64,10 @@ def snapshot_query(inventory):
         aliases = [chr(ord('a') + i) if i < 26 else 'c' + str(i) for i in range(len(expressions))]
         projection = ','.join(e + ' AS ' + a for e, a in zip(expressions, aliases))
         # Format one scalar expression per table, rather than repeating it for every
-        # column. Ordinals preserve column order and UNION ALL keeps each SQLite type.
-        cells = ' UNION ALL '.join('SELECT ' + a + ' AS v,' + str(i) + ' AS n'
-                                   for i, a in enumerate(aliases))
-        row = '(SELECT json_group_array(' + typed('v') + ') FROM (' + cells + ' ORDER BY n))'
+        # column. VALUES preserves SQLite types without a compound SELECT per cell.
+        cells = 'VALUES ' + ','.join('(' + a + ',' + str(i) + ')'
+                                    for i, a in enumerate(aliases))
+        row = '(WITH cells(v,n) AS (' + cells + ') SELECT json_group_array(' + typed('v') + ') FROM (SELECT v FROM cells ORDER BY n))'
         rows = ('(SELECT json_group_array(json(' + row + ')) FROM (SELECT '
                 + projection + ' FROM ' + quote(name) + ' ORDER BY ' + order + '))')
         parts.append("json_object('name'," + literal(name) + ",'rowid'," + (literal(alias) if alias else 'NULL')

@@ -69,6 +69,17 @@ class SnapshotTests(unittest.TestCase):
         with self.assertRaises(ValueError): snapshot.capture_local(db)
         db.close()
 
+    def test_large_row_does_not_exhaust_compound_select_terms(self):
+        db = sqlite3.connect(':memory:')
+        names = ['field' + str(i) for i in range(520)]
+        db.execute('CREATE TABLE large(' + ','.join(snapshot.quote(n) for n in names) + ')')
+        db.execute('INSERT INTO large VALUES(' + ','.join('?' for _ in names) + ')', tuple(range(520)))
+        captured = snapshot.capture_local(db)
+        with tempfile.TemporaryDirectory() as directory:
+            result = snapshot.restore(captured, pathlib.Path(directory) / 'large.sqlite')
+            self.assertTrue(result['typedValuesMatch'])
+        db.close()
+
     def test_refuses_incomplete_snapshot_missing_table_or_column(self):
         db = self.fixture(); captured = snapshot.capture_local(db); db.close()
         captured['tables'] = [t for t in captured['tables'] if t['name'] != 'people']

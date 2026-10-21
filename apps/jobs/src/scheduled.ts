@@ -150,6 +150,20 @@ function outgoingProviders(
     ),
   };
 }
+async function advanceTaskCheckins(
+  context: ExecutionContext,
+  enabled: EnabledProviders,
+  budget: ScheduledBudget,
+) {
+  let failed = false;
+  for (const provider of ['discord', 'newsletter'] as const) {
+    if (!enabled[provider] || !canContinueMembership(budget)) continue;
+    const result = await runAccount(context, provider === 'newsletter', budget);
+    if (result.stop) enabled[provider] = false;
+    failed ||= result.failed;
+  }
+  return (await runScheduledTaskCheckins(context, budget)) || failed;
+}
 async function processDueAccounts(
   now: Date,
   context: ExecutionContext,
@@ -165,16 +179,7 @@ async function processDueAccounts(
   );
   const enabled = outgoingProviders(providers, queues, paused);
   let failed = false;
-  if (admission.taskCheckins) {
-    // Each existing provider gets a turn before task work shares the reservation.
-    for (const provider of ['discord', 'newsletter'] as const) {
-      if (!enabled[provider] || !canContinueMembership(budget)) continue;
-      const result = await runAccount(context, provider === 'newsletter', budget);
-      if (result.stop) enabled[provider] = false;
-      failed ||= result.failed;
-    }
-    failed = (await runScheduledTaskCheckins(context, budget)) || failed;
-  }
+  if (admission.taskCheckins) failed = await advanceTaskCheckins(context, enabled, budget);
   for (
     let slot = 0;
     canContinueMembership(budget) && (enabled.discord || enabled.newsletter);
