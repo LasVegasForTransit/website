@@ -1,3 +1,4 @@
+import { taskStatusSelection } from './notion-task-status';
 import { t } from '@lasvegasfortransit/platform-core/messages';
 import type { TaskCardContext } from '@lasvegasfortransit/platform-storage/notion-task-cards';
 import type { Db } from '@lasvegasfortransit/platform-storage/db';
@@ -25,7 +26,7 @@ import { notionObject } from './notion-task-types';
 import type { TaskCheckinPolicy } from './notion-task-policy';
 
 function actionAllowed(action: TaskCardAction, policy: TaskCheckinPolicy): boolean {
-  if (action === 'confirm') return policy.actions.complete;
+  if (action === 'confirm' || action === 'status') return policy.actions.complete;
   if (
     action === 'progress' ||
     action === 'blocker' ||
@@ -42,6 +43,10 @@ function operationRequest(
   kind: TaskOperationInput['kind'];
   payload: Record<string, unknown>;
 } | null {
+  if (interaction.type === 3 && action === 'status') {
+    const status = taskStatusSelection(interaction.data);
+    return status ? { kind: 'complete', payload: { status } } : null;
+  }
   if (interaction.type === 3 && action === 'confirm') return { kind: 'complete', payload: {} };
   if (interaction.type === 3 && action === 'snooze') return { kind: 'snooze', payload: {} };
   if (interaction.type !== 5 || !['progress', 'blocker', 'extension'].includes(action)) return null;

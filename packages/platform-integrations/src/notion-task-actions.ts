@@ -1,3 +1,4 @@
+import { taskStatusTarget } from './notion-task-status';
 import { DiscordApiFailure } from './discord-types';
 import { readCurrentNotionTask, type TaskEffectOptions } from './notion-task-current';
 import { t } from '@lasvegasfortransit/platform-core/messages';
@@ -91,9 +92,16 @@ export async function processNotionTaskAction(
       await confirmTaskSnooze(db, operation, current.policy.snoozeMinutes, options.clock());
       return;
     }
+    const status = taskStatusTarget(JSON.parse(operation.payload_json));
+    if (operation.kind === 'complete' && !status)
+      throw new NotionTaskApiError('invalid_status', 60_000, false);
     const response = notionObject(
       operation.kind === 'complete'
-        ? await client.completeTask(operation.task_id, current.policy.fields.status)
+        ? await client.setTaskStatus(
+            operation.task_id,
+            current.policy.fields.status,
+            status ?? 'Done',
+          )
         : await client.createTaskComment(
             operation.task_id,
             comment(operation, current.context.notion_user_id),
@@ -103,7 +111,7 @@ export async function processNotionTaskAction(
       typeof response.id !== 'string' ||
       (operation.kind === 'complete'
         ? notionObject(notionProperty(response, current.policy.fields.status).status).name !==
-          'Done'
+          status
         : response.object !== 'comment')
     )
       throw new NotionTaskApiError('unconfirmed_response', 60_000, false, true);

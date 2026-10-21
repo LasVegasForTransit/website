@@ -1,3 +1,4 @@
+import { taskStatus, type TaskStatus } from './notion-task-status';
 import { notionObject } from './notion-task-types';
 
 export class NotionTaskApiError extends Error {
@@ -153,8 +154,12 @@ export class NotionTaskClient {
     });
   }
   completeTask(pageId: string, statusProperty: string): Promise<unknown> {
+    return this.setTaskStatus(pageId, statusProperty, 'Done');
+  }
+  setTaskStatus(pageId: string, statusProperty: string, status: TaskStatus): Promise<unknown> {
+    if (!taskStatus(status)) throw new NotionTaskApiError('invalid_status', 60_000, false);
     return this.request(`pages/${id(pageId)}`, 'PATCH', {
-      properties: { [statusProperty]: { status: { name: 'Done' } } },
+      properties: { [statusProperty]: { status: { name: status } } },
     });
   }
   async listTaskComments(pageId: string, cursor: string | null = null): Promise<NotionList> {

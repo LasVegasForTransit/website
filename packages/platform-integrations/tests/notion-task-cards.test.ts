@@ -45,7 +45,7 @@ void test('private task cards use Components V2, restrained mentions, and action
     taskCardButtons(message)
       .filter((b) => b.custom_id)
       .map((b) => b.label),
-    ['Update task', 'Mark complete'],
+    ['Add update'],
   );
 });
 void test('pending, complete, or stale cards cannot promise a saved state or submit task changes', async () => {
@@ -64,6 +64,18 @@ void test('pending, complete, or stale cards cannot promise a saved state or sub
   }
   const done = renderTaskCard({ token, task: { ...task, status: 'Done' }, active: false, policy });
   assert.equal(taskCardButtons(done).filter((b) => b.custom_id).length, 0);
+  const message = renderTaskCard({ token, task, active: true, policy });
+  const status = message.components[0]?.components?.find((row) =>
+    row.components?.some((c) => c.custom_id?.endsWith(':status')),
+  )?.components?.[0];
+  assert.deepEqual(
+    status?.options?.map((o) => [o.value, o.default]),
+    [
+      ['Not started', false],
+      ['In progress', true],
+      ['Done', false],
+    ],
+  );
 });
 void test('setup requires explicit consent and native modals accept only bounded nonempty input', async () => {
   const { renderTaskSetup, renderTaskModal, taskModalText, parseTaskCustomId } = await cards();
@@ -157,4 +169,61 @@ void test('the private update picker opens existing modals and enforces permitte
     now,
   );
   assert.equal(malformed.status, 400);
+});
+
+void test('the card status dropdown records only valid authorized status changes', async () => {
+  const { fixture, now, sourceId } = await import('./support/task-action-fixture');
+  const { handleTaskCardAction } = await import('../src/notion-task-card-actions');
+  const { readTaskCheckinSource } =
+    await import('@lasvegasfortransit/platform-storage/notion-task-checkins');
+  const db = await fixture();
+  try {
+    const source = await readTaskCheckinSource(db, sourceId);
+    const policy = inspectTaskCheckinPolicy(taskPolicy).policy;
+    assert.ok(source && policy);
+    db.raw
+      .prepare(
+        "UPDATE task_checkin_cards SET channel_id='222222222222222222',message_id='333333333333333333'",
+      )
+      .run();
+    const card = db.raw.prepare('SELECT token FROM task_checkin_cards').get() as { token: string };
+    const input = {
+      source,
+      policy,
+      discordUserId: '111111111111111111',
+      custom: { kind: 'task' as const, token: card.token, action: 'status' as const },
+      interaction: {
+        id: '444444444444444444',
+        type: 3,
+        channel_id: '222222222222222222',
+        message: { id: '333333333333333333' },
+        data: { component_type: 3, values: ['In progress'] },
+      },
+    };
+    const denied = await handleTaskCardAction(
+      db,
+      { ...input, policy: { ...policy, actions: { ...policy.actions, complete: false } } },
+      now,
+    );
+    assert.equal(denied.status, 403);
+    const invalid = await handleTaskCardAction(
+      db,
+      {
+        ...input,
+        interaction: { ...input.interaction, data: { component_type: 3, values: ['Unexpected'] } },
+      },
+      now,
+    );
+    assert.equal(invalid.status, 400);
+    assert.equal((await handleTaskCardAction(db, input, now)).status, 200);
+    const queued = db.raw
+      .prepare(
+        "SELECT kind,payload_json FROM task_checkin_operations WHERE id='444444444444444444'",
+      )
+      .get();
+    assert.equal(queued?.kind, 'complete');
+    assert.deepEqual(JSON.parse(String(queued.payload_json)), { status: 'In progress' });
+  } finally {
+    db.raw.close();
+  }
 });

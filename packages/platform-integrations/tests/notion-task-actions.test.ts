@@ -210,3 +210,40 @@ void test('a membership rate limit before a Notion effect remains safely retryab
     db.raw.close();
   }
 });
+
+void test('status selections write the chosen status once and reject unknown statuses', async () => {
+  const { processNotionTaskAction } = await actions();
+  for (const status of ['Not started', 'In progress', 'Done', 'Unexpected']) {
+    const db = await fixture('complete');
+    db.raw
+      .prepare("UPDATE task_checkin_operations SET payload_json=? WHERE id='response'")
+      .run(JSON.stringify({ status }));
+    let writes = 0;
+    const client = new NotionTaskClient('token', (_url, init) => {
+      const raw = page();
+      if (init?.method === 'PATCH') {
+        writes++;
+        assert.ok(typeof init.body === 'string');
+        assert.deepEqual(JSON.parse(init.body), {
+          properties: { Status: { status: { name: status } } },
+        });
+        raw.properties.Status.status.name = status;
+      }
+      return Promise.resolve(Response.json(raw));
+    });
+    try {
+      const options = { membership: () => Promise.resolve(true), clock: () => now };
+      await processNotionTaskAction(db, client, 'response', options);
+      await processNotionTaskAction(db, client, 'response', options);
+      const valid = status !== 'Unexpected';
+      assert.equal(writes, valid ? 1 : 0);
+      assert.equal(
+        db.raw.prepare("SELECT state FROM task_checkin_operations WHERE id='response'").get()
+          ?.state,
+        valid ? 'confirmed' : 'failed',
+      );
+    } finally {
+      db.raw.close();
+    }
+  }
+});

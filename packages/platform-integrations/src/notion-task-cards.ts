@@ -16,7 +16,7 @@ export interface DiscordTaskComponent {
   max_length?: number;
   required?: boolean;
   placeholder?: string;
-  options?: { label: string; value: string }[];
+  options?: { label: string; value: string; default?: boolean }[];
 }
 export interface DiscordTaskMessage {
   flags: number;
@@ -24,6 +24,7 @@ export interface DiscordTaskMessage {
   components: DiscordTaskComponent[];
 }
 const ACTIONS = [
+  'status',
   'menu',
   'update',
   'progress',
@@ -113,19 +114,13 @@ export function renderTaskCard(input: {
   const { token, task, policy, active, state = 'ready' } = input;
   const disabled =
     !active || task.status === 'Done' || ['pending', 'stale', 'failed'].includes(state);
-  const controls: DiscordTaskComponent[] = [];
-  if (task.status !== 'Done') {
-    controls.push(button(token, 'menu', t('taskCheckins.update'), { disabled, style: 1 }));
-    if (policy.actions.complete)
-      controls.push(button(token, 'complete', t('taskCheckins.complete'), { disabled }));
-  }
   const components: DiscordTaskComponent[] = [
     {
       type: 9,
       components: [
         {
           type: 10,
-          content: `### ${taskMarkdown(task.title)}\n${t('taskCheckins.yourTask')} · ${taskMarkdown(task.status)}\n${t('taskCheckins.due', { deadline: deadline(task, policy.timezone) })}`,
+          content: `### ${taskMarkdown(task.title)}\n${t('taskCheckins.yourTask')}\n${t('taskCheckins.due', { deadline: deadline(task, policy.timezone) })}`,
         },
       ],
       accessory: {
@@ -148,7 +143,36 @@ export function renderTaskCard(input: {
     } as const;
     components.push({ type: 10, content: labels[state] });
   }
-  if (controls.length) components.push({ type: 1, components: controls });
+  if (policy.actions.complete)
+    components.push({
+      type: 1,
+      components: [
+        {
+          type: 3,
+          custom_id: `tc:${token}:status`,
+          placeholder: t('taskCheckins.status'),
+          disabled,
+          options: [
+            {
+              label: t('taskCheckins.notStarted'),
+              value: 'Not started',
+              default: task.status === 'Not started',
+            },
+            {
+              label: t('taskCheckins.inProgress'),
+              value: 'In progress',
+              default: task.status === 'In progress',
+            },
+            { label: t('taskCheckins.done'), value: 'Done', default: task.status === 'Done' },
+          ],
+        },
+      ],
+    });
+  if (task.status !== 'Done' && policy.actions.progress)
+    components.push({
+      type: 1,
+      components: [button(token, 'progress', t('taskCheckins.addUpdate'), { disabled })],
+    });
   return message(components);
 }
 export function renderTaskUpdateMenu(token: string, policy: TaskCheckinPolicy): DiscordTaskMessage {
@@ -157,7 +181,7 @@ export function renderTaskUpdateMenu(token: string, policy: TaskCheckinPolicy): 
     blocker: t('taskCheckins.blocker'),
     extension: t('taskCheckins.extension'),
   };
-  const options: { label: string; value: string }[] = (
+  const options: { label: string; value: string; default?: boolean }[] = (
     ['progress', 'blocker', 'extension'] as const
   )
     .filter((action) => policy.actions[action])
