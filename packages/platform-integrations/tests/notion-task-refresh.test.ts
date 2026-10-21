@@ -93,7 +93,7 @@ void test('an existing card stays pending until Notion confirms the response, th
     db.raw.close();
   }
 });
-void test('confirmed completion shows current Done state with disabled task actions', async () => {
+void test('confirmed completion shows current Done state without task actions', async () => {
   const { processTaskCardRefresh } = await refresh(),
     db = await prepare('complete');
   const current = page();
@@ -125,7 +125,7 @@ void test('confirmed completion shows current Done state with disabled task acti
     assert.equal(writes, 1);
     assert.match(edited, /Done/);
     assert.match(edited, /was saved in Notion/);
-    assert.match(edited, /"disabled":true/);
+    assert.doesNotMatch(edited, /"custom_id"/);
   } finally {
     db.raw.close();
   }

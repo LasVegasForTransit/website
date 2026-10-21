@@ -12,6 +12,8 @@ import {
 import type { TaskCheckinSource } from '@lasvegasfortransit/platform-storage/notion-task-checkins';
 import {
   renderTaskSetup,
+  renderTaskUpdateMenu,
+  taskUpdateAction,
   renderTaskModal,
   renderTaskCompletion,
   taskModalText,
@@ -64,7 +66,7 @@ function messageMatches(
 ): boolean {
   if (interaction.type !== 3) return true;
   const message = notionObject(interaction.message);
-  if (action === 'confirm' || action === 'cancel')
+  if (action === 'confirm' || action === 'cancel' || action === 'update')
     return (
       message.id !== card.message_id &&
       typeof message.flags === 'number' &&
@@ -72,7 +74,12 @@ function messageMatches(
     );
   return message.id === card.message_id;
 }
-function immediateReply(action: TaskCardAction, token: string): Response | null {
+function immediateReply(
+  action: TaskCardAction,
+  token: string,
+  policy: TaskCheckinPolicy,
+): Response | null {
+  if (action === 'menu') return taskPrivateMessage(renderTaskUpdateMenu(token, policy));
   if (action === 'progress' || action === 'blocker' || action === 'extension')
     return taskJson(renderTaskModal(token, action));
   if (action === 'complete') return taskPrivateMessage(renderTaskCompletion(token));
@@ -141,10 +148,12 @@ export async function handleTaskCardAction(
     );
   if (!card.actionable || card.policy_revision !== source.revision)
     return taskNotice(t('taskCheckins.stale'));
-  if (!actionAllowed(custom.action, policy)) return new Response(null, { status: 403 });
-  const immediate = interaction.type === 3 ? immediateReply(custom.action, custom.token) : null;
+  const action = custom.action === 'update' ? taskUpdateAction(interaction.data) : custom.action;
+  if (!action) return new Response(null, { status: 400 });
+  if (!actionAllowed(action, policy)) return new Response(null, { status: 403 });
+  const immediate = interaction.type === 3 ? immediateReply(action, custom.token, policy) : null;
   if (immediate) return immediate;
-  const request = operationRequest(interaction, custom.action);
+  const request = operationRequest(interaction, action);
   if (!request || typeof interaction.id !== 'string') return new Response(null, { status: 400 });
   return recordResponse(db, { card, interactionId: interaction.id, request }, now);
 }

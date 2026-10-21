@@ -15,6 +15,8 @@ export interface DiscordTaskComponent {
   component?: DiscordTaskComponent;
   max_length?: number;
   required?: boolean;
+  placeholder?: string;
+  options?: { label: string; value: string }[];
 }
 export interface DiscordTaskMessage {
   flags: number;
@@ -22,6 +24,8 @@ export interface DiscordTaskMessage {
   components: DiscordTaskComponent[];
 }
 const ACTIONS = [
+  'menu',
+  'update',
   'progress',
   'blocker',
   'complete',
@@ -110,12 +114,11 @@ export function renderTaskCard(input: {
   const disabled =
     !active || task.status === 'Done' || ['pending', 'stale', 'failed'].includes(state);
   const controls: DiscordTaskComponent[] = [];
-  if (policy.actions.progress)
-    controls.push(button(token, 'progress', t('taskCheckins.progress'), { disabled, style: 1 }));
-  if (policy.actions.blocker)
-    controls.push(button(token, 'blocker', t('taskCheckins.blocker'), { disabled }));
-  if (policy.actions.complete)
-    controls.push(button(token, 'complete', t('taskCheckins.complete'), { disabled, style: 3 }));
+  if (task.status !== 'Done') {
+    controls.push(button(token, 'menu', t('taskCheckins.update'), { disabled, style: 1 }));
+    if (policy.actions.complete)
+      controls.push(button(token, 'complete', t('taskCheckins.complete'), { disabled }));
+  }
   const components: DiscordTaskComponent[] = [
     {
       type: 9,
@@ -146,12 +149,45 @@ export function renderTaskCard(input: {
     components.push({ type: 10, content: labels[state] });
   }
   if (controls.length) components.push({ type: 1, components: controls });
-  const other = [button(token, 'snooze', t('taskCheckins.snooze'), { disabled })];
-  if (policy.actions.extension)
-    other.push(button(token, 'extension', t('taskCheckins.extension'), { disabled }));
-  other.push(button(token, 'preferences', t('taskCheckins.preferences')));
-  components.push({ type: 1, components: other });
   return message(components);
+}
+export function renderTaskUpdateMenu(token: string, policy: TaskCheckinPolicy): DiscordTaskMessage {
+  const labels = {
+    progress: t('taskCheckins.progress'),
+    blocker: t('taskCheckins.blocker'),
+    extension: t('taskCheckins.extension'),
+  };
+  const options: { label: string; value: string }[] = (
+    ['progress', 'blocker', 'extension'] as const
+  )
+    .filter((action) => policy.actions[action])
+    .map((action) => ({ label: labels[action], value: action }));
+  options.push({ label: t('taskCheckins.snooze'), value: 'snooze' });
+  return message([
+    { type: 10, content: t('taskCheckins.update') },
+    {
+      type: 1,
+      components: [
+        {
+          type: 3,
+          custom_id: `tc:${token}:update`,
+          placeholder: t('taskCheckins.updatePrompt'),
+          options,
+        },
+      ],
+    },
+  ]);
+}
+export function taskUpdateAction(
+  data: unknown,
+): 'progress' | 'blocker' | 'extension' | 'snooze' | null {
+  const row = notionObject(data);
+  if (row.component_type !== 3 || !Array.isArray(row.values) || row.values.length !== 1)
+    return null;
+  const value: unknown = row.values[0];
+  return value === 'progress' || value === 'blocker' || value === 'extension' || value === 'snooze'
+    ? value
+    : null;
 }
 export function renderTaskStopControls(input: {
   sourceId: string;
