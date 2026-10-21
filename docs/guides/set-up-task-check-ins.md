@@ -74,6 +74,12 @@ settings, task records, logs, or shell command text. The website saves signed us
 service performs provider effects. Receiving a Discord interaction does not require provider secrets
 on the website.
 
+A disabled website preview requires its existing sign-in and email credentials, but does not require
+new credentials for inactive integrations. Its upload retains all already stored secrets. Production
+still declares its full credential requirements. Before enabling a trial, separately verify every
+connection needed for the approved actions; retaining a binding does not prove that its provider
+access works.
+
 The checked-in preview jobs configuration has no cron schedule. Prepare an approved, bounded
 schedule or scheduled-run procedure for the trial and its shutdown. A feature flag alone does not
 start jobs. Keep the production task feature disabled during preview testing and preserve unrelated

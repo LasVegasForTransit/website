@@ -90,9 +90,12 @@ void test('production and preview retain existing secret types and declared inte
         .filter(([, binding]) => binding.type === 'secret')
         .map(([name]) => name)
         .sort(),
-      names,
+      built.worker.name === 'lvbt-website-preview'
+        ? ['LVBT_RESEND_API_KEY', 'LVBT_SIGN_IN_SECRET']
+        : names,
     );
-    for (const name of names) assert.deepEqual(bindings[name], { type: 'secret' });
+    for (const binding of Object.values(bindings).filter((value) => value.type === 'secret'))
+      assert.deepEqual(binding, { type: 'secret' });
   }
 });
 void test('the website Worker never receives the Discord role-management bot token', () => {
@@ -121,7 +124,12 @@ void test('new release artifacts use typed configuration, frozen SQL and explici
   assert.equal(tooling.release.typedConfig, 'cloudflare.config.ts');
   assert.equal(tooling.release.assetsDirectory, '../site/dist');
   assert.equal(tooling.release.workersDevSubdomain, 'las-vegas-for-better-transit');
-  assert.deepEqual(tooling.release.previewBindings, preview.worker.env);
+  const declaredPreview = Object.fromEntries(
+    Object.entries(tooling.release.previewBindings).filter(([name]) => name in preview.worker.env),
+  );
+  assert.deepEqual(declaredPreview, preview.worker.env);
+  for (const [name, binding] of Object.entries(tooling.release.previewBindings))
+    if (!(name in preview.worker.env)) assert.deepEqual(binding, { type: 'secret' });
   assert.deepEqual(tooling.release.migrations, [
     { binding: 'PLATFORM_DB', directory: '../../packages/platform-storage/migrations' },
   ]);
