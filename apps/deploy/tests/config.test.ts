@@ -69,6 +69,9 @@ void test('saved releases retain matching Discord applications and isolated jobs
       '21422dba5d410653b6e1b21fedffbf8cdbccaa94fc221d81d767712d2f6faef9',
     );
     assert.equal(Object.hasOwn(vars, 'LVBT_DISCORD_BOT_TOKEN'), false);
+    assert.equal(vars.LVBT_TASK_CHECKINS_ENABLED, 'false');
+    assert.equal(vars.LVBT_NOTION_TASK_SOURCE_ID, '');
+    assert.equal(vars.LVBT_NOTION_TASK_PRODUCTION_SOURCE_ID, '');
     assert.deepEqual(built.triggers, { crons: [] });
   }
 });

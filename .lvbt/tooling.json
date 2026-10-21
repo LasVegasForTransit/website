@@ -145,6 +145,18 @@
         "type": "text",
         "value": "preview"
       },
+      "LVBT_TASK_CHECKINS_ENABLED": {
+        "type": "text",
+        "value": "false"
+      },
+      "LVBT_NOTION_TASK_SOURCE_ID": {
+        "type": "text",
+        "value": ""
+      },
+      "LVBT_NOTION_TASK_PRODUCTION_SOURCE_ID": {
+        "type": "text",
+        "value": ""
+      },
       "LVBT_DISCORD_JOBS": {
         "type": "worker",
         "worker": "lvbt-jobs-preview"

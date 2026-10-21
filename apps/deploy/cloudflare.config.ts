@@ -49,6 +49,9 @@ export default defineConfig((ctx) => {
             }),
             ASSETS: bindings.assets(),
             LVBT_DEPLOYMENT_ENV: bindings.text('preview'),
+            LVBT_TASK_CHECKINS_ENABLED: bindings.text('false'),
+            LVBT_NOTION_TASK_SOURCE_ID: bindings.text(''),
+            LVBT_NOTION_TASK_PRODUCTION_SOURCE_ID: bindings.text(''),
             LVBT_DISCORD_JOBS: bindings.worker({ worker: 'lvbt-jobs-preview' }),
             LVBT_DISCORD_APPLICATION_ID: bindings.text('1552481672945999872'),
             LVBT_DISCORD_PUBLIC_KEY: bindings.text(
@@ -80,6 +83,9 @@ export default defineConfig((ctx) => {
             }),
             ASSETS: bindings.assets(),
             LVBT_DEPLOYMENT_ENV: bindings.text('production'),
+            LVBT_TASK_CHECKINS_ENABLED: bindings.text('false'),
+            LVBT_NOTION_TASK_SOURCE_ID: bindings.text(''),
+            LVBT_NOTION_TASK_PRODUCTION_SOURCE_ID: bindings.text(''),
             LVBT_DISCORD_JOBS: bindings.worker({ worker: 'lvbt-jobs' }),
             LVBT_DISCORD_APPLICATION_ID: bindings.text('1552481672945999872'),
             LVBT_DISCORD_PUBLIC_KEY: bindings.text(
