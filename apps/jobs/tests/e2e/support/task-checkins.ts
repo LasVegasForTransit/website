@@ -14,7 +14,12 @@ import {
 import type { Request as RuntimeRequest } from 'miniflare';
 import { taskPolicy } from '@lasvegasfortransit/platform-integrations/test-task-policy';
 
-export async function taskRuntime() {
+export async function taskRuntime(
+  options: {
+    sharedWork?: boolean;
+    workResponse?: (request: RuntimeRequest, url: URL) => Promise<RuntimeResponse | null>;
+  } = {},
+) {
   const root = fileURLToPath(new URL('../../../', import.meta.url));
   const data = await mkdtemp(join(tmpdir(), 'lvbt-task-cross-worker-'));
   const sourceId = '10000000-0000-4000-8000-000000000001';
@@ -49,7 +54,7 @@ export async function taskRuntime() {
       Assignee: { people: [{ id: `notion-${account.person}` }] },
       'Due date': { date: { start: due } },
       Status: { status: { name: 'In progress' } },
-      Project: { relation: [] },
+      Project: { relation: [] as { id: string }[] },
     },
   }));
   const sends: { recipient: string; body: Record<string, unknown> }[] = [];
@@ -148,6 +153,7 @@ export async function taskRuntime() {
   const common = {
     LVBT_DEPLOYMENT_ENV: 'preview',
     LVBT_TASK_CHECKINS_ENABLED: 'true',
+    LVBT_DISCORD_WORK_ENABLED: options.sharedWork ? 'true' : 'false',
     LVBT_DISCORD_APPLICATION_ID: applicationId,
     LVBT_DISCORD_GUILD_ID: guildId,
     LVBT_DISCORD_PRODUCTION_GUILD_ID: '999999999999999999',
@@ -173,7 +179,10 @@ export async function taskRuntime() {
           compatibilityFlags: ['nodejs_compat'],
           d1Databases: { PLATFORM_DB: 'task-fixture' },
           bindings: { ...common, LVBT_DISCORD_PUBLIC_KEY: publicKey },
-          outboundService: () => {
+          serviceBindings: { DISCORD_WORK: { name: 'jobs', entrypoint: 'WorkPreview' } },
+          outboundService: async (request) => {
+            const response = await options.workResponse?.(request, new URL(request.url));
+            if (response) return response;
             throw new Error('The callback must not contact a provider');
           },
         },
@@ -192,6 +201,8 @@ export async function taskRuntime() {
           },
           outboundService: async (request) => {
             const url = new URL(request.url);
+            const override = await options.workResponse?.(request, url);
+            if (override) return override;
             providerCalls.push(`${request.method} ${url.origin}${url.pathname}`);
             if (url.origin === 'https://api.notion.com') return notionResponse(request, url);
             return discordResponse(request, url);
@@ -201,12 +212,15 @@ export async function taskRuntime() {
           name: 'probe',
           compatibilityDate: '2026-09-04',
           modules: true,
-          script: `export default {async fetch(request,env){ const key=new URL(request.url).pathname.slice(1); return ['scan','queue','operation','recovery'].includes(key) ? Response.json(await env[key].run()) : new Response(null,{status:404}); }}`,
+          script: `export default {async fetch(request,env){ const key=new URL(request.url).pathname.slice(1); return ['scan','queue','operation','recovery','workIngest','workEffects','workRefresh'].includes(key) ? Response.json(await env[key].run()) : new Response(null,{status:404}); }}`,
           serviceBindings: {
             scan: { name: 'jobs', entrypoint: 'TaskCheckinScan' },
             queue: { name: 'jobs', entrypoint: 'TaskCheckinQueue' },
             operation: { name: 'jobs', entrypoint: 'TaskCheckinOperation' },
             recovery: { name: 'jobs', entrypoint: 'TaskCheckinRecovery' },
+            workIngest: { name: 'jobs', entrypoint: 'DiscordWorkIngest' },
+            workEffects: { name: 'jobs', entrypoint: 'DiscordWorkEffects' },
+            workRefresh: { name: 'jobs', entrypoint: 'DiscordWorkRefresh' },
           },
         },
       ],
@@ -307,6 +321,9 @@ export async function taskRuntime() {
       queue: step('queue'),
       operation: step('operation'),
       recovery: step('recovery'),
+      workIngest: step('workIngest'),
+      workEffects: step('workEffects'),
+      workRefresh: step('workRefresh'),
     };
     return {
       db,

@@ -80,7 +80,7 @@ function button(
 function message(components: DiscordTaskComponent[]): DiscordTaskMessage {
   return { flags: 32768, allowed_mentions: { parse: [] }, components: [{ type: 17, components }] };
 }
-function deadline(task: NotionTaskSnapshot, timezone: string): string {
+export function taskDeadline(task: NotionTaskSnapshot, timezone: string): string {
   if (!task.dueDate) return '—';
   if (/^\d{4}-\d{2}-\d{2}$/.test(task.dueDate))
     return new Intl.DateTimeFormat('en', { dateStyle: 'medium', timeZone: 'UTC' }).format(
@@ -120,7 +120,7 @@ export function renderTaskCard(input: {
       components: [
         {
           type: 10,
-          content: `### ${taskMarkdown(task.title)}\n${t('taskCheckins.yourTask')}\n${t('taskCheckins.due', { deadline: deadline(task, policy.timezone) })}`,
+          content: `### ${taskMarkdown(task.title)}\n${t('taskCheckins.yourTask')}\n${t('taskCheckins.due', { deadline: taskDeadline(task, policy.timezone) })}`,
         },
       ],
       accessory: {

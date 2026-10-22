@@ -1,3 +1,4 @@
+import { runScheduledDiscordWork } from './scheduled-discord-work';
 import { membershipStep, canContinueMembership, type ScheduledBudget } from './scheduled-budget';
 import { runScheduledTaskCheckins } from './scheduled-task-checkins';
 import { withScheduledAdmission, type ScheduledAdmission } from './scheduled-admission';
@@ -164,6 +165,14 @@ async function advanceTaskCheckins(
   }
   return (await runScheduledTaskCheckins(context, budget)) || failed;
 }
+async function advanceSharedWork(
+  context: ExecutionContext,
+  admission: ScheduledAdmission,
+  failed: boolean,
+): Promise<boolean> {
+  if (!admission.discordWork) return failed;
+  return (await runScheduledDiscordWork(context, admission.budget)) || failed;
+}
 async function processDueAccounts(
   now: Date,
   context: ExecutionContext,
@@ -180,6 +189,7 @@ async function processDueAccounts(
   const enabled = outgoingProviders(providers, queues, paused);
   let failed = false;
   if (admission.taskCheckins) failed = await advanceTaskCheckins(context, enabled, budget);
+  failed = await advanceSharedWork(context, admission, failed);
   for (
     let slot = 0;
     canContinueMembership(budget) && (enabled.discord || enabled.newsletter);
@@ -219,7 +229,7 @@ async function runAdmittedMembership(
     admission.db,
     now,
     admission.providers,
-    accounts.more || admission.taskCheckins,
+    accounts.more || admission.taskCheckins || Boolean(admission.discordWork),
   );
   await acknowledgeScheduledSignal(admission.db, signal, admission.configuration, next);
 }

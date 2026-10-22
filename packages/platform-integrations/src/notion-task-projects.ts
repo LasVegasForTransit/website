@@ -3,7 +3,7 @@ import { propertyValues } from './notion-task-hydrate';
 import { notionObject, notionProperty, type NotionTaskReadOptions } from './notion-task-types';
 
 type ProjectCache = Map<string, Promise<string[] | null>>;
-async function projectLeads(
+export async function readNotionProjectLeads(
   client: NotionTaskClient,
   projectId: string,
   sourceId: string,
@@ -50,7 +50,12 @@ export async function resolveNotionTaskEscalation(
     for (const project of projects) {
       let pending = cache.get(project);
       if (!pending) {
-        pending = projectLeads(client, project, options.projectsSourceId, options.projectLeadField);
+        pending = readNotionProjectLeads(
+          client,
+          project,
+          options.projectsSourceId,
+          options.projectLeadField,
+        );
         cache.set(project, pending);
       }
       const leads = await pending;

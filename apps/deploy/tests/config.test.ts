@@ -61,7 +61,15 @@ void test('saved releases retain matching Discord applications and isolated jobs
     [generated, 'lvbt-jobs'],
     [previewConfig, 'lvbt-jobs-preview'],
   ] as const) {
-    assert.deepEqual(built.services, [{ binding: 'LVBT_DISCORD_JOBS', service: worker }]);
+    assert.deepEqual(
+      [...(built.services as { binding: string }[])].sort((a, b) =>
+        a.binding.localeCompare(b.binding),
+      ),
+      [
+        { binding: 'DISCORD_WORK', service: worker, entrypoint: 'WorkPreview' },
+        { binding: 'LVBT_DISCORD_JOBS', service: worker },
+      ],
+    );
     const vars = built.vars as Record<string, unknown>;
     assert.equal(vars.LVBT_DISCORD_APPLICATION_ID, '1552481672945999872');
     assert.equal(
@@ -208,6 +216,11 @@ void test('generated compatibility mirror preserves actual routes, database iden
       },
     ]);
     assert.deepEqual(mode.services, [
+      {
+        binding: 'DISCORD_WORK',
+        service: built.worker.name === 'lvbt-website-preview' ? 'lvbt-jobs-preview' : 'lvbt-jobs',
+        entrypoint: 'WorkPreview',
+      },
       {
         binding: 'LVBT_DISCORD_JOBS',
         service: built.worker.name === 'lvbt-website-preview' ? 'lvbt-jobs-preview' : 'lvbt-jobs',

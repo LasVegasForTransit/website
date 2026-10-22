@@ -1,3 +1,4 @@
+import { discordWorkInteraction, type WorkInteractionEnv } from './_work-links';
 import { t } from '@lasvegasfortransit/platform-core/messages';
 /// <reference types="@cloudflare/workers-types" />
 
@@ -6,9 +7,13 @@ import { discordLinkOrigin } from '@lasvegasfortransit/platform-storage/discord-
 import type { SignInPagesEnv } from '../../sign-in/_shared';
 import { taskCheckinInteraction, type TaskInteractionEnv } from './_task-checkins';
 
-const MAX_INTERACTION_BYTES = 16 * 1024;
+const MAX_INTERACTION_BYTES = 128 * 1024;
 
-interface DiscordInteractionEnv extends SignInPagesEnv, Omit<TaskInteractionEnv, 'PLATFORM_DB'> {
+interface DiscordInteractionEnv
+  extends
+    SignInPagesEnv,
+    Omit<TaskInteractionEnv, 'PLATFORM_DB'>,
+    Omit<WorkInteractionEnv, 'PLATFORM_DB'> {
   LVBT_DISCORD_PUBLIC_KEY?: string;
   LVBT_DISCORD_GUILD_ID?: string;
 }
@@ -174,7 +179,8 @@ async function linkInteraction(
   }
 }
 
-export const onRequestPost: PagesFunction<DiscordInteractionEnv> = async ({ request, env }) => {
+export const onRequestPost: PagesFunction<DiscordInteractionEnv> = async (context) => {
+  const { request, env } = context;
   const signature = request.headers.get('X-Signature-Ed25519');
   const timestamp = request.headers.get('X-Signature-Timestamp');
   if (!signature || !timestamp) return new Response(null, { status: 401 });
@@ -186,6 +192,8 @@ export const onRequestPost: PagesFunction<DiscordInteractionEnv> = async ({ requ
   const interaction = parseInteraction(body);
   if (!interaction) return new Response(null, { status: 400 });
   if (interaction.type === 1) return jsonResponse({ type: 1 });
+  const workResponse = await discordWorkInteraction(env, interaction, (p) => context.waitUntil(p));
+  if (workResponse) return workResponse;
   const taskResponse = await taskCheckinInteraction(env, interaction);
   if (taskResponse) return taskResponse;
   if (interaction.type !== 2 || interaction.data?.name !== 'link')

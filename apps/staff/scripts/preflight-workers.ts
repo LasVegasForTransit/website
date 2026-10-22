@@ -11,6 +11,7 @@ import {
 } from '@lasvegasfortransit/platform-integrations/worker-runtime-config';
 const VERSION_VARIABLES = [
   'LVBT_TASK_CHECKINS_ENABLED',
+  'LVBT_DISCORD_WORK_ENABLED',
   'LVBT_NOTION_TASK_SOURCE_ID',
   'LVBT_NOTION_TASK_PRODUCTION_SOURCE_ID',
   'LVBT_ACCESS_AUD',
@@ -31,19 +32,26 @@ export function disabledProviderBindings(bindings: Bindings, environment: Enviro
     value(bindings, 'LVBT_DEPLOYMENT_ENV') === environment &&
     value(bindings, 'LVBT_DISCORD_SYNC_ENABLED') === 'false' &&
     (value(bindings, 'LVBT_TASK_CHECKINS_ENABLED') ?? 'false') === 'false' &&
+    (value(bindings, 'LVBT_DISCORD_WORK_ENABLED') ?? 'false') === 'false' &&
     (value(bindings, 'LVBT_BEEHIIV_SYNC_ENABLED') ?? 'false') === 'false'
   );
 }
 export function taskCheckinBindingsReady(bindings: Bindings, environment: Environment): boolean {
   const enabled = value(bindings, 'LVBT_TASK_CHECKINS_ENABLED');
-  if (enabled === undefined || enabled === 'false') return true;
+  const workEnabled = value(bindings, 'LVBT_DISCORD_WORK_ENABLED');
+  if (workEnabled !== undefined && workEnabled !== 'true' && workEnabled !== 'false') return false;
+  if (enabled !== undefined && enabled !== 'true' && enabled !== 'false') return false;
+  if ((enabled === undefined || enabled === 'false') && workEnabled !== 'true') return true;
   const vars = Object.fromEntries(
     bindings
       .filter((row) => row.type === 'plain_text' && typeof row.name === 'string')
       .map((row) => [String(row.name), row.text]),
   );
   return (
-    taskCheckinContext(vars)?.environment === environment &&
+    taskCheckinContext({
+      ...vars,
+      LVBT_TASK_CHECKINS_ENABLED: 'true',
+    })?.environment === environment &&
     ['LVBT_NOTION_TASK_API_KEY', 'LVBT_DISCORD_BOT_TOKEN'].every((name) =>
       bindings.some((row) => row.name === name && row.type === 'secret_text'),
     )

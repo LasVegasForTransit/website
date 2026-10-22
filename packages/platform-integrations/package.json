@@ -56,7 +56,15 @@
     "./notion-task-digests": "./src/notion-task-digests.ts",
     "./notion-task-refresh": "./src/notion-task-refresh.ts",
     "./notion-task-admin": "./src/notion-task-admin.ts",
-    "./notion-task-recovery": "./src/notion-task-recovery.ts"
+    "./notion-task-recovery": "./src/notion-task-recovery.ts",
+    "./discord-work-types": "./src/discord-work-types.ts",
+    "./discord-work-authority": "./src/discord-work-authority.ts",
+    "./discord-work-runtime": "./src/discord-work-runtime.ts",
+    "./discord-work-provider": "./src/discord-work-provider.ts",
+    "./discord-work-setup": "./src/discord-work-setup.ts",
+    "./discord-work-runner": "./src/discord-work-runner.ts",
+    "./discord-work-command": "./src/discord-work-command.ts",
+    "./discord-work-interactions": "./src/discord-work-interactions.ts"
   },
   "scripts": {
     "lint": "eslint . --max-warnings 0",

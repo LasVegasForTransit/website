@@ -15,12 +15,16 @@ export interface RegisterLinkCommandOptions {
   fetcher?: typeof fetch;
   rateLimit?: DiscordOptions['rateLimit'];
 }
-function existingGuildCommand(commands: unknown, name: string): Record<string, unknown> | null {
+function existingGuildCommand(
+  commands: unknown,
+  definition: GuildChatCommand,
+): Record<string, unknown> | null {
   if (!Array.isArray(commands)) throw new DiscordApiFailure('invalid_response');
   const matching = commands
     .map(object)
-    .filter((command) => command.name === name && command.type === 1);
-  if (matching.length > 1) throw new Error(`Discord has multiple guild commands named ${name}.`);
+    .filter((command) => command.name === definition.name && command.type === definition.type);
+  if (matching.length > 1)
+    throw new Error(`Discord has multiple guild commands named ${definition.name}.`);
   const command = matching[0];
   if (!command) return null;
   if (!discordId(command.id)) throw new DiscordApiFailure('invalid_response');
@@ -29,15 +33,37 @@ function existingGuildCommand(commands: unknown, name: string): Record<string, u
 function matches(command: Record<string, unknown> | null, definition: GuildChatCommand): boolean {
   return (
     command?.description === definition.description &&
-    (command.options === undefined ||
-      (Array.isArray(command.options) && command.options.length === 0))
+    JSON.stringify(normalizeOptions(command.options)) ===
+      JSON.stringify(normalizeOptions(definition.options))
   );
+}
+function normalizeOptions(value: unknown): unknown[] {
+  if (!Array.isArray(value)) return [];
+  return value.map((v) => {
+    const o = object(v);
+    return {
+      type: o.type,
+      name: o.name,
+      description: o.description,
+      required: o.required === true,
+      channel_types: o.channel_types ?? [],
+      options: normalizeOptions(o.options),
+    };
+  });
+}
+export interface DiscordCommandOption {
+  type: number;
+  name: string;
+  description: string;
+  required?: boolean;
+  channel_types?: number[];
+  options?: readonly DiscordCommandOption[];
 }
 export interface GuildChatCommand {
   type: number;
   name: string;
   description: string;
-  options: readonly never[];
+  options: readonly DiscordCommandOption[];
 }
 /** Upsert only the named guild chat-input command, then confirm its stored definition. */
 export async function registerGuildChatCommand(
@@ -53,7 +79,7 @@ export async function registerGuildChatCommand(
   const path = `/applications/${applicationId}/guilds/${guildId}/commands`;
   const authorization = `Bot ${botToken}`;
   const read = async () =>
-    existingGuildCommand(await client.request(path, { authorization }), definition.name);
+    existingGuildCommand(await client.request(path, { authorization }), definition);
   const existing = await read();
   if (matches(existing, definition)) return 'confirmed';
   await client.request(existing ? `${path}/${String(existing.id)}` : path, {

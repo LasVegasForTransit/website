@@ -46,6 +46,9 @@ const QUERIES = {
     FROM task_checkin_consents r JOIN people p ON r.person_id IN (${taskPersonOrigins('p.id')})`,
   task_checkin_consent_history: `SELECT r.source_id,r.state,r.policy_revision,r.applied,r.created_at
     FROM task_checkin_consent_receipts r JOIN people p ON r.person_id IN (${taskPersonOrigins('p.id')})`,
+  discord_work_updates: `SELECT r.kind,r.state,r.reason,r.created_at,r.updated_at,
+    json_extract(r.payload_json,'$.text') AS text,json_extract(r.payload_json,'$.message.text') AS message_text
+    FROM discord_work_operations r JOIN people p ON r.actor_person_id IN (${taskPersonOrigins('p.id')})`,
   task_checkin_responses: `SELECT r.source_id,r.task_id,r.kind,r.state,r.reason,r.created_at,r.updated_at,
     CASE WHEN r.kind IN ('progress','blocker','extension') THEN json_extract(r.payload_json,'$.text') ELSE NULL END AS response_text
     FROM task_checkin_operations r JOIN people p ON r.person_id IN (${taskPersonOrigins('p.id')})`,

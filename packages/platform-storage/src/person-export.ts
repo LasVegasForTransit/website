@@ -230,6 +230,7 @@ export async function collectPersonExport(
     task_checkin_preferences: snapshot.task_checkin_preferences,
     task_checkin_consent_history: snapshot.task_checkin_consent_history,
     task_checkin_responses: snapshot.task_checkin_responses,
+    discord_work_updates: snapshot.discord_work_updates,
     task_checkin_cards: snapshot.task_checkin_cards,
     task_checkin_digests: snapshot.task_checkin_digests,
     task_checkin_card_updates: snapshot.task_checkin_card_updates,

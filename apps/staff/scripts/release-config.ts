@@ -7,6 +7,7 @@ import { releaseConfiguration, type Environment } from './preflight-config';
 
 const PUBLIC_VARIABLES = new Set([
   'LVBT_TASK_CHECKINS_ENABLED',
+  'LVBT_DISCORD_WORK_ENABLED',
   'LVBT_NOTION_TASK_SOURCE_ID',
   'LVBT_NOTION_TASK_PRODUCTION_SOURCE_ID',
   ...DISCORD_RUNTIME_CONFIG.map(({ name }) => name),

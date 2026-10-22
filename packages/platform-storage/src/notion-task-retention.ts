@@ -4,12 +4,13 @@ interface RetentionSource {
   id: string;
   revision: number;
   retention_days: number;
+  workspace_id: string;
 }
 /** Rotate across sources even while sending is disabled or a provider is unavailable. */
 export async function taskRetentionWrites(db: Db, now: Date, limit: number): Promise<Statement[]> {
   const source = await db
     .prepare(
-      `SELECT id,revision,retention_days FROM task_checkin_sources
+      `SELECT id,revision,retention_days,workspace_id FROM task_checkin_sources
     ORDER BY coalesce(retention_checked_at,''),id LIMIT 1`,
     )
     .first<RetentionSource>();
@@ -19,6 +20,17 @@ export async function taskRetentionWrites(db: Db, now: Date, limit: number): Pro
   const guard = `EXISTS(SELECT 1 FROM task_checkin_sources WHERE id=? AND revision=? AND retention_days=?)`;
   const authority = [source.id, source.revision, source.retention_days];
   return [
+    db
+      .prepare(
+        `UPDATE discord_work_operations SET payload_json='{}',grant_version='',
+      state=CASE WHEN state IN ('preview','queued','retryable') THEN 'superseded' ELSE state END,
+      reason=CASE WHEN state IN ('preview','queued','retryable') THEN 'retention_expired' ELSE reason END
+      WHERE id IN (SELECT id FROM discord_work_operations WHERE json_extract(scope_key,'$[2]')=? AND payload_json<>'{}'
+      AND coalesce(json_extract(payload_json,'$.taskSourceId'),(SELECT json_extract(h.data_json,'$.taskSourceId') FROM discord_project_homes h WHERE h.id=discord_work_operations.home_id),?)=?
+      AND (created_at<=? OR (state='preview' AND expires_at<=?)) AND (state<>'processing' OR lease_expires_at<=?)
+      ORDER BY created_at,id LIMIT ?) AND ${guard}`,
+      )
+      .bind(source.workspace_id, source.id, source.id, cutoff, stamp, stamp, limit, ...authority),
     db
       .prepare(
         `UPDATE task_checkin_tasks SET snapshot_json='{}',history_cleared_at=?

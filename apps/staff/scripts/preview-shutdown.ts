@@ -17,6 +17,7 @@ function disabledSource(config: Record<string, unknown>, app: string) {
     vars.LVBT_DEPLOYMENT_ENV === 'preview' &&
     vars.LVBT_DISCORD_SYNC_ENABLED === 'false' &&
     (vars.LVBT_TASK_CHECKINS_ENABLED ?? 'false') === 'false' &&
+    (vars.LVBT_DISCORD_WORK_ENABLED ?? 'false') === 'false' &&
     discordProviderConfiguration({ ...vars, LVBT_DISCORD_SYNC_ENABLED: 'true' }).configured &&
     (app !== 'jobs' ||
       (vars.LVBT_BEEHIIV_SYNC_ENABLED === 'false' && Array.isArray(crons) && crons.length === 0))
@@ -30,6 +31,7 @@ function samePreviewTarget(
   return (
     targetKeys.every((key) => value(bindings, key) === vars[key]) &&
     (value(bindings, 'LVBT_TASK_CHECKINS_ENABLED') ?? 'false') === 'false' &&
+    (value(bindings, 'LVBT_DISCORD_WORK_ENABLED') ?? 'false') === 'false' &&
     (value(bindings, 'LVBT_BEEHIIV_SYNC_ENABLED') ?? 'false') === 'false' &&
     (value(bindings, 'LVBT_DISCORD_SYNC_ENABLED') === 'false' ||
       (!disabledOnly && inspectDiscord(bindings, bindings, 'preview').status === 'passed'))

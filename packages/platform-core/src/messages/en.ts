@@ -8,6 +8,7 @@ import { staffAdministrators } from './staff-administrators';
 import { staffParticipation } from './staff-participation';
 import { staffRoles } from './staff-roles';
 import { taskCheckins } from './task-checkins';
+import { discordWork } from './discord-work';
 
 // English messages for member and staff screens. Keys are grouped by screen.
 // `{name}` fills in a value. A message that depends on a count is an object
@@ -15,6 +16,7 @@ import { taskCheckins } from './task-checkins';
 // How to add a message: README.md in this directory.
 
 export const en = {
+  discordWork,
   taskCheckins,
   staff: {
     ...staffCommon,

@@ -11,6 +11,7 @@
   "vars": {
     "LVBT_DEPLOYMENT_ENV": "production",
     "LVBT_TASK_CHECKINS_ENABLED": "false",
+    "LVBT_DISCORD_WORK_ENABLED": "false",
     "LVBT_NOTION_TASK_SOURCE_ID": "",
     "LVBT_NOTION_TASK_PRODUCTION_SOURCE_ID": "",
     "LVBT_BEEHIIV_SYNC_ENABLED": "true",
@@ -38,6 +39,7 @@
       "vars": {
         "LVBT_DEPLOYMENT_ENV": "preview",
         "LVBT_TASK_CHECKINS_ENABLED": "false",
+        "LVBT_DISCORD_WORK_ENABLED": "false",
         "LVBT_NOTION_TASK_SOURCE_ID": "",
         "LVBT_NOTION_TASK_PRODUCTION_SOURCE_ID": "",
         "LVBT_BEEHIIV_SYNC_ENABLED": "false",

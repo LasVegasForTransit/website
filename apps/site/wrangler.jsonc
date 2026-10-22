@@ -46,6 +46,7 @@
     "crons": [],
   },
   "services": [
+    { "binding": "DISCORD_WORK", "service": "lvbt-jobs", "entrypoint": "WorkPreview" },
     {
       "binding": "LVBT_DISCORD_JOBS",
       "service": "lvbt-jobs",
@@ -59,6 +60,7 @@
     "LVBT_DISCORD_PRODUCTION_GUILD_ID": "1509298455896522823",
     "LVBT_DEPLOYMENT_ENV": "production",
     "LVBT_TASK_CHECKINS_ENABLED": "false",
+    "LVBT_DISCORD_WORK_ENABLED": "false",
     "LVBT_NOTION_TASK_SOURCE_ID": "",
     "LVBT_NOTION_TASK_PRODUCTION_SOURCE_ID": "",
     "LVBT_DISCORD_APPLICATION_ID": "1552481672945999872",
@@ -109,6 +111,7 @@
         "crons": [],
       },
       "services": [
+        { "binding": "DISCORD_WORK", "service": "lvbt-jobs-preview", "entrypoint": "WorkPreview" },
         {
           "binding": "LVBT_DISCORD_JOBS",
           "service": "lvbt-jobs-preview",
@@ -122,6 +125,7 @@
         "LVBT_DISCORD_PRODUCTION_GUILD_ID": "1509298455896522823",
         "LVBT_DEPLOYMENT_ENV": "preview",
         "LVBT_TASK_CHECKINS_ENABLED": "false",
+        "LVBT_DISCORD_WORK_ENABLED": "false",
         "LVBT_NOTION_TASK_SOURCE_ID": "",
         "LVBT_NOTION_TASK_PRODUCTION_SOURCE_ID": "",
         "LVBT_DISCORD_APPLICATION_ID": "1552481672945999872",

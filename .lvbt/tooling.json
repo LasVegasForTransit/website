@@ -203,6 +203,15 @@
       "LVBT_DISCORD_PRODUCTION_GUILD_ID": {
         "type": "text",
         "value": "1509298455896522823"
+      },
+      "LVBT_DISCORD_WORK_ENABLED": {
+        "type": "text",
+        "value": "false"
+      },
+      "DISCORD_WORK": {
+        "type": "worker",
+        "worker": "lvbt-jobs-preview",
+        "exportName": "WorkPreview"
       }
     },
     "migrations": [

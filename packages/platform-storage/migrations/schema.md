@@ -1003,3 +1003,13 @@ Two Notion accounts in one merged family require staff review rather than an imp
 current approved participant still needs a new self-authored check-in consent after identity
 reassignment. Notification caps and daily-summary deduplication include the active merge family, so
 combining records does not reset those limits.
+
+## Shared Discord work links
+
+Migration `0055_discord_work_links.sql` adds project homes, typed work conversations, and durable
+shared effects. Scope keys bind environment, guild, and Notion workspace. Active project placements
+and conversation subjects are unique within that scope. Link generations invalidate old controls and
+pending writes; these tables never grant private reminder consent. Preview receipts expire after ten
+minutes. Operations retain provider result IDs and source keys for reconciliation. Uncertain effects
+are held rather than blindly retried. Person deletion revokes pending shared work and pauses project
+homes approved by that person.

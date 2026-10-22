@@ -1,5 +1,9 @@
 # Set up volunteer task check-ins
 
+For shared project channels, forum posts, and task-thread updates, use
+[Discord project conversations](./set-up-discord-project-work.md). Shared links and private reminder
+consent have separate controls.
+
 Use this procedure to prepare Notion tasks, private Discord check-ins, and the staff controls for an
 approved LVBT trial. Keep sending disabled until the environment, audience, and trial window have
 been reviewed. Routine source settings and recovery use **Task check-ins** in the staff console.

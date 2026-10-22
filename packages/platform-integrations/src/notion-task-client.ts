@@ -12,7 +12,7 @@ export class NotionTaskApiError extends Error {
     this.name = 'NotionTaskApiError';
   }
 }
-interface NotionList {
+export interface NotionList {
   results: unknown[];
   nextCursor: string | null;
 }
@@ -179,11 +179,52 @@ export class NotionTaskClient {
       20,
     );
   }
+  async queryTasksForProject(input: {
+    sourceId: string;
+    projectField: string;
+    projectId: string;
+    assigneeField: string;
+    assigneeId?: string | undefined;
+    cursor?: string | null | undefined;
+  }): Promise<NotionList> {
+    const project = { property: input.projectField, relation: { contains: id(input.projectId) } };
+    const filter = input.assigneeId
+      ? {
+          and: [project, { property: input.assigneeField, people: { contains: input.assigneeId } }],
+        }
+      : project;
+    return list(
+      await this.request(`data_sources/${id(input.sourceId)}/query`, 'POST', {
+        page_size: 25,
+        filter,
+        ...(input.cursor ? { start_cursor: input.cursor } : {}),
+      }),
+      25,
+    );
+  }
   readSelf(): Promise<unknown> {
     return this.request('users/me', 'GET');
   }
   readPage(pageId: string): Promise<unknown> {
     return this.request(`pages/${id(pageId)}`, 'GET');
+  }
+  async listBlockChildren(pageId: string, cursor: string | null = null): Promise<NotionList> {
+    const query = new URLSearchParams({
+      page_size: '100',
+      ...(cursor ? { start_cursor: cursor } : {}),
+    });
+    return list(
+      await this.request(`blocks/${id(pageId)}/children?${query.toString()}`, 'GET'),
+      100,
+    );
+  }
+  appendBlockChildren(pageId: string, children: unknown[]): Promise<unknown> {
+    if (!children.length || children.length > 100)
+      throw new NotionTaskApiError('invalid_blocks', 60_000, false);
+    return this.request(`blocks/${id(pageId)}/children`, 'PATCH', { children });
+  }
+  updateBlock(blockId: string, body: unknown): Promise<unknown> {
+    return this.request(`blocks/${id(blockId)}`, 'PATCH', body);
   }
   async readProperty(
     pageId: string,
