@@ -44,8 +44,9 @@ void test('shared cards expose a status dropdown and Add update, with no recipie
   const controls = flatten(card.components);
   assert.equal(controls.filter((p) => p.type === 3).length, 1);
   assert.equal(controls.filter((p) => p.label === 'Add update').length, 1);
-  assert.ok(
-    JSON.stringify(card).includes('Replies from authorized participants are saved to Notion'),
+  assert.deepEqual(
+    controls.filter((p) => p.type === 10).map((p) => p.content),
+    ['### Prepare agenda', 'No deadline'],
   );
   assert.ok(controls.some((p) => p.custom_id === 'work:conversation:2:status'));
   const done = flatten(

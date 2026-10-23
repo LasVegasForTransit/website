@@ -17,6 +17,7 @@ import { taskPolicy } from '@lasvegasfortransit/platform-integrations/test-task-
 export async function taskRuntime(
   options: {
     sharedWork?: boolean;
+    manualUpdatesOnly?: boolean;
     workResponse?: (request: RuntimeRequest, url: URL) => Promise<RuntimeResponse | null>;
   } = {},
 ) {
@@ -152,7 +153,8 @@ export async function taskRuntime(
   }
   const common = {
     LVBT_DEPLOYMENT_ENV: 'preview',
-    LVBT_TASK_CHECKINS_ENABLED: 'true',
+    LVBT_TASK_CHECKINS_ENABLED: options.manualUpdatesOnly ? 'false' : 'true',
+    LVBT_TASK_UPDATES_ENABLED: options.manualUpdatesOnly ? 'true' : 'false',
     LVBT_DISCORD_WORK_ENABLED: options.sharedWork ? 'true' : 'false',
     LVBT_DISCORD_APPLICATION_ID: applicationId,
     LVBT_DISCORD_GUILD_ID: guildId,
@@ -179,7 +181,10 @@ export async function taskRuntime(
           compatibilityFlags: ['nodejs_compat'],
           d1Databases: { PLATFORM_DB: 'task-fixture' },
           bindings: { ...common, LVBT_DISCORD_PUBLIC_KEY: publicKey },
-          serviceBindings: { DISCORD_WORK: { name: 'jobs', entrypoint: 'WorkPreview' } },
+          serviceBindings: {
+            DISCORD_WORK: { name: 'jobs', entrypoint: 'WorkPreview' },
+            ...(options.manualUpdatesOnly ? { LVBT_DISCORD_JOBS: 'jobs' } : {}),
+          },
           outboundService: async (request) => {
             const response = await options.workResponse?.(request, new URL(request.url));
             if (response) return response;
@@ -212,12 +217,13 @@ export async function taskRuntime(
           name: 'probe',
           compatibilityDate: '2026-09-04',
           modules: true,
-          script: `export default {async fetch(request,env){ const key=new URL(request.url).pathname.slice(1); return ['scan','queue','operation','recovery','workIngest','workEffects','workRefresh'].includes(key) ? Response.json(await env[key].run()) : new Response(null,{status:404}); }}`,
+          script: `export default {async fetch(request,env){ const key=new URL(request.url).pathname.slice(1); return ['scan','queue','operation','recovery','refresh','workIngest','workEffects','workRefresh'].includes(key) ? Response.json(await env[key].run()) : new Response(null,{status:404}); }}`,
           serviceBindings: {
             scan: { name: 'jobs', entrypoint: 'TaskCheckinScan' },
             queue: { name: 'jobs', entrypoint: 'TaskCheckinQueue' },
             operation: { name: 'jobs', entrypoint: 'TaskCheckinOperation' },
             recovery: { name: 'jobs', entrypoint: 'TaskCheckinRecovery' },
+            refresh: { name: 'jobs', entrypoint: 'TaskCheckinRefresh' },
             workIngest: { name: 'jobs', entrypoint: 'DiscordWorkIngest' },
             workEffects: { name: 'jobs', entrypoint: 'DiscordWorkEffects' },
             workRefresh: { name: 'jobs', entrypoint: 'DiscordWorkRefresh' },
@@ -321,6 +327,7 @@ export async function taskRuntime(
       queue: step('queue'),
       operation: step('operation'),
       recovery: step('recovery'),
+      refresh: step('refresh'),
       workIngest: step('workIngest'),
       workEffects: step('workEffects'),
       workRefresh: step('workRefresh'),

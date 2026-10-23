@@ -69,6 +69,7 @@ export async function claimTaskCardRefresh(
   db: Db,
   sourceId: string,
   now: Date,
+  target?: { taskId: string; personId: string },
 ): Promise<TaskCardRefresh | null> {
   const stamp = now.toISOString();
   await db
@@ -84,10 +85,20 @@ export async function claimTaskCardRefresh(
     .prepare(
       `${VIEW} UPDATE task_checkin_card_refreshes SET state='processing',claimed_generation=generation,claim_token=?,lease_expires_at=?,attempts=attempts+1,updated_at=?
     WHERE rowid=(SELECT o.row_id FROM o WHERE source_id=? AND state IN ('queued','retryable') AND attempts<5 AND next_attempt_at<=?
-    AND channel_id IS NOT NULL AND message_id IS NOT NULL AND ${ELIGIBLE} ORDER BY updated_at,row_id LIMIT 1)
+    AND channel_id IS NOT NULL AND message_id IS NOT NULL
+    AND (? IS NULL OR (o.task_id=? AND o.person_id=?)) AND ${ELIGIBLE} ORDER BY updated_at,row_id LIMIT 1)
     AND state IN ('queued','retryable') RETURNING source_id,task_id,person_id,generation,claim_token`,
     )
-    .bind(randomToken(), new Date(now.getTime() + 60_000).toISOString(), stamp, sourceId, stamp)
+    .bind(
+      randomToken(),
+      new Date(now.getTime() + 60_000).toISOString(),
+      stamp,
+      sourceId,
+      stamp,
+      target?.taskId ?? null,
+      target?.taskId ?? null,
+      target?.personId ?? null,
+    )
     .first<RefreshLease>();
   return lease ? readTaskCardRefresh(db, lease, now) : null;
 }

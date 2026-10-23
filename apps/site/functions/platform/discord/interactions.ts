@@ -194,7 +194,7 @@ export const onRequestPost: PagesFunction<DiscordInteractionEnv> = async (contex
   if (interaction.type === 1) return jsonResponse({ type: 1 });
   const workResponse = await discordWorkInteraction(env, interaction, (p) => context.waitUntil(p));
   if (workResponse) return workResponse;
-  const taskResponse = await taskCheckinInteraction(env, interaction);
+  const taskResponse = await taskCheckinInteraction(env, interaction, (p) => context.waitUntil(p));
   if (taskResponse) return taskResponse;
   if (interaction.type !== 2 || interaction.data?.name !== 'link')
     return new Response(null, { status: 404 });

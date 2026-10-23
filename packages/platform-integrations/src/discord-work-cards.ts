@@ -94,13 +94,7 @@ export function sharedTaskCard(
         workButton(workCustomId(conversation, 'note'), t('discordWork.addUpdate'), disabled),
       ],
     });
-  if (state === 'active')
-    rows.push(
-      workText(
-        conversation.mode === 'automatic' ? t('discordWork.automatic') : t('discordWork.selected'),
-      ),
-    );
-  else
+  if (state !== 'active')
     rows.push(
       workText(
         state === 'unlinked'

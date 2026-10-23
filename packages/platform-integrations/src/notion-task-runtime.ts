@@ -2,6 +2,7 @@ import { isDiscordId } from '@lasvegasfortransit/platform-core/discord-identity'
 
 export interface TaskCheckinRuntimeEnv {
   LVBT_TASK_CHECKINS_ENABLED?: string;
+  LVBT_TASK_UPDATES_ENABLED?: string;
   LVBT_DEPLOYMENT_ENV?: string;
   LVBT_NOTION_TASK_SOURCE_ID?: string;
   LVBT_NOTION_TASK_PRODUCTION_SOURCE_ID?: string;
@@ -46,11 +47,15 @@ function isolatedTaskContext(env: TaskCheckinRuntimeEnv) {
 export function taskCheckinContext(env: TaskCheckinRuntimeEnv) {
   return env.LVBT_TASK_CHECKINS_ENABLED === 'true' ? isolatedTaskContext(env) : null;
 }
-/** Self-stop remains available while every sending/update worker stays disabled. */
+/** Manual updates and reminder delivery have independent switches; self-stop is always available. */
 export function taskCheckinInteractionContext(env: TaskCheckinRuntimeEnv) {
   const context = isolatedTaskContext(env);
   return context
-    ? { ...context, preferencesOnly: env.LVBT_TASK_CHECKINS_ENABLED !== 'true' }
+    ? {
+        ...context,
+        preferencesOnly:
+          env.LVBT_TASK_CHECKINS_ENABLED !== 'true' && env.LVBT_TASK_UPDATES_ENABLED !== 'true',
+      }
     : null;
 }
 export type TaskCheckinContext = NonNullable<ReturnType<typeof taskCheckinContext>>;
@@ -62,8 +67,11 @@ export interface TaskCheckinWorkerEnv extends TaskCheckinRuntimeEnv {
   LVBT_NOTION_TASK_API_KEY?: string;
   LVBT_DISCORD_BOT_TOKEN?: string;
 }
-export function taskCheckinWorkerRuntime(env: TaskCheckinWorkerEnv) {
-  const context = taskCheckinContext(env);
+export function taskCheckinWorkerRuntime(env: TaskCheckinWorkerEnv, allowUpdates = false) {
+  const context =
+    allowUpdates && env.LVBT_TASK_UPDATES_ENABLED === 'true'
+      ? isolatedTaskContext(env)
+      : taskCheckinContext(env);
   const notionToken = env.LVBT_NOTION_TASK_API_KEY?.trim(),
     botToken = env.LVBT_DISCORD_BOT_TOKEN?.trim();
   return context && notionToken && botToken ? { ...context, notionToken, botToken } : null;

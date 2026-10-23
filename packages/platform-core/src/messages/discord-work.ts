@@ -14,9 +14,9 @@ export const discordWork = {
   automatic:
     'Replies from authorized participants are saved to Notion. Edits and attachments are not copied.',
   selected: 'Discussion stays in Discord. Use Add update or Save to Notion to record an update.',
-  paused: 'Syncing is paused. Use /work show for details.',
-  unlinked: 'This conversation is no longer linked.',
-  preview: 'Preview only. Sending is disabled.',
+  paused: 'Updates paused',
+  unlinked: 'Disconnected',
+  preview: 'Preview',
   audience: 'This shares the linked work with people who can access this Discord destination.',
   unavailable:
     'This action is unavailable. Check your linked account, project access, and /work show.',

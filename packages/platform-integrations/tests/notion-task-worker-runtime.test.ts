@@ -57,3 +57,16 @@ void test('preference-only interaction context preserves isolation without enabl
   ])
     assert.equal(taskCheckinInteractionContext({ ...disabled, ...change }), null);
 });
+void test('manual task updates work while reminder delivery stays disabled', async () => {
+  const { taskCheckinInteractionContext, taskCheckinWorkerRuntime } =
+    await import('../src/notion-task-runtime');
+  const manual = {
+    ...env,
+    LVBT_TASK_CHECKINS_ENABLED: 'false',
+    LVBT_TASK_UPDATES_ENABLED: 'true',
+  };
+  assert.equal(taskCheckinInteractionContext(manual)?.preferencesOnly, false);
+  assert.equal(taskCheckinWorkerRuntime(manual), null);
+  assert.equal(taskCheckinWorkerRuntime(manual, true)?.sourceId, env.LVBT_NOTION_TASK_SOURCE_ID);
+  assert.equal(taskCheckinWorkerRuntime({ ...manual, LVBT_NOTION_TASK_API_KEY: '' }, true), null);
+});

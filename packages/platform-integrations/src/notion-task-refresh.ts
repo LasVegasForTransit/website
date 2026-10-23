@@ -111,10 +111,15 @@ function refreshFailure(error: unknown, attempts: number) {
 export async function processTaskCardRefresh(
   db: Db,
   providers: { notion: NotionTaskClient; discord: DiscordTaskClient },
-  sourceId: string,
+  scope: string | { sourceId: string; taskId: string; personId: string },
   clock: () => Date,
 ): Promise<{ kind: 'idle' | 'progress' }> {
-  const refresh = await claimTaskCardRefresh(db, sourceId, clock());
+  const refresh = await claimTaskCardRefresh(
+    db,
+    typeof scope === 'string' ? scope : scope.sourceId,
+    clock(),
+    typeof scope === 'string' ? undefined : scope,
+  );
   if (!refresh) return { kind: 'idle' };
   try {
     const policy = readTaskCheckinPolicy(refresh.policy_json);

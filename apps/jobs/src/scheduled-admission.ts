@@ -46,7 +46,7 @@ function deferred(reason: string) {
 async function configurationFor(env: ScheduledEnv) {
   const discord = discordRuntime(env),
     newsletter = beehiivRuntime(env),
-    tasks = taskCheckinWorkerRuntime(env);
+    tasks = taskCheckinWorkerRuntime(env, true);
   const work = workLinkRuntime(env);
   const digest = await digestToken(JSON.stringify(LINK_COMMAND));
   const providers = {
@@ -65,7 +65,15 @@ async function configurationFor(env: ScheduledEnv) {
       providers,
       discord?.memberRoleId,
       env.LVBT_BEEHIIV_CONFLICT_POLICY,
-      tasks ? [tasks.sourceId, tasks.applicationId, tasks.guildId] : null,
+      tasks
+        ? [
+            tasks.sourceId,
+            tasks.applicationId,
+            tasks.guildId,
+            env.LVBT_TASK_CHECKINS_ENABLED,
+            env.LVBT_TASK_UPDATES_ENABLED,
+          ]
+        : null,
       work ? [work.sourceId, work.applicationId, work.guildId] : null,
     ]),
   };

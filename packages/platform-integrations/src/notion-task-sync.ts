@@ -1,6 +1,9 @@
 import type { Db } from '@lasvegasfortransit/platform-storage/db';
 import { digestToken } from '@lasvegasfortransit/platform-core/random-token';
-import { readTaskCheckinSource } from '@lasvegasfortransit/platform-storage/notion-task-checkins';
+import {
+  readTaskCheckinSource,
+  upsertNotionTaskSnapshot,
+} from '@lasvegasfortransit/platform-storage/notion-task-checkins';
 import {
   claimTaskScan,
   completeTaskScanPage,
@@ -113,4 +116,34 @@ export async function syncNotionTaskPage(
     );
     return { kind: 'failed', reason };
   }
+}
+
+/** Refresh only the task changed by a human action before claiming its card edit. */
+export async function syncNotionTaskSnapshot(
+  db: Db,
+  client: NotionTaskClient,
+  input: { sourceId: string; taskId: string },
+  clock: () => Date,
+): Promise<void> {
+  const source = await readTaskCheckinSource(db, input.sourceId);
+  const options = source && readOptions(input.sourceId, source.policy_json);
+  if (!source?.enabled || !options) return;
+  const hydrated = await hydrateNotionTask(client, await client.readPage(input.taskId), options);
+  const parsed = parseNotionTaskPage(hydrated.page, hydrated.options);
+  if (parsed?.taskId.replaceAll('-', '') !== input.taskId.replaceAll('-', '')) return;
+  Object.assign(
+    parsed.snapshot,
+    await resolveNotionTaskEscalation(client, parsed.snapshot.projectIds, options, new Map()),
+  );
+  await upsertNotionTaskSnapshot(
+    db,
+    {
+      sourceId: input.sourceId,
+      ...parsed,
+      revision: await digestToken(
+        JSON.stringify({ active: parsed.active, snapshot: parsed.snapshot }),
+      ),
+    },
+    clock(),
+  );
 }

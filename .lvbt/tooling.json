@@ -212,6 +212,10 @@
         "type": "worker",
         "worker": "lvbt-jobs-preview",
         "exportName": "WorkPreview"
+      },
+      "LVBT_TASK_UPDATES_ENABLED": {
+        "type": "text",
+        "value": "false"
       }
     },
     "migrations": [

@@ -71,15 +71,23 @@ export async function listTaskOperationQueue(
   db: Db,
   sourceId: string,
   now: Date,
-  limit: number,
+  options: number | { limit: number; includeDeliveries: boolean },
 ): Promise<{ id: string; kind: TaskOperation['kind'] }[]> {
+  const limit = typeof options === 'number' ? options : options.limit;
+  const includeDeliveries = typeof options === 'number' || options.includeDeliveries;
   const result = await db
     .prepare(
-      `SELECT id,kind FROM task_checkin_operations WHERE source_id=?
+      `SELECT id,kind FROM task_checkin_operations WHERE source_id=? AND (?=1 OR kind<>'delivery')
     AND ((state IN ('queued','retryable') AND next_attempt_at<=?) OR (state='processing' AND lease_expires_at<=?))
     ORDER BY CASE WHEN kind='delivery' THEN 1 ELSE 0 END,created_at,id LIMIT ?`,
     )
-    .bind(sourceId, now.toISOString(), now.toISOString(), limitSize(limit))
+    .bind(
+      sourceId,
+      Number(includeDeliveries),
+      now.toISOString(),
+      now.toISOString(),
+      limitSize(limit),
+    )
     .all<{ id: string; kind: TaskOperation['kind'] }>();
   return result.results;
 }

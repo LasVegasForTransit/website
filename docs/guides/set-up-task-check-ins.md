@@ -56,6 +56,12 @@ up the intended database and review migration `0054_notion_task_checkins.sql` th
 
 ## Prepare the environment while sending stays disabled
 
+Manual task updates have a separate switch from automated reminders. Keep
+`LVBT_TASK_CHECKINS_ENABLED=false` and set `LVBT_TASK_UPDATES_ENABLED=true` on the website and jobs
+workers to allow status changes, notes, and edits of existing cards. The source and participant
+consent must still be active. Reminder scheduling, queued deliveries, digests, and escalations
+remain disabled. Leave both switches off to stop all updates.
+
 Configure the reviewed website and jobs release together. Both must use the same intended
 `PLATFORM_DB`, deployment environment, task source, application, and guild. Staff must use that
 environment's database too. Preview and production use separate databases, guilds, and task sources.
@@ -63,6 +69,7 @@ environment's database too. Preview and production use separate databases, guild
 | Setting                                 | Where                  | Required choice                                                                                     |
 | --------------------------------------- | ---------------------- | --------------------------------------------------------------------------------------------------- |
 | `LVBT_TASK_CHECKINS_ENABLED`            | Website and jobs       | `false` during preparation; enable only for the approved trial.                                     |
+| `LVBT_TASK_UPDATES_ENABLED`             | Website and jobs       | `true` to allow manual status changes and notes on existing cards while reminders stay disabled.    |
 | `LVBT_DEPLOYMENT_ENV`                   | Website and jobs       | `preview` or `production`, matching the release.                                                    |
 | `LVBT_NOTION_TASK_SOURCE_ID`            | Website and jobs       | The intended task data source UUID.                                                                 |
 | `LVBT_NOTION_TASK_PRODUCTION_SOURCE_ID` | Website and jobs       | The production source UUID used as the isolation reference; preview must select a different source. |

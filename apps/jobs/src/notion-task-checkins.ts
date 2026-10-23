@@ -15,6 +15,7 @@ import type { queryBudget } from '@lasvegasfortransit/platform-storage/query-bud
 import { listTaskOperationQueue } from '@lasvegasfortransit/platform-storage/notion-task-reminders';
 import {
   taskCheckinWorkerRuntime,
+  taskCheckinContext,
   type TaskCheckinWorkerEnv,
 } from '@lasvegasfortransit/platform-integrations/notion-task-runtime';
 import { NotionTaskClient } from '@lasvegasfortransit/platform-integrations/notion-task-client';
@@ -34,12 +35,15 @@ interface TaskContext {
 async function runTaskJob<T extends object>(
   env: Env & TaskCheckinWorkerEnv,
   run: (context: TaskContext) => Promise<T>,
-  honorBackoff = true,
+  options: { honorBackoff?: boolean; updates?: boolean } = {},
 ) {
-  const runtime = taskCheckinWorkerRuntime(env);
+  const runtime = taskCheckinWorkerRuntime(env, options.updates);
   if (!runtime) return idleDatabaseJob({ kind: 'idle' as const });
   return runMeteredJob(env.PLATFORM_DB, 'TaskCheckin', async (budget) => {
-    if (honorBackoff && (await taskProviderCoolingDown(budget.db, runtime.sourceId, new Date())))
+    if (
+      options.honorBackoff !== false &&
+      (await taskProviderCoolingDown(budget.db, runtime.sourceId, new Date()))
+    )
       return { kind: 'idle' as const };
     return run({ runtime, budget });
   });
@@ -64,15 +68,19 @@ export class TaskCheckinCommands extends WorkerEntrypoint<Env & TaskCheckinWorke
           botToken: c.runtime.botToken,
         });
       },
-      false,
+      { honorBackoff: false },
     );
   }
 }
 export class TaskCheckinScan extends WorkerEntrypoint<Env & TaskCheckinWorkerEnv> {
   async run() {
-    return runTaskJob(this.env, async (c) => {
-      return syncNotionTaskPage(c.budget.db, notionClient(c), c.runtime.sourceId);
-    });
+    return runTaskJob(
+      this.env,
+      async (c) => {
+        return syncNotionTaskPage(c.budget.db, notionClient(c), c.runtime.sourceId);
+      },
+      { updates: true },
+    );
   }
 }
 export class TaskCheckinQueue extends WorkerEntrypoint<Env & TaskCheckinWorkerEnv> {
@@ -89,32 +97,41 @@ export class TaskCheckinQueue extends WorkerEntrypoint<Env & TaskCheckinWorkerEn
           queries: c.budget.queries,
         };
       },
-      false,
+      { honorBackoff: false },
     );
   }
 }
 export class TaskCheckinOperation extends WorkerEntrypoint<Env & TaskCheckinWorkerEnv> {
   async run() {
-    return runTaskJob(this.env, async (c) => {
-      const db = c.budget.db,
-        clock = () => new Date();
-      const next = (await listTaskOperationQueue(db, c.runtime.sourceId, clock(), 1))[0];
-      if (!next) return { kind: 'idle' as const };
-      const notion = notionClient(c);
-      const discord = new DiscordTaskClient({
-        guildId: c.runtime.guildId,
-        botToken: c.runtime.botToken,
-        rateLimit: discordRateLimit(db, c.runtime.applicationId, clock),
-      });
-      if (next.kind === 'delivery')
-        await processTaskDelivery(db, { notion, discord }, next.id, clock);
-      else
-        await processNotionTaskAction(db, notion, next.id, {
-          membership: (user, guild) => discord.membership(user, guild),
-          clock,
+    return runTaskJob(
+      this.env,
+      async (c) => {
+        const db = c.budget.db,
+          clock = () => new Date();
+        const next = (
+          await listTaskOperationQueue(db, c.runtime.sourceId, clock(), {
+            limit: 1,
+            includeDeliveries: Boolean(taskCheckinContext(this.env)),
+          })
+        )[0];
+        if (!next) return { kind: 'idle' as const };
+        const notion = notionClient(c);
+        const discord = new DiscordTaskClient({
+          guildId: c.runtime.guildId,
+          botToken: c.runtime.botToken,
+          rateLimit: discordRateLimit(db, c.runtime.applicationId, clock),
         });
-      return { kind: 'progress' as const, queries: c.budget.queries };
-    });
+        if (next.kind === 'delivery')
+          await processTaskDelivery(db, { notion, discord }, next.id, clock);
+        else
+          await processNotionTaskAction(db, notion, next.id, {
+            membership: (user, guild) => discord.membership(user, guild),
+            clock,
+          });
+        return { kind: 'progress' as const, queries: c.budget.queries };
+      },
+      { updates: true },
+    );
   }
 }
 
@@ -142,37 +159,45 @@ export class TaskCheckinDigest extends WorkerEntrypoint<Env & TaskCheckinWorkerE
 
 export class TaskCheckinRefresh extends WorkerEntrypoint<Env & TaskCheckinWorkerEnv> {
   async run() {
-    return runTaskJob(this.env, async (c) => {
-      const db = c.budget.db,
-        clock = () => new Date();
-      const notion = notionClient(c);
-      const discord = new DiscordTaskClient({
-        guildId: c.runtime.guildId,
-        botToken: c.runtime.botToken,
-        rateLimit: discordRateLimit(db, c.runtime.applicationId, clock),
-      });
-      const result = await processTaskCardRefresh(
-        db,
-        { notion, discord },
-        c.runtime.sourceId,
-        clock,
-      );
-      return { ...result, queries: c.budget.queries };
-    });
+    return runTaskJob(
+      this.env,
+      async (c) => {
+        const db = c.budget.db,
+          clock = () => new Date();
+        const notion = notionClient(c);
+        const discord = new DiscordTaskClient({
+          guildId: c.runtime.guildId,
+          botToken: c.runtime.botToken,
+          rateLimit: discordRateLimit(db, c.runtime.applicationId, clock),
+        });
+        const result = await processTaskCardRefresh(
+          db,
+          { notion, discord },
+          c.runtime.sourceId,
+          clock,
+        );
+        return { ...result, queries: c.budget.queries };
+      },
+      { updates: true },
+    );
   }
 }
 
 export class TaskCheckinRecovery extends WorkerEntrypoint<Env & TaskCheckinWorkerEnv> {
   async run() {
-    return runTaskJob(this.env, async (c) => {
-      const result = await processTaskCommentRecovery(
-        c.budget.db,
-        notionClient(c),
-        c.runtime.sourceId,
-        () => new Date(),
-      );
-      return { ...result, queries: c.budget.queries };
-    });
+    return runTaskJob(
+      this.env,
+      async (c) => {
+        const result = await processTaskCommentRecovery(
+          c.budget.db,
+          notionClient(c),
+          c.runtime.sourceId,
+          () => new Date(),
+        );
+        return { ...result, queries: c.budget.queries };
+      },
+      { updates: true },
+    );
   }
 }
 
