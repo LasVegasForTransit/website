@@ -474,6 +474,12 @@ new successful **Build staff release** from that source, then start a fresh depl
 receipt after inspecting existing traffic. Retrying an older build retains its older deployment
 code. Recovery of an existing receipt always keeps that receipt's original build and artifact.
 
+An uploaded version may briefly return HTTP 404 with Cloudflare code `100146` before its metadata
+can be read. Version verification retries only that response for the same recorded version, with at
+most two minutes of delays. It never uploads a replacement or activates an unverified version.
+Permission errors, other provider errors and mismatched configuration still stop immediately. If the
+wait expires, retain the receipt and reconcile actual traffic before considering another upload.
+
 - `failed` means the available configuration or metadata does not meet a requirement.
 - `unverified` means the required evidence could not be read or interpreted. It does not establish
   that the configuration is wrong, and it still blocks release.

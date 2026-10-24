@@ -1,4 +1,7 @@
 import { ReleaseDiagnosticError } from './release-diagnostics';
+import { setTimeout as wait } from 'node:timers/promises';
+
+const versionDelays = [1000, 2000, 4000, 8000, 15000, 30000, 30000, 30000];
 export function object(value: unknown): Record<string, unknown> {
   return value && typeof value === 'object' && !Array.isArray(value)
     ? (value as Record<string, unknown>)
@@ -9,7 +12,14 @@ export function array(value: unknown): Record<string, unknown>[] {
   return value.map(object);
 }
 export class MetadataClient {
-  constructor(private options: { accountId: string; token: string; fetch?: typeof fetch }) {}
+  constructor(
+    private options: {
+      accountId: string;
+      token: string;
+      fetch?: typeof fetch;
+      wait?: (milliseconds: number) => Promise<void>;
+    },
+  ) {}
   private async request(path: string, sql?: string): Promise<Record<string, unknown>> {
     const resource = path.startsWith('/zones')
       ? path
@@ -49,8 +59,25 @@ export class MetadataClient {
       });
     return data;
   }
-  async get(path: string): Promise<unknown> {
-    return (await this.request(path)).result;
+  async get(path: string, readiness?: { uploadedVersion: boolean }): Promise<unknown> {
+    for (let attempt = 0; ; attempt++) {
+      try {
+        return (await this.request(path)).result;
+      } catch (error) {
+        const diagnostics = error instanceof ReleaseDiagnosticError ? error.diagnostics : null;
+        const delay = versionDelays.at(attempt);
+        if (
+          !readiness?.uploadedVersion ||
+          !/^\/workers\/scripts\/[^/]+\/versions\/[a-f0-9-]{36}$/.test(path) ||
+          diagnostics?.httpStatus !== 404 ||
+          diagnostics.cloudflareCodes?.length !== 1 ||
+          diagnostics.cloudflareCodes[0] !== 100146 ||
+          delay === undefined
+        )
+          throw error;
+        await (this.options.wait ?? wait)(delay);
+      }
+    }
   }
   async zones(): Promise<Record<string, unknown>[]> {
     const zones = await this.list(

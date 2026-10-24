@@ -129,7 +129,11 @@ export async function verifyVersion(
   receipt: DeploymentReceipt,
   config: Record<string, unknown>,
 ) {
-  const version = object(await client.get(`${workerPath(worker)}/versions/${worker.versionId}`));
+  const version = object(
+    await client.get(`${workerPath(worker)}/versions/${worker.versionId}`, {
+      uploadedVersion: true,
+    }),
+  );
   let bindings: Record<string, unknown>[];
   try {
     bindings = array(object(version.resources).bindings);
