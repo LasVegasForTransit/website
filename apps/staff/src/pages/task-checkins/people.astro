@@ -1,5 +1,6 @@
 ---
 import StaffLayout from '../../layouts/StaffLayout.astro';
+import TaskSectionNav from '../../components/TaskSectionNav.astro';
 import { t } from '@lasvegasfortransit/platform-core/messages';
 import { PermissionDenied } from '@lasvegasfortransit/platform-core/permissions';
 import { taskCheckinReview } from '@lasvegasfortransit/platform-storage/notion-task-admin';
@@ -57,8 +58,10 @@ if (people.nextCursor) next.searchParams.set('cursor', people.nextCursor);
     slot="breadcrumb"
     class="staff-back"
     href={`/task-checkins/?source=${encodeURIComponent(sourceId)}`}
-    >← {t('taskCheckins.staff.back')}</a
   >
+    ← {t('taskCheckins.staff.back')}</a
+  >
+  <TaskSectionNav sourceId={sourceId} />
   {
     feedback && (
       <p role="alert" class="staff-error">

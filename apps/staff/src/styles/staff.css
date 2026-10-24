@@ -2005,33 +2005,11 @@ html {
 
 /* The review page groups action items separately from routine setup tools. */
 .staff-task-overview {
-  max-width: 64rem;
   min-width: 0;
-}
-.staff-task-tools {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  max-width: 28rem;
-  gap: 0.5rem;
-  margin-block: 0 1.5rem;
-  padding-block-end: 0.5rem;
-  border-block-end: 1px solid color-mix(in srgb, var(--color-outline) 28%, transparent);
-}
-.staff-task-tools a {
-  padding-inline: 0.5rem;
-  justify-content: center;
-  white-space: nowrap;
-  border-radius: 0;
-  text-decoration: underline;
-}
-.staff-task-tools a:hover,
-.staff-task-tools a:focus-visible {
-  background: var(--color-surface-container);
 }
 .staff-task-row-links a {
   text-decoration: underline;
 }
-.staff-task-tools a,
 .staff-task-row-links a {
   display: inline-flex;
   align-items: center;
@@ -2099,11 +2077,9 @@ html {
   max-width: 42rem;
 }
 .staff-task-attention .staff-checkin-section {
-  margin-block-start: 1.5rem;
-  padding: clamp(1.25rem, 3vw, 1.75rem);
-  border: 1px solid color-mix(in srgb, var(--color-outline) 28%, transparent);
-  border-radius: 0;
-  background: var(--color-surface-container);
+  margin-block-start: 2rem;
+  padding-block-start: 1.5rem;
+  border-block-start: 1px solid var(--color-outline-variant);
 }
 .staff-task-attention .staff-checkin-section > h2,
 .staff-task-attention .staff-checkin-section > h3 {
@@ -2161,9 +2137,6 @@ html {
   max-width: 42rem;
 }
 @media (width <= 48rem) {
-  .staff-task-tools {
-    gap: 0.25rem;
-  }
   .staff-task-overview .staff-checkin-status,
   .staff-task-attention .staff-checkin-list > li,
   .staff-task-row-links {
@@ -2172,4 +2145,28 @@ html {
   .staff-task-overview .staff-checkin-status > .staff-secondary-button {
     width: 100%;
   }
+}
+
+.staff-task-settings > fieldset {
+  padding-block-start: 0.75rem;
+  border-block-start: 1px solid var(--color-outline-variant);
+}
+.staff-task-settings > fieldset > legend {
+  padding-block-end: 0.5rem;
+  padding-inline-end: 1rem;
+  font-size: 1.125rem;
+}
+.staff-task-settings > .staff-checkin-connection {
+  border-block: 1px solid var(--color-outline-variant);
+}
+.staff-task-settings > button[type='submit'] {
+  justify-self: start;
+  min-width: 10rem;
+}
+
+.staff-task-settings > fieldset:first-of-type {
+  gap: 0.5rem;
+}
+.staff-task-settings > fieldset:first-of-type > .staff-help {
+  margin-top: 0;
 }

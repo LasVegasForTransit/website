@@ -1,0 +1,114 @@
+---
+interface Props {
+  sourceId: string;
+}
+const { sourceId } = Astro.props;
+const path = Astro.url.pathname;
+const current = path.startsWith('/task-checkins/settings')
+  ? 'settings'
+  : path.startsWith('/task-checkins/participants')
+    ? 'people'
+    : path.startsWith('/task-checkins/mappings') || path.startsWith('/task-checkins/people')
+      ? 'matches'
+      : 'troubleshooting';
+const links = [
+  { key: 'settings', label: 'Settings', accessible: 'Settings', path: '/task-checkins/settings/' },
+  {
+    key: 'people',
+    label: 'People',
+    accessible: 'People and reminder choices',
+    path: '/task-checkins/participants/',
+  },
+  {
+    key: 'matches',
+    label: 'Matches',
+    accessible: 'Account matches',
+    path: '/task-checkins/mappings/',
+  },
+  {
+    key: 'troubleshooting',
+    label: 'Troubleshooting',
+    accessible: 'Troubleshooting',
+    path: '/task-checkins/',
+  },
+];
+function destination(item: (typeof links)[number]) {
+  const params = new URLSearchParams();
+  if (sourceId) params.set('source', sourceId);
+  if (item.key === 'troubleshooting') params.set('view', 'review');
+  return `${item.path}${params.size ? `?${params}` : ''}`;
+}
+---
+
+<nav class="staff-task-section-nav" aria-label="Task check-ins">
+  {
+    links.map((link) =>
+      !sourceId && (link.key === 'people' || link.key === 'matches') ? (
+        <span aria-disabled="true" aria-label={link.accessible}>
+          {link.label}
+        </span>
+      ) : (
+        <a
+          href={destination(link)}
+          aria-label={link.accessible}
+          aria-current={current === link.key ? 'page' : undefined}
+        >
+          {link.label}
+        </a>
+      ),
+    )
+  }
+</nav>
+
+<style>
+  .staff-task-section-nav {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    width: 100%;
+    min-width: 0;
+    margin-block: 0 2rem;
+    border-block-end: 1px solid var(--color-outline-variant);
+  }
+  .staff-task-section-nav a,
+  .staff-task-section-nav span {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 3rem;
+    min-width: 0;
+    padding: 0.75rem 0.5rem;
+    border-block-end: 3px solid transparent;
+    color: var(--color-on-surface-variant);
+    font-weight: 600;
+    text-decoration: none;
+    white-space: nowrap;
+  }
+  .staff-task-section-nav a[aria-current='page'] {
+    border-block-end-color: var(--color-primary);
+    color: var(--color-primary-ink);
+    font-weight: 700;
+  }
+  .staff-task-section-nav a:hover {
+    background: var(--color-surface-container);
+    color: var(--color-on-surface);
+  }
+  .staff-task-section-nav a:focus-visible {
+    outline: 3px solid var(--color-primary-ink);
+    outline-offset: -3px;
+    background: var(--color-surface-container);
+  }
+  .staff-task-section-nav span[aria-disabled='true'] {
+    color: var(--color-on-surface-variant);
+    opacity: 0.6;
+  }
+  @media (width <= 30rem) {
+    .staff-task-section-nav {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+    .staff-task-section-nav a,
+    .staff-task-section-nav span {
+      padding-inline: 0.25rem;
+      font-size: 0.8125rem;
+    }
+  }
+</style>

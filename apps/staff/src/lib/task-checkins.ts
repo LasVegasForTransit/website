@@ -108,7 +108,12 @@ async function applyForm(
   } else if (!(await applyTaskRecoveryForm(staff, form, sourceId))) return null;
   return new Response(null, {
     status: 303,
-    headers: { Location: `/task-checkins/?source=${encodeURIComponent(sourceId)}&saved=1` },
+    headers: {
+      Location:
+        action === 'configure'
+          ? `/task-checkins/settings/?source=${encodeURIComponent(sourceId)}`
+          : `/task-checkins/?view=review&source=${encodeURIComponent(sourceId)}&saved=1`,
+    },
   });
 }
 

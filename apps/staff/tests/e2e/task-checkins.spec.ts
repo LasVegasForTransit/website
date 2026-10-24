@@ -1,7 +1,6 @@
 import { searchStaffPeople } from '@lasvegasfortransit/platform-storage/staff-people';
 import { loadActor } from '@lasvegasfortransit/platform-storage/staff-roles';
 import assert from 'node:assert/strict';
-import { mkdir } from 'node:fs/promises';
 import { join } from 'node:path';
 import { chromium } from '@playwright/test';
 import { PersonService } from '@lasvegasfortransit/platform-storage/person-service';
@@ -13,6 +12,8 @@ import { taskPolicy } from '@lasvegasfortransit/platform-integrations/test-task-
 import {
   exerciseDeliveryRecovery,
   exerciseReadiness,
+  exerciseSourceSelection,
+  captureTaskSettings,
 } from '../support/task-checkin-recovery-browser';
 import { ORIGIN, startRuntime } from '../support/runtime';
 const fixture = await startRuntime(),
@@ -102,9 +103,13 @@ try {
   const page = await context.newPage();
   const response = await page.goto(`${ORIGIN}/task-checkins/`);
   assert.equal(response?.status(), 200, await page.locator('body').innerText());
+  await page.getByRole('button', { name: 'Save settings', exact: true }).waitFor();
+  assert.equal(new URL(page.url()).pathname, '/task-checkins/settings/');
+  await page.getByRole('link', { name: 'Troubleshooting', exact: true }).click();
   await page
     .getByRole('heading', { name: 'Match people to their LVBT accounts', exact: true })
     .waitFor();
+  await exerciseSourceSelection({ fixture, page, sourceId, now });
   await exerciseReadiness({ fixture, page, sourceId, now });
   await page.getByRole('link', { name: 'Choose person', exact: true }).click();
   await page
@@ -143,8 +148,8 @@ try {
   await page.getByRole('link', { name: 'Settings', exact: true }).click();
   await page.getByLabel('Maximum notifications per person in 24 hours').fill('3');
   await page.getByLabel('Minimum minutes between notifications').fill('90');
-  await page.getByLabel('Escalate after this many overdue hours').fill('48');
-  await page.getByLabel('Allow delivery after setup', { exact: true }).check();
+  await page.getByLabel('Notify support when a task is this many hours overdue').fill('48');
+  await page.getByLabel('Allow automatic reminders for this task list', { exact: true }).check();
   await page.getByRole('button', { name: 'Save settings', exact: true }).click();
   assert.equal(
     (
@@ -162,8 +167,11 @@ try {
     '3',
   );
   assert.equal(await page.getByLabel('Minimum minutes between notifications').inputValue(), '90');
-  assert.equal(await page.getByLabel('Escalate after this many overdue hours').inputValue(), '48');
-  await page.getByLabel('Allow delivery after setup', { exact: true }).uncheck();
+  assert.equal(
+    await page.getByLabel('Notify support when a task is this many hours overdue').inputValue(),
+    '48',
+  );
+  await page.getByLabel('Allow automatic reminders for this task list', { exact: true }).uncheck();
   await page.getByRole('button', { name: 'Save settings', exact: true }).click();
   assert.equal(
     (
@@ -174,28 +182,7 @@ try {
     )?.enabled,
     0,
   );
-  await mkdir(join(fixture.root, 'test-results/staff'), { recursive: true });
-  for (const [width, scheme] of [
-    [1280, 'light'],
-    [1024, 'light'],
-    [768, 'light'],
-    [640, 'light'],
-    [390, 'light'],
-    [320, 'light'],
-    [320, 'dark'],
-  ] as const) {
-    await page.setViewportSize({ width, height: 900 });
-    await page.emulateMedia({ colorScheme: scheme });
-    assert.equal(
-      await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth),
-      true,
-    );
-    await page.screenshot({
-      path: join(fixture.root, `test-results/staff/task-checkins-${width}-${scheme}.png`),
-      fullPage: true,
-      animations: 'disabled',
-    });
-  }
+  await captureTaskSettings(page, fixture.root);
   await page.getByRole('link', { name: 'Settings', exact: true }).click();
   await page.waitForLoadState('networkidle');
   await page.evaluate(() => document.fonts.ready.then(() => undefined));
@@ -251,7 +238,7 @@ try {
       recoveryStamp,
     )
     .run();
-  await page.goto(`${ORIGIN}/task-checkins/?source=${sourceId}`);
+  await page.goto(`${ORIGIN}/task-checkins/?view=review&source=${sourceId}`);
   await page.getByRole('button', { name: 'Check Notion again', exact: true }).click();
   assert.equal(
     (await fixture.db.prepare('SELECT state FROM task_checkin_recovery').first<{ state: string }>())
@@ -284,7 +271,7 @@ try {
     )
     .bind(guest.id, now.toISOString(), now.toISOString(), now.toISOString(), sourceId)
     .run();
-  await page.goto(`${ORIGIN}/task-checkins/?source=${sourceId}`);
+  await page.goto(`${ORIGIN}/task-checkins/?view=review&source=${sourceId}`);
   const supportReview = page.getByRole('region', {
     name: 'Help requests that need attention',
   });
@@ -328,7 +315,7 @@ try {
     )
     .bind(sourceId, new Date(now.getTime() + 300000).toISOString(), now.toISOString())
     .run();
-  await page.goto(`${ORIGIN}/task-checkins/?source=${sourceId}`);
+  await page.goto(`${ORIGIN}/task-checkins/?view=review&source=${sourceId}`);
   assert.ok((await supportReview.innerText()).includes('request is saved'));
   assert.ok((await page.locator('body').innerText()).includes('The next check can run after'));
   assert.equal(

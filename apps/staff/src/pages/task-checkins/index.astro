@@ -5,6 +5,7 @@ import TaskEscalationReview from '../../components/TaskEscalationReview.astro';
 import { taskEscalationReview } from '@lasvegasfortransit/platform-storage/notion-task-escalation-admin';
 import TaskRecoveryActions from '../../components/TaskRecoveryActions.astro';
 import StaffLayout from '../../layouts/StaffLayout.astro';
+import TaskSectionNav from '../../components/TaskSectionNav.astro';
 import { t, formatDate, formatTime } from '@lasvegasfortransit/platform-core/messages';
 import { PermissionDenied } from '@lasvegasfortransit/platform-core/permissions';
 import {
@@ -28,6 +29,16 @@ try {
   throw error;
 }
 const sourceId = Astro.url.searchParams.get('source') ?? sources.items[0]?.id ?? '';
+const reviewRequested =
+  Astro.url.searchParams.get('view') === 'review' ||
+  ['cursor', 'heldCursor', 'deliveryCursor', 'escalationCursor'].some((key) =>
+    Astro.url.searchParams.has(key),
+  );
+if (['GET', 'HEAD'].includes(Astro.request.method) && !reviewRequested)
+  return Astro.redirect(
+    `/task-checkins/settings/${sourceId ? `?source=${encodeURIComponent(sourceId)}` : ''}`,
+    303,
+  );
 let feedback;
 if (Astro.request.method === 'POST') {
   const result = await submitTaskCheckinForm(Astro.request, staff, sourceId);
@@ -86,12 +97,6 @@ const deliveryTokens = {
   aux_retry: await issueFormToken(staff.db, staff.actor, `task-checkins:${sourceId}:aux_retry`),
   aux_close: await issueFormToken(staff.db, staff.actor, `task-checkins:${sourceId}:aux_close`),
 };
-const hasAttention =
-  review.unmapped.length > 0 ||
-  review.heldTasks.items.length > 0 ||
-  review.deliveryIssues.items.length > 0 ||
-  escalations.items.length > 0 ||
-  review.operations.items.length > 0;
 const tokens = {
   retry: await issueFormToken(staff.db, staff.actor, `task-checkins:${sourceId}:retry`),
   reconcile: await issueFormToken(staff.db, staff.actor, `task-checkins:${sourceId}:reconcile`),
@@ -100,10 +105,11 @@ const tokens = {
 ---
 
 <StaffLayout
-  title={t('taskCheckins.staff.title')}
-  description="Help volunteers keep their Notion tasks up to date through Discord."
+  title="Task check-in troubleshooting"
+  description="Review account matches, task details and messages that could not be completed."
 >
   <a slot="breadcrumb" href="/people/" class="staff-back">← Members</a>
+  <TaskSectionNav sourceId={source?.id ?? ''} />
   <div class="staff-task-overview">
     {
       feedback && (
@@ -115,6 +121,7 @@ const tokens = {
     {
       sources.items.length > 1 && (
         <form method="get" class="staff-form">
+          <input type="hidden" name="view" value="review" />
           <>
             <label for="source">Notion source</label>
             <select id="source" name="source">
@@ -144,21 +151,6 @@ const tokens = {
         </section>
       ) : (
         <>
-          <nav class="staff-task-tools" aria-label="Task check-in tools">
-            <a href={`/task-checkins/settings/?source=${encodeURIComponent(sourceId)}`}>Settings</a>
-            <a
-              href={`/task-checkins/participants/?source=${encodeURIComponent(sourceId)}`}
-              aria-label="People and reminder choices"
-            >
-              People
-            </a>
-            <a
-              href={`/task-checkins/mappings/?source=${encodeURIComponent(sourceId)}`}
-              aria-label="Account matches"
-            >
-              Matches
-            </a>
-          </nav>
           <section class="staff-checkin-status" aria-labelledby="task-status-title">
             <div class="staff-task-status-copy">
               <p class="staff-task-eyebrow">Automatic reminders</p>
@@ -231,24 +223,13 @@ const tokens = {
             </a>
           </section>
           <div class="staff-task-attention">
-            <div class="staff-task-attention-heading">
-              <h2>Needs attention</h2>
-            </div>
-            {!hasAttention && (
-              <div class="staff-task-all-clear">
-                <h3>Nothing to review right now</h3>
-                <p>
-                  No account matches, task details or message problems need your attention on this
-                  page.
-                </p>
-              </div>
-            )}
-            {review.unmapped.length > 0 && (
+            {
               <section class="staff-checkin-section" aria-labelledby="identity-title">
                 <h3 id="identity-title">Match people to their LVBT accounts</h3>
                 <p class="staff-help">
                   Choose the LVBT account for each person assigned a task in Notion.
                 </p>
+                {review.unmapped.length === 0 && <p>All task assignees have an account match.</p>}
                 {
                   <ul class="staff-checkin-list">
                     {review.unmapped.map((person) => (
@@ -277,7 +258,7 @@ const tokens = {
                   <p class="staff-help">{t('taskCheckins.staff.morePeople')}</p>
                 )}
               </section>
-            )}
+            }
             <TaskDeliveryRecovery
               sourceId={sourceId}
               review={review.deliveryIssues}
@@ -289,9 +270,10 @@ const tokens = {
               review={escalations}
               tokens={escalationTokens}
             />
-            {review.operations.items.length > 0 && (
+            {
               <section class="staff-checkin-section" aria-labelledby="recovery-title">
                 <h3 id="recovery-title">{t('taskCheckins.staff.recovery')}</h3>
+                {review.operations.items.length === 0 && <p>No task updates need another check.</p>}
                 {
                   <ul class="staff-checkin-list">
                     {review.operations.items.map((operation) => (
@@ -343,13 +325,13 @@ const tokens = {
                 {review.operations.nextCursor && (
                   <a
                     class="staff-next"
-                    href={`/task-checkins/?source=${encodeURIComponent(sourceId)}&cursor=${encodeURIComponent(review.operations.nextCursor)}`}
+                    href={`/task-checkins/?view=review&source=${encodeURIComponent(sourceId)}&cursor=${encodeURIComponent(review.operations.nextCursor)}`}
                   >
                     {t('taskCheckins.staff.next')}
                   </a>
                 )}
               </section>
-            )}
+            }
           </div>
         </>
       )
