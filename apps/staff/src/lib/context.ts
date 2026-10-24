@@ -53,6 +53,18 @@ function staffRoute(actor: Actor, request: Request): 'allowed' | 'paper_home' | 
   if (path === '' && request.method === 'GET') return 'paper_home';
   return ['/paper', '/paper/sheet', '/sign-out'].includes(path) ? 'allowed' : 'denied';
 }
+function signInRequired(request: Request): Response {
+  const destination = request.headers.get('Sec-Fetch-Dest');
+  // A missing icon, font or background fetch must not follow the sign-in route:
+  // Access would start a new pending setup and replace the active form's cookie.
+  if (destination && !['document', 'iframe', 'frame'].includes(destination))
+    return new Response(null, { status: 401 });
+  const url = new URL(request.url);
+  return new Response(null, {
+    status: 303,
+    headers: { Location: `/sign-in/?next=${encodeURIComponent(url.pathname + url.search)}` },
+  });
+}
 export async function resolveStaffContext(
   request: Request,
   env: StaffEnv,
@@ -61,13 +73,7 @@ export async function resolveStaffContext(
   const session = await readStaffSession(env, request, access);
   if (!session && request.method !== 'GET' && request.method !== 'HEAD')
     return messageResponse('Your sign-in expired. Sign in again before submitting this form.', 403);
-  if (!session)
-    return new Response(null, {
-      status: 303,
-      headers: {
-        Location: `/sign-in/?next=${encodeURIComponent(new URL(request.url).pathname + new URL(request.url).search)}`,
-      },
-    });
+  if (!session) return signInRequired(request);
   const actor = await loadActor(env.PLATFORM_DB, session.personId);
   const route = actor ? staffRoute(actor, request) : 'denied';
   if (route === 'paper_home')

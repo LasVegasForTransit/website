@@ -10,6 +10,7 @@ import {
   navigationRuntime,
   navigationJourney,
   accessHeaders,
+  faviconPreservesSetup,
   type Flow,
 } from './support/auth-navigation';
 
@@ -264,6 +265,7 @@ async function journey(
     await page.getByLabel('Member account email').fill('admin@example.invalid');
     await page.getByRole('button', { name: 'Send me a code' }).click();
     await page.getByRole('heading', { name: 'Check your email' }).waitFor();
+    await faviconPreservesSetup(page);
     await capture(page, { mode, theme, width }, '03-membership-code');
     await page.getByLabel('6-digit code').fill('000000' === code ? '111111' : '000000');
     await page.getByRole('button', { name: 'Verify and connect accounts' }).click();
