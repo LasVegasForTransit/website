@@ -6,7 +6,11 @@ const paths = builtSitemapPaths(import.meta.url);
 const SCHEMES = ['light', 'dark'] as const;
 
 async function plainSurfaceVariantDescendantPairs(surface: Locator) {
-  return surface.evaluate((element) => {
+  return surface.evaluate(async (element) => {
+    // Flush the interaction styles, then measure the finished state rather than a timer guess.
+    await Promise.all(
+      element.getAnimations({ subtree: true }).map((animation) => animation.finished),
+    );
     const background = getComputedStyle(element).backgroundColor;
     return [...element.querySelectorAll('.text-on-surface-variant')]
       .filter((candidate) => {
@@ -56,7 +60,6 @@ for (const scheme of SCHEMES) {
         await expect(surface).toBeVisible();
 
         await surface.hover();
-        await page.waitForTimeout(200);
         for (const pair of await plainSurfaceVariantDescendantPairs(surface)) {
           expect(
             contrastRatio(pair.color, pair.background),
@@ -65,7 +68,6 @@ for (const scheme of SCHEMES) {
         }
 
         await surface.focus();
-        await page.waitForTimeout(200);
         for (const pair of await plainSurfaceVariantDescendantPairs(surface)) {
           expect(
             contrastRatio(pair.color, pair.background),
@@ -75,4 +77,23 @@ for (const scheme of SCHEMES) {
       }
     });
   }
+}
+
+for (const scheme of SCHEMES) {
+  test(`inverted surface contrast waits for a slow transition [${scheme}]`, async ({ page }) => {
+    await page.emulateMedia({ colorScheme: scheme });
+    await page.goto('/events/', { waitUntil: 'networkidle' });
+    await page.addStyleTag({ content: 'a { transition-duration: 1s !important; }' });
+    const surface = page
+      .locator('.hover\\:bg-on-surface')
+      .filter({ has: page.locator('.text-on-surface-variant') })
+      .first();
+    await surface.hover();
+    for (const pair of await plainSurfaceVariantDescendantPairs(surface)) {
+      expect(
+        contrastRatio(pair.color, pair.background),
+        JSON.stringify(pair),
+      ).toBeGreaterThanOrEqual(4.5);
+    }
+  });
 }

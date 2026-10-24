@@ -772,8 +772,10 @@ test.describe('body content links', () => {
     expect(audit.bodyClasses.every((className) => className.includes('text-body-md'))).toBe(true);
   });
 
-  test('keeps top-level section headings on the larger MD3 headline style', async ({ page }) => {
-    for (const path of ['/about', '/programs', '/go', '/join', '/brand', '/contact', '/events']) {
+  for (const path of ['/about', '/programs', '/go', '/join', '/brand', '/contact', '/events']) {
+    test(`keeps top-level section headings on the larger MD3 headline style: ${path}`, async ({
+      page,
+    }) => {
       await page.goto(path);
       await page.waitForLoadState('networkidle');
 
@@ -791,8 +793,8 @@ test.describe('body content links', () => {
         classes.every(({ className }) => className.includes('text-headline-lg')),
         JSON.stringify({ path, classes }),
       ).toBe(true);
-    }
-  });
+    });
+  }
 
   test('does not render overline all-caps labels in site chrome and body content', async ({
     page,
