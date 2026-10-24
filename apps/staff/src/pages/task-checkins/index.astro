@@ -58,13 +58,10 @@ const escalationTokens = {
 };
 const source = review.source,
   policy = source ? readTaskCheckinPolicy(source.policy_json) : null;
-const syncNotice = source?.scan_reason
+const scanNeedsAccess = source?.scan_reason
   ? ['http_401', 'http_403', 'http_404', 'missing_credential'].includes(source.scan_reason)
-    ? t('taskCheckins.staff.scanAccess')
-    : t('taskCheckins.staff.scanFailed')
-  : source && !source.scan_last_completed_at
-    ? t('taskCheckins.staff.scanPending')
-    : null;
+  : false;
+const scanPending = source && !source.scan_last_completed_at && !source.scan_reason;
 const providerWait =
   source?.provider_not_before && Date.parse(source.provider_not_before) > Date.now()
     ? new Intl.DateTimeFormat('en-US', {
@@ -89,6 +86,12 @@ const deliveryTokens = {
   aux_retry: await issueFormToken(staff.db, staff.actor, `task-checkins:${sourceId}:aux_retry`),
   aux_close: await issueFormToken(staff.db, staff.actor, `task-checkins:${sourceId}:aux_close`),
 };
+const hasAttention =
+  review.unmapped.length > 0 ||
+  review.heldTasks.items.length > 0 ||
+  review.deliveryIssues.items.length > 0 ||
+  escalations.items.length > 0 ||
+  review.operations.items.length > 0;
 const tokens = {
   retry: await issueFormToken(staff.db, staff.actor, `task-checkins:${sourceId}:retry`),
   reconcile: await issueFormToken(staff.db, staff.actor, `task-checkins:${sourceId}:reconcile`),
@@ -96,219 +99,260 @@ const tokens = {
 };
 ---
 
-<StaffLayout title={t('taskCheckins.staff.title')} description={t('taskCheckins.staff.intro')}>
+<StaffLayout
+  title={t('taskCheckins.staff.title')}
+  description="Help volunteers keep their Notion tasks up to date through Discord."
+>
   <a slot="breadcrumb" href="/people/" class="staff-back">← Members</a>
-  {
-    feedback && (
-      <p role="alert" class="staff-error">
-        {feedback.message}
-      </p>
-    )
-  }
-  {
-    Astro.url.searchParams.get('saved') === '1' && (
-      <p role="status" class="staff-notice">
-        {t('taskCheckins.staff.saved')}
-      </p>
-    )
-  }
-  {
-    sources.items.length > 1 && (
-      <form method="get" class="staff-form">
-        <>
-          <label for="source">Notion source</label>
-          <select id="source" name="source">
-            {sources.items.map((item) => (
-              <option value={item.id} selected={item.id === sourceId}>
-                {item.id}
-              </option>
-            ))}
-          </select>
-          <button type="submit" class="staff-secondary-button">
-            View source
-          </button>
-        </>
-      </form>
-    )
-  }
-  {
-    !source ? (
-      <section class="staff-empty">
-        <>
-          <h2>{t('taskCheckins.staff.configure')}</h2>
-          <p>{t('taskCheckins.staff.noSource')}</p>
-          <a href="/task-checkins/settings/" class="staff-secondary-button">
-            {t('taskCheckins.staff.configure')}
-          </a>
-        </>
-      </section>
-    ) : (
-      <>
-        <section class="staff-checkin-status">
+  <div class="staff-task-overview">
+    {
+      feedback && (
+        <p role="alert" class="staff-error">
+          {feedback.message}
+        </p>
+      )
+    }
+    {
+      sources.items.length > 1 && (
+        <form method="get" class="staff-form">
           <>
-            <div>
-              <>
-                <h2>
-                  {source.enabled && policy
-                    ? t('taskCheckins.staff.allowed')
-                    : t('taskCheckins.staff.paused')}
-                </h2>
-                <p>{t('taskCheckins.staff.consent')}</p>
-              </>
+            <label for="source">Notion source</label>
+            <select id="source" name="source">
+              {sources.items.map((item) => (
+                <option value={item.id} selected={item.id === sourceId}>
+                  {item.id}
+                </option>
+              ))}
+            </select>
+            <button type="submit" class="staff-secondary-button">
+              View source
+            </button>
+          </>
+        </form>
+      )
+    }
+    {
+      !source ? (
+        <section class="staff-empty">
+          <>
+            <h2>{t('taskCheckins.staff.configure')}</h2>
+            <p>{t('taskCheckins.staff.noSource')}</p>
+            <a href="/task-checkins/settings/" class="staff-secondary-button">
+              {t('taskCheckins.staff.configure')}
+            </a>
+          </>
+        </section>
+      ) : (
+        <>
+          <nav class="staff-task-tools" aria-label="Task check-in tools">
+            <a href={`/task-checkins/settings/?source=${encodeURIComponent(sourceId)}`}>Settings</a>
+            <a
+              href={`/task-checkins/participants/?source=${encodeURIComponent(sourceId)}`}
+              aria-label="People and reminder choices"
+            >
+              People
+            </a>
+            <a
+              href={`/task-checkins/mappings/?source=${encodeURIComponent(sourceId)}`}
+              aria-label="Account matches"
+            >
+              Matches
+            </a>
+          </nav>
+          <section class="staff-checkin-status" aria-labelledby="task-status-title">
+            <div class="staff-task-status-copy">
+              <p class="staff-task-eyebrow">Automatic reminders</p>
+              <h2 id="task-status-title">
+                {source.enabled && policy ? 'Reminder settings ready' : 'Reminders paused'}
+              </h2>
+              <p>
+                {source.enabled && policy
+                  ? 'People can choose reminders with /checkins in Discord.'
+                  : 'No automatic reminders will be sent for this task list.'}
+              </p>
+              {(source.scan_reason || providerWait || scanPending || gaps.length > 0) && (
+                <div class="staff-task-connection-state">
+                  {source.scan_reason ? (
+                    <>
+                      <h3>
+                        {scanNeedsAccess
+                          ? 'Notion connection needs attention'
+                          : 'Tasks couldn’t be checked'}
+                      </h3>
+                      <p>
+                        {scanNeedsAccess
+                          ? 'Check that LVBT still has access to this task list in Notion. Review settings to check the connection.'
+                          : 'Review the task list settings and Notion connection before the next check.'}
+                      </p>
+                    </>
+                  ) : providerWait ? (
+                    <>
+                      <h3>Notion is temporarily unavailable</h3>
+                      <p>The next check can run after {providerWait}.</p>
+                    </>
+                  ) : scanPending ? (
+                    <>
+                      <h3>No tasks checked yet</h3>
+                      <p>
+                        Review the connection in settings if tasks don’t appear after the first
+                        check.
+                      </p>
+                    </>
+                  ) : null}
+                  {source.scan_reason && providerWait && (
+                    <p>The next Notion check can run after {providerWait}.</p>
+                  )}
+                  {gaps.length > 0 && (
+                    <>
+                      <h3>Finish reminder setup</h3>
+                      <p>
+                        Required settings are missing. Review settings before turning on automatic
+                        reminders.
+                      </p>
+                    </>
+                  )}
+                </div>
+              )}
+              {source.scan_last_completed_at && (
+                <p class="staff-help staff-task-sync">
+                  Last checked{' '}
+                  <time datetime={source.scan_last_completed_at}>
+                    {formatDate(new Date(source.scan_last_completed_at))}{' '}
+                    {formatTime(new Date(source.scan_last_completed_at))}
+                  </time>
+                </p>
+              )}
             </div>
             <a
               class="staff-secondary-button"
               href={`/task-checkins/settings/?source=${encodeURIComponent(sourceId)}`}
             >
-              {t('taskCheckins.staff.settings')}
+              Review settings
             </a>
-          </>
-        </section>
-        {syncNotice && (
-          <p role="status" class="staff-notice">
-            {syncNotice}
-          </p>
-        )}
-        {source.scan_last_completed_at && (
-          <p class="staff-help">
-            {t('taskCheckins.staff.lastSync')}{' '}
-            <time datetime={source.scan_last_completed_at}>
-              {formatDate(new Date(source.scan_last_completed_at))}{' '}
-              {formatTime(new Date(source.scan_last_completed_at))}
-            </time>
-          </p>
-        )}
-        {providerWait && (
-          <p role="status" class="staff-notice">
-            Notion is waiting until {providerWait} before another check. Saved updates remain
-            queued.
-          </p>
-        )}
-        {gaps.length > 0 && <p class="staff-notice">{t('taskCheckins.staff.incomplete')}</p>}
-        <section class="staff-checkin-section" aria-labelledby="identity-title">
-          <>
-            <h2 id="identity-title">{t('taskCheckins.staff.identities')}</h2>
-            <p class="staff-help">{t('taskCheckins.staff.identitiesIntro')}</p>
-          </>
-          <nav class="staff-task-people-links" aria-label="Task check-in people">
-            <a
-              href={`/task-checkins/mappings/?source=${encodeURIComponent(sourceId)}`}
-              class="staff-secondary-button"
-            >
-              {t('taskCheckins.staff.existingMappings')}
-            </a>
-            <a
-              href={`/task-checkins/participants/?source=${encodeURIComponent(sourceId)}`}
-              class="staff-secondary-button"
-            >
-              {t('taskCheckins.staff.participants')}
-            </a>
-          </nav>
-          {review.unmapped.length === 0 ? (
-            <p>{t('taskCheckins.staff.noIdentities')}</p>
-          ) : (
-            <ul class="staff-checkin-list">
-              {review.unmapped.map((person) => (
-                <li>
-                  <div>
-                    <p>{person.notion_name ?? 'Notion assignee'}</p>
-                    <a
-                      href={`https://www.notion.so/${person.task_id.replaceAll('-', '')}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                    >
-                      View assignment in Notion
-                    </a>
-                  </div>
+          </section>
+          <div class="staff-task-attention">
+            <div class="staff-task-attention-heading">
+              <h2>Needs attention</h2>
+            </div>
+            {!hasAttention && (
+              <div class="staff-task-all-clear">
+                <h3>Nothing to review right now</h3>
+                <p>
+                  No account matches, task details or message problems need your attention on this
+                  page.
+                </p>
+              </div>
+            )}
+            {review.unmapped.length > 0 && (
+              <section class="staff-checkin-section" aria-labelledby="identity-title">
+                <h3 id="identity-title">Match people to their LVBT accounts</h3>
+                <p class="staff-help">
+                  Choose the LVBT account for each person assigned a task in Notion.
+                </p>
+                {
+                  <ul class="staff-checkin-list">
+                    {review.unmapped.map((person) => (
+                      <li>
+                        <div>
+                          <p>{person.notion_name ?? 'Notion assignee'}</p>
+                          <a
+                            href={`https://www.notion.so/${person.task_id.replaceAll('-', '')}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                          >
+                            View assignment in Notion
+                          </a>
+                        </div>
+                        <a
+                          class="staff-secondary-button"
+                          href={`/task-checkins/people/?source=${encodeURIComponent(sourceId)}&notion=${encodeURIComponent(person.notion_user_id)}`}
+                        >
+                          {t('taskCheckins.staff.choosePerson')}
+                        </a>
+                      </li>
+                    ))}
+                  </ul>
+                }
+                {review.moreUnmapped && (
+                  <p class="staff-help">{t('taskCheckins.staff.morePeople')}</p>
+                )}
+              </section>
+            )}
+            <TaskDeliveryRecovery
+              sourceId={sourceId}
+              review={review.deliveryIssues}
+              tokens={deliveryTokens}
+            />
+            <TaskHeldReview sourceId={sourceId} review={review.heldTasks} />
+            <TaskEscalationReview
+              sourceId={sourceId}
+              review={escalations}
+              tokens={escalationTokens}
+            />
+            {review.operations.items.length > 0 && (
+              <section class="staff-checkin-section" aria-labelledby="recovery-title">
+                <h3 id="recovery-title">{t('taskCheckins.staff.recovery')}</h3>
+                {
+                  <ul class="staff-checkin-list">
+                    {review.operations.items.map((operation) => (
+                      <li>
+                        <div>
+                          <h4>
+                            <a
+                              href={`https://www.notion.so/${operation.task_id.replaceAll('-', '')}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                            >
+                              {operation.task_title ?? 'Notion task'}
+                            </a>
+                          </h4>
+                          <p>
+                            {operation.person_name ?? 'LVBT volunteer'} ·{' '}
+                            {actionLabels[operation.kind] ?? 'Task update'} ·{' '}
+                            {formatDate(new Date(operation.updated_at))}
+                          </p>
+                          <p class="staff-help">
+                            {operation.reason === 'retention_expired'
+                              ? t('taskCheckins.staff.responseExpired')
+                              : operation.state === 'held'
+                                ? t('taskCheckins.staff.held')
+                                : operation.safe_retry === 1
+                                  ? 'This update wasn’t saved. Trying again checks the current task and account first.'
+                                  : t('taskCheckins.staff.notRetryable')}
+                          </p>
+                        </div>
+                        <div>
+                          {['queued', 'processing'].includes(operation.recovery_state ?? '') && (
+                            <p class="staff-help">{t('taskCheckins.staff.checking')}</p>
+                          )}
+                          {operation.recovery_state === 'failed' && (
+                            <p class="staff-help">{t('taskCheckins.staff.checkUnavailable')}</p>
+                          )}
+                          {operation.recovery_reason === 'not_confirmed' && (
+                            <p class="staff-help">{t('taskCheckins.staff.notConfirmed')}</p>
+                          )}
+                          {operation.state === 'held' && (
+                            <p class="staff-help">{t('taskCheckins.staff.closeHelp')}</p>
+                          )}
+                          <TaskRecoveryActions operation={operation} tokens={tokens} />
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+                }
+                {review.operations.nextCursor && (
                   <a
-                    class="staff-secondary-button"
-                    href={`/task-checkins/people/?source=${encodeURIComponent(sourceId)}&notion=${encodeURIComponent(person.notion_user_id)}`}
+                    class="staff-next"
+                    href={`/task-checkins/?source=${encodeURIComponent(sourceId)}&cursor=${encodeURIComponent(review.operations.nextCursor)}`}
                   >
-                    {t('taskCheckins.staff.choosePerson')}
+                    {t('taskCheckins.staff.next')}
                   </a>
-                </li>
-              ))}
-            </ul>
-          )}
-          {review.moreUnmapped && <p class="staff-help">{t('taskCheckins.staff.morePeople')}</p>}
-        </section>
-        <TaskDeliveryRecovery
-          sourceId={sourceId}
-          review={review.deliveryIssues}
-          tokens={deliveryTokens}
-        />
-        <TaskHeldReview sourceId={sourceId} review={review.heldTasks} />
-        <TaskEscalationReview sourceId={sourceId} review={escalations} tokens={escalationTokens} />
-        <section class="staff-checkin-section" aria-labelledby="recovery-title">
-          <h2 id="recovery-title">{t('taskCheckins.staff.recovery')}</h2>
-          {review.operations.items.length === 0 ? (
-            <p>{t('taskCheckins.staff.noRecovery')}</p>
-          ) : (
-            <ul class="staff-checkin-list">
-              {review.operations.items.map((operation) => (
-                <li>
-                  <div>
-                    <h3>
-                      <a
-                        href={`https://www.notion.so/${operation.task_id.replaceAll('-', '')}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                      >
-                        {operation.task_title ?? 'Notion task'}
-                      </a>
-                    </h3>
-                    <p>
-                      {operation.person_name ?? 'LVBT volunteer'} ·{' '}
-                      {actionLabels[operation.kind] ?? 'Task update'} ·{' '}
-                      {formatDate(new Date(operation.updated_at))}
-                    </p>
-                    <p class="staff-help">
-                      {operation.reason === 'retention_expired'
-                        ? t('taskCheckins.staff.responseExpired')
-                        : operation.state === 'held'
-                          ? t('taskCheckins.staff.held')
-                          : operation.safe_retry === 1
-                            ? 'The last attempt failed. A retry checks the current task and account first.'
-                            : t('taskCheckins.staff.notRetryable')}
-                    </p>
-                  </div>
-                  <div>
-                    {['queued', 'processing'].includes(operation.recovery_state ?? '') && (
-                      <p class="staff-help">{t('taskCheckins.staff.checking')}</p>
-                    )}
-                    {operation.recovery_state === 'failed' && (
-                      <p class="staff-help">{t('taskCheckins.staff.checkUnavailable')}</p>
-                    )}
-                    {operation.recovery_reason === 'not_confirmed' && (
-                      <p class="staff-help">{t('taskCheckins.staff.notConfirmed')}</p>
-                    )}
-                    {operation.state === 'held' && (
-                      <p class="staff-help">{t('taskCheckins.staff.closeHelp')}</p>
-                    )}
-                    <TaskRecoveryActions operation={operation} tokens={tokens} />
-                  </div>
-                </li>
-              ))}
-            </ul>
-          )}
-          {review.operations.nextCursor && (
-            <a
-              class="staff-next"
-              href={`/task-checkins/?source=${encodeURIComponent(sourceId)}&cursor=${encodeURIComponent(review.operations.nextCursor)}`}
-            >
-              {t('taskCheckins.staff.next')}
-            </a>
-          )}
-        </section>
-      </>
-    )
-  }
+                )}
+              </section>
+            )}
+          </div>
+        </>
+      )
+    }
+  </div>
 </StaffLayout>
-
-<style>
-  .staff-task-people-links {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.75rem;
-  }
-</style>

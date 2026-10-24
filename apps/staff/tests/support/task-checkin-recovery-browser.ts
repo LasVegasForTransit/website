@@ -11,7 +11,7 @@ import {
   setTaskCheckinConsent,
   upsertNotionTaskSnapshot,
 } from '@lasvegasfortransit/platform-storage/notion-task-checkins';
-import type { startRuntime } from './runtime';
+import { ORIGIN, type startRuntime } from './runtime';
 type Fixture = Awaited<ReturnType<typeof startRuntime>>;
 export async function exerciseDeliveryRecovery(input: {
   fixture: Fixture;
@@ -73,11 +73,7 @@ export async function exerciseDeliveryRecovery(input: {
     .bind(sourceId, guest.id, auxStamp, auxStamp)
     .run();
   await page.reload();
-  assert.ok(
-    (await page.locator('body').innerText()).includes(
-      'Summaries and card updates needing attention',
-    ),
-  );
+  assert.ok((await page.locator('body').innerText()).includes('Messages that need another check'));
   assert.ok(!(await page.locator('body').innerText()).includes('PRIVATE-'));
   await mkdir(join(fixture.root, 'test-results/staff'), { recursive: true });
   await page.setViewportSize({ width: 320, height: 900 });
@@ -101,7 +97,7 @@ export async function exerciseDeliveryRecovery(input: {
     )?.state,
     'superseded',
   );
-  await page.getByRole('link', { name: 'Participant choices', exact: true }).click();
+  await page.getByRole('link', { name: 'People and reminder choices', exact: true }).click();
   assert.ok((await page.locator('body').innerText()).includes('Enabled'));
   await page.screenshot({
     path: join(fixture.root, 'test-results/staff/task-participant-choices-mobile.png'),
@@ -118,9 +114,7 @@ export async function exerciseReadiness(input: {
   now: Date;
 }) {
   const { fixture, page, sourceId, now } = input;
-  assert.ok(
-    (await page.locator('body').innerText()).includes('Waiting for the first complete task sync.'),
-  );
+  assert.ok((await page.locator('body').innerText()).includes('No tasks checked yet'));
   await fixture.db
     .prepare(
       `INSERT INTO task_checkin_scans(source_id,scan_id,policy_revision,state,next_attempt_at,reason,updated_at)
@@ -129,7 +123,7 @@ export async function exerciseReadiness(input: {
     .bind(sourceId, now.toISOString(), now.toISOString())
     .run();
   await page.reload();
-  assert.ok((await page.locator('body').innerText()).includes('Notion access needs attention.'));
+  assert.ok((await page.locator('body').innerText()).includes('Notion connection needs attention'));
   await fixture.db
     .prepare(
       "UPDATE task_checkin_scans SET state='complete',reason=NULL,last_completed_at=? WHERE source_id=?",
@@ -137,13 +131,13 @@ export async function exerciseReadiness(input: {
     .bind(now.toISOString(), sourceId)
     .run();
   await page.reload();
-  assert.ok((await page.locator('body').innerText()).includes('Last complete task sync:'));
+  assert.ok((await page.locator('body').innerText()).includes('Last checked'));
 
   assert.equal(
-    await page.getByRole('link', { name: 'Participant choices', exact: true }).count(),
+    await page.getByRole('link', { name: 'People and reminder choices', exact: true }).count(),
     1,
   );
-  await page.getByRole('link', { name: 'Participant choices', exact: true }).click();
+  await page.getByRole('link', { name: 'People and reminder choices', exact: true }).click();
   assert.ok((await page.locator('body').innerText()).includes('Not enabled'));
   assert.equal(
     await page.getByRole('button', { name: 'Enable check-ins', exact: true }).count(),
@@ -159,7 +153,7 @@ export async function exerciseReadiness(input: {
       sourceEditedAt: now.toISOString(),
       active: false,
       snapshot: {
-        title: 'Choose a deadline boundary',
+        title: 'Prepare the volunteer briefing',
         status: 'In progress',
         ineligibleReason: 'unconfirmed_date_range',
       },
@@ -167,9 +161,15 @@ export async function exerciseReadiness(input: {
     now,
   );
   await page.reload();
-  assert.ok(
-    (await page.locator('body').innerText()).includes(
-      'Choose which end of the deadline range applies.',
-    ),
+  const heldTask = page.getByRole('region', { name: 'Task details to fix', exact: true });
+  await heldTask.getByRole('heading', { name: 'Prepare the volunteer briefing' }).waitFor();
+  assert.match(
+    (await heldTask.getByRole('link', { name: /Open task in Notion/ }).getAttribute('href')) ?? '',
+    /10000000000040008000000000000099$/,
   );
+  await heldTask.getByRole('link', { name: 'Choose reminder date', exact: true }).click();
+  await page.getByLabel('When a deadline is a date range', { exact: true }).waitFor();
+  assert.equal(new URL(page.url()).hash, '#rangeBoundary');
+  assert.equal(new URL(page.url()).searchParams.get('source'), sourceId);
+  await page.goto(`${ORIGIN}/task-checkins/?source=${sourceId}`);
 }

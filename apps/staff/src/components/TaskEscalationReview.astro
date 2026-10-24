@@ -10,78 +10,78 @@ const { sourceId, review, tokens } = Astro.props;
 function explanation(item: EscalationReviewRow): string {
   if (item.state === 'held') return t('taskCheckins.staff.held');
   if (item.reason === 'routing_provider_unavailable')
-    return 'Notion could not be checked. This request is saved and will be checked again after the provider wait period.';
+    return 'Notion is temporarily unavailable. This help request is saved and will be checked again automatically.';
   if (item.reason === 'routing_limit')
-    return 'Routing could not be completed in this check. The request is saved for another check; review its project links or support group if it keeps waiting.';
+    return 'We haven’t found who should receive this request yet. It is saved for another check. If it keeps waiting, review the task’s project and support contacts.';
   return item.safe_retry === 1
-    ? 'Review the connection and current routing before retrying.'
-    : 'Confirm the project lead mapping, trial group, verified Discord account and individual opt-in. Routing is checked again automatically.';
+    ? 'Check the connection and who should receive this request before trying again.'
+    : 'Check that the project lead has a matched LVBT account, is in the trial and has turned on messages in Discord. We’ll check again automatically.';
 }
 ---
 
-<section class="staff-checkin-section" aria-labelledby="support-title">
-  <h2 id="support-title">Support notifications needing attention</h2>
-  {
-    review.items.length === 0 ? (
-      <p>No support notifications need your attention.</p>
-    ) : (
-      <ul class="staff-checkin-list">
-        {review.items.map((item) => (
-          <li>
-            <div>
-              <h3>
-                <a
-                  href={`https://www.notion.so/${item.task_id.replaceAll('-', '')}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  {item.task_title ?? 'Notion task'}
-                </a>
-              </h3>
-              <p>
-                {item.subject_name ?? 'LVBT volunteer'} ·{' '}
-                {item.trigger_kind === 'blocker' ? 'Help request' : 'Overdue task'}
-              </p>
-              <p>Support recipient: {item.recipient_name ?? 'Not available'}</p>
-              <p class="staff-help">{explanation(item)}</p>
-              {item.recipient_notion_id && (
-                <a
-                  href={`/task-checkins/people/?source=${encodeURIComponent(sourceId)}&notion=${encodeURIComponent(item.recipient_notion_id)}`}
-                >
-                  Review person mapping
-                </a>
-              )}
-            </div>
-            <div class="staff-checkin-recovery-actions">
-              {(['retry', 'close'] as const)
-                .filter((action) => action === 'close' || item.safe_retry === 1)
-                .map((action) => (
-                  <form method="post">
-                    <input type="hidden" name="action" value={`escalation_${action}`} />
-                    <input type="hidden" name="token" value={tokens[action]} />
-                    <input type="hidden" name="operationId" value={item.id} />
-                    <input type="hidden" name="expectedUpdatedAt" value={item.updated_at} />
-                    <button type="submit" class="staff-secondary-button">
-                      {action === 'retry'
-                        ? t('taskCheckins.staff.retry')
-                        : t('taskCheckins.staff.close')}
-                    </button>
-                  </form>
-                ))}
-            </div>
-          </li>
-        ))}
-      </ul>
-    )
-  }
-  {
-    review.nextCursor && (
-      <a
-        class="staff-next"
-        href={`/task-checkins/?source=${encodeURIComponent(sourceId)}&escalationCursor=${encodeURIComponent(review.nextCursor)}`}
-      >
-        {t('taskCheckins.staff.next')}
-      </a>
-    )
-  }
-</section>
+{
+  review.items.length > 0 && (
+    <section class="staff-checkin-section" aria-labelledby="support-title">
+      <h3 id="support-title">Help requests that need attention</h3>
+      {review.items.length === 0 ? (
+        <p>No support notifications need your attention.</p>
+      ) : (
+        <ul class="staff-checkin-list">
+          {review.items.map((item) => (
+            <li>
+              <div>
+                <h4>
+                  <a
+                    href={`https://www.notion.so/${item.task_id.replaceAll('-', '')}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    {item.task_title ?? 'Notion task'}
+                  </a>
+                </h4>
+                <p>
+                  {item.subject_name ?? 'LVBT volunteer'} ·{' '}
+                  {item.trigger_kind === 'blocker' ? 'Help request' : 'Overdue task'}
+                </p>
+                <p>Send help request to: {item.recipient_name ?? 'Not available'}</p>
+                <p class="staff-help">{explanation(item)}</p>
+                {item.recipient_notion_id && (
+                  <a
+                    href={`/task-checkins/people/?source=${encodeURIComponent(sourceId)}&notion=${encodeURIComponent(item.recipient_notion_id)}`}
+                  >
+                    Review account match
+                  </a>
+                )}
+              </div>
+              <div class="staff-checkin-recovery-actions">
+                {(['retry', 'close'] as const)
+                  .filter((action) => action === 'close' || item.safe_retry === 1)
+                  .map((action) => (
+                    <form method="post">
+                      <input type="hidden" name="action" value={`escalation_${action}`} />
+                      <input type="hidden" name="token" value={tokens[action]} />
+                      <input type="hidden" name="operationId" value={item.id} />
+                      <input type="hidden" name="expectedUpdatedAt" value={item.updated_at} />
+                      <button type="submit" class="staff-secondary-button">
+                        {action === 'retry'
+                          ? t('taskCheckins.staff.retry')
+                          : t('taskCheckins.staff.close')}
+                      </button>
+                    </form>
+                  ))}
+              </div>
+            </li>
+          ))}
+        </ul>
+      )}
+      {review.nextCursor && (
+        <a
+          class="staff-next"
+          href={`/task-checkins/?source=${encodeURIComponent(sourceId)}&escalationCursor=${encodeURIComponent(review.nextCursor)}`}
+        >
+          {t('taskCheckins.staff.next')}
+        </a>
+      )}
+    </section>
+  )
+}

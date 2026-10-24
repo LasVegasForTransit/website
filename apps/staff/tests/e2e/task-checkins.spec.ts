@@ -102,7 +102,9 @@ try {
   const page = await context.newPage();
   const response = await page.goto(`${ORIGIN}/task-checkins/`);
   assert.equal(response?.status(), 200, await page.locator('body').innerText());
-  await page.getByRole('heading', { name: 'People to match', exact: true }).waitFor();
+  await page
+    .getByRole('heading', { name: 'Match people to their LVBT accounts', exact: true })
+    .waitFor();
   await exerciseReadiness({ fixture, page, sourceId, now });
   await page.getByRole('link', { name: 'Choose person', exact: true }).click();
   await page
@@ -138,7 +140,7 @@ try {
     )?.n,
     0,
   );
-  await page.getByRole('link', { name: 'Check-in settings', exact: true }).click();
+  await page.getByRole('link', { name: 'Settings', exact: true }).click();
   await page.getByLabel('Maximum notifications per person in 24 hours').fill('3');
   await page.getByLabel('Minimum minutes between notifications').fill('90');
   await page.getByLabel('Escalate after this many overdue hours').fill('48');
@@ -154,7 +156,7 @@ try {
     1,
   );
   await exerciseDeliveryRecovery({ fixture, guest, page, sourceId });
-  await page.getByRole('link', { name: 'Check-in settings', exact: true }).click();
+  await page.getByRole('link', { name: 'Settings', exact: true }).click();
   assert.equal(
     await page.getByLabel('Maximum notifications per person in 24 hours').inputValue(),
     '3',
@@ -175,6 +177,10 @@ try {
   await mkdir(join(fixture.root, 'test-results/staff'), { recursive: true });
   for (const [width, scheme] of [
     [1280, 'light'],
+    [1024, 'light'],
+    [768, 'light'],
+    [640, 'light'],
+    [390, 'light'],
     [320, 'light'],
     [320, 'dark'],
   ] as const) {
@@ -190,7 +196,7 @@ try {
       animations: 'disabled',
     });
   }
-  await page.getByRole('link', { name: 'Check-in settings', exact: true }).click();
+  await page.getByRole('link', { name: 'Settings', exact: true }).click();
   await page.waitForLoadState('networkidle');
   await page.evaluate(() => document.fonts.ready.then(() => undefined));
   assert.equal(
@@ -280,7 +286,7 @@ try {
     .run();
   await page.goto(`${ORIGIN}/task-checkins/?source=${sourceId}`);
   const supportReview = page.getByRole('region', {
-    name: 'Support notifications needing attention',
+    name: 'Help requests that need attention',
   });
   assert.equal(
     await supportReview.getByRole('button', { name: 'Retry safely', exact: true }).count(),
@@ -323,8 +329,8 @@ try {
     .bind(sourceId, new Date(now.getTime() + 300000).toISOString(), now.toISOString())
     .run();
   await page.goto(`${ORIGIN}/task-checkins/?source=${sourceId}`);
-  assert.ok((await supportReview.innerText()).includes('This request is saved'));
-  assert.ok((await page.locator('body').innerText()).includes('Saved updates remain queued'));
+  assert.ok((await supportReview.innerText()).includes('request is saved'));
+  assert.ok((await page.locator('body').innerText()).includes('The next check can run after'));
   assert.equal(
     await supportReview.getByRole('button', { name: 'Retry safely', exact: true }).count(),
     0,
