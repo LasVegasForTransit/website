@@ -24,7 +24,8 @@ Keep provider credentials and volunteer response text out of support tickets and
 ## Review the update
 
 1. In the staff console, open **Members**, expand **Member records**, and choose **Task check-ins**.
-   Its route is `/task-checkins/`. Select the intended Notion source if more than one is listed.
+   Open **Troubleshooting**. Select the intended Notion source if more than one is listed. The
+   settings form remains available through **Settings**.
 2. Under **Updates needing attention**, identify the person and task. Check the current assignment
    and task state in Notion before making a decision.
 3. Use **Retry safely** for a failed update only when that control is available. The service checks
@@ -37,11 +38,11 @@ Do not treat these outcomes as equivalent.
 
 ## Correct a person match
 
-Under **People to match**, choose **Review existing matches**. Open **Review match** for the Notion
-account, verify the assignment in Notion, and search for the correct LVBT person. Select their
-record and choose **Change person match**, or expand **Remove this match** and choose **Remove
-match** to leave the account unmatched. Displayed Notion names help you recognize the account; they
-never establish identity.
+Open **Matches** in the task check-in navigation. Open **Review match** for the Notion account,
+verify the assignment in Notion, and search for the correct LVBT person. Select their record and
+choose **Change person match**, or expand **Remove this match** and choose **Remove match** to leave
+the account unmatched. Displayed Notion names help you recognize the account; they never establish
+identity.
 
 Matches apply across task sources in the same Notion workspace. Changing or removing one pauses
 check-ins for the affected people, including their merged records, and disables old card controls.
@@ -90,10 +91,10 @@ For database recovery rather than an individual update, use the
 
 ## Expired task history
 
-Set **Private task history retention in days** in **Check-in settings**. Private response text
-expires from the time it was submitted. Completed or removed task details expire from the time they
-became inactive; repeated scans do not restart that clock. Active task details also expire when they
-have not been observed within the configured period. Current source reads can restore active task
+Set **Private task history retention in days** in **Settings**. Private response text expires from
+the time it was submitted. Completed or removed task details expire from the time they became
+inactive; repeated scans do not restart that clock. Active task details also expire when they have
+not been observed within the configured period. Current source reads can restore active task
 details, but cannot restore expired responses. Saving an incomplete paused draft keeps the last
 valid retention period. Cleanup continues while sending is paused or the provider is unavailable.
 
@@ -113,28 +114,28 @@ the LVBT person-record privacy workflow.
 
 ## Notification limits
 
-In **Check-in settings**, confirm the maximum notifications per person in a rolling 24-hour window
-and the minimum spacing in minutes. Reminders and daily summaries from that source share these
-limits. Unconfirmed sends count as attempts, so a timeout cannot accidentally bypass the cap.
-Waiting for a limit does not consume provider retry attempts. The next scheduled check reevaluates
-the task and its current permissions before sending; an outdated reminder or summary can expire
-without being delivered. Existing settings without confirmed limits cannot enable delivery.
+In **Settings**, confirm the maximum notifications per person in a rolling 24-hour window and the
+minimum spacing in minutes. Reminders and daily summaries from that source share these limits.
+Unconfirmed sends count as attempts, so a timeout cannot accidentally bypass the cap. Waiting for a
+limit does not consume provider retry attempts. The next scheduled check reevaluates the task and
+its current permissions before sending; an outdated reminder or summary can expire without being
+delivered. Existing settings without confirmed limits cannot enable delivery.
 
 ## Support notifications
 
-In **Check-in settings**, choose whether confirmed help requests are routed to support and set the
-number of overdue hours before a task needs organizer attention. Leave the overdue field empty to
-turn off that trigger. Choose the selected support people or the task's current Notion project
-leads. Confirm that this task source and help notes may be shared with the configured support
-audience before enabling those notifications. Each recipient needs their own active check-in
-consent, verified Discord account, and place in the approved trial group. Project leads also need a
-confirmed person mapping.
+In **Settings**, choose whether confirmed help requests are routed to support and set the number of
+overdue hours before a task needs organizer attention. Leave the overdue field empty to turn off
+that trigger. Choose the selected support people or the task's current Notion project leads. Confirm
+that this task source and help notes may be shared with the configured support audience before
+enabling those notifications. Each recipient needs their own active check-in consent, verified
+Discord account, and place in the approved trial group. Project leads also need a confirmed person
+mapping.
 
-Review **Support notifications needing attention** on the task check-ins page when a route or
-message cannot be completed. Open the task in Notion to confirm its current lead, and use **Review
-person mapping** when a lead needs a matching LVBT record. Correct the trial group, connection, or
-preferences as appropriate; the service checks unresolved routing again. It never falls back to a
-public channel or guesses a Discord handle.
+Review **Help requests that need attention** in **Troubleshooting** when a route or message cannot
+be completed. Open the task in Notion to confirm its current lead, and use **Review account match**
+when a lead needs a matching LVBT record. Correct the trial group, connection, or preferences as
+appropriate; the service checks unresolved routing again. It never falls back to a public channel or
+guesses a Discord handle.
 
 Use **Retry safely** only after reviewing a known failed attempt. An uncertain message create has no
 retry button because Discord may already have accepted it. Inspect the recipient's Discord
@@ -143,11 +144,11 @@ claiming a confirmed delivery. Quiet hours and shared notification limits defer 
 assignee's snooze also defers overdue escalations, while a deliberate help request remains eligible
 for support.
 
-If Notion cannot be checked while finding project leads, the request stays in staff review. A
-provider wait appears on the task check-ins page; saved updates remain queued until that wait ends.
-The service then checks the current task and lead again, without asking the volunteer to repeat
-their response. Waiting applies across the task workers, including after a scheduled invocation
-restarts. Closing a review entry does not shorten the provider's wait.
+If Notion cannot be checked while finding project leads, the request stays in staff review. A Notion
+wait appears in **Troubleshooting**; saved updates remain queued until that wait ends. The service
+then checks the current task and lead again, without asking the volunteer to repeat their response.
+Waiting applies across the task workers, including after a scheduled invocation restarts. Closing a
+review entry does not shorten the provider's wait.
 
 When routing cannot finish within a bounded check, its review entry remains visible for another
 check. If it keeps waiting, review the linked projects and support configuration. The service never
@@ -155,27 +156,28 @@ uses an incomplete lead list as permission to send task details.
 
 ## Task sync status
 
-Open **Task check-ins** to check whether the first complete sync has finished and when the last
-complete sync succeeded. An access notice means the Notion connection or source permissions need
-attention; check those before changing people’s mappings. Other sync failures point to source fields
-or connection problems. The staff page shows a general explanation rather than raw provider output.
-Partial or failed scans preserve unseen tasks until the entire sync completes successfully.
+Open **Task check-ins**, then **Troubleshooting**, to check whether the first complete sync has
+finished and when the last complete sync succeeded. An access notice means the Notion connection or
+source permissions need attention; check those before changing people’s mappings. Other sync
+failures point to source fields or connection problems. The staff page shows a general explanation
+rather than raw provider output. Partial or failed scans preserve unseen tasks until the entire sync
+completes successfully.
 
 ## Participant choices
 
-Open **Participant choices** from **Task check-ins** to see whether someone enabled, paused, or
-stopped messages, or needs to approve changed settings. The view also identifies an account that
-needs confirmation, an unmatched Notion account, or a person outside the current trial group. These
-are read-only choices: the participant uses **/checkins** to enable or change their own preference.
-A ready source choice does not prove that provider access or private messages are available.
+Open **People** from **Task check-ins** to see whether someone enabled, paused, or stopped messages,
+or needs to approve changed settings. The view also identifies an account that needs confirmation,
+an unmatched Notion account, or a person outside the current trial group. These are read-only
+choices: the participant uses **/checkins** to enable or change their own preference. A ready source
+choice does not prove that provider access or private messages are available.
 
 ## Tasks held for review
 
-Review **Tasks held for review** for invalid or missing deadlines, an unconfirmed date range,
-missing assignments, unsupported status, or other source details that prevent check-ins. Follow the
-task link to correct it in Notion, or confirm the intended range boundary in source settings. A
-later successful sync re-evaluates the task. Ordinary completed and archived tasks do not appear
-here.
+In **Troubleshooting**, review **Task details to fix** for invalid or missing deadlines, an
+unconfirmed date range, missing assignments, unsupported status, or other source details that
+prevent check-ins. Follow the task link to correct it in Notion, or confirm the intended range
+boundary in source settings. A later successful sync re-evaluates the task. Ordinary completed and
+archived tasks do not appear here.
 
 ## Summaries and card updates
 
