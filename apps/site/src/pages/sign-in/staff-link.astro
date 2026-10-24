@@ -1,8 +1,11 @@
 ---
 import StaffGateLayout from '@lasvegasfortransit/platform-core/staff-gate-layout';
+import StructuredData from '../../components/seo/StructuredData.astro';
+import { organizationSchema } from '../../lib/structured-data';
 ---
 
 <StaffGateLayout title="Connect to the Staff Portal">
+  <StructuredData slot="head" data={organizationSchema()} />
   <p data-slot="connection-intro">
     Use this member account to finish setting up your Staff Portal access.
   </p>
