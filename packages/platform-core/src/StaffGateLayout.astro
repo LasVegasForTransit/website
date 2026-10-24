@@ -1,5 +1,5 @@
 ---
-import { gatePageStyles, gateIdentity } from './staff-gate';
+import { gatePageStyles, gateIdentity, gateHelp } from './staff-gate';
 interface Props {
   title: string;
 }
@@ -10,7 +10,7 @@ const { title } = Astro.props;
 <html lang="en">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <meta name="robots" content="noindex, nofollow" />
     <title>{title} · LVBT Staff Portal</title>
     <slot name="head" />
@@ -26,13 +26,9 @@ const { title } = Astro.props;
           <slot name="notice" />
           <slot />
         </div>
-        {
-          Astro.slots.has('help') && (
-            <div class="staff-gate-help">
-              <slot name="help" />
-            </div>
-          )
-        }
+        <div class="staff-gate-help">
+          <slot name="help"><Fragment set:html={gateHelp} /></slot>
+        </div>
       </main>
     </div>
   </body>

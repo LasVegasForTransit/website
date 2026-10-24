@@ -72,6 +72,7 @@ p {
   min-width: 0;
 }
 .staff-gate p {
+  text-wrap: balance;
   overflow-wrap: anywhere;
 }
 .staff-gate a {
@@ -158,6 +159,7 @@ p {
   padding-top: 1.25rem;
   border-top: 1px solid var(--gate-outline);
   text-align: center;
+  text-wrap: balance;
 }
 .staff-gate-help:empty {
   display: none;
@@ -253,15 +255,30 @@ p {
 }
 @media (max-width: 30rem) {
   .staff-gate {
-    padding: 1rem;
+    padding: 0;
+    background: var(--color-surface);
+  }
+  .staff-gate-frame {
+    max-width: none;
   }
   .staff-gate-panel {
-    padding: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    min-height: 100svh;
+    border: 0;
+    border-top: 4px solid var(--color-primary);
+    padding: max(2rem, env(safe-area-inset-top))
+      max(clamp(1.25rem, 6vw, 1.5rem), env(safe-area-inset-right))
+      max(2rem, env(safe-area-inset-bottom))
+      max(clamp(1.25rem, 6vw, 1.5rem), env(safe-area-inset-left));
   }
   .staff-gate .staff-identity {
     margin-bottom: 1.5rem;
   }
 }
 `;
+
+export const gateHelp = `<p>Need help? <a href="https://discord.gg/Pfzk5p8QNV">Ask on Discord</a></p>`;
 
 export const gateIdentity = `<a class="staff-identity" href="/" aria-label="LVBT Staff Portal home"><span class="staff-identity-mark staff-logo-light" aria-hidden="true">${recoveryLightLogo}</span><span class="staff-identity-mark staff-logo-dark" aria-hidden="true">${recoveryDarkLogo.replaceAll('clip0_1_687', 'dark_clip0_1_687').replaceAll('clip1_1_687', 'dark_clip1_1_687').replaceAll('clip2_1_687', 'dark_clip2_1_687')}</span><span>Staff Portal</span></a>`;
