@@ -1,6 +1,6 @@
 import { createHash } from 'node:crypto';
 
-import { gatePageStyles, gateIdentity, gateFooter } from './gate-page';
+import { gatePageStyles, gateIdentity } from './gate-page';
 
 export interface StaffErrorReport {
   reference: string;
@@ -64,5 +64,5 @@ export function messagePage(
   return `<!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="robots" content="noindex, nofollow"><title>${title} · Las Vegans for Better Transit</title><style>${messagePageStyles}</style></head>
 <body class="staff-shell staff-gate"><a href="#main" class="skip-link">Skip to content</a><div class="staff-gate-frame"><main id="main" class="staff-gate-panel" tabindex="-1"><header>${gateIdentity}</header>
-<h1>${title}</h1><p>${detail}</p>${reportDetails}<nav class="staff-gate-actions" aria-label="Next steps">${actions}</nav>${help}</main>${gateFooter}</div></body></html>`;
+<h1>${title}</h1><p>${detail}</p>${reportDetails}<nav class="staff-gate-actions" aria-label="Next steps">${actions}</nav>${help}</main></div></body></html>`;
 }

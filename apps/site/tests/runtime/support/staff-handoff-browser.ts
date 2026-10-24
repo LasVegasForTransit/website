@@ -52,7 +52,7 @@ export async function approveHandoffInBrowser(
     const page = await context.newPage();
     if (capture) {
       await page.goto(`${ACCOUNT_ORIGIN}/sign-in/staff-link/`);
-      assert.equal(await page.getByRole('heading', { name: 'Connection expired' }).count(), 1);
+      assert.equal(await page.getByRole('heading', { name: 'Let’s try that again' }).count(), 1);
       assert.equal(await page.getByRole('navigation', { name: 'Primary' }).count(), 0);
       const directory = join(process.cwd(), 'test-results/staff-handoff-layout');
       await mkdir(directory, { recursive: true });

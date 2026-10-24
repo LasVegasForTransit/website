@@ -20,10 +20,12 @@ for (const { mode, sessionType } of journeys) {
     assert.equal(expired.status, 410);
     const expiredHtml = await expired.text();
     assert.match(expiredHtml, /<html[^>]+lang="en"/);
-    assert.match(expiredHtml, /<title>Connection expired/);
+    assert.match(expiredHtml, /<title>Let’s try that again/);
+    assert.match(expiredHtml, /This link has expired/);
+    assert.doesNotMatch(expiredHtml, /<footer/);
     assert.match(expiredHtml, /class="staff-gate-frame"/);
     assert.doesNotMatch(expiredHtml, /aria-label="Primary"/);
-    assert.match(expiredHtml, /Open Staff Portal/);
+    assert.match(expiredHtml, /Return to Staff Portal/);
     assert.doesNotMatch(expiredHtml, /action="\/sign-in\/staff-link\/"/);
     const env = { PLATFORM_DB: fixture.db, LVBT_SIGN_IN_SECRET: 'independent-staff-fixture-only' };
     const service = mode === 'google' ? new WorkspaceLinkService(env) : new SsoLinkService(env);
@@ -61,7 +63,7 @@ for (const { mode, sessionType } of journeys) {
       409,
       'signed-in ineligible accounts must not loop through sign-in',
     );
-    assert.match(await recovery.text(), /Connection unavailable/);
+    assert.match(await recovery.text(), /We couldn’t finish setup/);
     const cookie = `__Host-lvbt_session=${fixture.session.token}`;
     const get = await fixture.simulator.dispatchFetch(url, {
       headers: { Cookie: cookie },
