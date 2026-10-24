@@ -6,7 +6,7 @@ import {
 } from '@lasvegasfortransit/platform-storage/staff-member-handoff';
 import { hashWithSecret } from '@lasvegasfortransit/platform-core/signing';
 import { SESSION_COOKIE, readCookie } from '@lasvegasfortransit/platform-core/web-auth';
-import { builtPage, finish, redirect, showText } from '../../join/_page';
+import { builtPage, finish, redirect, showText, SECURITY_HEADERS } from '../../join/_page';
 import { platformSignIn, formOf, field, setValue, type SignInPagesEnv } from '../_shared';
 async function recovery(env: SignInPagesEnv, request: Request, status: number) {
   const title = status === 410 ? 'Connection expired' : 'Connection unavailable';
@@ -36,6 +36,33 @@ async function recovery(env: SignInPagesEnv, request: Request, status: number) {
       },
     });
   return finish(rewriter.transform(page), status, { 'Referrer-Policy': 'no-referrer' });
+}
+function handoffPageResponse(
+  page: Response,
+  staffOrigin: string,
+  env: SignInPagesEnv,
+  request: Request,
+) {
+  // The form posts locally, then returns to the portal origin recorded by the
+  // verified handoff. Chromium also applies form-action to that redirect.
+  const origin = new URL(staffOrigin);
+  if (origin.protocol !== 'https:' || origin.origin !== staffOrigin)
+    return recovery(env, request, 410);
+  const response = finish(page, 200, {
+    'X-Robots-Tag': 'noindex, nofollow',
+  });
+  // no-referrer also removes Origin from a native POST, which would correctly
+  // fail the CSRF check. same-origin retains it locally and sends no referrer
+  // when navigation returns to the separate Staff Portal origin.
+  response.headers.set('Referrer-Policy', 'same-origin');
+  response.headers.set(
+    'Content-Security-Policy',
+    SECURITY_HEADERS['Content-Security-Policy'].replace(
+      "form-action 'self' https://givebutter.com",
+      `form-action 'self' ${origin.origin}`,
+    ),
+  );
+  return response;
 }
 export const onRequest: PagesFunction<SignInPagesEnv> = async ({ env, request }) => {
   const platform = platformSignIn(env);
@@ -72,8 +99,5 @@ export const onRequest: PagesFunction<SignInPagesEnv> = async ({ env, request })
   const rewriter = new HTMLRewriter()
     .on('[data-slot="member-email"]', showText(session.email))
     .on('[data-slot="request"]', setValue(token));
-  return finish(rewriter.transform(page), 200, {
-    'Referrer-Policy': 'no-referrer',
-    'X-Robots-Tag': 'noindex, nofollow',
-  });
+  return handoffPageResponse(rewriter.transform(page), handoff.staff_origin, env, request);
 };

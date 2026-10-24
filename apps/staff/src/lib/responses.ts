@@ -22,7 +22,11 @@ export function readStaffErrorReport(response: Response): StaffErrorReport | und
   return { reference, occurredAt };
 }
 
-export function privateResponse(response: Response, path = ''): Response {
+export function privateResponse(
+  response: Response,
+  path = '',
+  formOrigins: readonly string[] = [],
+): Response {
   const headers = new Headers(response.headers);
   headers.set('Cache-Control', 'private, no-store');
   headers.set('X-Robots-Tag', 'noindex, nofollow');
@@ -30,9 +34,17 @@ export function privateResponse(response: Response, path = ''): Response {
   headers.set('Referrer-Policy', 'same-origin');
   headers.set('X-Content-Type-Options', 'nosniff');
   const scripts = path === '/paper/' ? "'self'" : "'none'";
+  const destinations = formOrigins.filter((origin) => {
+    try {
+      const url = new URL(origin);
+      return url.protocol === 'https:' && url.origin === origin;
+    } catch {
+      return false;
+    }
+  });
   headers.set(
     'Content-Security-Policy',
-    `default-src 'none'; style-src 'self' 'sha256-${messagePageStyleHash}'; font-src 'self' data:; img-src 'self'; script-src ${scripts}; connect-src 'self'; form-action 'self'; base-uri 'none'; frame-ancestors 'none'`,
+    `default-src 'none'; style-src 'self' 'sha256-${messagePageStyleHash}'; font-src 'self' data:; img-src 'self'; script-src ${scripts}; connect-src 'self'; form-action 'self'${destinations.length ? ` ${destinations.join(' ')}` : ''}; base-uri 'none'; frame-ancestors 'none'`,
   );
   return new Response(response.body, {
     status: response.status,

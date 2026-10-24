@@ -52,6 +52,9 @@ jobs:
       - name: Verify compiled staff workflows
         run: pnpm -C apps/staff test:e2e
 
+      - name: Verify member-to-staff browser handoff
+        run: pnpm -C apps/site test:staff-link
+
       - name: Audit authenticated staff accessibility and performance
         run: pnpm -C apps/staff test:audit
 

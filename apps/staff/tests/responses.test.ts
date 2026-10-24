@@ -1,6 +1,48 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { messageResponse, privateResponse } from '../src/lib/responses';
+import { authFormOrigins } from '../src/lib/auth-form-origins';
+
+void test('only sign-in forms permit their configured member and provider redirects', () => {
+  for (const mode of ['google', 'cloudflare-access'] as const) {
+    const env = {
+      LVBT_STAFF_AUTH_MODE: mode,
+      LVBT_ACCESS_TEAM_DOMAIN: 'lvbt.cloudflareaccess.com',
+    };
+    const url = new URL('https://staff-preview.lasvegasfortransit.org/sign-in/ready/');
+    const origins = authFormOrigins(env, url);
+    const csp =
+      privateResponse(new Response(''), url.pathname, origins).headers.get(
+        'Content-Security-Policy',
+      ) ?? '';
+    assert.match(csp, /form-action 'self' https:\/\/preview\.lasvegasfortransit\.org /);
+    assert.ok(
+      csp.includes(
+        mode === 'google' ? 'https://accounts.google.com' : 'https://lvbt.cloudflareaccess.com',
+      ),
+    );
+    assert.ok(
+      !csp.includes(
+        mode === 'google' ? 'https://lvbt.cloudflareaccess.com' : 'https://accounts.google.com',
+      ),
+    );
+    assert.deepEqual(authFormOrigins(env, new URL('/people/', url)), []);
+    assert.match(
+      privateResponse(new Response(''), '/people/').headers.get('Content-Security-Policy') ?? '',
+      /form-action 'self';/,
+    );
+  }
+  const csp =
+    privateResponse(new Response(''), '/sign-in/', [
+      'https://trusted.invalid/path',
+      'http://insecure.invalid',
+      'https://evil.invalid; script-src *',
+      'https://user@evil.invalid',
+      '*',
+    ]).headers.get('Content-Security-Policy') ?? '';
+  assert.match(csp, /form-action 'self';/);
+  assert.doesNotMatch(csp, /trusted|insecure|evil|\*/);
+});
 
 void test('staff failures remain usable without the database, scripts or asset requests', async () => {
   const response = privateResponse(messageResponse('Please return later.', 503));

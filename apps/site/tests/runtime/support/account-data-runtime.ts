@@ -60,12 +60,13 @@ export async function accountDataRuntime() {
   const root = fileURLToPath(new URL('../../../', import.meta.url));
   const data = await mkdtemp(join(tmpdir(), 'lvbt-account-data-'));
   const emails: AccountCodeEmail[] = [];
+  const tls = await certificate(data);
   const simulator = new Miniflare(
     convertV4MiniflareOptions({
       host: '127.0.0.1',
       port: 0,
       https: true,
-      ...(await certificate(data)),
+      ...tls,
       modules: true,
       script: await readFile(join(root, '.wrangler/worker/index.js'), 'utf8'),
       compatibilityDate: '2026-09-04',
@@ -134,6 +135,7 @@ export async function accountDataRuntime() {
     assert.equal(signIn.kind, 'issued');
     return {
       root,
+      tls: { key: tls.httpsKey, cert: tls.httpsCert },
       data,
       simulator,
       db,

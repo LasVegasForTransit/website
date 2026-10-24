@@ -7,6 +7,7 @@ import {
 } from '@lasvegasfortransit/platform-integrations/staff-auth-config';
 import type { StaffEnv } from './context';
 import { messageResponse, privateResponse } from './responses';
+import { authFormOrigins } from './auth-form-origins';
 export async function guardStaffGateway(
   request: Request,
   env: StaffEnv,
@@ -24,6 +25,7 @@ export async function guardStaffGateway(
     return privateResponse(
       recoverStaffResponse(await context.next()),
       new URL(request.url).pathname,
+      authFormOrigins(env, new URL(request.url)),
     );
   } catch (error) {
     return requestFailure(error, 'gateway');
