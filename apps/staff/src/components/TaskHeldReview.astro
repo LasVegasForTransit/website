@@ -18,53 +18,54 @@ const reasons: Record<string, string> = {
 };
 ---
 
-{
-  review.items.length > 0 && (
-    <section class="staff-checkin-section" aria-labelledby="held-tasks-title">
-      <h3 id="held-tasks-title">Task details to fix</h3>
-      <p class="staff-help">These tasks need a change before reminders can be sent.</p>
-      <ul class="staff-checkin-list staff-task-review-list">
-        {review.items.map((task) => (
-          <li>
-            <div>
-              <h4>
+<section class="staff-checkin-section" aria-labelledby="held-tasks-title">
+  <h3 id="held-tasks-title">Task details to fix</h3>
+  <p class="staff-help">These tasks need a change before reminders can be sent.</p>
+  {review.items.length === 0 && <p>No task details need a change.</p>}
+  <ul class="staff-checkin-list staff-task-review-list">
+    {
+      review.items.map((task) => (
+        <li>
+          <div>
+            <h4>
+              <a
+                href={`https://www.notion.so/${task.task_id.replaceAll('-', '')}`}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                {task.task_title || 'Untitled task'}
+              </a>
+            </h4>
+            <p>{reasons[task.reason] ?? 'Review the task details in Notion.'}</p>
+            <div class="staff-task-row-links">
+              <a
+                href={`https://www.notion.so/${task.task_id.replaceAll('-', '')}`}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                Open task in Notion ↗
+              </a>
+              {task.reason === 'unconfirmed_date_range' && (
                 <a
-                  href={`https://www.notion.so/${task.task_id.replaceAll('-', '')}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
+                  href={`/task-checkins/settings/?source=${encodeURIComponent(sourceId)}#rangeBoundary`}
                 >
-                  {task.task_title || 'Untitled task'}
+                  Choose reminder date
                 </a>
-              </h4>
-              <p>{reasons[task.reason] ?? 'Review the task details in Notion.'}</p>
-              <div class="staff-task-row-links">
-                <a
-                  href={`https://www.notion.so/${task.task_id.replaceAll('-', '')}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  Open task in Notion ↗
-                </a>
-                {task.reason === 'unconfirmed_date_range' && (
-                  <a
-                    href={`/task-checkins/settings/?source=${encodeURIComponent(sourceId)}#rangeBoundary`}
-                  >
-                    Choose reminder date
-                  </a>
-                )}
-              </div>
+              )}
             </div>
-          </li>
-        ))}
-      </ul>
-      {review.nextCursor && (
-        <a
-          class="staff-next"
-          href={`/task-checkins/?source=${encodeURIComponent(sourceId)}&heldCursor=${encodeURIComponent(review.nextCursor)}`}
-        >
-          {t('taskCheckins.staff.next')}
-        </a>
-      )}
-    </section>
-  )
-}
+          </div>
+        </li>
+      ))
+    }
+  </ul>
+  {
+    review.nextCursor && (
+      <a
+        class="staff-next"
+        href={`/task-checkins/?view=review&source=${encodeURIComponent(sourceId)}&heldCursor=${encodeURIComponent(review.nextCursor)}`}
+      >
+        {t('taskCheckins.staff.next')}
+      </a>
+    )
+  }
+</section>

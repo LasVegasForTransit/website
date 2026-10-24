@@ -9,9 +9,11 @@ import {
 } from '@lasvegasfortransit/platform-storage/notion-task-cards';
 import {
   setTaskCheckinConsent,
+  saveTaskCheckinSource,
   upsertNotionTaskSnapshot,
 } from '@lasvegasfortransit/platform-storage/notion-task-checkins';
 import { ORIGIN, type startRuntime } from './runtime';
+import { taskPolicy } from '@lasvegasfortransit/platform-integrations/test-task-policy';
 type Fixture = Awaited<ReturnType<typeof startRuntime>>;
 export async function exerciseDeliveryRecovery(input: {
   fixture: Fixture;
@@ -72,7 +74,7 @@ export async function exerciseDeliveryRecovery(input: {
     )
     .bind(sourceId, guest.id, auxStamp, auxStamp)
     .run();
-  await page.reload();
+  await page.goto(`${ORIGIN}/task-checkins/?view=review&source=${sourceId}`);
   assert.ok((await page.locator('body').innerText()).includes('Messages that need another check'));
   assert.ok(!(await page.locator('body').innerText()).includes('PRIVATE-'));
   await mkdir(join(fixture.root, 'test-results/staff'), { recursive: true });
@@ -103,7 +105,7 @@ export async function exerciseDeliveryRecovery(input: {
     path: join(fixture.root, 'test-results/staff/task-participant-choices-mobile.png'),
     fullPage: true,
   });
-  await page.getByRole('link', { name: 'Back to task check-ins', exact: true }).click();
+  await page.getByRole('link', { name: 'Troubleshooting', exact: true }).click();
   await page.setViewportSize({ width: 1280, height: 900 });
   await page.emulateMedia({ colorScheme: 'light' });
 }
@@ -143,7 +145,7 @@ export async function exerciseReadiness(input: {
     await page.getByRole('button', { name: 'Enable check-ins', exact: true }).count(),
     0,
   );
-  await page.getByRole('link', { name: 'Back to task check-ins', exact: true }).click();
+  await page.getByRole('link', { name: 'Troubleshooting', exact: true }).click();
   await upsertNotionTaskSnapshot(
     fixture.db,
     {
@@ -171,5 +173,66 @@ export async function exerciseReadiness(input: {
   await page.getByLabel('When a deadline is a date range', { exact: true }).waitFor();
   assert.equal(new URL(page.url()).hash, '#rangeBoundary');
   assert.equal(new URL(page.url()).searchParams.get('source'), sourceId);
-  await page.goto(`${ORIGIN}/task-checkins/?source=${sourceId}`);
+  await page.goto(`${ORIGIN}/task-checkins/?view=review&source=${sourceId}`);
+}
+
+export async function exerciseSourceSelection(input: {
+  fixture: Fixture;
+  page: Page;
+  sourceId: string;
+  now: Date;
+}) {
+  const { fixture, page, sourceId, now } = input;
+  const secondSource = '10000000-0000-4000-8000-000000000003';
+  await saveTaskCheckinSource(
+    fixture.db,
+    {
+      sourceId: secondSource,
+      workspaceId: 'workspace-two',
+      expectedRevision: 0,
+      enabled: false,
+      actorId: fixture.admin.person.id,
+      policy: taskPolicy,
+    },
+    now,
+  );
+  await page.reload();
+  await page.getByLabel('Notion source', { exact: true }).selectOption(secondSource);
+  await page.getByRole('button', { name: 'View source', exact: true }).click();
+  assert.equal(new URL(page.url()).pathname, '/task-checkins/');
+  assert.equal(new URL(page.url()).searchParams.get('view'), 'review');
+  assert.equal(new URL(page.url()).searchParams.get('source'), secondSource);
+  await page.getByLabel('Notion source', { exact: true }).selectOption(sourceId);
+  await page.getByRole('button', { name: 'View source', exact: true }).click();
+}
+
+export async function captureTaskSettings(page: Page, root: string) {
+  await mkdir(join(root, 'test-results/staff'), { recursive: true });
+  for (const [width, scheme] of [
+    [1280, 'light'],
+    [1024, 'light'],
+    [768, 'light'],
+    [640, 'light'],
+    [390, 'light'],
+    [320, 'light'],
+    [320, 'dark'],
+  ] as const) {
+    await page.setViewportSize({ width, height: 900 });
+    await page.emulateMedia({ colorScheme: scheme });
+    assert.equal(
+      await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth),
+      true,
+    );
+    await page.screenshot({
+      path: join(root, `test-results/staff/task-checkins-${width}-${scheme}.png`),
+      fullPage: true,
+      animations: 'disabled',
+    });
+    if (scheme === 'light' && (width === 1280 || width === 390))
+      await page.screenshot({
+        path: join(root, `test-results/staff/task-settings-viewport-${width}.png`),
+        fullPage: false,
+        animations: 'disabled',
+      });
+  }
 }

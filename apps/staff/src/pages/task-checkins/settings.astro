@@ -1,5 +1,6 @@
 ---
 import StaffLayout from '../../layouts/StaffLayout.astro';
+import TaskSectionNav from '../../components/TaskSectionNav.astro';
 import { t } from '@lasvegasfortransit/platform-core/messages';
 import { PermissionDenied } from '@lasvegasfortransit/platform-core/permissions';
 import {
@@ -67,7 +68,7 @@ const gapNames: Record<string, string> = {
   content_approval: 'Task content approval',
   trial_approval: 'Trial approval',
   cohort: 'Trial participants',
-  service_owner: 'Service owner',
+  service_owner: 'Person responsible for these check-ins',
   support: 'Support and escalation',
   retention: 'Record retention',
   success_criteria: 'Trial success criteria',
@@ -77,15 +78,11 @@ const gapNames: Record<string, string> = {
 ---
 
 <StaffLayout
-  title={t('taskCheckins.staff.settings')}
-  description={t('taskCheckins.staff.firstSetup')}
+  title={t('taskCheckins.staff.title')}
+  description="Choose how volunteers receive reminders and send task updates through Discord."
 >
-  <a
-    slot="breadcrumb"
-    class="staff-back"
-    href={`/task-checkins/?source=${encodeURIComponent(sourceId)}`}
-    >← {t('taskCheckins.staff.back')}</a
-  >
+  <a slot="breadcrumb" class="staff-back" href="/people/">← Members</a>
+  <TaskSectionNav sourceId={sourceId} />
   {
     feedback && (
       <section role="alert" class="staff-error">
@@ -100,17 +97,29 @@ const gapNames: Record<string, string> = {
       </section>
     )
   }
-  <form method="post" class="staff-form staff-checkin-editor">
+  <form method="post" class="staff-form staff-checkin-editor staff-task-settings">
     <input type="hidden" name="action" value="configure" /><input
       type="hidden"
       name="token"
       value={token}
     /><input type="hidden" name="expectedRevision" value={source?.revision ?? 0} />
     <fieldset>
+      <legend>Delivery</legend>
+      <label class="staff-choice">
+        <input type="checkbox" name="enabled" checked={source?.enabled === 1} />
+        <span>Allow automatic reminders for this task list</span>
+      </label>
+      <p class="staff-help">
+        Volunteers turn reminders on for themselves with /checkins in Discord. Changes to the
+        schedule may require them to confirm again. The Discord bot must also have reminders
+        enabled.
+      </p>
+    </fieldset>
+    <fieldset>
       <legend>{t('taskCheckins.staff.cadence')}</legend>
       <div class="staff-editor-fields">
         <div>
-          <label for="timezone">Timezone for reminders and date-only deadlines</label><input
+          <label for="timezone">Time zone</label><input
             id="timezone"
             name="timezone"
             value={string(values.timezone, 'America/Los_Angeles')}
@@ -217,7 +226,7 @@ const gapNames: Record<string, string> = {
       <legend>{t('taskCheckins.staff.permissions')}</legend>
       <p class="staff-help">{t('taskCheckins.staff.consent')}</p>
       <div>
-        <label for="serviceOwnerId">Service owner</label><select
+        <label for="serviceOwnerId">Person responsible for these check-ins</label><select
           id="serviceOwnerId"
           name="serviceOwnerId"
           ><option value="">Choose a person</option>{
@@ -260,11 +269,13 @@ const gapNames: Record<string, string> = {
             type="checkbox"
             name="escalateBlockers"
             checked={values.escalateBlockers !== false}
-          /><span>Route confirmed help requests to support people</span></label
+          /><span>Send help requests to the selected support people</span></label
         >
       </div>
       <div>
-        <label for="escalationAfterHours">Escalate after this many overdue hours</label>
+        <label for="escalationAfterHours"
+          >Notify support when a task is this many hours overdue</label
+        >
         <input
           type="number"
           id="escalationAfterHours"
@@ -276,7 +287,7 @@ const gapNames: Record<string, string> = {
             : string(values.escalationAfterHours, '72')}
         />
         <p class="staff-help">
-          Leave empty to skip overdue escalations. Quiet hours and notification limits still apply.
+          Leave empty to skip overdue notifications. Quiet hours and message limits still apply.
         </p>
       </div>
       <div>
@@ -291,8 +302,8 @@ const gapNames: Record<string, string> = {
         >
       </div>
       <p class="staff-help">
-        Recipients need a verified Discord account and their own opt-in. Unavailable recipients need
-        administrator review.
+        Recipients must connect their Discord account and choose to receive messages. Ask an
+        administrator for help if someone is unavailable.
       </p>
       <fieldset>
         <legend>Volunteer actions</legend>{
@@ -466,14 +477,6 @@ const gapNames: Record<string, string> = {
         </p>
       </div>
     </details>
-    <label class="staff-choice"
-      ><input type="checkbox" name="enabled" checked={source?.enabled === 1} /><span
-        >{t('taskCheckins.staff.enable')}</span
-      ></label
-    ><p class="staff-help">
-      People review changed settings in Discord before messages resume. Live delivery also requires
-      the approved provider connection.
-    </p>
-    <button type="submit" class="staff-secondary-button">{t('taskCheckins.staff.save')}</button>
+    <button type="submit" class="staff-action-link">{t('taskCheckins.staff.save')}</button>
   </form>
 </StaffLayout>

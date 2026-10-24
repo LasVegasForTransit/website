@@ -19,69 +19,69 @@ function explanation(item: EscalationReviewRow): string {
 }
 ---
 
-{
-  review.items.length > 0 && (
-    <section class="staff-checkin-section" aria-labelledby="support-title">
-      <h3 id="support-title">Help requests that need attention</h3>
-      {review.items.length === 0 ? (
-        <p>No support notifications need your attention.</p>
-      ) : (
-        <ul class="staff-checkin-list">
-          {review.items.map((item) => (
-            <li>
-              <div>
-                <h4>
-                  <a
-                    href={`https://www.notion.so/${item.task_id.replaceAll('-', '')}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                  >
-                    {item.task_title ?? 'Notion task'}
-                  </a>
-                </h4>
-                <p>
-                  {item.subject_name ?? 'LVBT volunteer'} ·{' '}
-                  {item.trigger_kind === 'blocker' ? 'Help request' : 'Overdue task'}
-                </p>
-                <p>Send help request to: {item.recipient_name ?? 'Not available'}</p>
-                <p class="staff-help">{explanation(item)}</p>
-                {item.recipient_notion_id && (
-                  <a
-                    href={`/task-checkins/people/?source=${encodeURIComponent(sourceId)}&notion=${encodeURIComponent(item.recipient_notion_id)}`}
-                  >
-                    Review account match
-                  </a>
-                )}
-              </div>
-              <div class="staff-checkin-recovery-actions">
-                {(['retry', 'close'] as const)
-                  .filter((action) => action === 'close' || item.safe_retry === 1)
-                  .map((action) => (
-                    <form method="post">
-                      <input type="hidden" name="action" value={`escalation_${action}`} />
-                      <input type="hidden" name="token" value={tokens[action]} />
-                      <input type="hidden" name="operationId" value={item.id} />
-                      <input type="hidden" name="expectedUpdatedAt" value={item.updated_at} />
-                      <button type="submit" class="staff-secondary-button">
-                        {action === 'retry'
-                          ? t('taskCheckins.staff.retry')
-                          : t('taskCheckins.staff.close')}
-                      </button>
-                    </form>
-                  ))}
-              </div>
-            </li>
-          ))}
-        </ul>
-      )}
-      {review.nextCursor && (
-        <a
-          class="staff-next"
-          href={`/task-checkins/?source=${encodeURIComponent(sourceId)}&escalationCursor=${encodeURIComponent(review.nextCursor)}`}
-        >
-          {t('taskCheckins.staff.next')}
-        </a>
-      )}
-    </section>
-  )
-}
+<section class="staff-checkin-section" aria-labelledby="support-title">
+  <h3 id="support-title">Help requests that need attention</h3>
+  {
+    review.items.length === 0 ? (
+      <p>No support notifications need your attention.</p>
+    ) : (
+      <ul class="staff-checkin-list">
+        {review.items.map((item) => (
+          <li>
+            <div>
+              <h4>
+                <a
+                  href={`https://www.notion.so/${item.task_id.replaceAll('-', '')}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  {item.task_title ?? 'Notion task'}
+                </a>
+              </h4>
+              <p>
+                {item.subject_name ?? 'LVBT volunteer'} ·{' '}
+                {item.trigger_kind === 'blocker' ? 'Help request' : 'Overdue task'}
+              </p>
+              <p>Send help request to: {item.recipient_name ?? 'Not available'}</p>
+              <p class="staff-help">{explanation(item)}</p>
+              {item.recipient_notion_id && (
+                <a
+                  href={`/task-checkins/people/?source=${encodeURIComponent(sourceId)}&notion=${encodeURIComponent(item.recipient_notion_id)}`}
+                >
+                  Review account match
+                </a>
+              )}
+            </div>
+            <div class="staff-checkin-recovery-actions">
+              {(['retry', 'close'] as const)
+                .filter((action) => action === 'close' || item.safe_retry === 1)
+                .map((action) => (
+                  <form method="post">
+                    <input type="hidden" name="action" value={`escalation_${action}`} />
+                    <input type="hidden" name="token" value={tokens[action]} />
+                    <input type="hidden" name="operationId" value={item.id} />
+                    <input type="hidden" name="expectedUpdatedAt" value={item.updated_at} />
+                    <button type="submit" class="staff-secondary-button">
+                      {action === 'retry'
+                        ? t('taskCheckins.staff.retry')
+                        : t('taskCheckins.staff.close')}
+                    </button>
+                  </form>
+                ))}
+            </div>
+          </li>
+        ))}
+      </ul>
+    )
+  }
+  {
+    review.nextCursor && (
+      <a
+        class="staff-next"
+        href={`/task-checkins/?view=review&source=${encodeURIComponent(sourceId)}&escalationCursor=${encodeURIComponent(review.nextCursor)}`}
+      >
+        {t('taskCheckins.staff.next')}
+      </a>
+    )
+  }
+</section>

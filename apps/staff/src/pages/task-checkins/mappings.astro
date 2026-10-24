@@ -1,5 +1,6 @@
 ---
 import StaffLayout from '../../layouts/StaffLayout.astro';
+import TaskSectionNav from '../../components/TaskSectionNav.astro';
 import { t } from '@lasvegasfortransit/platform-core/messages';
 import { PermissionDenied } from '@lasvegasfortransit/platform-core/permissions';
 import { listTaskCheckinMappings } from '@lasvegasfortransit/platform-storage/notion-task-mapping-admin';
@@ -29,8 +30,10 @@ if (matches.nextCursor) next.searchParams.set('cursor', matches.nextCursor);
     slot="breadcrumb"
     class="staff-back"
     href={`/task-checkins/?source=${encodeURIComponent(sourceId)}`}
-    >← {t('taskCheckins.staff.back')}</a
   >
+    ← {t('taskCheckins.staff.back')}</a
+  >
+  <TaskSectionNav sourceId={sourceId} />
   <p>
     Matches are shared by task sources in this Notion workspace. Verify the account in Notion before
     changing its person record.
