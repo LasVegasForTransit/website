@@ -13,6 +13,7 @@ const { title } = Astro.props;
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="robots" content="noindex, nofollow" />
     <title>{title} · LVBT Staff Portal</title>
+    <slot name="head" />
     <style is:inline set:html={gatePageStyles}></style>
   </head>
   <body class="staff-shell staff-gate">
