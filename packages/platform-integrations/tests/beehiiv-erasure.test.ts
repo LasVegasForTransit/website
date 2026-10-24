@@ -55,6 +55,8 @@ void test('ordinary account erasure unsubscribes then removes the subscriber wit
   try {
     await reconcileBeehiivPerson(f.db, f.person.id, f.options);
     await f.people.deletePerson(f.person.id);
+    // Deletion queues work on the real clock; dispatch must observe that later instant.
+    f.now.setTime(Math.max(f.now.getTime(), Date.now() + 1));
     f.calls.length = 0;
     const fetcher: typeof fetch = async (input, init) => {
       if (init?.method !== 'DELETE') return f.options.fetcher(input, init);

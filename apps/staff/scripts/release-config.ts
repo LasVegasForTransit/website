@@ -6,6 +6,11 @@ import { DISCORD_RUNTIME_CONFIG } from '@lasvegasfortransit/platform-integration
 import { releaseConfiguration, type Environment } from './preflight-config';
 
 const PUBLIC_VARIABLES = new Set([
+  'LVBT_TASK_CHECKINS_ENABLED',
+  'LVBT_TASK_UPDATES_ENABLED',
+  'LVBT_DISCORD_WORK_ENABLED',
+  'LVBT_NOTION_TASK_SOURCE_ID',
+  'LVBT_NOTION_TASK_PRODUCTION_SOURCE_ID',
   ...DISCORD_RUNTIME_CONFIG.map(({ name }) => name),
   'LVBT_GOOGLE_ACCESS_OBSERVATIONS_ENABLED',
   'LVBT_GOOGLE_CUSTOMER_ID',

@@ -1,3 +1,5 @@
+import type { DiscordTaskMessage } from './notion-task-cards';
+import type { DiscordWorkBody } from './discord-work-http-types';
 import {
   DiscordApiFailure,
   object,
@@ -12,15 +14,33 @@ interface RequestInput {
   body?: URLSearchParams;
   jsonBody?:
     | { access_token: string }
+    | { recipient_id: string }
+    | DiscordWorkBody
+    | (DiscordTaskMessage & { nonce?: string; enforce_nonce?: true })
     | { type?: number; name: string; description: string; options: readonly unknown[] };
   commandRegistration?: true;
+  workCreation?: true;
   memberJoin?: true;
   unknownMember?: boolean;
-  responseSize?: 'guild-members' | 'guild-roles';
+  unknownChannel?: boolean;
+  responseSize?: 'guild-members' | 'guild-roles' | 'work-history';
+}
+function knownMissing(response: Response, input: RequestInput, data: unknown): boolean {
+  if (response.status !== 404) return false;
+  const code = object(data).code;
+  return (
+    (input.unknownChannel === true && code === 10003) ||
+    (input.unknownMember === true && code === 10007)
+  );
 }
 function checkedResult(response: Response, input: RequestInput, data: unknown): unknown {
-  if (response.status === 404 && input.unknownMember && object(data).code === 10007) return null;
-  if (response.status === 201 && input.commandRegistration && input.method === 'POST') return data;
+  if (knownMissing(response, input, data)) return null;
+  if (
+    response.status === 201 &&
+    input.method === 'POST' &&
+    (input.commandRegistration || input.workCreation)
+  )
+    return data;
   if (response.status === 201 && input.memberJoin && input.method === 'PUT') return data;
   if (response.status !== 200) throw new DiscordApiFailure('unknown');
   if (input.method === 'PUT' || input.method === 'DELETE')
@@ -142,7 +162,9 @@ export class DiscordHttp {
       throw new DiscordApiFailure('permission_denied');
     if (response.status >= 500) throw new DiscordApiFailure('provider_unavailable');
     if (response.status === 429) return await this.limited(response, signal);
-    const data = await json(response, signal, input.responseSize ? 2_097_152 : 131_072);
+    const size =
+      input.responseSize === 'work-history' ? 1_048_576 : input.responseSize ? 2_097_152 : 131_072;
+    const data = await json(response, signal, size);
     return checkedResult(response, input, data);
   }
 }

@@ -66,11 +66,11 @@ these paths. A returned-row limit or statement budget does not bound the rows SQ
 ## Reserve database capacity for people
 
 Migration **0051** adds a persistent budget for the scheduled jobs in each environment's membership
-database. Production jobs admit reservations within an allocation of 2,000,000 reads and 40,000
+database. Production jobs admit reservations within an allocation of 2,000,000 reads and 45,000
 writes per UTC day. Preview jobs use 250,000 reads and 5,000 writes. Together those allocations
-leave 55% of the Free account allowance outside these scheduled jobs. Staff/member requests,
-imports, backups and other databases are not counted by this ledger and can still exhaust that
-remaining allowance.
+leave at least half of the Free account allowance outside these scheduled jobs. Staff/member
+requests, imports, backups and other databases are not counted by this ledger and can still exhaust
+that remaining allowance.
 
 Each admitted cron invocation reserves 50,000 reads and 4,000 writes atomically before starting its
 jobs. A 120-second lease prevents overlapping parent runs. Jobs return actual D1 row counters.

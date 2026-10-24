@@ -339,6 +339,17 @@ try {
   await tick();
   assert.equal(calls.length, before, 'complete scans and choices must not repeat provider work');
 
+  const scanBudget = await db
+    .prepare('SELECT charged_writes FROM scheduled_work_budget')
+    .first<{ charged_writes: number }>();
+  assert.ok(
+    scanBudget && scanBudget.charged_writes <= 45_000,
+    'the complete roster scan must stay within the production daily allocation',
+  );
+  // Other admitted jobs can consume the remaining shared allocation. Fill only
+  // this isolated ledger to prove erasure deferral at the current daily limit,
+  // independently of the precise scan write count or wall-clock scheduling.
+  await db.prepare('UPDATE scheduled_work_budget SET charged_writes=45000').run();
   await new PersonService(db).deletePerson(person.id);
   await receive('evt_after_erasure', 0, 'subscription.confirmed', 'sub_late_unlinked');
   assert.deepEqual(
@@ -360,8 +371,8 @@ try {
     .prepare('SELECT charged_writes FROM scheduled_work_budget')
     .first<{ charged_writes: number }>();
   assert.ok(
-    spent && spent.charged_writes <= 40_000 && spent.charged_writes + 4_000 > 40_000,
-    'the large roster must defer subsequent work rather than exceed its daily allocation',
+    spent && spent.charged_writes <= 45_000 && spent.charged_writes + 4_000 > 45_000,
+    'an exhausted shared allocation must defer subsequent work until the next day',
   );
   // Advance the isolated ledger day after proving that the real daily guard refused work.
   await db.prepare("UPDATE scheduled_work_budget SET utc_day='2000-01-01'").run();

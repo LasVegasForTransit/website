@@ -11,6 +11,61 @@ const APPLICATION_ID = '111111111111111111';
 const GUILD_ID = '222222222222222222';
 const USER_ID = '333333333333333333';
 
+void test('signed work commands accept bounded resolved payloads and acknowledge privately before RPC completes', async (t) => {
+  t.mock.method(globalThis, 'fetch', () => Promise.resolve(Response.json({ id: 'fixture' })));
+  const pending: Promise<unknown>[] = [];
+  let inspected = false;
+  const signed = signedRequest({
+    type: 2,
+    id: '777777777777777777',
+    application_id: APPLICATION_ID,
+    guild_id: GUILD_ID,
+    channel_id: '555555555555555555',
+    token: 'fixture-only-interaction-token',
+    member: { user: { id: USER_ID } },
+    data: { name: 'work', options: [{ name: 'show' }] },
+    padding: 'x'.repeat(20_000),
+  });
+  const db = memoryDb();
+  try {
+    const response = await onRequestPost({
+      request: signed.request,
+      env: {
+        PLATFORM_DB: db,
+        LVBT_DISCORD_PUBLIC_KEY: signed.publicKey,
+        LVBT_DISCORD_APPLICATION_ID: APPLICATION_ID,
+        LVBT_DISCORD_GUILD_ID: GUILD_ID,
+        LVBT_DISCORD_PRODUCTION_GUILD_ID: '666666666666666666',
+        LVBT_DEPLOYMENT_ENV: 'preview',
+        LVBT_NOTION_TASK_SOURCE_ID: '10000000-0000-4000-8000-000000000001',
+        LVBT_NOTION_TASK_PRODUCTION_SOURCE_ID: '10000000-0000-4000-8000-000000000009',
+        LVBT_DISCORD_WORK_ENABLED: 'false',
+        DISCORD_WORK: {
+          preview: () => {
+            inspected = true;
+            return Promise.resolve({ kind: 'unavailable', reason: 'fixture' });
+          },
+        },
+      },
+      waitUntil: (promise: Promise<unknown>) => pending.push(promise),
+    } as unknown as Parameters<typeof onRequestPost>[0]);
+    assert.deepEqual(await response.json(), { type: 5, data: { flags: 64 } });
+    assert.equal(inspected, true);
+    await Promise.all(pending);
+  } finally {
+    db.raw.close();
+  }
+});
+
+void test('signed interactions larger than 128 KiB are rejected before processing', async () => {
+  const signed = signedRequest({ type: 1, padding: 'x'.repeat(128 * 1024) });
+  const response = await onRequestPost({
+    request: signed.request,
+    env: { LVBT_DISCORD_PUBLIC_KEY: signed.publicKey },
+  } as unknown as Parameters<typeof onRequestPost>[0]);
+  assert.equal(response.status, 413);
+});
+
 function signedRequest(payload: unknown) {
   const rawBody = JSON.stringify(payload);
   const timestamp = String(Math.floor(Date.now() / 1000));

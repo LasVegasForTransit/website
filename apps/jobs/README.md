@@ -40,6 +40,10 @@ pnpm -C apps/staff test:discord-observation
 `pnpm -C apps/staff build` before running `test:discord-observation` if it has not been built. The
 browser and compiled-Worker tests need the local dependencies installed by project setup.
 
+The task check-in fixtures exercise the compiled site callback and jobs entrypoints with separate
+member and guest identities, private cards, signed responses, Notion writeback, and failed or
+uncertain operations. Providers are simulated; hosted acceptance is separate.
+
 Use the test that matches your change:
 
 | Command                          | What it checks                                                                |

@@ -1,0 +1,76 @@
+---
+import StaffLayout from '../../layouts/StaffLayout.astro';
+import { t } from '@lasvegasfortransit/platform-core/messages';
+import { PermissionDenied } from '@lasvegasfortransit/platform-core/permissions';
+import { listTaskCheckinMappings } from '@lasvegasfortransit/platform-storage/notion-task-mapping-admin';
+import { messageResponse } from '../../lib/responses';
+const staff = Astro.locals.staff;
+if (!staff) return messageResponse(t('staff.common.accessDenied'), 403);
+const sourceId = Astro.url.searchParams.get('source') ?? '';
+let matches;
+try {
+  matches = await listTaskCheckinMappings(staff.db, staff.actor, {
+    sourceId,
+    cursor: Astro.url.searchParams.get('cursor') ?? '',
+  });
+} catch (error) {
+  if (error instanceof PermissionDenied) return messageResponse(error.message, 403);
+  throw error;
+}
+const next = new URL(Astro.url);
+if (matches.nextCursor) next.searchParams.set('cursor', matches.nextCursor);
+---
+
+<StaffLayout
+  title={t('taskCheckins.staff.existingMappings')}
+  description="Review the confirmed connections between Notion accounts and LVBT people."
+>
+  <a
+    slot="breadcrumb"
+    class="staff-back"
+    href={`/task-checkins/?source=${encodeURIComponent(sourceId)}`}
+    >← {t('taskCheckins.staff.back')}</a
+  >
+  <p>
+    Matches are shared by task sources in this Notion workspace. Verify the account in Notion before
+    changing its person record.
+  </p>
+  {
+    matches.items.length === 0 ? (
+      <p>No confirmed matches for this source.</p>
+    ) : (
+      <ul class="staff-checkin-list">
+        {matches.items.map((match) => (
+          <li>
+            <div>
+              <h2>{match.notion_name ?? 'Notion account'}</h2>
+              <div class="staff-checkin-account">
+                <p>Matched to {match.person_name ?? 'an unavailable person record'}</p>
+                {match.person_email && match.person_email !== match.person_name && (
+                  <p class="staff-help">{match.person_email}</p>
+                )}
+              </div>
+              <details>
+                <summary>Notion account reference</summary>
+                <code>{match.notion_user_id}</code>
+              </details>
+            </div>
+            <a
+              class="staff-secondary-button"
+              href={`/task-checkins/people/?source=${encodeURIComponent(sourceId)}&notion=${encodeURIComponent(match.notion_user_id)}`}
+            >
+              Review match
+            </a>
+          </li>
+        ))}
+      </ul>
+    )
+  }
+  {
+    matches.nextCursor && (
+      <a class="staff-next" href={next.pathname + next.search}>
+        {t('taskCheckins.staff.next')}
+      </a>
+    )
+  }
+</StaffLayout>

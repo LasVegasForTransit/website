@@ -31,12 +31,16 @@ function artifactHash(release: Omit<StaffRelease, 'artifactHash'>) {
 }
 function migrationFiles(files: FileDigest[]) {
   const migrations = files.filter(([name]) => name.startsWith('migrations/'));
+  const sequence = migrations.map(
+    ([name]) => /^migrations\/(\d{4})_[a-z0-9_]+\.sql$/.exec(name)?.[1],
+  );
+  // D1 records full filenames. Parallel releases can already have deployed
+  // different names with the same prefix; never rename their applied history.
+  const unique = [...new Set(sequence)];
   if (
     !migrations.length ||
-    migrations.some(
-      ([name], i) =>
-        !new RegExp(`^migrations/${String(i + 1).padStart(4, '0')}_[a-z0-9_]+\\.sql$`).test(name),
-    )
+    sequence.includes(undefined) ||
+    unique.some((prefix, i) => prefix !== String(i + 1).padStart(4, '0'))
   )
     throw new Error('Release requires the complete canonical migration sequence.');
   return migrations;

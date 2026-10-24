@@ -17,6 +17,8 @@ export function setupBindings(bindings: Bindings) {
   return (
     value(bindings, 'LVBT_DEPLOYMENT_ENV') === 'preview' &&
     value(bindings, 'LVBT_DISCORD_SYNC_ENABLED') === 'false' &&
+    (value(bindings, 'LVBT_TASK_CHECKINS_ENABLED') ?? 'false') === 'false' &&
+    (value(bindings, 'LVBT_DISCORD_WORK_ENABLED') ?? 'false') === 'false' &&
     bindings
       .filter((binding) => binding.name === 'LVBT_BEEHIIV_SYNC_ENABLED')
       .every((binding) => binding.type === 'plain_text' && binding.text === 'false')
@@ -95,7 +97,12 @@ export async function previewSetupReady(
   for (const app of ['staff', 'jobs'] as const) {
     const config = await portableConfiguration(root, app, 'preview');
     const vars = object(config.vars);
-    if (vars.LVBT_DEPLOYMENT_ENV !== 'preview' || vars.LVBT_DISCORD_SYNC_ENABLED !== 'false')
+    if (
+      vars.LVBT_DEPLOYMENT_ENV !== 'preview' ||
+      vars.LVBT_DISCORD_SYNC_ENABLED !== 'false' ||
+      (vars.LVBT_DISCORD_WORK_ENABLED ?? 'false') !== 'false' ||
+      (vars.LVBT_TASK_CHECKINS_ENABLED ?? 'false') !== 'false'
+    )
       return notReady([{ id: `setup.${app}.source`, status: 'failed' }], diagnose);
     if (app === 'jobs' && vars.LVBT_BEEHIIV_SYNC_ENABLED !== 'false')
       return notReady([{ id: 'setup.jobs.source', status: 'failed' }], diagnose);

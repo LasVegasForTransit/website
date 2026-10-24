@@ -158,3 +158,33 @@ void test('release variables reject credentials and unknown bindings before any 
     await rm(f.root, { recursive: true, force: true });
   }
 });
+
+void test('parallel deployed migration names retain every file without allowing sequence gaps', async () => {
+  const f = await releaseFixture();
+  try {
+    const migrations = join(f.source, 'packages/platform-storage/migrations');
+    await writeFile(
+      join(migrations, '0002_parallel_feature.sql'),
+      'CREATE TABLE feature(id TEXT);',
+    );
+    const release = await packageStaffRelease(f.source, f.destination, releaseIdentity);
+    assert.equal(release.migrations.length, 3);
+    assert.deepEqual(await verifyStaffRelease(f.destination, releaseIdentity), release);
+    await rm(f.destination, { recursive: true });
+    await rm(join(migrations, '0001_people.sql'));
+    await assert.rejects(
+      packageStaffRelease(f.source, f.destination, releaseIdentity),
+      /complete canonical migration sequence/,
+    );
+    await writeFile(join(migrations, '0001_people.sql'), 'CREATE TABLE people(id TEXT);');
+    await rm(join(migrations, '0002_consent.sql'));
+    await rm(join(migrations, '0002_parallel_feature.sql'));
+    await writeFile(join(migrations, '0003_feature.sql'), 'CREATE TABLE feature(id TEXT);');
+    await assert.rejects(
+      packageStaffRelease(f.source, f.destination, releaseIdentity),
+      /complete canonical migration sequence/,
+    );
+  } finally {
+    await rm(f.root, { recursive: true, force: true });
+  }
+});

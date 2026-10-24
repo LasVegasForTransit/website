@@ -55,6 +55,7 @@ const memberRecord = /^\/people\/[^/]+(?:\/(?:edit|delete))?\/?$/.test(Astro.url
                       '/roles',
                       '/export',
                       '/newsletter',
+                      '/task-checkins',
                       '/offboarding',
                     ].some((path) => Astro.url.pathname.startsWith(path))
                       ? 'page'

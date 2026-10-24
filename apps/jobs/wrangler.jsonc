@@ -10,6 +10,11 @@
   "triggers": { "crons": ["* * * * *"] },
   "vars": {
     "LVBT_DEPLOYMENT_ENV": "production",
+    "LVBT_TASK_CHECKINS_ENABLED": "false",
+    "LVBT_TASK_UPDATES_ENABLED": "true",
+    "LVBT_DISCORD_WORK_ENABLED": "false",
+    "LVBT_NOTION_TASK_SOURCE_ID": "1601d4dd-a09c-4562-8029-5a63446bd5ff",
+    "LVBT_NOTION_TASK_PRODUCTION_SOURCE_ID": "1601d4dd-a09c-4562-8029-5a63446bd5ff",
     "LVBT_BEEHIIV_SYNC_ENABLED": "true",
     "LVBT_BEEHIIV_CONFLICT_POLICY": "staff_review",
     "LVBT_BEEHIIV_PUBLICATION_ID": "pub_d3178023-f8d5-4e9d-a768-0c4eaa6b7280",
@@ -34,6 +39,11 @@
       "triggers": { "crons": [] },
       "vars": {
         "LVBT_DEPLOYMENT_ENV": "preview",
+        "LVBT_TASK_CHECKINS_ENABLED": "false",
+        "LVBT_TASK_UPDATES_ENABLED": "false",
+        "LVBT_DISCORD_WORK_ENABLED": "false",
+        "LVBT_NOTION_TASK_SOURCE_ID": "",
+        "LVBT_NOTION_TASK_PRODUCTION_SOURCE_ID": "",
         "LVBT_BEEHIIV_SYNC_ENABLED": "false",
         "LVBT_BEEHIIV_CONFLICT_POLICY": "staff_review",
         "LVBT_BEEHIIV_PUBLICATION_ID": "",

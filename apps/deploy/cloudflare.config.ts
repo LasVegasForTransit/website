@@ -33,6 +33,14 @@ const commonWorker = {
   },
 };
 
+const productionTaskBindings = {
+  LVBT_TASK_CHECKINS_ENABLED: bindings.text('false'),
+  LVBT_TASK_UPDATES_ENABLED: bindings.text('true'),
+  LVBT_DISCORD_WORK_ENABLED: bindings.text('false'),
+  LVBT_NOTION_TASK_SOURCE_ID: bindings.text('1601d4dd-a09c-4562-8029-5a63446bd5ff'),
+  LVBT_NOTION_TASK_PRODUCTION_SOURCE_ID: bindings.text('1601d4dd-a09c-4562-8029-5a63446bd5ff'),
+};
+
 export default defineConfig((ctx) => {
   switch (ctx.mode) {
     case 'preview': {
@@ -49,20 +57,24 @@ export default defineConfig((ctx) => {
             }),
             ASSETS: bindings.assets(),
             LVBT_DEPLOYMENT_ENV: bindings.text('preview'),
+            LVBT_TASK_CHECKINS_ENABLED: bindings.text('false'),
+            LVBT_TASK_UPDATES_ENABLED: bindings.text('false'),
+            LVBT_DISCORD_WORK_ENABLED: bindings.text('false'),
+            LVBT_NOTION_TASK_SOURCE_ID: bindings.text(''),
+            LVBT_NOTION_TASK_PRODUCTION_SOURCE_ID: bindings.text(''),
             LVBT_DISCORD_JOBS: bindings.worker({ worker: 'lvbt-jobs-preview' }),
+            DISCORD_WORK: bindings.worker({
+              worker: 'lvbt-jobs-preview',
+              exportName: 'WorkPreview',
+            }),
             LVBT_DISCORD_APPLICATION_ID: bindings.text('1552481672945999872'),
+            LVBT_DISCORD_GUILD_ID: bindings.text('1560146082640568350'),
+            LVBT_DISCORD_PRODUCTION_GUILD_ID: bindings.text('1509298455896522823'),
             LVBT_DISCORD_PUBLIC_KEY: bindings.text(
               '21422dba5d410653b6e1b21fedffbf8cdbccaa94fc221d81d767712d2f6faef9',
             ),
             LVBT_RESEND_API_KEY: bindings.secret(),
-            LVBT_BEEHIIV_API_KEY: bindings.secret(),
-            LVBT_BEEHIIV_PUBLICATION_ID: bindings.secret(),
-            LVBT_MEMBERSHIP_INTAKE_SECRET: bindings.secret(),
-            LVBT_NOTION_API_KEY: bindings.secret(),
-            LVBT_PRESS_DATA_SOURCE_ID: bindings.secret(),
-            LVBT_TRANSIT_NEWS_INTAKE_SECRET: bindings.secret(),
             LVBT_SIGN_IN_SECRET: bindings.secret(),
-            LVBT_LINK_SIGNING_SECRET: bindings.secret(),
           },
         },
       };
@@ -80,8 +92,12 @@ export default defineConfig((ctx) => {
             }),
             ASSETS: bindings.assets(),
             LVBT_DEPLOYMENT_ENV: bindings.text('production'),
+            ...productionTaskBindings,
             LVBT_DISCORD_JOBS: bindings.worker({ worker: 'lvbt-jobs' }),
+            DISCORD_WORK: bindings.worker({ worker: 'lvbt-jobs', exportName: 'WorkPreview' }),
             LVBT_DISCORD_APPLICATION_ID: bindings.text('1552481672945999872'),
+            LVBT_DISCORD_GUILD_ID: bindings.text('1509298455896522823'),
+            LVBT_DISCORD_PRODUCTION_GUILD_ID: bindings.text('1509298455896522823'),
             LVBT_DISCORD_PUBLIC_KEY: bindings.text(
               '21422dba5d410653b6e1b21fedffbf8cdbccaa94fc221d81d767712d2f6faef9',
             ),
