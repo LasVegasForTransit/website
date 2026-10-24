@@ -16,6 +16,18 @@ export async function verifiedMemberProof(env: AuthEnv, sessionHash: string, now
     .bind(sessionHash, now.toISOString())
     .first<{ id: string; email: string }>();
 }
+/** Existing public-account control, distinct from proof of a personal email. */
+export async function verifiedPublicAccountSession(
+  env: AuthEnv,
+  sessionHash: string,
+  now = new Date(),
+) {
+  return env.PLATFORM_DB.prepare(
+    `SELECT p.id,p.email,s.type AS sessionType FROM sessions s JOIN people p ON p.id=s.person_id WHERE s.id_hash=? AND s.type IN ('member','staff') AND s.expires_at>? AND p.deleted_at IS NULL AND ${TEAM_ACCOUNT_ELIGIBLE}`,
+  )
+    .bind(sessionHash, now.toISOString())
+    .first<{ id: string; email: string; sessionType: 'member' | 'staff' }>();
+}
 export async function beginMemberHandoff(
   env: AuthEnv,
   pending: string,
@@ -61,7 +73,7 @@ export async function approveMemberHandoff(
   now = new Date(),
 ) {
   const sessionHash = await hash(env, 'session', memberToken);
-  const member = await verifiedMemberProof(env, sessionHash, now);
+  const member = await verifiedPublicAccountSession(env, sessionHash, now);
   if (!member) return false;
   const result = await env.PLATFORM_DB.prepare(
     `UPDATE staff_member_handoffs SET member_session_hash=?,person_id=? WHERE token_hash=? AND expires_at>? AND member_session_hash IS NULL`,
@@ -85,6 +97,8 @@ export async function staffHandoffProof(
       (await hash(env, mode === 'google' ? 'workspace-link' : 'sso-link', pending))
   )
     return null;
-  const member = await verifiedMemberProof(env, handoff.member_session_hash, now);
-  return member ? { ...member, sessionHash: handoff.member_session_hash } : null;
+  const member = await verifiedPublicAccountSession(env, handoff.member_session_hash, now);
+  return member?.id === handoff.person_id
+    ? { ...member, sessionHash: handoff.member_session_hash }
+    : null;
 }

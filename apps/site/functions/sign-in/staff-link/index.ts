@@ -2,10 +2,11 @@
 import {
   memberHandoff,
   approveMemberHandoff,
-  verifiedMemberProof,
+  verifiedPublicAccountSession,
 } from '@lasvegasfortransit/platform-storage/staff-member-handoff';
 import { hashWithSecret } from '@lasvegasfortransit/platform-core/signing';
 import { SESSION_COOKIE, readCookie } from '@lasvegasfortransit/platform-core/web-auth';
+import { currentMember } from '../../../platform/sign-in';
 import { builtPage, finish, redirect, showText, SECURITY_HEADERS } from '../../join/_page';
 import { platformSignIn, formOf, field, setValue, type SignInPagesEnv } from '../_shared';
 async function recovery(env: SignInPagesEnv, request: Request, status: number) {
@@ -64,13 +65,26 @@ function handoffPageResponse(
   );
   return response;
 }
+async function publicAccountSession(
+  platform: NonNullable<ReturnType<typeof platformSignIn>>,
+  token: string | null,
+) {
+  return token
+    ? verifiedPublicAccountSession(
+        platform,
+        await hashWithSecret(platform.LVBT_SIGN_IN_SECRET, `session:${token}`),
+      )
+    : null;
+}
+function crossSiteSubmission(request: Request) {
+  return request.method === 'POST' && request.headers.get('Origin') !== new URL(request.url).origin;
+}
 export const onRequest: PagesFunction<SignInPagesEnv> = async ({ env, request }) => {
   const platform = platformSignIn(env);
   if (!platform) return recovery(env, request, 503);
   if (request.method !== 'GET' && request.method !== 'POST')
     return new Response(null, { status: 405 });
-  if (request.method === 'POST' && request.headers.get('Origin') !== new URL(request.url).origin)
-    return recovery(env, request, 403);
+  if (crossSiteSubmission(request)) return recovery(env, request, 403);
   const form = request.method === 'POST' ? await formOf(request) : null;
   const token = form
     ? field(form, 'request')
@@ -78,12 +92,9 @@ export const onRequest: PagesFunction<SignInPagesEnv> = async ({ env, request })
   const handoff = await memberHandoff(platform, token);
   if (!handoff) return recovery(env, request, 410);
   const sessionToken = readCookie(request, SESSION_COOKIE),
-    session = sessionToken
-      ? await verifiedMemberProof(
-          platform,
-          await hashWithSecret(platform.LVBT_SIGN_IN_SECRET, `session:${sessionToken}`),
-        )
-      : null;
+    session = await publicAccountSession(platform, sessionToken);
+  if (!session && (await currentMember(platform, request)).signedIn)
+    return recovery(env, request, 409);
   if (!session)
     return redirect(
       `/sign-in/?next=${encodeURIComponent(`/sign-in/staff-link/?request=${encodeURIComponent(token)}`)}`,

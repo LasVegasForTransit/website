@@ -1,4 +1,4 @@
-import { verifiedMemberProof } from './staff-member-handoff';
+import { staffHandoffProof, verifiedMemberProof } from './staff-member-handoff';
 import { createTeamAccount } from './staff-account';
 import { ulid } from '@lasvegasfortransit/platform-core/ids';
 import { randomToken } from '@lasvegasfortransit/platform-core/random-token';
@@ -154,6 +154,21 @@ export class WorkspaceLinkService {
     return pending
       ? await this.finishLink(pending, member.id, 'self_linked', now)
       : { kind: 'expired' };
+  }
+
+  async completeForMemberHandoff(
+    token: string,
+    handoff: string,
+    now = new Date(),
+  ): Promise<WorkspaceCompletion> {
+    const account = await staffHandoffProof(this.env, handoff, {
+      pending: token,
+      mode: 'google',
+      now,
+    });
+    if (!account) return { kind: 'conflict' };
+    const pending = await this.consume(token, now);
+    return pending ? this.finishLink(pending, account.id, 'self_linked', now) : { kind: 'expired' };
   }
 
   private workspace(pending: PendingLinkRow): WorkspaceIdentity {

@@ -1,5 +1,5 @@
 import { validSsoPrincipal as valid, prepareSsoLink } from './staff-sso-provisioning';
-import { verifiedMemberProof } from './staff-member-handoff';
+import { staffHandoffProof, verifiedMemberProof } from './staff-member-handoff';
 import { createTeamAccount, TEAM_ACCOUNT_ELIGIBLE } from './staff-account';
 import { ulid } from '@lasvegasfortransit/platform-core/ids';
 import { randomToken } from '@lasvegasfortransit/platform-core/random-token';
@@ -183,15 +183,37 @@ export class SsoLinkService {
   ): Promise<WorkspaceCompletion> {
     const member = await verifiedMemberProof(this.env, sessionHash, now);
     return member
-      ? this.finishMember(token, { personId: member.id, sessionHash }, now)
+      ? this.finishMember(token, { personId: member.id, sessionHash, sessionType: 'member' }, now)
+      : { kind: 'conflict' };
+  }
+  async completeForMemberHandoff(
+    token: string,
+    handoff: string,
+    now = new Date(),
+  ): Promise<WorkspaceCompletion> {
+    const account = await staffHandoffProof(this.env, handoff, {
+      pending: token,
+      mode: 'cloudflare-access',
+      now,
+    });
+    return account
+      ? this.finishMember(
+          token,
+          {
+            personId: account.id,
+            sessionHash: account.sessionHash,
+            sessionType: account.sessionType,
+          },
+          now,
+        )
       : { kind: 'conflict' };
   }
   private async finishMember(
     token: string,
-    proof: { personId: string; sessionHash: string },
+    proof: { personId: string; sessionHash: string; sessionType: 'member' | 'staff' },
     now: Date,
   ): Promise<WorkspaceCompletion> {
-    const { personId, sessionHash } = proof;
+    const { personId, sessionHash, sessionType } = proof;
     const pending = await this.env.PLATFORM_DB.prepare(
       'DELETE FROM staff_sso_pending WHERE token_hash=? AND expires_at>? RETURNING issuer,subject,workspace_email,return_to,principal_expires_at,expires_at',
     )
@@ -199,7 +221,7 @@ export class SsoLinkService {
       .first<Pending>();
     if (!pending) return { kind: 'expired' };
     await this.env.PLATFORM_DB.prepare(
-      `INSERT INTO staff_sso_links(id,person_id,issuer,subject,email,created_at) SELECT ?,?,?,?,?,? WHERE EXISTS(SELECT 1 FROM people p WHERE p.id=? AND p.deleted_at IS NULL AND ${TEAM_ACCOUNT_ELIGIBLE}) AND EXISTS(SELECT 1 FROM sessions WHERE id_hash=? AND person_id=? AND type='member' AND expires_at>?) ON CONFLICT(issuer,subject) DO NOTHING`,
+      `INSERT INTO staff_sso_links(id,person_id,issuer,subject,email,created_at) SELECT ?,?,?,?,?,? WHERE EXISTS(SELECT 1 FROM people p WHERE p.id=? AND p.deleted_at IS NULL AND ${TEAM_ACCOUNT_ELIGIBLE}) AND EXISTS(SELECT 1 FROM sessions WHERE id_hash=? AND person_id=? AND type=? AND expires_at>?) ON CONFLICT(issuer,subject) DO NOTHING`,
     )
       .bind(
         ulid(),
@@ -211,6 +233,7 @@ export class SsoLinkService {
         personId,
         sessionHash,
         personId,
+        sessionType,
         now.toISOString(),
       )
       .run();

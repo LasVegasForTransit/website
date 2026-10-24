@@ -70,7 +70,12 @@ async function submitCompletion(context: SubmitContext, form: FormData) {
     return finish(context, await service.createAccount(pending, { givenName, familyName }));
   }
   if (action === 'connect-member' && page.member)
-    return finish(context, await service.completeForMemberProof(pending, page.member.sessionHash));
+    return finish(
+      context,
+      page.member.handoffToken
+        ? await service.completeForMemberHandoff(pending, page.member.handoffToken)
+        : await service.completeForMemberProof(pending, page.member.sessionHash),
+    );
   if (action === 'confirm' && page.email)
     return finish(
       context,

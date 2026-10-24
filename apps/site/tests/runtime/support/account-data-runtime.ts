@@ -56,7 +56,7 @@ async function migrate(simulator: Miniflare, data: string) {
   return db;
 }
 /** One compiled website Worker, private synthetic members, and intercepted code email only. */
-export async function accountDataRuntime() {
+export async function accountDataRuntime(sessionType: 'member' | 'staff' = 'member') {
   const root = fileURLToPath(new URL('../../../', import.meta.url));
   const data = await mkdtemp(join(tmpdir(), 'lvbt-account-data-'));
   const emails: AccountCodeEmail[] = [];
@@ -124,8 +124,8 @@ export async function accountDataRuntime() {
       linkMethod: 'self_linked',
     });
     const env = { PLATFORM_DB: db, LVBT_SIGN_IN_SECRET: 'account-data-fixture-only' };
-    const session = await createSession(env, person.id, 'member');
-    const secondSession = await createSession(env, person.id, 'member');
+    const session = await createSession(env, person.id, sessionType);
+    const secondSession = await createSession(env, person.id, sessionType);
     const signIn = await requestCode(env, {
       email: person.email ?? '',
       personId: person.id,

@@ -21,7 +21,7 @@ type Saved = NonNullable<Awaited<ReturnType<ReturnType<typeof linkService>['pend
 export interface LinkPage {
   saved: Saved;
   email: string | null;
-  member: { email: string | null; sessionHash: string } | null;
+  member: { email: string | null; sessionHash: string; handoffToken?: string } | null;
   step: string;
   enteredEmail: string;
   notice: string | null;
@@ -43,7 +43,8 @@ async function currentMember(env: StaffEnv, request: Request, pending: string, m
     if (member) return { ...member, sessionHash };
   }
   const handoff = readCookie(request, '__Host-lvbt_member_handoff');
-  return handoff ? staffHandoffProof(env, handoff, { pending, mode }) : null;
+  const proof = handoff ? await staffHandoffProof(env, handoff, { pending, mode }) : null;
+  return proof && handoff ? { ...proof, handoffToken: handoff } : null;
 }
 function pageStep(params: URLSearchParams, email: string | null, hasMember: boolean) {
   const requested = params.get('step');

@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { createSession } from '@lasvegasfortransit/platform-storage/auth';
 import { approveHandoffInBrowser } from '../runtime/support/staff-handoff-browser';
 import {
   beginMemberHandoff,
@@ -7,8 +8,11 @@ import {
 import { SsoLinkService } from '@lasvegasfortransit/platform-storage/staff-sso';
 import { WorkspaceLinkService } from '@lasvegasfortransit/platform-storage/workspace-link';
 import { accountDataRuntime, ACCOUNT_ORIGIN } from '../runtime/support/account-data-runtime';
-for (const mode of ['google', 'cloudflare-access'] as const) {
-  const fixture = await accountDataRuntime();
+const journeys = (['google', 'cloudflare-access'] as const).flatMap((mode) =>
+  (['member', 'staff'] as const).map((sessionType) => ({ mode, sessionType })),
+);
+for (const { mode, sessionType } of journeys) {
+  const fixture = await accountDataRuntime(sessionType);
   try {
     const expired = await fixture.simulator.dispatchFetch(`${ACCOUNT_ORIGIN}/sign-in/staff-link/`, {
       redirect: 'manual',
@@ -41,12 +45,31 @@ for (const mode of ['google', 'cloudflare-access'] as const) {
     assert.equal(signedOut.status, 303);
     assert.match(signedOut.headers.get('Location') ?? '', /^\/sign-in\/\?next=/);
     await signedOut.arrayBuffer();
+    const ineligible = await createSession(
+      { PLATFORM_DB: fixture.db, LVBT_SIGN_IN_SECRET: 'account-data-fixture-only' },
+      fixture.other.id,
+      sessionType,
+    );
+    const recovery = await fixture.simulator.dispatchFetch(url, {
+      headers: { Cookie: `__Host-lvbt_session=${ineligible.token}` },
+      redirect: 'manual',
+    });
+    assert.equal(
+      recovery.status,
+      409,
+      'signed-in ineligible accounts must not loop through sign-in',
+    );
+    assert.match(await recovery.text(), /Connection unavailable/);
     const cookie = `__Host-lvbt_session=${fixture.session.token}`;
     const get = await fixture.simulator.dispatchFetch(url, {
       headers: { Cookie: cookie },
       redirect: 'manual',
     });
-    assert.equal(get.status, 200);
+    assert.equal(
+      get.status,
+      200,
+      `${mode}: existing ${sessionType} account session must reach confirmation`,
+    );
     const html = await get.text();
     assert.match(html, /Connect to the Staff Portal/);
     assert.match(html, /account-rider@example.invalid/);
@@ -62,10 +85,23 @@ for (const mode of ['google', 'cloudflare-access'] as const) {
     assert.equal(await staffHandoffProof(env, token, { pending: 'wrong-browser', mode }), null);
     const proof = await staffHandoffProof(env, token, { pending, mode });
     assert.ok(proof);
-    const completed = await service.completeForMemberProof(pending, proof.sessionHash);
+    const verificationBefore = await fixture.db
+      .prepare('SELECT email_verified_at FROM people WHERE id=?')
+      .bind(fixture.person.id)
+      .first<{ email_verified_at: string | null }>();
+    const completed = await service.completeForMemberHandoff(pending, token);
+    const verificationAfter = await fixture.db
+      .prepare('SELECT email_verified_at FROM people WHERE id=?')
+      .bind(fixture.person.id)
+      .first<{ email_verified_at: string | null }>();
+    assert.deepEqual(
+      verificationAfter,
+      verificationBefore,
+      'account control must not invent personal-email verification',
+    );
     assert.equal(completed.kind, 'ok');
     assert.equal(completed.personId, fixture.person.id);
-    assert.notEqual((await service.completeForMemberProof(pending, proof.sessionHash)).kind, 'ok');
+    assert.notEqual((await service.completeForMemberHandoff(pending, token)).kind, 'ok');
     console.log(
       'Compiled member-site handoff: host-only member session, CSRF rejection, verified account display, portal-bound completion and replay refusal passed.',
     );
