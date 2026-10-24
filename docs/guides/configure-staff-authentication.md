@@ -122,11 +122,12 @@ team account using their name and verified Google account. Creation does not sub
 mailing list or grant an administrator role. Team-only accounts have basic paper-entry access.
 
 Apply migration `0056_staff_accounts.sql` to the shared member/staff database before using this
-flow. The public website and Staff Portal must use that same database and `LVBT_SIGN_IN_SECRET` for
-the member-session handoff. Deploy both applications from a compatible release. If the member site
-has a different origin, set `LVBT_MEMBER_ORIGIN` on the Staff Portal to its exact HTTPS origin;
-otherwise the canonical public site, or public preview for staff previews, is used. Cookies remain
-host-only. Test a signed-in member connection across the actual origins before launch.
+flow. The public website and Staff Portal must use that same database for the member-session
+handoff. Each application keeps its own `LVBT_SIGN_IN_SECRET`; do not rotate or copy signing keys to
+enable linking. Deploy both applications from a compatible release. If the member site has a
+different origin, set `LVBT_MEMBER_ORIGIN` on the Staff Portal to its exact HTTPS origin; otherwise
+the canonical public site, or public preview for staff previews, is used. Cookies remain host-only.
+Test a signed-in member connection across the actual origins before launch.
 
 If a connection expires, restart it from the Staff Portal. If accounts conflict, inspect their saved
 bindings and use the established account recovery procedure; never change an ID to make a login

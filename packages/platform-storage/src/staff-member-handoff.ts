@@ -1,10 +1,14 @@
 import { TEAM_ACCOUNT_ELIGIBLE } from './staff-account';
-import { randomToken } from '@lasvegasfortransit/platform-core/random-token';
+import { randomToken, digestToken } from '@lasvegasfortransit/platform-core/random-token';
 import { hashWithSecret } from '@lasvegasfortransit/platform-core/signing';
 import type { AuthEnv } from './auth';
 type Mode = 'google' | 'cloudflare-access';
 const hash = (env: AuthEnv, purpose: string, value: string) =>
   hashWithSecret(env.LVBT_SIGN_IN_SECRET, `${purpose}:${value}`);
+// A random 256-bit capability crosses applications with independent keys. Pending
+// logins and member sessions retain each application's keyed hashes and are
+// checked again before connecting accounts. Store only the capability's digest.
+const handoffHash = (token: string) => digestToken(`staff-handoff:${token}`);
 export async function verifiedMemberProof(env: AuthEnv, sessionHash: string, now = new Date()) {
   return env.PLATFORM_DB.prepare(
     `SELECT p.id,p.email FROM sessions s JOIN people p ON p.id=s.person_id WHERE s.id_hash=? AND s.type='member' AND s.expires_at>? AND p.deleted_at IS NULL AND ${TEAM_ACCOUNT_ELIGIBLE}`,
@@ -27,7 +31,7 @@ export async function beginMemberHandoff(
     'INSERT INTO staff_member_handoffs(token_hash,pending_hash,auth_mode,staff_origin,expires_at) VALUES(?,?,?,?,?)',
   )
     .bind(
-      await hash(env, 'staff-handoff', token),
+      await handoffHash(token),
       await hash(env, mode === 'google' ? 'workspace-link' : 'sso-link', pending),
       mode,
       staffOrigin,
@@ -41,7 +45,7 @@ export async function memberHandoff(env: AuthEnv, token: string, now = new Date(
   return env.PLATFORM_DB.prepare(
     'SELECT pending_hash,auth_mode,staff_origin,member_session_hash,person_id FROM staff_member_handoffs WHERE token_hash=? AND expires_at>?',
   )
-    .bind(await hash(env, 'staff-handoff', token), now.toISOString())
+    .bind(await handoffHash(token), now.toISOString())
     .first<{
       pending_hash: string;
       auth_mode: Mode;
@@ -62,7 +66,7 @@ export async function approveMemberHandoff(
   const result = await env.PLATFORM_DB.prepare(
     `UPDATE staff_member_handoffs SET member_session_hash=?,person_id=? WHERE token_hash=? AND expires_at>? AND member_session_hash IS NULL`,
   )
-    .bind(sessionHash, member.id, await hash(env, 'staff-handoff', token), now.toISOString())
+    .bind(sessionHash, member.id, await handoffHash(token), now.toISOString())
     .run();
   return result.meta.changes === 1;
 }
