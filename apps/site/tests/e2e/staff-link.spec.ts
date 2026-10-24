@@ -7,6 +7,15 @@ import { WorkspaceLinkService } from '@lasvegasfortransit/platform-storage/works
 import { accountDataRuntime, ACCOUNT_ORIGIN } from '../runtime/support/account-data-runtime';
 const fixture = await accountDataRuntime();
 try {
+  const expired = await fixture.simulator.dispatchFetch(`${ACCOUNT_ORIGIN}/sign-in/staff-link/`, {
+    redirect: 'manual',
+  });
+  assert.equal(expired.status, 410);
+  const expiredHtml = await expired.text();
+  assert.match(expiredHtml, /<html[^>]+lang="en"/);
+  assert.match(expiredHtml, /<title>Connection expired/);
+  assert.match(expiredHtml, /Open Staff Portal/);
+  assert.doesNotMatch(expiredHtml, /action="\/sign-in\/staff-link\/"/);
   const env = { PLATFORM_DB: fixture.db, LVBT_SIGN_IN_SECRET: 'account-data-fixture-only' };
   const service = new WorkspaceLinkService(env);
   const pending = await service.begin(

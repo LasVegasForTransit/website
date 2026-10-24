@@ -31,7 +31,12 @@ void test('signed logout marker survives a valid SSO assertion and is scoped to 
     await isSignedOut(
       env,
       new Request(`${origin}/sign-in/`, {
-        headers: { Cookie: cookie.split(';')[0].replace(/.$/, 'x') },
+        headers: {
+          // Change signed bytes, not unused bits in the final base64 character.
+          Cookie: cookie
+            .split(';')[0]
+            .replace(/\.([A-Za-z0-9_-])/, (_, first: string) => `.${first === 'A' ? 'B' : 'A'}`),
+        },
       }),
       principal,
     ),
