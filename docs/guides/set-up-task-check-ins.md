@@ -99,25 +99,25 @@ membership, newsletter, and role processing.
 
 ## Configure a paused source
 
-1. Open **Members**, expand **Member records**, and choose **Task check-ins**, then **Set up
-   check-ins**. In **Connection and field mapping**, enter the reviewed source and workspace IDs,
-   field mapping, and server. Confirm the status property has a **Done** option before permitting
-   completion; cancellation follows archived or trashed source pages.
+1. Open **Members**, expand **Member records**, and choose **Task check-ins**. The **Settings** page
+   opens with the saved configuration. In **Connection and field mapping**, enter the reviewed
+   source and workspace IDs, field mapping, and server. Confirm the status property has a **Done**
+   option before permitting completion; cancellation follows archived or trashed source pages.
 2. Review the timezone and date-range behavior. A date-only deadline lasts through the local day.
    Choose pre-deadline reminders, overdue reminders, unanswered follow-ups, daily-summary hour,
    quiet hours, snooze duration, and the shared notification cap and spacing.
 3. Select the service owner, trial participants, support recipients, and permitted actions. Confirm
    task content is suitable for its assignees. Separately approve sharing task and help content with
    support recipients before enabling escalation. Enter the retention period and trial success
-   criteria. Leave **Allow delivery after setup** unchecked and save the paused draft.
-4. Under **People to match**, review each Notion assignment and explicitly select its existing LVBT
-   person record. Names and handles help recognition; they do not establish identity. Use the
-   established
+   criteria. Leave **Allow automatic reminders for this task list** unchecked and save the paused
+   draft.
+4. Open **Troubleshooting**. Under **Match people to their LVBT accounts**, review each Notion
+   assignment and explicitly select its existing LVBT person record. Names and handles help
+   recognition; they do not establish identity. Use the established
    [Discord account-linking flow](../reference/platform-secrets.md#register-the-link-command) for
    verified account ownership. A Notion guest does not need membership or staff access. Do not
    create a duplicate record or grant membership to make a task deliverable.
-5. Use **Review existing matches** to inspect already linked accounts. Resolve conflicts before
-   proceeding. Follow
+5. Open **Matches** to inspect already linked accounts. Resolve conflicts before proceeding. Follow
    [person-match correction](./resolve-task-check-in-updates.md#correct-a-person-match) if a match
    is wrong; a correction pauses affected choices and requires renewed opt-in.
 
@@ -155,11 +155,11 @@ tests. Confirm the saved release, migration, bindings, and callback separately.
 
 ## Pause and recover
 
-Uncheck **Allow delivery after setup** to pause a source. Retaining the same terms permits a later
-resume without replaying stale reminders; changing policy terms requires renewed opt-in. Changing an
-identity match also requires renewed opt-in. For an environment-wide stop, pause the active source
-first, then disable the jobs task flag and the website task flag through the approved release
-process.
+Uncheck **Allow automatic reminders for this task list** to pause a source. Retaining the same terms
+permits a later resume without replaying stale reminders; changing policy terms requires renewed
+opt-in. Changing an identity match also requires renewed opt-in. For an environment-wide stop, pause
+the active source first, then disable the jobs task flag and the website task flag through the
+approved release process.
 
 After an environment-wide stop, keep the signed callback and environment/guild/source bindings
 available so volunteers can still pause or stop through **/checkins**. An unavailable policy or
