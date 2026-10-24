@@ -31,8 +31,8 @@ void test('manual retained staging preserves artifact verification and publicati
   assert.match(source, /release-attest\.yml@3567f0cb1345e8756eb5d84e0a3ea7b62695125a/);
   assert.match(source, /staging:\n[\s\S]*?needs: \[build, attest\]/);
   assert.match(source, /if: github.ref == 'refs\/heads\/main'/);
-  // Keep the reviewed publisher, including its retained schema migration gate.
-  assert.match(source, /release-publish\.yml@141cafabceeebaef795812d530f573e56e01d2df/);
+  // Keep the reviewed publisher, including retained migrations and version readiness.
+  assert.match(source, /release-publish\.yml@e788db94b39634f0e844284efdac9d3db95923a0/);
   assert.match(source, /target: preview/);
   assert.match(source, /attestation-prefix: attestation-website-release/);
   assert.match(source, /smoke-script: worker:smoke/);
