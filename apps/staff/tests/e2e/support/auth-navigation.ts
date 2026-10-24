@@ -121,3 +121,17 @@ export function accessHeaders(mode: Mode, assertion: string) {
     ? { extraHTTPHeaders: { 'Cf-Access-Jwt-Assertion': assertion } }
     : {};
 }
+
+export async function faviconPreservesSetup(page: Page) {
+  const result = await page.evaluate(async () => {
+    const response = await fetch('/favicon.ico');
+    return { status: response.status, path: new URL(response.url).pathname };
+  });
+  assert.deepEqual(
+    result,
+    { status: 401, path: '/favicon.ico' },
+    'a background favicon request must not start another sign-in',
+  );
+  await page.reload();
+  await page.getByRole('heading', { name: 'Check your email', exact: true }).waitFor();
+}
