@@ -20,7 +20,7 @@ jobs:
   validate:
     name: Validate
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 25
     # Deployment config baked into the static HTML — see apps/site/src/lib/site.ts.
     # apps/site/turbo.json passes these through to the build pnpm check runs.
     env:
@@ -48,6 +48,12 @@ jobs:
 
       - name: Check
         run: pnpm check
+
+      - name: Verify compiled staff workflows
+        run: pnpm -C apps/staff test:e2e
+
+      - name: Audit authenticated staff accessibility and performance
+        run: pnpm -C apps/staff test:audit
 
       - name: Verify staff release packaging
         env:
