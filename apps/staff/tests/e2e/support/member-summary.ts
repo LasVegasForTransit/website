@@ -267,15 +267,42 @@ export async function exerciseMemberSummary(
     await page.evaluate(() => getComputedStyle(document.documentElement).fontSize),
     '32px',
   );
-  assert.equal(
-    await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth),
-    true,
-    'multiple committee links and actions must reflow at 200% text on a 320px phone',
-  );
-  await page.screenshot({
-    animations: 'disabled',
-    fullPage: true,
-    path: `${fixture.root}/test-results/staff/member-roster-enlarged-text.png`,
+  for (const { name, font } of [
+    { name: 'default', font: '' },
+    { name: 'fallback', font: 'Verdana, sans-serif' },
+  ]) {
+    await page.evaluate((family) => {
+      document.body.style.fontFamily = family;
+    }, font);
+    const layout = await page.evaluate(() => {
+      const identityElement = document.querySelector('.staff-identity');
+      const labelElement = document.querySelector('.staff-identity > span');
+      if (!identityElement || !labelElement) throw new Error('Staff Portal identity is missing');
+      const identity = identityElement.getBoundingClientRect();
+      const label = labelElement.getBoundingClientRect();
+      return {
+        viewport: innerWidth,
+        width: document.documentElement.scrollWidth,
+        identityRight: identity.right,
+        labelRight: label.right,
+      };
+    });
+    assert.ok(
+      layout.width <= layout.viewport,
+      `the member roster must reflow at 200% text on a 320px phone (${name} font): ${JSON.stringify(layout)}`,
+    );
+    assert.ok(
+      layout.labelRight <= layout.identityRight + 1,
+      `the Staff Portal label must wrap within its header (${name} font)`,
+    );
+    await page.screenshot({
+      animations: 'disabled',
+      fullPage: true,
+      path: `${fixture.root}/test-results/staff/member-roster-enlarged-text-${name}.png`,
+    });
+  }
+  await page.evaluate(() => {
+    document.body.style.removeProperty('font-family');
   });
   await page.goto(`${ORIGIN}/people/${person.id}/`);
   await page.emulateMedia({ colorScheme: 'dark' });
