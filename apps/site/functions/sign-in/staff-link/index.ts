@@ -13,7 +13,7 @@ async function recovery(env: SignInPagesEnv, request: Request, status: number) {
   const title = status === 410 ? 'Connection expired' : 'Connection unavailable';
   const page = await builtPage(env, request, '/sign-in/staff-link/');
   const rewriter = new HTMLRewriter()
-    .on('title', showText(`${title} — Las Vegans for Better Transit`))
+    .on('title', showText(`${title} · LVBT Staff Portal`))
     .on('h1', showText(title))
     .on('[data-slot="connection-intro"]', showText('Return to the Staff Portal and start again.'))
     .on('[data-slot="connection-form"]', {
@@ -26,7 +26,7 @@ async function recovery(env: SignInPagesEnv, request: Request, status: number) {
         element.removeAttribute('hidden');
       },
     })
-    .on('[data-slot="portal-link"]', {
+    .on('[data-slot="portal-link"], .staff-identity', {
       element: (element) => {
         element.setAttribute(
           'href',
@@ -109,6 +109,16 @@ export const onRequest: PagesFunction<SignInPagesEnv> = async ({ env, request })
   const page = await builtPage(env, request, '/sign-in/staff-link/');
   const rewriter = new HTMLRewriter()
     .on('[data-slot="member-email"]', showText(session.email))
+    .on('.staff-identity', {
+      element: (element) => {
+        element.setAttribute('href', handoff.staff_origin);
+      },
+    })
+    .on('[data-slot="different-member"]', {
+      element: (element) => {
+        element.setAttribute('href', `${handoff.staff_origin}/sign-in/link-account/?step=existing`);
+      },
+    })
     .on('[data-slot="request"]', setValue(token));
   return handoffPageResponse(rewriter.transform(page), handoff.staff_origin, env, request);
 };

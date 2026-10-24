@@ -1,29 +1,33 @@
 ---
-import BaseLayout from '../../layouts/BaseLayout.astro';
-import PageHero from '../../components/PageHero.astro';
-import Button from '../../components/app/Button.astro';
-import { linkClass } from '../../components/app/styles';
+import StaffGateLayout from '@lasvegasfortransit/platform-core/staff-gate-layout';
 ---
 
-<BaseLayout title="Connect to the Staff Portal" noindex>
-  <PageHero title="Connect to the Staff Portal"
-    ><p class="lede mt-6 max-w-2xl" data-slot="connection-intro">
-      Use this member account to finish setting up your Staff Portal access.
-    </p></PageHero
-  >
-  <section class="container-page py-12 md:py-16">
-    <div class="max-w-[30rem] space-y-6" data-slot="connection-form">
-      <p class="border border-outline bg-surface-container p-6 [overflow-wrap:anywhere]">
-        <strong data-slot="member-email"></strong>
-      </p>
-      <form method="post" action="/sign-in/staff-link/">
-        <input type="hidden" name="request" data-slot="request" /><Button block>Continue</Button>
-      </form>
-    </div>
-    <div class="max-w-[30rem] space-y-6" data-slot="connection-recovery" hidden>
-      <a data-slot="portal-link" href="https://staff.lasvegasfortransit.org/" class={linkClass}
-        >Open Staff Portal</a
+<StaffGateLayout title="Connect to the Staff Portal">
+  <p data-slot="connection-intro">
+    Use this member account to finish setting up your Staff Portal access.
+  </p>
+  <div class="staff-gate-form" data-slot="connection-form">
+    <p class="staff-gate-account">
+      LVBT member account
+      <strong data-slot="member-email"></strong>
+      <a
+        class="staff-gate-link"
+        data-slot="different-member"
+        href="https://staff.lasvegasfortransit.org/sign-in/link-account/?step=existing"
+        >Use a different member account</a
       >
-    </div>
-  </section>
-</BaseLayout>
+    </p>
+    <form method="post" action="/sign-in/staff-link/">
+      <input type="hidden" name="request" data-slot="request" />
+      <button class="staff-action-link" type="submit">Continue</button>
+    </form>
+  </div>
+  <div data-slot="connection-recovery" hidden>
+    <a
+      data-slot="portal-link"
+      href="https://staff.lasvegasfortransit.org/"
+      class="staff-action-link">Open Staff Portal</a
+    >
+  </div>
+  <p slot="help">Need a hand? Ask the LVBT volunteer who invited you.</p>
+</StaffGateLayout>

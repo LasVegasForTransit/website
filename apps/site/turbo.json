@@ -4,7 +4,12 @@
   "tasks": {
     "build": {
       "dependsOn": ["^build", "sync"],
-      "inputs": ["$TURBO_DEFAULT$", ".env*"],
+      "inputs": [
+        "$TURBO_DEFAULT$",
+        ".env*",
+        "$TURBO_ROOT$/packages/platform-core/src/staff-gate*",
+        "$TURBO_ROOT$/packages/platform-core/src/StaffGateLayout.astro"
+      ],
       "env": ["PUBLIC_LVBT_*", "LVBT_REQUIRE_ANALYTICS", "LVBT_PSEUDO_LOCALE"],
       "outputs": ["dist/**", ".wrangler/worker/**"]
     },

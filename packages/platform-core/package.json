@@ -19,7 +19,9 @@
     "./welcome": "./src/welcome.ts",
     "./access": "./src/access.ts",
     "./discord-identity": "./src/discord-identity.ts",
-    "./paper": "./src/paper.ts"
+    "./paper": "./src/paper.ts",
+    "./staff-gate": "./src/staff-gate.ts",
+    "./staff-gate-layout": "./src/StaffGateLayout.astro"
   },
   "scripts": {
     "lint": "eslint . --max-warnings 0",

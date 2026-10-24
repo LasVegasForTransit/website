@@ -1,7 +1,7 @@
 ---
 import { env } from 'cloudflare:workers';
 import { safeNext } from '@lasvegasfortransit/platform-core/web-auth';
-import StaffGateLayout from '../../layouts/StaffGateLayout.astro';
+import StaffGateLayout from '@lasvegasfortransit/platform-core/staff-gate-layout';
 import StaffAccount from '../../components/StaffAccount.astro';
 import { readStaffSession } from '../../lib/staff-session';
 import { staffReturnPath } from '../../lib/sign-in-return';
