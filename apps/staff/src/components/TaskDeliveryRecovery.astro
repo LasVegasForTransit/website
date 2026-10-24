@@ -12,12 +12,12 @@ const { sourceId, review, tokens } = Astro.props;
 {
   review.items.length > 0 && (
     <section class="staff-checkin-section" aria-labelledby="delivery-recovery-title">
-      <h2 id="delivery-recovery-title">Summaries and card updates needing attention</h2>
+      <h3 id="delivery-recovery-title">Messages that need another check</h3>
       <ul class="staff-checkin-list staff-delivery-review-list">
         {review.items.map((issue) => (
           <li>
             <div>
-              <h3>{issue.kind === 'digest' ? 'Daily summary' : 'Card update'}</h3>
+              <h4>{issue.kind === 'digest' ? 'Daily summary' : 'Card update'}</h4>
               <p>
                 {issue.person_name ?? 'LVBT volunteer'} ·{' '}
                 {issue.day ?? formatDate(new Date(issue.updated_at))}
@@ -33,12 +33,12 @@ const { sourceId, review, tokens } = Astro.props;
               )}
               <p class="staff-help">
                 {issue.state === 'held'
-                  ? 'Discord could not confirm whether this summary arrived. Check Discord before closing; another send could duplicate it.'
+                  ? 'We couldn’t confirm delivery. Check Discord before dismissing this message; sending it again could create a duplicate.'
                   : issue.safe_retry !== 1
-                    ? 'The current account, preferences or source settings prevent a retry. Resolve those before checking again.'
+                    ? 'This message can’t be sent again yet. Check the person’s account and message preferences, then review settings.'
                     : issue.kind === 'refresh'
-                      ? 'Retrying refreshes the existing private card without repeating a Notion response.'
-                      : 'The last summary attempt failed. A retry checks the current preferences and schedule.'}
+                      ? 'This updates the existing Discord message. It won’t send the same response to Notion again.'
+                      : 'The summary wasn’t sent. Trying again checks the person’s preferences and the schedule first.'}
               </p>
             </div>
             <div class="staff-checkin-recovery-actions">
@@ -76,9 +76,3 @@ const { sourceId, review, tokens } = Astro.props;
     </section>
   )
 }
-<style>
-  .staff-delivery-review-list {
-    max-height: 24rem;
-    overflow: auto;
-  }
-</style>

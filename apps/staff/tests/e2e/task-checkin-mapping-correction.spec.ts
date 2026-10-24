@@ -121,7 +121,7 @@ try {
   ]);
   const page = await context.newPage();
   await page.goto(`${ORIGIN}/task-checkins/?source=${sourceId}`);
-  await page.getByRole('link', { name: 'Review existing matches', exact: true }).click();
+  await page.getByRole('link', { name: 'Account matches', exact: true }).click();
   assert.ok((await page.locator('main').innerText()).includes('Alex Committee Volunteer'));
   assert.ok((await page.locator('main').innerText()).includes(wrong.email ?? ''));
   await page.getByRole('link', { name: 'Review match', exact: true }).click();
@@ -169,7 +169,7 @@ try {
     )?.person_id,
     right.id,
   );
-  await page.getByRole('link', { name: 'Review existing matches', exact: true }).click();
+  await page.getByRole('link', { name: 'Account matches', exact: true }).click();
   await page.getByRole('link', { name: 'Review match', exact: true }).click();
   assert.ok((await page.locator('main').innerText()).includes(right.email ?? ''));
   await page.setViewportSize({ width: 320, height: 900 });
