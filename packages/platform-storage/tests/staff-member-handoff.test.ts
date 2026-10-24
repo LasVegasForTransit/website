@@ -11,7 +11,8 @@ import {
 void test('member proof is bound to the pending browser and auth mode and dies with its session', async () => {
   const db = memoryDb();
   try {
-    const env = { PLATFORM_DB: db, LVBT_SIGN_IN_SECRET: 'fixture' };
+    const env = { PLATFORM_DB: db, LVBT_SIGN_IN_SECRET: 'staff-fixture' };
+    const memberEnv = { ...env, LVBT_SIGN_IN_SECRET: 'member-fixture' };
     const { person } = await new PersonService(db).upsertFromSource({
       source: 'join_form',
       fields: { email: 'personal@example.org' },
@@ -22,7 +23,7 @@ void test('member proof is bound to the pending browser and auth mode and dies w
         wordingVersion: 'fixture',
       },
     });
-    const session = await createSession(env, person.id, 'member');
+    const session = await createSession(memberEnv, person.id, 'member');
     const handoff = await beginMemberHandoff(env, 'browser-one', {
       mode: 'google',
       staffOrigin: 'https://staff.lasvegasfortransit.org',
@@ -31,7 +32,7 @@ void test('member proof is bound to the pending browser and auth mode and dies w
       await staffHandoffProof(env, handoff, { pending: 'browser-one', mode: 'google' }),
       null,
     );
-    assert.equal(await approveMemberHandoff(env, handoff, session.token), true);
+    assert.equal(await approveMemberHandoff(memberEnv, handoff, session.token), true);
     assert.equal(
       (await staffHandoffProof(env, handoff, { pending: 'browser-one', mode: 'google' }))?.id,
       person.id,
@@ -44,8 +45,8 @@ void test('member proof is bound to the pending browser and auth mode and dies w
       await staffHandoffProof(env, handoff, { pending: 'browser-one', mode: 'cloudflare-access' }),
       null,
     );
-    assert.equal(await approveMemberHandoff(env, handoff, session.token), false);
-    await endSession(env, session.token);
+    assert.equal(await approveMemberHandoff(memberEnv, handoff, session.token), false);
+    await endSession(memberEnv, session.token);
     assert.equal(
       await staffHandoffProof(env, handoff, { pending: 'browser-one', mode: 'google' }),
       null,
