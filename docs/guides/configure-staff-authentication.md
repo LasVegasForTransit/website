@@ -1,8 +1,10 @@
 # Configure staff authentication
 
 Use this guide when setting up a staff deployment or changing its sign-in provider. Both supported
-modes confirm a member's personal email once and apply current membership and role checks on each
-protected request. Authentication configuration does not grant administrator or committee roles.
+modes verify an LVBT Google account and apply current membership and role checks on each protected
+request. Prepared accounts continue directly; unlinked volunteers connect an existing member account
+or create a team account. Authentication configuration does not grant administrator or committee
+roles.
 
 ## Prerequisites
 
@@ -42,14 +44,20 @@ Workers, D1, assets and service-binding runtime to another host remains separate
 2. Set `LVBT_ACCESS_TEAM_DOMAIN` to the team hostname, without a scheme or path, and
    `LVBT_ACCESS_AUD` to the exact application's audience. Keep preview and production audiences
    separate.
-3. Keep the selected mode `cloudflare-access`. Google OAuth client credentials are unnecessary for
+3. In Cloudflare One, open **Integrations → Identity providers → Google Workspace** and set **Google
+   prompt** to **Select account**. Without this prompt, changing accounts can immediately sign the
+   volunteer back into the previous Google account. This setting applies to every Access application
+   using that identity provider; keep its Workspace domain and access policies intact.
+4. Keep the selected mode `cloudflare-access`. Google OAuth client credentials are unnecessary for
    staff authentication in this mode; Google provisioning integrations have their own credentials.
-4. Release the reviewed artifact and run `pnpm -C apps/staff preflight --preview` with the approved
+5. Release the reviewed artifact and run `pnpm -C apps/staff preflight --preview` with the approved
    read-only provider credentials as described in the release procedure. Review every failed or
    unverified check before promoting production.
-5. With an approved test member, sign in through Access, confirm the membership email if requested,
-   and verify the expected staff or paper-only destination. Repeat without an assertion and with an
-   unauthorized account; both must be refused without a Google fallback.
+6. With an approved test member, sign in through Access, confirm the membership email if requested,
+   and verify the expected staff or paper-only destination. Choose **Change account**, complete
+   Access logout, and verify Google offers an account chooser before returning to the portal. Repeat
+   without an assertion and with an unauthorized account; both must be refused without a Google
+   fallback.
 
 Access subjects are stored as provider-scoped authentication links. They are never Google account
 IDs. Existing Google-backed application sessions do not automatically establish an SSO link, even
@@ -90,8 +98,8 @@ Google Workspace identity remains a separate fact for Google provisioning and of
 ## Verify sign-out, revocation and recovery
 
 Signing out ends the application session. In Access mode a signed, principal-bound browser marker
-prevents automatic sign-in for up to 30 days, including after SSO credential renewal; **Continue to
-Staff** explicitly starts again through a same-origin form. The page does not claim to sign out the
+prevents automatic sign-in for up to 30 days, including after SSO credential renewal; **Sign in
+again** explicitly starts again through a same-origin form. The page does not claim to sign out the
 organization's identity provider. Clearing browser storage also clears this local sign-out
 preference.
 
