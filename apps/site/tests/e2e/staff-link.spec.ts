@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { approveHandoffInBrowser } from '../runtime/support/staff-handoff-browser';
 import {
   beginMemberHandoff,
   staffHandoffProof,
@@ -57,18 +58,7 @@ for (const mode of ['google', 'cloudflare-access'] as const) {
     });
     assert.equal(bad.status, 403);
     await bad.arrayBuffer();
-    const approved = await fixture.simulator.dispatchFetch(url, {
-      method: 'POST',
-      headers: { Cookie: cookie, Origin: ACCOUNT_ORIGIN },
-      body: new URLSearchParams({ request: token }),
-      redirect: 'manual',
-    });
-    assert.equal(approved.status, 303);
-    assert.equal(
-      approved.headers.get('Location'),
-      'https://staff.lasvegasfortransit.org/sign-in/link-account/',
-    );
-    await approved.arrayBuffer();
+    await approveHandoffInBrowser(fixture, url);
     assert.equal(await staffHandoffProof(env, token, { pending: 'wrong-browser', mode }), null);
     const proof = await staffHandoffProof(env, token, { pending, mode });
     assert.ok(proof);

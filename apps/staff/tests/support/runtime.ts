@@ -258,6 +258,7 @@ async function startRuntimeInternal(options: RuntimeOptions = {}) {
     if (options.initialAdminSetup)
       return {
         simulator,
+        tls: { key: httpsKey, cert: httpsCert },
         port: (await simulator.ready).port,
         db,
         admin,
@@ -337,6 +338,7 @@ async function startRuntimeInternal(options: RuntimeOptions = {}) {
     });
     return {
       simulator,
+      tls: { key: httpsKey, cert: httpsCert },
       port: (await simulator.ready).port,
       db,
       admin,

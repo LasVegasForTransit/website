@@ -5,6 +5,13 @@ import { join } from 'node:path';
 import { chromium, type Page, type BrowserContext } from '@playwright/test';
 import { exportJWK, generateKeyPair, SignJWT } from 'jose';
 import { ORIGIN, startRuntime } from '../support/runtime';
+import {
+  navigationFlow,
+  navigationRuntime,
+  navigationJourney,
+  accessHeaders,
+  type Flow,
+} from './support/auth-navigation';
 
 const output = process.argv
   .find((arg) => arg.startsWith('--screenshots='))
@@ -158,13 +165,13 @@ async function journey(
   mode: 'cloudflare-access' | 'google',
   theme: 'light' | 'dark',
   width: number,
-  flow: 'existing' | 'create' | 'member' = 'existing',
+  flow: Flow = 'existing',
 ) {
   let nonce = '';
   let code = '';
   const fixture = await startRuntime({
     initialAdminSetup: true,
-    unlinkedAdmin: true,
+    unlinkedAdmin: flow !== 'change',
     authMode: mode,
     emailCapture: (email) => {
       code = capturedCode(email);
@@ -191,20 +198,24 @@ async function journey(
         }
       : {}),
   });
+  const navigation = await navigationRuntime(fixture, flow, mode, (authorization) => {
+    nonce = authorization.searchParams.get('nonce') ?? '';
+    const callback = new URL('/sign-in/google/callback', ORIGIN);
+    callback.search = new URLSearchParams({
+      state: authorization.searchParams.get('state') ?? '',
+      code: 'local-fixture-only',
+    }).toString();
+    return callback.href;
+  });
   const browser = await chromium.launch({
-    args: [
-      `--host-resolver-rules=MAP staff.lasvegasfortransit.org 127.0.0.1:${fixture.port}`,
-      '--no-proxy-server',
-    ],
+    args: [`--host-resolver-rules=MAP * 127.0.0.1:${navigation.port}`, '--no-proxy-server'],
   });
   const context = await browser.newContext({
     javaScriptEnabled: false,
     ignoreHTTPSErrors: true,
     colorScheme: theme,
     viewport: { width, height: 900 },
-    ...(mode === 'cloudflare-access'
-      ? { extraHTTPHeaders: { 'Cf-Access-Jwt-Assertion': fixture.admin.assertion } }
-      : {}),
+    ...accessHeaders(mode, fixture.admin.assertion),
   });
   await seedMemberCookie(flow, fixture, context);
   const page = await context.newPage();
@@ -213,38 +224,16 @@ async function journey(
     if (message.type() === 'error' && message.text().includes('Content Security Policy'))
       cspErrors.push(message.text());
   });
-  await context.route('**/*', async (route) => {
-    const url = new URL(route.request().url());
-    if (url.origin === ORIGIN && url.pathname === '/sign-in/google/') {
-      assert.equal(mode, 'google', 'Access flow must never start Google OAuth');
-      const started = await fixture.simulator.dispatchFetch(url.href, {
-        headers: route.request().headers(),
-        redirect: 'manual',
-      });
-      assert.equal(started.status, 303);
-      const authorization = new URL(started.headers.get('Location') ?? '');
-      assert.equal(authorization.origin, 'https://accounts.google.com');
-      nonce = authorization.searchParams.get('nonce') ?? '';
-      const callback = new URL('/sign-in/google/callback', ORIGIN);
-      callback.search = new URLSearchParams({
-        state: authorization.searchParams.get('state') ?? '',
-        code: 'local-fixture-only',
-      }).toString();
-      return route.fulfill({
-        status: 302,
-        headers: { Location: callback.href, 'Set-Cookie': started.headers.get('Set-Cookie') ?? '' },
-        body: '',
-      });
-    }
-    assert.equal(url.origin, ORIGIN, 'local flow must not contact external browser services');
-    await route.continue();
-  });
   try {
     await page.goto(`${ORIGIN}/sign-in/`);
     if (mode === 'google') {
       await page.getByRole('heading', { name: 'Sign in to the Staff Portal' }).waitFor();
       await capture(page, { mode, theme, width }, '01-sign-in');
       await page.getByRole('link', { name: 'Sign in with Google' }).click();
+    }
+    if (navigationFlow(flow)) {
+      await navigationJourney(page, flow, cspErrors, mode);
+      return;
     }
     if (flow === 'member') {
       await memberJourney(page, fixture, { mode, theme, width });
@@ -321,6 +310,7 @@ async function journey(
     );
   } finally {
     await browser.close();
+    await navigation.dispose();
     await fixture.dispose();
   }
 }
@@ -329,7 +319,8 @@ for (const mode of ['cloudflare-access', 'google'] as const)
   for (const theme of ['light', 'dark'] as const)
     for (const width of output ? [390, 1440] : [390]) await journey(mode, theme, width);
 for (const mode of ['cloudflare-access', 'google'] as const)
-  for (const flow of ['create', 'member'] as const) await journey(mode, 'light', 390, flow);
+  for (const flow of ['create', 'member', 'handoff', 'change'] as const)
+    await journey(mode, 'light', 390, flow);
 if (output)
   await writeFile(
     join(output, 'captures.json'),

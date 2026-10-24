@@ -3,6 +3,7 @@ import { t } from '@lasvegasfortransit/platform-core/messages';
 import { verifyAccessAssertion } from '@lasvegasfortransit/platform-integrations/access-identity';
 import { resolveStaffContext, type StaffEnv, type StaffLocals } from './context';
 import { messageResponse, privateResponse } from './responses';
+import { authFormOrigins } from './auth-form-origins';
 export { staffOriginAllowed } from '@lasvegasfortransit/platform-integrations/staff-auth-config';
 import {
   staffAuthMode,
@@ -43,6 +44,7 @@ export async function staffMiddleware(
     return privateResponse(
       recoverStaffResponse(await context.next()),
       new URL(request.url).pathname,
+      authFormOrigins(env, new URL(request.url)),
     );
   } catch (error) {
     return requestFailure(error, 'middleware');
