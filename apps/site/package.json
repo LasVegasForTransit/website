@@ -58,6 +58,7 @@
     "check:links": "tsx scripts/audit/check-build-links.ts",
     "test:discord-link": "node --import tsx tests/e2e/discord-link.spec.ts",
     "test:intake": "node --import tsx tests/e2e/intake-runtime.spec.ts",
+    "test:staff-link": "node --import tsx tests/e2e/staff-link.spec.ts",
     "test:account-data": "node --import tsx tests/e2e/account-data.spec.ts",
     "test:account-data:lighthouse": "node --import tsx tests/e2e/account-data.spec.ts --lighthouse"
   },

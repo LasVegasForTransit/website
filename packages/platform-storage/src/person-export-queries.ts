@@ -4,7 +4,11 @@ import { ulid } from '@lasvegasfortransit/platform-core/ids';
 export type PersonExportAuthority = {
   personId: string;
   sessionHash: string;
-} & ({ kind: 'member' } | { kind: 'administrator'; workspaceEmail: string });
+} & (
+  | { kind: 'member' }
+  | { kind: 'administrator'; workspaceEmail: string }
+  | { kind: 'administrator'; sso: { issuer: string; subject: string } }
+);
 
 const SESSION_SCOPE = `EXISTS(SELECT 1 FROM sessions s JOIN people viewer ON viewer.id=s.person_id
   WHERE s.person_id=?2 AND s.id_hash=?3 AND julianday(s.expires_at)>julianday(?4)
@@ -16,8 +20,13 @@ function scope(authority: PersonExportAuthority): string {
       AND wi.person_id=viewer.id AND wi.platform='google_workspace'))))`
     : `${SESSION_SCOPE} AND s.type='staff' AND viewer.membership_status='member'
       AND EXISTS(SELECT 1 FROM staff_administrators WHERE person_id=viewer.id)
-      AND EXISTS(SELECT 1 FROM identities wi WHERE wi.id=s.workspace_identity_id
-        AND wi.person_id=viewer.id AND wi.platform='google_workspace' AND wi.external_email=?5))`;
+      AND ${
+        'sso' in authority
+          ? `s.authentication_source='cloudflare-access' AND EXISTS(SELECT 1 FROM staff_sso_links link
+          WHERE link.id=s.sso_link_id AND link.person_id=viewer.id AND link.issuer=?5 AND link.subject=?6 AND link.revoked_at IS NULL)`
+          : `EXISTS(SELECT 1 FROM identities wi WHERE wi.id=s.workspace_identity_id
+          AND wi.person_id=viewer.id AND wi.platform='google_workspace' AND wi.external_email=?5)`
+      })`;
 }
 
 const PROFILE = `p.id,p.given_name,p.family_name,p.email,p.email_verified_at,p.phone,p.zip,
@@ -84,7 +93,10 @@ export function exportStatement(
         ? QUERIES[section]
         : null;
   const values: SqlValue[] = [personId, authority.personId, authority.sessionHash, at];
-  if (authority.kind === 'administrator') values.push(authority.workspaceEmail);
+  if (authority.kind === 'administrator') {
+    if ('sso' in authority) values.push(authority.sso.issuer, authority.sso.subject);
+    else values.push(authority.workspaceEmail);
+  }
   // The final scope check writes its receipt atomically, so stale authority
   // cannot leave an audit entry for a refused export.
   const receipt = `INSERT INTO staff_audits(id,actor_id,action,permission,target_id,details,occurred_at)

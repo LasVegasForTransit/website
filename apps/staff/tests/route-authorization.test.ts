@@ -1,3 +1,4 @@
+import { ssoSessionFixture, ssoPrincipalFixture } from './support/sso';
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { readdir, readFile } from 'node:fs/promises';
@@ -7,10 +8,7 @@ import { exportJWK, generateKeyPair, SignJWT } from 'jose';
 import { memoryDb } from '@lasvegasfortransit/platform-storage/test-db';
 import { PersonService } from '@lasvegasfortransit/platform-storage/person-service';
 import { bootstrapStaffAdmin } from '@lasvegasfortransit/platform-storage/staff-roles';
-import {
-  createWorkspaceSession,
-  linkWorkspaceIdentity,
-} from '@lasvegasfortransit/platform-storage/workspace-link';
+import { linkWorkspaceIdentity } from '@lasvegasfortransit/platform-storage/workspace-link';
 import type { StaffLocals } from '../src/lib/context';
 import { staffSignInReturn, throughStaffReturn } from '../src/lib/sign-in-return';
 const keys = await generateKeyPair('RS256');
@@ -74,7 +72,11 @@ async function fixture(options: { staffAdmin?: boolean } = {}) {
       performedBy: 'fixture-maintainer',
       operationId: 'bootstrap',
     });
-  const session = await createWorkspaceSession(env, workspace);
+  const session = await ssoSessionFixture(
+    env,
+    person.id,
+    ssoPrincipalFixture(workspace.email, 'access-subject-is-different'),
+  );
   assert.ok(session);
   const assertion = await new SignJWT({ email: workspace.email, type: 'app' })
     .setProtectedHeader({ alg: 'RS256', kid: jwk.kid })
@@ -102,7 +104,7 @@ function privateHeaders(response: Response) {
   assert.equal(response.headers.get('Referrer-Policy'), 'same-origin');
   assert.match(response.headers.get('Content-Security-Policy') ?? '', /frame-ancestors 'none'/);
 }
-void test('every staff page derives its actor from a Google-bound session and current database roles', async () => {
+void test('every staff page derives its actor from a provider-bound session and current database roles', async () => {
   const { db, env, person, headers, staffMiddleware } = await fixture();
   const locals: StaffLocals = {};
   const ok = await staffMiddleware(new Request(`${origin}/people/`, { headers }), env, {
@@ -295,7 +297,7 @@ void test('revoked sessions or removed Workspace links immediately deny paper ac
       db.raw.prepare('DELETE FROM sessions WHERE person_id=?').run(person.id);
     else
       db.raw
-        .prepare("DELETE FROM identities WHERE platform='google_workspace' AND person_id=?")
+        .prepare("UPDATE staff_sso_links SET revoked_at=datetime('now') WHERE person_id=?")
         .run(person.id);
     for (const path of ['/paper/', '/paper/sheet/']) {
       const response = await staffMiddleware(new Request(`${origin}${path}`, { headers }), env, {
@@ -311,7 +313,10 @@ void test('revoked sessions or removed Workspace links immediately deny paper ac
 
 void test('staff sign-in returns a verified volunteer only to paper destinations', async () => {
   const { db, env, headers } = await fixture({ staffAdmin: false });
-  const access = { email: 'member@lasvegasfortransit.org', subject: 'access-fixture' };
+  const access = ssoPrincipalFixture(
+    'member@lasvegasfortransit.org',
+    'access-subject-is-different',
+  );
   for (const next of [
     '/people/?q=private',
     '/people/other/',
@@ -340,7 +345,7 @@ void test('staff sign-in returns a verified volunteer only to paper destinations
   const mismatch = await staffSignInReturn(
     env,
     new Request(`${origin}/sign-in/return/`, { headers }),
-    { ...access, email: 'other@lasvegasfortransit.org' },
+    { ...access, subject: 'other-principal' },
   );
   assert.equal(mismatch.headers.get('Location'), '/sign-in/');
   const response = new Response(null, {
@@ -351,7 +356,7 @@ void test('staff sign-in returns a verified volunteer only to paper destinations
     },
   });
   const returned = throughStaffReturn(response);
-  assert.equal(returned.headers.get('Location'), '/sign-in/return/?next=%2Fpeople%2F');
+  assert.equal(returned.headers.get('Location'), '/sign-in/ready/?next=%2Fpeople%2F');
   assert.equal(returned.headers.get('Set-Cookie'), response.headers.get('Set-Cookie'));
   assert.equal(
     throughStaffReturn(

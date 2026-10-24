@@ -38,8 +38,10 @@ paths remain closed. Record application activation separately from staff and pro
 
 ## 2. Verify membership linking and staff permissions
 
-1. Sign in with the approved administrator's LVBT Google account. Complete membership confirmation
-   in that browser if requested. Confirm it links the intended active member record.
+1. Sign in with the approved administrator's organization account through the selected mode. Access
+   mode must continue without a second Google sign-in; direct Google mode must work with Access
+   absent. Complete membership confirmation in that browser if requested. Confirm it links the
+   intended active member record.
 2. For first-time setup, complete **Set up staff access** once. Confirm the designation is audited
    and cannot replace an existing administrator. Remove the temporary setup secret after success.
 3. Open **Members**, search by name and email, and open the intended profile. Confirm membership,

@@ -11,6 +11,8 @@ export interface Actor {
   personId: string;
   membershipStatus: MembershipStatus;
   workspaceLinked: boolean;
+  organizationAuthenticated?: boolean;
+  teamAccount?: boolean;
   staffAdmin: boolean;
   committees: readonly ActorCommittee[];
   eventsLed: readonly string[];

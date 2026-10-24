@@ -7,17 +7,25 @@ import { readCookie, SESSION_COOKIE } from '@lasvegasfortransit/platform-core/we
 import { collectPersonExport } from '@lasvegasfortransit/platform-storage/person-export';
 import { messageResponse, privateResponse } from '../../../../lib/responses';
 import type { StaffEnv } from '../../../../lib/context';
+import { readStaffSession } from '../../../../lib/staff-session';
 
 export const GET: APIRoute = async ({ request, locals, params }) => {
   const staff = locals.staff;
-  const workspaceEmail = locals.access?.email;
+  const session = await readStaffSession(env as unknown as StaffEnv, request, locals.access);
   const token = readCookie(request, SESSION_COOKIE);
-  if (!staff || !can(staff.actor, 'export.full') || !workspaceEmail || !token)
+  if (
+    !staff ||
+    !can(staff.actor, 'export.full') ||
+    session?.personId !== staff.actor.personId ||
+    !token
+  )
     return messageResponse(t('staff.common.accessDenied'), 403);
   const data = await collectPersonExport(staff.db, params.id ?? '', {
     kind: 'administrator',
     personId: staff.actor.personId,
-    workspaceEmail,
+    ...(session.mode === 'google'
+      ? { workspaceEmail: session.email }
+      : { sso: { issuer: session.principal.issuer, subject: session.principal.subject } }),
     sessionHash: await hashWithSecret(
       (env as unknown as StaffEnv).LVBT_SIGN_IN_SECRET,
       `session:${token}`,

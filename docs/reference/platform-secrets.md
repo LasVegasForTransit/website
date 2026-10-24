@@ -380,11 +380,16 @@ still needs provider verification.
 
 ### Google sign-in for the staff portal
 
-The production staff portal has a dedicated Google client so its credentials and callback can be
-managed independently of the website. Before starting, you need an authorized LVBT Workspace
-administrator, access to **LVBT Core** (`lvbt-core`), the approved secret store and permission to
-create credentials for `lvbt-staff`. The existing project's audience must be **Internal**. Use only
-the basic `openid`, `email` and `profile` permissions; Google Directory administration is separate.
+Only staff deployments selecting `LVBT_STAFF_AUTH_MODE=google` use these OAuth credentials. The
+current Access-mode deployments reuse their gateway identity and do not require this client for
+staff sign-in. See [Configure staff authentication](../guides/configure-staff-authentication.md)
+before provisioning or changing a mode.
+
+The direct Google staff path has a dedicated client so its credentials and callback can be managed
+independently of the website. Before starting, you need an authorized LVBT Workspace administrator,
+access to **LVBT Core** (`lvbt-core`), the approved secret store and permission to create
+credentials for `lvbt-staff`. The existing project's audience must be **Internal**. Use only the
+basic `openid`, `email` and `profile` permissions; Google Directory administration is separate.
 
 1. Open <https://console.cloud.google.com/auth/clients?project=lvbt-core> and confirm **LVBT Core**
    in the project picker. Inspect the approved **LVBT staff production** Web application first. If

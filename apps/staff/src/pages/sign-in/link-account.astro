@@ -1,64 +1,190 @@
 ---
 import { env } from 'cloudflare:workers';
-import { t } from '@lasvegasfortransit/platform-core/messages';
-import StaffLayout from '../../layouts/StaffLayout.astro';
-import Button from '../../../../site/src/components/app/Button.astro';
-import TextField from '../../../../site/src/components/app/TextField.astro';
+import StaffGateLayout from '../../layouts/StaffGateLayout.astro';
+import StaffAccount from '../../components/StaffAccount.astro';
 import type { StaffEnv } from '../../lib/context';
 import { workspaceLinkPage } from '../../lib/workspace-link-page';
-const page = await workspaceLinkPage(env as unknown as StaffEnv, Astro.request, (promise) =>
-  Astro.locals.cfContext.waitUntil(promise),
+const page = await workspaceLinkPage(
+  env as unknown as StaffEnv,
+  Astro.request,
+  (p) => Astro.locals.cfContext.waitUntil(p),
+  Astro.locals.access,
 );
 if (page instanceof Response) return page;
-const { saved, email, notice, enteredEmail, status } = page;
-Astro.response.status = status;
+const { saved, email, notice, enteredEmail, step, member } = page;
+Astro.response.status = page.status;
+const title =
+  step === 'code'
+    ? 'Check your email'
+    : step === 'existing'
+      ? 'Sign in to your member account'
+      : step === 'new'
+        ? 'Create your LVBT account'
+        : step === 'review'
+          ? 'Connect these accounts?'
+          : 'Finish setting up';
 ---
 
-<StaffLayout title="Confirm your membership" signIn>
-  <div class="max-w-[30rem] space-y-6">
-    <p>{t('workspace.account', { email: saved.workspace_email })}</p>
-    {notice && <p role="alert">{notice}</p>}
-    {
-      email ? (
-        <>
-          <p>{t('workspace.sentTo', { email })}</p>
-          <form method="post" action="/sign-in/link-account/" class="space-y-6">
-            <input type="hidden" name="action" value="confirm" />
-            <TextField
-              name="code"
-              label={t('signIn.codeLabel')}
-              hint={t('workspace.codeHint')}
-              type="code"
-              width="code"
-              required
-              error={t('signIn.codeError')}
-            />
-            <Button>Continue to staff</Button>
-          </form>
-          <a href="/sign-in/link-account/?change_email=1">{t('signIn.differentEmail')}</a>
-        </>
-      ) : (
-        <>
-          <p>{t('workspace.intro')}</p>
-          <form method="post" action="/sign-in/link-account/" class="space-y-6">
-            <input type="hidden" name="action" value="request" />
-            <TextField
-              name="email"
-              label={t('workspace.emailLabel')}
-              type="email"
-              autocomplete="email"
-              value={enteredEmail}
-              required
-              error={t('signIn.emailError')}
-            />
-            <Button>{t('workspace.send')}</Button>
-          </form>
-        </>
-      )
-    }
-    <p>
-      If you need help finding your membership email, ask an LVBT administrator to check your
-      membership.
-    </p>
-  </div>
-</StaffLayout>
+<StaffGateLayout title={title}>
+  {
+    notice && (
+      <p slot="notice" id="account-notice" class="staff-gate-notice" role="alert">
+        {notice}
+      </p>
+    )
+  }
+  <StaffAccount email={saved.workspace_email} />
+  {
+    step === 'choose' && (
+      <>
+        <p>Do you have an LVBT member account?</p>
+        <a class="staff-action-link" href="/sign-in/link-account/?step=existing">
+          Yes, sign in
+        </a>
+        <a class="staff-secondary-button" href="/sign-in/link-account/?step=new">
+          No, create one
+        </a>
+        <form method="post" action="/sign-in/link-account/">
+          <>
+            <input type="hidden" name="action" value="use-member" />
+            <button type="submit" class="staff-gate-link staff-text-button">
+              Use my signed-in member account
+            </button>
+          </>
+        </form>
+      </>
+    )
+  }
+  {
+    step === 'existing' && (
+      <>
+        <form method="post" action="/sign-in/link-account/" class="staff-gate-form">
+          <input type="hidden" name="action" value="request" />
+          <div class="staff-gate-field">
+            <>
+              <label for="email">Member account email</label>
+              <input
+                id="email"
+                name="email"
+                type="email"
+                autocomplete="email"
+                value={enteredEmail}
+                required
+                aria-describedby="email-hint"
+              />
+              <p id="email-hint" class="staff-gate-hint">
+                We’ll send a code to this address.
+              </p>
+            </>
+          </div>
+          <button class="staff-action-link" type="submit">
+            Send me a code
+          </button>
+        </form>
+        <form method="post" action="/sign-in/link-account/">
+          <>
+            <input type="hidden" name="action" value="use-member" />
+            <button type="submit" class="staff-gate-link staff-text-button">
+              Use my signed-in member account
+            </button>
+          </>
+        </form>
+        <a class="staff-gate-link" href="/sign-in/link-account/">
+          Back
+        </a>
+      </>
+    )
+  }
+  {
+    step === 'new' && (
+      <>
+        <form method="post" action="/sign-in/link-account/" class="staff-gate-form">
+          <input type="hidden" name="action" value="create" />
+          <div class="staff-gate-field">
+            <>
+              <label for="givenName">First name</label>
+              <input
+                id="givenName"
+                name="givenName"
+                autocomplete="given-name"
+                value={'given_name' in saved ? saved.given_name : ''}
+                maxlength="100"
+                required
+              />
+            </>
+          </div>
+          <div class="staff-gate-field">
+            <>
+              <label for="familyName">Last name (optional)</label>
+              <input
+                id="familyName"
+                name="familyName"
+                autocomplete="family-name"
+                value={'family_name' in saved ? saved.family_name : ''}
+                maxlength="100"
+              />
+            </>
+          </div>
+          <button class="staff-action-link" type="submit">
+            Create account
+          </button>
+        </form>
+        <a class="staff-gate-link" href="/sign-in/link-account/?step=existing">
+          Already have a member account? Sign in
+        </a>
+      </>
+    )
+  }
+  {
+    step === 'code' && (
+      <>
+        <p>
+          We sent a code to <strong>{email}</strong>. Enter it to connect your accounts.
+        </p>
+        <form method="post" action="/sign-in/link-account/" class="staff-gate-form">
+          <input type="hidden" name="action" value="confirm" />
+          <div class="staff-gate-field">
+            <>
+              <label for="code">6-digit code</label>
+              <input
+                id="code"
+                name="code"
+                type="text"
+                inputmode="numeric"
+                autocomplete="one-time-code"
+                maxlength="6"
+                pattern="[0-9]{6}"
+                required
+              />
+            </>
+          </div>
+          <button class="staff-action-link" type="submit">
+            Verify and connect accounts
+          </button>
+        </form>
+        <a class="staff-gate-link" href={'/sign-in/link-account/?change_email=1&step=existing'}>
+          Change account email
+        </a>
+      </>
+    )
+  }
+  {
+    step === 'review' && member && (
+      <>
+        <StaffAccount email={member.email ?? ''} label="Member account email" change={false} />
+        <form method="post" action="/sign-in/link-account/">
+          <>
+            <input type="hidden" name="action" value="connect-member" />
+            <button class="staff-action-link" type="submit">
+              Connect accounts
+            </button>
+            <a class="staff-gate-link" href="/sign-in/link-account/?step=existing">
+              Use a different member account
+            </a>
+          </>
+        </form>
+      </>
+    )
+  }
+  <p slot="help">Need a hand? Ask the LVBT volunteer who invited you.</p>
+</StaffGateLayout>

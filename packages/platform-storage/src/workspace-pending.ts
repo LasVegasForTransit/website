@@ -1,3 +1,5 @@
+import { verifiedMemberProof } from './staff-member-handoff';
+import { createTeamAccount } from './staff-account';
 import { ulid } from '@lasvegasfortransit/platform-core/ids';
 import { randomToken } from '@lasvegasfortransit/platform-core/random-token';
 import { hashWithSecret } from '@lasvegasfortransit/platform-core/signing';
@@ -114,6 +116,44 @@ export class WorkspaceLinkService {
         .bind(now.toISOString(), now.toISOString(), proof.personId, normalizeEmail(input.email))
         .run();
     return outcome;
+  }
+
+  async createAccount(
+    token: string,
+    input: { givenName: string; familyName: string; now?: Date },
+  ): Promise<WorkspaceCompletion> {
+    const now = input.now ?? new Date();
+    const pending = await this.pending(token, now);
+    if (!pending) return { kind: 'expired' };
+    const personId = await createTeamAccount(this.env, 'google', token, { ...input, now });
+    if (!personId) return { kind: 'conflict' };
+    const session = await createWorkspaceSession(this.env, this.workspace(pending), now);
+    return session
+      ? { kind: 'ok', personId, returnTo: pending.return_to, session }
+      : { kind: 'conflict' };
+  }
+  async completeForMember(
+    token: string,
+    memberToken: string,
+    now = new Date(),
+  ): Promise<WorkspaceCompletion> {
+    return this.completeForMemberProof(
+      token,
+      await hashWithSecret(this.env.LVBT_SIGN_IN_SECRET, `session:${memberToken}`),
+      now,
+    );
+  }
+  async completeForMemberProof(
+    token: string,
+    sessionHash: string,
+    now = new Date(),
+  ): Promise<WorkspaceCompletion> {
+    const member = await verifiedMemberProof(this.env, sessionHash, now);
+    if (!member) return { kind: 'conflict' };
+    const pending = await this.consume(token, now);
+    return pending
+      ? await this.finishLink(pending, member.id, 'self_linked', now)
+      : { kind: 'expired' };
   }
 
   private workspace(pending: PendingLinkRow): WorkspaceIdentity {

@@ -89,7 +89,7 @@ export async function submitStaffAdministrator(
     enabled,
     operationId,
     expectedState: { updatedAt, designatedAt: designatedAt || null },
-    requireWorkspaceIdentity: true,
+    requireOrganizationAuthentication: true,
   });
   if (result.kind === 'ok')
     return changedResponse(request, staff, {

@@ -1,3 +1,7 @@
+import {
+  staffAuthBindings,
+  staffAuthMode,
+} from '@lasvegasfortransit/platform-integrations/staff-auth-config';
 import { execFile } from 'node:child_process';
 import { readFile } from 'node:fs/promises';
 import { promisify } from 'node:util';
@@ -85,8 +89,13 @@ function requiredBindingChecks(
   bindings: Record<string, unknown>[],
   worker: WorkerReceipt,
   receipt: DeploymentReceipt,
+  config: Record<string, unknown>,
 ) {
-  return STAFF_WORKER_BINDINGS[worker.app]
+  const required =
+    worker.app === 'staff'
+      ? (staffAuthBindings(object(config.vars)) ?? [])
+      : [...STAFF_WORKER_BINDINGS.jobs];
+  return required
     .filter(
       (name) =>
         !(
@@ -155,7 +164,8 @@ export async function verifyVersion(
           ),
         ] as const,
     ),
-    ...requiredBindingChecks(bindings, worker, receipt),
+    ...requiredBindingChecks(bindings, worker, receipt, config),
+    ['version.authentication', worker.app !== 'staff' || staffAuthMode(vars) !== null],
     [
       'version.forbidden_bindings',
       !(

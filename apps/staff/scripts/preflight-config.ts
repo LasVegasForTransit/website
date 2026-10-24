@@ -1,3 +1,7 @@
+import {
+  staffAuthMode,
+  staffOriginAllowed,
+} from '@lasvegasfortransit/platform-integrations/staff-auth-config';
 import { readFile, readdir } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import ts from 'typescript';
@@ -28,6 +32,19 @@ function target(config: Record<string, unknown>, environment: Environment) {
 function database(config: Record<string, unknown>) {
   return array(config.d1_databases).find((binding) => binding.binding === 'PLATFORM_DB');
 }
+function staffOrigin(staff: Record<string, unknown>, environment: Environment) {
+  const staffVars = object(staff.vars);
+  const defaultOrigin = `https://${environment === 'preview' ? 'staff-preview' : 'staff'}.lasvegasfortransit.org`;
+  const origin =
+    typeof staffVars.LVBT_STAFF_ORIGIN === 'string' ? staffVars.LVBT_STAFF_ORIGIN : defaultOrigin;
+  let hostname = '';
+  try {
+    hostname = new URL(origin).hostname;
+  } catch {
+    /* reported as invalid authentication configuration */
+  }
+  return { origin, hostname, staffVars };
+}
 export async function releaseConfiguration(root: string, environment: Environment) {
   const source = await Promise.all([
     configuration(root, 'site'),
@@ -39,7 +56,7 @@ export async function releaseConfiguration(root: string, environment: Environmen
   const jobs = target(source[2], environment);
   const db = database(site);
   const productionDb = database(source[0]);
-  const hostname = `${environment === 'preview' ? 'staff-preview' : 'staff'}.lasvegasfortransit.org`;
+  const { origin, hostname, staffVars } = staffOrigin(staff, environment);
   const canonical = resolve(root, 'packages/platform-storage/migrations');
   const checks = ['site', 'staff', 'jobs'].map((name, index) => {
     const config = [site, staff, jobs][index];
@@ -57,6 +74,13 @@ export async function releaseConfiguration(root: string, environment: Environmen
       'All applications must share the canonical database and migrations; preview must be isolated.',
     );
   });
+  checks.push(
+    check(
+      'source.staff.authentication',
+      staffAuthMode(staffVars) !== null && staffOriginAllowed(staffVars, origin),
+      'Select a valid authentication mode and canonical HTTPS staff origin.',
+    ),
+  );
   checks.push(
     check(
       'source.staff.domain',

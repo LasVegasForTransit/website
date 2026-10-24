@@ -54,9 +54,9 @@ hardcoded fallback literal in `site.ts`):
 `site.ts` gains:
 
 ```ts
-membership: {
+const membership = {
   formUrl: urlFromEnv('PUBLIC_LVBT_MEMBERSHIP_FORM_URL'),
-},
+};
 ```
 
 The short link is used by **both** the `/join` button and the QR slide: it works as a normal browser

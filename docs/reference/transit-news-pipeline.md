@@ -71,7 +71,7 @@ are supported (`foo.lasvegassun.com` → `Las Vegas Sun`).
 **To add a new publication:** append to `DOMAIN_TO_PUBLICATION`:
 
 ```ts
-'klas.com': 'KLAS-TV',
+const sources = { 'klas.com': 'KLAS-TV' };
 ```
 
 ---

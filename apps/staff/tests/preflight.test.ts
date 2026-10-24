@@ -1,3 +1,4 @@
+import { object, array } from '../scripts/preflight-api';
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { preflightStaff } from '../scripts/preflight';
@@ -152,4 +153,47 @@ void test('preview preflight accepts no cron and rejects an implicitly restored 
       scheduled ? 'failed' : 'passed',
     );
   }
+});
+
+void test('direct Google deployments require Google credentials and do not inspect Access policy', async () => {
+  const fixture = cloudflareFixture();
+  const seen: string[] = [];
+  const fetcher: typeof fetch = async (input, init) => {
+    const url = new URL(input instanceof Request ? input.url : input);
+    seen.push(url.pathname);
+    const response = await fixture.options.fetch(input, init);
+    if (url.pathname.includes('/workers/scripts/lvbt-staff-preview/versions/')) {
+      const body = object(await response.json());
+      const result = object(body.result);
+      const resources = object(result.resources);
+      resources.bindings = array(resources.bindings).filter(
+        (binding) => !['LVBT_ACCESS_AUD', 'LVBT_ACCESS_TEAM_DOMAIN'].includes(String(binding.name)),
+      );
+      resources.bindings = [
+        ...array(resources.bindings),
+        {
+          name: 'LVBT_STAFF_AUTH_MODE',
+          type: 'plain_text',
+          text: 'google',
+        },
+      ];
+      return Response.json({ ...body, result: { ...result, resources } });
+    }
+    return response;
+  };
+  const report = await preflightStaff('preview', { ...fixture.options, fetch: fetcher });
+  assert.equal(report.checks.find((item) => item.id === 'staff.authentication')?.status, 'passed');
+  assert.equal(
+    report.checks.find((item) => item.id === 'staff.binding.LVBT_GOOGLE_OAUTH_CLIENT_SECRET')
+      ?.status,
+    'passed',
+  );
+  assert.equal(
+    report.checks.some((item) => item.id === 'staff.binding.LVBT_ACCESS_AUD'),
+    false,
+  );
+  assert.equal(
+    seen.some((path) => path.includes('/access/')),
+    false,
+  );
 });

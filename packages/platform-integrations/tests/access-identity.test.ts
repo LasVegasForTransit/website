@@ -43,7 +43,12 @@ void test('Access signs an LVBT email and retains its own subject without treati
       env,
       { now, fetch: fetcher },
     ),
-    { email: valid.email, subject: valid.sub },
+    {
+      email: valid.email,
+      subject: valid.sub,
+      issuer: valid.iss,
+      expiresAt: new Date(valid.exp * 1000),
+    },
   );
 });
 for (const [name, claims, wrongSignature] of [

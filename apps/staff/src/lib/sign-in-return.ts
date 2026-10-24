@@ -1,7 +1,8 @@
-import { SESSION_COOKIE, readCookie, safeNext } from '@lasvegasfortransit/platform-core/web-auth';
+import { staffWelcomePath } from './onboarding';
+import { SESSION_COOKIE, safeNext } from '@lasvegasfortransit/platform-core/web-auth';
 import { can } from '@lasvegasfortransit/platform-core/permissions';
 import { t } from '@lasvegasfortransit/platform-core/messages';
-import { readWorkspaceSession } from '@lasvegasfortransit/platform-storage/workspace-link';
+import { readStaffSession } from './staff-session';
 import { loadActor } from '@lasvegasfortransit/platform-storage/staff-roles';
 import type { AccessIdentity } from '@lasvegasfortransit/platform-integrations/access-identity';
 import type { StaffEnv } from './context';
@@ -26,21 +27,22 @@ export function throughStaffReturn(response: Response): Response {
   )
     return response;
   const headers = new Headers(response.headers);
-  headers.set('Location', staffReturnPath(next));
+  headers.set('Location', staffWelcomePath(next));
   return new Response(response.body, { status: response.status, headers });
 }
 
 export async function staffSignInReturn(
   env: StaffEnv,
   request: Request,
-  access: AccessIdentity,
+  access?: AccessIdentity,
 ): Promise<Response> {
-  const token = readCookie(request, SESSION_COOKIE);
-  const session = token ? await readWorkspaceSession(env, token) : null;
-  if (session?.workspaceEmail !== access.email)
-    return new Response(null, { status: 303, headers: { Location: '/sign-in/' } });
+  const session = await readStaffSession(env, request, access);
+  if (!session) return new Response(null, { status: 303, headers: { Location: '/sign-in/' } });
   const actor = await loadActor(env.PLATFORM_DB, session.personId);
-  if (!actor?.workspaceLinked || !can(actor, 'attendance.record'))
+  if (
+    !(actor?.organizationAuthenticated ?? actor?.workspaceLinked) ||
+    !can(actor, 'attendance.record')
+  )
     return messageResponse(t('staff.common.accessDenied'), 403);
   const next = safeNext(new URL(request.url).searchParams.get('next'));
   if (

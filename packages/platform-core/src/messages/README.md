@@ -37,7 +37,9 @@ To fill in a value, write `{name}` in the text and pass `{ name: '…' }`.
 For text that depends on a number, write the forms as an object and pass `count`:
 
 ```ts
-tries: { one: 'You have {count} try left.', other: 'You have {count} tries left.' },
+const messages = {
+  tries: { one: 'You have {count} try left.', other: 'You have {count} tries left.' },
+};
 t('screen.tries', { count: 4 }); // "You have 4 tries left."
 ```
 

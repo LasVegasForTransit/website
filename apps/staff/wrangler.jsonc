@@ -12,6 +12,8 @@
   "services": [{ "binding": "LVBT_NEWSLETTER_JOBS", "service": "lvbt-jobs" }],
   "vars": {
     "LVBT_DEPLOYMENT_ENV": "production",
+    "LVBT_STAFF_AUTH_MODE": "cloudflare-access",
+    "LVBT_STAFF_ORIGIN": "https://staff.lasvegasfortransit.org",
     "LVBT_ACCESS_TEAM_DOMAIN": "lvbt.cloudflareaccess.com",
     "LVBT_ACCESS_AUD": "39a31460a680106970dd476e5d11d748b181df3ea7772f66f2e5823543120700",
     "LVBT_DISCORD_SYNC_ENABLED": "true",
@@ -38,6 +40,8 @@
       "routes": [{ "pattern": "staff-preview.lasvegasfortransit.org", "custom_domain": true }],
       "vars": {
         "LVBT_DEPLOYMENT_ENV": "preview",
+        "LVBT_STAFF_AUTH_MODE": "cloudflare-access",
+        "LVBT_STAFF_ORIGIN": "https://staff-preview.lasvegasfortransit.org",
         "LVBT_ACCESS_TEAM_DOMAIN": "lvbt.cloudflareaccess.com",
         "LVBT_ACCESS_AUD": "f89573338a947c9027f83748935d86f62041adba8672ab807c1634a85c85ef69",
         "LVBT_DISCORD_SYNC_ENABLED": "true",

@@ -1,0 +1,39 @@
+---
+import { gatePageStyles, gateIdentity, gateFooter } from '../lib/gate-page';
+interface Props {
+  title: string;
+}
+const { title } = Astro.props;
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex, nofollow" />
+    <title>{title} · LVBT Staff Portal</title>
+    <style is:inline set:html={gatePageStyles}></style>
+  </head>
+  <body class="staff-shell staff-gate">
+    <a href="#main" class="skip-link">Skip to content</a>
+    <div class="staff-gate-frame">
+      <main id="main" class="staff-gate-panel" tabindex="-1">
+        <header set:html={gateIdentity} />
+        <h1>{title}</h1>
+        <div class="staff-gate-body">
+          <slot name="notice" />
+          <slot />
+        </div>
+        {
+          Astro.slots.has('help') && (
+            <div class="staff-gate-help">
+              <slot name="help" />
+            </div>
+          )
+        }
+      </main>
+      <Fragment set:html={gateFooter} />
+    </div>
+  </body>
+</html>

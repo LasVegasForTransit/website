@@ -1,3 +1,4 @@
+import { TEAM_ACCOUNT_ELIGIBLE } from './staff-account';
 import { ulid } from '@lasvegasfortransit/platform-core/ids';
 import {
   WORKSPACE_DOMAIN,
@@ -23,7 +24,7 @@ export async function linkWorkspaceIdentity(
     return { kind: 'invalid' };
   const person = await db
     .prepare(
-      "SELECT id FROM people WHERE id = ? AND deleted_at IS NULL AND membership_status = 'member'",
+      `SELECT p.id FROM people p WHERE p.id=? AND p.deleted_at IS NULL AND ${TEAM_ACCOUNT_ELIGIBLE}`,
     )
     .bind(input.personId)
     .first();
@@ -34,7 +35,7 @@ export async function linkWorkspaceIdentity(
       .prepare(
         `INSERT INTO identities (id, person_id, platform, external_id, external_email, linked_at, link_method, created_at, updated_at)
        SELECT ?, ?, 'google_workspace', ?, ?, ?, ?, ?, ?
-       WHERE EXISTS (SELECT 1 FROM people WHERE id = ? AND deleted_at IS NULL AND membership_status = 'member')
+       WHERE EXISTS (SELECT 1 FROM people p WHERE p.id=? AND p.deleted_at IS NULL AND ${TEAM_ACCOUNT_ELIGIBLE})
          AND NOT EXISTS (SELECT 1 FROM workspace_link_operations WHERE operation_id = ?
            AND (person_id != ? OR workspace_subject != ?))
        ON CONFLICT (platform, external_id) DO NOTHING`,
@@ -73,7 +74,7 @@ export async function linkWorkspaceIdentity(
     .prepare(
       `SELECT i.person_id FROM identities i JOIN workspace_link_operations o ON o.person_id = i.person_id
        AND o.workspace_subject = i.external_id
-     JOIN people p ON p.id = i.person_id AND p.deleted_at IS NULL AND p.membership_status = 'member'
+     JOIN people p ON p.id = i.person_id AND p.deleted_at IS NULL AND ${TEAM_ACCOUNT_ELIGIBLE}
      WHERE i.platform = 'google_workspace' AND i.external_id = ? AND i.person_id = ? AND o.operation_id = ?`,
     )
     .bind(input.workspace.subject, input.personId, input.operationId)

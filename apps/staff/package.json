@@ -15,13 +15,14 @@
     "check-types": "astro check --noSync && tsc --noEmit -p tsconfig.e2e.json",
     "test": "node --import tsx --test --test-concurrency=2 tests/*.test.ts",
     "validate": "pnpm build",
-    "test:e2e": "node --import tsx tests/e2e/browser.spec.ts && node --import tsx tests/e2e/recovery.spec.ts && node --import tsx tests/e2e/review-comparison.spec.ts && node --import tsx tests/e2e/initial-admin.spec.ts && node --import tsx tests/e2e/google-sign-in.spec.ts && node --import tsx tests/e2e/discord-role-review.spec.ts && node --import tsx tests/e2e/discord-review-names.spec.ts && node --import tsx tests/e2e/google-group-overview.spec.ts && node --import tsx tests/e2e/newsletter-review.spec.ts && node --import tsx tests/e2e/person-export.spec.ts && node --import tsx tests/e2e/workspace-offboarding.spec.ts && node --import tsx tests/e2e/discord-role-settings.spec.ts && node --import tsx tests/e2e/roster-import.spec.ts && node --import tsx tests/e2e/person-deletion.spec.ts && node --import tsx tests/e2e/staff-administrators.spec.ts && node --import tsx tests/e2e/organization-roles.spec.ts",
+    "test:e2e": "node --import tsx tests/e2e/browser.spec.ts && node --import tsx tests/e2e/recovery.spec.ts && node --import tsx tests/e2e/review-comparison.spec.ts && node --import tsx tests/e2e/auth-modes.spec.ts && node --import tsx tests/e2e/initial-admin.spec.ts && node --import tsx tests/e2e/google-sign-in.spec.ts && node --import tsx tests/e2e/discord-role-review.spec.ts && node --import tsx tests/e2e/discord-review-names.spec.ts && node --import tsx tests/e2e/google-group-overview.spec.ts && node --import tsx tests/e2e/newsletter-review.spec.ts && node --import tsx tests/e2e/person-export.spec.ts && node --import tsx tests/e2e/person-export.spec.ts --google && node --import tsx tests/e2e/workspace-offboarding.spec.ts && node --import tsx tests/e2e/discord-role-settings.spec.ts && node --import tsx tests/e2e/roster-import.spec.ts && node --import tsx tests/e2e/person-deletion.spec.ts && node --import tsx tests/e2e/staff-administrators.spec.ts && node --import tsx tests/e2e/organization-roles.spec.ts",
     "test:release": "node --import tsx tests/e2e/release.spec.ts",
     "test:audit": "node --import tsx tests/e2e/print-sheet-keyboard.spec.ts && node --import tsx tests/e2e/release-audit.spec.ts",
     "test:discord-observation": "node --import tsx tests/e2e/discord-observation.spec.ts",
     "test:paper": "node --import tsx tests/e2e/paper.spec.ts",
     "test:export": "node --import tsx tests/e2e/export.spec.ts",
-    "brand:recovery": "tsx scripts/recovery-brand.ts"
+    "brand:recovery": "tsx scripts/recovery-brand.ts",
+    "test:auth": "node --import tsx tests/e2e/auth-modes.spec.ts"
   },
   "dependencies": {
     "@lasvegasfortransit/platform-core": "workspace:*",

@@ -79,10 +79,10 @@ export function eraseHistory(db: Db, operationId: string, stamp: string): Statem
       .bind(stamp, stamp, operationId, operationId, operationId),
     db
       .prepare(
-        `UPDATE merges SET moved_rows=json_set(moved_rows,'$.reviews',(
+        `UPDATE merges SET moved_rows=json_set(moved_rows,'$.reviews',json((
         SELECT json_group_array(json(review.value)) FROM json_each(merges.moved_rows,'$.reviews') review
         WHERE NOT EXISTS(SELECT 1 FROM person_erasure_scope s WHERE s.operation_id=?
-          AND s.person_id IN (json_extract(review.value,'$.candidate_person_id'),json_extract(review.value,'$.existing_person_id'))))),updated_at=?
+          AND s.person_id IN (json_extract(review.value,'$.candidate_person_id'),json_extract(review.value,'$.existing_person_id')))))),updated_at=?
       WHERE EXISTS(SELECT 1 FROM json_each(merges.moved_rows,'$.reviews') review JOIN person_erasure_scope s
         ON s.person_id IN (json_extract(review.value,'$.candidate_person_id'),json_extract(review.value,'$.existing_person_id'))
         WHERE s.operation_id=?)`,

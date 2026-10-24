@@ -1,10 +1,19 @@
 ---
 import { env } from 'cloudflare:workers';
-import StaffLayout from '../../layouts/StaffLayout.astro';
+import StaffGateLayout from '../../layouts/StaffGateLayout.astro';
 import { t } from '@lasvegasfortransit/platform-core/messages';
 import { safeNext } from '@lasvegasfortransit/platform-core/web-auth';
 import type { StaffEnv } from '../../lib/context';
+import { staffAuthMode } from '@lasvegasfortransit/platform-integrations/staff-auth-config';
+import { startSsoSignIn } from '../../lib/sso-sign-in';
+import { signedOutCookie } from '../../lib/sso-navigation';
 const staffEnv = env as unknown as StaffEnv;
+const sso = staffAuthMode(staffEnv) === 'cloudflare-access';
+if (sso && Astro.locals.access) {
+  const response = await startSsoSignIn(staffEnv, Astro.request, Astro.locals.access);
+  if (response) return response;
+  Astro.response.headers.append('Set-Cookie', await signedOutCookie(staffEnv, Astro.locals.access));
+}
 const hasAdministrator = await staffEnv.PLATFORM_DB.prepare(
   'SELECT 1 AS present FROM staff_administrators LIMIT 1',
 ).first();
@@ -13,40 +22,74 @@ const next = safeNext(
 );
 ---
 
-<StaffLayout title="Sign in to LVBT staff" signIn>
-  <div class="max-w-[30rem] space-y-6">
+<StaffGateLayout title={sso ? 'You’re signed out' : 'Sign in to the Staff Portal'}>
+  <Fragment slot="notice">
     {
       Astro.url.searchParams.get('administrator_removed') === '1' && (
-        <p role="status">{t('staff.administrators.selfRemoved')}</p>
+        <p class="staff-gate-notice" role="status">
+          {t('staff.administrators.selfRemoved')}
+        </p>
       )
     }
     {
       Astro.url.searchParams.get('deleted') === '1' && (
-        <p role="status">{t('staff.deletion.selfDeleted')}</p>
+        <p class="staff-gate-notice" role="status">
+          {t('staff.deletion.selfDeleted')}
+        </p>
       )
     }
     {
       Astro.url.searchParams.has('membership_confirmation_expired') && (
-        <p role="alert">
-          Your membership confirmation expired. Sign in again to request a new code.
+        <p class="staff-gate-notice" role="alert">
+          This sign-in attempt expired. Sign in again to get a new code.
         </p>
       )
     }
     {
       Astro.url.searchParams.has('google_error') && (
-        <p role="alert">
-          We couldn’t sign you in. Use your LVBT Google account and try again. If you need help, ask
-          an LVBT administrator to check your membership.
+        <p class="staff-gate-notice" role="alert">
+          We couldn’t sign you in. Use your LVBT Google account and try again.
         </p>
       )
     }
-    <p>
-      Use your LVBT Google account. The first time you sign in, confirm the email you used to join
-      LVBT.
-    </p>
-    <a
-      class="press inline-flex border-2 border-on-surface bg-on-surface px-6 py-3 font-bold text-surface hover:bg-primary hover:border-primary hover:text-on-primary"
-      href={`/sign-in/google/?next=${encodeURIComponent(next)}`}>{t('workspace.signIn')}</a
-    >
-  </div>
-</StaffLayout>
+  </Fragment>
+  {
+    sso ? (
+      <>
+        <p>You can sign in again with your LVBT account.</p>
+        <form method="post" action="/sign-in/continue/">
+          <button class="staff-action-link" type="submit">
+            Sign in again
+          </button>
+        </form>
+      </>
+    ) : (
+      <>
+        <p>Use your LVBT Google account to continue.</p>
+        <a class="staff-google-button" href={`/sign-in/google/?next=${encodeURIComponent(next)}`}>
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path
+              fill="#4285F4"
+              d="M21.6 12.23c0-.71-.06-1.39-.18-2.05H12v3.88h5.38a4.6 4.6 0 0 1-2 3.02v2.51h3.24c1.89-1.74 2.98-4.3 2.98-7.36Z"
+            />
+            <path
+              fill="#34A853"
+              d="M12 22c2.7 0 4.96-.9 6.61-2.41l-3.24-2.51c-.9.6-2.05.96-3.37.96-2.6 0-4.81-1.76-5.6-4.12H3.06v2.59A10 10 0 0 0 12 22Z"
+            />
+            <path
+              fill="#FBBC05"
+              d="M6.4 13.92a6 6 0 0 1 0-3.84V7.49H3.06a10 10 0 0 0 0 9.02l3.34-2.59Z"
+            />
+            <path
+              fill="#EA4335"
+              d="M12 5.96c1.47 0 2.79.5 3.83 1.5l2.87-2.87A9.6 9.6 0 0 0 12 2a10 10 0 0 0-8.94 5.49l3.34 2.59C7.19 7.72 9.4 5.96 12 5.96Z"
+            />
+          </svg>
+          {t('workspace.signIn')}
+        </a>
+        <p class="staff-gate-hint">Use the Google account LVBT gave you.</p>
+      </>
+    )
+  }
+  <p slot="help">Need help signing in? Ask an LVBT administrator.</p>
+</StaffGateLayout>

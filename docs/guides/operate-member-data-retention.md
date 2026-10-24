@@ -26,13 +26,16 @@ From the repository root, list the preview database's installed migrations:
 pnpm -C apps/staff exec wrangler d1 execute lvbt-platform-preview --remote --env preview --command "SELECT name FROM d1_migrations ORDER BY id"
 ```
 
-Confirm that `0041_member_privacy_maintenance.sql` and `0045_scheduled_read_budget.sql` are
-installed alongside every earlier membership-database migration before enabling scheduled
-maintenance. The latter adds an index that keeps legacy erasure from repeatedly reading
-already-erased retained profiles. The website, staff portal, and jobs Worker must use that same
-environment's database and compatible saved applications. A Worker is a backend application running
-on Cloudflare; see the [glossary](../reference/glossary.md). A missing migration or mismatched
-application is a release blocker. Use the
+Confirm that `0041_member_privacy_maintenance.sql`, `0045_scheduled_read_budget.sql`, and
+`0054_merge_review_arrays.sql` are installed alongside every earlier membership-database migration
+before enabling scheduled maintenance. Migration 0045 adds an index that keeps legacy erasure from
+repeatedly reading already-erased retained profiles. Migration 0054 repairs review arrays in
+retained merge archives and preserves their ability to be undone after third-party erasure. Use it
+with the saved applications that write canonical review arrays; keep the database backup for
+recovery. The website, staff portal, and jobs Worker must use that same environment's database and
+compatible saved applications. A Worker is a backend application running on Cloudflare; see the
+[glossary](../reference/glossary.md). A missing migration or mismatched application is a release
+blocker. Use the
 [release recovery procedure](../reference/staff-release-operations.md#recover-a-failed-preview-activation)
 instead of changing tables by hand.
 

@@ -44,14 +44,14 @@ block at the top of an MDX file — see [glossary](./glossary.md#frontmatter)) t
 loader in `apps/site/src/lib/events-loader.ts` maps calendar fields to this validated shape:
 
 ```ts
-{
-  title: string;                 // from GCal SUMMARY
-  calendarUid: string;           // from GCal UID; shared by all occurrences in a series
-  calendarOccurrenceId: string;  // UID + original recurrence time; one-off events use their UID
-  date: Date;                    // from GCal DTSTART
-  endDate?: Date;                // from GCal DTEND
+type CalendarEvent = {
+  title: string; // from GCal SUMMARY
+  calendarUid: string; // from GCal UID; shared by all occurrences in a series
+  calendarOccurrenceId: string; // UID + original recurrence time; one-off events use their UID
+  date: Date; // from GCal DTSTART
+  endDate?: Date; // from GCal DTEND
   location?: {
-    format: 'virtual' | 'in-person' | 'hybrid';  // derived from location / join URL
+    format: 'virtual' | 'in-person' | 'hybrid'; // derived from location / join URL
     venue?: {
       name;
       streetAddress?;
@@ -62,15 +62,16 @@ loader in `apps/site/src/lib/events-loader.ts` maps calendar fields to this vali
     };
     joinUrl?: URL;
   };
-  rsvpUrl?: URL;                 // from a `RSVP: <url>` line in the GCal description
-  admissionUrl?: URL;            // from `ADMISSION: <url>` or `TICKETS: <url>`
+  rsvpUrl?: URL; // from a `RSVP: <url>` line in the GCal description
+  admissionUrl?: URL; // from `ADMISSION: <url>` or `TICKETS: <url>`
   admissionLabel?: 'Admission' | 'Tickets';
-  featured: boolean;             // auto: nearest upcoming event wins
-  summary: string;               // first paragraph of the GCal description (HTML stripped); fallback to title
-  body?: string;                 // HTML for everything after the first paragraph; rendered on the detail page when no MDX fragment exists
-  schema?: {                     // derived defaults for Schema.org Event JSON-LD
+  featured: boolean; // auto: nearest upcoming event wins
+  summary: string; // first paragraph of the GCal description (HTML stripped); fallback to title
+  body?: string; // HTML for everything after the first paragraph; rendered on the detail page when no MDX fragment exists
+  schema?: {
+    // derived defaults for Schema.org Event JSON-LD
     schemaType?;
-    status?;                     // EventCancelled for GCal STATUS:CANCELLED; EventScheduled otherwise
+    status?; // EventCancelled for GCal STATUS:CANCELLED; EventScheduled otherwise
     images?;
     isAccessibleForFree?;
     keywords?;
@@ -78,7 +79,7 @@ loader in `apps/site/src/lib/events-loader.ts` maps calendar fields to this vali
     audience?;
     offer?;
   };
-}
+};
 ```
 
 Authoring lives in Google Calendar — see [`docs/guides/add-an-event.md`](../guides/add-an-event.md)
@@ -108,13 +109,13 @@ Newsletter issues come from the Beehiiv RSS feed (an XML feed of recent issues �
 `apps/site/src/lib/newsletter-loader.ts` maps each feed `<item>` to this validated shape:
 
 ```ts
-{
-  title: string;     // <title>
-  link: URL;         // <link> — the Beehiiv post; the site links out, never hosts the issue
-  pubDate: Date;     // <pubDate>
-  excerpt: string;   // first ~220 chars of <description>/<content:encoded>, HTML stripped
-  image?: string;    // <enclosure> or <media:content> thumbnail, if the feed includes one
-}
+type CalendarEvent = {
+  title: string; // <title>
+  link: URL; // <link> — the Beehiiv post; the site links out, never hosts the issue
+  pubDate: Date; // <pubDate>
+  excerpt: string; // first ~220 chars of <description>/<content:encoded>, HTML stripped
+  image?: string; // <enclosure> or <media:content> thumbnail, if the feed includes one
+};
 ```
 
 When the feed URL is unset (e.g. local dev with no `apps/site/.env.local`) or the feed has no

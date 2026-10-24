@@ -1,3 +1,4 @@
+import { ssoPrincipalFixture } from './support/sso';
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { memoryDb } from '@lasvegasfortransit/platform-storage/test-db';
@@ -56,7 +57,11 @@ async function fixture() {
     method: 'self_linked',
     operationId: 'budget-admin-link',
   });
-  const env = { PLATFORM_DB: db, LVBT_SIGN_IN_SECRET: 'budget-fixture-only' };
+  const env = {
+    PLATFORM_DB: db,
+    LVBT_STAFF_AUTH_MODE: 'google',
+    LVBT_SIGN_IN_SECRET: 'budget-fixture-only',
+  };
   const session = await createWorkspaceSession(env, workspace);
   const actor = await loadActor(db, admin.id);
   assert.ok(session && actor);
@@ -124,7 +129,7 @@ async function invocation(f: Awaited<ReturnType<typeof fixture>>, mode: Mode) {
   const staff = await resolveStaffContext(
     request,
     { ...f.env, PLATFORM_DB: counted },
-    { email: f.workspace.email, subject: 'budget-access-subject' },
+    ssoPrincipalFixture(f.workspace.email, 'budget-access-subject'),
   );
   assert.ok(!(staff instanceof Response));
   const result = mode === 'get' ? null : await submitPersonDeletion(request, staff, f.target.id);

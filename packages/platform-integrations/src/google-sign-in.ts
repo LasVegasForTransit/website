@@ -1,3 +1,4 @@
+import { staffOriginAllowed, type StaffAuthConfig } from './staff-auth-config';
 import { WORKSPACE_DOMAIN } from '@lasvegasfortransit/platform-core/workspace-identity';
 import {
   exchangeGoogleCode,
@@ -17,7 +18,7 @@ import { readCookie, safeNext, sessionCookies } from '@lasvegasfortransit/platfo
 
 export const STATE_COOKIE = '__Host-lvbt_workspace_state';
 export const PENDING_COOKIE = '__Host-lvbt_workspace_pending';
-export interface GoogleSignInEnv extends AuthEnv {
+export interface GoogleSignInEnv extends AuthEnv, StaffAuthConfig {
   LVBT_GOOGLE_OAUTH_CLIENT_ID?: string;
   LVBT_GOOGLE_OAUTH_CLIENT_SECRET?: string;
   /** Exact approved deployment origins, provisioned by the maintainer. */
@@ -29,7 +30,7 @@ const PREVIEW_ORIGIN = 'https://preview.lasvegasfortransit.org';
 const STAFF_PREVIEW_ORIGIN = 'https://staff-preview.lasvegasfortransit.org';
 
 export function googleOriginAllowed(env: GoogleSignInEnv, origin: string): boolean {
-  if ([PUBLIC_ORIGIN, STAFF_ORIGIN, PREVIEW_ORIGIN, STAFF_PREVIEW_ORIGIN].includes(origin))
+  if ([PUBLIC_ORIGIN, PREVIEW_ORIGIN].includes(origin) || staffOriginAllowed(env, origin))
     return true;
   try {
     const origins: unknown = JSON.parse(env.LVBT_GOOGLE_PREVIEW_ORIGINS ?? '[]');
@@ -74,13 +75,16 @@ export async function startGoogleSignIn(env: GoogleSignInEnv, request: Request):
   if (!googleOriginAllowed(env, url.origin)) return unavailable(403);
   if (!env.LVBT_GOOGLE_OAUTH_CLIENT_ID || !env.LVBT_GOOGLE_OAUTH_CLIENT_SECRET)
     return unavailable(503);
-  const callbackOrigin = [PUBLIC_ORIGIN, STAFF_ORIGIN, STAFF_PREVIEW_ORIGIN].includes(url.origin)
-    ? url.origin
-    : PREVIEW_ORIGIN;
+  const callbackOrigin =
+    (env.LVBT_STAFF_ORIGIN && staffOriginAllowed(env, url.origin)) ||
+    [PUBLIC_ORIGIN, STAFF_ORIGIN, STAFF_PREVIEW_ORIGIN].includes(url.origin)
+      ? url.origin
+      : PREVIEW_ORIGIN;
   const started = await beginWorkspaceSignIn(env.PLATFORM_DB, {
     returnTo: safeNext(url.searchParams.get('next')),
     callbackUrl: `${callbackOrigin}/sign-in/google/callback`,
     origin: url.origin,
+    approvedOrigins: staffOriginAllowed(env, url.origin) ? [url.origin] : [],
   });
   const google = new URL('https://accounts.google.com/o/oauth2/v2/auth');
   google.search = new URLSearchParams({
@@ -94,6 +98,8 @@ export async function startGoogleSignIn(env: GoogleSignInEnv, request: Request):
     code_challenge: started.challenge,
     code_challenge_method: 'S256',
   }).toString();
+  if (url.searchParams.get('select_account') === '1')
+    google.searchParams.set('prompt', 'select_account');
   return googleResponse(google.href, [workspaceCookie(STATE_COOKIE, started.state, 600)]);
 }
 

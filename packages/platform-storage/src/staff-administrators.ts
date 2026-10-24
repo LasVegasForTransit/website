@@ -17,11 +17,13 @@ export interface StaffAdministratorPerson {
   updated_at: string;
   designated_at: string | null;
   has_workspace: number;
+  has_organization_auth: number;
 }
 export const ADMINISTRATOR_WORKSPACE_IDENTITY = `EXISTS(SELECT 1 FROM identities WHERE person_id=p.id
   AND platform='google_workspace' AND external_id<>'' AND lower(external_email) LIKE '%@${WORKSPACE_DOMAIN}')`;
+export const ADMINISTRATOR_AUTHENTICATED_IDENTITY = `(${ADMINISTRATOR_WORKSPACE_IDENTITY} OR EXISTS(SELECT 1 FROM staff_sso_links WHERE person_id=p.id AND revoked_at IS NULL))`;
 const COLUMNS = `p.id,p.given_name,p.family_name,p.email,p.membership_status,p.updated_at,a.designated_at,
-  ${ADMINISTRATOR_WORKSPACE_IDENTITY} AS has_workspace`;
+  ${ADMINISTRATOR_WORKSPACE_IDENTITY} AS has_workspace,${ADMINISTRATOR_AUTHENTICATED_IDENTITY} AS has_organization_auth`;
 async function requireAdministrator(db: Db, actor: Actor): Promise<void> {
   if (await db.prepare(`SELECT 1 WHERE ${STAFF_ADMIN_SCOPE}`).bind(actor.personId).first()) return;
   await auditDenied(db, actor.personId, 'staff_admin.manage');

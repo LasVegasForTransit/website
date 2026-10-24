@@ -51,10 +51,10 @@ export const staffCommon = {
     profileExpired: 'This form expired or was already submitted. Reload the profile and try again.',
   },
   navigation: {
-    pageTitle: '{title} · LVBT staff',
+    pageTitle: '{title} · LVBT Staff Portal',
     skip: 'Skip to content',
-    home: 'LVBT staff home',
-    staff: 'Staff',
+    home: 'LVBT Staff Portal home',
+    staff: 'Staff Portal',
     label: 'Staff navigation',
     members: 'Members',
     welcome: 'Welcome',

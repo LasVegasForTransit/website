@@ -33,8 +33,9 @@ def literal(value):
 def typed(expression):
     # SQLite's own SQL literal plus an atomic source-side exactness guard.
     # Some SQLite versions cannot round-trip every finite double, even via quote().
+    # +0 coerces the quoted real back to a number without repeating a long CAST per cell.
     return (f"json_array(typeof({expression}),iif(typeof({expression})='real',"
-            f"iif(CAST(quote({expression})AS REAL)={expression},quote({expression}),NULL),hex({expression})))")
+            f"iif(quote({expression})+0={expression},quote({expression}),NULL),hex({expression})))")
 
 
 def rowid_alias(table):

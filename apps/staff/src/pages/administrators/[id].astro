@@ -51,7 +51,7 @@ const unavailable = grant
     ? t('staff.administrators.alreadyAdministrator')
     : person.membership_status !== 'member'
       ? t('staff.administrators.currentMemberRequired')
-      : !person.has_workspace
+      : !person.has_organization_auth
         ? t('staff.administrators.connectGoogle')
         : null
   : !person.designated_at

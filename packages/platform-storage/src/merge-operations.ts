@@ -103,6 +103,11 @@ export function invalidateMergedAccess(db: Db, input: MergeOperation): Statement
     )
     .concat([
       db
+        .prepare(
+          `DELETE FROM staff_sso_pending WHERE EXISTS(SELECT 1 FROM staff_sso_links l WHERE l.issuer=staff_sso_pending.issuer AND l.subject=staff_sso_pending.subject AND l.person_id IN (?,?)) AND ${FRESH_MERGE}`,
+        )
+        .bind(input.survivorId, input.mergedId, ...freshMerge(input)),
+      db
         .prepare(`DELETE FROM staff_form_tokens WHERE actor_id IN (?,?) AND ${FRESH_MERGE}`)
         .bind(input.survivorId, input.mergedId, ...freshMerge(input)),
       db

@@ -10,7 +10,7 @@ export const staffAdministrators = {
     noMatches: 'No current members match that name or email.',
     tryAnother: 'Try another name or membership email.',
     connectGoogle:
-      'They need to sign in once with their LVBT Google account before you can make them an administrator.',
+      'They need to sign in to Staff and confirm their membership before you can make them an administrator.',
     alreadyAdministrator: 'Already an administrator',
     currentMemberRequired: 'Only current LVBT members can become administrators.',
     noLongerAdministrator: 'This person is no longer an administrator.',

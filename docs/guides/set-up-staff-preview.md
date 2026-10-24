@@ -171,25 +171,33 @@ substitute for the saved configuration. The
 [operations reference](../reference/staff-portal-operations.md#maintainer-setup) lists the required
 bindings.
 
-## 4. Configure Google sign-in and confirmation emails
+## 4. Configure authentication and confirmation emails
 
-Open the existing approved Google Cloud project in the LVBT browser profile. Use the project picker
-to find **LVBT Core**; do not infer a Google project ID from a Cloudflare database name.
+The current staff preview selects `cloudflare-access`: reuse the verified Access identity without a
+second Google sign-in. Set its canonical origin to `https://staff-preview.lasvegasfortransit.org`.
+For the alternative direct mode and approved extra origins, follow
+[Configure staff authentication](configure-staff-authentication.md).
+
+The preview website still uses direct Google OAuth. For that website, or a staff preview explicitly
+configured as `google`, open the existing approved Google Cloud project in the LVBT browser profile.
+Use the project picker to find **LVBT Core**; do not infer a Google project ID from a Cloudflare
+database name.
 
 Follow [Google sign-in setup](../reference/platform-secrets.md#google-sign-in-for-the-website). The
-preview sign-in client must allow these exact callback addresses:
+preview website client needs the first callback below. A staff deployment using direct Google also
+needs its own exact callback; Access-mode staff does not use it:
 
 ```text
 https://preview.lasvegasfortransit.org/sign-in/google/callback
 https://staff-preview.lasvegasfortransit.org/sign-in/google/callback
 ```
 
-Use the approved preview Google client credentials on the preview website and preview staff Worker.
-Their sessions and confirmation cookies are scoped to their issuing host. Each Worker can use an
-independent `LVBT_SIGN_IN_SECRET`, even though they share the preview database. Preserve the
-website's existing signing key when provisioning a missing staff key; rotating the website key
-invalidates its existing sessions. Google sign-in uses name, email, and profile; Google Workspace
-group administration is a separate integration.
+Use the approved preview Google client credentials on the preview website. Install them on staff
+only when its selected mode is `google`. Their sessions and confirmation cookies are scoped to their
+issuing host. Each Worker can use an independent `LVBT_SIGN_IN_SECRET`, even though they share the
+preview database. Preserve the website's existing signing key when provisioning a missing staff key;
+rotating the website key invalidates its existing sessions. Google sign-in uses name, email, and
+profile; Google Workspace group administration is a separate integration.
 
 To install an approved value, open the exact preview Worker in Cloudflare, select **Settings →
 Variables and Secrets → Add**, choose **Secret**, enter its name and value from the approved secret
@@ -199,7 +207,7 @@ a shared Google client or email credential still requires coordinated approval.
 
 | Value                                                               | Destinations                                            |
 | ------------------------------------------------------------------- | ------------------------------------------------------- |
-| `LVBT_GOOGLE_OAUTH_CLIENT_ID` and `LVBT_GOOGLE_OAUTH_CLIENT_SECRET` | Preview website and preview staff                       |
+| `LVBT_GOOGLE_OAUTH_CLIENT_ID` and `LVBT_GOOGLE_OAUTH_CLIENT_SECRET` | Preview website; staff only in direct Google mode       |
 | `LVBT_SIGN_IN_SECRET`                                               | Preview website; preserve its existing value            |
 | `LVBT_SIGN_IN_SECRET`                                               | Preview staff; an independent approved key is supported |
 | `LVBT_LINK_SIGNING_SECRET`                                          | Preview website for its member email links              |
@@ -306,7 +314,8 @@ be linked to an active preview test membership. The secret chooses who may perfo
 setup; it does not itself grant administrator access.
 
 1. Open <https://staff-preview.lasvegasfortransit.org/> in the LVBT Chrome profile.
-2. Select **Sign in with Google** and use the approved LVBT account.
+2. Complete the organization sign-in shown by Access. The staff app continues without a second
+   Google prompt. A preview explicitly using direct Google instead shows **Sign in with Google**.
 3. If asked to confirm membership, enter the email used for the preview membership record. It may be
    the same as the Google address. Enter the newest email code directly in that browser tab.
 4. Select **Continue to staff**, then **Set up staff access** if shown.
@@ -319,10 +328,10 @@ To remove it in Cloudflare, open **lvbt-staff-preview → Settings → Variables
 Deploy** so the active preview stops receiving it. **Delete & Save** alone does not activate the
 change. The dashboard may call this Worker's deployed environment **Production**; verify the Worker
 name is still `lvbt-staff-preview` and its database is `lvbt-platform-preview` before saving. Do not
-remove the Google sign-in or session-signing credentials. Confirm the setup secret is absent, sign
-out, sign in again with the same Google account, and reopen the test profile. The administrator
-designation must remain usable without returning to setup. Retain the resulting configuration change
-in the private operational record, because it creates a new Worker version.
+remove the selected authentication mode’s credentials or session-signing key. Confirm the setup
+secret is absent, sign out, sign in again with the same Google account, and reopen the test profile.
+The administrator designation must remain usable without returning to setup. Retain the resulting
+configuration change in the private operational record, because it creates a new Worker version.
 
 Keep one confirmation attempt open at a time. A newly requested code invalidates earlier unused
 codes. Codes and linking attempts expire; if confirmation expires, sign in again and request a fresh
@@ -335,14 +344,14 @@ administrator, a committee lead, and an unapproved account. Check the actual pre
 with a keyboard, and with a screen reader. Keep provider writes and schedules disabled until their
 separate live preview tests pass.
 
-| Symptom                                                     | What it means                                                | Next step                                                                                        |
-| ----------------------------------------------------------- | ------------------------------------------------------------ | ------------------------------------------------------------------------------------------------ |
-| **Hello World!**                                            | A placeholder application is serving the hostname.           | Check custom-domain ownership and the selected active staff version.                             |
-| Google sign-in succeeds but membership confirmation appears | The Google account has not been linked to the member record. | Confirm the preview membership email in the same browser attempt.                                |
-| Confirmation expires                                        | The linking attempt or code is no longer current.            | Sign in again and request one fresh code.                                                        |
-| Sign-in works but the member list is refused                | Membership, linking, or staff permission is incomplete.      | Inspect the approved preview record and one-time setup; do not infer permission from the domain. |
-| Preflight says **unverified**                               | The checker could not prove a requirement.                   | Read the named check and repair its specific access or configuration dependency.                 |
-| Deployment fails after upload                               | New versions may exist without full activation.              | Preserve the receipt, inspect both active deployments, and follow recovery before retrying.      |
+| Symptom                                                           | What it means                                                   | Next step                                                                                        |
+| ----------------------------------------------------------------- | --------------------------------------------------------------- | ------------------------------------------------------------------------------------------------ |
+| **Hello World!**                                                  | A placeholder application is serving the hostname.              | Check custom-domain ownership and the selected active staff version.                             |
+| Organization sign-in succeeds but membership confirmation appears | The verified identity has not been linked to the member record. | Confirm the preview membership email in the same browser attempt.                                |
+| Confirmation expires                                              | The linking attempt or code is no longer current.               | Sign in again and request one fresh code.                                                        |
+| Sign-in works but the member list is refused                      | Membership, linking, or staff permission is incomplete.         | Inspect the approved preview record and one-time setup; do not infer permission from the domain. |
+| Preflight says **unverified**                                     | The checker could not prove a requirement.                      | Read the named check and repair its specific access or configuration dependency.                 |
+| Deployment fails after upload                                     | New versions may exist without full activation.                 | Preserve the receipt, inspect both active deployments, and follow recovery before retrying.      |
 
 Production deployment requires its own backup, migration review, provider acceptance, and launch
 authorization. This setup procedure enables protected preview testing.

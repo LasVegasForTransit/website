@@ -25,6 +25,10 @@ export const RELATED_TABLES = {
     key: 'id',
     columns: 'id,person_id,origin_person_id,scope,source,withdrawn_at,recorded_at',
   },
+  staff_sso_links: {
+    key: 'id',
+    columns: 'id,person_id,issuer,subject,email,created_at,revoked_at',
+  },
   identities: {
     key: 'id',
     columns:
@@ -57,6 +61,12 @@ export type RelatedTable = keyof typeof RELATED_TABLES;
 const PERSON_FIELDS =
   'id,given_name,family_name,email,email_verified_at,phone,zip,census_block,census_block_vintage,preferred_language,membership_status,membership_rules_version,created_at,updated_at,deleted_at,place_name,region_id,region_source,region_set_at,erased_at';
 const OTHER_TABLES = {
+  staff_team_accounts: {
+    columns: 'person_id,created_at',
+    order: 'person_id',
+    filter: 'person_id IN (?,?)',
+    copies: 1,
+  },
   people: { columns: PERSON_FIELDS, order: 'id', filter: 'id IN (?,?)', copies: 1 },
   field_sources: {
     columns: 'person_id,field,source,confirmed_at,created_at,updated_at',
@@ -156,6 +166,7 @@ export interface MergeBookkeeping {
   archivedAfter: MergeRow;
   suppressed: SuppressedConsent[];
   copiedAdmin: MergeRow | null;
+  copiedTeam?: MergeRow | null;
   reviews: MergeRow[];
   withdrawalIds: string[];
   fieldSources?: MergeRow[];

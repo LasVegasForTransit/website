@@ -42,9 +42,9 @@ export const en = {
     confirming: 'Linking…',
     conflict:
       'We couldn’t link this account to an active LVBT membership. Ask an LVBT administrator to check your record.',
-    emailSubject: '{code} is your LVBT account linking code',
+    emailSubject: '{code} is your LVBT sign-in code',
     emailBody:
-      'Enter {code} in the browser where you signed in with your LVBT Google account. This code expires in 15 minutes.',
+      'Enter {code} in the browser where you requested it. This code expires in 15 minutes.',
     emailIgnore: 'If you didn’t ask to link an account, ignore this email.',
   },
   join: {

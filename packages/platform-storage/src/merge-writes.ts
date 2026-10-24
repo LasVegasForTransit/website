@@ -115,6 +115,15 @@ export function mergeWrites(db: Db, input: MergeOperation, book: MergeBookkeepin
         input.reason,
         ...freshMerge(input),
       ),
+    ...(book.copiedTeam
+      ? [
+          db
+            .prepare(
+              `INSERT INTO staff_team_accounts(person_id,created_at) SELECT ?,? WHERE ${FRESH_MERGE}`,
+            )
+            .bind(input.survivorId, rowValue(book.copiedTeam, 'created_at'), ...freshMerge(input)),
+        ]
+      : []),
     ...(admin
       ? [
           db

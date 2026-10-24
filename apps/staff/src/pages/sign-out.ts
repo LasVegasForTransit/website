@@ -1,3 +1,5 @@
+import { signedOutCookie } from '../lib/sso-navigation';
+import { staffAuthMode } from '@lasvegasfortransit/platform-integrations/staff-auth-config';
 import { field } from '../lib/forms';
 import type { APIRoute } from 'astro';
 import { env } from 'cloudflare:workers';
@@ -27,5 +29,8 @@ export const POST: APIRoute = async ({ request, locals }) => {
     );
   const token = readCookie(request, SESSION_COOKIE);
   if (token) await endSession(env as unknown as StaffEnv, token);
-  return googleResponse('/sign-in/', clearedSessionCookies());
+  const cookies = clearedSessionCookies();
+  if (staffAuthMode(env) === 'cloudflare-access' && locals.access)
+    cookies.push(await signedOutCookie(env as unknown as StaffEnv, locals.access));
+  return googleResponse('/sign-in/', cookies);
 };

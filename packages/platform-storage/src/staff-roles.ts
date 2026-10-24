@@ -1,53 +1,16 @@
 import type { Actor, MutationResult } from '@lasvegasfortransit/platform-core/staff-types';
-import { INTERESTS, type Interest } from '@lasvegasfortransit/platform-core/join-form';
 import { ulid } from '@lasvegasfortransit/platform-core/ids';
 import type { MembershipStatus } from '@lasvegasfortransit/platform-core/membership';
 import type { Db, SqlValue } from './db';
 import { auditDenied } from './audits';
-import { ADMINISTRATOR_WORKSPACE_IDENTITY } from './staff-administrators';
+import {
+  ADMINISTRATOR_WORKSPACE_IDENTITY,
+  ADMINISTRATOR_AUTHENTICATED_IDENTITY,
+} from './staff-administrators';
 import { can } from '@lasvegasfortransit/platform-core/permissions';
 
-function interestIds(json: string): Interest[] {
-  const parsed: unknown = JSON.parse(json);
-  return Array.isArray(parsed)
-    ? parsed.filter((value): value is Interest => INTERESTS.some((interest) => interest === value))
-    : [];
-}
-export async function loadActor(db: Db, personId: string): Promise<Actor | null> {
-  const person = await db
-    .prepare(
-      `SELECT p.membership_status,
-    EXISTS(SELECT 1 FROM identities WHERE person_id=p.id AND platform='google_workspace') AS workspace_linked,
-    EXISTS(SELECT 1 FROM staff_administrators WHERE person_id=p.id) AS staff_admin
-    FROM people p WHERE p.id=? AND p.deleted_at IS NULL`,
-    )
-    .bind(personId)
-    .first<{
-      membership_status: MembershipStatus;
-      workspace_linked: number;
-      staff_admin: number;
-    }>();
-  if (!person) return null;
-  const { results } = await db
-    .prepare(
-      `SELECT c.id,a.role,c.interest_ids FROM committee_assignments a
-    JOIN committees c ON c.id=a.committee_id WHERE a.person_id=? AND a.ended_at IS NULL`,
-    )
-    .bind(personId)
-    .all<{ id: string; role: 'member' | 'lead'; interest_ids: string }>();
-  return {
-    personId,
-    membershipStatus: person.membership_status,
-    workspaceLinked: Boolean(person.workspace_linked),
-    staffAdmin: Boolean(person.staff_admin),
-    committees: results.map((row) => ({
-      id: row.id,
-      role: row.role,
-      interestIds: interestIds(row.interest_ids),
-    })),
-    eventsLed: [],
-  };
-}
+export { loadActor } from './staff-actor';
+import { loadActor } from './staff-actor';
 
 const ACTIVE_ADMIN = `EXISTS (SELECT 1 FROM staff_administrators a JOIN people p ON p.id=a.person_id AND p.deleted_at IS NULL AND p.membership_status='member' WHERE a.person_id=?)`;
 
@@ -168,12 +131,14 @@ export interface StaffAdminManageInput {
   expectedState?: { updatedAt: string; designatedAt: string | null };
   /** Trusted server policy for portal grants; legacy maintenance callers retain their existing contract. */
   requireWorkspaceIdentity?: boolean;
+  requireOrganizationAuthentication?: boolean;
 }
 interface AdministratorTarget {
   updated_at: string;
   membership_status: MembershipStatus;
   designated_at: string | null;
   has_workspace: number;
+  has_organization_auth: number;
   has_other_active: number;
 }
 interface AdministratorChange extends StaffAdminManageInput {
@@ -190,7 +155,7 @@ async function administratorTarget(db: Db, id: string): Promise<AdministratorTar
   return await db
     .prepare(
       `SELECT p.updated_at,p.membership_status,a.designated_at,
-    ${ADMINISTRATOR_WORKSPACE_IDENTITY} AS has_workspace,
+    ${ADMINISTRATOR_WORKSPACE_IDENTITY} AS has_workspace,${ADMINISTRATOR_AUTHENTICATED_IDENTITY} AS has_organization_auth,
     ${OTHER_ACTIVE_ADMIN} AS has_other_active FROM people p LEFT JOIN staff_administrators a ON a.person_id=p.id
     WHERE p.id=? AND p.deleted_at IS NULL`,
     )
@@ -230,6 +195,7 @@ function managementPayload(input: StaffAdminManageInput): string {
     enabled: input.enabled,
     ...(input.expectedState ? { expectedState: input.expectedState } : {}),
     ...(input.requireWorkspaceIdentity ? { requireWorkspaceIdentity: true } : {}),
+    ...(input.requireOrganizationAuthentication ? { requireOrganizationAuthentication: true } : {}),
   });
 }
 async function managementRejection(
@@ -278,7 +244,8 @@ function targetRejection(
   if (
     input.enabled &&
     (target.membership_status !== 'member' ||
-      (input.requireWorkspaceIdentity && !target.has_workspace))
+      (input.requireWorkspaceIdentity && !target.has_workspace) ||
+      (input.requireOrganizationAuthentication && !target.has_organization_auth))
   )
     return { kind: 'invalid' };
   return !input.enabled && !keepsActiveAdministrator(target) ? { kind: 'last_admin' } : null;
@@ -335,12 +302,16 @@ function targetGuard(input: AdministratorChange): { sql: string; values: SqlValu
     input.enabled && input.requireWorkspaceIdentity
       ? `AND ${ADMINISTRATOR_WORKSPACE_IDENTITY}`
       : '';
+  const organization =
+    input.enabled && input.requireOrganizationAuthentication
+      ? `AND ${ADMINISTRATOR_AUTHENTICATED_IDENTITY}`
+      : '';
   const keep = input.enabled
     ? ''
     : `AND (p.membership_status<>'member' OR NOT EXISTS(SELECT 1 FROM staff_administrators WHERE person_id=p.id) OR ${OTHER_ACTIVE_ADMIN})`;
   return {
     sql: `EXISTS(SELECT 1 FROM people p WHERE p.id=? AND p.deleted_at IS NULL AND p.updated_at=?
-    AND (SELECT designated_at FROM staff_administrators WHERE person_id=p.id) IS ? ${member} ${workspace} ${keep})`,
+    AND (SELECT designated_at FROM staff_administrators WHERE person_id=p.id) IS ? ${member} ${workspace} ${organization} ${keep})`,
     values: [input.targetPersonId, input.target.updated_at, input.target.designated_at],
   };
 }

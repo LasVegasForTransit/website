@@ -102,13 +102,13 @@ try {
                     <div class="min-w-0 flex-[1_1_16rem]">
                       <p class="font-bold">{administratorName(person)}</p>
                       <p>{person.email ?? t('staff.profile.noEmail')}</p>
-                      {!person.has_workspace && !person.designated_at && (
+                      {!person.has_organization_auth && !person.designated_at && (
                         <p>{t('staff.administrators.connectGoogle')}</p>
                       )}
                     </div>
                     {person.designated_at ? (
                       <p>{t('staff.administrators.alreadyAdministrator')}</p>
-                    ) : person.has_workspace ? (
+                    ) : person.has_organization_auth ? (
                       <a
                         href={`/administrators/${person.id}/?action=grant`}
                         class="staff-muted-link"

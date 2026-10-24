@@ -8,6 +8,7 @@ const key = { ...(await exportJWK(keys.publicKey)), kid: 'google-runtime-fixture
 let nonce = '';
 const fixture = await startRuntime({
   initialAdminSetup: true,
+  authMode: 'google',
   googleOAuth: {
     key,
     token: () =>
@@ -26,7 +27,7 @@ const fixture = await startRuntime({
         .sign(keys.privateKey),
   },
 });
-const access = { 'Cf-Access-Jwt-Assertion': fixture.admin.assertion };
+const access = {};
 try {
   await fixture.db
     .prepare('DELETE FROM sessions WHERE person_id=?')
@@ -72,14 +73,14 @@ try {
   });
   assert.equal(
     finished.headers.get('Location'),
-    '/sign-in/return/?next=%2Fsign-in%2Finitial-admin%2F',
+    '/sign-in/ready/?next=%2Fsign-in%2Finitial-admin%2F',
   );
   const sessionCookie = /__Host-lvbt_session=[^;]+/.exec(
     finished.headers.get('Set-Cookie') ?? '',
   )?.[0];
   assert.ok(sessionCookie);
   const returned = await fixture.simulator.dispatchFetch(
-    `${origin}${finished.headers.get('Location')}`,
+    `${origin}/sign-in/return/?next=%2Fsign-in%2Finitial-admin%2F`,
     {
       headers: { ...access, Cookie: sessionCookie },
       redirect: 'manual',

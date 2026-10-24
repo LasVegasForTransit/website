@@ -1,3 +1,4 @@
+import { staffAuthMode } from '@lasvegasfortransit/platform-integrations/staff-auth-config';
 import { type MetadataClient, array, object } from './preflight-api';
 import { type releaseConfiguration, check, type Check } from './preflight-config';
 import { inspectAccess } from './preflight-access';
@@ -58,10 +59,17 @@ export function remoteProbes(
         ];
       },
     },
-    {
-      id: 'access.policy',
-      run: () => inspectAccess(client, config.hostname, value(staffBindings, 'LVBT_ACCESS_AUD')),
-    },
+    ...(staffAuthMode({
+      LVBT_STAFF_AUTH_MODE: value(staffBindings, 'LVBT_STAFF_AUTH_MODE') as string | undefined,
+    }) === 'cloudflare-access'
+      ? [
+          {
+            id: 'access.policy',
+            run: () =>
+              inspectAccess(client, config.hostname, value(staffBindings, 'LVBT_ACCESS_AUD')),
+          },
+        ]
+      : []),
   ];
   return probes;
 }
