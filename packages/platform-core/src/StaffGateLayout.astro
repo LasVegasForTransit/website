@@ -1,5 +1,5 @@
 ---
-import { gatePageStyles, gateIdentity, gateFooter } from './staff-gate';
+import { gatePageStyles, gateIdentity } from './staff-gate';
 interface Props {
   title: string;
 }
@@ -34,7 +34,6 @@ const { title } = Astro.props;
           )
         }
       </main>
-      <Fragment set:html={gateFooter} />
     </div>
   </body>
 </html>

@@ -10,12 +10,16 @@ import { currentMember } from '../../../platform/sign-in';
 import { builtPage, finish, redirect, showText, SECURITY_HEADERS } from '../../join/_page';
 import { platformSignIn, formOf, field, setValue, type SignInPagesEnv } from '../_shared';
 async function recovery(env: SignInPagesEnv, request: Request, status: number) {
-  const title = status === 410 ? 'Connection expired' : 'Connection unavailable';
+  const title = status === 410 ? 'Let’s try that again' : 'We couldn’t finish setup';
+  const detail =
+    status === 410
+      ? 'This link has expired. Return to the Staff Portal to continue.'
+      : 'Return to the Staff Portal and try again.';
   const page = await builtPage(env, request, '/sign-in/staff-link/');
   const rewriter = new HTMLRewriter()
     .on('title', showText(`${title} · LVBT Staff Portal`))
     .on('h1', showText(title))
-    .on('[data-slot="connection-intro"]', showText('Return to the Staff Portal and start again.'))
+    .on('[data-slot="connection-intro"]', showText(detail))
     .on('[data-slot="connection-form"]', {
       element: (element) => {
         element.remove();

@@ -1,5 +1,1 @@
-export {
-  gatePageStyles,
-  gateIdentity,
-  gateFooter,
-} from '@lasvegasfortransit/platform-core/staff-gate';
+export { gatePageStyles, gateIdentity } from '@lasvegasfortransit/platform-core/staff-gate';

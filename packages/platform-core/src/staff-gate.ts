@@ -16,7 +16,7 @@ p {
   display: grid;
   place-items: center;
   padding: clamp(1rem, 4vw, 3rem);
-  background: var(--color-surface);
+  background: var(--color-surface-container);
   color: var(--color-on-surface);
   --gate-outline: color-mix(in srgb, var(--color-outline) 25%, transparent);
   font-size: 1rem;
@@ -29,7 +29,7 @@ p {
 }
 .staff-gate-panel {
   padding: clamp(1.5rem, 5vw, 2.5rem);
-  background: var(--color-surface-container);
+  background: var(--color-surface);
   border: 1px solid var(--gate-outline);
   border-top: 4px solid var(--color-primary);
 }
@@ -97,8 +97,8 @@ p {
 .staff-gate-account {
   padding: 1rem;
   border: 1px solid var(--gate-outline);
-  border-radius: 0.75rem;
-  background: var(--color-surface);
+  border-radius: 0;
+  background: var(--color-surface-container);
   font-size: 0.875rem;
   color: var(--color-on-surface-variant);
 }
@@ -157,6 +157,7 @@ p {
   margin-top: 1.5rem;
   padding-top: 1.25rem;
   border-top: 1px solid var(--gate-outline);
+  text-align: center;
 }
 .staff-gate-help:empty {
   display: none;
@@ -231,13 +232,6 @@ p {
   display: block;
   margin-top: 0.25rem;
 }
-.staff-gate-footer {
-  margin-top: 1.25rem;
-  text-align: center;
-  font-size: 0.75rem;
-  line-height: 1.5;
-  color: var(--color-on-surface-variant);
-}
 .staff-gate .skip-link {
   position: absolute;
   left: 1rem;
@@ -271,5 +265,3 @@ p {
 `;
 
 export const gateIdentity = `<a class="staff-identity" href="/" aria-label="LVBT Staff Portal home"><span class="staff-identity-mark staff-logo-light" aria-hidden="true">${recoveryLightLogo}</span><span class="staff-identity-mark staff-logo-dark" aria-hidden="true">${recoveryDarkLogo.replaceAll('clip0_1_687', 'dark_clip0_1_687').replaceAll('clip1_1_687', 'dark_clip1_1_687').replaceAll('clip2_1_687', 'dark_clip2_1_687')}</span><span>Staff Portal</span></a>`;
-export const gateFooter =
-  '<footer class="staff-gate-footer">Las Vegans for Better Transit</footer>';
