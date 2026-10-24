@@ -68,18 +68,26 @@ export async function approveHandoffInBrowser(
       await page.getByRole('link', { name: 'Use a different member account' }).getAttribute('href'),
       'https://staff.lasvegasfortransit.org/sign-in/link-account/?step=existing',
     );
+    assert.equal(
+      await page.getByRole('link', { name: 'Ask on Discord' }).getAttribute('href'),
+      'https://discord.gg/Pfzk5p8QNV',
+    );
     if (capture) {
-      for (const [width, colorScheme] of [
-        [1280, 'light'],
-        [768, 'light'],
-        [390, 'light'],
-        [320, 'dark'],
+      for (const [width, height, colorScheme] of [
+        [1280, 900, 'light'],
+        [768, 900, 'light'],
+        [390, 844, 'light'],
+        [320, 568, 'dark'],
       ] as const) {
-        await page.setViewportSize({ width, height: 900 });
+        await page.setViewportSize({ width, height });
         await page.emulateMedia({ colorScheme });
         const panel = await page.getByRole('main').boundingBox();
         assert.ok(panel && panel.width <= 480, 'handoff must use the compact auth panel');
         assert.ok(Math.abs(panel.x - (width - panel.width) / 2) <= 1);
+        if (width <= 480) {
+          assert.equal(panel.width, width, 'mobile auth must fill the screen width');
+          assert.ok(panel.height >= height, 'mobile auth must fill the screen height');
+        }
         assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth));
         await page.screenshot({
           path: join(process.cwd(), `test-results/staff-handoff-layout/confirm-${width}.png`),

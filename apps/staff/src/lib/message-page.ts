@@ -1,6 +1,6 @@
 import { createHash } from 'node:crypto';
 
-import { gatePageStyles, gateIdentity } from './gate-page';
+import { gatePageStyles, gateIdentity, gateHelp } from './gate-page';
 
 export interface StaffErrorReport {
   reference: string;
@@ -53,16 +53,13 @@ export function messagePage(
     status >= 500
       ? `<a class="staff-action-link" href="https://discord.com/channels/1509298455896522823">Open Discord</a><a class="staff-secondary-button" href="${back.href}">${back.label}</a>`
       : `<a class="staff-action-link" href="${back.href}">${back.label}</a>`;
-  const help =
-    status >= 500
-      ? ''
-      : `<p class="staff-gate-help">Need a hand? <a class="staff-muted-link" href="mailto:hello@lasvegasfortransit.org">Email the team</a></p>`;
+  const help = status >= 500 ? '' : `<div class="staff-gate-help">${gateHelp}</div>`;
   const reportDetails =
     status >= 500 && report
       ? `<p class="staff-gate-report">Reference <strong>${escapeHtml(report.reference)}</strong><time datetime="${escapeHtml(report.occurredAt)}">${escapeHtml(new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', second: '2-digit', timeZone: 'America/Los_Angeles', timeZoneName: 'short' }).format(new Date(report.occurredAt)))}</time></p>`
       : '';
   return `<!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="robots" content="noindex, nofollow"><title>${title} · Las Vegans for Better Transit</title><style>${messagePageStyles}</style></head>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"><meta name="robots" content="noindex, nofollow"><title>${title} · Las Vegans for Better Transit</title><style>${messagePageStyles}</style></head>
 <body class="staff-shell staff-gate"><a href="#main" class="skip-link">Skip to content</a><div class="staff-gate-frame"><main id="main" class="staff-gate-panel" tabindex="-1"><header>${gateIdentity}</header>
 <h1>${title}</h1><p>${detail}</p>${reportDetails}<nav class="staff-gate-actions" aria-label="Next steps">${actions}</nav>${help}</main></div></body></html>`;
 }
