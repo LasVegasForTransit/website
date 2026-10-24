@@ -97,7 +97,7 @@ try {
       await context.close();
     }
   }
-  reports.push(...(await auditSignIn(browser, fixture)));
+  reports.push(...(await auditSignIn()));
   assert.ok(
     reports
       .filter((report) => report.path === '/paper/')
