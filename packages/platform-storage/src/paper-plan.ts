@@ -18,8 +18,8 @@ export interface PaperRecord {
   check: { sql: string; values: SqlValue[] };
   consentId: string;
 }
-export const PAPER_SCOPE = `EXISTS(SELECT 1 FROM people actor WHERE actor.id=? AND actor.deleted_at IS NULL AND actor.membership_status='member'
- AND (EXISTS(SELECT 1 FROM staff_administrators WHERE person_id=actor.id) OR EXISTS(SELECT 1 FROM identities WHERE person_id=actor.id AND platform='google_workspace') OR EXISTS(SELECT 1 FROM committee_assignments WHERE person_id=actor.id AND ended_at IS NULL)))`;
+export const PAPER_SCOPE = `EXISTS(SELECT 1 FROM people actor WHERE actor.id=? AND actor.deleted_at IS NULL AND (actor.membership_status='member' OR (actor.membership_status='not_member' AND EXISTS(SELECT 1 FROM staff_team_accounts WHERE person_id=actor.id)))
+ AND (EXISTS(SELECT 1 FROM staff_administrators WHERE person_id=actor.id) OR EXISTS(SELECT 1 FROM identities WHERE person_id=actor.id AND platform='google_workspace') OR EXISTS(SELECT 1 FROM staff_sso_links WHERE person_id=actor.id AND revoked_at IS NULL) OR EXISTS(SELECT 1 FROM committee_assignments WHERE person_id=actor.id AND ended_at IS NULL)))`;
 export async function paperAllowed(db: Db, actorId: string): Promise<boolean> {
   return Boolean(await db.prepare(`SELECT 1 WHERE ${PAPER_SCOPE}`).bind(actorId).first());
 }

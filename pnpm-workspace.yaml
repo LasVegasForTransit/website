@@ -31,6 +31,7 @@ overrides:
   sharp: 0.35.5
   source-map-js: 1.2.2
   smol-toml: 1.9.0
+  'zod@>=4.0.0 <4.6.6': 4.6.6
   svgo: 4.1.0
 
   # The organization version baseline. Every LVBT repository carries this same
@@ -41,8 +42,8 @@ overrides:
   'braces': 'npm:@dieub/braces-depth-guard@3.0.3-pn.3'
   'fast-uri': '3.1.8'
   'http-cache-semantics': '4.3.0'
-  'undici@^7.0.0': '7.29.1'
-  'undici@^8.0.0': '8.10.2'
+  'undici@^7.0.0': '7.30.1'
+  'undici@^8.0.0': '8.12.2'
 catalog:
   '@axe-core/playwright': 4.13.0
   '@astrojs/check': 0.9.10
@@ -82,7 +83,7 @@ catalog:
   vite: 8.2.2
   vitest: 4.1.11
   wrangler: 4.141.0
-  zod: 4.5.4
+  zod: 4.6.6
   # This repository's own entries.
   fflate: 0.8.3
   '@astrojs/cloudflare': 14.2.0

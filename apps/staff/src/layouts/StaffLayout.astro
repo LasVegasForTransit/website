@@ -6,11 +6,10 @@ import { welcomeVisible } from '../lib/welcome';
 import { can } from '@lasvegasfortransit/platform-core/permissions';
 interface Props {
   title: string;
-  signIn?: boolean;
   printPage?: boolean;
   description?: string;
 }
-const { title, signIn = false, printPage = false, description } = Astro.props;
+const { title, printPage = false, description } = Astro.props;
 const staff = Astro.locals.staff;
 const consoleVisible = staff && can(staff.actor, 'console.enter');
 const home = staff && !consoleVisible ? '/paper/' : '/';
@@ -43,7 +42,7 @@ const memberRecord = /^\/people\/[^/]+(?:\/(?:edit|delete))?\/?$/.test(Astro.url
             <span>{t('staff.navigation.staff')}</span>
           </a>
           {
-            !signIn && consoleVisible && (
+            consoleVisible && (
               <nav aria-label={t('staff.navigation.label')} class="staff-nav">
                 <a
                   href="/people/"
@@ -109,12 +108,5 @@ const memberRecord = /^\/people\/[^/]+(?:\/(?:edit|delete))?\/?$/.test(Astro.url
         <slot />
       </main>
     </div>
-    {
-      signIn && (
-        <footer class="container-page py-8 text-body-sm">
-          {t('staff.navigation.organization')}
-        </footer>
-      )
-    }
   </body>
 </html>

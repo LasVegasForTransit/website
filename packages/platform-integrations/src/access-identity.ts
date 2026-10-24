@@ -7,6 +7,8 @@ export interface AccessEnv {
 export interface AccessIdentity {
   email: string;
   subject: string;
+  issuer: string;
+  expiresAt: Date;
 }
 const resolvers = new WeakMap<typeof fetch, Map<string, ReturnType<typeof createRemoteJWKSet>>>();
 function accessKeys(issuer: string, fetcher: typeof fetch) {
@@ -57,7 +59,12 @@ export async function verifyAccessAssertion(
       payload.type !== 'app'
     )
       return null;
-    return { subject: payload.sub, email: payload.email.toLowerCase() };
+    return {
+      subject: payload.sub,
+      email: payload.email.toLowerCase(),
+      issuer,
+      expiresAt: new Date(Number(payload.exp) * 1000),
+    };
   } catch {
     return null;
   }

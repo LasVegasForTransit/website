@@ -3,6 +3,7 @@
 // reveals whether an email address is on LVBT's list. Codes, link tokens and
 // session identifiers are stored only as keyed hashes (LVBT_SIGN_IN_SECRET).
 
+import { TEAM_ACCOUNT_ELIGIBLE } from './staff-account';
 import { ulid } from '@lasvegasfortransit/platform-core/ids';
 import { hashWithSecret } from '@lasvegasfortransit/platform-core/signing';
 import type { Db } from './db';
@@ -115,7 +116,7 @@ export async function requestCode(
   if (!personId) return { kind: 'no_person' };
   if (input.purpose === 'workspace_link') {
     const member = await env.PLATFORM_DB.prepare(
-      "SELECT id FROM people WHERE id = ? AND email = ? AND deleted_at IS NULL AND membership_status = 'member'",
+      `SELECT p.id FROM people p WHERE p.id=? AND p.email=? AND p.deleted_at IS NULL AND ${TEAM_ACCOUNT_ELIGIBLE}`,
     )
       .bind(personId, email)
       .first();

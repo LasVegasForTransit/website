@@ -1,3 +1,4 @@
+import { TEAM_ACCOUNT_ELIGIBLE } from './staff-account';
 import { hashWithSecret } from '@lasvegasfortransit/platform-core/signing';
 import type { WorkspaceIdentity } from '@lasvegasfortransit/platform-core/workspace-identity';
 import { createSession, endSession, readSession, type AuthEnv } from './auth';
@@ -8,7 +9,7 @@ export async function createWorkspaceSession(
 ) {
   const identity = await env.PLATFORM_DB.prepare(
     `SELECT i.id, i.person_id FROM identities i JOIN people p ON p.id = i.person_id
-     WHERE i.platform = 'google_workspace' AND i.external_id = ? AND p.deleted_at IS NULL AND p.membership_status = 'member'`,
+     WHERE i.platform = 'google_workspace' AND i.external_id = ? AND p.deleted_at IS NULL AND ${TEAM_ACCOUNT_ELIGIBLE}`,
   )
     .bind(workspace.subject)
     .first<{ id: string; person_id: string }>();
@@ -16,8 +17,8 @@ export async function createWorkspaceSession(
   const session = await createSession(env, identity.person_id, 'staff', now);
   await env.PLATFORM_DB.batch([
     env.PLATFORM_DB.prepare(
-      `UPDATE sessions SET workspace_identity_id = ? WHERE id_hash = ?
-      AND EXISTS (SELECT 1 FROM people WHERE id = sessions.person_id AND deleted_at IS NULL AND membership_status = 'member')`,
+      `UPDATE sessions SET authentication_source = 'google', workspace_identity_id = ? WHERE id_hash = ?
+      AND EXISTS (SELECT 1 FROM people p WHERE p.id = sessions.person_id AND p.deleted_at IS NULL AND ${TEAM_ACCOUNT_ELIGIBLE})`,
     ).bind(identity.id, await hashWithSecret(env.LVBT_SIGN_IN_SECRET, `session:${session.token}`)),
     env.PLATFORM_DB.prepare(
       'UPDATE identities SET external_email = ?, updated_at = ? WHERE id = ?',
@@ -34,7 +35,7 @@ export async function readWorkspaceSession(env: AuthEnv, token: string, now: Dat
   const identity = await env.PLATFORM_DB.prepare(
     `SELECT i.external_id, i.external_email FROM sessions s JOIN identities i
        ON i.id = s.workspace_identity_id AND i.person_id = s.person_id
-     JOIN people p ON p.id = s.person_id AND p.deleted_at IS NULL AND p.membership_status = 'member'
+     JOIN people p ON p.id = s.person_id AND p.deleted_at IS NULL AND ${TEAM_ACCOUNT_ELIGIBLE}
      WHERE s.id_hash = ? AND i.platform = 'google_workspace'`,
   )
     .bind(await hashWithSecret(env.LVBT_SIGN_IN_SECRET, `session:${token}`))

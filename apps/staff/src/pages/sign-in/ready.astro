@@ -1,0 +1,26 @@
+---
+import { env } from 'cloudflare:workers';
+import { safeNext } from '@lasvegasfortransit/platform-core/web-auth';
+import StaffGateLayout from '../../layouts/StaffGateLayout.astro';
+import StaffAccount from '../../components/StaffAccount.astro';
+import { readStaffSession } from '../../lib/staff-session';
+import { staffReturnPath } from '../../lib/sign-in-return';
+import type { StaffEnv } from '../../lib/context';
+const session = await readStaffSession(
+  env as unknown as StaffEnv,
+  Astro.request,
+  Astro.locals.access,
+);
+if (!session) return Astro.redirect('/sign-in/', 303);
+const next = safeNext(Astro.url.searchParams.get('next'));
+const title = session.person.givenName
+  ? `Welcome, ${session.person.givenName}`
+  : 'Your account is ready';
+---
+
+<StaffGateLayout title={title}>
+  <p>Your account is ready. Continue to the tools for your LVBT work.</p>
+  <StaffAccount email={session.email} />
+  <a class="staff-action-link" href={staffReturnPath(next)}>Continue</a>
+  <p slot="help">Need a hand? Ask the LVBT volunteer who invited you.</p>
+</StaffGateLayout>

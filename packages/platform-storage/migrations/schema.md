@@ -264,7 +264,9 @@ Before saving the result, the transaction compares complete, ordered copies of t
 checks that the administrator still has permission. Conflicting contact emails, external platforms,
 current assignments or unique event references cause no partial change. Engagement and correction
 content stays immutable; only a recorded ownership movement during a pending merge or undo receipt
-is permitted by their triggers. Merge bookkeeping rejects ordinary edits; explicit deletion can
+is permitted by their triggers. Saved review snapshots remain JSON arrays after erasure. Migration
+`0054_merge_review_arrays.sql` normalizes legacy quoted arrays without changing the remaining
+archive fields or undo metadata. Merge bookkeeping rejects ordinary edits; explicit deletion can
 irreversibly erase personal copies as described below. Sessions, codes, affected form tokens and
 welcome claims are invalidated, and pending provider work for both people is superseded and replaced
 with current person-reconciliation jobs. The archived person's cleanup job is valid only while its
@@ -914,3 +916,16 @@ when rolling application code back; dropping it discards capacity accounting. Th
 scheduled work in that database, not the account-wide usage of staff/member requests, imports,
 backups or other databases. See [staff availability](../../../docs/reference/staff-availability.md)
 for allocations, remaining limits and deferral recovery.
+
+## Team account setup
+
+`staff_team_accounts` records explicit Staff Portal account creation separately from newsletter
+membership and staff roles. It permits a verified organization identity to use basic volunteer
+paper-entry tools while the person's membership status remains `not_member`. Former members and
+erased people remain ineligible. Erasure removes the team enrollment; identity tombstones continue
+to prevent recreation.
+
+`staff_member_handoffs` binds a short-lived cross-origin connection to the pending portal login,
+authentication mode, initiating staff origin and live member session. It stores keyed hashes rather
+than session tokens. Member approval requires a same-origin POST; portal completion still requires
+the original host-only pending cookie. Session deletion or person erasure removes approved proofs.

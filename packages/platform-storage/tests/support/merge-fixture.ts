@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs';
+import { URL } from 'node:url';
 import assert from 'node:assert/strict';
 import { PersonService } from '../../src/person-service';
 import { CommitteeService } from '../../src/committees';
@@ -8,6 +10,20 @@ export async function mergeFixture(through?: string, initialConsentAt?: string) 
   const loaded = await import('../../src/merges').catch(() => null);
   assert.ok(loaded, 'merge and undo must preserve exact movements and later work');
   const db = memoryDb(through);
+  // Current merge code includes SSO links. Install only that independent schema
+  // when a regression deliberately leaves an unrelated migration pending.
+  if (through && through < '0055_staff_sso.sql') {
+    db.raw.exec(
+      readFileSync(new URL('../../migrations/0055_staff_sso.sql', import.meta.url), 'utf8'),
+    );
+    db.raw.prepare('INSERT INTO d1_migrations(name) VALUES(?)').run('0055_staff_sso.sql');
+  }
+  if (through && through < '0056_staff_accounts.sql') {
+    db.raw.exec(
+      readFileSync(new URL('../../migrations/0056_staff_accounts.sql', import.meta.url), 'utf8'),
+    );
+    db.raw.prepare('INSERT INTO d1_migrations(name) VALUES(?)').run('0056_staff_accounts.sql');
+  }
   const people = new PersonService(db);
   const create = async (email: string, name: string) =>
     (

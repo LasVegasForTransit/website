@@ -23,6 +23,7 @@
     "./newsletter-sync-store": "./src/newsletter-sync-store.ts",
     "./newsletter-plan": "./src/newsletter-plan.ts",
     "./beehiiv-poll-store": "./src/beehiiv-poll-store.ts",
+    "./staff-member-handoff": "./src/staff-member-handoff.ts",
     "./auth": "./src/auth.ts",
     "./db": "./src/db.ts",
     "./engagement": "./src/engagement.ts",
@@ -82,7 +83,8 @@
     "./google-group-overview": "./src/google-group-overview.ts",
     "./google-group-actions": "./src/google-group-actions.ts",
     "./discord-command-checkpoint": "./src/discord-command-checkpoint.ts",
-    "./staff-deletion": "./src/staff-deletion.ts"
+    "./staff-deletion": "./src/staff-deletion.ts",
+    "./staff-sso": "./src/staff-sso.ts"
   },
   "scripts": {
     "lint": "eslint . --max-warnings 0",

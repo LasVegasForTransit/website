@@ -30,6 +30,10 @@ Choose the reference for your task:
 - [Staff acceptance](./staff-portal-acceptance.md) lists the real tasks and outside-service checks
   required before launch.
 
+For authentication mode selection, portable origins, provider switching and sign-out recovery, use
+[Configure staff authentication](../guides/configure-staff-authentication.md). The existing hosted
+deployments use Access; direct Google is an explicit alternative.
+
 ## Read-only configuration check
 
 The [staff environment example](../../apps/staff/.env.example) lists the Access binding names.
@@ -111,15 +115,13 @@ operational reports.
    application and policy sessions to 12 hours. Allow the Console users Google group and require the
    LVBT email domain. Do not add bypass policies or broader alternative allow rules. Review the
    Google identity provider and actual group membership separately.
-4. Configure the dedicated
-   [production staff Google client](./platform-secrets.md#google-sign-in-for-the-staff-portal) and
-   [staff email key](./platform-secrets.md#staff-email-key). Use
-   [staff preview setup](../guides/set-up-staff-preview.md) for the shared preview credentials and
-   fixed preview callbacks. Keep dynamic preview origins disabled unless explicitly approved.
-   Configure the approved sign-in and email bindings on staff. Sessions and confirmation cookies are
-   scoped to their issuing host, so staff can use an independent `LVBT_SIGN_IN_SECRET` while sharing
-   the membership database. Preserve the website's existing signing key; rotating it invalidates its
-   member sessions. Confirm a real sign-in on each application before acceptance.
+4. Configure the [staff email key](./platform-secrets.md#staff-email-key), an independent
+   `LVBT_SIGN_IN_SECRET`, and the selected authentication mode and canonical origin according to
+   [Configure staff authentication](../guides/configure-staff-authentication.md). Current hosted
+   deployments use `cloudflare-access` and reuse the verified assertion without another Google OAuth
+   flow. The alternative `google` mode requires a dedicated OAuth client and exact callbacks, and
+   works without Access. Preserve the website's signing key and verify real sign-in separately for
+   each application.
 5. Add the non-sensitive Access audience and team domain to the staff source configuration's Worker
    variables for each environment before building the release. Upload replaces public variables;
    values added only to the remote Worker are not inherited. If an audience is stored as an opaque
@@ -145,13 +147,13 @@ operational reports.
    Google account linked to a clearly marked test member in the isolated preview database. This may
    be an existing staff Google account; do not copy production member records or permissions. Do not
    store this value in source control or use a personal email. The one-time setup page checks that
-   this exact Workspace account is linked to an active LVBT member and that no administrator
-   designation exists, then records the grant in the staff audit log. The president signs in with
-   Google, completes any inbox confirmation needed to link their member record, then completes the
-   first-administrator setup. Confirm the audited designation and access to the member list, then
-   remove the temporary secret. Sign out and sign in again through the normal Google flow; verify
-   that the member list opens without the temporary setting. Do not infer admin access from a domain
-   or group alone.
+   this exact organization account is linked to an active LVBT member and that no administrator
+   designation exists, then records the grant in the staff audit log. The president signs in through
+   the selected mode, completes any inbox confirmation needed to link their member record, then
+   completes the first-administrator setup. Confirm the audited designation and access to the member
+   list, then remove the temporary secret. Sign out and sign in again through the selected
+   authentication mode; verify that the member list opens without the temporary setting. Do not
+   infer admin access from a domain or group alone.
 
 ## Historical roster preview
 

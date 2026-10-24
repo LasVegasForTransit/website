@@ -237,11 +237,8 @@ try {
   });
   const revokedCounts = await counts();
   const denied = await post(fixture.admin, submitted);
-  assert.equal(denied.status, 303);
-  assert.equal(
-    denied.headers.get('Location'),
-    `/sign-in/?next=${encodeURIComponent('/imports/resolve/')}`,
-  );
+  assert.equal(denied.status, 403, 'a withdrawn session cannot replay its POST after signing in');
+  assert.equal(denied.headers.has('Location'), false);
   await page.goto(`${ORIGIN}/imports/`);
   assert.equal(new URL(page.url()).pathname, '/sign-in/');
   assert.equal(

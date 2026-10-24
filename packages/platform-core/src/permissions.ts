@@ -91,9 +91,18 @@ function eventScope(actor: Actor, target?: PermissionTarget): boolean {
     actor.eventsLed.includes(target.eventId),
   );
 }
+function teamVolunteer(actor: Actor, scope: Scope) {
+  return (
+    scope === 'volunteer' &&
+    actor.membershipStatus === 'not_member' &&
+    actor.teamAccount &&
+    actor.organizationAuthenticated
+  );
+}
 export function can(actor: Actor, permission: Permission, target?: PermissionTarget): boolean {
   const scope = PERMISSION_SCOPES[permission];
   if (scope === 'self') return target?.personId === actor.personId;
+  if (teamVolunteer(actor, scope)) return true;
   if (actor.membershipStatus !== 'member') return false;
   if (actor.staffAdmin) return true;
   switch (scope) {
@@ -102,7 +111,11 @@ export function can(actor: Actor, permission: Permission, target?: PermissionTar
     case 'admin':
       return false;
     case 'volunteer':
-      return actor.workspaceLinked || actor.committees.length > 0;
+      return (
+        actor.workspaceLinked ||
+        actor.organizationAuthenticated === true ||
+        actor.committees.length > 0
+      );
     case 'person':
       return personScope(actor, permission, target);
     case 'committee':

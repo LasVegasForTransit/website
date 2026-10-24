@@ -1,0 +1,21 @@
+---
+interface Props {
+  email: string;
+  label?: string;
+  change?: boolean;
+}
+const { email, label = 'LVBT Google account', change = true } = Astro.props;
+---
+
+<div class="staff-gate-account">
+  <p>{label}<strong>{email}</strong></p>
+  {
+    change && (
+      <form method="post" action="/sign-in/change-account/">
+        <button type="submit" class="staff-gate-link staff-text-button">
+          Change account
+        </button>
+      </form>
+    )
+  }
+</div>

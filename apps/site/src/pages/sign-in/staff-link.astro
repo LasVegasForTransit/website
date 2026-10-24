@@ -1,0 +1,23 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import PageHero from '../../components/PageHero.astro';
+import Button from '../../components/app/Button.astro';
+---
+
+<BaseLayout title="Connect to the Staff Portal" noindex>
+  <PageHero title="Connect to the Staff Portal"
+    ><p class="lede mt-6 max-w-2xl">
+      Use this member account to finish setting up your Staff Portal access.
+    </p></PageHero
+  >
+  <section class="container-page py-12 md:py-16">
+    <div class="max-w-[30rem] space-y-6">
+      <p class="border border-outline bg-surface-container p-6 [overflow-wrap:anywhere]">
+        <strong data-slot="member-email"></strong>
+      </p>
+      <form method="post" action="/sign-in/staff-link/">
+        <input type="hidden" name="request" data-slot="request" /><Button block>Continue</Button>
+      </form>
+    </div>
+  </section>
+</BaseLayout>

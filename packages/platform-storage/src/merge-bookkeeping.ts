@@ -124,6 +124,8 @@ export function mergeBookkeeping(
       }
     }
   }
+  const teamAccounts = stateRows(state, 'staff_team_accounts');
+  const mergedTeam = teamAccounts.find((row) => row.person_id === merged.id);
   const admins = stateRows(state, 'staff_administrators');
   const mergedAdmin = admins.find((row) => row.person_id === merged.id);
   return {
@@ -132,6 +134,10 @@ export function mergeBookkeeping(
     archivedBefore: merged,
     archivedAfter: { ...merged, ...MERGED_PROFILE_EMPTY, deleted_at: stamp, updated_at: stamp },
     suppressed,
+    copiedTeam:
+      mergedTeam && !teamAccounts.some((row) => row.person_id === survivor.id)
+        ? { ...mergedTeam, person_id: rowValue(survivor, 'id') }
+        : null,
     copiedAdmin:
       mergedAdmin && !admins.some((row) => row.person_id === survivor.id)
         ? { ...mergedAdmin, person_id: rowValue(survivor, 'id') }

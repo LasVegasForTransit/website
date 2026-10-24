@@ -51,6 +51,24 @@ function compatibleMovements(
   }
   return true;
 }
+function copiedAccessCompatible(
+  state: MergeSnapshot[],
+  book: MergeBookkeeping,
+  survivorId: string,
+) {
+  const records: [string, MergeRow | null | undefined][] = [
+    ['staff_team_accounts', book.copiedTeam],
+    ['staff_administrators', book.copiedAdmin],
+  ];
+  return records.every(
+    ([table, row]) =>
+      !row ||
+      equalRows(
+        stateRows(state, table).find((value) => value.person_id === survivorId) ?? null,
+        row,
+      ),
+  );
+}
 export function undoCompatible(
   state: MergeSnapshot[],
   record: MergeRecord,
@@ -79,14 +97,7 @@ export function undoCompatible(
       return false;
   }
   if (!compatibleMovements(state, book, String(survivor.id))) return false;
-  if (
-    book.copiedAdmin &&
-    !equalRows(
-      stateRows(state, 'staff_administrators').find((row) => row.person_id === survivor.id) ?? null,
-      book.copiedAdmin,
-    )
-  )
-    return false;
+  if (!copiedAccessCompatible(state, book, String(survivor.id))) return false;
   return true;
 }
 function restoreConsents(
@@ -210,6 +221,13 @@ export function unmergeWrites(
           ...freshMerge(input),
         ),
     ),
+    ...(book.copiedTeam
+      ? [
+          db
+            .prepare(`DELETE FROM staff_team_accounts WHERE person_id=? AND ${FRESH_MERGE}`)
+            .bind(input.survivorId, ...freshMerge(input)),
+        ]
+      : []),
     ...(book.copiedAdmin
       ? [
           db

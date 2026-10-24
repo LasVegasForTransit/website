@@ -9,16 +9,16 @@ responsibility.
 - Sign in as an existing administrator at the intended staff portal. Production is
   `https://staff.lasvegasfortransit.org`; isolated tests use
   `https://staff-preview.lasvegasfortransit.org`.
-- Confirm the person is a current LVBT member and has their own LVBT Google account. A personal
-  Google account is insufficient.
-- Confirm their approved entry in `console-users@lasvegasfortransit.org`, the Google Group that
-  permits entry through the portal's outer sign-in gate. The president maintains this group until
-  its management is automated. Follow
+- Confirm the person is a current LVBT member and has their own approved organization account. A
+  personal Google account is insufficient for the direct Google mode.
+- For the existing Access deployment, confirm their approved entry in
+  `console-users@lasvegasfortransit.org`, the Google Group that permits entry through the portal's
+  outer sign-in gate. The president maintains this group until its management is automated. Follow
   [maintainer setup](../reference/staff-portal-operations.md#maintainer-setup) for the existing
   Google and Cloudflare configuration.
-- Have them sign in once with their LVBT Google account and complete membership confirmation if
-  requested. This connects their existing member record. It does not make them an administrator;
-  they may still see an access-denied page until you finish the grant.
+- Have them sign in once through the deployment’s selected authentication mode and complete
+  membership confirmation if requested. This connects their existing member record. It does not make
+  them an administrator; they may still see an access-denied page until you finish the grant.
 
 Use synthetic members in preview for testing. Never grant a real person access merely to test the
 controls, share an administrator's account, or restore the one-time first-administrator setting for
@@ -28,9 +28,10 @@ routine access changes.
 
 1. Open **Members**, expand **Member records**, then choose **Staff administrators**.
 2. Under **Add administrator**, search by the person's name or membership email.
-3. Check the result's name and email. If the person has not connected their LVBT Google account,
-   have them finish the sign-in described above, then search again. If they are not a current
-   member, resolve the membership record first; this screen must not create membership for them.
+3. Check the result's name and email. If the person has not confirmed their organization account and
+   membership, have them finish the sign-in described above, then search again. If they are not a
+   current member, resolve the membership record first; this screen must not create membership for
+   them.
 4. Open the person's administrator confirmation. Read the access they will receive, then confirm the
    grant. **Cancel** returns without changing their access.
 5. Confirm they appear in the administrator list. Have them sign in with their own account and open
@@ -63,7 +64,7 @@ details.
 If the page closes or the response is lost, reopen **Staff administrators** and check the current
 list before acting again. Do not assume an error means the change failed. To reverse an accidental
 grant, use the normal removal confirmation; to reverse a removal, grant access again after checking
-the person's current membership and Google account.
+the person's current membership and organization authentication.
 
 For local acceptance after building the applications, run:
 

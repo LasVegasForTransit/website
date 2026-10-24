@@ -1,14 +1,11 @@
 ---
-import { messageResponse } from '../../lib/responses';
 import { env } from 'cloudflare:workers';
-import Button from '../../../../site/src/components/app/Button.astro';
-import StaffLayout from '../../layouts/StaffLayout.astro';
+import StaffGateLayout from '../../layouts/StaffGateLayout.astro';
 import type { StaffEnv } from '../../lib/context';
 import { bootstrapInitialStaffAdmin, getInitialStaffAdminState } from '../../lib/initial-admin';
 
 const staffEnv = env as unknown as StaffEnv;
 const access = Astro.locals.access;
-if (!access) return messageResponse("You don't have access to this", 403);
 
 let state =
   Astro.request.method === 'POST'
@@ -29,28 +26,43 @@ Astro.response.status =
         : 503;
 ---
 
-<StaffLayout title="Set up staff access" signIn>
-  <div class="max-w-[30rem] space-y-6">
-    {
-      state.kind === 'ready' ? (
-        <>
-          <p>
-            This one-time step gives staff administrator access to the LVBT member account linked to
-            the approved president’s Google account.
-          </p>
-          <form method="post" action="/sign-in/initial-admin/">
-            <Button>Set up staff access</Button>
-          </form>
-        </>
-      ) : state.kind === 'not_authorized' ? (
-        <p role="alert">You don't have access to this.</p>
-      ) : state.kind === 'invalid_request' ? (
-        <p role="alert">Reload this page and try again.</p>
-      ) : state.kind === 'unconfigured' ? (
-        <p role="alert">Staff setup is not ready yet. Ask the LVBT president for help.</p>
-      ) : (
-        <p role="alert">Staff setup is unavailable right now. Please try again later.</p>
-      )
-    }
-  </div>
-</StaffLayout>
+<StaffGateLayout title="Set up staff access">
+  {
+    state.kind === 'ready' ? (
+      <>
+        <p>
+          This gives your LVBT account administrator access to Staff. You’ll be able to manage
+          member records and other administrators.
+        </p>
+        <form method="post" action="/sign-in/initial-admin/">
+          <button class="staff-action-link" type="submit">
+            Set up staff access
+          </button>
+        </form>
+      </>
+    ) : state.kind === 'not_authorized' ? (
+      <p class="staff-gate-notice" role="alert">
+        You don't have access to this.
+      </p>
+    ) : state.kind === 'invalid_request' ? (
+      <p class="staff-gate-notice" role="alert">
+        Reload this page and try again.
+      </p>
+    ) : state.kind === 'unconfigured' ? (
+      <p class="staff-gate-notice" role="alert">
+        Staff setup is not ready yet. Ask the LVBT president for help.
+      </p>
+    ) : (
+      <p class="staff-gate-notice" role="alert">
+        Staff setup is unavailable right now. Please try again later.
+      </p>
+    )
+  }
+  {
+    state.kind !== 'ready' && (
+      <a class="staff-secondary-button" href="/sign-in/">
+        Back to sign in
+      </a>
+    )
+  }
+</StaffGateLayout>

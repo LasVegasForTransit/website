@@ -11,20 +11,21 @@ import {
 } from '@lasvegasfortransit/platform-integrations/google-runtime';
 import type { AccessConfiguration } from '@lasvegasfortransit/platform-core/access';
 import type { Actor } from '@lasvegasfortransit/platform-core/staff-types';
-import { SESSION_COOKIE, readCookie } from '@lasvegasfortransit/platform-core/web-auth';
+import { readStaffSession } from './staff-session';
+import type { StaffAuthConfig } from '@lasvegasfortransit/platform-integrations/staff-auth-config';
 import { can } from '@lasvegasfortransit/platform-core/permissions';
 import type {
   AccessEnv,
   AccessIdentity,
 } from '@lasvegasfortransit/platform-integrations/access-identity';
 import type { GoogleSignInEnv } from '@lasvegasfortransit/platform-integrations/google-sign-in';
-import { readWorkspaceSession } from '@lasvegasfortransit/platform-storage/workspace-link';
 import { loadActor } from '@lasvegasfortransit/platform-storage/staff-roles';
 import { auditDenied } from '@lasvegasfortransit/platform-storage/audits';
 import type { Db } from '@lasvegasfortransit/platform-storage/db';
 export interface StaffEnv
-  extends GoogleSignInEnv, AccessEnv, DiscordRuntimeEnv, GoogleAccessRuntimeEnv {
+  extends GoogleSignInEnv, AccessEnv, DiscordRuntimeEnv, GoogleAccessRuntimeEnv, StaffAuthConfig {
   LVBT_RESEND_API_KEY?: string;
+  LVBT_MEMBER_ORIGIN?: string;
   LVBT_NEWSLETTER_JOBS?: { fetch(request: Request): Promise<Response> };
   /** Set only for the one-time, maintainer-approved first administrator bootstrap. */
   LVBT_INITIAL_STAFF_ADMIN_WORKSPACE_EMAIL?: string;
@@ -43,7 +44,11 @@ export interface StaffLocals {
 }
 function staffRoute(actor: Actor, request: Request): 'allowed' | 'paper_home' | 'denied' {
   if (can(actor, 'console.enter')) return 'allowed';
-  if (!actor.workspaceLinked || !can(actor, 'attendance.record')) return 'denied';
+  if (
+    !(actor.organizationAuthenticated ?? actor.workspaceLinked) ||
+    !can(actor, 'attendance.record')
+  )
+    return 'denied';
   const path = new URL(request.url).pathname.replace(/\/$/, '');
   if (path === '' && request.method === 'GET') return 'paper_home';
   return ['/paper', '/paper/sheet', '/sign-out'].includes(path) ? 'allowed' : 'denied';
@@ -51,11 +56,12 @@ function staffRoute(actor: Actor, request: Request): 'allowed' | 'paper_home' | 
 export async function resolveStaffContext(
   request: Request,
   env: StaffEnv,
-  access: AccessIdentity,
+  access?: AccessIdentity,
 ): Promise<StaffContext | Response> {
-  const token = readCookie(request, SESSION_COOKIE);
-  const session = token ? await readWorkspaceSession(env, token) : null;
-  if (session?.workspaceEmail !== access.email)
+  const session = await readStaffSession(env, request, access);
+  if (!session && request.method !== 'GET' && request.method !== 'HEAD')
+    return messageResponse('Your sign-in expired. Sign in again before submitting this form.', 403);
+  if (!session)
     return new Response(null, {
       status: 303,
       headers: {

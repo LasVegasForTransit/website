@@ -7,7 +7,8 @@ import { correctPerson } from '@lasvegasfortransit/platform-storage/corrections'
 import { loadActor } from '@lasvegasfortransit/platform-storage/staff-roles';
 import { ORIGIN, startRuntime } from '../support/runtime';
 
-const fixture = await startRuntime();
+const authMode = process.argv.includes('--google') ? 'google' : 'cloudflare-access';
+const fixture = await startRuntime({ authMode });
 const browser = await chromium
   .launch({
     args: [
@@ -53,7 +54,9 @@ try {
     javaScriptEnabled: false,
     ignoreHTTPSErrors: true,
     acceptDownloads: true,
-    extraHTTPHeaders: { 'Cf-Access-Jwt-Assertion': fixture.admin.assertion },
+    ...(authMode === 'cloudflare-access'
+      ? { extraHTTPHeaders: { 'Cf-Access-Jwt-Assertion': fixture.admin.assertion } }
+      : {}),
     serviceWorkers: 'block',
   });
   await context.addCookies([

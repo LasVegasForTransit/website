@@ -122,8 +122,7 @@ export async function listGoogleGroupOverview(
     SELECT v.allowed,
       (SELECT json_group_array(json(value)) FROM (SELECT ${GROUP_JSON} AS value FROM summaries WHERE NOT is_console AND group_email>? AND (?=0 OR ${HAS_PROBLEM}) ORDER BY group_email LIMIT ?)) AS items,
       (SELECT ${GROUP_JSON} FROM summaries WHERE is_console) AS console,
-      (SELECT count(*) FROM summaries WHERE NOT is_console) AS totalGroups,
-      (SELECT count(*) FROM summaries WHERE NOT is_console AND ${HAS_PROBLEM}) AS totalProblems
+      (SELECT json_object('totalGroups',count(*),'totalProblems',coalesce(sum(${HAS_PROBLEM}),0)) FROM summaries WHERE NOT is_console) AS totals
     FROM viewer v`,
     )
     .bind(...parameters(actor, query), after, Number(Boolean(query.problemsOnly)), limit + 1)
@@ -131,10 +130,12 @@ export async function listGoogleGroupOverview(
       allowed: number;
       items: string;
       console: string | null;
-      totalGroups: number;
-      totalProblems: number;
+      totals: string;
     }>();
   const authorized = await requireAllowed(db, actor, row);
+  // Read both totals from one scan: repeating the expanded summaries CTE in
+  // separate scalar subqueries exceeds SQLite's nested-query limit.
+  const totals = JSON.parse(authorized.totals) as { totalGroups: number; totalProblems: number };
   const groups = (JSON.parse(authorized.items) as SummaryRow[]).map(summary);
   const items = groups.slice(0, limit),
     last = items.at(-1);
@@ -142,8 +143,8 @@ export async function listGoogleGroupOverview(
     items,
     nextCursor: groups.length > limit && last ? accessCursor(['groups', last.groupEmail]) : null,
     console: authorized.console ? summary(JSON.parse(authorized.console) as SummaryRow) : null,
-    totalGroups: authorized.totalGroups,
-    totalProblems: authorized.totalProblems,
+    totalGroups: totals.totalGroups,
+    totalProblems: totals.totalProblems,
   };
 }
 export async function getGoogleGroupReview(

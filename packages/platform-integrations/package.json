@@ -37,7 +37,8 @@
     "./worker-runtime-config": "./src/worker-runtime-config.ts",
     "./export-archive": "./src/export-archive.ts",
     "./discord-link-command": "./src/discord-link-command.ts",
-    "./discord-command-registration": "./src/discord-command-registration.ts"
+    "./discord-command-registration": "./src/discord-command-registration.ts",
+    "./staff-auth-config": "./src/staff-auth-config.ts"
   },
   "scripts": {
     "lint": "eslint . --max-warnings 0",

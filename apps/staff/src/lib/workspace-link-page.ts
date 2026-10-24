@@ -1,79 +1,87 @@
+import type { AccessIdentity } from '@lasvegasfortransit/platform-integrations/access-identity';
 import { messageResponse } from './responses';
-import { t } from '@lasvegasfortransit/platform-core/messages';
-import { readCookie, sessionCookies } from '@lasvegasfortransit/platform-core/web-auth';
+import { readCookie, SESSION_COOKIE } from '@lasvegasfortransit/platform-core/web-auth';
+import { hashWithSecret } from '@lasvegasfortransit/platform-core/signing';
 import {
-  googleResponse,
+  staffHandoffProof,
+  verifiedMemberProof,
+} from '@lasvegasfortransit/platform-storage/staff-member-handoff';
+import { staffAuthMode } from '@lasvegasfortransit/platform-integrations/staff-auth-config';
+import {
   PENDING_COOKIE,
+  googleResponse,
   workspaceCookie,
 } from '@lasvegasfortransit/platform-integrations/google-sign-in';
-import { WorkspaceLinkService } from '@lasvegasfortransit/platform-storage/workspace-link';
-import { normalizeEmail } from '@lasvegasfortransit/platform-storage/person-service';
-import {
-  EMAIL_COOKIE,
-  linkingEmail,
-  requestLinkCode,
-  expiredWorkspaceConfirmation,
-} from './workspace-email';
+import { linkService } from './staff-link-service';
+import { EMAIL_COOKIE, linkingEmail, expiredWorkspaceConfirmation } from './workspace-email';
+import { submitWorkspaceLink } from './workspace-link-actions';
 import type { StaffEnv } from './context';
-import { field } from './forms';
-import { staffReturnPath } from './sign-in-return';
-interface SubmitContext {
-  env: StaffEnv;
-  request: Request;
-  pending: string;
-  waitUntil: (promise: Promise<unknown>) => void;
+type Mode = 'google' | 'cloudflare-access';
+type Saved = NonNullable<Awaited<ReturnType<ReturnType<typeof linkService>['pending']>>>;
+export interface LinkPage {
+  saved: Saved;
+  email: string | null;
+  member: { email: string | null; sessionHash: string } | null;
+  step: string;
+  enteredEmail: string;
+  notice: string | null;
+  status: number;
 }
-async function submitEmail(context: SubmitContext, form: FormData) {
-  const email = normalizeEmail(field(form, 'email'));
-  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))
-    return { notice: t('signIn.emailError'), status: 400, enteredEmail: email };
-  return await requestLinkCode(context.env, {
-    pending: context.pending,
-    email,
-    callerAddress: context.request.headers.get('CF-Connecting-IP') ?? 'unknown',
-    waitUntil: context.waitUntil,
-  });
+function principalMatches(saved: Saved, access?: AccessIdentity) {
+  if (!('issuer' in saved)) return true;
+  return (
+    saved.issuer === access?.issuer &&
+    saved.subject === access.subject &&
+    access.expiresAt > new Date()
+  );
 }
-async function submitCode(context: SubmitContext, form: FormData, email: string) {
-  const result = await new WorkspaceLinkService(context.env).complete(context.pending, {
-    email,
-    code: field(form, 'code', 32),
-  });
-  if (result.kind === 'ok')
-    return googleResponse(staffReturnPath(result.returnTo), [
-      workspaceCookie(PENDING_COOKIE, '', 0),
-      workspaceCookie(EMAIL_COOKIE, '', 0),
-      ...sessionCookies(result.session.token, result.session.expiresAt),
-    ]);
-  if (result.kind === 'expired') return expiredWorkspaceConfirmation();
-  return {
-    notice: result.kind === 'conflict' ? t('workspace.conflict') : t('signIn.codeError'),
-    status: result.kind === 'conflict' ? 409 : 400,
-    enteredEmail: '',
-  };
+async function currentMember(env: StaffEnv, request: Request, pending: string, mode: Mode) {
+  const localToken = readCookie(request, SESSION_COOKIE);
+  if (localToken) {
+    const sessionHash = await hashWithSecret(env.LVBT_SIGN_IN_SECRET, `session:${localToken}`);
+    const member = await verifiedMemberProof(env, sessionHash);
+    if (member) return { ...member, sessionHash };
+  }
+  const handoff = readCookie(request, '__Host-lvbt_member_handoff');
+  return handoff ? staffHandoffProof(env, handoff, { pending, mode }) : null;
+}
+function pageStep(params: URLSearchParams, email: string | null, hasMember: boolean) {
+  const requested = params.get('step');
+  if (requested === 'existing' || requested === 'new') return requested;
+  if (email) return 'code';
+  return hasMember ? 'review' : 'choose';
 }
 export async function workspaceLinkPage(
   env: StaffEnv,
   request: Request,
   waitUntil: (promise: Promise<unknown>) => void,
+  access?: AccessIdentity,
 ) {
-  const pending = readCookie(request, PENDING_COOKIE);
-  const saved = pending ? await new WorkspaceLinkService(env).pending(pending) : null;
+  const service = linkService(env),
+    pending = readCookie(request, PENDING_COOKIE);
+  const saved = pending ? await service.pending(pending) : null;
   if (!pending || !saved) return expiredWorkspaceConfirmation();
-  const email = await linkingEmail(env, request, pending);
-  const page = { saved, email, notice: null as string | null, enteredEmail: '', status: 200 };
-  if (request.method !== 'POST') return page;
-  const form = await request.formData();
-  const context = { env, request, pending, waitUntil };
-  const action = field(form, 'action');
-  const result =
-    action === 'request'
-      ? await submitEmail(context, form)
-      : action === 'confirm' && email
-        ? await submitCode(context, form, email)
-        : messageResponse(
-            'We couldn’t complete this sign-in step. Return to staff home to start again.',
-            400,
-          );
-  return result instanceof Response ? result : { ...page, ...result };
+  if (!principalMatches(saved, access))
+    return messageResponse("You don't have access to this", 403);
+  if (request.method === 'GET' && new URL(request.url).searchParams.has('change_email'))
+    return googleResponse('/sign-in/link-account/?step=existing', [
+      workspaceCookie(EMAIL_COOKIE, '', 0),
+    ]);
+  const mode = staffAuthMode(env);
+  if (!mode) return messageResponse('Sign-in is unavailable.', 503);
+  const member = await currentMember(env, request, pending, mode),
+    email = await linkingEmail(env, request, pending);
+  const params = new URL(request.url).searchParams;
+  const page: LinkPage = {
+    saved,
+    email,
+    member,
+    step: pageStep(params, email, Boolean(member)),
+    enteredEmail: '',
+    notice: params.has('expired') ? 'This sign-in attempt expired. Request a new code.' : null,
+    status: 200,
+  };
+  return request.method === 'POST'
+    ? submitWorkspaceLink({ env, request, pending, mode, page, waitUntil })
+    : page;
 }

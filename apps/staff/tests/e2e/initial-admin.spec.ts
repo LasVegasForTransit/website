@@ -9,10 +9,14 @@ const headers = {
 try {
   const signIn = await fixture.simulator.dispatchFetch(`${ORIGIN}/sign-in/`, {
     headers: { 'Cf-Access-Jwt-Assertion': fixture.admin.assertion },
+    redirect: 'manual',
   });
-  const signInHtml = await signIn.text();
-  assert.equal(signIn.status, 200);
-  assert.ok(signInHtml.includes('next=%2Fsign-in%2Finitial-admin%2F'));
+  assert.equal(signIn.status, 303);
+  assert.equal(
+    signIn.headers.get('Location'),
+    '/sign-in/ready/?next=%2Fsign-in%2Finitial-admin%2F',
+  );
+  assert.ok(!signIn.headers.get('Location')?.includes('google'));
 
   const expired = await fixture.simulator.dispatchFetch(`${ORIGIN}/sign-in/link-account/`, {
     headers: { 'Cf-Access-Jwt-Assertion': fixture.admin.assertion },
@@ -26,13 +30,13 @@ try {
   );
   const recovery = await fixture.simulator.dispatchFetch(
     `${ORIGIN}${expired.headers.get('Location') ?? ''}`,
-    { headers: { 'Cf-Access-Jwt-Assertion': fixture.admin.assertion } },
+    { headers: { 'Cf-Access-Jwt-Assertion': fixture.admin.assertion }, redirect: 'manual' },
   );
-  assert.equal(recovery.status, 200);
-  const recoveryHtml = await recovery.text();
-  assert.match(recoveryHtml, /Your membership confirmation expired/);
-  assert.match(recoveryHtml, /Sign in again to request a new code/);
-  assert.ok(!recoveryHtml.includes('We couldn’t sign you in.'));
+  assert.equal(recovery.status, 303);
+  assert.equal(
+    recovery.headers.get('Location'),
+    '/sign-in/ready/?next=%2Fsign-in%2Finitial-admin%2F',
+  );
 
   const setup = await fixture.simulator.dispatchFetch(`${ORIGIN}/sign-in/initial-admin/`, {
     headers,

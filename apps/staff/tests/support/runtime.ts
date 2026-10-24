@@ -1,3 +1,5 @@
+import { createSession } from '@lasvegasfortransit/platform-storage/auth';
+import { ssoSessionFixture, ssoPrincipalFixture } from './sso';
 import assert from 'node:assert/strict';
 import { mkdtemp, readdir, readFile, rm } from 'node:fs/promises';
 import { execFileSync } from 'node:child_process';
@@ -55,6 +57,9 @@ function seedRoster(raw: DatabaseSync) {
   }
 }
 interface RuntimeOptions {
+  authMode?: 'cloudflare-access' | 'google';
+  unlinkedAdmin?: boolean;
+  emailCapture?: (email: { to: string[]; text: string }) => void;
   newsletter?: boolean;
   consentAt?: string;
   discord?: boolean;
@@ -121,6 +126,8 @@ async function startRuntimeInternal(options: RuntimeOptions = {}) {
         telemetry: { enabled: false },
         bindings: {
           LVBT_SIGN_IN_SECRET: 'local-browser-fixture-only',
+          LVBT_STAFF_AUTH_MODE: options.authMode ?? 'cloudflare-access',
+          ...(options.emailCapture ? { LVBT_RESEND_API_KEY: 'local-email-fixture-only' } : {}),
           LVBT_ACCESS_TEAM_DOMAIN: 'lvbt.cloudflareaccess.com',
           LVBT_ACCESS_AUD: 'browser-fixture-app',
           ...(options.googleOAuth
@@ -162,6 +169,12 @@ async function startRuntimeInternal(options: RuntimeOptions = {}) {
           routerConfig: { has_user_worker: true },
         },
         outboundService: async (request) => {
+          if (options.emailCapture && request.url === 'https://api.resend.com/emails') {
+            options.emailCapture((await request.json()) as { to: string[]; text: string });
+            return new RuntimeResponse('{}', { headers: { 'Content-Type': 'application/json' } });
+          }
+          if (options.authMode === 'google' && request.url.includes('.cloudflareaccess.com/'))
+            throw new Error('Direct Google mode contacted Access');
           if (options.googleOAuth && request.url === 'https://oauth2.googleapis.com/token') {
             const form = new URLSearchParams(await request.text());
             assert.equal(form.get('client_id'), 'google-runtime-fixture');
@@ -216,13 +229,20 @@ async function startRuntimeInternal(options: RuntimeOptions = {}) {
         givenName: null,
         familyName: null,
       };
-      await linkWorkspaceIdentity(db, {
-        workspace,
-        personId: person.id,
-        method: 'self_linked',
-        operationId: `link-${kind}`,
-      });
-      const session = await createWorkspaceSession(env, workspace);
+      if (!(options.unlinkedAdmin && kind === 'admin'))
+        await linkWorkspaceIdentity(db, {
+          workspace,
+          personId: person.id,
+          method: 'self_linked',
+          operationId: `link-${kind}`,
+        });
+      const principal = ssoPrincipalFixture(workspace.email, `fixture-access-${kind}`);
+      const session =
+        options.unlinkedAdmin && kind === 'admin'
+          ? await createSession(env, person.id, 'staff')
+          : options.authMode === 'google'
+            ? await createWorkspaceSession(env, workspace)
+            : await ssoSessionFixture(env, person.id, principal);
       assert.ok(session);
       const assertion = await new SignJWT({ email: workspace.email, type: 'app' })
         .setProtectedHeader({ alg: 'RS256', kid: jwk.kid })
@@ -232,7 +252,7 @@ async function startRuntimeInternal(options: RuntimeOptions = {}) {
         .setIssuedAt()
         .setExpirationTime('1h')
         .sign(keys.privateKey);
-      return { person, session, assertion };
+      return { person, session, assertion, principal };
     }
     const admin = await staff('admin');
     if (options.initialAdminSetup)

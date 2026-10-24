@@ -9,7 +9,7 @@ import {
   PENDING_COOKIE,
   workspaceCookie,
 } from '@lasvegasfortransit/platform-integrations/google-sign-in';
-import { WorkspaceLinkService } from '@lasvegasfortransit/platform-storage/workspace-link';
+import { linkService } from './staff-link-service';
 import type { StaffEnv } from './context';
 export const EMAIL_COOKIE = '__Host-lvbt_workspace_email';
 export function expiredWorkspaceConfirmation(): Response {
@@ -35,7 +35,7 @@ export async function requestLinkCode(
     waitUntil: (promise: Promise<unknown>) => void;
   },
 ) {
-  const result = await new WorkspaceLinkService(env).requestCode(input.pending, {
+  const result = await linkService(env).requestCode(input.pending, {
     email: input.email,
     callerAddress: input.callerAddress,
   });

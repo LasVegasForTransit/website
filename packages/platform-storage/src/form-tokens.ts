@@ -4,9 +4,9 @@ import type { Db } from './db';
 function eligible(action: string): string {
   const workspace =
     action === 'paper:submit' || action === 'sign-out'
-      ? "OR EXISTS(SELECT 1 FROM identities WHERE person_id=p.id AND platform='google_workspace')"
+      ? "OR EXISTS(SELECT 1 FROM identities WHERE person_id=p.id AND platform='google_workspace') OR EXISTS(SELECT 1 FROM staff_sso_links WHERE person_id=p.id AND revoked_at IS NULL)"
       : '';
-  return `EXISTS (SELECT 1 FROM people p WHERE p.id=? AND p.deleted_at IS NULL AND p.membership_status='member'
+  return `EXISTS (SELECT 1 FROM people p WHERE p.id=? AND p.deleted_at IS NULL AND (p.membership_status='member' OR (p.membership_status='not_member' AND EXISTS(SELECT 1 FROM staff_team_accounts WHERE person_id=p.id) AND ${action === 'paper:submit' || action === 'sign-out' ? '1' : '0'}))
   AND (EXISTS(SELECT 1 FROM staff_administrators WHERE person_id=p.id) OR
        EXISTS(SELECT 1 FROM committee_assignments WHERE person_id=p.id AND role='lead' AND ended_at IS NULL) ${workspace}))`;
 }

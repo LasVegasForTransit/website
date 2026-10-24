@@ -1,12 +1,10 @@
+import { ssoSessionFixture, ssoPrincipalFixture } from './support/sso';
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { SESSION_COOKIE } from '@lasvegasfortransit/platform-core/web-auth';
 import { PersonService } from '@lasvegasfortransit/platform-storage/person-service';
 import { memoryDb } from '@lasvegasfortransit/platform-storage/test-db';
-import {
-  createWorkspaceSession,
-  linkWorkspaceIdentity,
-} from '@lasvegasfortransit/platform-storage/workspace-link';
+import { linkWorkspaceIdentity } from '@lasvegasfortransit/platform-storage/workspace-link';
 import { bootstrapInitialStaffAdmin, getInitialStaffAdminState } from '../src/lib/initial-admin';
 
 const origin = 'https://staff.lasvegasfortransit.org';
@@ -43,7 +41,8 @@ async function fixture(options: { configured?: boolean; admin?: boolean } = {}) 
       ? {}
       : { LVBT_INITIAL_STAFF_ADMIN_WORKSPACE_EMAIL: workspace.email }),
   };
-  const session = await createWorkspaceSession(env, workspace);
+  const access = ssoPrincipalFixture(workspace.email, 'fixture-cloudflare-subject');
+  const session = await ssoSessionFixture(env, person.id, access);
   assert.ok(session);
   const sessionToken = session.token;
   if (options.admin) {
@@ -61,7 +60,6 @@ async function fixture(options: { configured?: boolean; admin?: boolean } = {}) 
       'ok',
     );
   }
-  const access = { email: workspace.email, subject: 'fixture-cloudflare-subject' };
   function request(method: 'GET' | 'POST' = 'GET', requestOrigin = origin) {
     const headers = new Headers({ Cookie: `${SESSION_COOKIE}=${sessionToken}` });
     if (method === 'POST' && requestOrigin) headers.set('Origin', requestOrigin);
@@ -112,9 +110,9 @@ void test('an unconfigured, unmatched, or differently authenticated account cann
   assert.deepEqual(
     await getInitialStaffAdminState(f.env, f.request(), {
       ...f.access,
-      email: 'other@lasvegasfortransit.org',
+      subject: 'different-subject',
     }),
-    { kind: 'not_authorized' },
+    { kind: 'needs_sign_in' },
   );
   assert.equal(f.db.raw.prepare('SELECT count(*) AS n FROM staff_administrators').get()?.n, 0);
   f.db.raw.close();

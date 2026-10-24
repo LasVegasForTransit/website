@@ -28,14 +28,14 @@ Import the component in
 and add one registration:
 
 ```ts
-{
+const section = {
   id: 'preferences',
   position: 40,
   component: Preferences,
   navigationLabel: t('account.preferencesNav'),
   slot: null,
   className: '',
-}
+};
 ```
 
 This example assumes a `Preferences.astro` component and a catalog entry for its navigation label.

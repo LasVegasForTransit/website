@@ -18,14 +18,18 @@ export interface WorkspaceState {
   origin: string;
 }
 
-export function approvedDestinations(returnTo: string, callbackUrl: string): void {
+export function approvedDestinations(
+  returnTo: string,
+  callbackUrl: string,
+  additionalOrigins: readonly string[] = [],
+): void {
   const callback = new URL(callbackUrl);
   if (
     !returnTo.startsWith('/') ||
     returnTo.startsWith('//') ||
     /[\\\r\n]/.test(returnTo) ||
     callback.protocol !== 'https:' ||
-    !CALLBACK_HOSTS.has(callback.hostname) ||
+    (!CALLBACK_HOSTS.has(callback.hostname) && !additionalOrigins.includes(callback.origin)) ||
     callback.port ||
     callback.username ||
     callback.password ||
@@ -38,9 +42,15 @@ export function approvedDestinations(returnTo: string, callbackUrl: string): voi
 
 export async function beginWorkspaceSignIn(
   db: Db,
-  input: { returnTo: string; callbackUrl: string; origin?: string; now?: Date },
+  input: {
+    returnTo: string;
+    callbackUrl: string;
+    origin?: string;
+    now?: Date;
+    approvedOrigins?: readonly string[];
+  },
 ): Promise<WorkspaceState & { state: string; challenge: string }> {
-  approvedDestinations(input.returnTo, input.callbackUrl);
+  approvedDestinations(input.returnTo, input.callbackUrl, input.approvedOrigins);
   const now = input.now ?? new Date();
   const state = randomToken();
   const verifier = randomToken();

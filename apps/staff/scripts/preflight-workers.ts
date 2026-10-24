@@ -1,3 +1,8 @@
+import {
+  staffAuthMode,
+  staffAuthBindings,
+  type StaffAuthConfig,
+} from '@lasvegasfortransit/platform-integrations/staff-auth-config';
 import { type MetadataClient, array, object } from './preflight-api';
 import { check, type Check, type Environment } from './preflight-config';
 import {
@@ -9,6 +14,9 @@ import {
   STAFF_WORKER_BINDINGS,
 } from '@lasvegasfortransit/platform-integrations/worker-runtime-config';
 const VERSION_VARIABLES = [
+  'LVBT_STAFF_AUTH_MODE',
+  'LVBT_STAFF_ORIGIN',
+  'LVBT_STAFF_PREVIEW_ORIGINS',
   'LVBT_ACCESS_AUD',
   'LVBT_ACCESS_TEAM_DOMAIN',
   'LVBT_GOOGLE_OAUTH_CLIENT_ID',
@@ -113,6 +121,25 @@ function staffBindingChecks(versions: Bindings[], name: string): Check[] {
     ),
   ];
 }
+function authConfig(candidate: Bindings): StaffAuthConfig {
+  return Object.fromEntries(
+    candidate
+      .filter((binding) => binding.type === 'plain_text')
+      .map((binding) => [String(binding.name), binding.text]),
+  );
+}
+function validBinding(bindings: Bindings, name: string) {
+  return bindings.some(
+    (binding) =>
+      binding.name === name &&
+      (binding.type === 'secret_text' ||
+        (['LVBT_ACCESS_TEAM_DOMAIN', 'LVBT_ACCESS_AUD', 'LVBT_GOOGLE_OAUTH_CLIENT_ID'].includes(
+          name,
+        ) &&
+          binding.type === 'plain_text' &&
+          Boolean(binding.text))),
+  );
+}
 export async function inspectWorker(
   client: MetadataClient,
   name: string,
@@ -122,10 +149,22 @@ export async function inspectWorker(
   const path = `/workers/scripts/${encodeURIComponent(name)}`;
   const versions = await activeBindings(client, path);
   const bindings = versions.at(0) ?? [];
-  const required = STAFF_WORKER_BINDINGS[kind];
+  const required =
+    kind === 'staff'
+      ? (staffAuthBindings(authConfig(bindings)) ?? [])
+      : [...STAFF_WORKER_BINDINGS.jobs];
   return {
     bindings,
     checks: [
+      ...(kind === 'staff'
+        ? [
+            check(
+              'staff.authentication',
+              versions.every((candidate) => staffAuthMode(authConfig(candidate)) !== null),
+              'Select cloudflare-access or google explicitly; invalid authentication modes fail closed.',
+            ),
+          ]
+        : []),
       check(
         `${kind}.deployment`,
         versions.length > 0,
@@ -151,20 +190,7 @@ export async function inspectWorker(
       ...required.map((name) =>
         check(
           `${kind}.binding.${name}`,
-          versions.every((bindings) =>
-            bindings.some(
-              (binding) =>
-                binding.name === name &&
-                (binding.type === 'secret_text' ||
-                  ([
-                    'LVBT_ACCESS_TEAM_DOMAIN',
-                    'LVBT_ACCESS_AUD',
-                    'LVBT_GOOGLE_OAUTH_CLIENT_ID',
-                  ].includes(name) &&
-                    binding.type === 'plain_text' &&
-                    Boolean(binding.text))),
-            ),
-          ),
+          versions.every((bindings) => validBinding(bindings, name)),
           `Configure ${name}; presence does not prove provider validity.`,
         ),
       ),
