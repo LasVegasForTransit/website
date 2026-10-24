@@ -70,6 +70,21 @@ class SnapshotTests(unittest.TestCase):
             self.assertTrue(snapshot.restore(captured, pathlib.Path(directory) / 'fresh.sqlite')['typedValuesMatch'])
         db.close()
 
+    def test_shared_database_extensions_fit_atomic_backup_and_restore(self):
+        db = sqlite3.connect(':memory:')
+        migrations = pathlib.Path(__file__).parents[3] / 'platform-storage/migrations'
+        for migration in sorted(migrations.glob('*.sql')):
+            db.executescript(migration.read_text())
+        for number in range(16):
+            columns = ','.join('field' + str(i) + ' TEXT' for i in range(12))
+            db.execute('CREATE TABLE integration_state_' + str(number) + '(' + columns + ')')
+        inventory = json.loads(db.execute(snapshot.INVENTORY_SQL).fetchone()[0])
+        self.assertLess(len(snapshot.snapshot_query(inventory).encode()), 95000)
+        captured = snapshot.capture_local(db)
+        with tempfile.TemporaryDirectory() as directory:
+            self.assertTrue(snapshot.restore(captured, pathlib.Path(directory) / 'extended.sqlite')['typedValuesMatch'])
+        db.close()
+
     def test_wide_typed_rows_preserve_every_column_after_query_compaction(self):
         db = sqlite3.connect(':memory:')
         names = ['field' + str(i) for i in range(45)]
