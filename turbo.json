@@ -76,7 +76,9 @@
         "$TURBO_ROOT$/apps/site/src/styles/global.css",
         "$TURBO_ROOT$/apps/site/public/fonts/public-sans-latin.woff2",
         "$TURBO_ROOT$/apps/site/public/brand/lvbt-logo.svg",
-        "$TURBO_ROOT$/apps/site/public/brand/lvbt-logo-dark.svg"
+        "$TURBO_ROOT$/apps/site/public/brand/lvbt-logo-dark.svg",
+        "$TURBO_ROOT$/packages/platform-core/src/staff-gate*",
+        "$TURBO_ROOT$/packages/platform-core/src/StaffGateLayout.astro"
       ],
       "outputs": [".astro/**"]
     },
@@ -88,7 +90,9 @@
         "$TURBO_ROOT$/apps/site/public/fonts/public-sans-latin.woff2",
         "$TURBO_ROOT$/apps/site/public/brand/lvbt-logo.svg",
         "$TURBO_ROOT$/apps/site/public/brand/lvbt-logo-dark.svg",
-        ".env*"
+        ".env*",
+        "$TURBO_ROOT$/packages/platform-core/src/staff-gate*",
+        "$TURBO_ROOT$/packages/platform-core/src/StaffGateLayout.astro"
       ],
       "outputs": ["dist/**", ".wrangler/worker/**"]
     }

@@ -29,8 +29,8 @@ standalone response HTML. Authentication handlers retain their current contracts
 
 ## Task 1: Shared gate presentation
 
-**Files:** `src/lib/gate-page.ts`, `src/layouts/StaffGateLayout.astro`, `src/lib/message-page.ts`,
-`src/layouts/StaffLayout.astro` (relative to apps/staff).
+**Files:** `src/lib/gate-page.ts`, `packages/platform-core/src/StaffGateLayout.astro`,
+`src/lib/message-page.ts`, `src/layouts/StaffLayout.astro` (relative to apps/staff).
 
 **Interfaces:** Export `gatePageStyles`, `gateIdentity`, and `gateFooter` from gate-page.ts. The
 Astro layout accepts a title and default, notice, and help slots. Response HTML uses the same styles

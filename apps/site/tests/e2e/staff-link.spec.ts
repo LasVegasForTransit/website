@@ -21,6 +21,8 @@ for (const { mode, sessionType } of journeys) {
     const expiredHtml = await expired.text();
     assert.match(expiredHtml, /<html[^>]+lang="en"/);
     assert.match(expiredHtml, /<title>Connection expired/);
+    assert.match(expiredHtml, /class="staff-gate-frame"/);
+    assert.doesNotMatch(expiredHtml, /aria-label="Primary"/);
     assert.match(expiredHtml, /Open Staff Portal/);
     assert.doesNotMatch(expiredHtml, /action="\/sign-in\/staff-link\/"/);
     const env = { PLATFORM_DB: fixture.db, LVBT_SIGN_IN_SECRET: 'independent-staff-fixture-only' };
@@ -73,6 +75,9 @@ for (const { mode, sessionType } of journeys) {
     const html = await get.text();
     assert.match(html, /Connect to the Staff Portal/);
     assert.match(html, /account-rider@example.invalid/);
+    assert.match(html, /class="staff-gate-frame"/);
+    assert.doesNotMatch(html, /aria-label="Primary"/);
+    assert.match(html, /aria-label="LVBT Staff Portal home"/);
     const bad = await fixture.simulator.dispatchFetch(url, {
       method: 'POST',
       headers: { Cookie: cookie, Origin: 'https://attacker.invalid' },
@@ -81,7 +86,7 @@ for (const { mode, sessionType } of journeys) {
     });
     assert.equal(bad.status, 403);
     await bad.arrayBuffer();
-    await approveHandoffInBrowser(fixture, url);
+    await approveHandoffInBrowser(fixture, url, mode === 'google' && sessionType === 'member');
     assert.equal(await staffHandoffProof(env, token, { pending: 'wrong-browser', mode }), null);
     const proof = await staffHandoffProof(env, token, { pending, mode });
     assert.ok(proof);

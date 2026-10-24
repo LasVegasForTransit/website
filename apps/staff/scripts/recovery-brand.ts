@@ -3,7 +3,7 @@ import { fileURLToPath } from 'node:url';
 import { format } from 'prettier';
 
 const root = new URL('../', import.meta.url);
-const output = new URL('src/lib/recovery-brand-data.ts', root);
+const output = new URL('../../packages/platform-core/src/staff-gate-brand.ts', root);
 function rule(source: string, selector: string): string {
   const start = source.indexOf(`${selector} {`);
   if (start < 0) throw new Error(`Missing shared brand rule: ${selector}`);
