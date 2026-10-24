@@ -297,3 +297,38 @@ void test('an incoming withdrawal eligible after cron start runs before outgoing
     assert.ok(f.visits.indexOf('newsletter_incoming') < f.visits.indexOf(`${provider}_account`));
   }
 });
+
+void test('task check-ins advance independently of role sync without starving membership or exceeding the invocation budget', async () => {
+  const f = fixture(undefined, undefined, {
+    taskCheckins: true,
+    discordDisabled: true,
+    busyInbox: true,
+  });
+  await f.run();
+  for (const step of [
+    'task_commands',
+    'task_scan',
+    'task_queue',
+    'task_operation',
+    'task_digest',
+    'task_refresh',
+    'task_recovery',
+    'task_escalation',
+  ])
+    assert.ok(f.visits.includes(step), step);
+  assert.ok(f.visits.indexOf('newsletter_account') < f.visits.indexOf('task_scan'));
+  assert.ok(f.visits.length + 1 <= 32);
+  assert.equal(f.visits.at(-1), 'completion');
+});
+void test('a reported task failure with usage still allows other steps and completion', async () => {
+  const f = fixture(undefined, undefined, { taskCheckins: true, failedTaskOutcome: true });
+  await assert.rejects(f.run(), /Scheduled membership work failed/);
+  assert.ok(f.visits.includes('task_operation'));
+  assert.ok(f.visits.includes('discord_account'));
+  assert.equal(f.visits.at(-1), 'completion');
+});
+void test('missing task usage retains the reservation and stops unaccounted work', async () => {
+  const f = fixture('task_scan', undefined, { taskCheckins: true });
+  await assert.rejects(f.run(), /Scheduled database work deferred/);
+  assert.equal(f.visits.includes('task_operation'), false);
+});

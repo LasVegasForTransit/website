@@ -58,6 +58,10 @@ Choose the guide for the task you need to complete.
   administrator access through the portal and verify the Google sign-in prerequisites.
 - [Operate member data retention](./guides/operate-member-data-retention.md) — review deletion,
   daily retention, and Google accounts that need attention.
+- [Resolve uncertain task check-in updates](./guides/resolve-task-check-in-updates.md) — check
+  Notion outcomes and close unresolved responses without duplicate writes.
+- [Set up volunteer task check-ins](./guides/set-up-task-check-ins.md) — connect providers,
+  configure a paused source, and run an approved member-and-guest trial.
 - [Automate member database backups](./guides/member-database-backups.md) — operate daily private
   backups and quarterly restore tests
 - [Back up the membership database](./guides/back-up-membership-database.md) — export privately and

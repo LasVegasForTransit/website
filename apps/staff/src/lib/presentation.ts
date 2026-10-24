@@ -54,6 +54,8 @@ const LABELS: Record<string, string> = {
   volunteer_shift: t('staff.labels.volunteer_shift'),
   role_changed: t('staff.labels.role_changed'),
   check_in_held: t('staff.labels.check_in_held'),
+  task_checkin_response: t('staff.labels.task_checkin_response'),
+  task_checkin_preference: t('staff.labels.task_checkin_preference'),
   correction: t('staff.labels.correction'),
   duplicate_reviewed: t('staff.labels.duplicate_reviewed'),
   lead: t('staff.labels.lead'),

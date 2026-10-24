@@ -54,12 +54,11 @@ export function peopleFilters(query: Omit<PeopleQuery, 'limit'>, prefix = '') {
     values.push(query.regionId);
   }
   if (query.text) {
+    // Literal matching avoids D1's LIKE-pattern limit for legitimate long email addresses.
     where.push(
-      `(coalesce(${prefix}given_name, '') || ' ' || coalesce(${prefix}family_name, '') || ' ' || coalesce(${prefix}email, '')) LIKE ? ESCAPE '\\'`,
+      `instr(lower(coalesce(${prefix}given_name, '') || ' ' || coalesce(${prefix}family_name, '') || ' ' || coalesce(${prefix}email, '')), lower(?)) > 0`,
     );
-    values.push(
-      `%${query.text.replaceAll('\\', '\\\\').replaceAll('%', '\\%').replaceAll('_', '\\_')}%`,
-    );
+    values.push(query.text);
   }
   if (query.cursor) {
     where.push(`${prefix}id > ?`);

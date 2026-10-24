@@ -1,3 +1,4 @@
+import { taskPersonOrigins } from './notion-task-person-lineage';
 import type { Db, SqlValue, Statement } from './db';
 import { ulid } from '@lasvegasfortransit/platform-core/ids';
 
@@ -39,6 +40,33 @@ const ADMINISTRATOR_CORRECTIONS = `SELECT r.corrected_at,r.changes,r.reason,r.ac
   FROM person_corrections r JOIN people p ON p.id=r.person_id
   LEFT JOIN people author ON author.id=r.actor_id AND author.deleted_at IS NULL`;
 const QUERIES = {
+  task_checkin_escalations: `SELECT r.source_id,
+    CASE WHEN r.subject_id IN (${taskPersonOrigins('p.id')}) THEN r.task_id ELSE NULL END AS task_id,
+    CASE WHEN r.subject_id IN (${taskPersonOrigins('p.id')}) THEN 'reported' ELSE 'recipient' END AS relationship,
+    r.trigger_kind,r.state,r.reason,r.created_at,r.updated_at
+    FROM task_checkin_escalations r JOIN people p ON r.subject_id IN (${taskPersonOrigins('p.id')}) OR r.person_id IN (${taskPersonOrigins('p.id')})`,
+  task_checkin_notifications: `SELECT r.source_id,r.kind,r.reserved_at FROM task_checkin_notifications r JOIN people p ON r.person_id IN (${taskPersonOrigins('p.id')})`,
+  task_checkin_recovery_checks: `SELECT o.source_id,o.task_id,r.state,r.reason,r.updated_at
+    FROM task_checkin_recovery r JOIN task_checkin_operations o ON o.id=r.operation_id JOIN people p ON o.person_id IN (${taskPersonOrigins('p.id')})`,
+  task_checkin_mappings: `SELECT r.workspace_id,r.notion_user_id,r.confirmed_at
+    FROM task_checkin_mappings r JOIN people p ON r.person_id IN (${taskPersonOrigins('p.id')})`,
+  task_checkin_preferences: `SELECT r.source_id,r.discord_user_id,r.state,r.revision,r.policy_revision,r.updated_at,
+    CASE WHEN r.person_id=p.id THEN 'current_profile' ELSE 'merged_history' END AS record_scope
+    FROM task_checkin_consents r JOIN people p ON r.person_id IN (${taskPersonOrigins('p.id')})`,
+  task_checkin_consent_history: `SELECT r.source_id,r.state,r.policy_revision,r.applied,r.created_at
+    FROM task_checkin_consent_receipts r JOIN people p ON r.person_id IN (${taskPersonOrigins('p.id')})`,
+  discord_work_updates: `SELECT r.kind,r.state,r.reason,r.created_at,r.updated_at,
+    json_extract(r.payload_json,'$.text') AS text,json_extract(r.payload_json,'$.message.text') AS message_text
+    FROM discord_work_operations r JOIN people p ON r.actor_person_id IN (${taskPersonOrigins('p.id')})`,
+  task_checkin_responses: `SELECT r.source_id,r.task_id,r.kind,r.state,r.reason,r.created_at,r.updated_at,
+    CASE WHEN r.kind IN ('progress','blocker','extension') THEN json_extract(r.payload_json,'$.text') ELSE NULL END AS response_text
+    FROM task_checkin_operations r JOIN people p ON r.person_id IN (${taskPersonOrigins('p.id')})`,
+  task_checkin_cards: `SELECT r.source_id,r.task_id,r.snoozed_until,r.last_evaluated_at,r.last_escalation_evaluated_at,r.updated_at
+    FROM task_checkin_cards r JOIN people p ON r.person_id IN (${taskPersonOrigins('p.id')})`,
+  task_checkin_digests: `SELECT r.source_id,r.day,r.state,r.reason,r.created_at,r.updated_at
+    FROM task_checkin_digests r JOIN people p ON r.person_id IN (${taskPersonOrigins('p.id')})`,
+  task_checkin_card_updates: `SELECT r.source_id,r.task_id,r.state,r.reason,r.updated_at
+    FROM task_checkin_card_refreshes r JOIN people p ON r.person_id IN (${taskPersonOrigins('p.id')})`,
   current_membership_evidence: `SELECT r.status,r.observed_at,r.source_created_at,r.withdrawn_at,r.entitled,r.recognized_at,r.revoked_at FROM membership_roll r JOIN people p ON p.id=r.person_id`,
   imported_signup_evidence: `SELECT r.source,r.state,
     json_remove(r.evidence,'$.beehiiv','$.form.rawResponseUrl','$.form.responseId','$.newsletter.evidenceReference') AS evidence,

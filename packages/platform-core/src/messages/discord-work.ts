@@ -1,0 +1,46 @@
+export const discordWork = {
+  command: 'Link Notion work to Discord conversations',
+  link: 'Link a Notion project or task',
+  url: 'Notion project or task URL',
+  destination: 'Channel, forum, thread, or category for a new project forum',
+  show: 'Show linked work and sync health',
+  unlink: 'Stop syncing the linked work',
+  viewTasks: 'View tasks',
+  confirm: 'Confirm link',
+  save: 'Save update',
+  openNotion: 'Open in Notion',
+  addUpdate: 'Add update',
+  status: 'Status',
+  automatic:
+    'Replies from authorized participants are saved to Notion. Edits and attachments are not copied.',
+  selected: 'Discussion stays in Discord. Use Add update or Save to Notion to record an update.',
+  paused: 'Updates paused',
+  unlinked: 'Disconnected',
+  preview: 'Preview',
+  audience: 'This shares the linked work with people who can access this Discord destination.',
+  unavailable:
+    'This action is unavailable. Check your linked account, project access, and /work show.',
+  disabled:
+    'Sending is disabled. You can inspect links, but no messages or Notion updates will be sent.',
+  retry: 'The connection could not be checked in time. Try /work again.',
+  queued: 'Saved for processing. Use /work show to check the result.',
+  noHome:
+    'This location has no project home. An LVBT administrator can link a project with /work link.',
+  noTasks: 'No eligible tasks are available in this project.',
+  chooseTask: 'Choose a task',
+  chooseProject: 'Choose a project',
+  chooseTag: 'Choose a forum tag',
+  noteTitle: 'Add update',
+  noteLabel: 'What changed?',
+  taskDue: 'Due {date}',
+  noDeadline: 'No deadline',
+  source: 'Open the Discord message',
+  author: 'Discord update from {name}',
+  submitted: 'Saved by {name}',
+  pointInTime:
+    'Saved updates are point-in-time copies. Later edits or deletions in Discord are not mirrored.',
+  automaticUnavailable:
+    'Automatic replies need Message Content access and channel history permission. Selected updates remain available.',
+  projectForum: 'Create a project forum in this category',
+  none: 'No linked work is available here.',
+};

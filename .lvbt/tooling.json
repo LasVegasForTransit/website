@@ -145,6 +145,18 @@
         "type": "text",
         "value": "preview"
       },
+      "LVBT_TASK_CHECKINS_ENABLED": {
+        "type": "text",
+        "value": "false"
+      },
+      "LVBT_NOTION_TASK_SOURCE_ID": {
+        "type": "text",
+        "value": ""
+      },
+      "LVBT_NOTION_TASK_PRODUCTION_SOURCE_ID": {
+        "type": "text",
+        "value": ""
+      },
       "LVBT_DISCORD_JOBS": {
         "type": "worker",
         "worker": "lvbt-jobs-preview"
@@ -183,6 +195,27 @@
       },
       "LVBT_LINK_SIGNING_SECRET": {
         "type": "secret"
+      },
+      "LVBT_DISCORD_GUILD_ID": {
+        "type": "text",
+        "value": "1560146082640568350"
+      },
+      "LVBT_DISCORD_PRODUCTION_GUILD_ID": {
+        "type": "text",
+        "value": "1509298455896522823"
+      },
+      "LVBT_DISCORD_WORK_ENABLED": {
+        "type": "text",
+        "value": "false"
+      },
+      "DISCORD_WORK": {
+        "type": "worker",
+        "worker": "lvbt-jobs-preview",
+        "exportName": "WorkPreview"
+      },
+      "LVBT_TASK_UPDATES_ENABLED": {
+        "type": "text",
+        "value": "false"
       }
     },
     "migrations": [

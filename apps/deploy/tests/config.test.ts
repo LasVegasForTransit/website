@@ -61,14 +61,32 @@ void test('saved releases retain matching Discord applications and isolated jobs
     [generated, 'lvbt-jobs'],
     [previewConfig, 'lvbt-jobs-preview'],
   ] as const) {
-    assert.deepEqual(built.services, [{ binding: 'LVBT_DISCORD_JOBS', service: worker }]);
+    assert.deepEqual(
+      [...(built.services as { binding: string }[])].sort((a, b) =>
+        a.binding.localeCompare(b.binding),
+      ),
+      [
+        { binding: 'DISCORD_WORK', service: worker, entrypoint: 'WorkPreview' },
+        { binding: 'LVBT_DISCORD_JOBS', service: worker },
+      ],
+    );
     const vars = built.vars as Record<string, unknown>;
     assert.equal(vars.LVBT_DISCORD_APPLICATION_ID, '1552481672945999872');
+    assert.equal(
+      vars.LVBT_DISCORD_GUILD_ID,
+      worker === 'lvbt-jobs' ? '1509298455896522823' : '1560146082640568350',
+    );
+    assert.equal(vars.LVBT_DISCORD_PRODUCTION_GUILD_ID, '1509298455896522823');
     assert.equal(
       vars.LVBT_DISCORD_PUBLIC_KEY,
       '21422dba5d410653b6e1b21fedffbf8cdbccaa94fc221d81d767712d2f6faef9',
     );
     assert.equal(Object.hasOwn(vars, 'LVBT_DISCORD_BOT_TOKEN'), false);
+    assert.equal(vars.LVBT_TASK_CHECKINS_ENABLED, 'false');
+    assert.equal(vars.LVBT_TASK_UPDATES_ENABLED, worker === 'lvbt-jobs' ? 'true' : 'false');
+    const source = worker === 'lvbt-jobs' ? '1601d4dd-a09c-4562-8029-5a63446bd5ff' : '';
+    assert.equal(vars.LVBT_NOTION_TASK_SOURCE_ID, source);
+    assert.equal(vars.LVBT_NOTION_TASK_PRODUCTION_SOURCE_ID, source);
     assert.deepEqual(built.triggers, { crons: [] });
   }
 });
@@ -87,9 +105,12 @@ void test('production and preview retain existing secret types and declared inte
         .filter(([, binding]) => binding.type === 'secret')
         .map(([name]) => name)
         .sort(),
-      names,
+      built.worker.name === 'lvbt-website-preview'
+        ? ['LVBT_RESEND_API_KEY', 'LVBT_SIGN_IN_SECRET']
+        : names,
     );
-    for (const name of names) assert.deepEqual(bindings[name], { type: 'secret' });
+    for (const binding of Object.values(bindings).filter((value) => value.type === 'secret'))
+      assert.deepEqual(binding, { type: 'secret' });
   }
 });
 void test('the website Worker never receives the Discord role-management bot token', () => {
@@ -118,7 +139,12 @@ void test('new release artifacts use typed configuration, frozen SQL and explici
   assert.equal(tooling.release.typedConfig, 'cloudflare.config.ts');
   assert.equal(tooling.release.assetsDirectory, '../site/dist');
   assert.equal(tooling.release.workersDevSubdomain, 'las-vegas-for-better-transit');
-  assert.deepEqual(tooling.release.previewBindings, preview.worker.env);
+  const declaredPreview = Object.fromEntries(
+    Object.entries(tooling.release.previewBindings).filter(([name]) => name in preview.worker.env),
+  );
+  assert.deepEqual(declaredPreview, preview.worker.env);
+  for (const [name, binding] of Object.entries(tooling.release.previewBindings))
+    if (!(name in preview.worker.env)) assert.deepEqual(binding, { type: 'secret' });
   assert.deepEqual(tooling.release.migrations, [
     { binding: 'PLATFORM_DB', directory: '../../packages/platform-storage/migrations' },
   ]);
@@ -191,11 +217,33 @@ void test('generated compatibility mirror preserves actual routes, database iden
         migrations_dir: '../../packages/platform-storage/migrations',
       },
     ]);
-    assert.deepEqual(mode.services, [
-      {
-        binding: 'LVBT_DISCORD_JOBS',
-        service: built.worker.name === 'lvbt-website-preview' ? 'lvbt-jobs-preview' : 'lvbt-jobs',
-      },
-    ]);
+    assert.deepEqual(
+      [...mode.services].sort((a, b) => a.binding.localeCompare(b.binding)),
+      [
+        {
+          binding: 'DISCORD_WORK',
+          service: built.worker.name === 'lvbt-website-preview' ? 'lvbt-jobs-preview' : 'lvbt-jobs',
+          entrypoint: 'WorkPreview',
+        },
+        {
+          binding: 'LVBT_DISCORD_JOBS',
+          service: built.worker.name === 'lvbt-website-preview' ? 'lvbt-jobs-preview' : 'lvbt-jobs',
+        },
+      ],
+    );
   }
+});
+
+void test('saved production jobs preserve manual task updates without enabling reminders or shared work', async () => {
+  const filename = path.resolve(deployDir, '../jobs/wrangler.jsonc');
+  const parsed = ts.parseConfigFileTextToJson(filename, await readFile(filename, 'utf8'));
+  const jobs = parsed.config as { vars: Record<string, string> };
+  assert.equal(jobs.vars.LVBT_TASK_UPDATES_ENABLED, 'true');
+  assert.equal(jobs.vars.LVBT_TASK_CHECKINS_ENABLED, 'false');
+  assert.equal(jobs.vars.LVBT_DISCORD_WORK_ENABLED, 'false');
+  assert.equal(jobs.vars.LVBT_NOTION_TASK_SOURCE_ID, '1601d4dd-a09c-4562-8029-5a63446bd5ff');
+  assert.equal(
+    jobs.vars.LVBT_NOTION_TASK_PRODUCTION_SOURCE_ID,
+    jobs.vars.LVBT_NOTION_TASK_SOURCE_ID,
+  );
 });

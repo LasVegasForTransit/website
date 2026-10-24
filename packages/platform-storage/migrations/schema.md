@@ -929,3 +929,102 @@ to prevent recreation.
 authentication mode, initiating staff origin and live member session. It stores keyed hashes rather
 than session tokens. Member approval requires a same-origin POST; portal completion still requires
 the original host-only pending cookie. Session deletion or person erasure removes approved proofs.
+
+### Notion task check-ins (0054)
+
+`task_checkin_sources` stores source identity and revisioned policy, including the enablement flag.
+Credentials remain in Worker secrets. `task_checkin_mappings` links a workspace-scoped Notion user
+to one person; it neither grants membership nor enables messages. A conflicting mapping must be
+reviewed rather than overwritten.
+
+Mapping versions distinguish a reviewed match from a removed or recreated one. An administrator can
+explicitly correct or remove the current version. The atomic audited change pauses affected people's
+delivery choices across the workspace, preserves opt-outs, and removes old card controls. History
+stays with its recording person; a corrected match never transfers consent or membership. Optional
+bounded assignee names are display hints within retained task snapshots, not identity keys.
+
+`task_checkin_consent_receipts` records volunteer-initiated Discord choices idempotently.
+`task_checkin_consents` stores each person's current delivery choice and the policy revision they
+accepted. Unlinking Discord revokes consent. Linking it again requires a new affirmative choice.
+
+`task_checkin_tasks` holds minimal task snapshots and source revisions. `task_checkin_scans` retains
+the pagination cursor and worker lease. Partial or failed scans preserve unseen tasks; only a
+complete pass can mark absent work ineligible. Stale workers and changed policy revisions cannot
+commit a scan page.
+
+`task_checkin_operations` stores durable response and delivery intents, bounded attempts, leases,
+and outcomes. Queuing and claiming both recheck current assignment, verified Discord identity,
+consent, source policy, and task revisions. Interrupted effects are held for reconciliation.
+`task_checkin_cards` holds private message references, revision-bound opaque interaction tokens,
+snooze state, and the last reminder evaluation time. Evaluation ordering lets bounded scheduled
+batches make progress across all participating assignees. Policy changes, consent changes, and task
+changes invalidate obsolete unsent work. Person erasure removes their response payloads, mappings,
+consent, and private card references in the erasure transaction.
+
+`task_checkin_digests` retains one daily receipt per source and person. Each receipt pins the
+reviewed policy, opt-in revision, and Notion identity, and records a bounded attempt count and
+provider result. Interrupted effects remain held for reconciliation. Consent and source changes
+supersede unsent summaries; erasing a person removes their private digest references.
+
+`task_checkin_card_refreshes` keeps the newest requested render of an existing private card.
+Response receipts and source changes enqueue work transactionally. A generation fence invalidates
+older renders, while the in-flight edit keeps its lease until it finishes; subsequent renders then
+apply the newest state. Interrupted edits can retry idempotently, with bounded attempts. Current
+consent, reviewed source policy, verified identity, and private destination are rechecked before
+editing; the queue never creates a replacement message.
+
+`task_checkin_retired_cards` preserves the owner and private destination of replaced card controls.
+Retired references can only explain that a task changed; they cannot authorize an action or expose
+the current task. Deleting the parent card removes its retired references.
+
+`task_checkin_recovery` records an administrator's request to check an uncertain comment against
+Notion. A bounded lease protects each read-only check; only a matching integration-authored comment
+reference can confirm the original response. Unresolved-comment absence keeps the response held.
+Current administrator authority and the original operation version are checked before confirmation.
+Closing a held update cancels pending recovery without claiming a Notion write. Deleting the
+original operation also removes its recovery record.
+
+`task_checkin_notifications` reserves message attempts atomically across reminders and daily
+summaries for each person in a source. Rolling 24-hour and minimum-spacing checks read the current
+source settings and current operation lease. Ambiguous sends retain their reservation; a retry of
+the same known retryable intent renews its reservation against the same shared limits. Entries do
+not contain message content, Discord destinations, or tokens. Erasure removes the person's entries.
+
+`task_checkin_escalations` records each task support event and recipient separately. Confirmed
+blockers and configured overdue thresholds use distinct deduplicated events. Subject and recipient
+consent revisions remain independent; project leads additionally require their current workspace
+mapping and a fresh provider-side lead check. Unavailable routes remain in administrator review.
+Leased sends share notification reservations with reminders and summaries, while ambiguous creates
+remain held until reviewed. An administrator can close without confirming delivery; an uncertain
+create cannot be retried. Erasing either person removes the associated record. Cards keep a separate
+escalation evaluation cursor so reminder scans cannot starve support scans.
+
+`task_checkin_provider_backoffs` holds the earliest next Notion request for a task source. Worker
+invocations share the wait, and a later failure can extend but never shorten it. It contains no
+person references or provider payload. Closing a routing review does not clear provider backoff.
+Routing failures persist as minimal escalation review records, with a bounded automatic recheck;
+completed recipient discovery supersedes the temporary routing review.
+
+Reassigning a Discord identity during a profile merge or undo pauses affected check-in preferences
+and advances their revision. Existing stop choices remain stopped, and no consent receipt is
+fabricated. Task controls for both records are removed and unsent support work is superseded;
+uncertain effects remain available for review. A prior opt-in cannot revive merely because an
+identity returns to its previous person record.
+
+Task history keeps its original record owner. Private exports and verified Notion mappings follow
+only active, unerased merge links to the current profile; undo removes that association. Mapping
+lookups are anchored to the current person or Notion account, with an index for reverse merge links.
+Two Notion accounts in one merged family require staff review rather than an implicit choice. A
+current approved participant still needs a new self-authored check-in consent after identity
+reassignment. Notification caps and daily-summary deduplication include the active merge family, so
+combining records does not reset those limits.
+
+## Shared Discord work links
+
+Migration `0055_discord_work_links.sql` adds project homes, typed work conversations, and durable
+shared effects. Scope keys bind environment, guild, and Notion workspace. Active project placements
+and conversation subjects are unique within that scope. Link generations invalidate old controls and
+pending writes; these tables never grant private reminder consent. Preview receipts expire after ten
+minutes. Operations retain provider result IDs and source keys for reconciliation. Uncertain effects
+are held rather than blindly retried. Person deletion revokes pending shared work and pauses project
+homes approved by that person.

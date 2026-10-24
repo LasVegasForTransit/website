@@ -117,7 +117,7 @@ void test('old UTC day settlement cannot alter the next day ledger', async () =>
 });
 void test('preview and production retain separate conservative daily caps', async () => {
   for (const [environment, runs] of [
-    ['production', 10],
+    ['production', 11],
     ['preview', 1],
   ] as const) {
     const f = fixture();
@@ -380,7 +380,7 @@ void test('the next invocation requires its full write reservation below the dai
     const lease = await reserveScheduledWork(f.db, 'production', at(), 'first');
     assert.ok(lease);
     await settleScheduledWork(f.db, lease, usage, { failed: false, now: at() });
-    const boundary = 40_000 - SCHEDULED_RESERVATION.writes;
+    const boundary = 45_000 - SCHEDULED_RESERVATION.writes;
     f.native.raw.prepare('UPDATE scheduled_work_budget SET charged_writes=?').run(boundary + 1);
     assert.equal(await reserveScheduledWork(f.db, 'production', at(), 'above'), null);
     f.native.raw.prepare('UPDATE scheduled_work_budget SET charged_writes=?').run(boundary);
@@ -388,7 +388,7 @@ void test('the next invocation requires its full write reservation below the dai
     assert.equal(
       f.native.raw.prepare('SELECT charged_writes FROM scheduled_work_budget').get()
         ?.charged_writes,
-      40_000,
+      45_000,
     );
   } finally {
     f.native.raw.close();
