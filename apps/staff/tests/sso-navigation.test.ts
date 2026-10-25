@@ -66,11 +66,12 @@ void test('only an explicit same-origin POST with a valid logout marker continue
     new Request(`${origin}/sign-in/continue/`, {
       method: 'POST',
       headers: { Cookie: cookie, Origin: origin },
+      body: new URLSearchParams({ next: '/paper/' }),
     }),
     principal,
   );
   assert.equal(response.status, 303);
-  assert.equal(response.headers.get('Location'), '/sign-in/');
+  assert.equal(response.headers.get('Location'), '/sign-in/?next=%2Fpaper%2F');
   assert.match(response.headers.get('Set-Cookie') ?? '', /Max-Age=0/);
 });
 

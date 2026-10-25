@@ -105,7 +105,7 @@ async function createJourney(
   await page.getByRole('button', { name: 'Sign out', exact: true }).click();
   await page
     .getByRole('heading', {
-      name: mode === 'google' ? 'Sign in to the Staff Portal' : 'You’re signed out',
+      name: 'Sign in to the Staff Portal',
     })
     .waitFor();
   console.log(`${mode}: new team account, no consent, paper-only permissions and sign-out passed.`);
@@ -145,7 +145,7 @@ async function signOutAndReenter(page: Page, view: { mode: string; theme: string
   await page.getByRole('button', { name: 'Sign out', exact: true }).click();
   await page
     .getByRole('heading', {
-      name: mode === 'google' ? 'Sign in to the Staff Portal' : 'You’re signed out',
+      name: 'Sign in to the Staff Portal',
     })
     .waitFor();
   await capture(page, view, '07-signed-out');
@@ -156,9 +156,8 @@ async function signOutAndReenter(page: Page, view: { mode: string; theme: string
     'SSO must not immediately recreate signed-out session',
   );
   if (mode === 'cloudflare-access')
-    await page.getByRole('button', { name: 'Sign in again' }).click();
+    await page.getByRole('button', { name: 'Continue with LVBT account' }).click();
   else await page.getByRole('link', { name: 'Sign in with Google' }).click();
-  await page.getByRole('link', { name: 'Continue', exact: true }).click();
   await page.waitForURL(`${ORIGIN}/people/`);
   assert.equal(await page.getByRole('heading', { name: 'Finish setting up' }).count(), 0);
 }

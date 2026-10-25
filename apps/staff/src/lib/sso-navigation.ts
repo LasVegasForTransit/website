@@ -1,5 +1,5 @@
 import { signToken, verifyToken, hashWithSecret } from '@lasvegasfortransit/platform-core/signing';
-import { readCookie } from '@lasvegasfortransit/platform-core/web-auth';
+import { readCookie, safeNext } from '@lasvegasfortransit/platform-core/web-auth';
 import {
   googleResponse,
   workspaceCookie,
@@ -45,5 +45,10 @@ export async function continueSso(env: LogoutEnv, request: Request, principal: A
     !(await isSignedOut(env, request, principal))
   )
     return new Response(null, { status: 403 });
-  return googleResponse('/sign-in/', [workspaceCookie(SIGNED_OUT_COOKIE, '', 0)]);
+  const form = await request.formData();
+  const requestedNext = form.get('next');
+  const next = safeNext(typeof requestedNext === 'string' ? requestedNext : '/');
+  return googleResponse(`/sign-in/?next=${encodeURIComponent(next)}`, [
+    workspaceCookie(SIGNED_OUT_COOKIE, '', 0),
+  ]);
 }
