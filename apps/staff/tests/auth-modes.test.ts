@@ -120,7 +120,7 @@ void test('known SSO principal enters without Google while an unknown principal 
   );
   assert.equal(
     (await startSsoSignIn(env, request, unknown))?.headers.get('Location'),
-    '/sign-in/ready/?next=%2Fpaper%2F',
+    '/sign-in/return/?next=%2Fpaper%2F',
   );
   await revokeSsoPrincipal(db, unknown);
   assert.equal((await startSsoSignIn(env, request, unknown))?.status, 403);
