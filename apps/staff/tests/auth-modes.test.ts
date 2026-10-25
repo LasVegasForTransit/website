@@ -97,7 +97,7 @@ void test('known SSO principal enters without Google while an unknown principal 
   await ssoSessionFixture(env, person.id, principal);
   const request = new Request(`${origin}/sign-in/?next=%2Fpaper%2F`);
   const continued = await startSsoSignIn(env, request, principal);
-  assert.equal(continued?.headers.get('Location'), '/sign-in/ready/?next=%2Fpaper%2F');
+  assert.equal(continued?.headers.get('Location'), '/sign-in/return/?next=%2Fpaper%2F');
   assert.match(continued.headers.get('Set-Cookie') ?? '', /__Host-lvbt_session=/);
   assert.equal(db.raw.prepare('SELECT count(*) AS n FROM workspace_oauth_states').get()?.n, 0);
   const unknown = { ...principal, subject: 'new-access-subject' };
@@ -120,7 +120,7 @@ void test('known SSO principal enters without Google while an unknown principal 
   );
   assert.equal(
     (await startSsoSignIn(env, request, unknown))?.headers.get('Location'),
-    '/sign-in/ready/?next=%2Fpaper%2F',
+    '/sign-in/return/?next=%2Fpaper%2F',
   );
   await revokeSsoPrincipal(db, unknown);
   assert.equal((await startSsoSignIn(env, request, unknown))?.status, 403);
