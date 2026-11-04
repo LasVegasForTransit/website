@@ -11,6 +11,7 @@ import {
   type WorkEffectContext,
 } from './discord-work-actions';
 import { inspectFooterRecovery } from './notion-work-links';
+import { recoverDiscoveredForum } from './discord-work-recover-forum';
 import {
   readProjectHome,
   readWorkConversation,
@@ -244,6 +245,14 @@ async function recoverProvision(
     createForum: p.createForum === true,
     isTask: p.intent === 'task' || p.intent === 'event',
   });
+  const recoveredForum = await recoverDiscoveredForum(db, providers, {
+    op,
+    context,
+    proof,
+    payload: p,
+    destinationId,
+  });
+  if (recoveredForum) return recoveredForum;
   if (
     !proof?.threadId ||
     (['forumId', 'threadId', 'starterMessageId', 'cardChannelId'] as const).some(
