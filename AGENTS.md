@@ -64,9 +64,10 @@ The hooks under [`.githooks/`](./.githooks/) enforce most of this automatically.
 
 ## Commit messages
 
-Subjects are conventional: `type(scope): description`, at most 72 characters. Scopes are optional
-and come only from [`.lvbt/commit-scopes.txt`](.lvbt/commit-scopes.txt). Omit the scope when a
-change crosses boundaries; never invent one for a feature, file, task, or role.
+Subjects are conventional: `type(scope): description`, at most 72 characters. Every commit uses a
+feature or domain scope from [`.lvbt/commit-scopes.txt`](.lvbt/commit-scopes.txt). Choose the domain
+whose behavior changes, even when the implementation spans several packages. Add a missing domain
+with a clear definition; do not use an implementation layer, file, or task as a scope.
 
 ## The repository standard
 
@@ -99,7 +100,7 @@ Follow [commit-messages.md](./docs/standards/commit-messages.md) for examples an
 ## Commit format quick reference
 
 ```text
-type(scope)?: brief description (≤ 72 chars, imperative mood)
+type(scope): brief description (≤ 72 chars, imperative mood)
 
 Body — required for feat/fix, otherwise whenever the title alone is
 ambiguous. Wrap at 72 chars.
@@ -110,8 +111,8 @@ Co-Authored-By: <model> <email>   (required when an agent commits)
 **Allowed types:** `build chore docs feat fix perf refactor revert style test`. `ci` is deprecated;
 use `chore` for workflow changes.
 
-**Allowed scopes:** `site content functions docs dx`, or empty. No page slugs, no component names,
-no short-lived feature names, no `deps`, no vendor tags. See
+**Allowed scopes:** `site content membership docs dx`. Scopes describe features or domains; they do
+not describe implementation layers, component names, task IDs, or vendor tags. See
 [`commit-scopes.md`](./docs/standards/commit-scopes.md) for rationale.
 
 ---
