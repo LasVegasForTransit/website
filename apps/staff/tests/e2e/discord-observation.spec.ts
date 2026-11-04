@@ -163,7 +163,7 @@ try {
   unreachable = true;
   await fixture.db
     .prepare(
-      "UPDATE provider_operation_receipts SET expires_at='2000-01-01T00:00:00.000Z' WHERE provider='discord'",
+      "UPDATE provider_operation_receipts SET observed_at='2000-01-01T00:00:00.000Z',expires_at='2000-01-01T00:00:00.000Z' WHERE provider='discord'",
     )
     .run();
   assert.equal((await reconcileDiscordPending(fixture.db, options)).retry, 1);

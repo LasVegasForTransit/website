@@ -75,15 +75,19 @@ export async function exerciseAccountAccess(page: Page, fixture: Fixture) {
     0,
     'missing runtime configuration must not expose a stored granted confirmation',
   );
-  assert.equal(await accounts.getByText('Not set up yet', { exact: true }).count(), 1);
-  await submit(page, 'Try again');
+  assert.equal(await accounts.getByText('Access not set up', { exact: true }).count(), 1);
+  assert.equal(
+    await accounts.getByRole('heading', { name: 'Events Committee', exact: true }).count(),
+    0,
+  );
+  assert.equal(await accounts.getByRole('button', { name: 'Try again', exact: true }).count(), 0);
   assert.equal(
     (
       await fixture.db
         .prepare("SELECT state FROM integration_outbox WHERE id='recovery-grant'")
         .first<{ state: string }>()
     )?.state,
-    'queued',
+    'retry',
   );
   assert.equal(
     (
@@ -128,7 +132,7 @@ export async function exerciseAccountAccess(page: Page, fixture: Fixture) {
     fullPage: true,
   });
   assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
-  await submit(page, 'Try again');
+  assert.equal(await page.getByRole('button', { name: 'Try again', exact: true }).count(), 0);
   assert.equal(
     (
       await fixture.db
@@ -141,17 +145,21 @@ export async function exerciseAccountAccess(page: Page, fixture: Fixture) {
   assert.equal(await page.getByText('Access history', { exact: true }).count(), 0);
   await page.goto(`${ORIGIN}/access/?view=all`);
   await page.locator('.staff-account-history > summary').click();
-  assert.equal(await page.getByText('Account update retried', { exact: true }).count(), 2);
+  assert.equal(await page.getByText('Account update retried', { exact: true }).count(), 0);
   await page.setViewportSize({ width: 1440, height: 1000 });
 }
 export async function exerciseLeadAccountAccess(page: Page, fixture: Fixture) {
   await page.goto(`${ORIGIN}/access/?person=${fixture.inside.id}`);
   const accounts = page.getByRole('region', { name: 'Accounts', exact: true });
-  await accounts.locator('summary').first().click();
-  assert.equal(await accounts.locator('.staff-account-row').count(), 1);
+  assert.equal(
+    await accounts.count(),
+    0,
+    'unconnected accounts and disabled committee services need no Accounts section',
+  );
+  assert.equal(await accounts.locator('.staff-account-row').count(), 0);
   assert.equal(await accounts.getByRole('button', { name: 'Try again', exact: true }).count(), 0);
   assert.equal(await accounts.getByText('Remove from committee', { exact: true }).count(), 0);
-  assert.equal((await accounts.innerText()).includes('Advocacy Team'), false);
+  assert.equal(await accounts.getByText('Advocacy Team', { exact: true }).count(), 0);
   assert.equal(
     await page.getByRole('link', { name: 'Download member record', exact: true }).count(),
     0,

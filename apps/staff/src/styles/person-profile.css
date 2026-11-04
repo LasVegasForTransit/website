@@ -263,13 +263,34 @@
   }
 
   .staff-person-access .staff-account-row {
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1.5fr);
-    gap: 1rem 1.5rem;
-    padding-block: 1.25rem;
+    grid-template-columns: minmax(0, 12rem) minmax(0, 1fr);
+    gap: 0.5rem 1.5rem;
+    padding-block: 0.75rem;
   }
 
   .staff-person-access .staff-account-heading h3 {
-    font-size: var(--text-title-md);
+    font-size: var(--text-body-sm);
+    line-height: 1.5;
+  }
+
+  .staff-person-access .staff-account-status {
+    gap: 0.75rem 1.5rem;
+  }
+
+  .staff-person-access .staff-account-status dt {
+    display: inline;
+    margin-right: 0.5rem;
+    font-weight: 400;
+  }
+
+  .staff-person-access .staff-account-status dd {
+    display: inline;
+  }
+
+  .staff-person-access .staff-account-status .staff-access-checked {
+    display: block;
+    margin-top: 0.125rem;
+    font-size: 0.75rem;
   }
 
   .staff-profile-account-state {

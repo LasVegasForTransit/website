@@ -4,7 +4,7 @@ import assert from 'node:assert/strict';
 import { mkdtemp, readdir, readFile, rm } from 'node:fs/promises';
 import { execFileSync } from 'node:child_process';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { basename, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { DatabaseSync } from 'node:sqlite';
 import { Miniflare, Response as RuntimeResponse, convertV4MiniflareOptions } from 'miniflare';
@@ -202,7 +202,13 @@ async function startRuntimeInternal(options: RuntimeOptions = {}) {
     const db = await simulator.getD1Database('PLATFORM_DB');
     await db.prepare('SELECT 1 AS ready').first();
     const files = await readdir(data, { recursive: true });
-    const database = files.find((file) => file.includes('d1') && file.endsWith('.sqlite'));
+    const database = files.find(
+      (file) =>
+        file.includes('d1') &&
+        file.endsWith('.sqlite') &&
+        !basename(file).startsWith('._') &&
+        basename(file) !== 'metadata.sqlite',
+    );
     assert.ok(database, 'local D1 should have its own isolated SQLite file');
     const raw = new DatabaseSync(join(data, database));
     try {

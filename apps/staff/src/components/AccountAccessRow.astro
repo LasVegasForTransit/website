@@ -8,6 +8,11 @@ import Button from '../../../site/src/components/app/Button.astro';
 import { accessLabel, updateFailure } from '../lib/account-access';
 import { MEMBERSHIP_LABELS } from '../lib/people';
 import { needsAccessRecovery } from '@lasvegasfortransit/platform-core/access';
+import {
+  profileAccessLabel,
+  profileNeedsRecovery,
+  profileProviders,
+} from '../lib/profile-account-access';
 interface Props {
   row: AccessRow;
   personView?: boolean;
@@ -21,8 +26,9 @@ const removeToken =
   admin && row.assignmentId && !personView && !leadChannels
     ? await issueFormToken(staff.db, staff.actor, `access:remove:${row.assignmentId}`)
     : null;
-const providers =
-  memberChannels || leadChannels
+const providers = personView
+  ? profileProviders(row, staff.accessConfiguration ?? {})
+  : memberChannels || leadChannels
     ? [
         {
           name: t(
@@ -35,7 +41,9 @@ const providers =
         { name: t('staff.access.googleGroup'), access: row.googleWorkspace },
         { name: t('staff.common.discord'), access: row.discord },
       ];
-const needsRecovery = needsAccessRecovery(row);
+const needsRecovery = personView
+  ? profileNeedsRecovery(row, staff.accessConfiguration ?? {})
+  : needsAccessRecovery(row);
 const Heading = personView ? 'h3' : 'h2';
 const retryToken =
   admin && needsRecovery && row.operationId
@@ -68,7 +76,7 @@ const retryToken =
       )
     }
     {
-      !(personView && memberChannels) && (
+      !personView && (
         <p class="staff-help">
           {memberChannels
             ? personView
@@ -106,7 +114,9 @@ const retryToken =
                 },
               ]}
             >
-              {accessLabel(access, row.expectedAccess, memberChannels)}
+              {personView
+                ? profileAccessLabel(access, row.expectedAccess)
+                : accessLabel(access, row.expectedAccess, memberChannels)}
             </strong>
           </dd>
           {access.observedAt && (
