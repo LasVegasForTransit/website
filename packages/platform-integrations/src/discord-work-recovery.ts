@@ -13,6 +13,7 @@ import {
 import { inspectFooterRecovery } from './notion-work-links';
 import { recoverDiscoveredForum } from './discord-work-recover-forum';
 import { recoverWorkNameSync } from './discord-work-name-recovery';
+import { recoverProjectPins } from './discord-work-project-pins';
 import {
   readProjectHome,
   readWorkConversation,
@@ -342,6 +343,8 @@ async function recoverHeld(
     return recoverTags(db, providers, op, { context, c });
   if (op.kind === 'refresh' && payload.intent === 'name-sync')
     return recoverWorkNameSync(db, providers, op, context);
+  if (op.kind === 'refresh' && payload.intent === 'project-pins')
+    return recoverProjectPins(db, op, context);
   if (op.kind === 'comment')
     return recoverWorkComment(
       db,
@@ -386,7 +389,7 @@ export async function recoverOneWorkOperation(
 ): Promise<WorkResult> {
   const op = await db
     .prepare(
-      "SELECT * FROM discord_work_operations WHERE scope_key=? AND state='held' AND reason IS NOT 'eligibility_changed_after_effect' AND (kind IN ('comment','backlink','provision') OR (kind='refresh' AND json_extract(payload_json,'$.intent') IN ('tag-sync','name-sync'))) AND next_attempt_at<=? ORDER BY next_attempt_at,id LIMIT 1",
+      "SELECT * FROM discord_work_operations WHERE scope_key=? AND state='held' AND reason IS NOT 'eligibility_changed_after_effect' AND (kind IN ('comment','backlink','provision') OR (kind='refresh' AND json_extract(payload_json,'$.intent') IN ('tag-sync','name-sync','project-pins'))) AND next_attempt_at<=? ORDER BY next_attempt_at,id LIMIT 1",
     )
     .bind(workScopeKey(context.scope), context.clock().toISOString())
     .first<WorkOperation>();

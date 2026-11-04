@@ -99,72 +99,6 @@ async function overview(
     cursorId: created.starterMessageId,
   };
 }
-async function pinProjectOverview(
-  db: Db,
-  providers: WorkProviders,
-  context: WorkEffectContext,
-  {
-    op,
-    p,
-    home,
-    existing,
-    c,
-  }: {
-    op: WorkOperation;
-    p: Payload;
-    home: ProjectHome;
-    existing: ProjectHome | null;
-    c: WorkConversation;
-  },
-): Promise<void> {
-  if (!existing?.overviewPin) {
-    await assertProvisionCurrent(db, op, context.clock, home);
-    let pin: 'pinned' | 'needs_attention' = 'pinned';
-    try {
-      await providers.discord.pinWorkMessage(c.cardChannelId ?? c.threadId, c.starterMessageId);
-    } catch {
-      pin = 'needs_attention';
-    }
-    await db
-      .prepare(
-        "UPDATE discord_project_homes SET data_json=json_set(data_json,'$.overviewPin',?) WHERE id=? AND scope_key=? AND generation=? AND state='active' AND EXISTS(SELECT 1 FROM discord_work_operations o WHERE o.id=? AND o.scope_key=discord_project_homes.scope_key AND o.state='processing' AND o.claim_token=? AND o.lease_expires_at>?)",
-      )
-      .bind(
-        pin,
-        home.id,
-        op.scope_key,
-        home.generation,
-        op.id,
-        op.claim_token,
-        context.clock().toISOString(),
-      )
-      .run();
-  }
-  if (home.destination.kind === 'forum' && p.createForum === true && !existing?.overviewPostPin) {
-    await assertProvisionCurrent(db, op, context.clock, home);
-    let pin: 'pinned' | 'needs_attention' = 'pinned';
-    try {
-      await providers.discord.pinForumPost(home.destination.channelId, c.threadId);
-    } catch {
-      pin = 'needs_attention';
-    }
-    await db
-      .prepare(
-        "UPDATE discord_project_homes SET data_json=json_set(data_json,'$.overviewPostPin',?) WHERE id=? AND scope_key=? AND generation=? AND state='active' AND EXISTS(SELECT 1 FROM discord_work_operations o WHERE o.id=? AND o.scope_key=discord_project_homes.scope_key AND o.state='processing' AND o.claim_token=? AND o.lease_expires_at>?)",
-      )
-      .bind(
-        pin,
-        home.id,
-        op.scope_key,
-        home.generation,
-        op.id,
-        op.claim_token,
-        context.clock().toISOString(),
-      )
-      .run();
-  }
-}
-
 function staleProjectHome(home: ProjectHome | null, generation: number): boolean {
   return !!home && (home.state !== 'active' || home.generation !== generation);
 }
@@ -232,6 +166,5 @@ export async function provisionHome(
     )
     .bind(c.starterMessageId, c.threadId, home.id, op.scope_key)
     .run();
-  await pinProjectOverview(db, providers, context, { op, p, home, existing, c });
   return c;
 }

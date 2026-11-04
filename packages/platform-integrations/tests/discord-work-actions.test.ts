@@ -159,6 +159,8 @@ void test('scheduled footer repair rechecks the original actor before writing to
   });
   Object.assign(discord, { membership: () => Promise.resolve(true) });
   Object.assign(notion, {
+    readSelf: () => Promise.resolve({ id: 'bot', type: 'bot' }),
+    listBlockChildren: () => Promise.resolve({ results: [], nextCursor: null }),
     appendBlockChildren: () => {
       writes++;
       return Promise.resolve({});

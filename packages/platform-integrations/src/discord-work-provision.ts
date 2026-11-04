@@ -33,6 +33,7 @@ import {
   createOrRecover,
 } from './discord-work-provision-common';
 import { provisionHome } from './discord-work-provision-home';
+import { queueProjectPins } from './discord-work-project-pins';
 type Payload = Record<string, unknown>;
 async function provisionTask(
   db: Db,
@@ -264,6 +265,7 @@ export async function processWorkProvision(
       },
       context.clock(),
     );
+    await queueProjectPins(db, c, op, context);
     const confirmed = await settleWorkOperation(
       db,
       { id: op.id, token: op.claim_token },

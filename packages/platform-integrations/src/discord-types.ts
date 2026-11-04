@@ -35,6 +35,7 @@ export interface DiscordOptions {
   rateLimit?: DiscordRateLimit;
   fetch?: typeof fetch;
   timeoutMs?: number;
+  preflightTimeoutMs?: number;
   now?: () => number;
 }
 export type DiscordUser = DiscordIdentity;

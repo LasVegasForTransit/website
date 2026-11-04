@@ -37,9 +37,25 @@ export async function nameSyncNotices(
   ).flat();
   const conversations = [
     ...new Map([...data.conversations, ...linked].map((c) => [c.id, c])).values(),
-  ].slice(0, 10);
+  ]
+    .filter((c) => ['project_plan', 'event_plan'].includes(c.subject.kind))
+    .slice(0, 10);
   const lines: string[] = [];
+  let checked = 0;
   for (const c of conversations) {
+    const rows = await db
+      .prepare(
+        `SELECT o.reason FROM discord_work_operations o JOIN discord_work_conversations c ON c.id=o.conversation_id AND c.scope_key=o.scope_key JOIN discord_project_homes h ON h.id=c.home_id AND h.scope_key=c.scope_key WHERE o.scope_key=? AND o.conversation_id=? AND o.kind='refresh' AND o.state IN ('held','failed') AND json_extract(o.payload_json,'$.intent')='name-sync' AND json_extract(o.payload_json,'$.revision')=coalesce(json_extract(CASE WHEN json_extract(o.payload_json,'$.target')='forum' THEN h.data_json ELSE c.data_json END,'$.nameSyncRevision'),'created') AND NOT EXISTS(SELECT 1 FROM discord_work_operations later WHERE later.scope_key=o.scope_key AND later.conversation_id=o.conversation_id AND later.kind='refresh' AND later.state='confirmed' AND json_extract(later.payload_json,'$.intent')='name-sync' AND json_extract(later.payload_json,'$.target')=json_extract(o.payload_json,'$.target') AND json_extract(later.payload_json,'$.revision')=json_extract(o.payload_json,'$.revision') AND later.rowid>o.rowid) ORDER BY o.rowid DESC LIMIT 2`,
+      )
+      .bind(workScopeKey(context.scope), c.id)
+      .all<{ reason: string | null }>();
+    if (!rows.results.length) continue;
+    if (checked >= 3) {
+      if (lines.length)
+        lines.push('More name updates may need review. Inspect their linked pages individually.');
+      break;
+    }
+    checked++;
     const actor = await authorizeWork(
       db,
       providers,
@@ -56,12 +72,6 @@ export async function nameSyncNotices(
       context.clock(),
     );
     if (!actor) continue;
-    const rows = await db
-      .prepare(
-        `SELECT o.reason FROM discord_work_operations o JOIN discord_work_conversations c ON c.id=o.conversation_id AND c.scope_key=o.scope_key JOIN discord_project_homes h ON h.id=c.home_id AND h.scope_key=c.scope_key WHERE o.scope_key=? AND o.conversation_id=? AND o.kind='refresh' AND o.state IN ('held','failed') AND json_extract(o.payload_json,'$.intent')='name-sync' AND json_extract(o.payload_json,'$.revision')=coalesce(json_extract(CASE WHEN json_extract(o.payload_json,'$.target')='forum' THEN h.data_json ELSE c.data_json END,'$.nameSyncRevision'),'created') AND NOT EXISTS(SELECT 1 FROM discord_work_operations later WHERE later.scope_key=o.scope_key AND later.conversation_id=o.conversation_id AND later.kind='refresh' AND later.state='confirmed' AND json_extract(later.payload_json,'$.intent')='name-sync' AND json_extract(later.payload_json,'$.target')=json_extract(o.payload_json,'$.target') AND json_extract(later.payload_json,'$.revision')=json_extract(o.payload_json,'$.revision') AND later.rowid>o.rowid) ORDER BY o.rowid DESC LIMIT 2`,
-      )
-      .bind(workScopeKey(context.scope), c.id)
-      .all<{ reason: string | null }>();
     for (const row of rows.results)
       lines.push(
         reasons[row.reason ?? ''] ??

@@ -1,5 +1,11 @@
 import { DiscordApiFailure, object } from './discord-types';
 
+export class NameSyncPreDispatchFailure extends Error {
+  constructor(readonly original: unknown) {
+    super('Name update was not dispatched');
+  }
+}
+
 export interface PlanningNameUpdate {
   channelId: string;
   parentId: string | null;

@@ -10,6 +10,7 @@ import { processWorkProvision } from '../src/discord-work-provision';
 import { processWorkAction } from '../src/discord-work-actions';
 import { runWorkPreview } from '../src/discord-work-setup';
 import { refreshPlanningOverview } from '../src/discord-work-project-refresh';
+import { runQueuedProjectPins } from './support/discord-work-pins';
 import {
   readProjectHome,
   readWorkConversation,
@@ -201,6 +202,7 @@ for (const race of [false, true]) {
       assert.equal(forums, 1);
       assert.equal(posts, 1);
       assert.match(JSON.stringify(overviewCard), new RegExp(projectId));
+      assert.equal((await runQueuedProjectPins(db, { notion, discord }, context)).kind, 'progress');
       assert.equal(postPins, 1);
       assert.equal(
         db.raw

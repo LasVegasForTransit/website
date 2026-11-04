@@ -248,6 +248,9 @@ export class NotionTaskClient {
       throw new NotionTaskApiError('invalid_blocks', 60_000, false);
     return this.request(`blocks/${id(pageId)}/children`, 'PATCH', { children });
   }
+  readBlock(blockId: string): Promise<unknown> {
+    return this.request(`blocks/${id(blockId)}`, 'GET');
+  }
   updateBlock(blockId: string, body: unknown): Promise<unknown> {
     return this.request(`blocks/${id(blockId)}`, 'PATCH', body);
   }

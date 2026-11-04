@@ -6,6 +6,7 @@ import { runWorkPreview } from '../src/discord-work-setup';
 import { recoverOneWorkOperation } from '../src/discord-work-recovery';
 import { processWorkAction } from '../src/discord-work-actions';
 import { processWorkProvision } from '../src/discord-work-provision';
+import { runQueuedProjectPins } from './support/discord-work-pins';
 import {
   discordUserId,
   projectId,
@@ -165,6 +166,7 @@ for (const lostResponse of [false, true])
           return Promise.resolve({ results: added });
         },
       });
+      await runQueuedProjectPins(db, { notion, discord }, context);
       const backlink = await claimWorkOperation(db, workScope, now);
       assert.ok(backlink);
       assert.equal(

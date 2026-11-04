@@ -181,12 +181,12 @@ Discord created the channel. For categories, the worker can confirm a matching c
 Discord's audit log when the bot has `VIEW_AUDIT_LOG`. If evidence is unavailable or ambiguous,
 inspect the server and audit log before deciding how to proceed; the creation is not repeated.
 
-The worker attempts to pin the project overview in its conversation. Pinning requires the bot's
-`PIN_MESSAGES` permission; if the pin cannot be confirmed, the link still works and `/work show`
-reports the issue. Check the post and permissions before pinning it manually. For a newly created
-forum, the worker also attempts to pin the overview post if no other post is pinned. This requires
-`MANAGE_THREADS`; an unavailable post pin does not prevent the project link from working. Existing
-forums retain their pinned post when adopted.
+The worker queues the project overview pins separately after creating the link. Pinning requires the
+bot's `PIN_MESSAGES` permission; if the pin cannot be confirmed, the link still works and
+`/work show` reports the issue. Check the post and permissions before pinning it manually. For a
+newly created forum, the worker also attempts to pin the overview post if no other post is pinned.
+This requires `MANAGE_THREADS`; an unavailable post pin does not prevent the project link from
+working. Existing forums retain their pinned post when adopted.
 
 To replace an existing project forum's topic with a link to its Notion project, use
 `/work project-topic` and select that forum. Review the current and proposed topics before choosing
