@@ -34,10 +34,11 @@ Optional footer (issue refs, co-authors, BREAKING CHANGE).
 ### Title (required)
 
 `type(scope): description` — the only required part. This is the **Conventional Commits** format: a
-widely-used convention where every commit title starts with a `type` (like `feat` or `fix`), an
-optional `(scope)`, then a short summary — e.g. `feat(content): add about page`. It's validated by
-the commit‑msg hook: a script Git runs automatically when you commit, which rejects the commit if
-the message breaks the rules below (see [git-guidelines.md](./git-guidelines.md#hook-overview)).
+widely-used convention where every commit title starts with a `type` (like `feat` or `fix`), a
+`(scope)`, then a short summary — e.g. `feat(content): Add an about page`. This repository requires
+a scope on every commit. The shared commit‑msg hook checks the subject grammar and allowed scope
+names; contributors must also follow the repository's scope requirement. See
+[git-guidelines.md](./git-guidelines.md#hook-overview).
 
 ### Body (required for `feat` and `fix`; conditional otherwise)
 
@@ -81,12 +82,13 @@ the change was necessary, what alternatives existed, what trade‑offs were made
 
 ## Scopes
 
-Only five scopes are valid: `site`, `content`, `functions`, `docs`, `dx`. See
-[commit-scopes.md](./commit-scopes.md) for the full list and rationale. Empty scope is the default
-for everything else (`feat: add newsletter form`).
+Use a feature or domain scope: `site`, `content`, `membership`, `docs`, or `dx`. See
+[commit-scopes.md](./commit-scopes.md) for the full list and rationale. Every commit has a scope,
+including work that spans several packages. Choose the domain whose behavior changes.
 
-Do **not** invent ad‑hoc scopes for page slugs, components, short‑lived features, dep bumps, or
-vendor names. The commit‑msg hook rejects anything outside the curated list.
+Add a missing feature or domain to the repository's list with a clear definition. Do not use an
+implementation layer, component, task identifier, dependency, or vendor as a scope. The commit‑msg
+hook rejects scopes outside the repository's list.
 
 ---
 
@@ -196,7 +198,7 @@ UTC. The page now formats the date in the event's timezone.
 ### Trivial change — short title only
 
 ```text
-docs: Correct a setup link
+docs(docs): Correct a setup link
 ```
 
 A title is enough for a small, obvious change. Add a body when the reason or trade-off matters.

@@ -1,15 +1,15 @@
-# One scope per durable boundary in this repository; omit a scope when a
-# change crosses them. Never invent one for a feature, page, file, or task.
+# Scopes identify a feature or domain, rather than an implementation layer.
+# Every commit uses one scope. Add a missing domain with a clear definition.
 #
-#   site       the Astro site under apps/site: pages, layouts, components, styles
-#   content    copy and MDX under apps/site/src/content
-#   functions  the Worker routes and the platform code behind them
+#   site       public website navigation, layout, and visual design
+#   content    published editorial content
+#   membership member signup, membership records, and membership-based access
 #   docs       repository documentation under docs/ (not site copy)
 #   dx         hooks, lint and format settings, dev scripts, local tooling
 #
-# Workflow and composite-action changes are chores with no scope: `chore: ...`.
+# Workflow and composite-action changes use `chore(dx): ...`.
 site
 content
-functions
+membership
 docs
 dx
