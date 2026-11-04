@@ -56,8 +56,10 @@ export async function enqueueWorkOperation(
     .run();
   if (result.meta.changes) return 'queued';
   return (await db
-    .prepare('SELECT 1 FROM discord_work_operations WHERE scope_key=? AND source_key=?')
-    .bind(key, input.sourceKey)
+    .prepare(
+      "SELECT 1 FROM discord_work_operations WHERE scope_key=? AND (source_key=? OR (?='comment' AND kind='comment' AND substr(source_key,1,8)='comment:' AND lower(replace(source_key,'-',''))=lower(replace(?,'-',''))))",
+    )
+    .bind(key, input.sourceKey, input.kind, input.sourceKey)
     .first())
     ? 'duplicate'
     : 'stale';
@@ -71,6 +73,34 @@ export async function readWorkOperation(
     .prepare('SELECT * FROM discord_work_operations WHERE scope_key=? AND id=?')
     .bind(workScopeKey(scope), id)
     .first<WorkOperation>();
+}
+
+export async function queueFooterReconciliation(
+  db: Db,
+  conversation: { scope: WorkScope; id: string; generation: number },
+  now: Date,
+): Promise<boolean> {
+  const stamp = now.toISOString();
+  const result = await db
+    .prepare(
+      `UPDATE discord_work_operations SET state='queued',attempts=0,reason=NULL,next_attempt_at=?,updated_at=?
+       WHERE scope_key=? AND conversation_id=? AND generation=? AND kind='backlink' AND source_key=? AND state='confirmed'
+       AND next_attempt_at<=? AND EXISTS(SELECT 1 FROM discord_work_conversations c
+         JOIN discord_project_homes h ON h.id=c.home_id AND h.scope_key=c.scope_key
+         WHERE c.id=discord_work_operations.conversation_id AND c.scope_key=discord_work_operations.scope_key
+         AND c.generation=discord_work_operations.generation AND c.state='active' AND h.state='active')`,
+    )
+    .bind(
+      stamp,
+      stamp,
+      workScopeKey(conversation.scope),
+      conversation.id,
+      conversation.generation,
+      `backlink:${conversation.id}`,
+      stamp,
+    )
+    .run();
+  return result.meta.changes > 0;
 }
 export async function consumeWorkPreview(
   db: Db,

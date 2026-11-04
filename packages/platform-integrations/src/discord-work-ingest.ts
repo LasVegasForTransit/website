@@ -1,13 +1,14 @@
 import type { Db } from '@lasvegasfortransit/platform-storage/db';
-import {
-  readWorkConversation,
-  readProjectHome,
-} from '@lasvegasfortransit/platform-storage/discord-work-links';
+import { readWorkConversation } from '@lasvegasfortransit/platform-storage/discord-work-links';
 import { acceptWorkMessages } from '@lasvegasfortransit/platform-storage/discord-work-ingress';
 import { resolveWorkActors } from './discord-work-actors';
 import { readWorkSource, readWorkTask } from './discord-work-authority';
 import { readNotionProjectLeads } from './notion-task-projects';
-import type { WorkProviders, WorkEffectContext } from './discord-work-actions';
+import {
+  currentWorkAudience,
+  type WorkProviders,
+  type WorkEffectContext,
+} from './discord-work-actions';
 import type {
   WorkConversation,
   WorkMessage,
@@ -16,7 +17,7 @@ import type {
   WorkActor,
 } from './discord-work-types';
 export function workMessageKey(pageId: string, m: { channelId: string; id: string }): string {
-  return `comment:${pageId}:${m.channelId}:${m.id}`;
+  return `comment:${pageId.replaceAll('-', '').toLowerCase()}:${m.channelId}:${m.id}`;
 }
 function human(m: WorkMessage) {
   return !m.bot && !m.webhook && !m.system;
@@ -86,18 +87,9 @@ async function readPermittedWindow(
   db: Db,
   providers: WorkProviders,
   c: WorkConversation,
-): Promise<WorkMessage[] | null> {
-  const home = await readProjectHome(db, c.scope, c.homeId);
-  if (home?.state !== 'active') return null;
-  const placement = await providers.discord.inspectDestination(home.destination.channelId);
-  const thread = await providers.discord.inspectDestination(c.threadId);
-  if (
-    !thread.canRead ||
-    thread.locked ||
-    placement.audienceFingerprint !== home.audienceFingerprint
-  )
-    return null;
-  if (!(await providers.discord.messageContentAvailable())) return null;
+): Promise<WorkMessage[] | 'audience_or_permission_changed' | 'message_content_unavailable'> {
+  if (!(await currentWorkAudience(db, providers, c))) return 'audience_or_permission_changed';
+  if (!(await providers.discord.messageContentAvailable())) return 'message_content_unavailable';
   return providers.discord.readMessages(
     c.threadId,
     c.windowBeforeId ? { before: c.windowBeforeId, limit: 25 } : { after: c.cursorId, limit: 25 },
@@ -114,7 +106,7 @@ export async function ingestWorkConversation(
   if (c?.state !== 'active' || c.mode !== 'automatic' || c.subject.kind !== 'task')
     return { kind: 'idle' };
   const messages = await readPermittedWindow(db, providers, c);
-  if (!messages) return { kind: 'paused', reason: 'content_or_destination_unavailable' };
+  if (typeof messages === 'string') return { kind: 'paused', reason: messages };
   const upper = c.windowUpperId;
   const fresh = messages.filter(
     (m) =>

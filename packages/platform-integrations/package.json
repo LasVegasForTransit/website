@@ -64,6 +64,7 @@
     "./discord-work-provider": "./src/discord-work-provider.ts",
     "./discord-work-setup": "./src/discord-work-setup.ts",
     "./discord-work-runner": "./src/discord-work-runner.ts",
+    "./discord-work-route-scan": "./src/discord-work-route-scan.ts",
     "./discord-work-command": "./src/discord-work-command.ts",
     "./discord-work-interactions": "./src/discord-work-interactions.ts"
   },

@@ -5,6 +5,8 @@ import { readFileSync, readdirSync } from 'node:fs';
 import { URL } from 'node:url';
 import { DatabaseSync, type SQLInputValue } from 'node:sqlite';
 import type { Db, SqlValue, Statement } from '@lasvegasfortransit/platform-storage/db';
+import { workScopeKey } from '../../src/discord-work-types';
+import type { WorkRoute } from '../../src/discord-work-routes';
 
 const MIGRATIONS = new URL('../../migrations/', import.meta.url);
 
@@ -48,6 +50,27 @@ class MemoryStatement implements Statement {
 
 export interface MemoryDb extends Db {
   raw: DatabaseSync;
+}
+
+/** Seed an already-active route when testing consumers, not the activation flow. */
+export function seedActiveWorkRoute(db: MemoryDb, route: WorkRoute, now: Date): void {
+  if (route.state !== 'active') throw new Error('Expected an active route fixture');
+  const source = route.sourceId.replaceAll('-', '').toLowerCase();
+  db.raw
+    .prepare(
+      `INSERT INTO discord_work_routes(id,scope_key,source_id,state,revision,data_json,updated_at)
+    VALUES(?,?,?,'active',?,?,?) ON CONFLICT(id) DO UPDATE SET scope_key=excluded.scope_key,
+    source_id=excluded.source_id,state=excluded.state,revision=excluded.revision,
+    data_json=excluded.data_json,updated_at=excluded.updated_at`,
+    )
+    .run(
+      route.id,
+      workScopeKey(route.scope),
+      source,
+      route.revision,
+      JSON.stringify({ ...route, sourceId: source }),
+      now.toISOString(),
+    );
 }
 
 export function migrationFiles(): string[] {

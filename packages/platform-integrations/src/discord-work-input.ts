@@ -7,6 +7,10 @@ export function notionWorkId(value: unknown): string | null {
     ? `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`
     : null;
 }
+export function sameNotionWorkId(left: unknown, right: unknown): boolean {
+  const id = notionWorkId(left);
+  return id !== null && id === notionWorkId(right);
+}
 export function notionWorkUrl(value: unknown): string | null {
   if (typeof value !== 'string' || value.length > 1000) return null;
   try {

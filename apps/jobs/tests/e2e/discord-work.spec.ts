@@ -17,6 +17,8 @@ const json = (value: unknown) =>
 const fixture = await taskRuntime({
   sharedWork: true,
   workResponse: async (request, url) => {
+    if (url.pathname === `/v1/data_sources/${taskPolicy.projectsSourceId}/query`)
+      return json({ results: [], next_cursor: null, has_more: false });
     if (url.pathname.includes('/webhooks/')) {
       privateReplies.push(await request.json());
       return json({ id: 'private' });
@@ -152,6 +154,37 @@ try {
   assert.deepEqual(await show.json(), { type: 5, data: { flags: 64 } });
   await until(() => Promise.resolve(privateReplies.length === 1));
   assert.match(JSON.stringify(privateReplies), /Committee work/);
+  const route = {
+    id: 'route',
+    scope,
+    sourceId: taskPolicy.projectsSourceId,
+    kind: 'project',
+    state: 'active',
+    revision: 1,
+    trigger: { property: 'Status', values: ['Planning'] },
+    destination: { kind: 'category', channelId: '333333333333333333' },
+    approvedBy: 'staff',
+    audienceFingerprint: audience,
+  };
+  await fixture.db
+    .prepare(
+      "INSERT INTO discord_work_routes(id,scope_key,source_id,state,revision,data_json,updated_at) VALUES(?,?,?,'active',1,?,?)",
+    )
+    .bind(
+      route.id,
+      JSON.stringify([scope.environment, scope.guildId, scope.workspaceId]),
+      route.sourceId,
+      JSON.stringify(route),
+      new Date().toISOString(),
+    )
+    .run();
+  assert.equal((await fixture.steps.workRouteScan.run()).kind, 'progress');
+  const scan = await fixture.db
+    .prepare('SELECT last_success_at,cursor FROM discord_work_route_scans WHERE route_id=?')
+    .bind(route.id)
+    .first<{ last_success_at: string | null; cursor: string | null }>();
+  assert.ok(scan?.last_success_at);
+  assert.equal(scan.cursor, null);
   assert.equal((await fixture.steps.workIngest.run()).kind, 'progress');
   assert.equal((await fixture.steps.workEffects.run()).kind, 'progress');
   assert.equal(fixture.comments.length, 1);

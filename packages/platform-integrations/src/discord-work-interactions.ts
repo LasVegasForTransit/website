@@ -12,11 +12,13 @@ export interface WorkIntent {
   linkId?: string | undefined;
   generation?: number | undefined;
   value?: string | undefined;
+  values?: string[] | undefined;
   messageId?: string | undefined;
   url?: string | undefined;
   destinationId?: string | undefined;
   message?: WorkMessage;
   text?: string | undefined;
+  name?: string | undefined;
 }
 export interface WorkPreviewInput {
   applicationId: string;
@@ -53,11 +55,19 @@ function parseControl(data: Record<string, unknown>): WorkIntent | null {
   const match = /^work:([\w-]{1,64}):(\d{1,9}):([\w-]{1,24})(?::(\d{17,20}))?$/.exec(value);
   if (!match?.[1] || !match[3]) return null;
   const values = Array.isArray(data.values) ? data.values : [];
+  const multiple = ['route-tag', 'project-tag-save', 'route-choice'].includes(match[3]);
+  const maximum = match[3] === 'route-choice' ? 25 : 5;
+  if (
+    multiple &&
+    (values.length < 1 || values.length > maximum || values.some((v) => !workString(v, 128)))
+  )
+    return null;
   return {
     action: match[3],
     linkId: match[1],
     generation: Number(match[2]),
     value: workString(values[0], 128) ?? undefined,
+    ...(multiple ? { values: values as string[] } : {}),
     messageId: match[4],
   };
 }
@@ -68,8 +78,32 @@ function command(data: Record<string, unknown>): WorkIntent | null {
   const option = (name: string) =>
     workString(notionObject(values.find((v) => notionObject(v).name === name)).value, 1000) ??
     undefined;
-  if (!['link', 'show', 'unlink'].includes(String(sub.name))) return null;
-  return { action: String(sub.name), url: option('url'), destinationId: option('destination') };
+  if (
+    ![
+      'link',
+      'adopt-event',
+      'adopt-project',
+      'show',
+      'unlink',
+      'routes',
+      'route-project',
+      'route-event',
+      'route-event-project',
+      'project-event-tags',
+      'project-topic',
+      'destinations',
+      'create-event-forum',
+      'create-event-channel',
+      'create-category',
+    ].includes(String(sub.name))
+  )
+    return null;
+  return {
+    action: String(sub.name),
+    url: option('url'),
+    destinationId: option('destination') ?? option('category'),
+    name: option('name'),
+  };
 }
 function selectedMessage(data: Record<string, unknown>, channelId: string): WorkMessage | null {
   const target = workString(data.target_id),

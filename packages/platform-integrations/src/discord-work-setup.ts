@@ -1,11 +1,17 @@
+import { adoptProject } from './discord-work-adopt-project';
+import { adoptEvent } from './discord-work-adopt-event';
+import { projectEventTags } from './discord-work-project-tags';
+import { projectTopicSetup } from './discord-work-project-topic';
+import { tagMappingSetup } from './discord-work-tag-setup';
 import { linkHome } from './discord-work-setup-links';
+import { routeSetup } from './discord-work-route-setup';
+import { manageWorkRoute } from './discord-work-route-manage';
+import { destinationSetup } from './discord-work-destination-setup';
+import { show, unlink } from './discord-work-link-controls';
 import type { Db } from '@lasvegasfortransit/platform-storage/db';
 import {
-  listProjectHomes,
-  listWorkConversations,
   readProjectHome,
   readWorkConversation,
-  unlinkWork,
 } from '@lasvegasfortransit/platform-storage/discord-work-links';
 import {
   enqueueWorkOperation,
@@ -13,9 +19,8 @@ import {
 } from '@lasvegasfortransit/platform-storage/discord-work-operations';
 import { t } from '@lasvegasfortransit/platform-core/messages';
 import { authorizeWork, resolveWorkActor } from './discord-work-authority';
-import { workSubject, workString, notionWorkUrl } from './discord-work-input';
+import { workSubject, workString } from './discord-work-input';
 import { notionObject } from './notion-task-types';
-import { taskMarkdown } from './notion-task-cards';
 import { setupReply, ownedReceipt, receiptCard } from './discord-work-setup-common';
 import {
   workTaskPicker,
@@ -39,7 +44,11 @@ async function currentReceiptActor(
     subject = workSubject(p.subject);
   if (!subject) return null;
   const action =
-    p.intent === 'home' ? 'manage_home' : p.intent === 'comment' ? 'comment' : 'place_work';
+    p.intent === 'home' || p.intent === 'event'
+      ? 'manage_home'
+      : p.intent === 'comment'
+        ? 'comment'
+        : 'place_work';
   const actor = await authorizeWork(
     db,
     providers,
@@ -136,107 +145,6 @@ async function tag(
     .run();
   return receiptCard(receipt, context);
 }
-async function show(
-  db: Db,
-  _providers: WorkProviders,
-  input: WorkPreviewInput,
-  context: WorkEffectContext,
-): Promise<WorkPreviewResult> {
-  const homes = await listProjectHomes(db, context.scope),
-    conversations = await listWorkConversations(db, context.scope);
-  const here = conversations.filter((c) => c.threadId === input.channelId),
-    homeIds = new Set(here.map((c) => c.homeId));
-  const relevant = homes.filter(
-    (h) => h.destination.channelId === input.channelId || homeIds.has(h.id),
-  );
-  const lines = relevant.map(
-    (h) =>
-      `**${taskMarkdown(h.title ?? 'Project')}** · ${h.state === 'active' ? 'Linked' : 'Paused'}\nhttps://discord.com/channels/${context.scope.guildId}/${h.destination.channelId}`,
-  );
-  for (const c of here)
-    lines.push(
-      `${c.mode === 'automatic' ? t('discordWork.automatic') : t('discordWork.selected')}\n${c.reason ? 'Sync needs attention. Check account access and channel permissions; an administrator can unlink and relink to approve a changed audience.' : 'Sync is ready.'}`,
-    );
-  const row = await db
-    .prepare(
-      "SELECT state,reason,updated_at FROM discord_work_operations WHERE scope_key=? AND actor_person_id=? AND state IN ('held','failed') AND (home_id IN (SELECT value FROM json_each(?)) OR json_extract(payload_json,'$.destinationId')=?) ORDER BY updated_at DESC LIMIT 1",
-    )
-    .bind(
-      JSON.stringify([context.scope.environment, context.scope.guildId, context.scope.workspaceId]),
-      (await resolveWorkActor(db, context.scope, input.discordUserId))?.personId ?? '',
-      JSON.stringify(relevant.map((h) => h.id)),
-      input.channelId,
-    )
-    .first<{ state: string; reason: string; updated_at: string }>();
-  if (!relevant.length && !row) return setupReply(t('discordWork.none'));
-  if (row)
-    lines.push(
-      row.state === 'held'
-        ? 'An update is waiting for confirmation. It will not be sent again unless the original result can be verified.'
-        : 'An update could not be completed. Check access before trying again.',
-    );
-  return setupReply(
-    lines.join('\n\n') + (!context.enabled ? `\n\n${t('discordWork.disabled')}` : ''),
-  );
-}
-async function unlink(
-  db: Db,
-  providers: WorkProviders,
-  input: WorkPreviewInput,
-  context: WorkEffectContext,
-): Promise<WorkPreviewResult> {
-  const pageId = notionWorkUrl(input.intent.url);
-  const local = (await listWorkConversations(db, context.scope)).filter(
-    (v) => v.threadId === input.channelId,
-  );
-  const overviewHomeIds = new Set(
-    local.filter((v) => v.subject.kind === 'project_plan').map((v) => v.homeId),
-  );
-  const candidates = local.filter(
-    (v) =>
-      v.threadId === input.channelId &&
-      v.subject.kind === 'task' &&
-      (!pageId || v.subject.pageId === pageId),
-  );
-  if (candidates.length > 1)
-    return setupReply(
-      'Several tasks share this discussion. Use /work unlink url: with the Notion task URL.',
-    );
-  const [c] = candidates;
-  const home = c
-    ? await readProjectHome(db, context.scope, c.homeId)
-    : (await listProjectHomes(db, context.scope)).find(
-        (h) =>
-          (h.destination.channelId === input.channelId || overviewHomeIds.has(h.id)) &&
-          (!pageId || h.projectId === pageId),
-      );
-  if (!home) return setupReply(t('discordWork.noHome'));
-  const subject = c?.subject ?? {
-    kind: 'project_plan' as const,
-    sourceId: home.projectSourceId,
-    pageId: home.projectId,
-  };
-  const actor = await authorizeWork(
-    db,
-    providers,
-    {
-      scope: context.scope,
-      subject,
-      taskSourceId: context.taskSourceId,
-      discordUserId: input.discordUserId,
-      action: c ? 'place_work' : 'manage_home',
-    },
-    context.clock(),
-  );
-  if (!actor && !(await resolveWorkActor(db, context.scope, input.discordUserId))?.administrator)
-    return setupReply(t('discordWork.unavailable'));
-  await unlinkWork(
-    db,
-    { scope: context.scope, id: c?.id ?? home.id, generation: c?.generation ?? home.generation },
-    context.clock(),
-  );
-  return setupReply(t('discordWork.unlinked'));
-}
 type Handler = (
   db: Db,
   providers: WorkProviders,
@@ -244,6 +152,45 @@ type Handler = (
   context: WorkEffectContext,
 ) => Promise<WorkPreviewResult>;
 const handlers: Record<string, Handler> = {
+  'create-event-forum': destinationSetup,
+  'create-event-channel': destinationSetup,
+  'create-category': destinationSetup,
+  'dest-confirm': destinationSetup,
+  destinations: destinationSetup,
+  'adopt-project': adoptProject,
+  'adopt-event': adoptEvent,
+  'project-event-tags': projectEventTags,
+  'project-topic': projectTopicSetup,
+  'topic-confirm': projectTopicSetup,
+  'route-tags-start': tagMappingSetup,
+  'route-tags-forum': tagMappingSetup,
+  'route-tags-field': tagMappingSetup,
+  'route-tags-value': tagMappingSetup,
+  'route-tags-save': tagMappingSetup,
+  'project-tag-save': projectEventTags,
+  'project-tag-clear': projectEventTags,
+  'route-project': routeSetup,
+  routes: routeSetup,
+  'routes-more': routeSetup,
+  'route-manage': manageWorkRoute,
+  'route-prepare': manageWorkRoute,
+  'route-enable': manageWorkRoute,
+  'route-enable-confirm': manageWorkRoute,
+  'route-pause': manageWorkRoute,
+  'route-retry-checks': manageWorkRoute,
+  'route-create-event': manageWorkRoute,
+  'route-edit': routeSetup,
+  'route-dest': routeSetup,
+  'route-event': routeSetup,
+  'route-event-project': routeSetup,
+  'route-relation': routeSetup,
+  'route-source': routeSetup,
+  'route-more': routeSetup,
+  'route-next': routeSetup,
+  'route-choice': routeSetup,
+  'route-tag': routeSetup,
+  'route-skip-tag': routeSetup,
+  'route-approve': routeSetup,
   link: linkHome,
   show,
   unlink,

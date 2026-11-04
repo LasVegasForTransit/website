@@ -81,6 +81,7 @@ export function workFailure(error: unknown): WorkOutcome {
       'link_changed',
       'task_project_changed',
       'project_already_linked',
+      'not_eligible',
     ].includes(error.message)
   )
     return { state: 'superseded', reason: error.message };
@@ -91,6 +92,9 @@ export function workFailure(error: unknown): WorkOutcome {
       'project_home_required',
       'message_content_required',
       'forum_tag_required',
+      'invalid_forum_tag',
+      'private_thread_unavailable',
+      'forum_topic_changed',
     ].includes(error.message)
   )
     return { state: 'failed', reason: error.message };
@@ -121,9 +125,15 @@ export async function currentWorkAudience(
   const home = await readProjectHome(db, c.scope, c.homeId);
   if (home?.state !== 'active') return false;
   const current = await providers.discord.inspectDestination(home.destination.channelId);
-  if (current.audienceFingerprint !== home.audienceFingerprint) return false;
+  if (current.audienceFingerprint !== home.audienceFingerprint || current.privateThread === true)
+    return false;
   const thread = await providers.discord.inspectDestination(c.threadId);
-  return thread.canRead && !thread.locked;
+  return (
+    thread.canRead &&
+    thread.privateThread !== true &&
+    !thread.locked &&
+    thread.audienceFingerprint === (c.audienceFingerprint ?? home.audienceFingerprint)
+  );
 }
 export async function refreshWorkCard(
   db: Db,
@@ -342,7 +352,9 @@ export async function recoverWorkComment(
         r.object === 'comment' &&
         typeof r.id === 'string' &&
         notionObject(r.created_by).id === bot.id &&
-        notionObject(r.parent).page_id === c.subject.pageId &&
+        typeof notionObject(r.parent).page_id === 'string' &&
+        String(notionObject(r.parent).page_id).replaceAll('-', '').toLowerCase() ===
+          c.subject.pageId.replaceAll('-', '').toLowerCase() &&
         Array.isArray(r.rich_text) &&
         r.rich_text.some(
           (v) =>

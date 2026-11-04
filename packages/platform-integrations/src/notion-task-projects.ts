@@ -14,7 +14,8 @@ export async function readNotionProjectLeads(
       parent = notionObject(page.parent);
     if (
       page.object !== 'page' ||
-      page.id !== projectId ||
+      typeof page.id !== 'string' ||
+      page.id.replaceAll('-', '').toLowerCase() !== projectId.replaceAll('-', '').toLowerCase() ||
       page.archived === true ||
       page.in_trash === true ||
       typeof parent.data_source_id !== 'string' ||

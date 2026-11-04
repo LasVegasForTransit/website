@@ -13,6 +13,7 @@ import { parseNotionTaskPage } from './notion-task-reader';
 import { readTaskCheckinPolicy } from './notion-task-policy';
 import { notionObject, type NotionTaskSnapshot } from './notion-task-types';
 import { readNotionProjectLeads } from './notion-task-projects';
+import { notionWorkId, workSubject } from './discord-work-input';
 import type { WorkAction, WorkActor, WorkScope, WorkSubject } from './discord-work-types';
 export interface WorkAuthorityProviders {
   notion: NotionTaskClient;
@@ -103,6 +104,17 @@ interface WorkAuthorizationInput {
   generation?: number | undefined;
 }
 type SourceContext = NonNullable<Awaited<ReturnType<typeof readWorkSource>>>;
+function subjectsMatch(stored: unknown, requested: WorkSubject): boolean {
+  const storedSubject = workSubject(stored);
+  const requestedSubject = workSubject(requested);
+  return (
+    !!storedSubject &&
+    !!requestedSubject &&
+    storedSubject.kind === requestedSubject.kind &&
+    storedSubject.sourceId === requestedSubject.sourceId &&
+    storedSubject.pageId === requestedSubject.pageId
+  );
+}
 async function authorizedHome(db: Db, input: WorkAuthorizationInput) {
   const home = input.homeId ? await readProjectHome(db, input.scope, input.homeId) : null;
   if (input.homeId && (!home || ['unlinked', 'paused'].includes(home.state)))
@@ -116,8 +128,7 @@ async function authorizedHome(db: Db, input: WorkAuthorizationInput) {
   if (conversation?.state !== 'active') return { valid: false, home: null };
   if (input.generation !== undefined && conversation.generation !== input.generation)
     return { valid: false, home: null };
-  if (JSON.stringify(conversation.subject) !== JSON.stringify(input.subject))
-    return { valid: false, home: null };
+  if (!subjectsMatch(conversation.subject, input.subject)) return { valid: false, home: null };
   const owner = await readProjectHome(db, input.scope, conversation.homeId);
   return { valid: owner?.state === 'active', home: owner };
 }
@@ -131,7 +142,10 @@ async function taskGrant(
   if (uuid(request.subject.sourceId) !== uuid(source.source.id)) return false;
   const task = await readWorkTask(providers, source, request.subject);
   if (!task) return false;
-  if (home && !task.projectIds.includes(home.projectId)) return false;
+  if (home) {
+    const projectId = notionWorkId(home.projectId);
+    if (!projectId || !task.projectIds.some((id) => notionWorkId(id) === projectId)) return false;
+  }
   if (actor.administrator) return true;
   if (
     request.action !== 'place_work' &&
@@ -170,11 +184,47 @@ async function projectGrant(
   if (!leads) return false;
   return actor.administrator || leads.some((id) => actor.notionUserIds.includes(id));
 }
+async function eventGrant(
+  providers: WorkAuthorityProviders,
+  actor: WorkActor,
+  subject: WorkSubject,
+  home: Awaited<ReturnType<typeof readProjectHome>>,
+): Promise<boolean> {
+  if (!actor.administrator || subject.kind !== 'event_plan') return false;
+  if (
+    home &&
+    (home.kind !== 'event' ||
+      uuid(home.projectId) !== uuid(subject.pageId) ||
+      uuid(home.projectSourceId) !== uuid(subject.sourceId))
+  )
+    return false;
+  const page = notionObject(await providers.notion.readPage(subject.pageId));
+  return (
+    page.object === 'page' &&
+    typeof page.id === 'string' &&
+    uuid(page.id) === uuid(subject.pageId) &&
+    uuid(String(notionObject(page.parent).data_source_id)) === uuid(subject.sourceId) &&
+    page.archived !== true &&
+    page.in_trash !== true
+  );
+}
 function homeSourceMatches(
   home: Awaited<ReturnType<typeof readProjectHome>>,
   sourceId: string,
 ): boolean {
   return !home?.taskSourceId || uuid(home.taskSourceId) === uuid(sourceId);
+}
+async function subjectGrant(
+  providers: WorkAuthorityProviders,
+  source: SourceContext,
+  actor: WorkActor,
+  input: { request: WorkAuthorizationInput; home: Awaited<ReturnType<typeof readProjectHome>> },
+) {
+  const { request, home } = input;
+  if (request.subject.kind === 'task') return taskGrant(providers, source, actor, input);
+  if (request.subject.kind === 'event_plan')
+    return eventGrant(providers, actor, request.subject, home);
+  return projectGrant(providers, source, actor, request.subject);
 }
 export async function authorizeWork(
   db: Db,
@@ -193,10 +243,10 @@ export async function authorizeWork(
     const source = await readWorkSource(db, sourceId, input.scope);
     if (!source || !homeSourceMatches(binding.home, sourceId)) return null;
     if (input.action === 'manage_home' && !actor.administrator) return null;
-    const allowed =
-      input.subject.kind === 'task'
-        ? await taskGrant(providers, source, actor, { request: input, home: binding.home })
-        : await projectGrant(providers, source, actor, input.subject);
+    const allowed = await subjectGrant(providers, source, actor, {
+      request: input,
+      home: binding.home,
+    });
     return allowed ? actor : null;
   } catch (error) {
     if (error instanceof NotionTaskApiError && !error.retryable) return null;

@@ -62,6 +62,8 @@ Choose the guide for the task you need to complete.
   Notion outcomes and close unresolved responses without duplicate writes.
 - [Set up volunteer task check-ins](./guides/set-up-task-check-ins.md) — connect providers,
   configure a paused source, and run an approved member-and-guest trial.
+- [Set up Discord project conversations](./guides/set-up-discord-project-work.md) — configure and
+  operate approved Notion-to-Discord links.
 - [Automate member database backups](./guides/member-database-backups.md) — operate daily private
   backups and quarterly restore tests
 - [Back up the membership database](./guides/back-up-membership-database.md) — export privately and
@@ -154,6 +156,8 @@ The why behind decisions and conventions.
   participate
 - [Events pipeline](./explanation/events-pipeline.md) — how events flow from Google Calendar to the
   site
+- [Discord project work](./explanation/discord-project-work.md) — ownership, routing, identity, and
+  recovery for Notion-linked forums and conversations
 - [Membership program](./explanation/membership-program.md) — proposed participation levels and
   their relationship to implemented membership tools
 - [Innovation ideas registry](./explanation/innovation-ideas.md) — running list of tools, content
