@@ -86,6 +86,17 @@ try {
     'profile interactions must remain native HTML',
   );
   const accounts = page.getByRole('region', { name: 'Accounts', exact: true });
+  assert.equal(
+    await page
+      .getByRole('region', { name: 'Committees', exact: true })
+      .getByRole('link', {
+        name: 'Google and Discord access needs attention',
+        exact: true,
+      })
+      .count(),
+    0,
+    'an unmapped committee must not leave a false warning elsewhere on the profile',
+  );
   await accounts.locator('summary').first().click();
   assert.equal(await accounts.getByText('Access last confirmed', { exact: true }).count(), 1);
   assert.equal(await accounts.getByText('Needs a fresh check', { exact: true }).count(), 0);
@@ -142,6 +153,17 @@ try {
   );
   await markOperationFailed(fixture.db, 'profile-events', 'permission_denied');
   await page.reload();
+  assert.equal(
+    await page
+      .getByRole('region', { name: 'Committees', exact: true })
+      .getByRole('link', {
+        name: 'Google and Discord access needs attention',
+        exact: true,
+      })
+      .count(),
+    1,
+    'a configured failing committee must retain its link to recovery',
+  );
   assert.equal(await accounts.getByText('Access last confirmed', { exact: true }).count(), 0);
   assert.equal(
     await accounts.getByText('Connection needs attention', { exact: true }).isVisible(),
