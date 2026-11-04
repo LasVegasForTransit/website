@@ -10,12 +10,20 @@ import { displayLabel } from '../lib/presentation';
 import type { CommitteeFeedback } from '../lib/committees';
 import { rosterReturn } from '../lib/roster-return';
 import PersonCommitteeAccess from './PersonCommitteeAccess.astro';
+import { discordTarget, type AccessRow } from '@lasvegasfortransit/platform-storage/access-view';
+import { profileNeedsRecovery } from '../lib/profile-account-access';
 interface Props {
   profile: StaffPerson;
+  access: AccessRow[];
   feedback?: CommitteeFeedback;
 }
-const { profile, feedback } = Astro.props;
+const { profile, access, feedback } = Astro.props;
 const staff = Astro.locals.staff!;
+const attention = new Set(
+  access
+    .filter((row) => profileNeedsRecovery(row, staff.accessConfiguration ?? {}))
+    .map((row) => discordTarget(row.targetId).committeeId),
+);
 const current = profile.assignments.filter((item) => !item.ended_at);
 const past = profile.assignments.filter((item) => item.ended_at);
 const available = (await visibleCommittees(staff.db, staff.actor)).filter(
@@ -56,7 +64,7 @@ const endReasons = {
             ) : (
               <strong>{item.committee_name}</strong>
             )}
-            {item.account_update_state === 'retry' && (
+            {attention.has(item.committee_id) && (
               <p class="staff-help">
                 <a href="#accounts">{t('staff.assignments.attention')}</a>
               </p>

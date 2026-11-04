@@ -191,7 +191,7 @@ const combinations = await personMerges(staff.db, staff.actor, person.id);
           currentMember={person.membership_status === 'member'}
           feedback={roleFeedback}
         />
-        <PersonCommittees profile={profile} feedback={feedback} />
+        <PersonCommittees profile={profile} access={accountAccess.items} feedback={feedback} />
         <PersonParticipation
           personId={person.id}
           participation={participation}
