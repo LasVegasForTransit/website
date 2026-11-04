@@ -12,6 +12,7 @@ import {
 } from './discord-work-actions';
 import { eventWorkCard, projectWorkCard } from './discord-work-cards';
 import { queueWorkTagSync } from './discord-work-tag-sync';
+import { queuePlanningNames } from './discord-work-name-sync';
 import { notionObject } from './notion-task-types';
 import type { ProjectHome, WorkConversation, WorkResult } from './discord-work-types';
 
@@ -50,10 +51,10 @@ async function authorizedOrigin(
   );
   if (actor?.personId !== origin.actor_person_id || actor.grantVersion !== origin.grant_version)
     return { kind: 'paused' as const, reason: 'authority_changed' };
-  return { kind: 'ready' as const, id: origin.id };
+  return { kind: 'ready' as const, ...origin };
 }
 
-async function planningPage(providers: WorkProviders, c: WorkConversation) {
+export async function planningPage(providers: WorkProviders, c: WorkConversation) {
   const page = notionObject(await providers.notion.readPage(c.subject.pageId));
   const canonical = (value: unknown) =>
     typeof value === 'string' ? value.replaceAll('-', '').toLowerCase() : '';
@@ -117,6 +118,13 @@ async function currentPlanningConversation(
   return current;
 }
 
+function originAuthority(origin: Awaited<ReturnType<typeof authorizedOrigin>>) {
+  return origin.kind === 'ready' ? origin : null;
+}
+function queuedResult(queued: boolean): WorkResult {
+  return { kind: queued ? 'progress' : 'idle' };
+}
+
 /** Refresh only the bot-authored overview; the forum, post title and human content remain untouched. */
 export async function refreshPlanningOverview(
   db: Db,
@@ -131,15 +139,20 @@ export async function refreshPlanningOverview(
   )
     return { kind: 'idle' };
   const home = await readProjectHome(db, context.scope, c.homeId);
-  if (home?.state !== 'active' || !(await currentWorkAudience(db, providers, c)))
+  if (home?.state !== 'active' || !(await currentWorkAudience(db, providers, c, true)))
     return { kind: 'paused', reason: 'link_or_audience_changed' };
   const origin = await authorizedOrigin(db, providers, c, context);
-  if (origin.kind === 'paused') return origin;
   const page = await planningPage(providers, c);
   if (!page) return { kind: 'paused', reason: 'source_unavailable' };
   const { title } = page;
   const tagQueued = await queueWorkTagSync(db, c, page.lastEditedTime, context);
-  if (home.title === title) return { kind: tagQueued ? 'progress' : 'idle' };
+  const nameQueued = await queuePlanningNames(
+    db,
+    { home, conversation: c, page, origin: originAuthority(origin) },
+    context,
+  );
+  if (origin.kind === 'paused') return origin;
+  if (home.title === title) return queuedResult(tagQueued || nameQueued);
   const card = overviewCard(home, c, title, origin.id);
   const current = await currentPlanningConversation(db, providers, c, context);
   if (!current) return { kind: 'paused', reason: 'link_or_audience_changed' };

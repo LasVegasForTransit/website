@@ -124,9 +124,9 @@ export async function claimWorkOperation(
     stamp = now.toISOString();
   await db
     .prepare(
-      "UPDATE discord_work_operations SET state='held',reason='unconfirmed_effect' WHERE scope_key=? AND state='processing' AND lease_expires_at<=?",
+      "UPDATE discord_work_operations SET state='held',reason='unconfirmed_effect',updated_at=? WHERE scope_key=? AND state='processing' AND lease_expires_at<=?",
     )
-    .bind(key, stamp)
+    .bind(stamp, key, stamp)
     .run();
   await db
     .prepare(
@@ -145,6 +145,7 @@ export async function claimWorkOperation(
       `UPDATE discord_work_operations SET state='processing',claim_token=?,lease_expires_at=?,attempts=attempts+1,updated_at=? WHERE id=(
     SELECT id FROM discord_work_operations o WHERE scope_key=? AND state IN ('queued','retryable') AND next_attempt_at<=? AND attempts<5 AND ${CURRENT}
     AND (json_extract(payload_json,'$.automatic') IS NOT 1 OR EXISTS(SELECT 1 FROM discord_work_conversations c WHERE c.id=o.conversation_id AND json_extract(c.data_json,'$.windowUpperId') IS NULL))
+    AND (kind<>'refresh' OR json_extract(payload_json,'$.intent') IS NOT 'name-sync' OR NOT EXISTS(SELECT 1 FROM discord_work_operations other JOIN discord_work_conversations a ON a.id=o.conversation_id AND a.scope_key=o.scope_key JOIN discord_work_conversations b ON b.id=other.conversation_id AND b.scope_key=other.scope_key JOIN discord_project_homes ah ON ah.id=a.home_id AND ah.scope_key=a.scope_key JOIN discord_project_homes bh ON bh.id=b.home_id AND bh.scope_key=b.scope_key WHERE other.scope_key=o.scope_key AND other.id<>o.id AND other.kind='refresh' AND other.state IN ('processing','held') AND json_extract(other.payload_json,'$.intent')='name-sync' AND json_extract(other.payload_json,'$.target')=json_extract(o.payload_json,'$.target') AND ((json_extract(o.payload_json,'$.target')='thread' AND a.thread_id=b.thread_id) OR (json_extract(o.payload_json,'$.target')='forum' AND ah.destination_id=bh.destination_id))))
     AND (kind<>'comment' OR NOT EXISTS(SELECT 1 FROM discord_work_operations earlier WHERE earlier.scope_key=o.scope_key AND earlier.conversation_id=o.conversation_id AND earlier.kind='comment' AND earlier.state IN ('held','processing','queued','retryable') AND (coalesce(json_extract(earlier.payload_json,'$.message.createdAt'),earlier.created_at),earlier.source_key)<(coalesce(json_extract(o.payload_json,'$.message.createdAt'),o.created_at),o.source_key)))
     ORDER BY coalesce(json_extract(payload_json,'$.message.createdAt'),created_at),length(json_extract(payload_json,'$.message.id')),json_extract(payload_json,'$.message.id'),id LIMIT 1) RETURNING *`,
     )

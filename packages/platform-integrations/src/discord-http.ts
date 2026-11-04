@@ -7,6 +7,14 @@ import {
   type DiscordRateLimit,
 } from './discord-types';
 const ENDPOINT = 'https://discord.com/api/v10';
+class DispatchRejected extends Error {
+  constructor(readonly original: unknown) {
+    super('Discord request dispatch was rejected');
+  }
+}
+function ensureNotAborted(signal: AbortSignal): void {
+  if (signal.aborted) throw new DiscordApiFailure('provider_unavailable');
+}
 interface RequestInput {
   method?: 'GET' | 'PUT' | 'DELETE' | 'POST' | 'PATCH';
   authorization: string;
@@ -24,6 +32,7 @@ interface RequestInput {
   unknownMember?: boolean;
   unknownChannel?: boolean;
   responseSize?: 'guild-members' | 'guild-roles' | 'work-history';
+  beforeDispatch?: (() => Promise<void>) | undefined;
 }
 function knownMissing(response: Response, input: RequestInput, data: unknown): boolean {
   if (response.status !== 404) return false;
@@ -116,6 +125,7 @@ export class DiscordHttp {
         }),
       ]);
     } catch (error) {
+      if (error instanceof DispatchRejected) throw error.original;
       if (error instanceof DiscordApiFailure) throw error;
       throw new DiscordApiFailure('provider_unavailable');
     } finally {
@@ -127,6 +137,12 @@ export class DiscordHttp {
     if (input.reason) headers.set('X-Audit-Log-Reason', encodeURIComponent(input.reason));
     if (input.body) headers.set('Content-Type', 'application/x-www-form-urlencoded');
     if (input.jsonBody) headers.set('Content-Type', 'application/json');
+    try {
+      await input.beforeDispatch?.();
+    } catch (error) {
+      throw new DispatchRejected(error);
+    }
+    ensureNotAborted(signal);
     const response = await this.fetcher(`${ENDPOINT}${path}`, {
       method: input.method ?? 'GET',
       headers,
@@ -135,7 +151,7 @@ export class DiscordHttp {
       ...(input.body ? { body: input.body } : {}),
       ...(input.jsonBody ? { body: JSON.stringify(input.jsonBody) } : {}),
     });
-    if (signal.aborted) throw new DiscordApiFailure('provider_unavailable');
+    ensureNotAborted(signal);
     if (response.status >= 300 && response.status < 400)
       throw new DiscordApiFailure('invalid_response');
     return await this.result(response, input, signal);

@@ -14,6 +14,11 @@ export interface WorkDestination {
   parentId: string | null;
 }
 export type WorkState = 'preview' | 'active' | 'paused' | 'unlinked';
+export interface WorkNameAuthority {
+  actor_person_id: string;
+  actor_discord_id: string;
+  grant_version: string;
+}
 export interface ProjectHome {
   kind?: 'project' | 'event';
   id: string;
@@ -27,6 +32,10 @@ export interface ProjectHome {
   state: WorkState;
   generation: number;
   title?: string | undefined;
+  managedName?: string | undefined;
+  managedNameReason?: string | undefined;
+  nameSyncRevision?: string | undefined;
+  managedNameAuthority?: WorkNameAuthority | undefined;
   summaryMessageId?: string | undefined;
   summaryChannelId?: string | undefined;
   overviewPin?: 'pinned' | 'needs_attention' | undefined;
@@ -55,6 +64,10 @@ export interface WorkConversation {
   footerBlockIds: string[];
   managedForumTags?: { routeId: string; tagIds: string[] } | undefined;
   title?: string | undefined;
+  managedName?: string | undefined;
+  managedNameReason?: string | undefined;
+  nameSyncRevision?: string | undefined;
+  managedNameAuthority?: WorkNameAuthority | undefined;
   reason?: string | undefined;
 }
 export interface WorkOperationInput {

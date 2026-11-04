@@ -8,6 +8,7 @@ import { routeSetup } from './discord-work-route-setup';
 import { manageWorkRoute } from './discord-work-route-manage';
 import { destinationSetup } from './discord-work-destination-setup';
 import { show, unlink } from './discord-work-link-controls';
+import { enableNameSync } from './discord-work-name-opt-in';
 import type { Db } from '@lasvegasfortransit/platform-storage/db';
 import {
   readProjectHome,
@@ -193,6 +194,8 @@ const handlers: Record<string, Handler> = {
   'route-approve': routeSetup,
   link: linkHome,
   show,
+  'sync-name': enableNameSync,
+  'resolve-name': enableNameSync,
   unlink,
   confirm,
   tag,

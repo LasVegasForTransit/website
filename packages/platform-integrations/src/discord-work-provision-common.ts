@@ -8,6 +8,24 @@ import type { CreatedConversation, DestinationInspection } from './discord-work-
 import type { DiscordTaskMessage } from './notion-task-cards';
 type Payload = Record<string, unknown>;
 
+export function priorCreatedName(prior: Payload): { createdName?: string } {
+  return typeof prior.createdName === 'string' ? { createdName: prior.createdName } : {};
+}
+
+export function managedCreatedName(
+  p: Payload,
+  kind: string,
+  createdName: string | undefined,
+  forumOnly = false,
+): { managedName?: string } {
+  return createdName &&
+    !workString(p.adoptThreadId) &&
+    kind !== 'thread' &&
+    (!forumOnly || kind === 'forum')
+    ? { managedName: createdName }
+    : {};
+}
+
 export function markedCard(card: DiscordTaskMessage, id: string): DiscordTaskMessage {
   const result = structuredClone(card);
   for (const container of result.components)
@@ -77,6 +95,7 @@ export async function createOrRecover(
     created = {
       threadId: prior.threadId,
       starterMessageId: prior.starterMessageId,
+      ...priorCreatedName(prior),
       ...(typeof prior.cardChannelId === 'string' ? { cardChannelId: prior.cardChannelId } : {}),
     };
   else if (d.destination.kind === 'thread') {

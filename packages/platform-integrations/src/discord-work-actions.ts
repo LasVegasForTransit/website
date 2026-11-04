@@ -121,6 +121,7 @@ export async function currentWorkAudience(
   db: Db,
   providers: WorkProviders,
   c: WorkConversation,
+  allowLocked = false,
 ): Promise<boolean> {
   const home = await readProjectHome(db, c.scope, c.homeId);
   if (home?.state !== 'active') return false;
@@ -131,7 +132,7 @@ export async function currentWorkAudience(
   return (
     thread.canRead &&
     thread.privateThread !== true &&
-    !thread.locked &&
+    (allowLocked || !thread.locked) &&
     thread.audienceFingerprint === (c.audienceFingerprint ?? home.audienceFingerprint)
   );
 }

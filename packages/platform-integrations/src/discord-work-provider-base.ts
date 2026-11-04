@@ -10,6 +10,7 @@ import {
 import type { DiscordTaskMessage } from './notion-task-cards';
 import type { WorkDestination, WorkMessage } from './discord-work-types';
 export interface DestinationInspection {
+  createdName?: string | undefined;
   destination: WorkDestination;
   isCategory?: boolean;
   privateThread?: boolean | undefined;
@@ -24,6 +25,7 @@ export interface DestinationInspection {
   tags: { id: string; name: string }[];
 }
 export interface CreatedConversation {
+  createdName?: string | undefined;
   threadId: string;
   starterMessageId: string;
   cardChannelId?: string;
@@ -130,6 +132,21 @@ export class DiscordWorkProviderBase {
   }
   protected write() {
     if (!this.config.allowWrites) throw new Error('work_sending_disabled');
+  }
+  async readPlanningName(channelId: string): Promise<string> {
+    const channel = await this.channel(channelId);
+    if (typeof channel.name !== 'string') throw new DiscordApiFailure('invalid_response');
+    return channel.name;
+  }
+  async pinWorkMessage(channelId: string, messageId: string): Promise<void> {
+    this.write();
+    if (!discordId(messageId)) throw new DiscordApiFailure('invalid_response');
+    await this.channel(channelId);
+    await this.http.request(`/channels/${channelId}/messages/pins/${messageId}`, {
+      method: 'PUT',
+      authorization: this.authorization,
+      reason: 'Pin the project overview',
+    });
   }
   protected async channel(id: string) {
     if (!discordId(id)) throw new DiscordApiFailure('invalid_response');
@@ -255,7 +272,7 @@ export class DiscordWorkProviderBase {
     name: string;
     projectUrl: string;
     operationId: string;
-  }): Promise<WorkDestination> {
+  }): Promise<WorkDestination & { createdName?: string }> {
     this.write();
     const category = await this.channel(input.categoryId);
     if (category.type !== 4) throw new Error('category_required');
@@ -286,7 +303,12 @@ export class DiscordWorkProviderBase {
       created.parent_id !== input.categoryId
     )
       throw new DiscordApiFailure('invalid_response');
-    return { kind: 'forum', channelId: created.id, parentId: input.categoryId };
+    return {
+      kind: 'forum',
+      channelId: created.id,
+      parentId: input.categoryId,
+      ...(typeof created.name === 'string' ? { createdName: created.name } : {}),
+    };
   }
   /** Create a route destination only after the caller has durably approved and claimed the request. */
   async createRouteDestination(input: {
