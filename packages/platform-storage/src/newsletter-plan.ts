@@ -152,7 +152,7 @@ export function newsletterPlanGuard(
   };
 }
 
-/** Pending evidence delays this held account without starving the next account or recording success. */
+/** Unknown membership waits for new evidence; actionable choices retain their short retry. */
 export async function deferPendingNewsletterChoice(
   db: Db,
   plan: NewsletterPlan,
@@ -161,11 +161,14 @@ export async function deferPendingNewsletterChoice(
 ): Promise<boolean> {
   if (plan.deletedAt !== null) return false;
   const pending = pendingEvidence(plan, lease.publicationId);
+  const review = plan.desired === 'unknown';
   const result = await db
     .prepare(
-      `UPDATE newsletter_sync_jobs SET state='queued',next_attempt_at=? WHERE person_id=? AND (${SNAPSHOT})=? AND lease_token=? AND lease_expires_at>? AND ${pending.sql}`,
+      `UPDATE newsletter_sync_jobs SET state=?,last_failure=CASE WHEN ? THEN 'consent_evidence_needed' ELSE last_failure END,next_attempt_at=? WHERE person_id=? AND (${SNAPSHOT})=? AND lease_token=? AND lease_expires_at>? AND ${pending.sql}`,
     )
     .bind(
+      review ? 'needs_review' : 'queued',
+      Number(review),
       new Date(now.getTime() + 60_000).toISOString(),
       plan.personId,
       plan.personId,
