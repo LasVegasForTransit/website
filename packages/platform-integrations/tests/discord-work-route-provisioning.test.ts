@@ -10,7 +10,10 @@ import { processWorkProvision } from '../src/discord-work-provision';
 import { processWorkAction } from '../src/discord-work-actions';
 import { runWorkPreview } from '../src/discord-work-setup';
 import { refreshPlanningOverview } from '../src/discord-work-project-refresh';
-import { readWorkConversation } from '@lasvegasfortransit/platform-storage/discord-work-links';
+import {
+  readProjectHome,
+  readWorkConversation,
+} from '@lasvegasfortransit/platform-storage/discord-work-links';
 import {
   discordUserId,
   projectId,
@@ -61,7 +64,12 @@ for (const race of [false, true]) {
         }),
       createProjectForum: () => {
         forums++;
-        return Promise.resolve({ kind: 'forum', channelId: forumId, parentId: categoryId });
+        return Promise.resolve({
+          kind: 'forum',
+          channelId: forumId,
+          parentId: categoryId,
+          createdName: 'Project',
+        });
       },
       createTaskConversation: (input: { card: unknown }) => {
         const checkpoint = db.raw
@@ -76,7 +84,12 @@ for (const race of [false, true]) {
         );
         posts++;
         overviewCard = input.card;
-        return Promise.resolve({ threadId, starterMessageId: threadId, cardChannelId: threadId });
+        return Promise.resolve({
+          threadId,
+          starterMessageId: threadId,
+          cardChannelId: threadId,
+          createdName: 'Project',
+        });
       },
       pinForumPost: (parent: string, thread: string) => {
         assert.equal(parent, forumId);
@@ -258,6 +271,11 @@ for (const race of [false, true]) {
       assert.ok(conversationRow);
       const conversation = await readWorkConversation(db, workScope, String(conversationRow.id));
       assert.ok(conversation);
+      assert.equal(conversation.managedName, 'Project');
+      assert.equal(
+        (await readProjectHome(db, workScope, conversation.homeId))?.managedName,
+        'Project',
+      );
       let edits = 0,
         editedCard: unknown;
       Object.assign(discord, {

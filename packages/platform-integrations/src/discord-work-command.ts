@@ -27,6 +27,18 @@ export const WORK_COMMAND: GuildChatCommand = {
     },
     {
       type: 1,
+      name: 'sync-name',
+      description: 'Let Notion manage this linked forum or post name',
+      options: [{ type: 3, name: 'url', description: 'Notion page to identify the link' }],
+    },
+    {
+      type: 1,
+      name: 'resolve-name',
+      description: 'Resolve a held name update after reviewing Discord',
+      options: [{ type: 3, name: 'url', description: 'Notion page to identify the link' }],
+    },
+    {
+      type: 1,
       name: 'adopt-project',
       description: 'Connect this existing post to a project',
       options: [{ type: 3, name: 'url', description: 'Notion project page URL', required: true }],

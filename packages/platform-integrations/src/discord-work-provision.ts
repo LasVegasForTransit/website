@@ -26,7 +26,12 @@ import type {
 import { assertProvisionCurrent, checkpoint } from './discord-work-provision-checkpoint';
 import { destinationFor } from './discord-work-provision-destination';
 import { IneligibleWorkPage, refreshProvisionRoute } from './discord-work-provision-route';
-import { markedCard, skeleton, createOrRecover } from './discord-work-provision-common';
+import {
+  managedCreatedName,
+  markedCard,
+  skeleton,
+  createOrRecover,
+} from './discord-work-provision-common';
 import { provisionHome } from './discord-work-provision-home';
 type Payload = Record<string, unknown>;
 async function provisionTask(
@@ -137,6 +142,7 @@ async function createEventConversation(
     ...created,
     activationId: created.starterMessageId,
     cursorId: created.starterMessageId,
+    ...managedCreatedName(p, target.destination.kind, created.createdName),
   };
   if (!(await saveWorkConversation(db, ready, 0, context.clock())))
     throw new Error('conversation_already_linked');

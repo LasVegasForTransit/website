@@ -84,6 +84,8 @@ function command(data: Record<string, unknown>): WorkIntent | null {
       'adopt-event',
       'adopt-project',
       'show',
+      'sync-name',
+      'resolve-name',
       'unlink',
       'routes',
       'route-project',

@@ -8,6 +8,82 @@ const scope = {
   workspaceId: 'workspace',
 };
 const stamp = new Date('2026-10-22T12:00:00Z');
+
+void test('name writes to the same Discord thread are serialized across links', async () => {
+  const links = await import('../src/discord-work-links');
+  const operations = await import('../src/discord-work-operations');
+  const db = memoryDb();
+  try {
+    const home = {
+      id: 'names-home',
+      scope,
+      projectSourceId: 'projects',
+      projectId: 'project',
+      destination: { kind: 'forum' as const, channelId: '333333333333333333', parentId: null },
+      taskParent: null,
+      audienceFingerprint: 'audience',
+      approvedBy: 'person',
+      state: 'active' as const,
+      generation: 1,
+    };
+    await links.saveProjectHome(db, home, 0, stamp);
+    const conversation = {
+      id: 'name-one',
+      scope,
+      subject: { kind: 'event_plan' as const, sourceId: 'events', pageId: 'one' },
+      homeId: home.id,
+      placementProjectId: 'one',
+      threadId: '555555555555555555',
+      starterMessageId: '555555555555555555',
+      mode: 'selected' as const,
+      state: 'active' as const,
+      generation: 1,
+      activationId: '555555555555555555',
+      cursorId: '555555555555555555',
+      windowUpperId: null,
+      windowBeforeId: null,
+      footerBlockIds: [],
+    };
+    await links.saveWorkConversation(db, conversation, 0, stamp);
+    await links.saveWorkConversation(
+      db,
+      { ...conversation, id: 'name-two', subject: { ...conversation.subject, pageId: 'two' } },
+      0,
+      stamp,
+    );
+    for (const id of ['name-one', 'name-two'])
+      await operations.enqueueWorkOperation(
+        db,
+        {
+          id: `op-${id}`,
+          scope,
+          homeId: home.id,
+          conversationId: id,
+          generation: 1,
+          kind: 'refresh',
+          sourceKey: `sync-${id}`,
+          actorPersonId: null,
+          actorDiscordId: '111111111111111111',
+          grantVersion: 'grant',
+          originalAuthorId: '111111111111111111',
+          payload: { intent: 'name-sync', target: 'thread' },
+        },
+        stamp,
+      );
+    const first = await operations.claimWorkOperation(db, scope, stamp);
+    assert.ok(first);
+    assert.equal(await operations.claimWorkOperation(db, scope, stamp), null);
+    await operations.settleWorkOperation(
+      db,
+      { id: first.id, token: first.claim_token },
+      { state: 'confirmed' },
+      stamp,
+    );
+    assert.ok(await operations.claimWorkOperation(db, scope, stamp));
+  } finally {
+    db.raw.close();
+  }
+});
 void test('shared links fence generations, isolate guilds and cancel queued writes on unlink', async () => {
   const links = await import('../src/discord-work-links').catch(() => null);
   const operations = await import('../src/discord-work-operations').catch(() => null);

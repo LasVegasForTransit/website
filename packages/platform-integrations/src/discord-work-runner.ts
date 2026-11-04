@@ -18,6 +18,7 @@ import { processWorkProvision } from './discord-work-provision';
 import { processWorkDestination } from './discord-work-destination';
 import { processWorkTopic } from './discord-work-project-topic';
 import { processWorkTagSync } from './discord-work-tag-sync';
+import { processWorkNameSync } from './discord-work-name-sync';
 import { refreshPlanningOverview } from './discord-work-project-refresh';
 import { notionObject } from './notion-task-types';
 import { ingestWorkConversation } from './discord-work-ingest';
@@ -43,6 +44,8 @@ function dispatchClaimedOperation(
   }
   if (operation.kind === 'refresh' && intent === 'tag-sync')
     return processWorkTagSync(db, providers, operation, context);
+  if (operation.kind === 'refresh' && intent === 'name-sync')
+    return processWorkNameSync(db, providers, operation, context);
   return processWorkAction(db, providers, operation, context);
 }
 async function effects(

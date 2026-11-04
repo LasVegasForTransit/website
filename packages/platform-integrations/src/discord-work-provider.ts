@@ -3,6 +3,11 @@ import { digestToken } from '@lasvegasfortransit/platform-core/random-token';
 import { object, discordId, DiscordApiFailure } from './discord-types';
 import { DiscordWorkProviderBase } from './discord-work-provider-base';
 import {
+  validatePlanningName,
+  validPlanningNameResult,
+  type PlanningNameUpdate,
+} from './discord-work-provider-names';
+import {
   validTagSet,
   validPinnedThread,
   validPinnedResponse,
@@ -27,6 +32,24 @@ function requireCreation(input: ConversationCreateInput): void {
     throw new Error('invalid_forum_tag');
 }
 export class DiscordWorkClient extends DiscordWorkProviderBase {
+  /** Discord does not offer an atomic conditional channel update. */
+  async updatePlanningName(input: PlanningNameUpdate): Promise<void> {
+    this.write();
+    const channel = await this.channel(input.channelId);
+    validatePlanningName(channel, input);
+    if (channel.name === input.name) return;
+    const updated = object(
+      await this.http.request(`/channels/${input.channelId}`, {
+        method: 'PATCH',
+        authorization: this.authorization,
+        reason: 'Update the linked planning name',
+        jsonBody: { name: input.name },
+        beforeDispatch: input.beforeWrite,
+      }),
+    );
+    if (!validPlanningNameResult(updated, input, this.config.guildId))
+      throw new DiscordApiFailure('invalid_response');
+  }
   /** Discord does not provide an atomic compare-and-set for channel topics. */
   async readForumTopic(forumId: string): Promise<string | null> {
     const forum = await this.channel(forumId);
@@ -111,16 +134,6 @@ export class DiscordWorkClient extends DiscordWorkProviderBase {
     );
     if (!updatedTagsMatch(updated, input, this.config.guildId))
       throw new DiscordApiFailure('invalid_response');
-  }
-  async pinWorkMessage(channelId: string, messageId: string): Promise<void> {
-    this.write();
-    if (!discordId(messageId)) throw new DiscordApiFailure('invalid_response');
-    await this.channel(channelId);
-    await this.http.request(`/channels/${channelId}/messages/pins/${messageId}`, {
-      method: 'PUT',
-      authorization: this.authorization,
-      reason: 'Pin the project overview',
-    });
   }
   async pinForumPost(forumId: string, threadId: string): Promise<void> {
     this.write();
@@ -236,7 +249,11 @@ export class DiscordWorkClient extends DiscordWorkProviderBase {
         object(row.message).id !== row.id
       )
         throw new DiscordApiFailure('invalid_response');
-      return { threadId: row.id, starterMessageId: row.id };
+      return {
+        threadId: row.id,
+        starterMessageId: row.id,
+        ...(typeof row.name === 'string' ? { createdName: row.name } : {}),
+      };
     }
     if (!d.canCreateThreads) throw new DiscordApiFailure('permission_denied');
     const starter = await this.sendCard(channelId, input.card, input.operationId);
@@ -255,7 +272,12 @@ export class DiscordWorkClient extends DiscordWorkProviderBase {
     );
     if (row.id !== starter || row.parent_id !== channelId || row.guild_id !== this.config.guildId)
       throw new DiscordApiFailure('invalid_response');
-    return { threadId: starter, starterMessageId: starter, cardChannelId: channelId };
+    return {
+      threadId: starter,
+      starterMessageId: starter,
+      cardChannelId: channelId,
+      ...(typeof row.name === 'string' ? { createdName: row.name } : {}),
+    };
   }
   findLinkedEvent(forumId: string, pageId: string) {
     return discoverLinkedEvent({
@@ -318,7 +340,12 @@ export class DiscordWorkClient extends DiscordWorkProviderBase {
       row.guild_id !== this.config.guildId
     )
       throw new DiscordApiFailure('invalid_response');
-    return { threadId: row.id, starterMessageId: row.id, cardChannelId: input.channelId };
+    return {
+      threadId: row.id,
+      starterMessageId: row.id,
+      cardChannelId: input.channelId,
+      ...(typeof row.name === 'string' ? { createdName: row.name } : {}),
+    };
   }
   async sendCard(
     channelId: string,

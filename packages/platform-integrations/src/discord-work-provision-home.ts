@@ -12,7 +12,12 @@ import { workSubject, workString } from './discord-work-input';
 import { notionObject } from './notion-task-types';
 import { assertProvisionCurrent, checkpoint } from './discord-work-provision-checkpoint';
 import { destinationFor } from './discord-work-provision-destination';
-import { markedCard, skeleton } from './discord-work-provision-common';
+import {
+  managedCreatedName,
+  markedCard,
+  priorCreatedName,
+  skeleton,
+} from './discord-work-provision-common';
 import type { WorkProviders, WorkEffectContext } from './discord-work-actions';
 import type { WorkOperation, WorkConversation, ProjectHome, WorkActor } from './discord-work-types';
 import type { CreatedConversation } from './discord-work-provider';
@@ -63,6 +68,7 @@ async function overview(
     created = {
       threadId: prior.threadId,
       starterMessageId: prior.starterMessageId,
+      ...priorCreatedName(prior),
       ...(typeof prior.cardChannelId === 'string' ? { cardChannelId: prior.cardChannelId } : {}),
     };
   else if (target.destination.kind === 'forum')
@@ -88,6 +94,7 @@ async function overview(
   return {
     ...c,
     ...created,
+    ...managedCreatedName(p, target.destination.kind, created.createdName, true),
     activationId: created.starterMessageId,
     cursorId: created.starterMessageId,
   };
@@ -196,6 +203,7 @@ export async function provisionHome(
     state: 'active',
     generation: 1,
     title: String(p.title),
+    ...(p.createForum === true && d.createdName ? { managedName: d.createdName } : {}),
   };
   const existing = await readProjectHome(db, context.scope, id);
   if (staleProjectHome(existing, op.generation)) throw new Error('link_changed');

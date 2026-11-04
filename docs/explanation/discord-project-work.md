@@ -71,8 +71,11 @@ copy a complete planning page into Discord.
 
 The current implementation can set an existing forum topic after explicit review, but Discord does
 not provide an atomic conditional topic update. An edit made between the final read and write can
-still be overwritten. Project and event title changes refresh a bot-authored card; forum and thread
-names are not automatically renamed, and an event's date is not synchronized to that card. An
+still be overwritten. Project and event title changes refresh the bot-authored card and names of
+bot-created forums and posts. Existing names are managed only after an administrator opts in.
+Automatic renaming stops if the observed name differs from the last managed name, and it does not
+reopen archived posts. Discord has no conditional rename operation, so an edit between the final
+read and write can still be overwritten. An event's date is not synchronized to the card. An
 administrator can map one Notion selection or status to tags for existing forum posts. For project
 routes, each forum needs the mapped tag names. Discord cannot conditionally update a tag set, so an
 edit concurrent with the final read and write may be overwritten. Provider access and the real

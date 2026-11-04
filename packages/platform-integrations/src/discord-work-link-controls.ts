@@ -11,6 +11,7 @@ import { authorizeWork, resolveWorkActor } from './discord-work-authority';
 import { notionWorkUrl } from './discord-work-input';
 import { taskMarkdown } from './notion-task-cards';
 import { setupReply } from './discord-work-setup-common';
+import { nameSyncNotices } from './discord-work-name-status';
 import type { WorkProviders, WorkEffectContext } from './discord-work-actions';
 import type { WorkPreviewInput, WorkPreviewResult } from './discord-work-interactions';
 
@@ -54,13 +55,18 @@ async function conversationStatusLines(
       .first<{ state: string }>();
     const status = backlinkStatus(backlink);
     lines.push(
-      `**${conversationLabel(c.subject.kind)}**\nhttps://discord.com/channels/${context.scope.guildId}/${c.threadId}\n${status}${conversationNotice(c.reason)}`,
+      `**${conversationLabel(c.subject.kind)}**\nhttps://discord.com/channels/${context.scope.guildId}/${c.threadId}\n${status}${conversationNotice(c.reason)}${c.managedNameReason === 'planning_name_changed' ? '\nAutomatic post renaming stopped because an organizer changed its name.' : ''}`,
     );
   }
   return lines;
 }
 
 const footerReasons: Record<string, string> = {
+  planning_name_changed: 'Automatic renaming stopped because an organizer changed the name.',
+  planning_post_archived:
+    'The post is archived. Its name was left unchanged; reopen it yourself and run /work sync-name to retry.',
+  planning_post_locked:
+    'The post is locked. Its name was left unchanged; unlock it yourself and run /work sync-name to retry.',
   forum_topic_changed:
     'The forum topic changed after review. Run /work project-topic to review it again.',
   tag_mapping_unavailable:
@@ -95,7 +101,7 @@ function moreLinksExist(
 
 export async function show(
   db: Db,
-  _providers: WorkProviders,
+  providers: WorkProviders,
   input: WorkPreviewInput,
   context: WorkEffectContext,
 ): Promise<WorkPreviewResult> {
@@ -116,9 +122,16 @@ export async function show(
   const relevant = allRelevant.slice(0, 5);
   const lines = relevant.map(
     (h) =>
-      `**${taskMarkdown(h.title ?? (h.kind === 'event' ? 'Event' : 'Project'))}** · ${h.state === 'active' ? 'Linked' : 'Paused'}\nhttps://discord.com/channels/${context.scope.guildId}/${h.kind === 'event' ? (here.find((c) => c.homeId === h.id)?.threadId ?? h.destination.channelId) : h.destination.channelId}${h.overviewPin === 'needs_attention' ? '\nThe overview message pin could not be confirmed. Check the post and Discord permissions.' : ''}${h.overviewPostPin === 'needs_attention' ? '\nThe overview post pin could not be confirmed. Check the forum and Manage Threads permission.' : ''}`,
+      `**${taskMarkdown(h.title ?? (h.kind === 'event' ? 'Event' : 'Project'))}** · ${h.state === 'active' ? 'Linked' : 'Paused'}\nhttps://discord.com/channels/${context.scope.guildId}/${h.kind === 'event' ? (here.find((c) => c.homeId === h.id)?.threadId ?? h.destination.channelId) : h.destination.channelId}${h.overviewPin === 'needs_attention' ? '\nThe overview message pin could not be confirmed. Check the post and Discord permissions.' : ''}${h.overviewPostPin === 'needs_attention' ? '\nThe overview post pin could not be confirmed. Check the forum and Manage Threads permission.' : ''}${h.managedNameReason === 'planning_name_changed' ? '\nAutomatic forum renaming stopped because an organizer changed its name.' : ''}`,
   );
   lines.push(...(await conversationStatusLines(db, context, here)));
+  lines.push(
+    ...(await nameSyncNotices(db, providers, {
+      input,
+      context,
+      data: { homes: relevant, conversations: here },
+    })),
+  );
   if (moreLinksExist(foundHomes, foundHere, allRelevant))
     lines.push(
       'More links exist in this location. Use /work show url: with a Notion page to inspect a specific record.',
@@ -128,6 +141,7 @@ export async function show(
       `SELECT o.state,o.reason,o.updated_at FROM discord_work_operations o
        WHERE o.scope_key=? AND o.actor_person_id=? AND o.state IN ('held','failed')
        AND (o.home_id IN (SELECT value FROM json_each(?)) OR json_extract(o.payload_json,'$.destinationId')=?)
+       AND coalesce(json_extract(o.payload_json,'$.intent'),'') <> 'name-sync'
        AND (coalesce(json_extract(o.payload_json,'$.intent'),'') <> 'project-topic' OR NOT EXISTS (
          SELECT 1 FROM discord_work_operations later WHERE later.scope_key=o.scope_key AND later.home_id=o.home_id
          AND later.state='confirmed' AND json_extract(later.payload_json,'$.intent')='project-topic'

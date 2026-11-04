@@ -200,9 +200,25 @@ requested topic is visible in the same approved forum. Otherwise, inspect the fo
 maintainer; do not submit another request or change the held operation until its outcome has been
 reconciled.
 
-When a project or event title changes in Notion, scheduled refresh can update the bot-authored link
-message after rechecking the original administrator and Discord audience. It does not rename the
-forum or the post, or edit messages written by people.
+When a project or event title changes in Notion, scheduled refresh updates the bot-authored link
+message and the names of forums and posts created by the bot, after rechecking administrator access
+and the Discord audience. Existing names stay under organizer control until an administrator runs
+`/work sync-name` in the linked forum or post; include the Notion page URL when there is more than
+one link. The command also resets the baseline when an administrator wants to resume name sync.
+
+The worker stops managing a name if it differs from the last name it set. Use `/work show` to find
+the issue, and use `/work sync-name` only if the name should follow Notion again. It does not reopen
+archived posts to rename them. If a post is archived or locked, reopen or unlock it yourself before
+running `/work sync-name` to retry. Name changes require the bot's applicable Manage Channels or
+thread permissions. A failed rename does not remove the link. Discord cannot make the name check and
+update atomic, so an organizer's edit between the final read and write can still be overwritten.
+
+If `/work show` reports an unconfirmed name update, inspect the current Discord name and decide
+whether it is safe to use as the new baseline. Then run `/work resolve-name` in that forum or post,
+adding the Notion page URL if needed. This retires the held update and uses the observed name for
+future sync. If the result remains uncertain, leave it held rather than resolving it. Resolution is
+available after the held update has been quiet for at least 15 seconds; review the channel again
+before using it. A delayed Discord request cannot be ruled out with certainty.
 
 The jobs worker can reconcile active routes in small pages, retaining its place after temporary
 Notion errors. Project and event requests are rechecked before the worker queues provisioning.
