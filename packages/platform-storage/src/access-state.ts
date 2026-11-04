@@ -39,7 +39,6 @@ function matchesCurrent(
     (!google || observation.identityEmail === row.googleEmail) &&
     observation.generation === row.generation &&
     observation.expectedAccess === Boolean(row.expectedAccess) &&
-    Date.parse(observation.expiresAt) > now.getTime() &&
     Date.parse(observation.observedAt) <= now.getTime()
   );
 }
@@ -95,6 +94,13 @@ export function observedAccess(
     })
   )
     return unknown('stale', observation.observedAt);
+  if (!(Date.parse(observation.expiresAt) > now.getTime()))
+    return {
+      ...unknown('stale', observation.observedAt),
+      ...(Number.isFinite(Date.parse(observation.expiresAt)) && observation.state !== 'unknown'
+        ? { lastConfirmedState: observation.state }
+        : {}),
+    };
   return {
     state: observation.state,
     reason: observation.state === 'unknown' ? (observation.failure ?? 'unknown') : null,

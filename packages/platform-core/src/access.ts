@@ -13,6 +13,8 @@ export interface ProviderConfiguration {
 export type AccessConfiguration = Partial<Record<AccessProvider, ProviderConfiguration>>;
 export interface ProviderAccess {
   state: ProviderState;
+  /** Display history only; never fresh proof for an access decision. */
+  lastConfirmedState?: 'granted' | 'absent';
   reason:
     | 'ambiguous_account'
     | 'not_linked'

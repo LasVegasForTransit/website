@@ -167,9 +167,9 @@ export async function exerciseMemberSummary(
   await page.reload();
   assert.equal(await page.locator('.staff-current-assignments > li').count(), 2);
   assert.equal(
-    await page.locator('#accounts details').first().getAttribute('open'),
-    null,
-    'account support starts folded when no action is needed',
+    await page.locator('#accounts').count(),
+    0,
+    'unlinked accounts and disabled committee services do not add an empty support section',
   );
   for (const [name, width] of [
     ['desktop', 1440],
@@ -312,22 +312,6 @@ export async function exerciseMemberSummary(
     path: `${fixture.root}/test-results/staff/member-summary-dark.png`,
   });
   await page.emulateMedia({ colorScheme: 'light' });
-  await page
-    .getByRole('region', { name: 'Accounts', exact: true })
-    .locator('summary')
-    .first()
-    .click();
-  const status = page.locator('.staff-profile-account-state').first();
-  assert.equal(await status.isVisible(), true);
-  assert.deepEqual(
-    await status.evaluate((element) => ({
-      tag: element.tagName,
-      border: getComputedStyle(element).borderWidth,
-      background: getComputedStyle(element).backgroundColor,
-    })),
-    { tag: 'STRONG', border: '0px', background: 'rgba(0, 0, 0, 0)' },
-    'account status must read as text, not an outlined control',
-  );
   await page.setViewportSize({ width: 1440, height: 1000 });
   await page.getByRole('link', { name: 'Edit details', exact: true }).click();
   await page.getByLabel('Email', { exact: true }).fill('summary-corrected@example.invalid');

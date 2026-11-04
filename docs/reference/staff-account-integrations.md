@@ -252,6 +252,14 @@ someone opens the page. Counts describe confirmed access; unconnected, ambiguous
 remain separate. Discord is optional, so an unconnected account is not a reason to remove someone
 from a committee.
 
+The member profile's **Accounts** section shows mapped, configured committee services. It omits
+services with no connection rather than repeating setup warnings for each assignment. **Access last
+confirmed** and **No access last confirmed** describe a previous check of the same account, role,
+server and assignment; their checked timestamp is historical evidence, not current access proof.
+Fresh confirmations expire after five minutes, while unchanged Discord work normally refreshes
+hourly. An assignment or account change clears that historical status until its update is confirmed.
+**Try again** appears only for a current retry involving a configured service that needs recovery.
+
 1. Open a committee to review its Google and Discord differences. Confirm the checked date before
    acting. A missing or stale check cannot confirm that someone has access or that access was
    removed.
@@ -266,9 +274,9 @@ from a committee.
 4. Open a member for committee changes or an access retry. A retry records who requested it and the
    reason. Requests are not completed access changes; only a confirmed provider change appears in
    the corrections list. Unmatched Discord accounts stay unchanged while staff reviews them.
-5. Review **Discord corrections in the last seven days** for completed changes. The member profile's
-   **Access history** retains the longer administrator-only history, including automatic changes and
-   the staff requester when available.
+5. Review **Discord corrections in the last seven days** for completed changes. **Access history**
+   on the administrator access page retains the longer history, including automatic changes and the
+   staff requester when available.
 
 Migration `0043_access_mismatch_observations.sql` adds operational first-noticed dates for known
 Google direct membership and Discord role differences. Apply all database migrations in order before

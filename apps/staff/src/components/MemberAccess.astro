@@ -4,6 +4,7 @@ import { t } from '@lasvegasfortransit/platform-core/messages';
 import AccountAccessRow from './AccountAccessRow.astro';
 import type { AccessFeedback } from '../lib/account-access';
 import { needsAccessRecovery } from '@lasvegasfortransit/platform-core/access';
+import { profileNeedsRecovery, profileProviders } from '../lib/profile-account-access';
 interface Props {
   member: AccessRow;
   committees: AccessRow[];
@@ -12,14 +13,16 @@ interface Props {
   nextHref?: string | undefined;
 }
 const { member, committees, feedback, discordConnected = true, nextHref } = Astro.props;
+const configuration = Astro.locals.staff?.accessConfiguration ?? {};
 const showMember =
   discordConnected || needsAccessRecovery(member) || member.discord.state === 'granted';
 const committeeAccounts = committees.filter(
   (row) =>
-    row.assignmentId ||
-    needsAccessRecovery(row) ||
-    row.discord.state === 'granted' ||
-    row.googleWorkspace.state === 'granted',
+    profileProviders(row, configuration).length > 0 &&
+    (row.assignmentId ||
+      profileNeedsRecovery(row, configuration) ||
+      row.discord.state === 'granted' ||
+      row.googleWorkspace.state === 'granted'),
 );
 const needsHelp = [...(showMember ? [member] : []), ...committeeAccounts].some((row) => {
   const providers =
@@ -28,7 +31,7 @@ const needsHelp = [...(showMember ? [member] : []), ...committeeAccounts].some((
       : [row.discord, row.googleWorkspace];
   const expected = row.expectedAccess ? 'granted' : 'absent';
   return (
-    needsAccessRecovery(row) ||
+    profileNeedsRecovery(row, configuration) ||
     providers.some((access) => access.state !== 'unknown' && access.state !== expected)
   );
 });

@@ -32,6 +32,7 @@ export interface AccessRow {
   discordResourceId: string | null;
   discordFirstSeenAt: string | null;
   googleConnected: boolean;
+  googleResourceId: string | null;
   discordConnected: boolean;
   googleWorkspace: ProviderAccess;
   discord: ProviderAccess;
@@ -47,6 +48,7 @@ interface Row
       | 'expectedAccess'
       | 'discordExpectedAccess'
       | 'googleConnected'
+      | 'googleResourceId'
       | 'discordConnected'
       | 'googleWorkspace'
       | 'discord'
@@ -86,6 +88,7 @@ function accessRow(
     discordResourceId: row.discordResourceId,
     discordFirstSeenAt: row.discordFirstSeenAt,
     googleConnected: row.googleIdentityCount > 0,
+    googleResourceId: row.workspaceGroupEmail,
     discordConnected: row.discordIdentityCount > 0,
     googleWorkspace: observedAccess(row, 'google_workspace', configuration, now),
     discord: observedAccess(row, 'discord', configuration, now),
