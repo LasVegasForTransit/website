@@ -174,6 +174,28 @@ retry timing; a due scan is not proof that all pages have completed. Delivery ob
 separate from consent evidence. An observed inactive or paused subscription alone must not supply an
 invented withdrawal time.
 
+An account whose membership cannot be determined waits in `newsletter_sync_jobs` with
+`state='needs_review'` and `last_failure='consent_evidence_needed'`. The runner stops retrying it
+until new membership evidence changes the record. This keeps an unresolved account from consuming
+the daily database allowance needed for other newsletter and Discord work. Pending choices for
+accounts with a known membership preference retain their short retry, and account deletion remains
+eligible for access removal.
+
+With authorized read access to the selected database, inspect these counts without contact data:
+
+```sql
+SELECT state, last_failure, count(*) AS accounts
+FROM newsletter_sync_jobs GROUP BY state, last_failure;
+```
+
+For an unknown membership, confirm the person's choice and use their actual signup or an approved
+correction to the imported membership evidence. A new accepted membership observation queues the
+account again. Confirm the job then completes or reports its next specific blocker. Do not force it
+back into the queue or invent consent to clear the warning. If Discord work is also deferred, use
+the
+[shared database allowance procedure](staff-background-work.md#keep-background-work-within-the-shared-database-allowance)
+and preserve the daily budget guard.
+
 Saved authenticated source events are applied through the person service in one guarded transaction.
 That transaction records the inbox outcome with consent, membership, and engagement changes. It
 rechecks current account ownership and prior choices, preserves original source time, and lets
