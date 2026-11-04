@@ -1,134 +1,106 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import {
-  readWorkConversation,
-  saveProjectHome,
-  saveWorkConversation,
-} from '@lasvegasfortransit/platform-storage/discord-work-links';
-import { NotionTaskClient } from '../src/notion-task-client';
+import { readWorkConversation } from '@lasvegasfortransit/platform-storage/discord-work-links';
 import { ensureNotionWorkLink } from '../src/notion-work-links';
-import {
-  projectId,
-  projectSourceId,
-  sourceId,
-  taskId,
-  workFixture,
-  workNow,
-  workScope,
-} from './support/discord-work';
+import { workNow, workScope } from './support/discord-work';
+import { footerFixture } from './support/notion-work-footer';
 
-function parseBody(value: BodyInit | null | undefined): Record<string, unknown> {
-  assert.ok(typeof value === 'string');
-  return JSON.parse(value) as Record<string, unknown>;
-}
-function isArchiveRequest(method: string | undefined, body: Record<string, unknown>): boolean {
-  return method === 'DELETE' || body.archived === true || body.in_trash === true;
-}
+void test('footer repair preserves edits made while the replacement is being appended', async () => {
+  const fixture = await footerFixture();
+  try {
+    const client = fixture.client();
+    await ensureNotionWorkLink(fixture.db, client, fixture.conversation, workNow);
+    const old = fixture.blocks[1];
+    assert.ok(old);
+    fixture.addOrganizerBlock();
+    fixture.afterNextAppend(() => {
+      Object.assign(old, { has_children: true });
+    });
+    const result = await ensureNotionWorkLink(fixture.db, client, fixture.conversation, workNow);
+    assert.equal(result.reason, 'footer_modified');
+    assert.equal(fixture.blocks.includes(old), true);
+  } finally {
+    fixture.db.raw.close();
+  }
+});
 
-async function footerFixture() {
-  const { db } = workFixture();
-  const blocks: Record<string, unknown>[] = [];
-  let nextId = 1;
-  let loseAppendResponse = false;
-  let loseArchiveResponse = false;
-  let afterNextBlockRead: (() => void) | undefined;
-  const fetcher: typeof fetch = (input, init) => {
-    const url = new URL(input instanceof Request ? input.url : input.toString());
-    if (url.pathname.endsWith('/users/me'))
-      return Promise.resolve(Response.json({ id: 'bot', type: 'bot' }));
-    if (url.pathname.endsWith('/children')) {
-      if (init?.method === 'PATCH') {
-        const body = parseBody(init.body) as { children: Record<string, unknown>[] };
-        const results = body.children.map((block) => ({
-          ...block,
-          id: String(nextId++).padStart(32, '0'),
-          created_by: { id: 'bot' },
-        }));
-        blocks.push(...results);
-        if (loseAppendResponse) {
-          loseAppendResponse = false;
-          return Promise.reject(new Error('connection lost after append'));
-        }
-        return Promise.resolve(Response.json({ results, has_more: false, next_cursor: null }));
-      }
-      const response = Response.json({ results: blocks, has_more: false, next_cursor: null });
-      const callback = afterNextBlockRead;
-      afterNextBlockRead = undefined;
-      callback?.();
-      return Promise.resolve(response);
-    }
-    const blockId = url.pathname.split('/').at(-1);
-    const index = blocks.findIndex((block) => block.id === blockId);
-    if (index < 0) return Promise.resolve(new Response(null, { status: 404 }));
-    const body = init?.body ? parseBody(init.body) : {};
-    if (isArchiveRequest(init?.method, body)) {
-      const [removed] = blocks.splice(index, 1);
-      if (loseArchiveResponse) {
-        loseArchiveResponse = false;
-        return Promise.reject(new Error('connection lost after archive'));
-      }
-      return Promise.resolve(Response.json({ ...removed, in_trash: true }));
-    }
-    blocks[index] = { ...blocks[index], ...body };
-    return Promise.resolve(Response.json(blocks[index]));
-  };
-  const home = {
-    id: 'home',
-    scope: workScope,
-    projectSourceId,
-    projectId,
-    destination: { kind: 'forum' as const, channelId: '333333333333333333', parentId: null },
-    taskParent: null,
-    audienceFingerprint: 'audience',
-    approvedBy: 'guest',
-    state: 'active' as const,
-    generation: 1,
-  };
-  const conversation = {
-    id: 'conversation',
-    scope: workScope,
-    subject: { kind: 'task' as const, sourceId, pageId: taskId },
-    homeId: 'home',
-    placementProjectId: projectId,
-    threadId: '555555555555555555',
-    starterMessageId: '555555555555555555',
-    mode: 'automatic' as const,
-    state: 'active' as const,
-    generation: 1,
-    activationId: '555555555555555555',
-    cursorId: '555555555555555555',
-    windowUpperId: null,
-    windowBeforeId: null,
-    footerBlockIds: [],
-  };
-  await saveProjectHome(db, home, 0, workNow);
-  await saveWorkConversation(db, conversation, 0, workNow);
-  return {
-    db,
-    blocks,
-    conversation,
-    client: () => new NotionTaskClient('fixture-only', fetcher),
-    loseNextAppendResponse: () => {
-      loseAppendResponse = true;
-    },
-    loseNextArchiveResponse: () => {
-      loseArchiveResponse = true;
-    },
-    afterNextBlockRead: (callback: () => void) => {
-      afterNextBlockRead = callback;
-    },
-    addOrganizerBlock: () => {
-      const organizerBlock = {
-        id: 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
-        type: 'paragraph',
-        created_by: { id: 'organizer' },
-        paragraph: { rich_text: [{ type: 'text', text: { content: 'New planning details' } }] },
-      };
-      blocks.push(organizerBlock);
-      return organizerBlock;
-    },
-  };
-}
+void test('footer repair preserves edits made during the final authorization check', async () => {
+  const fixture = await footerFixture();
+  try {
+    const client = fixture.client();
+    await ensureNotionWorkLink(fixture.db, client, fixture.conversation, workNow);
+    const old = fixture.blocks[1];
+    assert.ok(old);
+    fixture.addOrganizerBlock();
+    let checks = 0;
+    const result = await ensureNotionWorkLink(fixture.db, client, fixture.conversation, {
+      now: workNow,
+      beforeWrite: () => {
+        if (++checks === 2) Object.assign(old, { has_children: true });
+        return Promise.resolve(true);
+      },
+    });
+    assert.equal(result.reason, 'footer_modified');
+    assert.equal(fixture.blocks.includes(old), true);
+  } finally {
+    fixture.db.raw.close();
+  }
+});
+
+void test('footer repair preserves edits made while the old divider is archived', async () => {
+  const fixture = await footerFixture();
+  try {
+    const client = fixture.client();
+    await ensureNotionWorkLink(fixture.db, client, fixture.conversation, workNow);
+    const old = fixture.blocks[1];
+    assert.ok(old);
+    fixture.addOrganizerBlock();
+    fixture.afterNextArchive(() => Object.assign(old, { has_children: true }));
+    const result = await ensureNotionWorkLink(fixture.db, client, fixture.conversation, workNow);
+    assert.equal(result.reason, 'footer_modified');
+    assert.equal(fixture.blocks.includes(old), true);
+  } finally {
+    fixture.db.raw.close();
+  }
+});
+
+void test('footer repair pauses when authority changes after appending a replacement', async () => {
+  const fixture = await footerFixture();
+  try {
+    const client = fixture.client();
+    await ensureNotionWorkLink(fixture.db, client, fixture.conversation, workNow);
+    fixture.addOrganizerBlock();
+    let checks = 0;
+    const result = await ensureNotionWorkLink(fixture.db, client, fixture.conversation, {
+      now: workNow,
+      beforeWrite: () => Promise.resolve(++checks === 1),
+    });
+    assert.equal(result.kind, 'paused');
+    assert.equal(result.reason, 'link_changed');
+    assert.equal(fixture.blocks.length, 5);
+  } finally {
+    fixture.db.raw.close();
+  }
+});
+
+void test('repair of a five-page Notion page fits the jobs request budget', async () => {
+  const fixture = await footerFixture();
+  try {
+    await ensureNotionWorkLink(fixture.db, fixture.client(), fixture.conversation, workNow);
+    for (let i = 0; i < 400; i++) fixture.addOrganizerBlock();
+    const client = fixture.client(20);
+    const result = await ensureNotionWorkLink(fixture.db, client, fixture.conversation, {
+      now: workNow,
+      beforeWrite: async () => {
+        await client.readPage(fixture.conversation.subject.pageId);
+        return true;
+      },
+    });
+    assert.equal(result.kind, 'progress');
+  } finally {
+    fixture.db.raw.close();
+  }
+});
 
 void test('the managed Discord footer returns to the end after an organizer adds content', async () => {
   const fixture = await footerFixture();

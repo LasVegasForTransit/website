@@ -16,6 +16,8 @@ import {
 } from './discord-work-actions';
 import { notionObject } from './notion-task-types';
 import { DiscordApiFailure } from './discord-types';
+import { DiscordPreDispatchTimeout } from './discord-http';
+import { NameSyncPreDispatchFailure } from './discord-work-provider-names';
 import { planningPage } from './discord-work-project-refresh';
 import { assertProvisionCurrent } from './discord-work-provision-checkpoint';
 import type {
@@ -80,12 +82,7 @@ export async function queuePlanningNames(
   return queued;
 }
 
-async function loadNameSync(
-  db: Db,
-  providers: WorkProviders,
-  op: WorkOperation,
-  context: WorkEffectContext,
-) {
+async function loadNameSync(db: Db, op: WorkOperation, context: WorkEffectContext) {
   const payload = notionObject(JSON.parse(op.payload_json) as unknown);
   const c = op.conversation_id
     ? await readWorkConversation(db, context.scope, op.conversation_id)
@@ -95,7 +92,6 @@ async function loadNameSync(
   validateNameSyncLink(c, home, op, payload);
   const target: NameTarget = payload.target;
   const previous = managedTarget(c, home, target, payload.revision);
-  await verifyNameSync(db, providers, { op, context, c, home, title: payload.title });
   const destination = target === 'forum' ? home.destination.channelId : c.threadId;
   const parentId = target === 'forum' ? home.destination.parentId : home.destination.channelId;
   return {
@@ -265,18 +261,26 @@ async function nameSyncFailure(
   context: WorkEffectContext,
   input: { error: unknown; expected: string | undefined },
 ): Promise<WorkResult> {
-  if (
-    input.error instanceof DiscordApiFailure &&
-    input.error.kind === 'rate_limited' &&
-    !op.result_json
-  ) {
+  const beforeDispatch =
+    input.error instanceof NameSyncPreDispatchFailure ||
+    input.error instanceof DiscordPreDispatchTimeout;
+  const original =
+    input.error instanceof NameSyncPreDispatchFailure ? input.error.original : input.error;
+  const retry =
+    original instanceof DiscordPreDispatchTimeout
+      ? { state: 'retryable' as const, reason: 'dispatch_timeout', retryAfterMs: 60_000 }
+      : workFailure(original);
+  const safeRetry =
+    beforeDispatch || (original instanceof DiscordApiFailure && original.kind === 'rate_limited');
+  if (safeRetry && retry.state === 'retryable' && !op.result_json) {
     const now = context.clock();
-    const retryAt = new Date(now.getTime() + Math.max(1000, input.error.retryAfterMs ?? 60_000));
+    const retryAt = new Date(now.getTime() + Math.max(1000, retry.retryAfterMs ?? 60_000));
     const result = await db
       .prepare(
-        "UPDATE discord_work_operations SET state='retryable',reason='rate_limited',result_json=NULL,next_attempt_at=?,claim_token=NULL,lease_expires_at=NULL,updated_at=? WHERE id=? AND scope_key=? AND state='processing' AND claim_token=? AND lease_expires_at>?",
+        "UPDATE discord_work_operations SET state='retryable',reason=?,result_json=NULL,next_attempt_at=?,claim_token=NULL,lease_expires_at=NULL,updated_at=? WHERE id=? AND scope_key=? AND state='processing' AND claim_token=? AND lease_expires_at>?",
       )
       .bind(
+        retry.reason ?? 'retryable',
         retryAt.toISOString(),
         now.toISOString(),
         op.id,
@@ -285,25 +289,57 @@ async function nameSyncFailure(
         now.toISOString(),
       )
       .run();
-    return { kind: 'paused', reason: result.meta.changes ? 'rate_limited' : 'unconfirmed_effect' };
+    return { kind: 'paused', reason: result.meta.changes ? retry.reason : 'unconfirmed_effect' };
   }
-  const changed = input.error instanceof Error && input.error.message === 'planning_name_changed';
+  return finishNameFailure(db, op, context, { original, retry, expected: input.expected });
+}
+
+async function finishNameFailure(
+  db: Db,
+  op: WorkOperation,
+  context: WorkEffectContext,
+  {
+    original,
+    retry,
+    expected,
+  }: { original: unknown; retry: ReturnType<typeof workFailure>; expected: string | undefined },
+): Promise<WorkResult> {
+  const changed = original instanceof Error && original.message === 'planning_name_changed';
   const stopped =
-    changed &&
-    input.expected !== undefined &&
-    (await stopNameManagement(db, op, context, input.expected));
+    changed && expected !== undefined && (await stopNameManagement(db, op, context, expected));
   const archiveReason =
-    input.error instanceof Error &&
-    ['planning_post_archived', 'planning_post_locked'].includes(input.error.message)
-      ? input.error.message
+    original instanceof Error &&
+    ['planning_post_archived', 'planning_post_locked'].includes(original.message)
+      ? original.message
       : null;
   const outcome = stopped
     ? { state: 'failed' as const, reason: 'planning_name_changed' }
     : archiveReason
       ? { state: 'failed' as const, reason: archiveReason }
-      : workFailure(input.error);
+      : retry;
   await settleWorkOperation(db, { id: op.id, token: op.claim_token }, outcome, context.clock());
   return { kind: 'paused', reason: outcome.reason };
+}
+
+async function nameBeforeWrite(
+  db: Db,
+  providers: WorkProviders,
+  op: WorkOperation,
+  context: WorkEffectContext,
+): Promise<void> {
+  try {
+    const current = await loadNameSync(db, op, context);
+    await verifyNameSync(db, providers, {
+      op,
+      context,
+      c: current.c,
+      home: current.home,
+      title: current.title,
+    });
+    await assertProvisionCurrent(db, op, context.clock, current.home);
+  } catch (error) {
+    throw new NameSyncPreDispatchFailure(error);
+  }
 }
 
 export async function processWorkNameSync(
@@ -315,14 +351,30 @@ export async function processWorkNameSync(
   if (!context.enabled || op.state !== 'processing') return { kind: 'idle' };
   let expected: string | undefined;
   try {
-    const link = await loadNameSync(db, providers, op, context);
+    const link = await loadNameSync(db, op, context);
     expected = link.previous;
     const current = await providers.discord.readPlanningName(link.destination);
     if (op.result_json) {
       const saved = notionObject(JSON.parse(op.result_json) as unknown);
       if (!checkpointMatches(saved, link, current)) throw new Error('unconfirmed_effect');
+      await verifyNameSync(db, providers, {
+        op,
+        context,
+        c: link.c,
+        home: link.home,
+        title: link.title,
+      });
     } else {
-      if (current !== link.previous) throw new Error('planning_name_changed');
+      if (current !== link.previous) {
+        await verifyNameSync(db, providers, {
+          op,
+          context,
+          c: link.c,
+          home: link.home,
+          title: link.title,
+        });
+        throw new Error('planning_name_changed');
+      }
       const saved = await db
         .prepare(
           "UPDATE discord_work_operations SET result_json=?,updated_at=? WHERE id=? AND scope_key=? AND state='processing' AND claim_token=? AND lease_expires_at>? AND result_json IS NULL",
@@ -337,17 +389,13 @@ export async function processWorkNameSync(
         )
         .run();
       if (!saved.meta.changes) throw new Error('link_changed');
-      await loadNameSync(db, providers, op, context);
       await providers.discord.updatePlanningName({
         channelId: link.destination,
         parentId: link.parentId,
         kind: link.target,
         expectedName: link.previous,
         name: link.title,
-        beforeWrite: async () => {
-          await loadNameSync(db, providers, op, context);
-          await assertProvisionCurrent(db, op, context.clock, link.home);
-        },
+        beforeWrite: () => nameBeforeWrite(db, providers, op, context),
       });
     }
     if (link.previous !== link.title) await saveName(db, op, context, link);

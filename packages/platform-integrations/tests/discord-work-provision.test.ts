@@ -11,6 +11,7 @@ import {
 } from '@lasvegasfortransit/platform-storage/discord-work-links';
 import { resolveWorkActor } from '../src/discord-work-authority';
 import { DiscordWorkClient } from '../src/discord-work-provider';
+import { runQueuedProjectPins } from './support/discord-work-pins';
 import {
   workFixture,
   workScope,
@@ -216,6 +217,16 @@ for (const pinFails of [false, true]) {
       });
       assert.equal(result.kind, 'progress');
       assert.equal(creates, 1);
+      const pinContext = {
+        scope: workScope,
+        taskSourceId: sourceId,
+        enabled: true,
+        clock: () => workNow,
+      };
+      assert.equal(
+        (await runQueuedProjectPins(db, { notion, discord }, pinContext)).kind,
+        'progress',
+      );
       const homes = await listProjectHomes(db, workScope);
       assert.equal(homes.length, 1);
       assert.deepEqual(pins, [['555555555555555555', '555555555555555555']]);
@@ -246,6 +257,15 @@ for (const pinFails of [false, true]) {
         });
         assert.equal(resumed.kind, 'progress');
         assert.equal(creates, 1);
+        db.raw
+          .prepare(
+            "UPDATE discord_work_operations SET state='queued' WHERE json_extract(payload_json,'$.intent')='project-pins'",
+          )
+          .run();
+        assert.equal(
+          (await runQueuedProjectPins(db, { notion, discord }, pinContext)).kind,
+          'progress',
+        );
         assert.equal(pins.length, 2);
         assert.equal((await listProjectHomes(db, workScope))[0]?.overviewPin, 'pinned');
         assert.equal(
@@ -268,21 +288,21 @@ for (const pinFails of [false, true]) {
           pinWorkMessage: () => {
             db.raw
               .prepare(
-                "UPDATE discord_work_operations SET state='held',claim_token=NULL WHERE id='provision'",
+                "UPDATE discord_work_operations SET state='held',claim_token=NULL WHERE json_extract(payload_json,'$.intent')='project-pins'",
               )
               .run();
             return Promise.resolve();
           },
         });
-        assert.deepEqual(
-          await module.processWorkProvision(db, { notion, discord }, op, {
-            scope: workScope,
-            taskSourceId: sourceId,
-            enabled: true,
-            clock: () => workNow,
-          }),
-          { kind: 'paused', reason: 'unconfirmed_effect' },
-        );
+        db.raw
+          .prepare(
+            "UPDATE discord_work_operations SET state='queued' WHERE json_extract(payload_json,'$.intent')='project-pins'",
+          )
+          .run();
+        assert.deepEqual(await runQueuedProjectPins(db, { notion, discord }, pinContext), {
+          kind: 'paused',
+          reason: 'unconfirmed_effect',
+        });
         assert.equal((await listProjectHomes(db, workScope))[0]?.overviewPin, undefined);
       }
       // A recovered old receipt cannot create another overview after the administrator unlinks it.

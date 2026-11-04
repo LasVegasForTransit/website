@@ -17,6 +17,7 @@ import { sharedTaskCard } from './discord-work-cards';
 import { taskStatus } from './notion-task-status';
 import { notionObject, notionProperty } from './notion-task-types';
 import { ensureNotionWorkLink } from './notion-work-links';
+import { canWriteBacklink } from './discord-work-backlink-guard';
 import type { DiscordWorkClient } from './discord-work-provider';
 import type {
   WorkScope,
@@ -125,10 +126,11 @@ export async function currentWorkAudience(
 ): Promise<boolean> {
   const home = await readProjectHome(db, c.scope, c.homeId);
   if (home?.state !== 'active') return false;
-  const current = await providers.discord.inspectDestination(home.destination.channelId);
+  const cache = new Map<string, unknown>();
+  const current = await providers.discord.inspectDestination(home.destination.channelId, cache);
   if (current.audienceFingerprint !== home.audienceFingerprint || current.privateThread === true)
     return false;
-  const thread = await providers.discord.inspectDestination(c.threadId);
+  const thread = await providers.discord.inspectDestination(c.threadId, cache);
   return (
     thread.canRead &&
     thread.privateThread !== true &&
@@ -273,6 +275,15 @@ async function applySharedEffect(
   if (!context.enabled) return { state: 'retryable', reason: 'disabled' };
   const c = await operationConversation(db, op, context);
   if (!c) return { state: 'superseded', reason: 'link_changed' };
+  if (op.kind === 'backlink') {
+    const result = await ensureNotionWorkLink(db, providers.notion, c, {
+      now: context.clock(),
+      beforeWrite: () => canWriteBacklink(db, providers, { c, op, context }),
+    });
+    if (result.kind === 'idle' && result.reason === 'link_changed')
+      return { state: 'superseded', reason: 'link_changed' };
+    return { state: result.kind === 'progress' ? 'confirmed' : 'held', reason: result.reason };
+  }
   const actor = await authorizeWork(
     db,
     providers,
@@ -293,10 +304,6 @@ async function applySharedEffect(
   if (!(await currentWorkAudience(db, providers, c)))
     return { state: 'failed', reason: 'audience_or_destination_changed' };
   const payload = notionObject(JSON.parse(op.payload_json) as unknown);
-  if (op.kind === 'backlink') {
-    const result = await ensureNotionWorkLink(db, providers.notion, c, context.clock());
-    return { state: result.kind === 'progress' ? 'confirmed' : 'held', reason: result.reason };
-  }
   if (op.kind === 'comment')
     return {
       state: 'confirmed',

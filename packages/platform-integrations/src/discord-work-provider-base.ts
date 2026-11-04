@@ -148,11 +148,22 @@ export class DiscordWorkProviderBase {
       reason: 'Pin the project overview',
     });
   }
-  protected async channel(id: string) {
+  private async inspectionValue(
+    path: string,
+    cache?: Map<string, unknown>,
+    responseSize?: 'guild-roles',
+  ) {
+    if (cache?.has(path)) return cache.get(path);
+    const value = await this.http.request(path, {
+      authorization: this.authorization,
+      ...(responseSize ? { responseSize } : {}),
+    });
+    cache?.set(path, value);
+    return value;
+  }
+  protected async channel(id: string, cache?: Map<string, unknown>) {
     if (!discordId(id)) throw new DiscordApiFailure('invalid_response');
-    const value = object(
-      await this.http.request(`/channels/${id}`, { authorization: this.authorization }),
-    );
+    const value = object(await this.inspectionValue(`/channels/${id}`, cache));
     if (value.id !== id || value.guild_id !== this.config.guildId)
       throw new DiscordApiFailure('permission_denied');
     return value;
@@ -190,24 +201,20 @@ export class DiscordWorkProviderBase {
       audienceFingerprint: await workAudience(roles, [], null),
     };
   }
-  async inspectDestination(id: string): Promise<DestinationInspection> {
-    const row = await this.channel(id),
+  async inspectDestination(
+    id: string,
+    cache?: Map<string, unknown>,
+  ): Promise<DestinationInspection> {
+    const row = await this.channel(id, cache),
       kind = row.type === 4 ? 'forum' : channelKind(row.type);
-    const parent = kind === 'thread' ? await this.channel(String(row.parent_id)) : row;
-    const self = object(
-      await this.http.request('/users/@me', { authorization: this.authorization }),
-    );
+    const parent = kind === 'thread' ? await this.channel(String(row.parent_id), cache) : row;
+    const self = object(await this.inspectionValue('/users/@me', cache));
     if (!discordId(self.id)) throw new DiscordApiFailure('invalid_response');
     const roles = workRoles(
-      await this.http.request(`/guilds/${this.config.guildId}/roles`, {
-        authorization: this.authorization,
-        responseSize: 'guild-roles',
-      }),
+      await this.inspectionValue(`/guilds/${this.config.guildId}/roles`, cache, 'guild-roles'),
     );
     const member = object(
-      await this.http.request(`/guilds/${this.config.guildId}/members/${self.id}`, {
-        authorization: this.authorization,
-      }),
+      await this.inspectionValue(`/guilds/${this.config.guildId}/members/${self.id}`, cache),
     );
     if (!Array.isArray(member.roles) || !member.roles.every(discordId))
       throw new DiscordApiFailure('invalid_response');

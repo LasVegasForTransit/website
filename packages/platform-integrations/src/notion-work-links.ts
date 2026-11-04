@@ -6,6 +6,8 @@ import {
 import { NotionTaskApiError, type NotionTaskClient } from './notion-task-client';
 import { notionObject } from './notion-task-types';
 import type { WorkConversation, WorkResult } from './discord-work-types';
+import { canWriteFooter, type FooterWriteOptions } from './notion-work-footer-guard';
+import { appendManagedFooter } from './notion-work-footer-write';
 export function workConversationUrl(c: WorkConversation): string {
   return `https://discord.com/channels/${c.scope.guildId}/${c.threadId}`;
 }
@@ -178,38 +180,23 @@ export async function inspectFooterRecovery(
   return inspectPriorFooter(scan, c, { latest, divider, matches, url });
 }
 
-async function appendManagedFooter(
-  client: NotionTaskClient,
-  pageId: string,
-  url: string,
-): Promise<string[]> {
-  const response = notionObject(
-    await client.appendBlockChildren(pageId, [
-      { object: 'block', type: 'divider', divider: {} },
-      {
-        object: 'block',
-        type: 'paragraph',
-        paragraph: {
-          rich_text: [
-            { type: 'text', text: { content: 'Open the Discord conversation', link: { url } } },
-          ],
-        },
-      },
-    ]),
-  );
-  if (!Array.isArray(response.results) || response.results.length !== 2)
-    throw new NotionTaskApiError('unconfirmed_footer', 60_000, false, true);
-  const ids = response.results
-    .map((value) => notionObject(value).id)
-    .filter((id): id is string => typeof id === 'string');
-  if (ids.length !== 2) throw new NotionTaskApiError('unconfirmed_footer', 60_000, false, true);
-  return ids;
-}
-
 type FooterScan = NonNullable<Awaited<ReturnType<typeof scanFooterBlocks>>>;
 interface FooterMatch {
   block: Record<string, unknown>;
   index: number;
+}
+async function archiveOldLink(
+  db: Db,
+  client: NotionTaskClient,
+  input: WorkConversation,
+  { id, botId, url }: { id: string; botId: string; url: string },
+): Promise<WorkResult | null> {
+  const link = notionObject(await client.readBlock(id));
+  if (link.id !== id) return { kind: 'paused', reason: 'footer_ownership_unverified' };
+  if (!untouchedFooter(link, botId, url)) return { kind: 'paused', reason: 'footer_modified' };
+  if (!(await canWriteFooter(db, input))) return { kind: 'paused', reason: 'link_changed' };
+  await archiveManagedBlock(client, id);
+  return null;
 }
 async function archiveOldFooter(
   db: Db,
@@ -220,28 +207,33 @@ async function archiveOldFooter(
     scan,
     newIds,
     url,
+    beforeWrite,
   }: {
     current: WorkConversation;
     input: WorkConversation;
     scan: FooterScan;
     newIds: string[];
     url: string;
+    beforeWrite?: (() => Promise<boolean>) | undefined;
   },
 ): Promise<WorkResult | null> {
   const [oldDividerId, oldLinkId] = current.footerBlockIds;
   if (!oldDividerId || !oldLinkId || newIds.includes(oldLinkId))
     return { kind: 'paused', reason: 'footer_ownership_unverified' };
-  const oldDivider = scan.blocks.find((block) => block.id === oldDividerId);
-  const oldLink = scan.blocks.find((block) => block.id === oldLinkId);
+  if (!(await canWriteFooter(db, input, beforeWrite)))
+    return { kind: 'paused', reason: 'link_changed' };
+  const fresh = await scanFooterBlocks(client, current);
+  if (fresh?.botId !== scan.botId) return { kind: 'paused', reason: 'footer_scan_limit' };
+  const oldDivider = fresh.blocks.find((block) => block.id === oldDividerId);
+  const oldLink = fresh.blocks.find((block) => block.id === oldLinkId);
   if (
     (oldDivider && !managedDivider(oldDivider, scan.botId)) ||
     (oldLink && !untouchedFooter(oldLink, scan.botId, url))
   )
     return { kind: 'paused', reason: 'footer_modified' };
-  const live = await readWorkConversation(db, input.scope, input.id);
-  if (live?.generation !== input.generation || live.state !== 'active') return { kind: 'idle' };
+  if (!(await canWriteFooter(db, input))) return { kind: 'paused', reason: 'link_changed' };
   if (oldDivider) await archiveManagedBlock(client, oldDividerId);
-  if (oldLink) await archiveManagedBlock(client, oldLinkId);
+  if (oldLink) return archiveOldLink(db, client, input, { id: oldLinkId, botId: scan.botId, url });
   return null;
 }
 
@@ -256,6 +248,7 @@ async function reconcileCurrentFooter(
     matches,
     latest,
     url,
+    beforeWrite,
   }: {
     current: WorkConversation;
     input: WorkConversation;
@@ -263,6 +256,7 @@ async function reconcileCurrentFooter(
     matches: FooterMatch[];
     latest: FooterMatch;
     url: string;
+    beforeWrite?: (() => Promise<boolean>) | undefined;
   },
 ): Promise<WorkResult> {
   const divider = scan.blocks[latest.index - 1];
@@ -284,7 +278,14 @@ async function reconcileCurrentFooter(
     return { kind: 'paused', reason: 'footer_changed_during_repair' };
   }
   if (matches.length > 1 || newIds[1] !== latest.block.id) {
-    const outcome = await archiveOldFooter(db, client, { current, input, scan, newIds, url });
+    const outcome = await archiveOldFooter(db, client, {
+      current,
+      input,
+      scan,
+      newIds,
+      url,
+      beforeWrite,
+    });
     if (outcome) return outcome;
   }
   const saved = await saveWorkFooterBlockIds(
@@ -355,13 +356,17 @@ export async function ensureNotionWorkLink(
   db: Db,
   client: NotionTaskClient,
   input: WorkConversation,
-  now: Date,
+  options: Date | FooterWriteOptions,
 ): Promise<WorkResult> {
+  const { now, beforeWrite } =
+    options instanceof Date ? { now: options, beforeWrite: undefined } : options;
   const current = await readWorkConversation(db, input.scope, input.id);
   if (current?.generation !== input.generation || current.state !== 'active')
-    return { kind: 'idle' };
+    return { kind: 'idle', reason: 'link_changed' };
   const scan = await scanFooterBlocks(client, current);
   if (scan === null) return { kind: 'paused', reason: 'footer_scan_limit' };
+  if (!(await canWriteFooter(db, input, beforeWrite)))
+    return { kind: 'idle', reason: 'link_changed' };
   const url = footerUrl(current);
   const matches = scan.blocks
     .map((block, index) => ({ block, index }))
@@ -371,7 +376,15 @@ export async function ensureNotionWorkLink(
   if (matches.length > 2) return { kind: 'paused', reason: 'multiple_managed_footers' };
   const latest = matches.at(-1);
   if (latest)
-    return reconcileCurrentFooter(db, client, now, { current, input, scan, matches, latest, url });
+    return reconcileCurrentFooter(db, client, now, {
+      current,
+      input,
+      scan,
+      matches,
+      latest,
+      url,
+      beforeWrite,
+    });
   const previous = scan.blocks
     .map((block, index) => ({ block, index }))
     .filter(({ block }) => matchesBlock(block, { botId: scan.botId, url, previous: true }));

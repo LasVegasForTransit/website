@@ -7,9 +7,26 @@ import {
   type DiscordRateLimit,
 } from './discord-types';
 const ENDPOINT = 'https://discord.com/api/v10';
-class DispatchRejected extends Error {
-  constructor(readonly original: unknown) {
-    super('Discord request dispatch was rejected');
+export class DiscordPreDispatchTimeout extends Error {
+  constructor() {
+    super('dispatch_timeout');
+  }
+}
+async function runPreflight(
+  check: (() => Promise<void>) | undefined,
+  timeoutMs: number,
+): Promise<void> {
+  if (!check) return;
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  try {
+    await Promise.race([
+      check(),
+      new Promise<never>((_resolve, reject) => {
+        timer = setTimeout(() => reject(new DiscordPreDispatchTimeout()), timeoutMs);
+      }),
+    ]);
+  } finally {
+    clearTimeout(timer);
   }
 }
 function ensureNotAborted(signal: AbortSignal): void {
@@ -98,13 +115,21 @@ export class DiscordHttp {
   private readonly fetcher: typeof fetch;
   readonly now: () => number;
   private readonly timeoutMs: number;
+  private readonly preflightTimeoutMs: number;
   private readonly rateLimit: DiscordRateLimit | undefined;
   constructor(options: DiscordOptions = {}) {
     this.fetcher = options.fetch ?? globalThis.fetch.bind(globalThis);
     this.now = options.now ?? Date.now;
     this.rateLimit = options.rateLimit;
     this.timeoutMs = options.timeoutMs ?? 5000;
+    this.preflightTimeoutMs = options.preflightTimeoutMs ?? 30_000;
     if (!Number.isFinite(this.timeoutMs) || this.timeoutMs < 1 || this.timeoutMs > 10_000)
+      throw new DiscordApiFailure('not_configured');
+    if (
+      !Number.isFinite(this.preflightTimeoutMs) ||
+      this.preflightTimeoutMs < 1 ||
+      this.preflightTimeoutMs > 30_000
+    )
       throw new DiscordApiFailure('not_configured');
   }
   async request(path: string, input: RequestInput): Promise<unknown> {
@@ -112,6 +137,7 @@ export class DiscordHttp {
     if (shared) throw new DiscordApiFailure('rate_limited', shared.retryAfterMs, shared.global);
     const remaining = this.blockedUntil - this.now();
     if (remaining > 0) throw new DiscordApiFailure('rate_limited', remaining, this.blockedGlobally);
+    await runPreflight(input.beforeDispatch, this.preflightTimeoutMs);
     const controller = new AbortController();
     let timer: ReturnType<typeof setTimeout> | undefined;
     try {
@@ -125,7 +151,6 @@ export class DiscordHttp {
         }),
       ]);
     } catch (error) {
-      if (error instanceof DispatchRejected) throw error.original;
       if (error instanceof DiscordApiFailure) throw error;
       throw new DiscordApiFailure('provider_unavailable');
     } finally {
@@ -137,11 +162,6 @@ export class DiscordHttp {
     if (input.reason) headers.set('X-Audit-Log-Reason', encodeURIComponent(input.reason));
     if (input.body) headers.set('Content-Type', 'application/x-www-form-urlencoded');
     if (input.jsonBody) headers.set('Content-Type', 'application/json');
-    try {
-      await input.beforeDispatch?.();
-    } catch (error) {
-      throw new DispatchRejected(error);
-    }
     ensureNotAborted(signal);
     const response = await this.fetcher(`${ENDPOINT}${path}`, {
       method: input.method ?? 'GET',
