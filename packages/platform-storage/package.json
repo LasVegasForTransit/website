@@ -104,6 +104,9 @@
     "./discord-work-types": "./src/discord-work-types.ts",
     "./discord-work-links": "./src/discord-work-links.ts",
     "./discord-work-operations": "./src/discord-work-operations.ts",
+    "./discord-work-routes": "./src/discord-work-routes.ts",
+    "./discord-work-requests": "./src/discord-work-requests.ts",
+    "./discord-work-route-scans": "./src/discord-work-route-scans.ts",
     "./notion-task-person-lineage": "./src/notion-task-person-lineage.ts",
     "./discord-work-ingress": "./src/discord-work-ingress.ts"
   },

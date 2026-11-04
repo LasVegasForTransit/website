@@ -5,6 +5,7 @@ export {
   DiscordWorkIngest,
   DiscordWorkEffects,
   DiscordWorkRefresh,
+  DiscordWorkRouteScan,
 } from './discord-work';
 import type { TaskCheckinWorkerEnv } from '@lasvegasfortransit/platform-integrations/notion-task-runtime';
 import type { DiscordRuntimeEnv } from '@lasvegasfortransit/platform-integrations/discord-runtime';

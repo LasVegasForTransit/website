@@ -8,7 +8,9 @@ import {
   saveProjectHome,
   saveWorkConversation,
   readWorkConversation,
+  deferWorkConversation,
 } from '@lasvegasfortransit/platform-storage/discord-work-links';
+import { runWorkPreview } from '../src/discord-work-setup';
 import { DiscordWorkClient } from '../src/discord-work-provider';
 import {
   workFixture,
@@ -43,18 +45,22 @@ void test('a frozen reply window drains all 63 messages before releasing effects
     applicationId: '444444444444444444',
     botToken: 'fixture-only',
   });
+  let threadAudience = 'audience',
+    reads = 0;
   Object.assign(discord, {
+    membership: () => Promise.resolve(true),
     messageContentAvailable: () => Promise.resolve(true),
-    inspectDestination: () =>
+    inspectDestination: (id: string) =>
       Promise.resolve({
-        audienceFingerprint: 'audience',
+        audienceFingerprint: id === String(base) ? threadAudience : 'audience',
         canRead: true,
         canSend: true,
         locked: false,
         archived: false,
       }),
-    readMessages: (_id: string, q: { after?: string; before?: string }) =>
-      Promise.resolve(
+    readMessages: (_id: string, q: { after?: string; before?: string }) => {
+      reads++;
+      return Promise.resolve(
         rows
           .filter(
             (m) =>
@@ -63,7 +69,8 @@ void test('a frozen reply window drains all 63 messages before releasing effects
           )
           .sort((a, b) => (BigInt(a.id) > BigInt(b.id) ? -1 : 1))
           .slice(0, 25),
-      ),
+      );
+    },
   });
   const home = {
     id: 'home',
@@ -83,6 +90,7 @@ void test('a frozen reply window drains all 63 messages before releasing effects
     subject: { kind: 'task' as const, sourceId, pageId: taskId },
     homeId: 'home',
     placementProjectId: projectId,
+    audienceFingerprint: 'audience',
     threadId: String(base),
     starterMessageId: String(base),
     mode: 'automatic' as const,
@@ -104,6 +112,41 @@ void test('a frozen reply window drains all 63 messages before releasing effects
       enabled: true,
       clock: () => new Date(workNow.getTime() + elapsed++ * 1000),
     };
+    threadAudience = 'changed';
+    const blocked = await module.ingestWorkConversation(db, { notion, discord }, c.id, context);
+    assert.deepEqual(blocked, { kind: 'paused', reason: 'audience_or_permission_changed' });
+    await deferWorkConversation(
+      db,
+      { conversation: c, stage: 'ingest', reason: blocked.reason },
+      context.clock(),
+    );
+    await deferWorkConversation(db, { conversation: c, stage: 'refresh' }, context.clock());
+    const status = await runWorkPreview(
+      db,
+      { notion, discord },
+      {
+        applicationId: '444444444444444444',
+        guildId: workScope.guildId,
+        discordUserId,
+        channelId: c.threadId,
+        interactionId: '777777777777777777',
+        intent: { action: 'show' },
+      },
+      context,
+    );
+    assert.match(JSON.stringify(status), /audience.*permissions/i);
+    await deferWorkConversation(db, { conversation: c, stage: 'ingest' }, context.clock());
+    await deferWorkConversation(
+      db,
+      { conversation: c, stage: 'refresh', reason: 'source_unavailable' },
+      context.clock(),
+    );
+    await deferWorkConversation(db, { conversation: c, stage: 'ingest' }, context.clock());
+    assert.equal((await readWorkConversation(db, workScope, c.id))?.reason, 'source_unavailable');
+    await deferWorkConversation(db, { conversation: c, stage: 'refresh' }, context.clock());
+    assert.equal((await readWorkConversation(db, workScope, c.id))?.reason, null);
+    assert.equal(reads, 0);
+    threadAudience = 'audience';
     await module.ingestWorkConversation(db, { notion, discord }, c.id, context);
     assert.equal((await readWorkConversation(db, workScope, c.id))?.cursorId, String(base));
     assert.equal(db.raw.prepare('SELECT count(*) AS n FROM discord_work_operations').get()?.n, 25);

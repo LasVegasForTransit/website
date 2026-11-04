@@ -179,6 +179,15 @@ export class NotionTaskClient {
       20,
     );
   }
+  async queryWorkSource(sourceId: string, cursor: string | null = null): Promise<NotionList> {
+    return list(
+      await this.request(`data_sources/${id(sourceId)}/query`, 'POST', {
+        page_size: 5,
+        ...(cursor ? { start_cursor: cursor } : {}),
+      }),
+      5,
+    );
+  }
   async queryTasksForProject(input: {
     sourceId: string;
     projectField: string;
@@ -207,6 +216,22 @@ export class NotionTaskClient {
   }
   readPage(pageId: string): Promise<unknown> {
     return this.request(`pages/${id(pageId)}`, 'GET');
+  }
+  readDataSource(sourceId: string): Promise<unknown> {
+    return this.request(`data_sources/${id(sourceId)}`, 'GET');
+  }
+  async searchDataSources(query: string, cursor: string | null = null): Promise<NotionList> {
+    if (query.length > 100 || (cursor !== null && (!cursor || cursor.length > 2048)))
+      throw new NotionTaskApiError('invalid_search', 60_000, false);
+    return list(
+      await this.request('search', 'POST', {
+        ...(query ? { query } : {}),
+        filter: { property: 'object', value: 'data_source' },
+        page_size: 25,
+        ...(cursor ? { start_cursor: cursor } : {}),
+      }),
+      25,
+    );
   }
   async listBlockChildren(pageId: string, cursor: string | null = null): Promise<NotionList> {
     const query = new URLSearchParams({

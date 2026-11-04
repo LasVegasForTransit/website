@@ -7,20 +7,23 @@ void test('work interactions defer private provider reads, isolate the guild and
   const db = memoryDb(),
     pending: Promise<unknown>[] = [],
     sent: unknown[] = [];
+  const intents: unknown[] = [];
   const context = {
     applicationId: '111111111111111111',
     guildId: '222222222222222222',
     enabled: false,
     preview: {
-      preview: () =>
-        Promise.resolve({
+      preview: (input: { intent: unknown }) => {
+        intents.push(input.intent);
+        return Promise.resolve({
           kind: 'ready' as const,
           card: {
             flags: 32768,
             allowed_mentions: { parse: [] as never[] },
             components: [{ type: 10, content: 'Preview' }],
           },
-        }),
+        });
+      },
     },
     waitUntil: (p: Promise<unknown>) => pending.push(p),
     fetcher: (_input: RequestInfo | URL, init?: RequestInit) => {
@@ -54,6 +57,134 @@ void test('work interactions defer private provider reads, isolate the guild and
     assert.deepEqual(await response.json(), { type: 5, data: { flags: 64 } });
     await Promise.all(pending);
     assert.equal(sent.length, 1);
+    const creation = {
+      ...interaction,
+      data: {
+        name: 'work',
+        options: [
+          {
+            name: 'create-event-forum',
+            options: [
+              { name: 'name', value: 'Events' },
+              { name: 'category', value: '777777777777777777' },
+            ],
+          },
+        ],
+      },
+    };
+    assert.ok(await module.handleWorkInteraction(db, creation, context));
+    await Promise.all(pending);
+    assert.deepEqual(intents.at(-1), {
+      action: 'create-event-forum',
+      url: undefined,
+      destinationId: '777777777777777777',
+      name: 'Events',
+    });
+    const showOne = {
+      ...interaction,
+      data: {
+        name: 'work',
+        options: [
+          {
+            name: 'show',
+            options: [
+              { name: 'url', value: 'https://www.notion.so/10000000000040008000000000000001' },
+            ],
+          },
+        ],
+      },
+    };
+    assert.ok(await module.handleWorkInteraction(db, showOne, context));
+    await Promise.all(pending);
+    assert.equal(
+      (intents.at(-1) as { url: string }).url,
+      'https://www.notion.so/10000000000040008000000000000001',
+    );
+    const tagSelect = {
+      ...interaction,
+      type: 3,
+      data: {
+        custom_id: 'work:receipt:1:route-tag',
+        values: ['666666666666666666', '888888888888888888'],
+      },
+      message: { id: '999999999999999999' },
+    };
+    assert.ok(await module.handleWorkInteraction(db, tagSelect, context));
+    await Promise.all(pending);
+    assert.deepEqual((intents.at(-1) as { values: string[] }).values, [
+      '666666666666666666',
+      '888888888888888888',
+    ]);
+    const statusSelect = {
+      ...tagSelect,
+      data: { custom_id: 'work:receipt:1:route-choice', values: ['0', '1', '2'] },
+    };
+    assert.ok(await module.handleWorkInteraction(db, statusSelect, context));
+    await Promise.all(pending);
+    assert.deepEqual((intents.at(-1) as { values: string[] }).values, ['0', '1', '2']);
+    const projectTagCommand = {
+      ...interaction,
+      data: {
+        name: 'work',
+        options: [
+          {
+            name: 'project-event-tags',
+            options: [{ name: 'destination', value: '777777777777777777' }],
+          },
+        ],
+      },
+    };
+    assert.ok(await module.handleWorkInteraction(db, projectTagCommand, context));
+    await Promise.all(pending);
+    assert.equal(
+      (intents.at(-1) as { action: string; destinationId: string }).action,
+      'project-event-tags',
+    );
+    assert.equal((intents.at(-1) as { destinationId: string }).destinationId, '777777777777777777');
+    const topicCommand = {
+      ...interaction,
+      data: {
+        name: 'work',
+        options: [
+          {
+            name: 'project-topic',
+            options: [{ name: 'destination', value: '777777777777777777' }],
+          },
+        ],
+      },
+    };
+    const topicResponse = await module.handleWorkInteraction(db, topicCommand, context);
+    assert.deepEqual(await topicResponse?.json(), { type: 5, data: { flags: 64 } });
+    await Promise.all(pending);
+    assert.deepEqual(intents.at(-1), {
+      action: 'project-topic',
+      url: undefined,
+      destinationId: '777777777777777777',
+      name: undefined,
+    });
+    const topicConfirm = {
+      ...interaction,
+      type: 3,
+      data: { custom_id: 'work:receipt:1:topic-confirm' },
+      message: { id: '999999999999999999' },
+    };
+    assert.ok(await module.handleWorkInteraction(db, topicConfirm, context));
+    await Promise.all(pending);
+    assert.equal((intents.at(-1) as { action: string }).action, 'topic-confirm');
+    assert.equal((intents.at(-1) as { linkId: string }).linkId, 'receipt');
+    const projectTagSelect = {
+      ...tagSelect,
+      data: {
+        custom_id: 'work:receipt:1:project-tag-save',
+        values: ['666666666666666666', '888888888888888888'],
+      },
+    };
+    assert.ok(await module.handleWorkInteraction(db, projectTagSelect, context));
+    await Promise.all(pending);
+    assert.deepEqual((intents.at(-1) as { values: string[] }).values, [
+      '666666666666666666',
+      '888888888888888888',
+    ]);
     assert.equal(
       (
         await module.handleWorkInteraction(

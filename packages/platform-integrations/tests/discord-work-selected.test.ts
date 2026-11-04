@@ -126,3 +126,80 @@ void test('a selected message previews attribution and saves once without requir
     db.raw.close();
   }
 });
+
+void test('saving a message finds the project in its current channel beyond 50 unrelated projects', async () => {
+  const { db, notion } = workFixture();
+  const discord = new DiscordWorkClient({
+    guildId: workScope.guildId,
+    applicationId: '444444444444444444',
+    botToken: 'fixture-only',
+  });
+  Object.assign(discord, { membership: () => Promise.resolve(true) });
+  Object.assign(notion, {
+    queryTasksForProject: () => Promise.resolve({ results: [], nextCursor: null }),
+  });
+  const channelId = '333333333333333333';
+  try {
+    db.raw.prepare("UPDATE people SET membership_status='member' WHERE id='guest'").run();
+    db.raw
+      .prepare(
+        "INSERT INTO staff_administrators(person_id,designated_by,designated_at) VALUES('guest','setup',?)",
+      )
+      .run(workNow.toISOString());
+    for (let i = 0; i < 51; i++) {
+      const pageId =
+        i === 50 ? projectId : `20000000-0000-4000-8000-${String(i).padStart(12, '0')}`;
+      await saveProjectHome(
+        db,
+        {
+          id: i === 50 ? 'z-target' : `a-${String(i).padStart(3, '0')}`,
+          scope: workScope,
+          projectSourceId,
+          projectId: pageId,
+          destination: {
+            kind: 'text',
+            channelId: i === 50 ? channelId : String(600000000000000000n + BigInt(i)),
+            parentId: null,
+          },
+          taskParent: null,
+          audienceFingerprint: 'audience',
+          approvedBy: 'guest',
+          state: 'active',
+          generation: 1,
+          title: i === 50 ? 'Target project' : 'Other',
+        },
+        0,
+        workNow,
+      );
+    }
+    const message = {
+      id: '555555555555555555',
+      channelId,
+      authorId: discordUserId,
+      authorName: 'Volunteer',
+      createdAt: workNow.toISOString(),
+      text: 'Update',
+      bot: false,
+      webhook: false,
+      system: false,
+      contentAvailable: true,
+      attachmentOnly: false,
+    };
+    const result = await runWorkPreview(
+      db,
+      { notion, discord },
+      {
+        applicationId: '444444444444444444',
+        guildId: workScope.guildId,
+        discordUserId,
+        channelId,
+        interactionId: '777777777777777777',
+        intent: { action: 'save-message', message },
+      },
+      { scope: workScope, taskSourceId: sourceId, enabled: true, clock: () => workNow },
+    );
+    assert.match(JSON.stringify(result), /Target project/);
+  } finally {
+    db.raw.close();
+  }
+});

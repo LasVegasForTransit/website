@@ -29,6 +29,20 @@ function section(title: string, url: string): DiscordTaskComponent {
     accessory: { type: 2, style: 5, label: t('discordWork.openNotion'), url: taskNotionLink(url) },
   };
 }
+export function eventWorkCard(event: { title: string; pageId: string }): DiscordTaskMessage {
+  return workMessage([
+    {
+      type: 9,
+      components: [workText(`### ${taskMarkdown(event.title)}`)],
+      accessory: {
+        type: 2,
+        style: 5,
+        label: 'Open in Notion',
+        url: taskNotionLink(`https://www.notion.so/${event.pageId}`),
+      },
+    },
+  ]);
+}
 export function projectWorkCard(
   home: ProjectHome,
   project: { title: string; url: string },

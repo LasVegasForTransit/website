@@ -9,6 +9,7 @@ import {
 } from '@lasvegasfortransit/platform-integrations/discord-work-runtime';
 import { runWorkPreview } from '@lasvegasfortransit/platform-integrations/discord-work-setup';
 import { runDiscordWorkBatch } from '@lasvegasfortransit/platform-integrations/discord-work-runner';
+import { runWorkRouteScan } from '@lasvegasfortransit/platform-integrations/discord-work-route-scan';
 import {
   WORK_COMMAND,
   SAVE_TO_NOTION_COMMAND,
@@ -66,12 +67,23 @@ export class WorkPreview extends WorkerEntrypoint<WorkEnv> {
     });
   }
 }
-async function runWorkJob(env: WorkEnv, stage: 'ingest' | 'effects' | 'refresh') {
+async function runWorkJob(env: WorkEnv, stage: 'ingest' | 'effects' | 'refresh' | 'route-scan') {
   const runtime = workLinkRuntime(env);
   if (!runtime) return idleDatabaseJob({ kind: 'idle' as const });
   return runMeteredJob(env.PLATFORM_DB, `DiscordWork:${stage}`, async (budget) => {
     const source = await readTaskCheckinSource(budget.db, runtime.sourceId);
     if (!source) return { kind: 'idle' as const };
+    if (stage === 'route-scan')
+      return runWorkRouteScan(
+        budget.db,
+        providers(env, budget.db, runtime).notion,
+        {
+          environment: runtime.environment,
+          guildId: runtime.guildId,
+          workspaceId: source.workspace_id,
+        },
+        () => new Date(),
+      );
     return runDiscordWorkBatch(budget.db, providers(env, budget.db, runtime), {
       scope: {
         environment: runtime.environment,
@@ -101,6 +113,11 @@ export class DiscordWorkEffects extends WorkerEntrypoint<WorkEnv> {
 export class DiscordWorkRefresh extends WorkerEntrypoint<WorkEnv> {
   async run() {
     return runWorkJob(this.env, 'refresh');
+  }
+}
+export class DiscordWorkRouteScan extends WorkerEntrypoint<WorkEnv> {
+  async run() {
+    return runWorkJob(this.env, 'route-scan');
   }
 }
 export class DiscordWorkCommands extends WorkerEntrypoint<WorkEnv> {

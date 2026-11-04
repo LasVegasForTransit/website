@@ -1,6 +1,7 @@
 import type { Db } from '@lasvegasfortransit/platform-storage/db';
 import {
-  listProjectHomes,
+  findExistingProjectHomes,
+  findProjectHomesForPlacement,
   findWorkSubject,
 } from '@lasvegasfortransit/platform-storage/discord-work-links';
 import { t } from '@lasvegasfortransit/platform-core/messages';
@@ -12,10 +13,15 @@ import { setupReply, setupReceipt, receiptCard } from './discord-work-setup-comm
 import type { WorkProviders, WorkEffectContext } from './discord-work-actions';
 import type { WorkPreviewInput, WorkPreviewResult } from './discord-work-interactions';
 import type { WorkSubject, ProjectHome } from './discord-work-types';
-function homeDescription(createForum: boolean | undefined): string {
+function homeDescription(
+  createForum: boolean | undefined,
+  kind: 'forum' | 'text' | 'thread',
+): string {
   return createForum
     ? `${t('discordWork.projectForum')}\n\n${t('discordWork.audience')}`
-    : t('discordWork.audience');
+    : kind === 'forum'
+      ? t('discordWork.audience')
+      : `This explicitly uses a ${kind === 'text' ? 'text channel' : 'thread'} instead of a dedicated project forum.\n\n${t('discordWork.audience')}`;
 }
 export async function sourceSubject(
   db: Db,
@@ -53,6 +59,42 @@ export async function sourceSubject(
     : 'Linked work';
   return { subject: { kind, sourceId: parent, pageId }, title: title || 'Linked work' };
 }
+function isPrivateWorkThread(
+  destination: Awaited<ReturnType<WorkProviders['discord']['inspectDestination']>>,
+): boolean {
+  return destination.destination.kind === 'thread' && destination.privateThread !== false;
+}
+
+async function homeDestinationProblem(
+  providers: WorkProviders,
+  destination: Awaited<ReturnType<WorkProviders['discord']['inspectDestination']>>,
+  input: WorkPreviewInput,
+): Promise<string | null> {
+  if (isPrivateWorkThread(destination))
+    return 'Private threads cannot be linked because their audience may differ from the parent channel.';
+  if (
+    !destination.canRead ||
+    destination.archived ||
+    destination.locked ||
+    (!destination.canSend && !destination.isCategory)
+  )
+    return t('discordWork.unavailable');
+  if (
+    destination.isCategory &&
+    (!destination.canManageChannels || !(await providers.discord.communityEnabled()))
+  )
+    return 'Creating a forum needs Manage Channels in the category and Community enabled on the server.';
+  if (
+    !destination.isCategory &&
+    destination.destination.kind !== 'forum' &&
+    !input.intent.destinationId
+  )
+    return 'Choose a forum or category. To use a text channel or thread instead, select it explicitly as the destination.';
+  if (destination.requiredTag && !destination.tags.length)
+    return 'This forum requires a tag, but none is available to use.';
+  return null;
+}
+
 export async function linkHome(
   db: Db,
   providers: WorkProviders,
@@ -77,7 +119,10 @@ export async function linkHome(
     context.clock(),
   );
   if (!actor) return setupReply(t('discordWork.unavailable'));
-  const existing = (await listProjectHomes(db, context.scope)).find((h) => h.projectId === pageId);
+  const matches = await findExistingProjectHomes(db, context.scope, page.subject.sourceId, pageId);
+  if (matches.length > 1)
+    return setupReply('Multiple links exist for this project. Review them before continuing.');
+  const existing = matches[0];
   if (existing)
     return setupReply(
       `### ${taskMarkdown(existing.title ?? page.title)}\nhttps://discord.com/channels/${context.scope.guildId}/${existing.destination.channelId}`,
@@ -85,8 +130,8 @@ export async function linkHome(
   const destination = await providers.discord.inspectDestination(
     input.intent.destinationId ?? input.channelId,
   );
-  if (!destination.canRead || (!destination.canSend && !destination.isCategory))
-    return setupReply(t('discordWork.unavailable'));
+  const destinationProblem = await homeDestinationProblem(providers, destination, input);
+  if (destinationProblem) return setupReply(destinationProblem);
   const tags =
     destination.requiredTag && destination.tags.length === 1 ? [destination.tags[0]?.id ?? ''] : [];
   const receipt = await setupReceipt(
@@ -102,7 +147,7 @@ export async function linkHome(
         destinationId: destination.destination.channelId,
         audienceFingerprint: destination.audienceFingerprint,
         createForum: destination.isCategory === true,
-        description: homeDescription(destination.isCategory),
+        description: homeDescription(destination.isCategory, destination.destination.kind),
         requiredTag: destination.requiredTag,
         availableTags: destination.tags,
         tagIds: tags,
@@ -119,18 +164,20 @@ async function linkTask(
   context: WorkEffectContext,
 ): Promise<WorkPreviewResult> {
   const { input, page } = request;
-  const homes = await listProjectHomes(db, context.scope),
-    source = await readWorkSource(db, context.taskSourceId, context.scope);
+  const source = await readWorkSource(db, context.taskSourceId, context.scope);
   const task = source ? await readWorkTask(providers, source, page.subject) : null;
   if (!task) return setupReply(t('discordWork.unavailable'));
   const target = await providers.discord.inspectDestination(
     input.intent.destinationId ?? input.channelId,
   );
-  const candidates = homes.filter(
-    (h) =>
-      task.projectIds.includes(h.projectId) &&
-      [target.destination.channelId, target.destination.parentId].includes(h.destination.channelId),
-  );
+  const candidates = source
+    ? await findProjectHomesForPlacement(db, context.scope, {
+        sourceId: source.policy.projectsSourceId,
+        projectIds: task.projectIds,
+        channelId: target.destination.channelId,
+        parentId: target.destination.parentId,
+      })
+    : [];
   const [candidate] = candidates;
   if (!candidate || candidates.length !== 1) return setupReply(t('discordWork.noHome'));
   return prepareTaskLink(
@@ -184,6 +231,10 @@ export async function prepareTaskLink(
   const destination = await providers.discord.inspectDestination(
     request.destinationId ?? (home.taskParent ?? home.destination).channelId,
   );
+  if (destination.destination.kind === 'thread' && destination.privateThread !== false)
+    return setupReply(
+      'Private threads cannot be linked because their audience may differ from the parent channel.',
+    );
   const automatic =
     home.destination.kind !== 'thread' && (await providers.discord.messageContentAvailable());
   const receipt = await setupReceipt(

@@ -7,6 +7,9 @@ import {
 import {
   enqueueWorkOperation,
   claimWorkOperation,
+  settleWorkOperation,
+  queueFooterReconciliation,
+  readWorkOperation,
 } from '@lasvegasfortransit/platform-storage/discord-work-operations';
 import { resolveWorkActor } from '../src/discord-work-authority';
 import { DiscordWorkClient } from '../src/discord-work-provider';
@@ -143,4 +146,102 @@ void test('shared status writes recheck assignment and refresh only the same bot
   } finally {
     db.raw.close();
   }
+});
+
+void test('scheduled footer repair rechecks the original actor before writing to Notion', async () => {
+  const { processWorkAction } = await import('../src/discord-work-actions');
+  const { db, notion, task } = workFixture();
+  let writes = 0;
+  const discord = new DiscordWorkClient({
+    guildId: workScope.guildId,
+    applicationId: '444444444444444444',
+    botToken: 'fixture-only',
+  });
+  Object.assign(discord, { membership: () => Promise.resolve(true) });
+  Object.assign(notion, {
+    appendBlockChildren: () => {
+      writes++;
+      return Promise.resolve({});
+    },
+  });
+  const home = {
+    id: 'home',
+    scope: workScope,
+    projectSourceId,
+    projectId,
+    destination: { kind: 'forum' as const, channelId: '333333333333333333', parentId: null },
+    taskParent: null,
+    audienceFingerprint: 'audience',
+    approvedBy: 'guest',
+    state: 'active' as const,
+    generation: 1,
+  };
+  const conversation = {
+    id: 'conversation',
+    scope: workScope,
+    subject: { kind: 'task' as const, sourceId, pageId: taskId },
+    homeId: 'home',
+    placementProjectId: projectId,
+    threadId: '555555555555555555',
+    starterMessageId: '555555555555555555',
+    mode: 'automatic' as const,
+    state: 'active' as const,
+    generation: 1,
+    activationId: '555555555555555555',
+    cursorId: '555555555555555555',
+    windowUpperId: null,
+    windowBeforeId: null,
+    footerBlockIds: [],
+  };
+  try {
+    await saveProjectHome(db, home, 0, workNow);
+    await saveWorkConversation(db, conversation, 0, workNow);
+    const actor = await resolveWorkActor(db, workScope, discordUserId);
+    assert.ok(actor);
+    await enqueueWorkOperation(
+      db,
+      {
+        id: 'backlink',
+        scope: workScope,
+        homeId: 'home',
+        conversationId: 'conversation',
+        generation: 1,
+        kind: 'backlink',
+        sourceKey: 'backlink:conversation',
+        actorPersonId: actor.personId,
+        actorDiscordId: discordUserId,
+        originalAuthorId: discordUserId,
+        grantVersion: actor.grantVersion,
+        payload: {},
+      },
+      workNow,
+    );
+    const first = await claimWorkOperation(db, workScope, workNow);
+    assert.ok(first);
+    await settleWorkOperation(
+      db,
+      { id: first.id, token: first.claim_token },
+      { state: 'confirmed' },
+      workNow,
+    );
+    const now = new Date(workNow.getTime() + 60_001);
+    assert.equal(await queueFooterReconciliation(db, conversation, now), true);
+    task.properties.Assignee.people = [];
+    const next = await claimWorkOperation(db, workScope, now);
+    assert.ok(next);
+    const context = { scope: workScope, taskSourceId: sourceId, enabled: true, clock: () => now };
+    assert.equal((await processWorkAction(db, { notion, discord }, next, context)).kind, 'idle');
+    assert.equal((await readWorkOperation(db, workScope, next.id))?.state, 'superseded');
+    assert.equal(writes, 0);
+  } finally {
+    db.raw.close();
+  }
+});
+
+void test('a deleted forum tag is a known pre-send failure, not an uncertain creation', async () => {
+  const { workFailure } = await import('../src/discord-work-actions');
+  assert.deepEqual(workFailure(new Error('invalid_forum_tag')), {
+    state: 'failed',
+    reason: 'invalid_forum_tag',
+  });
 });

@@ -8,6 +8,7 @@ export async function runScheduledDiscordWork(
     ['discord_work_ingest', () => context.exports.DiscordWorkIngest.run()],
     ['discord_work_effects', () => context.exports.DiscordWorkEffects.run()],
     ['discord_work_refresh', () => context.exports.DiscordWorkRefresh.run()],
+    ['discord_work_route_scan', () => context.exports.DiscordWorkRouteScan.run()],
   ] as const;
   let failed = false;
   for (const [event, run] of steps) {

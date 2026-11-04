@@ -15,6 +15,7 @@ export interface WorkDestination {
 }
 export type WorkState = 'preview' | 'active' | 'paused' | 'unlinked';
 export interface ProjectHome {
+  kind?: 'project' | 'event';
   id: string;
   scope: WorkScope;
   projectSourceId: string;
@@ -28,7 +29,10 @@ export interface ProjectHome {
   title?: string | undefined;
   summaryMessageId?: string | undefined;
   summaryChannelId?: string | undefined;
+  overviewPin?: 'pinned' | 'needs_attention' | undefined;
+  overviewPostPin?: 'pinned' | 'needs_attention' | undefined;
   taskSourceId?: string | undefined;
+  eventForumTags?: { forumId: string; tagIds: string[] } | undefined;
   reason?: string | undefined;
 }
 export interface WorkConversation {
@@ -37,6 +41,7 @@ export interface WorkConversation {
   subject: WorkSubject;
   homeId: string;
   placementProjectId: string;
+  audienceFingerprint?: string | undefined;
   threadId: string;
   starterMessageId: string;
   cardChannelId?: string | undefined;
@@ -48,6 +53,7 @@ export interface WorkConversation {
   windowUpperId: string | null;
   windowBeforeId: string | null;
   footerBlockIds: string[];
+  managedForumTags?: { routeId: string; tagIds: string[] } | undefined;
   title?: string | undefined;
   reason?: string | undefined;
 }
@@ -97,5 +103,9 @@ export function workScopeKey(scope: WorkScope): string {
   return JSON.stringify([scope.environment, scope.guildId, scope.workspaceId]);
 }
 export function workSubjectKey(subject: WorkSubject): string {
-  return JSON.stringify([subject.kind, subject.sourceId, subject.pageId]);
+  return JSON.stringify([
+    subject.kind,
+    subject.sourceId.replaceAll('-', '').toLowerCase(),
+    subject.pageId.replaceAll('-', '').toLowerCase(),
+  ]);
 }

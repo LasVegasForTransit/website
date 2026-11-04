@@ -1,5 +1,6 @@
 import { object, discordId, DiscordApiFailure } from './discord-types';
 import type { DiscordHttp } from './discord-http';
+import { notionWorkId, notionWorkUrl } from './discord-work-input';
 export interface WorkDiscovery {
   forumId?: string;
   threadId?: string;
@@ -48,6 +49,27 @@ async function discoverForum(input: DiscoveryInput): Promise<string | null> {
   const [forum] = forums;
   return forums.length === 1 && discordId(forum?.id) ? forum.id : null;
 }
+async function includeArchived(
+  request: (path: string) => Promise<unknown>,
+  input: { destinationId: string; guildId: string },
+  candidates: Record<string, unknown>[],
+): Promise<boolean> {
+  const archived = object(
+    await request(`/channels/${input.destinationId}/threads/archived/public?limit=100`),
+  );
+  if (!Array.isArray(archived.threads) || typeof archived.has_more !== 'boolean')
+    throw new DiscordApiFailure('invalid_response');
+  if (archived.has_more) return false;
+  for (const value of archived.threads) {
+    const thread = object(value);
+    if (thread.parent_id !== input.destinationId || !discordId(thread.id))
+      throw new DiscordApiFailure('invalid_response');
+    if (thread.guild_id !== undefined && thread.guild_id !== input.guildId)
+      throw new DiscordApiFailure('invalid_response');
+    if (!candidates.some((candidate) => candidate.id === thread.id)) candidates.push(thread);
+  }
+  return candidates.length <= 8;
+}
 async function discoverPost(
   input: DiscoveryInput,
   context: { destinationId: string; found: WorkDiscovery; botId: string },
@@ -55,28 +77,42 @@ async function discoverPost(
   const request = (path: string) =>
     input.http.request(path, { authorization: input.authorization, responseSize: 'work-history' });
   const response = object(await request(`/guilds/${input.guildId}/threads/active`));
-  const threads = Array.isArray(response.threads) ? response.threads.map(object) : [];
-  for (const thread of threads
+  if (!Array.isArray(response.threads)) throw new DiscordApiFailure('invalid_response');
+  const candidates = response.threads
+    .map(object)
     .filter(
       (t) =>
         t.parent_id === context.destinationId && t.guild_id === input.guildId && discordId(t.id),
-    )
-    .slice(0, 8)) {
+    );
+  // An incomplete scan cannot establish that the marked post is unique.
+  if (candidates.length > 8) return null;
+  if (
+    !(await includeArchived(
+      request,
+      { destinationId: context.destinationId, guildId: input.guildId },
+      candidates,
+    ))
+  )
+    return null;
+  let foundPost: WorkDiscovery | null = null;
+  for (const thread of candidates) {
     const m = object(await request(`/channels/${String(thread.id)}/messages/${String(thread.id)}`));
     if (
       m.id === thread.id &&
       m.channel_id === thread.id &&
       object(m.author).id === context.botId &&
       marked(m.components, input.operationId)
-    )
-      return {
+    ) {
+      if (foundPost) return null;
+      foundPost = {
         ...context.found,
         threadId: String(thread.id),
         starterMessageId: String(thread.id),
         cardChannelId: String(thread.id),
       };
+    }
   }
-  return context.found.forumId ? context.found : null;
+  return foundPost ?? (context.found.forumId ? context.found : null);
 }
 /** Bounded, positive evidence only. A missing result never authorizes another post. */
 export async function discoverDiscordWork(input: DiscoveryInput): Promise<WorkDiscovery | null> {
@@ -117,4 +153,57 @@ export async function discoverDiscordWork(input: DiscoveryInput): Promise<WorkDi
     };
   }
   return { ...found, threadId: destinationId, starterMessageId: id, cardChannelId: destinationId };
+}
+
+function containsNotionPage(content: string, pageId: string): boolean {
+  const urls = content.match(/https:\/\/[^\s<>]+/g) ?? [];
+  return urls.some((url) => notionWorkUrl(url.replace(/[),.!?]+$/, '')) === pageId);
+}
+
+/** Find only a uniquely linked event post. A missing result never proves that no post exists. */
+export async function discoverLinkedEvent(input: {
+  http: DiscordHttp;
+  authorization: string;
+  guildId: string;
+  forumId: string;
+  pageId: string;
+}): Promise<string | null> {
+  const pageId = notionWorkId(input.pageId);
+  if (!pageId || !discordId(input.forumId)) throw new DiscordApiFailure('invalid_response');
+  const request = (path: string) =>
+    input.http.request(path, { authorization: input.authorization, responseSize: 'work-history' });
+  const parent = object(await request(`/channels/${input.forumId}`));
+  if (parent.id !== input.forumId || parent.guild_id !== input.guildId || parent.type !== 15)
+    throw new DiscordApiFailure('permission_denied');
+  const active = object(await request(`/guilds/${input.guildId}/threads/active`));
+  if (!Array.isArray(active.threads)) throw new DiscordApiFailure('invalid_response');
+  const candidates = active.threads
+    .map(object)
+    .filter(
+      (thread) =>
+        thread.parent_id === input.forumId &&
+        thread.guild_id === input.guildId &&
+        discordId(thread.id),
+    );
+  if (
+    candidates.length > 8 ||
+    !(await includeArchived(
+      request,
+      { destinationId: input.forumId, guildId: input.guildId },
+      candidates,
+    ))
+  )
+    return null;
+  let match: string | null = null;
+  for (const thread of candidates) {
+    const id = String(thread.id);
+    const message = object(await request(`/channels/${id}/messages/${id}`));
+    if (message.id !== id || message.channel_id !== id || typeof message.content !== 'string')
+      throw new DiscordApiFailure('invalid_response');
+    if (containsNotionPage(message.content, pageId)) {
+      if (match) return null;
+      match = id;
+    }
+  }
+  return match;
 }

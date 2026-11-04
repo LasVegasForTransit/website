@@ -1,79 +1,22 @@
-import { discoverDiscordWork } from './discord-work-discovery';
+import { discoverDiscordWork, discoverLinkedEvent } from './discord-work-discovery';
 import { digestToken } from '@lasvegasfortransit/platform-core/random-token';
-import { DiscordHttp } from './discord-http';
-import { DiscordTaskClient } from './notion-task-discord';
-import { object, discordId, DiscordApiFailure, type DiscordOptions } from './discord-types';
+import { object, discordId, DiscordApiFailure } from './discord-types';
+import { DiscordWorkProviderBase } from './discord-work-provider-base';
 import {
-  workRoles,
-  workOverwrites,
-  workPermissions,
-  workAudience,
-} from './discord-work-permissions';
+  validTagSet,
+  validPinnedThread,
+  validPinnedResponse,
+  sameTags,
+  updatedTagsMatch,
+} from './discord-work-provider-validation';
+import type { ConversationCreateInput, CreatedConversation } from './discord-work-provider-base';
 import type { DiscordTaskMessage } from './notion-task-cards';
-import type { WorkDestination, WorkMessage } from './discord-work-types';
-export interface DestinationInspection {
-  destination: WorkDestination;
-  isCategory?: boolean;
-  audienceFingerprint: string;
-  archived: boolean;
-  locked: boolean;
-  canRead: boolean;
-  canSend: boolean;
-  canCreateThreads: boolean;
-  canManageChannels: boolean;
-  requiredTag: boolean;
-  tags: { id: string; name: string }[];
-}
-export interface CreatedConversation {
-  threadId: string;
-  starterMessageId: string;
-  cardChannelId?: string;
-}
-export interface ConversationCreateInput {
-  destination: DestinationInspection;
-  title: string;
-  card: DiscordTaskMessage;
-  operationId: string;
-  tagIds: string[];
-  onStarter?: (created: CreatedConversation) => Promise<void>;
-}
-function channelKind(type: unknown): WorkDestination['kind'] {
-  if (type === 0) return 'text';
-  if (type === 15) return 'forum';
-  if ([10, 11, 12].includes(Number(type))) return 'thread';
-  throw new Error('unsupported_channel_type');
-}
-function message(value: unknown, channelId: string): WorkMessage {
-  const row = object(value),
-    author = object(row.author);
-  if (
-    !discordId(row.id) ||
-    row.channel_id !== channelId ||
-    !discordId(author.id) ||
-    typeof row.timestamp !== 'string' ||
-    !Number.isFinite(Date.parse(row.timestamp))
-  )
-    throw new DiscordApiFailure('invalid_response');
-  const text = typeof row.content === 'string' ? row.content : '';
-  return {
-    id: row.id,
-    channelId,
-    authorId: author.id,
-    authorName:
-      typeof author.global_name === 'string'
-        ? author.global_name
-        : typeof author.username === 'string'
-          ? author.username
-          : 'Discord participant',
-    createdAt: new Date(row.timestamp).toISOString(),
-    text,
-    bot: author.bot === true,
-    webhook: typeof row.webhook_id === 'string',
-    system: ![0, 19].includes(Number(row.type)),
-    contentAvailable: typeof row.content === 'string',
-    attachmentOnly: !text && Array.isArray(row.attachments) && row.attachments.length > 0,
-  };
-}
+export type {
+  DestinationInspection,
+  CreatedConversation,
+  ConversationCreateInput,
+} from './discord-work-provider-base';
+
 function requireCreation(input: ConversationCreateInput): void {
   const d = input.destination;
   if (d.isCategory) throw new Error('category_is_not_a_conversation');
@@ -83,147 +26,189 @@ function requireCreation(input: ConversationCreateInput): void {
   if (input.tagIds.some((id) => !d.tags.some((t) => t.id === id)))
     throw new Error('invalid_forum_tag');
 }
-export class DiscordWorkClient {
-  private readonly http: DiscordHttp;
-  private readonly authorization: string;
-  private readonly members: DiscordTaskClient;
-  constructor(
-    private readonly config: DiscordOptions & {
-      guildId: string;
-      applicationId: string;
-      botToken: string;
-      allowWrites?: boolean;
-    },
-  ) {
-    if (!discordId(config.guildId) || !discordId(config.applicationId) || !config.botToken)
-      throw new DiscordApiFailure('not_configured');
-    this.http = new DiscordHttp(config);
-    this.authorization = `Bot ${config.botToken}`;
-    this.members = new DiscordTaskClient(config);
+export class DiscordWorkClient extends DiscordWorkProviderBase {
+  /** Discord does not provide an atomic compare-and-set for channel topics. */
+  async readForumTopic(forumId: string): Promise<string | null> {
+    const forum = await this.channel(forumId);
+    if (forum.type !== 15 || (forum.topic !== null && typeof forum.topic !== 'string'))
+      throw new DiscordApiFailure('invalid_response');
+    return forum.topic;
   }
-  membership(userId: string, guildId: string) {
-    return this.members.membership(userId, guildId);
-  }
-  private write() {
-    if (!this.config.allowWrites) throw new Error('work_sending_disabled');
-  }
-  private async channel(id: string) {
-    if (!discordId(id)) throw new DiscordApiFailure('invalid_response');
-    const value = object(
-      await this.http.request(`/channels/${id}`, { authorization: this.authorization }),
+  async updateForumTopic(input: {
+    forumId: string;
+    expectedTopic: string | null;
+    topic: string;
+  }): Promise<void> {
+    this.write();
+    if (input.topic.length > 4096) throw new DiscordApiFailure('invalid_response');
+    const forum = await this.channel(input.forumId);
+    if (forum.type !== 15 || (forum.topic !== null && typeof forum.topic !== 'string'))
+      throw new DiscordApiFailure('invalid_response');
+    if (forum.topic !== input.expectedTopic) throw new Error('forum_topic_changed');
+    if (forum.topic === input.topic) return;
+    const updated = object(
+      await this.http.request(`/channels/${input.forumId}`, {
+        method: 'PATCH',
+        authorization: this.authorization,
+        reason: 'Update the project forum topic',
+        jsonBody: { topic: input.topic },
+      }),
     );
-    if (value.id !== id || value.guild_id !== this.config.guildId)
-      throw new DiscordApiFailure('permission_denied');
-    return value;
+    if (
+      updated.id !== input.forumId ||
+      updated.guild_id !== this.config.guildId ||
+      updated.type !== 15 ||
+      updated.topic !== input.topic
+    )
+      throw new DiscordApiFailure('invalid_response');
   }
-  async inspectDestination(id: string): Promise<DestinationInspection> {
-    const row = await this.channel(id),
-      kind = row.type === 4 ? 'forum' : channelKind(row.type);
-    const parent = kind === 'thread' ? await this.channel(String(row.parent_id)) : row;
+  async readForumTags(forumId: string, threadId: string): Promise<string[]> {
+    const thread = await this.channel(threadId);
+    const metadata = object(thread.thread_metadata);
+    if (
+      !discordId(forumId) ||
+      thread.type !== 11 ||
+      thread.parent_id !== forumId ||
+      metadata.archived !== false ||
+      metadata.locked !== false ||
+      !Array.isArray(thread.applied_tags) ||
+      thread.applied_tags.length > 5 ||
+      !thread.applied_tags.every(discordId) ||
+      new Set(thread.applied_tags).size !== thread.applied_tags.length
+    )
+      throw new DiscordApiFailure('invalid_response');
+    return thread.applied_tags;
+  }
+  /** Rechecks the observed set; Discord does not support atomic conditional thread updates. */
+  async updateForumTags(input: {
+    forumId: string;
+    threadId: string;
+    expectedTags: string[];
+    tags: string[];
+  }): Promise<void> {
+    this.write();
+    if (!discordId(input.forumId) || !validTagSet(input.expectedTags) || !validTagSet(input.tags))
+      throw new DiscordApiFailure('invalid_response');
+    const thread = await this.channel(input.threadId);
+    const metadata = object(thread.thread_metadata);
+    if (
+      thread.type !== 11 ||
+      thread.parent_id !== input.forumId ||
+      metadata.archived !== false ||
+      metadata.locked !== false ||
+      !validTagSet(thread.applied_tags)
+    )
+      throw new DiscordApiFailure('invalid_response');
+    if (!sameTags(thread.applied_tags, input.expectedTags)) throw new Error('forum_tags_changed');
+    if (sameTags(thread.applied_tags, input.tags)) return;
+    const updated = object(
+      await this.http.request(`/channels/${input.threadId}`, {
+        method: 'PATCH',
+        authorization: this.authorization,
+        reason: 'Update project forum tags',
+        jsonBody: { applied_tags: input.tags },
+      }),
+    );
+    if (!updatedTagsMatch(updated, input, this.config.guildId))
+      throw new DiscordApiFailure('invalid_response');
+  }
+  async pinWorkMessage(channelId: string, messageId: string): Promise<void> {
+    this.write();
+    if (!discordId(messageId)) throw new DiscordApiFailure('invalid_response');
+    await this.channel(channelId);
+    await this.http.request(`/channels/${channelId}/messages/pins/${messageId}`, {
+      method: 'PUT',
+      authorization: this.authorization,
+      reason: 'Pin the project overview',
+    });
+  }
+  async pinForumPost(forumId: string, threadId: string): Promise<void> {
+    this.write();
+    const parent = await this.channel(forumId);
+    const thread = await this.channel(threadId);
+    if (!validPinnedThread(parent, thread, forumId))
+      throw new DiscordApiFailure('invalid_response');
+    const flags = BigInt(Number(thread.flags));
+    if ((flags & 2n) !== 0n) return;
+    const active = object(
+      await this.http.request(`/guilds/${this.config.guildId}/threads/active`, {
+        authorization: this.authorization,
+        responseSize: 'work-history',
+      }),
+    );
+    if (!Array.isArray(active.threads)) throw new DiscordApiFailure('invalid_response');
+    for (const value of active.threads) {
+      const other = object(value);
+      if (other.parent_id !== forumId || other.id === threadId) continue;
+      if (!Number.isSafeInteger(other.flags) || Number(other.flags) < 0)
+        throw new DiscordApiFailure('invalid_response');
+      if ((BigInt(Number(other.flags)) & 2n) !== 0n)
+        throw new Error('forum_already_has_pinned_post');
+    }
+    const next = Number(flags | 2n);
+    if (!Number.isSafeInteger(next)) throw new DiscordApiFailure('invalid_response');
+    const updated = object(
+      await this.http.request(`/channels/${threadId}`, {
+        method: 'PATCH',
+        authorization: this.authorization,
+        jsonBody: { flags: next },
+        reason: 'Pin the project overview post',
+      }),
+    );
+    if (!validPinnedResponse(updated, { threadId, guildId: this.config.guildId, forumId }))
+      throw new DiscordApiFailure('invalid_response');
+  }
+  /** A missing or ambiguous marker never authorizes another creation. */
+  async findCreatedCategory(operationId: string): Promise<string | null> {
+    if (!/^[\w-]{1,64}$/.test(operationId)) throw new DiscordApiFailure('invalid_response');
     const self = object(
       await this.http.request('/users/@me', { authorization: this.authorization }),
     );
     if (!discordId(self.id)) throw new DiscordApiFailure('invalid_response');
-    const roles = workRoles(
-      await this.http.request(`/guilds/${this.config.guildId}/roles`, {
-        authorization: this.authorization,
-        responseSize: 'guild-roles',
-      }),
+    const logs = object(
+      await this.http.request(
+        `/guilds/${this.config.guildId}/audit-logs?user_id=${self.id}&action_type=10&limit=100`,
+        { authorization: this.authorization, responseSize: 'work-history' },
+      ),
     );
-    const member = object(
-      await this.http.request(`/guilds/${this.config.guildId}/members/${self.id}`, {
-        authorization: this.authorization,
-      }),
-    );
-    if (!Array.isArray(member.roles) || !member.roles.every(discordId))
+    if (!Array.isArray(logs.audit_log_entries)) throw new DiscordApiFailure('invalid_response');
+    const matches = logs.audit_log_entries
+      .map(object)
+      .filter(
+        (entry) =>
+          entry.action_type === 10 &&
+          entry.user_id === self.id &&
+          entry.reason === `LVBT route setup ${operationId}` &&
+          discordId(entry.target_id),
+      );
+    if (matches.length !== 1) return null;
+    const id = String(matches[0]?.target_id);
+    const channel = await this.channel(id);
+    return channel.type === 4 && (channel.parent_id ?? null) === null ? id : null;
+  }
+  async findRouteDestination(input: {
+    kind: 'text' | 'forum';
+    parentId: string;
+    operationId: string;
+  }): Promise<string | null> {
+    if (!discordId(input.parentId) || !/^[\w-]{1,64}$/.test(input.operationId))
       throw new DiscordApiFailure('invalid_response');
-    const overwrites = workOverwrites(parent.permission_overwrites);
-    const permissions = workPermissions({
-      guildId: this.config.guildId,
-      userId: self.id,
-      memberRoles: member.roles,
-      roles,
-      overwrites,
-    });
-    const has = (bit: bigint) => Boolean(permissions & (1n << bit));
-    const tags = Array.isArray(row.available_tags)
-      ? row.available_tags
-          .map((v) => object(v))
-          .filter((v) => discordId(v.id) && typeof v.name === 'string')
-          .map((v) => ({ id: String(v.id), name: String(v.name) }))
-      : [];
-    return {
-      isCategory: row.type === 4,
-      destination: {
-        kind,
-        channelId: id,
-        parentId: discordId(row.parent_id) ? row.parent_id : null,
-      },
-      audienceFingerprint: await workAudience(roles, overwrites, String(parent.id)),
-      archived: object(row.thread_metadata ?? {}).archived === true,
-      locked: object(row.thread_metadata ?? {}).locked === true,
-      canRead: has(10n) && has(16n),
-      canSend: has(10n) && has(kind === 'thread' ? 38n : 11n),
-      canCreateThreads: has(35n),
-      canManageChannels: has(4n),
-      requiredTag: (Number(row.flags) & 16) !== 0,
-      tags,
-    };
-  }
-  async messageContentAvailable(): Promise<boolean> {
-    const app = object(
-      await this.http.request('/oauth2/applications/@me', { authorization: this.authorization }),
-    );
-    if (app.id !== this.config.applicationId) throw new DiscordApiFailure('invalid_response');
-    return typeof app.flags === 'number' && Boolean(app.flags & ((1 << 18) | (1 << 19)));
-  }
-  async readMessages(
-    channelId: string,
-    query: { after?: string; before?: string; limit: number },
-  ): Promise<WorkMessage[]> {
-    await this.channel(channelId);
-    const params = new URLSearchParams({ limit: String(Math.min(25, Math.max(1, query.limit))) });
-    if (query.after) params.set('after', query.after);
-    if (query.before) params.set('before', query.before);
-    const value = await this.http.request(`/channels/${channelId}/messages?${params.toString()}`, {
+    const channels = await this.http.request(`/guilds/${this.config.guildId}/channels`, {
       authorization: this.authorization,
       responseSize: 'work-history',
     });
-    if (!Array.isArray(value) || value.length > 25) throw new DiscordApiFailure('invalid_response');
-    return value.map((v) => message(v, channelId));
-  }
-  async createProjectForum(input: {
-    categoryId: string;
-    name: string;
-    projectUrl: string;
-    operationId: string;
-  }): Promise<WorkDestination> {
-    this.write();
-    const category = await this.channel(input.categoryId);
-    if (category.type !== 4) throw new Error('category_required');
-    const guild = object(
-      await this.http.request(`/guilds/${this.config.guildId}`, {
-        authorization: this.authorization,
-      }),
-    );
-    if (!Array.isArray(guild.features) || !guild.features.includes('COMMUNITY'))
-      throw new Error('forum_unavailable');
-    const created = object(
-      await this.http.request(`/guilds/${this.config.guildId}/channels`, {
-        method: 'POST',
-        authorization: this.authorization,
-        workCreation: true,
-        jsonBody: {
-          type: 15,
-          name: input.name.slice(0, 100),
-          parent_id: input.categoryId,
-          topic: `Project plan: ${input.projectUrl}\nLVBT work reference: ${input.operationId}`,
-        },
-      }),
-    );
-    if (!discordId(created.id) || created.guild_id !== this.config.guildId || created.type !== 15)
-      throw new DiscordApiFailure('invalid_response');
-    return { kind: 'forum', channelId: created.id, parentId: input.categoryId };
+    if (!Array.isArray(channels)) throw new DiscordApiFailure('invalid_response');
+    const matches = channels
+      .map(object)
+      .filter(
+        (channel) =>
+          channel.guild_id === this.config.guildId &&
+          channel.parent_id === input.parentId &&
+          channel.type === (input.kind === 'forum' ? 15 : 0) &&
+          channel.topic === `LVBT route setup: ${input.operationId}` &&
+          discordId(channel.id),
+      );
+    return matches.length === 1 ? String(matches[0]?.id) : null;
   }
   async createTaskConversation(input: ConversationCreateInput): Promise<CreatedConversation> {
     this.write();
@@ -271,6 +256,15 @@ export class DiscordWorkClient {
     if (row.id !== starter || row.parent_id !== channelId || row.guild_id !== this.config.guildId)
       throw new DiscordApiFailure('invalid_response');
     return { threadId: starter, starterMessageId: starter, cardChannelId: channelId };
+  }
+  findLinkedEvent(forumId: string, pageId: string) {
+    return discoverLinkedEvent({
+      http: this.http,
+      authorization: this.authorization,
+      guildId: this.config.guildId,
+      forumId,
+      pageId,
+    });
   }
   discoverWork(input: {
     destinationId: string;

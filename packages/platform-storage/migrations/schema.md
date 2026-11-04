@@ -1028,3 +1028,54 @@ pending writes; these tables never grant private reminder consent. Preview recei
 minutes. Operations retain provider result IDs and source keys for reconciliation. Uncertain effects
 are held rather than blindly retried. Person deletion revokes pending shared work and pauses project
 homes approved by that person.
+
+Migration `0057_discord_work_routes.sql` stores reusable Notion source routes separately from
+project homes. Only one active route may claim a source within a workspace and Discord guild; paused
+routes may be edited without altering existing project or conversation links. Revisions fence
+concurrent edits. Route writes check the current administrator and create an audit entry in the same
+transaction. A stored route does not itself grant authority or start processing: callers must
+validate destination access and source policy, and workers must recheck the approved authority and
+audience before performing provider writes.
+
+Migration `0058_discord_work_requests.sql` records per-route eligibility observations and
+deduplicates requests by workspace, source, and Notion page. Existing eligible pages are baselined
+on activation; new eligible pages and later ineligible-to-eligible transitions may produce requests.
+Observations from paused or superseded route revisions cannot queue work. Request records contain no
+page content and are not themselves authority to create a Discord resource. A request may be
+atomically attached to one provision operation after source, actor, and destination checks; its
+state follows that operation. Retryable provider errors defer the request, and uncertain or
+unauthorized results remain held for review. When a page becomes ineligible and then eligible again,
+a held request can be rechecked only if no provision operation exists for it; possible external
+effects remain held for reconciliation.
+
+Migration `0059_discord_work_route_scans.sql` leases one bounded source page at a time. A scan
+retains its cursor across failures and restarts when the route revision changes. An expired lease,
+paused route, or changed revision cannot advance a cursor or record scan observations. An
+administrator-requested baseline can scan a paused route without producing requests. Activation
+requires a completed baseline for the same revision and atomically switches the route and scan to
+active operation. Baseline observations retain their revision and are read as the starting state,
+avoiding an unbounded rewrite of all observed pages. The scan retains a bounded failure indicator
+for organizer status and clears it after a successful page; stale leases cannot overwrite the
+current scan's status.
+
+Migration `0060_discord_work_location_indexes.sql` indexes scoped Discord destinations and threads
+so organizer controls can find linked work without scanning unrelated conversations.
+
+Migration `0061_discord_work_canonical_identity.sql` enforces uniqueness for active routes and
+linked homes and conversations after normalizing Notion UUID capitalization and hyphenation. It
+rejects existing conflicts for operator reconciliation rather than selecting a link automatically.
+
+Migration `0062_discord_work_comment_identity.sql` prevents the same Discord message from being
+saved twice to a Notion page when the page UUID has different spelling. Existing duplicate records
+block the migration for operator reconciliation.
+
+Migration `0063_discord_work_canonical_reservation.sql` prevents competing in-flight provisioning
+operations for the same source and page when their UUID spellings differ. Existing collisions block
+the migration so an operator can reconcile any uncertain provider effects first.
+
+Migration `0064_discord_work_tag_serialization.sql` permits only one pending or uncertain tag update
+per conversation. Conflicting existing operations block the migration for operator review.
+
+Migration `0065_discord_work_existing_events.sql` records whether an event needs existing-post
+reconciliation independently of its stable request identifier, preserving that classification when
+an unstarted request is reused after a route changes.

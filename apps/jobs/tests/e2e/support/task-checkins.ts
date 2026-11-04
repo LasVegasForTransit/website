@@ -217,7 +217,7 @@ export async function taskRuntime(
           name: 'probe',
           compatibilityDate: '2026-09-04',
           modules: true,
-          script: `export default {async fetch(request,env){ const key=new URL(request.url).pathname.slice(1); return ['scan','queue','operation','recovery','refresh','workIngest','workEffects','workRefresh'].includes(key) ? Response.json(await env[key].run()) : new Response(null,{status:404}); }}`,
+          script: `export default {async fetch(request,env){ const key=new URL(request.url).pathname.slice(1); return ['scan','queue','operation','recovery','refresh','workIngest','workEffects','workRefresh','workRouteScan'].includes(key) ? Response.json(await env[key].run()) : new Response(null,{status:404}); }}`,
           serviceBindings: {
             scan: { name: 'jobs', entrypoint: 'TaskCheckinScan' },
             queue: { name: 'jobs', entrypoint: 'TaskCheckinQueue' },
@@ -227,6 +227,7 @@ export async function taskRuntime(
             workIngest: { name: 'jobs', entrypoint: 'DiscordWorkIngest' },
             workEffects: { name: 'jobs', entrypoint: 'DiscordWorkEffects' },
             workRefresh: { name: 'jobs', entrypoint: 'DiscordWorkRefresh' },
+            workRouteScan: { name: 'jobs', entrypoint: 'DiscordWorkRouteScan' },
           },
         },
       ],
@@ -254,7 +255,13 @@ export async function taskRuntime(
     const db = await simulator.getD1Database('PLATFORM_DB', 'jobs');
     await db.prepare('SELECT 1').first();
     const files = await readdir(data, { recursive: true });
-    const file = files.find((name) => name.includes('d1') && name.endsWith('.sqlite'));
+    const file = files.find(
+      (name) =>
+        name.includes('d1') &&
+        name.endsWith('.sqlite') &&
+        !name.split('/').at(-1)?.startsWith('._') &&
+        !name.endsWith('/metadata.sqlite'),
+    );
     assert.ok(file);
     const raw = new DatabaseSync(join(data, file));
     try {
@@ -331,6 +338,7 @@ export async function taskRuntime(
       workIngest: step('workIngest'),
       workEffects: step('workEffects'),
       workRefresh: step('workRefresh'),
+      workRouteScan: step('workRouteScan'),
     };
     return {
       db,

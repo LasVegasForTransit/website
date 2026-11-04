@@ -17,6 +17,9 @@ export interface DiscordTaskComponent {
   required?: boolean;
   placeholder?: string;
   options?: { label: string; value: string; default?: boolean }[];
+  min_values?: number;
+  max_values?: number;
+  channel_types?: number[];
 }
 export interface DiscordTaskMessage {
   flags: number;

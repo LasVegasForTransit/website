@@ -13,7 +13,6 @@ export const discordWork = {
   status: 'Status',
   automatic:
     'Replies from authorized participants are saved to Notion. Edits and attachments are not copied.',
-  selected: 'Discussion stays in Discord. Use Add update or Save to Notion to record an update.',
   paused: 'Updates paused',
   unlinked: 'Disconnected',
   preview: 'Preview',

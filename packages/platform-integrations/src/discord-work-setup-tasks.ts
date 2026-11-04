@@ -1,8 +1,8 @@
 import type { Db } from '@lasvegasfortransit/platform-storage/db';
 import {
   readProjectHome,
-  listProjectHomes,
-  listWorkConversations,
+  listProjectHomesAtDestination,
+  listWorkConversationsAtThread,
   findWorkSubject,
 } from '@lasvegasfortransit/platform-storage/discord-work-links';
 import { t } from '@lasvegasfortransit/platform-core/messages';
@@ -10,7 +10,7 @@ import { resolveWorkActor, readWorkSource, authorizeWork } from './discord-work-
 import { readNotionProjectLeads } from './notion-task-projects';
 import { notionObject } from './notion-task-types';
 import { parseNotionTaskPage } from './notion-task-reader';
-import { workSubject, workString } from './discord-work-input';
+import { sameNotionWorkId, workSubject, workString } from './discord-work-input';
 import { workMessage, workText, workCustomId } from './discord-work-cards';
 import { setupReply, setupReceipt, ownedReceipt, receiptCard } from './discord-work-setup-common';
 import { prepareTaskLink } from './discord-work-setup-links';
@@ -56,7 +56,9 @@ async function choices(
     if (
       parsed &&
       typeof id === 'string' &&
-      parsed.snapshot.projectIds.includes(input.home.projectId)
+      parsed.snapshot.projectIds.some((projectId) =>
+        sameNotionWorkId(projectId, input.home.projectId),
+      )
     )
       tasks.push({
         title: parsed.snapshot.title,
@@ -237,13 +239,22 @@ export async function workSaveMessage(
 ): Promise<WorkPreviewResult> {
   const message = input.intent.message;
   if (message?.channelId !== input.channelId) return setupReply(t('discordWork.unavailable'));
-  const conversations = await listWorkConversations(db, context.scope),
-    homeIds = new Set(
-      conversations.filter((c) => c.threadId === input.channelId).map((c) => c.homeId),
-    );
-  const homes = (await listProjectHomes(db, context.scope)).filter(
-    (h) => h.destination.channelId === input.channelId || homeIds.has(h.id),
-  );
+  const [direct, conversations] = await Promise.all([
+    listProjectHomesAtDestination(db, context.scope, input.channelId),
+    listWorkConversationsAtThread(db, context.scope, input.channelId),
+  ]);
+  if (direct.length > 50 || conversations.length > 50)
+    return setupReply('Too many links share this location to choose safely.');
+  const associated = (
+    await Promise.all(conversations.map((c) => readProjectHome(db, context.scope, c.homeId)))
+  ).filter((h): h is ProjectHome => Boolean(h && h.state !== 'unlinked' && h.kind !== 'event'));
+  const homes = [
+    ...new Map(
+      [...direct.filter((h) => h.kind !== 'event'), ...associated].map((h) => [h.id, h]),
+    ).values(),
+  ];
+  if (homes.length > 25)
+    return setupReply('Too many projects share this location to choose safely.');
   if (!homes.length) return setupReply(t('discordWork.noHome'));
   const [onlyHome] = homes;
   if (homes.length === 1 && onlyHome)
@@ -317,9 +328,8 @@ export async function workSaveSelection(
     context.clock(),
   );
   if (!actor) return setupReply(t('discordWork.unavailable'));
-  const c = (await listWorkConversations(db, context.scope, home.id)).find(
-    (v) => v.subject.pageId === subject.pageId,
-  );
+  const matched = await findWorkSubject(db, context.scope, subject);
+  const c = matched?.homeId === home.id ? matched : null;
   const text = message.text || 'Discord attachments: open the source message to view them.';
   const preview = await setupReceipt(
     db,
