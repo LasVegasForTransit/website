@@ -196,6 +196,38 @@ void test('repair preserves a footer paragraph edited by an organizer', async ()
   }
 });
 
+for (const formatting of ['bold', 'text color', 'paragraph color'] as const) {
+  void test(`repair preserves an organizer's ${formatting} on the footer`, async () => {
+    const fixture = await footerFixture();
+    const { db, blocks, conversation } = fixture;
+    try {
+      const client = fixture.client();
+      await ensureNotionWorkLink(db, client, conversation, workNow);
+      const footer = blocks[1];
+      assert.ok(footer);
+      const paragraph = footer.paragraph as {
+        color?: string;
+        rich_text: Record<string, unknown>[];
+      };
+      if (formatting === 'paragraph color') paragraph.color = 'red';
+      else {
+        const item = paragraph.rich_text[0];
+        assert.ok(item);
+        item.annotations = formatting === 'bold' ? { bold: true } : { color: 'red' };
+      }
+      fixture.addOrganizerBlock();
+      const before = structuredClone(blocks);
+      assert.deepEqual(await ensureNotionWorkLink(db, client, conversation, workNow), {
+        kind: 'paused',
+        reason: 'footer_modified',
+      });
+      assert.deepEqual(blocks, before);
+    } finally {
+      db.raw.close();
+    }
+  });
+}
+
 void test('repair pauses if an organizer removes the link from the recorded footer', async () => {
   const fixture = await footerFixture();
   const { db, blocks, conversation } = fixture;

@@ -91,15 +91,28 @@ function untouchedFooter(
   url: string,
   previous = false,
 ): boolean {
-  const richText = notionObject(block.paragraph).rich_text;
+  const paragraph = notionObject(block.paragraph);
+  const richText = paragraph.rich_text;
   if (
     !matchesBlock(block, { botId, url, previous }) ||
     block.has_children === true ||
     !Array.isArray(richText)
   )
     return false;
-  if (richText.length !== 1) return false;
-  return notionObject(notionObject(richText[0]).text).content === 'Open the Discord conversation';
+  if (richText.length !== 1 || (paragraph.color !== undefined && paragraph.color !== 'default'))
+    return false;
+  const item = notionObject(richText[0]);
+  const annotations = notionObject(item.annotations);
+  return (
+    notionObject(item.text).content === 'Open the Discord conversation' &&
+    ['bold', 'italic', 'strikethrough', 'underline', 'code'].every(
+      (name) => annotations[name] === undefined || annotations[name] === false,
+    ) &&
+    (annotations.color === undefined || annotations.color === 'default') &&
+    Object.keys(annotations).every((name) =>
+      ['bold', 'italic', 'strikethrough', 'underline', 'code', 'color'].includes(name),
+    )
+  );
 }
 
 async function archiveManagedBlock(client: NotionTaskClient, id: string): Promise<void> {

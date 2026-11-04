@@ -7,6 +7,7 @@ import {
   readWorkOperation,
 } from '@lasvegasfortransit/platform-storage/discord-work-operations';
 import { recoverOneWorkOperation } from '../src/discord-work-recovery';
+import { recoverDiscoveredForum } from '../src/discord-work-recover-forum';
 import { DiscordWorkClient } from '../src/discord-work-provider';
 import {
   saveProjectHome,
@@ -21,6 +22,80 @@ import {
   projectId,
   discordUserId,
 } from './support/discord-work';
+
+void test('a uniquely discovered forum resumes only before any overview checkpoint', async () => {
+  const { db, notion } = workFixture();
+  const discord = new DiscordWorkClient({
+    guildId: workScope.guildId,
+    applicationId: '444444444444444444',
+    botToken: 'fixture-only',
+  });
+  const forumId = '333333333333333333',
+    categoryId = '777777777777777777';
+  const payload = {
+    intent: 'home',
+    createForum: true,
+    audienceFingerprint: 'audience',
+    destinationId: categoryId,
+  };
+  let now = workNow;
+  const context = { scope: workScope, taskSourceId: sourceId, enabled: true, clock: () => now };
+  try {
+    await enqueueWorkOperation(
+      db,
+      {
+        id: 'new-forum',
+        scope: workScope,
+        homeId: null,
+        conversationId: null,
+        generation: 1,
+        kind: 'provision',
+        sourceKey: 'new-forum',
+        actorPersonId: 'guest',
+        actorDiscordId: discordUserId,
+        originalAuthorId: discordUserId,
+        grantVersion: 'grant',
+        payload,
+      },
+      workNow,
+    );
+    const op = await claimWorkOperation(db, workScope, workNow);
+    assert.ok(op);
+    await settleWorkOperation(db, { id: op.id, token: op.claim_token }, { state: 'held' }, workNow);
+    Object.assign(discord, {
+      discoverWork: () => Promise.resolve({ forumId }),
+      inspectDestination: () =>
+        Promise.resolve({
+          destination: { kind: 'forum', channelId: forumId, parentId: categoryId },
+          audienceFingerprint: 'audience',
+          canRead: true,
+          canSend: true,
+        }),
+    });
+    const input = { proof: { forumId }, payload, destinationId: categoryId };
+    const attempted = { ...op, result_json: JSON.stringify({ forumId, postPhase: 'attempted' }) };
+    assert.equal(
+      await recoverDiscoveredForum(db, { discord, notion }, { ...input, op: attempted, context }),
+      null,
+    );
+    now = new Date(workNow.getTime() + 60_001);
+    assert.deepEqual(await recoverOneWorkOperation(db, { discord, notion }, context), {
+      kind: 'progress',
+    });
+    const saved = await readWorkOperation(db, workScope, op.id);
+    assert.equal(saved?.state, 'queued');
+    assert.deepEqual(JSON.parse(saved.result_json ?? '{}'), { forumId, postPhase: 'not_started' });
+    assert.deepEqual(
+      await recoverDiscoveredForum(db, { discord, notion }, { ...input, op, context }),
+      {
+        kind: 'paused',
+        reason: 'link_changed',
+      },
+    );
+  } finally {
+    db.raw.close();
+  }
+});
 
 void test('a saved overview and matching checkpoint allow interrupted provisioning to resume', async () => {
   const { db, notion } = workFixture();
