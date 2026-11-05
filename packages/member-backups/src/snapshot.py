@@ -75,7 +75,9 @@ def snapshot_query(inventory):
         parts.append("json_object('name'," + literal(name) + ",'rowid'," + (literal(alias) if alias else 'NULL')
                      + ",'rows'," + rows + ')')
     schema = "(SELECT json_group_array(json_object('type',type,'name',name,'tbl_name',tbl_name,'sql',sql)) FROM (" + SCHEMA_SQL + '))'
-    query = "SELECT json_object('formatVersion',2,'schema'," + schema + ",'tables',json_array(" + ','.join(parts) + ')) AS snapshot'
+    table_values = 'VALUES ' + ','.join('(' + part + ')' for part in parts)
+    query = ("SELECT json_object('formatVersion',2,'schema'," + schema
+             + ",'tables',(SELECT json_group_array(json(column1)) FROM (" + table_values + '))) AS snapshot')
     if len(query.encode()) > 95_000:
         raise ValueError('Schema exceeds the safe single-query snapshot limit; review backup capacity')
     return query
