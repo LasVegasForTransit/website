@@ -3,6 +3,7 @@ import { readFile, rm, symlink, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import test from 'node:test';
 import { packageStaffRelease, verifyStaffRelease } from '../scripts/release-artifact';
+import { inventory } from '../scripts/release-files';
 import { releaseFixture, releaseIdentity } from './support/release';
 
 void test('staff and jobs retain the same reviewed bytes, isolated configs and canonical migrations', async () => {
@@ -183,6 +184,20 @@ void test('parallel deployed migration names retain every file without allowing 
     await assert.rejects(
       packageStaffRelease(f.source, f.destination, releaseIdentity),
       /complete canonical migration sequence/,
+    );
+  } finally {
+    await rm(f.root, { recursive: true, force: true });
+  }
+});
+
+void test('release inventory omits AppleDouble metadata sidecars', async () => {
+  const f = await releaseFixture();
+  try {
+    const migrations = join(f.source, 'packages/platform-storage/migrations');
+    await writeFile(join(migrations, '._0001_people.sql'), 'filesystem metadata');
+    assert.deepEqual(
+      (await inventory(migrations)).map(([name]) => name),
+      ['0001_people.sql', '0002_consent.sql'],
     );
   } finally {
     await rm(f.root, { recursive: true, force: true });

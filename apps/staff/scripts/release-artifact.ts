@@ -109,6 +109,16 @@ export async function packageStaffRelease(
     throw error;
   }
 }
+export async function copyVerifiedRelease(
+  source: string,
+  destination: string,
+  release: StaffRelease,
+) {
+  await copyFiles(source, destination, release.files);
+  await writeFile(join(destination, 'release.json'), await readFile(join(source, 'release.json')), {
+    flag: 'wx',
+  });
+}
 export async function verifyStaffRelease(
   directory: string,
   expected: ReleaseIdentity,
