@@ -234,13 +234,25 @@ void test('generated compatibility mirror preserves actual routes, database iden
   }
 });
 
-void test('saved production jobs preserve manual task updates without enabling reminders or shared work', async () => {
+void test('shared work is enabled consistently in production while preview and reminders stay disabled', async () => {
   const filename = path.resolve(deployDir, '../jobs/wrangler.jsonc');
   const parsed = ts.parseConfigFileTextToJson(filename, await readFile(filename, 'utf8'));
-  const jobs = parsed.config as { vars: Record<string, string> };
+  const jobs = parsed.config as {
+    vars: Record<string, string>;
+    env: { preview: { vars: Record<string, string> } };
+  };
+  const site = typedWorkerConfiguration(
+    production,
+    await readReleaseConfiguration(path.resolve(deployDir, '../..')),
+    preview,
+  );
+  const sitePreview = (site.env as { preview: { vars: Record<string, string> } }).preview;
   assert.equal(jobs.vars.LVBT_TASK_UPDATES_ENABLED, 'true');
   assert.equal(jobs.vars.LVBT_TASK_CHECKINS_ENABLED, 'false');
-  assert.equal(jobs.vars.LVBT_DISCORD_WORK_ENABLED, 'false');
+  assert.equal(jobs.vars.LVBT_DISCORD_WORK_ENABLED, 'true');
+  assert.equal((site.vars as Record<string, string>).LVBT_DISCORD_WORK_ENABLED, 'true');
+  assert.equal(jobs.env.preview.vars.LVBT_DISCORD_WORK_ENABLED, 'false');
+  assert.equal(sitePreview.vars.LVBT_DISCORD_WORK_ENABLED, 'false');
   assert.equal(jobs.vars.LVBT_NOTION_TASK_SOURCE_ID, '1601d4dd-a09c-4562-8029-5a63446bd5ff');
   assert.equal(
     jobs.vars.LVBT_NOTION_TASK_PRODUCTION_SOURCE_ID,

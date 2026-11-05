@@ -36,7 +36,7 @@ const commonWorker = {
 const productionTaskBindings = {
   LVBT_TASK_CHECKINS_ENABLED: bindings.text('false'),
   LVBT_TASK_UPDATES_ENABLED: bindings.text('true'),
-  LVBT_DISCORD_WORK_ENABLED: bindings.text('false'),
+  LVBT_DISCORD_WORK_ENABLED: bindings.text('true'),
   LVBT_NOTION_TASK_SOURCE_ID: bindings.text('1601d4dd-a09c-4562-8029-5a63446bd5ff'),
   LVBT_NOTION_TASK_PRODUCTION_SOURCE_ID: bindings.text('1601d4dd-a09c-4562-8029-5a63446bd5ff'),
 };
