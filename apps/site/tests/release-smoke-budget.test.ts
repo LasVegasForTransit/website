@@ -8,6 +8,8 @@ void test('candidate and activation smoke include marker and browser resources i
   let burst = true;
   let staleMarkers = 0;
   let markerReads = 0;
+  let propagationTime = 0;
+  const markerWaits: number[] = [];
   const expected = { commit: 'a'.repeat(40), releaseId: '123' };
   const server = createServer((request, response) => {
     received += 1;
@@ -65,12 +67,19 @@ void test('candidate and activation smoke include marker and browser resources i
       protected: false,
       public: false,
       waitForPropagation: true,
+      now: () => propagationTime,
+      sleep: (milliseconds) => {
+        markerWaits.push(milliseconds);
+        propagationTime += milliseconds;
+        return Promise.resolve();
+      },
     });
     assert.equal(
       markerReads,
       5,
       'Activation preserves all five bounded propagation reads without test retries.',
     );
+    assert.deepEqual(markerWaits, [4_500, 4_500, 4_500, 4_500]);
     assert.equal(report.limit, 32);
     assert.equal(report.sent, received);
     assert.equal(report.blocked, 0);
