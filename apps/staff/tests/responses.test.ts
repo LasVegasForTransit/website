@@ -178,3 +178,22 @@ void test('a reported reference identifies a useful cause without logging privat
     logger.mock.restore();
   }
 });
+
+void test('only the Discord onboarding form admits its native redirect chain through Discord', () => {
+  for (const mode of ['google', 'cloudflare-access'] as const) {
+    const env = {
+      LVBT_STAFF_AUTH_MODE: mode,
+      LVBT_ACCESS_TEAM_DOMAIN: 'lvbt.cloudflareaccess.com',
+    };
+    const url = new URL('https://staff-preview.lasvegasfortransit.org/onboarding/discord/');
+    const csp =
+      privateResponse(new Response(''), url.pathname, authFormOrigins(env, url)).headers.get(
+        'Content-Security-Policy',
+      ) ?? '';
+    assert.match(csp, /form-action[^;]*https:\/\/preview\.lasvegasfortransit\.org/);
+    assert.match(csp, /form-action[^;]*https:\/\/discord\.com(?: |;)/);
+    for (const path of ['/onboarding/', '/onboarding/connect/', '/sign-in/ready/', '/people/']) {
+      assert.ok(!authFormOrigins(env, new URL(path, url)).includes('https://discord.com'), path);
+    }
+  }
+});

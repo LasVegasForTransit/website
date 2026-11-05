@@ -21,7 +21,9 @@
     "./discord-identity": "./src/discord-identity.ts",
     "./paper": "./src/paper.ts",
     "./staff-gate": "./src/staff-gate.ts",
-    "./staff-gate-layout": "./src/StaffGateLayout.astro"
+    "./staff-gate-layout": "./src/StaffGateLayout.astro",
+    "./workspace-onboarding": "./src/workspace-onboarding.ts",
+    "./workspace-connector": "./src/workspace-connector.ts"
   },
   "scripts": {
     "lint": "eslint . --max-warnings 0",

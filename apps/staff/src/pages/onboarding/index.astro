@@ -1,0 +1,27 @@
+---
+import { env } from 'cloudflare:workers';
+import { discordProviderConfiguration } from '@lasvegasfortransit/platform-integrations/discord-runtime';
+import { staffOnboardingStep } from '@lasvegasfortransit/platform-storage/staff-discord-handoff';
+import {
+  onboardingAccount,
+  onboardingStepPath,
+  refreshOnboardingDiscord,
+} from '../../lib/onboarding-account';
+import type { StaffEnv } from '../../lib/context';
+const platform = env as unknown as StaffEnv;
+const account = await onboardingAccount(platform, Astro.request, Astro.locals.access);
+if (!account) return Astro.redirect('/sign-in/', 303);
+const outcome = Astro.url.searchParams.get('discord');
+if (outcome && ['connected', 'screening_pending'].includes(outcome))
+  await refreshOnboardingDiscord(platform, account.session.personId);
+const step = await staffOnboardingStep(
+  platform,
+  account.token,
+  discordProviderConfiguration(platform).contextId,
+);
+return Astro.redirect(
+  onboardingStepPath(step, account.next) +
+    (outcome ? `&discord=${encodeURIComponent(outcome)}` : ''),
+  303,
+);
+---

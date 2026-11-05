@@ -1,0 +1,38 @@
+---
+import { env } from 'cloudflare:workers';
+import StaffGateLayout from '@lasvegasfortransit/platform-core/staff-gate-layout';
+import { discordProviderConfiguration } from '@lasvegasfortransit/platform-integrations/discord-runtime';
+import { staffOnboardingStep } from '@lasvegasfortransit/platform-storage/staff-discord-handoff';
+import { onboardingAccount, onboardingStepPath } from '../../../lib/onboarding-account';
+import type { StaffEnv } from '../../../lib/context';
+const platform = env as unknown as StaffEnv;
+const account = await onboardingAccount(platform, Astro.request, Astro.locals.access);
+if (!account) return Astro.redirect('/sign-in/', 303);
+const step = await staffOnboardingStep(
+  platform,
+  account.token,
+  discordProviderConfiguration(platform).contextId,
+);
+if (step !== 'pending') return Astro.redirect(onboardingStepPath(step, account.next), 303);
+---
+
+<StaffGateLayout title="Your setup is pending">
+  <p>
+    You’re signed in as <strong>{account.session.email}</strong>. Your Workspace account still needs
+    to be prepared for staff setup.
+  </p>
+  <p>
+    Contact <a href="mailto:hello@lasvegasfortransit.org">hello@lasvegasfortransit.org</a> to finish setting
+    up your access.
+  </p>
+  <a
+    class="staff-action-link"
+    href={`/onboarding/pending/?next=${encodeURIComponent(account.next)}`}>Check again</a
+  >
+  <form method="post" action="/sign-in/change-account/">
+    <button class="staff-gate-link staff-text-button" type="submit">Switch account</button>
+  </form>
+  <Fragment slot="help"
+    >Need help? <a href="mailto:hello@lasvegasfortransit.org">Email the team</a>.</Fragment
+  >
+</StaffGateLayout>

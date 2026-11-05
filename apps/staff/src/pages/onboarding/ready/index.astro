@@ -1,0 +1,28 @@
+---
+import { env } from 'cloudflare:workers';
+import StaffGateLayout from '@lasvegasfortransit/platform-core/staff-gate-layout';
+import { discordProviderConfiguration } from '@lasvegasfortransit/platform-integrations/discord-runtime';
+import { staffOnboardingStep } from '@lasvegasfortransit/platform-storage/staff-discord-handoff';
+import OnboardingProgress from '../../../components/OnboardingProgress.astro';
+import { onboardingAccount, onboardingStepPath } from '../../../lib/onboarding-account';
+import { staffReturnPath } from '../../../lib/sign-in-return';
+import type { StaffEnv } from '../../../lib/context';
+const platform = env as unknown as StaffEnv;
+const account = await onboardingAccount(platform, Astro.request, Astro.locals.access);
+if (!account) return Astro.redirect('/sign-in/', 303);
+const step = await staffOnboardingStep(
+  platform,
+  account.token,
+  discordProviderConfiguration(platform).contextId,
+);
+if (step !== 'ready') return Astro.redirect(onboardingStepPath(step, account.next), 303);
+---
+
+<StaffGateLayout title="Your account is ready">
+  <OnboardingProgress slot="progress" step="ready" />
+  <p>You’re connected to the LVBT team. Your staff tools are ready.</p>
+  <a class="staff-action-link" href={staffReturnPath(account.next)}>Open portal</a>
+  <Fragment slot="help"
+    >Need help? <a href="mailto:hello@lasvegasfortransit.org">Email the team</a>.</Fragment
+  >
+</StaffGateLayout>

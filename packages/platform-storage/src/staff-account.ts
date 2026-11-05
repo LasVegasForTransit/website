@@ -3,7 +3,7 @@ import { hashWithSecret } from '@lasvegasfortransit/platform-core/signing';
 import type { AuthEnv } from './auth';
 
 /** Only explicit team account enrollment permits a non-newsletter member to sign in as staff. */
-export const TEAM_ACCOUNT_ELIGIBLE = `(p.membership_status='member' OR (p.membership_status='not_member' AND EXISTS(SELECT 1 FROM staff_team_accounts t WHERE t.person_id=p.id)))`;
+export const TEAM_ACCOUNT_ELIGIBLE = `((p.membership_status='member' OR (p.membership_status='not_member' AND EXISTS(SELECT 1 FROM staff_team_accounts t WHERE t.person_id=p.id)) OR EXISTS(SELECT 1 FROM workspace_enrollments e WHERE e.person_id=p.id AND e.state='active')) AND NOT EXISTS(SELECT 1 FROM workspace_enrollments e WHERE e.person_id=p.id AND e.state<>'active'))`;
 
 export async function createTeamAccount(
   env: AuthEnv,

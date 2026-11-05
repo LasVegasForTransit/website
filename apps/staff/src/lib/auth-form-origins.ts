@@ -4,7 +4,7 @@ import type { StaffEnv } from './context';
 // Chromium checks the full redirect chain of native forms, including a same-origin
 // POST that redirects to the member site or the selected sign-in provider.
 export function authFormOrigins(env: Partial<StaffEnv>, url: URL): string[] {
-  if (!/^\/sign-in(?:\/|$)/.test(url.pathname)) return [];
+  if (!/^\/(?:sign-in|onboarding)(?:\/|$)/.test(url.pathname)) return [];
   const member =
     env.LVBT_MEMBER_ORIGIN ??
     (url.hostname.includes('preview')
@@ -16,5 +16,8 @@ export function authFormOrigins(env: Partial<StaffEnv>, url: URL): string[] {
       : env.LVBT_ACCESS_TEAM_DOMAIN
         ? `https://${env.LVBT_ACCESS_TEAM_DOMAIN}`
         : undefined;
-  return provider ? [member, provider] : [member];
+  const origins = provider ? [member, provider] : [member];
+  if (url.pathname.replace(/\/$/, '') === '/onboarding/discord')
+    origins.push('https://discord.com');
+  return origins;
 }

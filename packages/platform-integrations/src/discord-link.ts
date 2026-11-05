@@ -1,6 +1,7 @@
+import { discordSessionEligible } from '@lasvegasfortransit/platform-storage/discord-eligibility';
 import { signToken, verifyToken } from '@lasvegasfortransit/platform-core/signing';
 import { isDiscordId } from '@lasvegasfortransit/platform-core/discord-identity';
-import { readSession, type AuthEnv } from '@lasvegasfortransit/platform-storage/auth';
+import { type AuthEnv } from '@lasvegasfortransit/platform-storage/auth';
 import {
   DiscordLinkService,
   discordLinkOrigin,
@@ -69,8 +70,7 @@ export class DiscordLink {
       !/^[\w-]{43}$/.test(sessionToken)
     )
       return null;
-    const session = await readSession(this.env, sessionToken);
-    if (session?.person.membershipStatus !== 'member') return null;
+    if (!(await discordSessionEligible(this.env, sessionToken, new Date(this.now())))) return null;
     return await signToken(this.env.LVBT_SIGN_IN_SECRET, {
       purpose: 'discord_link_start',
       subject: await discordSessionHash(this.env, sessionToken),

@@ -1,3 +1,4 @@
+import { DISCORD_PERSON_ELIGIBLE } from './discord-eligibility';
 import { isDiscordId } from '@lasvegasfortransit/platform-core/discord-identity';
 import type { Db } from './db';
 
@@ -5,7 +6,7 @@ interface JoinTarget {
   personId: string;
   discordId: string;
 }
-const CURRENT = `p.id=? AND p.deleted_at IS NULL AND p.membership_status='member'
+const CURRENT = `p.id=? AND p.deleted_at IS NULL AND ${DISCORD_PERSON_ELIGIBLE}
   AND NOT EXISTS(SELECT 1 FROM discord_disconnects d JOIN identities i ON i.id=d.identity_record_id WHERE i.person_id=p.id AND i.platform='discord')
   AND (SELECT count(*) FROM identities WHERE person_id=p.id AND platform='discord')=1
   AND EXISTS(SELECT 1 FROM identities WHERE person_id=p.id AND platform='discord'

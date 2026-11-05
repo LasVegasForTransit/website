@@ -1,0 +1,28 @@
+---
+import { workspaceScopeReviews } from '@lasvegasfortransit/platform-storage/workspace-status';
+const staff = Astro.locals.staff;
+const reviews = staff ? await workspaceScopeReviews(staff.db, staff.actor) : [];
+---
+
+{
+  reviews.length > 0 && (
+    <section class="staff-google-warning" aria-labelledby="workspace-scope-heading">
+      <h2 id="workspace-scope-heading">Workspace accounts awaiting review</h2>
+      <p>
+        These accounts are outside the approved human-account scope. They have not received
+        automatic portal access. An administrator needs to review the Workspace organizational unit
+        or account exception.
+      </p>
+      <ul>
+        {reviews.slice(0, 50).map((row) => (
+          <li>{row.email ?? 'Deleted or unavailable Workspace address'}</li>
+        ))}
+      </ul>
+      {reviews.length > 50 && (
+        <p>
+          More accounts await review. Check the full Directory inventory before changing the policy.
+        </p>
+      )}
+    </section>
+  )
+}
