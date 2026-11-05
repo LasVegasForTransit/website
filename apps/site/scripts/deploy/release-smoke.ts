@@ -31,6 +31,8 @@ interface SmokeOptions {
   public: boolean;
   waitForPropagation: boolean;
   credentials?: AccessCredentials;
+  now?: () => number;
+  sleep?: (milliseconds: number) => Promise<void>;
 }
 
 async function verifySmokeIdentity(options: SmokeOptions, claim: () => void): Promise<void> {
@@ -47,6 +49,8 @@ async function verifySmokeIdentity(options: SmokeOptions, claim: () => void): Pr
       claim();
       return fetch(url, init);
     },
+    ...(options.now ? { now: options.now } : {}),
+    ...(options.sleep ? { sleep: options.sleep } : {}),
   };
   if (options.expected)
     await waitForReleaseIdentity(origin, options.expected, {
