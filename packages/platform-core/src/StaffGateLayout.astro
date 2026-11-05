@@ -21,8 +21,8 @@ const { title } = Astro.props;
     <div class="staff-gate-frame">
       <main id="main" class="staff-gate-panel" tabindex="-1">
         <header set:html={gateIdentity} />
-        <slot name="progress" />
         <h1>{title}</h1>
+        <slot name="progress" />
         <div class="staff-gate-body">
           <slot name="notice" />
           <slot />

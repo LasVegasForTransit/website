@@ -3,38 +3,44 @@ interface Props {
   step: 'account' | 'discord' | 'ready';
 }
 const { step } = Astro.props;
-const steps = [
-  ['account', 'Account'],
-  ['discord', 'Discord'],
-  ['ready', 'Ready'],
-];
+const labels = { account: 'Account', discord: 'Discord', ready: 'Ready' } as const;
+const current = { account: 1, discord: 2, ready: 3 }[step];
 ---
 
-<nav aria-label="Setup progress">
-  <ol>
-    {steps.map(([key, label]) => <li aria-current={key === step ? 'step' : undefined}>{label}</li>)}
-  </ol>
-</nav>
+<div class="onboarding-progress">
+  <p>Step {current} of 3: {labels[step]}</p>
+  <progress value={current} max="3" aria-label="Setup progress"></progress>
+</div>
 <style>
-  nav {
-    margin-block: 0 1.5rem;
+  .onboarding-progress {
+    display: grid;
+    gap: 0.5rem;
+    margin-block: 0.5rem 1.5rem;
   }
-  ol {
-    display: flex;
-    gap: 1.25rem;
-    list-style: none;
-    padding: 0;
-    margin: 0;
+  p {
     font-size: 0.875rem;
-  }
-  li {
-    opacity: 0.65;
-    border-bottom: 2px solid transparent;
-    padding-bottom: 0.4rem;
-  }
-  li[aria-current] {
-    opacity: 1;
     font-weight: 700;
-    border-color: currentColor;
+    color: var(--color-on-surface-variant);
+  }
+  progress {
+    display: block;
+    width: 100%;
+    height: 0.4rem;
+    border: 0;
+    border-radius: 999px;
+    accent-color: var(--color-primary);
+    background: var(--color-surface-container);
+  }
+  progress::-webkit-progress-bar {
+    border-radius: 999px;
+    background: var(--color-surface-container);
+  }
+  progress::-webkit-progress-value {
+    border-radius: 999px;
+    background: var(--color-primary);
+  }
+  progress::-moz-progress-bar {
+    border-radius: 999px;
+    background: var(--color-primary);
   }
 </style>

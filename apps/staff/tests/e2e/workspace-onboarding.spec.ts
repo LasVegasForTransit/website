@@ -225,7 +225,15 @@ async function teamDiscord(browser: Browser) {
     await page.waitForURL((url) => url.pathname === '/onboarding/account/');
     await render(page, 'account-choice', team.assertion);
     await page.getByRole('button', { name: 'Use Workspace account', exact: true }).click();
-    await page.getByRole('heading', { name: 'Join the team on Discord', exact: true }).waitFor();
+    const heading = page.getByRole('heading', { name: 'Join the team on Discord', exact: true });
+    await heading.waitFor();
+    const progress = page.getByRole('progressbar', { name: 'Setup progress' });
+    assert.equal(await progress.getAttribute('value'), '2');
+    const [headingBox, progressBox] = await Promise.all([
+      heading.boundingBox(),
+      progress.boundingBox(),
+    ]);
+    assert.ok(headingBox && progressBox && progressBox.y > headingBox.y);
     assert.equal(await page.getByRole('button', { name: /skip|later/i }).count(), 0);
     await render(page, 'discord-connect', team.assertion);
     await page.getByRole('button', { name: 'Connect Discord', exact: true }).click();
