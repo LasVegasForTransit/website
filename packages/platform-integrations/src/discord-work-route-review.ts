@@ -1,6 +1,6 @@
 import type { Db } from '@lasvegasfortransit/platform-storage/db';
 import { readWorkSource } from './discord-work-authority';
-import { inspectProjectRelations } from './discord-work-source-discovery';
+import { inspectProjectRelations, inspectProjectLeadFields } from './discord-work-source-discovery';
 import { startWorkRouteApproval, previewWorkRoute } from './discord-work-route-preview';
 import { notionObject } from './notion-task-types';
 import { savePayload } from './discord-work-route-setup-common';
@@ -71,6 +71,47 @@ interface ReviewState {
   indexes: number[];
   proposal: RouteProposal;
 }
+async function chooseProjectLead(
+  db: Db,
+  providers: WorkProviders,
+  context: WorkEffectContext,
+  { input, receipt, p, indexes, proposal }: ReviewState,
+): Promise<WorkPreviewResult> {
+  const fields = await inspectProjectLeadFields(db, providers, {
+    scope: context.scope,
+    discordUserId: input.discordUserId,
+    sourceId: proposal.sourceId,
+  });
+  if (!fields?.length)
+    return setupReply(
+      'Add a people field for project leads and share the source with the integration.',
+    );
+  const next = { ...p, selectedChoices: indexes, leadFields: fields };
+  if (
+    !(await savePayload(db, receipt.id, input.discordUserId, {
+      original: receipt.payload_json,
+      payload: next,
+    }))
+  )
+    return setupReply('This setup changed. Start again.');
+  return picker(receipt.id, 'route-lead', 'Choose the project lead people field.', {
+    options: fields.map((field) => ({ label: field.name.slice(0, 100), value: field.id })),
+  });
+}
+
+async function projectLeadSelection(
+  db: Db,
+  providers: WorkProviders,
+  context: WorkEffectContext,
+  state: ReviewState,
+): Promise<WorkPreviewResult | null> {
+  if (state.p.kind !== 'project') return null;
+  if (state.input.intent.action === 'route-choice')
+    return chooseProjectLead(db, providers, context, state);
+  return state.proposal.projectLeadField
+    ? null
+    : setupReply('Choose the project lead field from the list.');
+}
 async function chooseProjectRelation(
   db: Db,
   providers: WorkProviders,
@@ -78,12 +119,11 @@ async function chooseProjectRelation(
   { input, receipt, p, indexes, proposal }: ReviewState,
 ): Promise<WorkPreviewResult> {
   const source = await readWorkSource(db, context.taskSourceId, context.scope);
-  if (!source) return setupReply('The configured projects source is unavailable.');
   const relations = await inspectProjectRelations(db, providers, {
     scope: context.scope,
     discordUserId: input.discordUserId,
     sourceId: proposal.sourceId,
-    projectSourceId: source.policy.projectsSourceId,
+    projectSourceId: source?.policy.projectsSourceId ?? '',
   });
   if (!relations)
     return setupReply(
@@ -96,7 +136,6 @@ async function chooseProjectRelation(
   const next = {
     ...p,
     selectedChoices: indexes,
-    projectSourceId: source.policy.projectsSourceId,
     relations,
   };
   if (
@@ -191,6 +230,14 @@ function selectedRouteChoices(input: WorkPreviewInput, p: Record<string, unknown
   return { indexes, field, values };
 }
 
+function selectedProjectRelation(input: WorkPreviewInput, p: Record<string, unknown>) {
+  if (input.intent.action !== 'route-relation' || !Array.isArray(p.relations)) return undefined;
+  const relation = p.relations.map(notionObject).find((value) => value.id === input.intent.value);
+  if (typeof relation?.projectSourceId !== 'string' || typeof input.intent.value !== 'string')
+    return undefined;
+  return { property: input.intent.value, projectSourceId: relation.projectSourceId };
+}
+
 function buildRouteProposal(
   input: WorkPreviewInput,
   receipt: NonNullable<Awaited<ReturnType<typeof ownedReceipt>>>,
@@ -205,6 +252,7 @@ function buildRouteProposal(
   const selection = selectedRouteChoices(input, p);
   if (!selection) return null;
   const { indexes, field, values } = selection;
+  const projectRelation = selectedProjectRelation(input, p);
   const proposal = {
     id: typeof p.routeId === 'string' ? p.routeId : receipt.id,
     expectedRevision: typeof p.revision === 'number' ? p.revision : 0,
@@ -212,11 +260,13 @@ function buildRouteProposal(
     kind: p.kind as 'project' | 'event',
     trigger: { property: field, values },
     destinationId: p.destinationId,
-    ...(input.intent.action === 'route-relation' &&
-    typeof p.projectSourceId === 'string' &&
+    ...(input.intent.action === 'route-lead' &&
+    Array.isArray(p.leadFields) &&
+    p.leadFields.map(notionObject).some((field) => field.id === input.intent.value) &&
     typeof input.intent.value === 'string'
-      ? { projectRelation: { property: input.intent.value, projectSourceId: p.projectSourceId } }
+      ? { projectLeadField: input.intent.value }
       : {}),
+    ...(projectRelation ? { projectRelation } : {}),
   };
   return { proposal, indexes, selected: { field, values } };
 }
@@ -252,6 +302,14 @@ export async function reviewRouteSetup(
   const built = buildRouteProposal(input, receipt, p);
   if (!built) return setupReply('Choose a status from the list.');
   const { proposal, indexes, selected } = built;
+  const projectLead = await projectLeadSelection(db, providers, context, {
+    input,
+    receipt,
+    p,
+    indexes,
+    proposal,
+  });
+  if (projectLead) return projectLead;
   if (input.intent.action === 'route-choice' && p.projectMode === true)
     return chooseProjectRelation(db, providers, context, { input, receipt, p, indexes, proposal });
   if (projectRelationMissing(input, p, proposal))

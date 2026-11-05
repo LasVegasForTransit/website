@@ -7,6 +7,7 @@ import {
 } from '@lasvegasfortransit/platform-storage/discord-work-operations';
 import {
   readWorkRoute,
+  findActiveWorkRoute,
   saveWorkRoute,
   type WorkRoute,
 } from '@lasvegasfortransit/platform-storage/discord-work-routes';
@@ -18,6 +19,7 @@ interface RoutePreviewInput {
   sourceId: string;
   kind: 'project' | 'event';
   trigger: { property: string; values: string[] };
+  projectLeadField?: string;
   destinationId: string;
   projectRelation?: { property: string; projectSourceId: string };
   tagSync?: WorkRoute['tagSync'];
@@ -45,7 +47,7 @@ const unavailable = (reason: string): Extract<RoutePreview, { kind: 'unavailable
 });
 const canonicalId = (id: string) => id.replaceAll('-', '').toLowerCase();
 
-/** Project authorization and provisioning use the configured task source's project database. */
+/** Accept an approved project route independently of the private check-in policy. */
 export async function projectRouteSourceMatches(
   db: Db,
   scope: WorkScope,
@@ -53,7 +55,10 @@ export async function projectRouteSourceMatches(
   projectSourceId: string,
 ): Promise<boolean> {
   const source = await readWorkSource(db, taskSourceId, scope);
-  return !!source && canonicalId(source.policy.projectsSourceId) === canonicalId(projectSourceId);
+  if (source && canonicalId(source.policy.projectsSourceId) === canonicalId(projectSourceId))
+    return true;
+  const route = await findActiveWorkRoute(db, scope, projectSourceId);
+  return route?.kind === 'project';
 }
 
 function sourceTagProblem(
@@ -129,6 +134,11 @@ function sourceProblem(
     source.in_trash === true
   )
     return unavailable('source_unavailable');
+  if (
+    input.projectLeadField &&
+    (input.kind !== 'project' || notionProperty(source, input.projectLeadField).type !== 'people')
+  )
+    return unavailable('project_lead_field_unavailable');
   return (
     sourceTriggerProblem(source, input) ??
     sourceRelationProblem(source, input) ??
@@ -308,6 +318,7 @@ function approvedRoute(
     state: 'paused',
     revision: input.expectedRevision + 1,
     trigger: input.trigger,
+    ...(input.projectLeadField ? { projectLeadField: input.projectLeadField } : {}),
     destination: preview.destination,
     ...(input.projectRelation ? { projectRelation: input.projectRelation } : {}),
     ...(input.tagSync ? { tagSync: input.tagSync } : {}),

@@ -1,5 +1,6 @@
 import type { Db } from '@lasvegasfortransit/platform-storage/db';
 import type { WorkScope } from '@lasvegasfortransit/platform-storage/discord-work-types';
+import { workScopeKey } from '@lasvegasfortransit/platform-storage/discord-work-types';
 import { resolveWorkActor } from './discord-work-authority';
 import { notionObject } from './notion-task-types';
 import type { WorkProviders } from './discord-work-actions';
@@ -108,7 +109,7 @@ export async function inspectProjectRelations(
     sourceId,
     projectSourceId,
   }: { scope: WorkScope; discordUserId: string; sourceId: string; projectSourceId: string },
-): Promise<{ id: string; name: string }[] | null> {
+): Promise<{ id: string; name: string; projectSourceId: string }[] | null> {
   try {
     if (!(await isWorkAdmin(db, providers, scope, discordUserId))) return null;
     const source = notionObject(await providers.notion.readDataSource(sourceId));
@@ -121,16 +122,55 @@ export async function inspectProjectRelations(
       source.in_trash === true
     )
       return null;
+    const routes = await db
+      .prepare(
+        "SELECT source_id FROM discord_work_routes WHERE scope_key=? AND state='active' AND json_extract(data_json,'$.kind')='project'",
+      )
+      .bind(workScopeKey(scope))
+      .all<{ source_id: string }>();
+    const approved = new Set([
+      canonical(projectSourceId),
+      ...routes.results.map((row) => canonical(row.source_id)),
+    ]);
     return Object.entries(notionObject(source.properties)).flatMap(([name, value]) => {
       const property = notionObject(value),
         relation = notionObject(property.relation);
+      const target = typeof relation.data_source_id === 'string' ? relation.data_source_id : '';
       return property.type === 'relation' &&
         typeof property.id === 'string' &&
         property.id.length > 0 &&
         property.id.length <= 128 &&
-        canonical(relation.data_source_id) === canonical(projectSourceId)
-        ? [{ id: property.id, name }]
+        Boolean(target) &&
+        approved.has(canonical(target))
+        ? [{ id: property.id, name, projectSourceId: target }]
         : [];
+    });
+  } catch {
+    return null;
+  }
+}
+
+/** List people properties for an administrator to choose the project-lead field. */
+export async function inspectProjectLeadFields(
+  db: Db,
+  providers: WorkProviders,
+  { scope, discordUserId, sourceId }: { scope: WorkScope; discordUserId: string; sourceId: string },
+): Promise<{ id: string; name: string }[] | null> {
+  try {
+    if (!(await isWorkAdmin(db, providers, scope, discordUserId))) return null;
+    const source = notionObject(await providers.notion.readDataSource(sourceId));
+    if (
+      source.object !== 'data_source' ||
+      typeof source.id !== 'string' ||
+      source.id.replaceAll('-', '').toLowerCase() !== sourceId.replaceAll('-', '').toLowerCase() ||
+      source.archived === true ||
+      source.in_trash === true
+    )
+      return null;
+    return Object.entries(notionObject(source.properties)).flatMap(([name, value]) => {
+      const property = notionObject(value);
+      const id = typeof property.id === 'string' ? property.id : name;
+      return property.type === 'people' && id.length > 0 && id.length <= 100 ? [{ id, name }] : [];
     });
   } catch {
     return null;
