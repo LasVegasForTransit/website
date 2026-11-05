@@ -10,7 +10,6 @@ import { InvalidCursor } from './staff-history';
 import {
   GOOGLE_GROUP_QUERY,
   GROUP_JSON,
-  HAS_PROBLEM,
   googleGroupQueryParameters as parameters,
 } from './google-group-query';
 
@@ -75,6 +74,88 @@ interface SummaryRow extends Omit<
   needsSeatReview: number;
   committees: { id: string; name: string; current: number }[];
 }
+interface OverviewRow {
+  allowed: number;
+  group_email: string | null;
+  is_console: number | null;
+  state: GoogleGroupSummary['state'] | null;
+  group_id: string | null;
+  content_hash: string | null;
+  started_at: string | null;
+  observed_at: string | null;
+  expires_at: string | null;
+  member_count: number | null;
+  user_count: number | null;
+  actual_count: number | null;
+  actual_users: number | null;
+  unbounded: number | null;
+  expected_count: number | null;
+  missing_count: number | null;
+  unexpected_count: number | null;
+  unconfirmed_count: number | null;
+  unmatched_count: number | null;
+  check_state: string | null;
+  linked_committee_id: string | null;
+  linked_committee_name: string | null;
+  linked_committee_current: number | null;
+}
+function overviewSummary(
+  row: OverviewRow & { group_email: string; state: GoogleGroupSummary['state'] },
+): GoogleGroupSummary {
+  const current = row.state === 'current';
+  const confirmed =
+    row.actual_count === row.member_count && row.actual_users === row.user_count && !row.unbounded;
+  return {
+    groupEmail: row.group_email,
+    groupId: row.group_id,
+    contentHash: row.content_hash,
+    startedAt: row.started_at,
+    checkedAt: row.observed_at,
+    expiresAt: row.expires_at,
+    isConsole: Boolean(row.is_console),
+    state: row.state,
+    userCount: current ? row.user_count : null,
+    lastUserCount: confirmed ? row.user_count : null,
+    expectedCount: row.expected_count ?? 0,
+    missingCount: current ? row.missing_count : null,
+    unexpectedCount: current ? row.unexpected_count : null,
+    unmatchedCount: current ? row.unmatched_count : null,
+    unconfirmedCount: current ? row.unconfirmed_count : null,
+    needsSeatReview: Boolean(
+      row.is_console && current && row.user_count !== null && row.user_count >= 45,
+    ),
+    committees: [],
+  };
+}
+function overviewSummaries(rows: OverviewRow[]): GoogleGroupSummary[] {
+  const byEmail = new Map<string, GoogleGroupSummary>();
+  for (const row of rows) {
+    if (!row.group_email || !row.state) continue;
+    let item = byEmail.get(row.group_email);
+    if (!item) {
+      item = overviewSummary({ ...row, group_email: row.group_email, state: row.state });
+      byEmail.set(row.group_email, item);
+    }
+    if (row.linked_committee_id && row.linked_committee_name) {
+      item.committees.push({
+        id: row.linked_committee_id,
+        name: row.linked_committee_name,
+        current: Boolean(row.linked_committee_current),
+      });
+    }
+  }
+  return [...byEmail.values()];
+}
+function hasGroupProblem(item: GoogleGroupSummary): boolean {
+  return (
+    item.state !== 'current' ||
+    (item.missingCount ?? 0) +
+      (item.unexpectedCount ?? 0) +
+      (item.unmatchedCount ?? 0) +
+      (item.unconfirmedCount ?? 0) >
+      0
+  );
+}
 function summary(row: SummaryRow): GoogleGroupSummary {
   return {
     ...row,
@@ -116,35 +197,35 @@ export async function listGoogleGroupOverview(
   }
 > {
   const { after, limit } = pagination(query, 'groups');
-  const row = await db
+  const rows = await db
     .prepare(
       `${GOOGLE_GROUP_QUERY}
-    SELECT v.allowed,
-      (SELECT json_group_array(json(value)) FROM (SELECT ${GROUP_JSON} AS value FROM summaries WHERE NOT is_console AND group_email>? AND (?=0 OR ${HAS_PROBLEM}) ORDER BY group_email LIMIT ?)) AS items,
-      (SELECT ${GROUP_JSON} FROM summaries WHERE is_console) AS console,
-      (SELECT json_object('totalGroups',count(*),'totalProblems',coalesce(sum(${HAS_PROBLEM}),0)) FROM summaries WHERE NOT is_console) AS totals
-    FROM viewer v`,
+    SELECT v.allowed,s.*,l.committee_id AS linked_committee_id,
+      l.name AS linked_committee_name,l.current AS linked_committee_current
+    FROM viewer v LEFT JOIN summaries s ON 1=1
+    LEFT JOIN committee_links l ON l.group_email=s.group_email
+    ORDER BY s.group_email,l.committee_id`,
     )
-    .bind(...parameters(actor, query), after, Number(Boolean(query.problemsOnly)), limit + 1)
-    .first<{
-      allowed: number;
-      items: string;
-      console: string | null;
-      totals: string;
-    }>();
-  const authorized = await requireAllowed(db, actor, row);
-  // Read both totals from one scan: repeating the expanded summaries CTE in
-  // separate scalar subqueries exceeds SQLite's nested-query limit.
-  const totals = JSON.parse(authorized.totals) as { totalGroups: number; totalProblems: number };
-  const groups = (JSON.parse(authorized.items) as SummaryRow[]).map(summary);
-  const items = groups.slice(0, limit),
-    last = items.at(-1);
+    .bind(...parameters(actor, query))
+    .all<OverviewRow>();
+  const first = rows.results[0];
+  await requireAllowed(db, actor, first ?? null);
+  const allGroups = overviewSummaries(rows.results);
+  const committeeGroups = allGroups.filter((item) => !item.isConsole);
+  const totalGroups = committeeGroups.length;
+  const totalProblems = committeeGroups.filter(hasGroupProblem).length;
+  const console = allGroups.find((item) => item.isConsole) ?? null;
+  const groups = committeeGroups.filter(
+    (item) => item.groupEmail > after && (!query.problemsOnly || hasGroupProblem(item)),
+  );
+  const items = groups.slice(0, limit);
+  const last = items.at(-1);
   return {
     items,
     nextCursor: groups.length > limit && last ? accessCursor(['groups', last.groupEmail]) : null,
-    console: authorized.console ? summary(JSON.parse(authorized.console) as SummaryRow) : null,
-    totalGroups: totals.totalGroups,
-    totalProblems: totals.totalProblems,
+    console,
+    totalGroups,
+    totalProblems,
   };
 }
 export async function getGoogleGroupReview(
