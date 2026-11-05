@@ -1,7 +1,7 @@
-import { cp, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
+import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { verifyStaffRelease, type ReleaseIdentity } from './release-artifact';
+import { copyVerifiedRelease, verifyStaffRelease, type ReleaseIdentity } from './release-artifact';
 import { portableConfiguration } from './release-config';
 import { type Environment } from './preflight-config';
 import { preflightStaff } from './preflight';
@@ -131,7 +131,7 @@ async function withRelease<T>(
   const temporary = await mkdtemp(join(tmpdir(), 'lvbt-staff-deploy-'));
   try {
     const copy = join(temporary, 'release');
-    await cp(directory, copy, { recursive: true });
+    await copyVerifiedRelease(directory, copy, release);
     await verifyStaffRelease(copy, identity);
     for (const app of ['staff', 'jobs'] as const) {
       const config = JSON.parse(

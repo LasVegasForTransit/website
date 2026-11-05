@@ -14,6 +14,8 @@ export async function inventory(directory: string, relative = ''): Promise<FileD
   if (!stat.isDirectory()) throw new Error('Unsupported release file.');
   const files: FileDigest[] = [];
   for (const entry of await readdir(location)) {
+    // macOS stores extended attributes as AppleDouble sidecars on some volumes.
+    if (entry.startsWith('._')) continue;
     if (relative === '' && entry === 'release.json') continue;
     files.push(...(await inventory(directory, relative ? `${relative}/${entry}` : entry)));
   }
@@ -21,7 +23,8 @@ export async function inventory(directory: string, relative = ''): Promise<FileD
 }
 export async function copyFiles(source: string, destination: string, files: FileDigest[]) {
   for (const [name, expected] of files) {
-    if (name !== '.assetsignore' && /(^|\/)(\..*|node_modules)(\/|$)/.test(name))
+    const allowedAssetsIgnore = name === '.assetsignore' || name === 'staff/assets/.assetsignore';
+    if (!allowedAssetsIgnore && /(^|\/)(\..*|node_modules)(\/|$)/.test(name))
       throw new Error('Release contains an unexpected private file.');
     const content = await readFile(join(source, name));
     if (digest(content) !== expected) throw new Error('Build changed during packaging.');

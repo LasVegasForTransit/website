@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
-import { readFile, rm, writeFile } from 'node:fs/promises';
-import { join } from 'node:path';
+import { readFile, readdir, rm, writeFile } from 'node:fs/promises';
+import { dirname, join } from 'node:path';
 import test from 'node:test';
 import {
   uploadStaffRelease,
@@ -10,6 +10,29 @@ import {
 import { verifyStaffRelease } from '../scripts/release-artifact';
 import { deploymentFixture, versions } from './support/deployment';
 import { releaseIdentity } from './support/release';
+
+void test('release uploads omit AppleDouble filesystem sidecars from Worker assets', async () => {
+  const f = await deploymentFixture();
+  try {
+    await writeFile(join(f.destination, 'staff/assets/._unlisted.js'), 'filesystem metadata');
+    const run = f.options.run;
+    assert.ok(run);
+    f.options.run = async (args, output) => {
+      const configPath = args[args.indexOf('--config') + 1];
+      const config = JSON.parse(await readFile(configPath, 'utf8')) as {
+        assets?: { directory?: string };
+      };
+      if (config.assets?.directory) {
+        const files = await readdir(join(dirname(configPath), config.assets.directory));
+        assert.equal(files.includes('._unlisted.js'), false);
+      }
+      await run(args, output);
+    };
+    await uploadStaffRelease(f.destination, releaseIdentity, f.receiptFile, f.options);
+  } finally {
+    await rm(f.root, { recursive: true, force: true });
+  }
+});
 
 void test('saved deployment inspection reports readiness without changing receipt or traffic', async () => {
   const f = await deploymentFixture();
