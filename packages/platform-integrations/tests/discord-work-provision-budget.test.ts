@@ -22,8 +22,10 @@ import {
   workScope,
 } from './support/discord-work';
 
-void test('project creation queues its Notion link within the metered jobs budget', async () => {
+async function exerciseProjectCreation(independent: boolean) {
   const { db, notion, project } = workFixture();
+  const routeSourceId = independent ? '10000000-0000-4000-8000-000000000099' : projectSourceId;
+  project.parent.data_source_id = routeSourceId;
   const categoryId = '333333333333333333',
     botId = '444444444444444444',
     forumId = '555555555555555555',
@@ -95,14 +97,17 @@ void test('project creation queues its Notion link within the metered jobs budge
     const actor = await resolveWorkActor(db, workScope, discordUserId);
     assert.ok(actor);
     const fingerprint = await workAudience(roles, [], categoryId);
-    Object.assign(project.properties, { Status: { type: 'status', status: { name: 'Planning' } } });
+    Object.assign(project.properties, {
+      Status: { type: 'status', status: { name: 'Planning' } },
+    });
     seedActiveWorkRoute(
       db,
       {
         id: 'route',
         scope: workScope,
-        sourceId: projectSourceId,
+        sourceId: routeSourceId,
         kind: 'project',
+        projectLeadField: 'Lead',
         state: 'active',
         revision: 1,
         trigger: { property: 'Status', values: ['Planning'] },
@@ -131,7 +136,7 @@ void test('project creation queues its Notion link within the metered jobs budge
         payload: {
           intent: 'home',
           linkId: 'home',
-          subject: { kind: 'project_plan', sourceId: projectSourceId, pageId: projectId },
+          subject: { kind: 'project_plan', sourceId: routeSourceId, pageId: projectId },
           title: 'Project',
           destinationId: categoryId,
           audienceFingerprint: fingerprint,
@@ -312,4 +317,9 @@ void test('project creation queues its Notion link within the metered jobs budge
   } finally {
     db.raw.close();
   }
-});
+}
+
+void test('legacy project creation stays within the metered jobs budget', async () =>
+  exerciseProjectCreation(false));
+void test('independent project creation stays within the metered jobs budget', async () =>
+  exerciseProjectCreation(true));

@@ -118,6 +118,41 @@ void test('an admin configures and activates a project-linked event route using 
       context,
     );
     assert.match(JSON.stringify(missing), /add.*relation/i);
+    const independent = target.replaceAll('-', '');
+    const independentRoute = {
+      id: 'independent-project',
+      scope: workScope,
+      sourceId: independent,
+      kind: 'project',
+      state: 'active',
+      revision: 1,
+      trigger: { property: 'Status', values: ['Planning'] },
+      destination: { kind: 'category', channelId: base.channelId },
+      approvedBy: 'guest',
+      audienceFingerprint: 'audience',
+      projectLeadField: 'Lead',
+    };
+    db.raw
+      .prepare(
+        'INSERT INTO discord_work_routes(id,scope_key,source_id,state,revision,data_json,updated_at) VALUES(?,?,?,?,?,?,?)',
+      )
+      .run(
+        independentRoute.id,
+        JSON.stringify([workScope.environment, workScope.guildId, workScope.workspaceId]),
+        independent,
+        independentRoute.state,
+        independentRoute.revision,
+        JSON.stringify(independentRoute),
+        workNow.toISOString(),
+      );
+    const independentRelation = await runWorkPreview(
+      db,
+      { notion, discord },
+      { ...base, intent: { action: 'route-choice', linkId, value: '0' } },
+      context,
+    );
+    assert.match(JSON.stringify(independentRelation), /identifies an event/);
+    db.raw.prepare('DELETE FROM discord_work_routes WHERE id=?').run(independentRoute.id);
     target = projectSourceId;
     const relations = await runWorkPreview(
       db,

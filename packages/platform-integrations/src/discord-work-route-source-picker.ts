@@ -1,6 +1,5 @@
 import type { Db } from '@lasvegasfortransit/platform-storage/db';
 import { discoverWorkSources, inspectWorkSourceFields } from './discord-work-source-discovery';
-import { projectRouteSourceMatches } from './discord-work-route-preview';
 import { notionObject } from './notion-task-types';
 import { setupReply } from './discord-work-setup-common';
 import type { ownedReceipt } from './discord-work-setup-common';
@@ -94,13 +93,6 @@ async function selectSingleRouteSource(
   if (!sources.some((s) => s.id === input.intent.value))
     return setupReply('Choose a source from the list.');
   const sourceId = String(input.intent.value);
-  if (
-    p.kind === 'project' &&
-    !(await projectRouteSourceMatches(db, context.scope, context.taskSourceId, sourceId))
-  )
-    return setupReply(
-      'This source is not the configured projects database. Choose that database or update the workspace configuration.',
-    );
   const fields = await inspectWorkSourceFields(db, providers, {
     scope: context.scope,
     discordUserId: input.discordUserId,

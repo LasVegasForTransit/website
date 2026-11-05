@@ -10,7 +10,8 @@ import {
   deferWorkRouteRequest,
   reconcileWorkRouteRequest,
 } from '@lasvegasfortransit/platform-storage/discord-work-requests';
-import { authorizeWork, readWorkSource } from './discord-work-authority';
+import { authorizeWork } from './discord-work-authority';
+import { projectRouteSourceMatches } from './discord-work-route-preview';
 import { resolveEventProjectForum } from './discord-work-event-project';
 import { notionObject } from './notion-task-types';
 import { workFailure, type WorkProviders, type WorkEffectContext } from './discord-work-actions';
@@ -151,10 +152,13 @@ async function resolveRequestDestination(
   let eventTagIds = route.tagIds ?? [];
   if (route.kind === 'event' && route.projectRelation) {
     if (!destination.isCategory) throw new Error('audience_or_permission_changed');
-    const source = await readWorkSource(db, context.taskSourceId, context.scope);
     if (
-      !source ||
-      canonical(source.policy.projectsSourceId) !== canonical(route.projectRelation.projectSourceId)
+      !(await projectRouteSourceMatches(
+        db,
+        context.scope,
+        context.taskSourceId,
+        route.projectRelation.projectSourceId,
+      ))
     )
       throw new Error('project_relation_unavailable');
     const resolved = await resolveEventProjectForum(db, providers, context.scope, {

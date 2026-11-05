@@ -63,18 +63,22 @@ export async function findExistingProjectHomes(
 export async function findProjectHomesForPlacement(
   db: Db,
   scope: WorkScope,
-  input: { sourceId: string; projectIds: string[]; channelId: string; parentId: string | null },
+  input: { sourceId?: string; projectIds: string[]; channelId: string; parentId: string | null },
 ): Promise<ProjectHome[]> {
   const { sourceId, projectIds, channelId, parentId } = input;
   const ids = projectIds.map((id) => id.replaceAll('-', '').toLowerCase());
-  const source = sourceId.replaceAll('-', '').toLowerCase();
-  if (!ids.length || ids.some((id) => !/^[0-9a-f]{32}$/.test(id)) || !/^[0-9a-f]{32}$/.test(source))
+  const source = sourceId?.replaceAll('-', '').toLowerCase() ?? null;
+  if (
+    !ids.length ||
+    ids.some((id) => !/^[0-9a-f]{32}$/.test(id)) ||
+    (source !== null && !/^[0-9a-f]{32}$/.test(source))
+  )
     return [];
   const rows = await db
     .prepare(
-      "SELECT data_json FROM discord_project_homes WHERE scope_key=? AND state='active' AND coalesce(json_extract(data_json,'$.kind'),'project')='project' AND destination_id IN (?,?) AND lower(replace(source_id,'-',''))=? AND lower(replace(project_id,'-','')) IN (SELECT value FROM json_each(?)) LIMIT 2",
+      "SELECT data_json FROM discord_project_homes WHERE scope_key=? AND state='active' AND coalesce(json_extract(data_json,'$.kind'),'project')='project' AND destination_id IN (?,?) AND (? IS NULL OR lower(replace(source_id,'-',''))=?) AND lower(replace(project_id,'-','')) IN (SELECT value FROM json_each(?)) LIMIT 2",
     )
-    .bind(workScopeKey(scope), channelId, parentId, source, JSON.stringify(ids))
+    .bind(workScopeKey(scope), channelId, parentId, source, source, JSON.stringify(ids))
     .all<{ data_json: string }>();
   return rows.results.map((row) => JSON.parse(row.data_json) as ProjectHome);
 }

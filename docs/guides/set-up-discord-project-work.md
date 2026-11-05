@@ -138,38 +138,40 @@ approved link; access or audience changes stop affected work for review.
 
 Administrators can use `/work route-project` to select a Notion source and category for future
 project forums, or `/work route-event` to select a source and an existing event channel or forum.
-For the LVBT Events source, choose the existing **Status** field and the **Planning**, **Pending
+For a project route, choose the source's people field that identifies project leads. The project
+source and lead field belong to this route; setting them does not change private task check-ins. For
+the LVBT Events source, choose the existing **Status** field and the **Planning**, **Pending
 review**, and **Registration open** values. Leave an event as **Not started** while it is a draft;
 moving it to **Planning** makes it eligible for a Discord conversation. Including the later active
 states keeps it eligible if its status advances before the worker processes it. No separate request
 field is needed. After activation, existing eligible events are checked for a uniquely linked forum
 post. An uncertain match is held for an administrator to review; it does not create a duplicate
 automatically. Use `/work route-event-project` to route events to their related project forums
-within an approved category. The event source must have a relation to the configured projects
-source; select that field in the preview. If none is available, add a relation property in the event
-source that points to the configured projects source, confirm both sources are shared with the
-integration, and start setup again. Each event routed this way must have the intended project
-selected in that relation. Each event must identify exactly one project with an active, matching
-forum. Missing or ambiguous relations, a different audience, or a forum requiring tags stop that
-request for review. For each project forum that requires a tag, an administrator can use
-`/work project-event-tags` to select up to five tags for future event posts. After saving, open the
-route with `/work routes` and choose **Retry checks** for held requests. If the chosen tags are
-removed or the forum audience changes, the affected requests stop for review. Review the source,
-trigger status, destination, audience, and forum tag. For a separately configured event forum with
-optional tags, choose up to five or continue without a tag. A new or edited route is saved paused.
-Use `/work routes` to inspect it, select it for management, and choose **Prepare**. The worker scans
-existing source records; reopen the route after preparation completes, review the destination and
-audience, and explicitly activate it. Existing projects are not automatically backfilled. Existing
-eligible events are checked for linked posts, as described below. Newly eligible pages and later
-status transitions can create spaces. Choose **Pause** to stop new route-triggered work; existing
-project links and conversations remain. Use `/work link` to connect a project directly. The route
-management view lists recent requests needing attention and links to their Notion pages. Check the
-source, bot access, and destination audience before taking the indicated recovery step. If the
-Notion scan is interrupted, check source access and the configured status field. The worker retries
-the scan and clears the warning when it successfully reads the next page. If `/work show` reports an
-audience or permission change, inspect the linked channel and thread against the approved audience.
-Restore the intended access; the worker rechecks it on its next scheduled attempt. Check Message
-Content access separately when that is the reported issue.
+within an approved category. The event source must have a relation to an active project route's
+source or the existing configured task-project source; select that field in the preview. If none is
+available, add a relation property in the event source that points to the project source, confirm
+both sources are shared with the integration, and start setup again. Each event routed this way must
+have the intended project selected in that relation. Each event must identify exactly one project
+with an active, matching forum. Missing or ambiguous relations, a different audience, or a forum
+requiring tags stop that request for review. For each project forum that requires a tag, an
+administrator can use `/work project-event-tags` to select up to five tags for future event posts.
+After saving, open the route with `/work routes` and choose **Retry checks** for held requests. If
+the chosen tags are removed or the forum audience changes, the affected requests stop for review.
+Review the source, trigger status, destination, audience, and forum tag. For a separately configured
+event forum with optional tags, choose up to five or continue without a tag. A new or edited route
+is saved paused. Use `/work routes` to inspect it, select it for management, and choose **Prepare**.
+The worker scans existing source records; reopen the route after preparation completes, review the
+destination and audience, and explicitly activate it. Existing projects are not automatically
+backfilled. Existing eligible events are checked for linked posts, as described below. Newly
+eligible pages and later status transitions can create spaces. Choose **Pause** to stop new
+route-triggered work; existing project links and conversations remain. Use `/work link` to connect a
+project directly. The route management view lists recent requests needing attention and links to
+their Notion pages. Check the source, bot access, and destination audience before taking the
+indicated recovery step. If the Notion scan is interrupted, check source access and the configured
+status field. The worker retries the scan and clears the warning when it successfully reads the next
+page. If `/work show` reports an audience or permission change, inspect the linked channel and
+thread against the approved audience. Restore the intended access; the worker rechecks it on its
+next scheduled attempt. Check Message Content access separately when that is the reported issue.
 
 To synchronize a Notion selection or status to forum tags, open `/work routes`, select the route,
 and pause it if it is active. Choose **Map tags**. For a project-category route, select an existing

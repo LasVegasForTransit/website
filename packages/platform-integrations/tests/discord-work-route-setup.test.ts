@@ -4,7 +4,7 @@ import { DiscordWorkClient } from '../src/discord-work-provider';
 import { runWorkPreview } from '../src/discord-work-setup';
 import { discordUserId, sourceId, workFixture, workNow, workScope } from './support/discord-work';
 
-void test('project route setup explains when a selected source is not the configured projects database', async () => {
+void test('project route setup rejects a source that was not offered to the administrator', async () => {
   const { db, notion } = workFixture();
   const discord = new DiscordWorkClient({
     guildId: workScope.guildId,
@@ -53,11 +53,15 @@ void test('project route setup explains when a selected source is not the config
       { notion, discord },
       {
         ...base,
-        intent: { action: 'route-source', linkId: String(receipt.id), value: sourceId },
+        intent: {
+          action: 'route-source',
+          linkId: String(receipt.id),
+          value: '10000000-0000-4000-8000-000000000099',
+        },
       },
       context,
     );
-    assert.match(JSON.stringify(result), /not the configured projects database/);
+    assert.match(JSON.stringify(result), /Choose a source from the list/);
     assert.equal(db.raw.prepare('SELECT count(*) AS n FROM discord_work_routes').get()?.n, 0);
   } finally {
     db.raw.close();
