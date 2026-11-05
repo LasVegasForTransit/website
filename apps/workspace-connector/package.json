@@ -1,0 +1,30 @@
+{
+  "name": "@lasvegasfortransit/workspace-connector",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "tsc --noEmit",
+    "start": "tsx src/server.ts",
+    "preflight": "tsx src/preflight.ts",
+    "lint": "eslint . --max-warnings 0",
+    "check-types": "tsc --noEmit",
+    "test": "node --import tsx --test --test-concurrency=2 tests/*.test.ts",
+    "deployment:plan": "tsx scripts/deployment-plan.ts",
+    "preflight:google": "node scripts/inspect-google.mjs"
+  },
+  "dependencies": {
+    "@lasvegasfortransit/platform-core": "workspace:*",
+    "@lasvegasfortransit/platform-integrations": "workspace:*",
+    "tsx": "catalog:"
+  },
+  "devDependencies": {
+    "@lasvegasfortransit/eslint-config": "file:../../.lvbt/web-platform/packages/eslint-config",
+    "@types/node": "catalog:",
+    "eslint": "catalog:",
+    "typescript": "catalog:",
+    "jose": "catalog:",
+    "miniflare": "catalog:",
+    "@lasvegasfortransit/platform-storage": "workspace:*"
+  }
+}

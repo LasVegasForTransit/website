@@ -1,0 +1,144 @@
+---
+import { env } from 'cloudflare:workers';
+import StaffGateLayout from '@lasvegasfortransit/platform-core/staff-gate-layout';
+import { readCookie } from '@lasvegasfortransit/platform-core/web-auth';
+import { discordProviderConfiguration } from '@lasvegasfortransit/platform-integrations/discord-runtime';
+import {
+  beginStaffDiscordHandoff,
+  approveStaffDiscordHandoff,
+  staffDiscordHandoff,
+  staffOnboardingStep,
+  staffDiscordReadiness,
+} from '@lasvegasfortransit/platform-storage/staff-discord-handoff';
+import OnboardingProgress from '../../../components/OnboardingProgress.astro';
+import {
+  onboardingAccount,
+  onboardingCookie,
+  DISCORD_HANDOFF_COOKIE,
+  onboardingStepPath,
+  refreshOnboardingDiscord,
+} from '../../../lib/onboarding-account';
+import type { StaffEnv } from '../../../lib/context';
+const platform = env as unknown as StaffEnv;
+const account = await onboardingAccount(platform, Astro.request, Astro.locals.access);
+if (!account) return Astro.redirect('/sign-in/', 303);
+let notice = '';
+const browser = Astro.url.searchParams.get('browser');
+// Only the browser holding the host-only cookie from its same-origin Connect
+// POST can finish this expiring intent. The initial ticket cannot consume it.
+if (Astro.request.method === 'GET' && browser) {
+  const ticket = readCookie(Astro.request, DISCORD_HANDOFF_COOKIE) ?? '';
+  const handoff = await staffDiscordHandoff(platform, ticket);
+  const approval =
+    handoff?.staff_origin === account.staffOrigin
+      ? await approveStaffDiscordHandoff(platform, ticket, { staffToken: account.token, browser })
+      : null;
+  if (approval && handoff)
+    return new Response(null, {
+      status: 303,
+      headers: {
+        Location: `${handoff.member_origin}/account/discord/staff?request=${encodeURIComponent(ticket)}&finish=1&approval=${encodeURIComponent(approval)}`,
+        'Set-Cookie': onboardingCookie(DISCORD_HANDOFF_COOKIE, ''),
+        'Referrer-Policy': 'no-referrer',
+      },
+    });
+  notice = 'This connection expired or belongs to another browser. Connect Discord to try again.';
+  Astro.response.status = 410;
+}
+const guild = discordProviderConfiguration(platform).contextId;
+const step = await staffOnboardingStep(platform, account.token, guild);
+if (step !== 'discord') return Astro.redirect(onboardingStepPath(step, account.next), 303);
+let discord = await staffDiscordReadiness(platform, account.session.personId, guild);
+if (Astro.request.method === 'POST') {
+  const form = await Astro.request.formData();
+  const checking = form.get('action') === 'check';
+  if (discord?.discord_id && discord.identity_count === 1 && !discord.disconnecting) {
+    const observed = await refreshOnboardingDiscord(platform, account.session.personId);
+    if (observed) {
+      const refreshed = await staffOnboardingStep(platform, account.token, guild);
+      if (refreshed !== 'discord')
+        return Astro.redirect(onboardingStepPath(refreshed, account.next), 303);
+      discord = await staffDiscordReadiness(platform, account.session.personId, guild);
+    } else if (checking) notice = 'Discord couldn’t be checked. Try again shortly.';
+  }
+  if (!checking && discord && discord.identity_count <= 1 && !discord.disconnecting) {
+    const ticket = await beginStaffDiscordHandoff(platform, account.token, {
+      ...account,
+      returnTo: `/onboarding/?next=${encodeURIComponent(account.next)}`,
+    });
+    if (ticket)
+      return new Response(null, {
+        status: 303,
+        headers: {
+          Location: `${account.memberOrigin}/account/discord/staff?request=${encodeURIComponent(ticket)}`,
+          'Set-Cookie': onboardingCookie(DISCORD_HANDOFF_COOKIE, ticket),
+        },
+      });
+    notice = 'Discord setup is temporarily unavailable. Try again shortly.';
+  }
+}
+const outcome = Astro.url.searchParams.get('discord');
+const blocked = Boolean(!discord || discord.disconnecting || discord.identity_count > 1);
+---
+
+<StaffGateLayout title="Join the team on Discord">
+  <OnboardingProgress slot="progress" step="discord" />
+  {
+    notice && (
+      <p class="staff-gate-notice" role="alert">
+        {notice}
+      </p>
+    )
+  }
+  {
+    outcome === 'cancelled' && (
+      <p role="status">Discord wasn’t connected. Connect when you’re ready to finish setup.</p>
+    )
+  }
+  {
+    outcome && !['cancelled', 'connected', 'screening_pending'].includes(outcome) && (
+      <p role="alert">Discord setup needs another try.</p>
+    )
+  }
+  {
+    blocked ? (
+      <p>
+        {discord?.disconnecting
+          ? 'Your Discord disconnection is being completed. Check again shortly.'
+          : 'Your Discord accounts need review. Contact hello@lasvegasfortransit.org for help.'}
+      </p>
+    ) : (
+      <p>
+        Connect your Discord account and join the LVBT server. All staff use Discord to work with
+        the team.
+      </p>
+    )
+  }
+  {
+    !blocked && (
+      <form method="post">
+        <button class="staff-action-link" type="submit">
+          Connect Discord
+        </button>
+      </form>
+    )
+  }
+  {
+    (blocked || Boolean(discord?.discord_id)) && (
+      <form method="post">
+        <>
+          <input type="hidden" name="action" value="check" />
+          <button class="staff-secondary-button" type="submit">
+            Check again
+          </button>
+        </>
+      </form>
+    )
+  }
+  <form method="post" action="/sign-in/change-account/">
+    <button class="staff-gate-link staff-text-button" type="submit">Switch account</button>
+  </form>
+  <Fragment slot="help"
+    >Need help? <a href="mailto:hello@lasvegasfortransit.org">Email the team</a>.</Fragment
+  >
+</StaffGateLayout>

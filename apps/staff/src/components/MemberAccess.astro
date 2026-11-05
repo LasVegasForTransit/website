@@ -1,18 +1,21 @@
 ---
-import { discordTarget, type AccessRow } from '@lasvegasfortransit/platform-storage/access-view';
+import { type AccessRow } from '@lasvegasfortransit/platform-storage/access-view';
 import { t } from '@lasvegasfortransit/platform-core/messages';
+import WorkspaceAccount from './WorkspaceAccount.astro';
+import type { WorkspaceEnrollment } from '@lasvegasfortransit/platform-storage/workspace-enrollment';
 import AccountAccessRow from './AccountAccessRow.astro';
 import type { AccessFeedback } from '../lib/account-access';
 import { needsAccessRecovery } from '@lasvegasfortransit/platform-core/access';
 import { profileNeedsRecovery, profileProviders } from '../lib/profile-account-access';
 interface Props {
   member: AccessRow;
+  enrollment?: WorkspaceEnrollment | null;
   committees: AccessRow[];
   feedback?: AccessFeedback | undefined;
   discordConnected?: boolean;
   nextHref?: string | undefined;
 }
-const { member, committees, feedback, discordConnected = true, nextHref } = Astro.props;
+const { member, committees, feedback, discordConnected = true, nextHref, enrollment } = Astro.props;
 const configuration = Astro.locals.staff?.accessConfiguration ?? {};
 const showMember =
   discordConnected || needsAccessRecovery(member) || member.discord.state === 'granted';
@@ -24,24 +27,29 @@ const committeeAccounts = committees.filter(
       row.discord.state === 'granted' ||
       row.googleWorkspace.state === 'granted'),
 );
-const needsHelp = [...(showMember ? [member] : []), ...committeeAccounts].some((row) => {
-  const providers =
-    row.targetId === 'person' || discordTarget(row.targetId).lead
-      ? [row.discord]
-      : [row.discord, row.googleWorkspace];
-  const expected = row.expectedAccess ? 'granted' : 'absent';
-  return (
+const needsHelp = [...(showMember ? [member] : []), ...committeeAccounts].some(
+  (row) =>
     profileNeedsRecovery(row, configuration) ||
-    providers.some((access) => access.state !== 'unknown' && access.state !== expected)
-  );
-});
-const showAccounts = showMember || committeeAccounts.length > 0 || feedback || nextHref;
+    profileProviders(row, configuration).some(
+      ({ access, expected }) =>
+        access.state !== 'unknown' && access.state !== (expected ? 'granted' : 'absent'),
+    ),
+);
+const showAccounts =
+  enrollment || showMember || committeeAccounts.length > 0 || feedback || nextHref;
 ---
 
 {
   showAccounts && (
     <section id="accounts" class="staff-person-access" aria-labelledby="account-access-heading">
-      <details open={Boolean(feedback || needsHelp || Astro.url.searchParams.has('access_cursor'))}>
+      <details
+        open={Boolean(
+          feedback ||
+          needsHelp ||
+          enrollment?.console_failure ||
+          Astro.url.searchParams.has('access_cursor'),
+        )}
+      >
         <summary>
           <h2 id="account-access-heading">{t('staff.access.accountTitle')}</h2>
         </summary>
@@ -52,6 +60,7 @@ const showAccounts = showMember || committeeAccounts.length > 0 || feedback || n
           </p>
         )}
         <ul class="staff-account-list">
+          {enrollment && <WorkspaceAccount enrollment={enrollment} />}
           {showMember && <AccountAccessRow row={member} personView />}
           {committeeAccounts.map((row) => (
             <AccountAccessRow row={row} personView />

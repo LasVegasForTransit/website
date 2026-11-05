@@ -113,7 +113,7 @@ export function accessObservationBatchWrite(
       AND (SELECT count(*) FROM identities WHERE person_id=p.id AND platform=incoming.provider)=1
       AND coalesce((SELECT generation FROM reconcile_generations WHERE person_id=p.id AND target_id=${target}),0)=incoming.generation
       AND (incoming.target_id='person' OR EXISTS(SELECT 1 FROM committees c WHERE c.id=${target} AND CASE incoming.provider WHEN 'discord' THEN CASE WHEN ${lead} THEN c.discord_lead_role_id ELSE c.discord_role_id END ELSE c.workspace_group_email END=incoming.resource_id))
-      AND (incoming.expected_access=CASE WHEN p.membership_status='member' AND (incoming.target_id='person' OR EXISTS(SELECT 1 FROM committee_assignments a WHERE a.person_id=p.id AND a.committee_id=${target} AND a.ended_at IS NULL AND (NOT ${lead} OR a.role='lead'))) THEN 1 ELSE 0 END)
+      AND (incoming.expected_access=CASE WHEN p.membership_status='member' AND (incoming.provider<>'google_workspace' OR NOT EXISTS(SELECT 1 FROM workspace_enrollments e WHERE e.person_id=p.id AND e.state<>'active')) AND (incoming.target_id='person' OR EXISTS(SELECT 1 FROM committee_assignments a WHERE a.person_id=p.id AND a.committee_id=${target} AND a.ended_at IS NULL AND (NOT ${lead} OR a.role='lead'))) THEN 1 ELSE 0 END)
       AND (${guard.sql})`,
     )
     .bind(rows, ...guard.values);

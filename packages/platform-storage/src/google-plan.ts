@@ -25,13 +25,15 @@ const MAPPINGS = `SELECT committee_id,external_id FROM committee_account_mapping
 /** A single SQL snapshot also serves as the atomic conditional-write guard. */
 const SNAPSHOT = `SELECT json_object('deletedAt',p.deleted_at,'membership',CASE WHEN p.deleted_at IS NULL THEN p.membership_status ELSE 'not_member' END,
   'generation',coalesce((SELECT generation FROM reconcile_generations WHERE person_id=p.id AND target_id='person'),0),
-  'identities',json((SELECT json_group_array(json_object('id',id,'externalId',external_id,'email',external_email,'method',link_method)) FROM (SELECT * FROM identities WHERE person_id=p.id AND platform='google_workspace' ORDER BY id))),
+  'workspaceCustomer',(SELECT customer_id FROM workspace_enrollments WHERE person_id=p.id LIMIT 1),
+  'identities',json((SELECT json_group_array(json_object('id',linked.id,'externalId',external_id,'email',external_email,'method',CASE WHEN link_method='created_by_platform' AND EXISTS(SELECT 1 FROM workspace_directory_accounts e WHERE e.identity_record_id=linked.id) THEN 'staff_confirmed' ELSE link_method END)) FROM (SELECT * FROM identities WHERE person_id=p.id AND platform='google_workspace' ORDER BY id) linked)),
   'targets',json((SELECT json_group_array(json_object('targetId',r.committee_id,'resourceId',r.external_id,'generation',coalesce((SELECT generation FROM reconcile_generations WHERE person_id=p.id AND target_id=r.committee_id),0),
-    'expected',CASE WHEN p.deleted_at IS NULL AND p.membership_status='member' AND c.workspace_group_email=r.external_id AND EXISTS(SELECT 1 FROM committee_assignments a WHERE a.person_id=p.id AND a.committee_id=c.id AND a.ended_at IS NULL) THEN 1 ELSE 0 END,
+    'expected',CASE WHEN p.deleted_at IS NULL AND p.membership_status='member' AND NOT EXISTS(SELECT 1 FROM workspace_enrollments e WHERE e.person_id=p.id AND e.state<>'active') AND c.workspace_group_email=r.external_id AND EXISTS(SELECT 1 FROM committee_assignments a WHERE a.person_id=p.id AND a.committee_id=c.id AND a.ended_at IS NULL) THEN 1 ELSE 0 END,
     'current',CASE WHEN c.workspace_group_email=r.external_id THEN 1 ELSE 0 END)) FROM (SELECT * FROM (${MAPPINGS}) ORDER BY committee_id,external_id) r JOIN committees c ON c.id=r.committee_id))) AS snapshot
   FROM reconciliation_people p WHERE p.id=? AND EXISTS(SELECT 1 FROM integration_outbox o JOIN reconcile_generations g ON g.person_id=o.person_id AND g.target_id=o.target_id AND g.generation=o.generation
     WHERE o.id=? AND o.person_id=p.id AND o.kind IN ('person_reconcile','committee_reconcile') AND o.state IN ('queued','running','retry') AND ${PERSON_OPERATION_ELIGIBLE})`;
 interface Snapshot {
+  workspaceCustomer?: string | null;
   deletedAt: string | null;
   identities: { id: string; externalId: string; email: string | null; method: string }[];
   targets: {
@@ -54,6 +56,7 @@ export async function loadGooglePlan(
   const snapshot = JSON.parse(row.snapshot) as Snapshot;
   const identity = snapshot.identities[0];
   if (
+    (snapshot.workspaceCustomer != null && snapshot.workspaceCustomer !== input.customerId) ||
     snapshot.identities.length !== 1 ||
     !identity ||
     !['self_linked', 'staff_confirmed'].includes(identity.method)

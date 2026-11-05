@@ -1,0 +1,33 @@
+# The repository root is the context. Nothing enters unless named below.
+**
+!package.json
+!pnpm-lock.yaml
+!pnpm-workspace.yaml
+!.lvbt/web-platform/packages/**
+!apps/*/package.json
+!apps/workspace-connector/src/**
+!packages/*/package.json
+!packages/platform-core/src/**
+!packages/platform-integrations/src/**
+!packages/platform-storage/src/**
+# These exclusions always win, including inside an otherwise allowed directory.
+**/node_modules
+**/.superpowers
+**/.git
+**/.env*
+**/.dev.vars*
+**/.npmrc
+**/.pnpmfile*
+**/dist
+**/build
+**/coverage
+**/.cache
+**/.turbo
+**/.wrangler
+**/*.pem
+**/*.key
+**/*credentials*.json
+**/*service-account*.json
+**/secrets
+**/gcloud
+**/application_default_credentials.json

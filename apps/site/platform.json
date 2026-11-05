@@ -462,6 +462,54 @@
         "Open the existing LVBT website release-verification service token in Cloudflare One. Its policy must cover the protected preview URLs the workflow verifies.",
         "Copy the existing Client Secret and paste it at this prompt. If the secret is unavailable, a maintainer must authorize rotation of the paired service token and its installation in worker-preview. An agent may carry out that authorized setup. Ordinary promotion uses the installed pair."
       ]
+    },
+    {
+      "name": "LVBT_WORKSPACE_ONBOARDING_ENABLED",
+      "purpose": "Enables the approved Workspace onboarding connector after isolated acceptance.",
+      "use": "future",
+      "neededFor": "Workspace account onboarding",
+      "targets": ["worker"],
+      "steps": [
+        "Leave empty until the Workspace connector activation review is approved.",
+        "Follow apps/workspace-connector/docs/deployment.md and use the reviewed deployment plan value for this exact environment. Never copy a production policy into preview.",
+        "Store as a Worker secret binding so normal release promotion preserves it. The enabled flag remains false until isolated provider acceptance is complete."
+      ]
+    },
+    {
+      "name": "LVBT_WORKSPACE_CONNECTOR_SUBJECT",
+      "purpose": "Pins the exact Google numeric identity of the matching connector runtime.",
+      "use": "future",
+      "neededFor": "Workspace account onboarding",
+      "targets": ["worker"],
+      "steps": [
+        "Leave empty until the Workspace connector activation review is approved.",
+        "Follow apps/workspace-connector/docs/deployment.md and use the reviewed deployment plan value for this exact environment. Never copy a production policy into preview.",
+        "Store as a Worker secret binding so normal release promotion preserves it. The enabled flag remains false until isolated provider acceptance is complete."
+      ]
+    },
+    {
+      "name": "LVBT_WORKSPACE_CONNECTOR_AUDIENCE",
+      "purpose": "Pins the matching environment site URL for the purpose-specific connector API.",
+      "use": "future",
+      "neededFor": "Workspace account onboarding",
+      "targets": ["worker"],
+      "steps": [
+        "Leave empty until the Workspace connector activation review is approved.",
+        "Follow apps/workspace-connector/docs/deployment.md and use the reviewed deployment plan value for this exact environment. Never copy a production policy into preview.",
+        "Store as a Worker secret binding so normal release promotion preserves it. The enabled flag remains false until isolated provider acceptance is complete."
+      ]
+    },
+    {
+      "name": "LVBT_WORKSPACE_ONBOARDING_CONFIG",
+      "purpose": "Stores the reviewed customer, human-account scope and group policy for this environment.",
+      "use": "future",
+      "neededFor": "Workspace account onboarding",
+      "targets": ["worker"],
+      "steps": [
+        "Leave empty until the Workspace connector activation review is approved.",
+        "Follow apps/workspace-connector/docs/deployment.md and use the reviewed deployment plan value for this exact environment. Never copy a production policy into preview.",
+        "Store as a Worker secret binding so normal release promotion preserves it. The enabled flag remains false until isolated provider acceptance is complete."
+      ]
     }
   ],
   "vars": [

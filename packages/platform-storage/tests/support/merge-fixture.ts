@@ -24,6 +24,17 @@ export async function mergeFixture(through?: string, initialConsentAt?: string) 
     );
     db.raw.prepare('INSERT INTO d1_migrations(name) VALUES(?)').run('0056_staff_accounts.sql');
   }
+  if (through && through < '0057_workspace_onboarding.sql') {
+    db.raw.exec(
+      readFileSync(
+        new URL('../../migrations/0057_workspace_onboarding.sql', import.meta.url),
+        'utf8',
+      ),
+    );
+    db.raw
+      .prepare('INSERT INTO d1_migrations(name) VALUES(?)')
+      .run('0057_workspace_onboarding.sql');
+  }
   const people = new PersonService(db);
   const create = async (email: string, name: string) =>
     (

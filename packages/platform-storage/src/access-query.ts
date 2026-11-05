@@ -16,6 +16,8 @@ export const ACCESS_ROWS_QUERY = `${TARGETS}
     SELECT p.id AS personId,t.targetId,coalesce(nullif(trim(coalesce(p.given_name,'')||' '||coalesce(p.family_name,'')),''),p.email,'') AS name,
     p.email,p.membership_status AS membershipStatus,c.name AS committeeName,a.id AS assignmentId,a.role,
     CASE WHEN p.membership_status='member' AND (t.targetId='person' OR a.id IS NOT NULL) THEN 1 ELSE 0 END AS expectedAccess,
+    CASE WHEN p.membership_status='member' AND (t.targetId='person' OR a.id IS NOT NULL)
+      AND NOT EXISTS(SELECT 1 FROM workspace_enrollments we WHERE we.person_id=p.id AND we.state<>'active') THEN 1 ELSE 0 END AS googleExpectedAccess,
     coalesce(g.generation,0) AS generation,
     (SELECT count(*) FROM identities WHERE person_id=p.id AND platform='google_workspace') AS googleIdentityCount,
     (SELECT count(*) FROM identities WHERE person_id=p.id AND platform='discord') AS discordIdentityCount,

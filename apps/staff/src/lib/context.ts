@@ -1,4 +1,7 @@
+import { SESSION_COOKIE, readCookie } from '@lasvegasfortransit/platform-core/web-auth';
+import { staffOnboardingStep } from '@lasvegasfortransit/platform-storage/staff-discord-handoff';
 import { messageResponse } from './responses';
+import { refreshExpiredOnboardingDiscord } from './onboarding-account';
 import {
   discordProviderConfiguration,
   type DiscordRuntimeEnv,
@@ -25,6 +28,7 @@ import type { Db } from '@lasvegasfortransit/platform-storage/db';
 export interface StaffEnv
   extends GoogleSignInEnv, AccessEnv, DiscordRuntimeEnv, GoogleAccessRuntimeEnv, StaffAuthConfig {
   LVBT_RESEND_API_KEY?: string;
+  LVBT_STAFF_DISCORD_REQUIRED?: string;
   LVBT_MEMBER_ORIGIN?: string;
   LVBT_NEWSLETTER_JOBS?: { fetch(request: Request): Promise<Response> };
   /** Set only for the one-time, maintainer-approved first administrator bootstrap. */
@@ -42,6 +46,15 @@ export interface StaffLocals {
   staff?: StaffContext;
   access?: AccessIdentity;
 }
+const setupRoutes = [
+  '/onboarding',
+  '/onboarding/account',
+  '/onboarding/connect',
+  '/onboarding/discord',
+  '/onboarding/discord/screening',
+  '/onboarding/ready',
+  '/onboarding/pending',
+];
 function staffRoute(actor: Actor, request: Request): 'allowed' | 'paper_home' | 'denied' {
   if (can(actor, 'console.enter')) return 'allowed';
   if (
@@ -51,7 +64,9 @@ function staffRoute(actor: Actor, request: Request): 'allowed' | 'paper_home' | 
     return 'denied';
   const path = new URL(request.url).pathname.replace(/\/$/, '');
   if (path === '' && request.method === 'GET') return 'paper_home';
-  return ['/paper', '/paper/sheet', '/sign-out'].includes(path) ? 'allowed' : 'denied';
+  return ['/paper', '/paper/sheet', '/sign-out', ...setupRoutes].includes(path)
+    ? 'allowed'
+    : 'denied';
 }
 function signInRequired(request: Request): Response {
   const destination = request.headers.get('Sec-Fetch-Dest');
@@ -65,6 +80,32 @@ function signInRequired(request: Request): Response {
     headers: { Location: `/sign-in/?next=${encodeURIComponent(url.pathname + url.search)}` },
   });
 }
+async function requiredSetupRedirect(
+  request: Request,
+  env: StaffEnv,
+  personId: string,
+): Promise<Response | null> {
+  const url = new URL(request.url),
+    path = url.pathname.replace(/\/$/, '');
+  if (
+    env.LVBT_STAFF_DISCORD_REQUIRED !== 'true' ||
+    path === '/sign-out' ||
+    setupRoutes.includes(path)
+  )
+    return null;
+  const token = readCookie(request, SESSION_COOKIE) ?? '',
+    guildId = discordProviderConfiguration(env).contextId;
+  let step = await staffOnboardingStep(env, token, guildId);
+  if (step === 'discord' && (await refreshExpiredOnboardingDiscord(env, personId, guildId)))
+    step = await staffOnboardingStep(env, token, guildId);
+  if (step === 'ready') return null;
+  return new Response(null, {
+    status: 303,
+    headers: {
+      Location: `${step === 'pending' ? '/onboarding/pending/' : '/onboarding/'}?next=${encodeURIComponent(url.pathname + url.search)}`,
+    },
+  });
+}
 export async function resolveStaffContext(
   request: Request,
   env: StaffEnv,
@@ -76,6 +117,9 @@ export async function resolveStaffContext(
   if (!session) return signInRequired(request);
   const actor = await loadActor(env.PLATFORM_DB, session.personId);
   const route = actor ? staffRoute(actor, request) : 'denied';
+  const setup =
+    route !== 'denied' ? await requiredSetupRedirect(request, env, session.personId) : null;
+  if (setup) return setup;
   if (route === 'paper_home')
     return new Response(null, { status: 303, headers: { Location: '/paper/' } });
   if (!actor || route === 'denied') {
