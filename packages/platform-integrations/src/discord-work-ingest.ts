@@ -1,8 +1,11 @@
 import type { Db } from '@lasvegasfortransit/platform-storage/db';
-import { readWorkConversation } from '@lasvegasfortransit/platform-storage/discord-work-links';
+import {
+  readWorkConversation,
+  readProjectHome,
+} from '@lasvegasfortransit/platform-storage/discord-work-links';
 import { acceptWorkMessages } from '@lasvegasfortransit/platform-storage/discord-work-ingress';
 import { resolveWorkActors } from './discord-work-actors';
-import { readWorkSource, readWorkTask } from './discord-work-authority';
+import { projectLeadConfig, readWorkSource, readWorkTask } from './discord-work-authority';
 import { readNotionProjectLeads } from './notion-task-projects';
 import {
   currentWorkAudience,
@@ -37,11 +40,15 @@ async function eligibleActors(
   if (!source) return null;
   const task = await readWorkTask(providers, source, c.subject);
   if (!task?.projectIds.includes(c.placementProjectId)) return null;
+  const home = await readProjectHome(db, c.scope, c.homeId);
+  if (home?.state !== 'active') return null;
+  const lead = await projectLeadConfig(db, c.scope, source, home.projectSourceId);
+  if (!lead) return null;
   const leads = await readNotionProjectLeads(
     providers.notion,
     c.placementProjectId,
-    source.policy.projectsSourceId,
-    source.policy.projectLeadField,
+    lead.sourceId,
+    lead.field,
   );
   if (!leads) return null;
   const eligibleIds = new Set([...task.assigneeIds, ...leads]);

@@ -185,6 +185,7 @@ const handlers: Record<string, Handler> = {
   'route-event': routeSetup,
   'route-event-project': routeSetup,
   'route-relation': routeSetup,
+  'route-lead': routeSetup,
   'route-source': routeSetup,
   'route-more': routeSetup,
   'route-next': routeSetup,

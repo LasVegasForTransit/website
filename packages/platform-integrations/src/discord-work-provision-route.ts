@@ -1,6 +1,6 @@
 import type { Db } from '@lasvegasfortransit/platform-storage/db';
 import { readWorkRoute } from '@lasvegasfortransit/platform-storage/discord-work-routes';
-import { readWorkSource } from './discord-work-authority';
+import { projectRouteSourceMatches } from './discord-work-route-preview';
 import { resolveEventProjectForum } from './discord-work-event-project';
 import { assertProvisionCurrent } from './discord-work-provision-checkpoint';
 import { notionObject } from './notion-task-types';
@@ -46,11 +46,13 @@ async function validateProjectRoute(
   { route, page, p }: { route: Route; page: Record<string, unknown>; p: Record<string, unknown> },
 ): Promise<void> {
   if (route.kind === 'event' && route.projectRelation) {
-    const source = await readWorkSource(db, context.taskSourceId, context.scope);
     if (
-      !source ||
-      normalize(source.policy.projectsSourceId) !==
-        normalize(route.projectRelation.projectSourceId) ||
+      !(await projectRouteSourceMatches(
+        db,
+        context.scope,
+        context.taskSourceId,
+        route.projectRelation.projectSourceId,
+      )) ||
       route.destination.kind !== 'category'
     )
       throw new Error('link_changed');

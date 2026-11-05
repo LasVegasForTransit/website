@@ -6,7 +6,12 @@ import {
   findWorkSubject,
 } from '@lasvegasfortransit/platform-storage/discord-work-links';
 import { t } from '@lasvegasfortransit/platform-core/messages';
-import { resolveWorkActor, readWorkSource, authorizeWork } from './discord-work-authority';
+import {
+  resolveWorkActor,
+  readWorkSource,
+  authorizeWork,
+  projectLeadConfig,
+} from './discord-work-authority';
 import { readNotionProjectLeads } from './notion-task-projects';
 import { notionObject } from './notion-task-types';
 import { parseNotionTaskPage } from './notion-task-reader';
@@ -30,11 +35,13 @@ async function choices(
 ) {
   const source = await readWorkSource(db, context.taskSourceId, context.scope);
   if (!source) return { tasks: [], nextCursor: null, canPlace: false };
+  const lead = await projectLeadConfig(db, context.scope, source, input.home.projectSourceId);
+  if (!lead) return { tasks: [], nextCursor: null, canPlace: false };
   const leads = await readNotionProjectLeads(
     providers.notion,
     input.home.projectId,
-    input.home.projectSourceId,
-    source.policy.projectLeadField,
+    lead.sourceId,
+    lead.field,
   );
   const canPlace =
     input.actor.administrator ||
