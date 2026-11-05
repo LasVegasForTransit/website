@@ -1,0 +1,67 @@
+---
+import { can } from '@lasvegasfortransit/platform-core/permissions';
+import { issueFormToken } from '@lasvegasfortransit/platform-storage/form-tokens';
+import type { WorkspaceEnrollment } from '@lasvegasfortransit/platform-storage/workspace-enrollment';
+import { workspaceStatus } from '@lasvegasfortransit/platform-storage/workspace-status';
+import { formatFullDate, formatTime } from '@lasvegasfortransit/platform-core/messages';
+interface Props {
+  enrollment: WorkspaceEnrollment;
+}
+const { enrollment } = Astro.props;
+const status = workspaceStatus(enrollment);
+const staff = Astro.locals.staff;
+const token =
+  staff && status.retry && can(staff.actor, 'access.recover')
+    ? await issueFormToken(staff.db, staff.actor, `workspace:retry:${enrollment.person_id}`)
+    : null;
+---
+
+<li class="staff-account-row">
+  <header class="staff-account-heading">
+    <h3>Google Workspace</h3>
+    {enrollment.email && <p class="staff-account-scope">{enrollment.email}</p>}
+  </header>
+  <dl class="staff-account-status">
+    <div>
+      <dt>Account</dt><dd>
+        <strong class="staff-profile-account-state">{status.account}</strong>
+      </dd><dd>{status.association}</dd>
+    </div>
+    <div>
+      <dt>Staff portal</dt><dd>
+        <strong class="staff-profile-account-state">{status.admission}</strong>
+      </dd>
+      {
+        enrollment.console_checked_at && (
+          <dd class="staff-access-checked">
+            <time datetime={enrollment.console_checked_at}>
+              Last confirmed {formatFullDate(new Date(enrollment.console_checked_at))} at{' '}
+              {formatTime(new Date(enrollment.console_checked_at))}
+            </time>
+          </dd>
+        )
+      }
+    </div>
+  </dl>
+  {
+    status.retry && (
+      <div class="staff-access-recovery">
+        {enrollment.console_failure && (
+          <p role="status">
+            The Google group update needs an administrator’s attention. Saved membership and
+            committee assignments are unchanged.
+          </p>
+        )}
+        {token && (
+          <form method="post" action={Astro.url.pathname + Astro.url.search}>
+            <input type="hidden" name="action" value="workspace_retry" />
+            <input type="hidden" name="token" value={token} />
+            <button type="submit" class="staff-secondary-button">
+              Check again
+            </button>
+          </form>
+        )}
+      </div>
+    )
+  }
+</li>

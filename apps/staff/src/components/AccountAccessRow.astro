@@ -35,11 +35,16 @@ const providers = personView
             personView && memberChannels ? 'staff.access.memberChannels' : 'staff.common.discord',
           ),
           access: row.discord,
+          expected: row.expectedAccess,
         },
       ]
     : [
-        { name: t('staff.access.googleGroup'), access: row.googleWorkspace },
-        { name: t('staff.common.discord'), access: row.discord },
+        {
+          name: t('staff.access.googleGroup'),
+          access: row.googleWorkspace,
+          expected: row.googleExpectedAccess ?? row.expectedAccess,
+        },
+        { name: t('staff.common.discord'), access: row.discord, expected: row.expectedAccess },
       ];
 const needsRecovery = personView
   ? profileNeedsRecovery(row, staff.accessConfiguration ?? {})
@@ -93,7 +98,7 @@ const retryToken =
   </header>
   <dl class="staff-account-status">
     {
-      providers.map(({ name, access }) => (
+      providers.map(({ name, access, expected }) => (
         <div>
           <dt>{name}</dt>
           <dd>
@@ -102,21 +107,21 @@ const retryToken =
                 personView ? 'staff-profile-account-state' : 'staff-access-status',
                 {
                   'staff-access-status-confirmed':
-                    !personView && access.state === 'granted' && row.expectedAccess,
+                    !personView && access.state === 'granted' && expected,
                   'staff-access-status-attention':
                     !personView &&
                     access.state !== 'unknown' &&
-                    access.state !== (row.expectedAccess ? 'granted' : 'absent'),
+                    access.state !== (expected ? 'granted' : 'absent'),
                   'staff-profile-account-attention':
                     personView &&
                     access.state !== 'unknown' &&
-                    access.state !== (row.expectedAccess ? 'granted' : 'absent'),
+                    access.state !== (expected ? 'granted' : 'absent'),
                 },
               ]}
             >
               {personView
-                ? profileAccessLabel(access, row.expectedAccess)
-                : accessLabel(access, row.expectedAccess, memberChannels)}
+                ? profileAccessLabel(access, expected)
+                : accessLabel(access, expected, memberChannels)}
             </strong>
           </dd>
           {access.observedAt && (

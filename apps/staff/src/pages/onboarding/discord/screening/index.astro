@@ -1,0 +1,46 @@
+---
+import { env } from 'cloudflare:workers';
+import StaffGateLayout from '@lasvegasfortransit/platform-core/staff-gate-layout';
+import { discordProviderConfiguration } from '@lasvegasfortransit/platform-integrations/discord-runtime';
+import { staffOnboardingStep } from '@lasvegasfortransit/platform-storage/staff-discord-handoff';
+import OnboardingProgress from '../../../../components/OnboardingProgress.astro';
+import {
+  onboardingAccount,
+  onboardingStepPath,
+  refreshOnboardingDiscord,
+} from '../../../../lib/onboarding-account';
+import type { StaffEnv } from '../../../../lib/context';
+const platform = env as unknown as StaffEnv;
+const account = await onboardingAccount(platform, Astro.request, Astro.locals.access);
+if (!account) return Astro.redirect('/sign-in/', 303);
+const guild = discordProviderConfiguration(platform).contextId;
+let notice = '';
+if (Astro.request.method === 'POST') {
+  if (!(await refreshOnboardingDiscord(platform, account.session.personId)))
+    notice = 'Discord couldn’t be checked. Try again shortly.';
+  else notice = 'The server rules still need your acceptance in Discord.';
+}
+const step = await staffOnboardingStep(platform, account.token, guild);
+if (step !== 'screening') return Astro.redirect(onboardingStepPath(step, account.next), 303);
+---
+
+<StaffGateLayout title="Accept the server rules">
+  <OnboardingProgress slot="progress" step="discord" />
+  <p>
+    Your Discord account is connected. Accept the LVBT server rules in Discord, then check again to
+    finish setup.
+  </p>
+  {notice && <p role="status">{notice}</p>}
+  <a
+    class="staff-action-link"
+    href={`https://discord.com/channels/${guild}`}
+    target="_blank"
+    rel="noopener noreferrer">Open Discord</a
+  >
+  <form method="post">
+    <button class="staff-secondary-button" type="submit">Check again</button>
+  </form>
+  <Fragment slot="help"
+    >Need help? <a href="mailto:hello@lasvegasfortransit.org">Email the team</a>.</Fragment
+  >
+</StaffGateLayout>

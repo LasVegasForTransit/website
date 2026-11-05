@@ -1,4 +1,5 @@
 ---
+import WorkspaceScopeReview from '../../components/WorkspaceScopeReview.astro';
 import StaffLayout from '../../layouts/StaffLayout.astro';
 import Button from '../../../../site/src/components/app/Button.astro';
 import AccountAccessRow from '../../components/AccountAccessRow.astro';
@@ -146,6 +147,7 @@ if (discordReviews?.nextCursor)
       </p>
     )
   }
+  {committeeOverview && <WorkspaceScopeReview />}
   {committeeOverview && <CommitteeAccessOverview page={committeeOverview} />}
   {googleOverview && <GoogleGroupOverview page={googleOverview} showGroups={false} />}
   {

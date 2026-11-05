@@ -13,6 +13,7 @@ export interface Actor {
   workspaceLinked: boolean;
   organizationAuthenticated?: boolean;
   teamAccount?: boolean;
+  workspaceEnrolled?: boolean;
   staffAdmin: boolean;
   committees: readonly ActorCommittee[];
   eventsLed: readonly string[];

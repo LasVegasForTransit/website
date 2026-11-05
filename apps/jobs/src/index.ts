@@ -1,3 +1,4 @@
+import { handleDiscordReadinessRequest } from './discord-readiness';
 import { handleManualTaskUpdate } from './notion-task-manual';
 export {
   WorkPreview,
@@ -40,6 +41,8 @@ export {
 } from './notion-task-checkins';
 export default {
   async fetch(request, env) {
+    if (request.url === 'https://jobs.internal/discord/readiness')
+      return handleDiscordReadinessRequest(request, env);
     if (request.url === 'https://jobs.internal/notion/task-update')
       return handleManualTaskUpdate(request, env);
     if (request.url === 'https://jobs.internal/discord/committee-roles')

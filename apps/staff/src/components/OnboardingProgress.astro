@@ -1,0 +1,40 @@
+---
+interface Props {
+  step: 'account' | 'discord' | 'ready';
+}
+const { step } = Astro.props;
+const steps = [
+  ['account', 'Account'],
+  ['discord', 'Discord'],
+  ['ready', 'Ready'],
+];
+---
+
+<nav aria-label="Setup progress">
+  <ol>
+    {steps.map(([key, label]) => <li aria-current={key === step ? 'step' : undefined}>{label}</li>)}
+  </ol>
+</nav>
+<style>
+  nav {
+    margin-block: 0 1.5rem;
+  }
+  ol {
+    display: flex;
+    gap: 1.25rem;
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    font-size: 0.875rem;
+  }
+  li {
+    opacity: 0.65;
+    border-bottom: 2px solid transparent;
+    padding-bottom: 0.4rem;
+  }
+  li[aria-current] {
+    opacity: 1;
+    font-weight: 700;
+    border-color: currentColor;
+  }
+</style>

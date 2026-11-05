@@ -4,6 +4,7 @@
   "private": true,
   "type": "module",
   "exports": {
+    "./workspace-maintenance": "./src/workspace-maintenance.ts",
     "./organization-roles": "./src/organization-roles.ts",
     "./roster-import-resolve": "./src/roster-import-resolve.ts",
     "./membership-roll": "./src/membership-roll.ts",
@@ -105,7 +106,16 @@
     "./discord-work-links": "./src/discord-work-links.ts",
     "./discord-work-operations": "./src/discord-work-operations.ts",
     "./notion-task-person-lineage": "./src/notion-task-person-lineage.ts",
-    "./discord-work-ingress": "./src/discord-work-ingress.ts"
+    "./discord-work-ingress": "./src/discord-work-ingress.ts",
+    "./workspace-enrollment": "./src/workspace-enrollment.ts",
+    "./workspace-connector": "./src/workspace-connector.ts",
+    "./workspace-channels": "./src/workspace-channels.ts",
+    "./workspace-scans": "./src/workspace-scans.ts",
+    "./workspace-budget": "./src/workspace-budget.ts",
+    "./workspace-enrollment-connect": "./src/workspace-enrollment-connect.ts",
+    "./staff-discord-handoff": "./src/staff-discord-handoff.ts",
+    "./discord-eligibility": "./src/discord-eligibility.ts",
+    "./workspace-status": "./src/workspace-status.ts"
   },
   "scripts": {
     "lint": "eslint . --max-warnings 0",

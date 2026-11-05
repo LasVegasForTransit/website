@@ -1,0 +1,114 @@
+---
+import { env } from 'cloudflare:workers';
+import StaffGateLayout from '@lasvegasfortransit/platform-core/staff-gate-layout';
+import { readCookie, clearedSessionCookies } from '@lasvegasfortransit/platform-core/web-auth';
+import {
+  beginWorkspaceConnection,
+  workspaceConnection,
+  completeWorkspaceConnection,
+} from '@lasvegasfortransit/platform-storage/workspace-enrollment-connect';
+import {
+  onboardingAccount,
+  onboardingCookie,
+  CONNECTION_COOKIE,
+} from '../../../lib/onboarding-account';
+import { messageResponse } from '../../../lib/responses';
+import OnboardingProgress from '../../../components/OnboardingProgress.astro';
+import type { StaffEnv } from '../../../lib/context';
+const platform = env as unknown as StaffEnv,
+  account = await onboardingAccount(platform, Astro.request, Astro.locals.access);
+if (!account) return Astro.redirect('/sign-in/', 303);
+let ticket = readCookie(Astro.request, CONNECTION_COOKIE) ?? '',
+  notice = '';
+if (Astro.request.method === 'POST') {
+  const form = await Astro.request.formData();
+  if (form.get('action') === 'complete') {
+    const result = await completeWorkspaceConnection(platform, ticket, account.token);
+    if (result.kind === 'connected') {
+      const response = new Response(null, {
+        status: 303,
+        headers: { Location: `/sign-in/?next=${encodeURIComponent(account.next)}` },
+      });
+      for (const cookie of clearedSessionCookies()) response.headers.append('Set-Cookie', cookie);
+      response.headers.append('Set-Cookie', onboardingCookie(CONNECTION_COOKIE, ''));
+      return response;
+    }
+    notice =
+      result.kind === 'conflict'
+        ? 'These accounts need a staff review before they can be connected. Contact hello@lasvegasfortransit.org.'
+        : 'This connection expired. Start again to prove both accounts.';
+    Astro.response.status = 409;
+  } else {
+    ticket = (await beginWorkspaceConnection(platform, account.token, account)) ?? '';
+    if (!ticket)
+      return messageResponse(
+        'This account cannot be connected automatically. Contact hello@lasvegasfortransit.org.',
+        409,
+      );
+    return new Response(null, {
+      status: 303,
+      headers: {
+        Location: `${account.memberOrigin}/sign-in/workspace-connect/?request=${encodeURIComponent(ticket)}`,
+        'Set-Cookie': onboardingCookie(CONNECTION_COOKIE, ticket),
+      },
+    });
+  }
+}
+const connection = await workspaceConnection(platform, ticket);
+const destination = connection?.destination_person_id
+  ? await platform.PLATFORM_DB.prepare('SELECT email FROM people WHERE id=? AND deleted_at IS NULL')
+      .bind(connection.destination_person_id)
+      .first<{ email: string | null }>()
+  : null;
+---
+
+<StaffGateLayout title={destination ? 'Connect these accounts?' : 'Connect your member account'}>
+  <OnboardingProgress slot="progress" step="account" />
+  {
+    notice && (
+      <p class="staff-gate-notice" role="alert">
+        {notice}
+      </p>
+    )
+  }
+  {
+    destination ? (
+      <>
+        <>
+          <p>
+            Connect <strong>{account.session.email}</strong> to your LVBT account{' '}
+            <strong>{destination.email}</strong>. Your saved details and choices stay with that
+            account.
+          </p>
+          <form method="post">
+            <>
+              <input type="hidden" name="action" value="complete" />
+              <button class="staff-action-link" type="submit">
+                Connect accounts
+              </button>
+            </>
+          </form>
+        </>
+      </>
+    ) : (
+      <>
+        <>
+          <p>
+            Verify your member account to connect it to <strong>{account.session.email}</strong>.
+          </p>
+          <form method="post">
+            <button class="staff-action-link" type="submit">
+              Verify account
+            </button>
+          </form>
+        </>
+      </>
+    )
+  }
+  <a class="staff-gate-link" href={`/onboarding/account/?next=${encodeURIComponent(account.next)}`}
+    >Back</a
+  >
+  <Fragment slot="help"
+    >Need help? <a href="mailto:hello@lasvegasfortransit.org">Email the team</a>.</Fragment
+  >
+</StaffGateLayout>

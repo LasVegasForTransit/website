@@ -1,3 +1,4 @@
+import { onboardingRuntime } from './onboarding-runtime';
 import { createSession } from '@lasvegasfortransit/platform-storage/auth';
 import { ssoSessionFixture, ssoPrincipalFixture } from './sso';
 import assert from 'node:assert/strict';
@@ -57,6 +58,7 @@ function seedRoster(raw: DatabaseSync) {
   }
 }
 interface RuntimeOptions {
+  onboarding?: boolean;
   authMode?: 'cloudflare-access' | 'google';
   unlinkedAdmin?: boolean;
   emailCapture?: (email: { to: string[]; text: string }) => void;
@@ -105,12 +107,14 @@ async function startRuntimeInternal(options: RuntimeOptions = {}) {
     path: join(server, file),
   }));
   const withJobs = (value: Parameters<typeof newsletterRuntime>[0]) =>
-    options.discordRoles
-      ? discordRoleRuntime(value, options.discordRoles)
-      : newsletterRuntime(value, options.newsletter);
+    options.onboarding
+      ? onboardingRuntime(value, root)
+      : options.discordRoles
+        ? discordRoleRuntime(value, options.discordRoles)
+        : newsletterRuntime(value, options.newsletter);
   const simulator = new Miniflare(
     convertV4MiniflareOptions(
-      withJobs({
+      await withJobs({
         host: '127.0.0.1',
         port: 0,
         https: true,
@@ -343,6 +347,15 @@ async function startRuntimeInternal(options: RuntimeOptions = {}) {
       consent: { ...consent, ...(options.consentAt ? { givenAt: options.consentAt } : {}) },
     });
     return {
+      assertionFor: (email: string, subject: string) =>
+        new SignJWT({ email, type: 'app' })
+          .setProtectedHeader({ alg: 'RS256', kid: jwk.kid })
+          .setIssuer('https://lvbt.cloudflareaccess.com')
+          .setAudience('browser-fixture-app')
+          .setSubject(subject)
+          .setIssuedAt()
+          .setExpirationTime('1h')
+          .sign(keys.privateKey),
       simulator,
       tls: { key: httpsKey, cert: httpsCert },
       port: (await simulator.ready).port,

@@ -245,7 +245,10 @@ void test('every route requires Access and volunteers can reach only the paper t
       );
       if (
         /^\/sign-in(?:\/|$)/.test(path) ||
-        ['/paper/', '/paper/sheet/', '/sign-out/'].includes(path)
+        ['/paper/', '/paper/sheet/', '/sign-out/'].includes(path) ||
+        /^\/onboarding\/(?:account\/|connect\/|discord\/(?:screening\/)?|ready\/|pending\/)?$/.test(
+          path,
+        )
       )
         assert.equal(
           authenticated.status,
@@ -365,4 +368,35 @@ void test('staff sign-in returns a verified volunteer only to paper destinations
     '/sign-in/?google_error=1',
   );
   db.raw.close();
+});
+
+void test('required Discord rollout gates both administrator and paper staff including legacy accounts', async () => {
+  for (const staffAdmin of [true, false]) {
+    const f = await fixture({ staffAdmin });
+    const env = { ...f.env, LVBT_STAFF_DISCORD_REQUIRED: 'true' };
+    for (const path of staffAdmin
+      ? ['/people/', '/staff-admin/', '/paper/']
+      : ['/paper/', '/paper/sheet/']) {
+      const response = await f.staffMiddleware(
+        new Request(`${origin}${path}`, { headers: f.headers }),
+        env,
+        {
+          locals: {},
+          fetch: fetcher,
+          next: () => Promise.resolve(new Response('must not render')),
+        },
+      );
+      assert.equal(response.status, 303);
+      assert.match(response.headers.get('Location') ?? '', /^\/onboarding\/pending\//);
+    }
+    for (const path of ['/onboarding/pending/', '/sign-out/']) {
+      const response = await f.staffMiddleware(
+        new Request(`${origin}${path}`, { headers: f.headers }),
+        env,
+        { locals: {}, fetch: fetcher, next: () => Promise.resolve(new Response('recovery')) },
+      );
+      assert.equal(response.status, 200);
+    }
+    f.db.raw.close();
+  }
 });

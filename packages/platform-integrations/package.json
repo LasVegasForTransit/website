@@ -65,7 +65,9 @@
     "./discord-work-setup": "./src/discord-work-setup.ts",
     "./discord-work-runner": "./src/discord-work-runner.ts",
     "./discord-work-command": "./src/discord-work-command.ts",
-    "./discord-work-interactions": "./src/discord-work-interactions.ts"
+    "./discord-work-interactions": "./src/discord-work-interactions.ts",
+    "./workspace-connector-api": "./src/workspace-connector-api.ts",
+    "./workspace-connector-auth": "./src/workspace-connector-auth.ts"
   },
   "scripts": {
     "lint": "eslint . --max-warnings 0",

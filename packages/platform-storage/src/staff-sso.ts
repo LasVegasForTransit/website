@@ -55,9 +55,9 @@ export async function readSsoSession(
 ) {
   if (!valid(principal, now)) return null;
   const session = await readSession(env, token, now);
-  if (session?.type !== 'staff' || session.person.membershipStatus === 'former_member') return null;
+  if (session?.type !== 'staff') return null;
   const link = await env.PLATFORM_DB.prepare(
-    `SELECT 1 FROM sessions s JOIN staff_sso_links l ON l.id=s.sso_link_id AND l.person_id=s.person_id WHERE s.id_hash=? AND s.authentication_source='cloudflare-access' AND l.issuer=? AND l.subject=? AND l.revoked_at IS NULL`,
+    `SELECT 1 FROM sessions s JOIN staff_sso_links l ON l.id=s.sso_link_id AND l.person_id=s.person_id JOIN people p ON p.id=s.person_id WHERE s.id_hash=? AND s.authentication_source='cloudflare-access' AND l.issuer=? AND l.subject=? AND l.revoked_at IS NULL AND ${TEAM_ACCOUNT_ELIGIBLE}`,
   )
     .bind(await hash(env, 'session', token), principal.issuer, principal.subject)
     .first();

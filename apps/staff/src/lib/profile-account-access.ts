@@ -7,6 +7,7 @@ export function profileProviders(row: AccessRow, configuration: AccessConfigurat
   const discord = {
     name: row.targetId === 'person' ? t('staff.access.memberChannels') : t('staff.common.discord'),
     access: row.discord,
+    expected: row.expectedAccess,
     resource: row.discordResourceId,
     configured: Boolean(configuration.discord?.configured && configuration.discord.contextId),
   };
@@ -17,6 +18,7 @@ export function profileProviders(row: AccessRow, configuration: AccessConfigurat
         {
           name: t('staff.access.googleGroup'),
           access: row.googleWorkspace,
+          expected: row.googleExpectedAccess ?? row.expectedAccess,
           resource: row.googleResourceId,
           configured: Boolean(
             configuration.google_workspace?.configured &&
@@ -35,13 +37,12 @@ export function profileProviders(row: AccessRow, configuration: AccessConfigurat
 
 export function profileNeedsRecovery(row: AccessRow, configuration: AccessConfiguration): boolean {
   if (row.operationState !== 'retry') return false;
-  const expected = row.expectedAccess ? 'granted' : 'absent';
   return profileProviders(row, configuration).some(
-    ({ access, configured }) =>
+    ({ access, configured, expected }) =>
       configured &&
       (access.reason === 'stale'
         ? access.lastConfirmedState
-          ? access.lastConfirmedState !== expected
+          ? access.lastConfirmedState !== (expected ? 'granted' : 'absent')
           : row.lastFailure !== null
         : access.state === 'unknown'
           ? [
@@ -51,7 +52,7 @@ export function profileNeedsRecovery(row: AccessRow, configuration: AccessConfig
               'unknown',
               'not_checked',
             ].includes(access.reason ?? '')
-          : access.state !== expected),
+          : access.state !== (expected ? 'granted' : 'absent')),
   );
 }
 

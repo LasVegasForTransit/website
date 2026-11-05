@@ -1,3 +1,4 @@
+import { DISCORD_PERSON_ELIGIBLE, DISCORD_SESSION_ELIGIBLE } from './discord-eligibility';
 import { hashWithSecret } from '@lasvegasfortransit/platform-core/signing';
 import { digestToken, randomToken } from '@lasvegasfortransit/platform-core/random-token';
 import {
@@ -38,7 +39,7 @@ export function discordCallback(origin: string): string {
 export function discordSessionHash(env: AuthEnv, token: string): Promise<string> {
   return hashWithSecret(env.LVBT_SIGN_IN_SECRET, `session:${token}`);
 }
-const LIVE_MEMBER = `s.expires_at>? AND p.deleted_at IS NULL AND p.membership_status='member'
+const LIVE_MEMBER = `s.expires_at>? AND p.deleted_at IS NULL AND ${DISCORD_PERSON_ELIGIBLE} AND ${DISCORD_SESSION_ELIGIBLE}
  AND NOT EXISTS(SELECT 1 FROM discord_disconnects d JOIN identities i ON i.id=d.identity_record_id WHERE i.person_id=p.id AND i.platform='discord')
  AND (SELECT count(*) FROM identities i WHERE i.person_id=p.id AND i.platform='discord')<=1`;
 
@@ -86,6 +87,8 @@ export class DiscordLinkService {
         now.toISOString(),
         sessionHash,
         now.toISOString(),
+        now.toISOString(),
+        now.toISOString(),
       ),
     ]);
     const stored = await this.env.PLATFORM_DB.prepare(
@@ -113,6 +116,8 @@ export class DiscordLinkService {
         stateHash,
         sessionHash,
         input.origin,
+        now.toISOString(),
+        now.toISOString(),
         now.toISOString(),
         now.toISOString(),
       )
