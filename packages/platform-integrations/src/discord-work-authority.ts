@@ -1,5 +1,7 @@
 import type { Db } from '@lasvegasfortransit/platform-storage/db';
 import { readTaskCheckinSource } from '@lasvegasfortransit/platform-storage/notion-task-checkins';
+import { workScopeKey } from '@lasvegasfortransit/platform-storage/discord-work-types';
+import { findActiveWorkRoute } from '@lasvegasfortransit/platform-storage/discord-work-routes';
 import { taskMappingMatches } from '@lasvegasfortransit/platform-storage/notion-task-person-lineage';
 import {
   readProjectHome,
@@ -104,6 +106,25 @@ interface WorkAuthorizationInput {
   generation?: number | undefined;
 }
 type SourceContext = NonNullable<Awaited<ReturnType<typeof readWorkSource>>>;
+export async function projectLeadConfig(
+  db: Db,
+  scope: WorkScope,
+  source: SourceContext,
+  projectSourceId: string,
+): Promise<{ sourceId: string; field: string } | null> {
+  const route = await findActiveWorkRoute(db, scope, projectSourceId);
+  if (route?.kind === 'project' && route.projectLeadField)
+    return { sourceId: route.sourceId, field: route.projectLeadField };
+  return uuid(projectSourceId) === uuid(source.policy.projectsSourceId)
+    ? { sourceId: source.policy.projectsSourceId, field: source.policy.projectLeadField }
+    : null;
+}
+function taskProjectSource(
+  source: SourceContext,
+  home: Awaited<ReturnType<typeof readProjectHome>>,
+) {
+  return home?.projectSourceId ?? source.policy.projectsSourceId;
+}
 function subjectsMatch(stored: unknown, requested: WorkSubject): boolean {
   const storedSubject = workSubject(stored);
   const requestedSubject = workSubject(requested);
@@ -136,7 +157,11 @@ async function taskGrant(
   providers: WorkAuthorityProviders,
   source: SourceContext,
   actor: WorkActor,
-  input: { request: WorkAuthorizationInput; home: Awaited<ReturnType<typeof readProjectHome>> },
+  input: {
+    db: Db;
+    request: WorkAuthorizationInput;
+    home: Awaited<ReturnType<typeof readProjectHome>>;
+  },
 ): Promise<boolean> {
   const { request, home } = input;
   if (uuid(request.subject.sourceId) !== uuid(source.source.id)) return false;
@@ -153,33 +178,57 @@ async function taskGrant(
   )
     return true;
   const projectIds = home ? [home.projectId] : task.projectIds;
+  const lead = await projectLeadConfig(
+    input.db,
+    request.scope,
+    source,
+    taskProjectSource(source, home),
+  );
+  if (!lead) return false;
   for (const projectId of projectIds) {
     const leads = await readNotionProjectLeads(
       providers.notion,
       projectId,
-      source.policy.projectsSourceId,
-      source.policy.projectLeadField,
+      lead.sourceId,
+      lead.field,
     );
     if (leads?.some((id) => actor.notionUserIds.includes(id))) return true;
   }
   return false;
 }
 async function projectGrant(
+  db: Db,
   providers: WorkAuthorityProviders,
-  source: SourceContext,
-  actor: WorkActor,
-  subject: WorkSubject,
+  {
+    actor,
+    subject,
+    scope,
+    taskSourceId,
+  }: { actor: WorkActor; subject: WorkSubject; scope: WorkScope; taskSourceId: string },
 ) {
-  if (
-    subject.kind !== 'project_plan' ||
-    uuid(subject.sourceId) !== uuid(source.policy.projectsSourceId)
-  )
-    return false;
+  if (subject.kind !== 'project_plan') return false;
+  const row = await db
+    .prepare(
+      `SELECT
+    (SELECT policy_json FROM task_checkin_sources WHERE id=? AND workspace_id=?) AS policy_json,
+    (SELECT json_extract(data_json,'$.projectLeadField') FROM discord_work_routes
+      WHERE scope_key=? AND source_id=? AND state='active' AND json_extract(data_json,'$.kind')='project') AS route_lead`,
+    )
+    .bind(taskSourceId, scope.workspaceId, workScopeKey(scope), uuid(subject.sourceId))
+    .first<{ policy_json: string | null; route_lead: string | null }>();
+  const policy = row?.policy_json ? readTaskCheckinPolicy(row.policy_json) : null;
+  const legacyField =
+    policy?.guildId === scope.guildId && uuid(policy.projectsSourceId) === uuid(subject.sourceId)
+      ? policy.projectLeadField
+      : null;
+  const field =
+    typeof row?.route_lead === 'string' && row.route_lead ? row.route_lead : legacyField;
+  if (!field) return false;
   const leads = await readNotionProjectLeads(
     providers.notion,
     subject.pageId,
     subject.sourceId,
-    source.policy.projectLeadField,
+    field,
   );
   if (!leads) return false;
   return actor.administrator || leads.some((id) => actor.notionUserIds.includes(id));
@@ -218,13 +267,41 @@ async function subjectGrant(
   providers: WorkAuthorityProviders,
   source: SourceContext,
   actor: WorkActor,
-  input: { request: WorkAuthorizationInput; home: Awaited<ReturnType<typeof readProjectHome>> },
+  input: {
+    db: Db;
+    request: WorkAuthorizationInput;
+    home: Awaited<ReturnType<typeof readProjectHome>>;
+  },
 ) {
   const { request, home } = input;
   if (request.subject.kind === 'task') return taskGrant(providers, source, actor, input);
   if (request.subject.kind === 'event_plan')
     return eventGrant(providers, actor, request.subject, home);
-  return projectGrant(providers, source, actor, request.subject);
+  return false;
+}
+async function authorizeSubject(
+  db: Db,
+  providers: WorkAuthorityProviders,
+  actor: WorkActor,
+  {
+    input,
+    home,
+    sourceId,
+  }: {
+    input: WorkAuthorizationInput;
+    home: Awaited<ReturnType<typeof readProjectHome>>;
+    sourceId: string;
+  },
+) {
+  if (input.subject.kind === 'project_plan')
+    return projectGrant(db, providers, {
+      actor,
+      subject: input.subject,
+      scope: input.scope,
+      taskSourceId: sourceId,
+    });
+  const source = await readWorkSource(db, sourceId, input.scope);
+  return source && subjectGrant(providers, source, actor, { db, request: input, home });
 }
 export async function authorizeWork(
   db: Db,
@@ -240,12 +317,12 @@ export async function authorizeWork(
     if (!binding.valid) return null;
     const sourceId =
       input.taskSourceId ?? (input.subject.kind === 'task' ? input.subject.sourceId : '');
-    const source = await readWorkSource(db, sourceId, input.scope);
-    if (!source || !homeSourceMatches(binding.home, sourceId)) return null;
+    if (!homeSourceMatches(binding.home, sourceId)) return null;
     if (input.action === 'manage_home' && !actor.administrator) return null;
-    const allowed = await subjectGrant(providers, source, actor, {
-      request: input,
+    const allowed = await authorizeSubject(db, providers, actor, {
+      input,
       home: binding.home,
+      sourceId,
     });
     return allowed ? actor : null;
   } catch (error) {
