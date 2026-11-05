@@ -49,7 +49,7 @@ export async function completeProviderOperations(
         AND NOT EXISTS (
           SELECT 1 FROM identities i WHERE i.person_id=o.person_id
             AND i.platform='google_workspace' AND (
-              i.link_method NOT IN ('self_linked','staff_confirmed')
+              (i.link_method NOT IN ('self_linked','staff_confirmed') AND NOT (i.link_method='created_by_platform' AND EXISTS(SELECT 1 FROM workspace_directory_accounts e WHERE e.identity_record_id=i.id)))
               OR (SELECT count(*) FROM identities linked
                 WHERE linked.person_id=i.person_id AND linked.platform=i.platform)<>1
               OR NOT EXISTS (

@@ -1,4 +1,7 @@
 ---
+import { workspaceEnrollment } from '@lasvegasfortransit/platform-storage/workspace-enrollment';
+import { retryWorkspaceConsole } from '@lasvegasfortransit/platform-storage/workspace-status';
+import { consumeFormToken } from '@lasvegasfortransit/platform-storage/form-tokens';
 import StaffLayout from '../../../layouts/StaffLayout.astro';
 import { getStaffPerson } from '@lasvegasfortransit/platform-storage/staff-people';
 import { InvalidCursor } from '@lasvegasfortransit/platform-storage/staff-history';
@@ -47,7 +50,19 @@ let roleFeedback: RoleFeedback | undefined;
 let accessFeedback: AccessFeedback | undefined;
 if (Astro.request.method === 'POST') {
   const action = (await Astro.request.clone().formData()).get('action');
-  if (action === 'organization_role') {
+  if (action === 'workspace_retry') {
+    const form = await Astro.request.formData();
+    if (
+      !(await consumeFormToken(staff.db, staff.actor, {
+        action: `workspace:retry:${profile.person.id}`,
+        token: String(form.get('token') ?? ''),
+      }))
+    )
+      return messageResponse(t('staff.access.expiredForm'), 409);
+    const retried = await retryWorkspaceConsole(staff.db, staff.actor, profile.person.id);
+    if (!retried) return messageResponse(t('staff.access.actionChanged'), 409);
+    return Astro.redirect(Astro.url.pathname + Astro.url.search + '#accounts', 303);
+  } else if (action === 'organization_role') {
     const result = await submitPersonRole(Astro.request, staff, profile.person.id);
     if (result instanceof Response) return result;
     roleFeedback = result;
@@ -65,6 +80,7 @@ if (Astro.request.method === 'POST') {
   }
 }
 const { person } = profile;
+const enrollment = await workspaceEnrollment(staff.db, person.id);
 const participation = await staffParticipation(staff.db, staff.actor.personId, person.id);
 if (!participation) return messageResponse(t('staff.common.accessDenied'), 404);
 const discordConnected = profile.identities.some((identity) => identity.platform === 'discord');
@@ -201,6 +217,7 @@ const combinations = await personMerges(staff.db, staff.actor, person.id);
           server && (
             <MemberAccess
               member={server}
+              enrollment={enrollment}
               committees={accountAccess.items}
               discordConnected={discordConnected}
               feedback={accessFeedback}

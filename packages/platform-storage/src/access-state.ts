@@ -10,6 +10,7 @@ export interface ObservedRow {
   targetId: string;
   generation: number;
   expectedAccess: number;
+  googleExpectedAccess?: number;
   googleIdentityCount: number;
   discordIdentityCount: number;
   googleIdentity: string | null;
@@ -38,7 +39,8 @@ function matchesCurrent(
     observation.contextId === contextId &&
     (!google || observation.identityEmail === row.googleEmail) &&
     observation.generation === row.generation &&
-    observation.expectedAccess === Boolean(row.expectedAccess) &&
+    observation.expectedAccess ===
+      Boolean(google ? (row.googleExpectedAccess ?? row.expectedAccess) : row.expectedAccess) &&
     Date.parse(observation.observedAt) <= now.getTime()
   );
 }

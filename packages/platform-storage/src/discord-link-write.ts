@@ -1,3 +1,4 @@
+import { DISCORD_PERSON_ELIGIBLE, DISCORD_SESSION_ELIGIBLE } from './discord-eligibility';
 import { ulid } from '@lasvegasfortransit/platform-core/ids';
 import { randomToken } from '@lasvegasfortransit/platform-core/random-token';
 import type { DiscordIdentity } from '@lasvegasfortransit/platform-core/discord-identity';
@@ -18,7 +19,7 @@ function flowGuard(input: LinkInput): Guard {
     sql: `EXISTS(SELECT 1 FROM discord_link_states f JOIN sessions s ON s.id_hash=f.session_hash JOIN people p ON p.id=f.person_id
       WHERE f.state_hash=? AND f.claim_token=? AND f.person_id=? AND f.session_hash=? AND f.origin_url=?
       AND f.claimed_at IS NOT NULL AND f.completed_at IS NULL AND f.expires_at>? AND s.expires_at>?
-      AND s.person_id=p.id AND p.deleted_at IS NULL AND p.membership_status='member')
+      AND s.person_id=p.id AND p.deleted_at IS NULL AND ${DISCORD_PERSON_ELIGIBLE} AND ${DISCORD_SESSION_ELIGIBLE})
       AND (SELECT count(*) FROM identities WHERE platform='discord' AND person_id=?)<=1
       AND NOT EXISTS(SELECT 1 FROM identities WHERE platform='discord' AND person_id=? AND external_id<>?)
       AND NOT EXISTS(SELECT 1 FROM discord_disconnects d JOIN identities i ON i.id=d.identity_record_id WHERE i.person_id=? AND i.platform='discord')`,
@@ -28,6 +29,8 @@ function flowGuard(input: LinkInput): Guard {
       claim.personId,
       claim.sessionHash,
       claim.origin,
+      now.toISOString(),
+      now.toISOString(),
       now.toISOString(),
       now.toISOString(),
       claim.personId,

@@ -1,3 +1,4 @@
+import { scopedDiscordSession, STAFF_DISCORD_SESSION, staffDiscordCookie } from './_staff';
 import { noticeCookie } from '../_account';
 import { readCookie, SESSION_COOKIE } from '@lasvegasfortransit/platform-core/web-auth';
 import {
@@ -32,6 +33,34 @@ async function authorizationResult(
   return { kind: 'failed' };
 }
 
+function connectionDestination(
+  scoped: Awaited<ReturnType<typeof scopedDiscordSession>>,
+  result: DiscordConnectionResult,
+) {
+  if (scoped) {
+    const destination = new URL(scoped.return_to, scoped.staff_origin);
+    destination.searchParams.set('discord', result.kind);
+    return destination.href;
+  }
+  return ['connected', 'cancelled'].includes(result.kind)
+    ? '/account/#discord'
+    : `/account/discord/?result=${result.kind}`;
+}
+function connectionCookies(
+  response: Response,
+  result: DiscordConnectionResult,
+  stateMatches: boolean,
+  scoped: boolean,
+) {
+  if (stateMatches && result.kind !== 'failed')
+    response.headers.append('Set-Cookie', discordStateCookie(''));
+  if (scoped) response.headers.append('Set-Cookie', staffDiscordCookie(STAFF_DISCORD_SESSION, ''));
+  if (result.kind === 'connected')
+    response.headers.append('Set-Cookie', noticeCookie('discord_connected'));
+  if (result.kind === 'cancelled')
+    response.headers.append('Set-Cookie', noticeCookie('discord_cancelled'));
+  return response;
+}
 export async function completeDiscordConnection(
   platform: DiscordLinkEnv | null,
   request: Request,
@@ -39,7 +68,8 @@ export async function completeDiscordConnection(
 ): Promise<Response> {
   const url = new URL(request.url);
   const state = url.searchParams.get('state');
-  const sessionToken = readCookie(request, SESSION_COOKIE);
+  const scoped = platform ? await scopedDiscordSession(platform, request) : null;
+  const sessionToken = scoped?.token ?? readCookie(request, SESSION_COOKIE);
   const stateMatches = Boolean(state && state === readCookie(request, DISCORD_STATE_COOKIE));
   let result: DiscordConnectionResult = { kind: 'failed' };
   if (platform && sessionToken && state && stateMatches) {
@@ -49,16 +79,6 @@ export async function completeDiscordConnection(
       url,
     );
   }
-  const response = discordReply(null, 303, {
-    Location: ['connected', 'cancelled'].includes(result.kind)
-      ? '/account/#discord'
-      : `/account/discord/?result=${result.kind}`,
-    // A generic failure may reject before claiming the flow. Its cookie expires naturally.
-    ...(stateMatches && result.kind !== 'failed' ? { 'Set-Cookie': discordStateCookie('') } : {}),
-  });
-  if (result.kind === 'connected')
-    response.headers.append('Set-Cookie', noticeCookie('discord_connected'));
-  if (result.kind === 'cancelled')
-    response.headers.append('Set-Cookie', noticeCookie('discord_cancelled'));
-  return response;
+  const response = discordReply(null, 303, { Location: connectionDestination(scoped, result) });
+  return connectionCookies(response, result, stateMatches, Boolean(scoped));
 }

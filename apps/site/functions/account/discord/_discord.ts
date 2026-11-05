@@ -1,3 +1,5 @@
+import { discordSessionEligible } from '@lasvegasfortransit/platform-storage/discord-eligibility';
+import { scopedDiscordSession } from './_staff';
 import { t } from '@lasvegasfortransit/platform-core/messages';
 /// <reference types="@cloudflare/workers-types" />
 import {
@@ -46,12 +48,16 @@ export async function discordMember(env: SignInPagesEnv, request: Request) {
   if (!discordLinkOrigin(new URL(request.url).origin))
     return discordReply(t('discord.wrongAddress'), 403);
   const platform = discordPlatform(env);
-  const sessionToken = readCookie(request, SESSION_COOKIE);
+  const scoped = platform ? await scopedDiscordSession(platform, request) : null;
+  const sessionToken = scoped?.token ?? readCookie(request, SESSION_COOKIE);
   if (!platform || !sessionToken) return signInRedirect(request, false);
   if (!discordLinkConfigured(platform)) return discordReply(t('discord.unavailable'), 503);
-  const signed = await requireMember(platform, request);
-  if (signed instanceof Response) return signed;
-  if (signed.person.membershipStatus !== 'member') return discordReply(t('discord.notMember'), 409);
+  if (!scoped) {
+    const signed = await requireMember(platform, request);
+    if (signed instanceof Response) return signed;
+  }
+  if (!(await discordSessionEligible(platform, sessionToken)))
+    return discordReply(t('discord.notMember'), 409);
   const profile = await new DiscordLinkService(platform).profile(sessionToken);
   if (!profile) return discordReply(t('discord.notMember'), 409);
   return { platform, sessionToken, profile, client: new DiscordLink(platform) };

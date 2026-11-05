@@ -94,7 +94,7 @@ function eventScope(actor: Actor, target?: PermissionTarget): boolean {
 function teamVolunteer(actor: Actor, scope: Scope) {
   return (
     scope === 'volunteer' &&
-    actor.membershipStatus === 'not_member' &&
+    (actor.membershipStatus === 'not_member' || actor.workspaceEnrolled === true) &&
     actor.teamAccount &&
     actor.organizationAuthenticated
   );

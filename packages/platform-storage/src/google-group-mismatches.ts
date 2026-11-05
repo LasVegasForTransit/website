@@ -10,13 +10,19 @@ export function googleGroupMismatchWrites(
   guard: { sql: string; values: SqlValue[] },
 ): Statement[] {
   if (input.userCount === null) return [];
-  const differences = `WITH settings AS (SELECT ? AS console_group,? AS group_email), linked AS (
+  const differences = `WITH settings AS (SELECT ? AS console_group,? AS group_email,? AS customer), linked AS (
  SELECT p.id AS person_id,i.external_id AS identity_id,${googleExpectedAccess('p', '(SELECT group_email FROM settings)')} AS expected,
  EXISTS(SELECT 1 FROM google_group_inventory_members m WHERE m.context_id=? AND m.group_email=? AND m.member_type='USER' AND m.member_id=i.external_id) AS held
  FROM people p JOIN identities i ON i.person_id=p.id WHERE p.deleted_at IS NULL AND i.platform='google_workspace'
- AND i.link_method IN ('self_linked','staff_confirmed') AND (SELECT count(*) FROM identities other WHERE other.person_id=p.id AND other.platform='google_workspace')=1
+ AND (i.link_method IN ('self_linked','staff_confirmed') OR (i.link_method='created_by_platform' AND EXISTS(SELECT 1 FROM workspace_enrollments e WHERE e.identity_record_id=i.id AND e.person_id=i.person_id AND e.customer_id=(SELECT customer FROM settings)))) AND (SELECT count(*) FROM identities other WHERE other.person_id=p.id AND other.platform='google_workspace')=1
  ), differences AS (SELECT * FROM linked WHERE expected<>held)`;
-  const values = [consoleGroupEmail, input.groupEmail, input.customerId, input.groupEmail];
+  const values = [
+    consoleGroupEmail,
+    input.groupEmail,
+    input.customerId,
+    input.customerId,
+    input.groupEmail,
+  ];
   return [
     db
       .prepare(

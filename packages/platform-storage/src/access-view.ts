@@ -28,6 +28,7 @@ export interface AccessRow {
   assignmentId: string | null;
   role: 'member' | 'lead' | null;
   expectedAccess: boolean;
+  googleExpectedAccess?: boolean;
   discordExpectedAccess: boolean;
   discordResourceId: string | null;
   discordFirstSeenAt: string | null;
@@ -46,6 +47,7 @@ interface Row
     Omit<
       AccessRow,
       | 'expectedAccess'
+      | 'googleExpectedAccess'
       | 'discordExpectedAccess'
       | 'googleConnected'
       | 'googleResourceId'
@@ -84,6 +86,7 @@ function accessRow(
     assignmentId: row.assignmentId,
     role: row.role,
     expectedAccess: Boolean(row.expectedAccess),
+    googleExpectedAccess: Boolean(row.googleExpectedAccess ?? row.expectedAccess),
     discordExpectedAccess: Boolean(row.discordExpectedAccess),
     discordResourceId: row.discordResourceId,
     discordFirstSeenAt: row.discordFirstSeenAt,

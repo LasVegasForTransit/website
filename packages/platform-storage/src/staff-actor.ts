@@ -16,6 +16,7 @@ export async function loadActor(db: Db, personId: string): Promise<Actor | null>
     EXISTS(SELECT 1 FROM identities WHERE person_id=p.id AND platform='google_workspace') AS workspace_linked,
     EXISTS(SELECT 1 FROM staff_sso_links WHERE person_id=p.id AND revoked_at IS NULL) AS sso_linked,
     EXISTS(SELECT 1 FROM staff_team_accounts WHERE person_id=p.id) AS team_account,
+    EXISTS(SELECT 1 FROM workspace_enrollments WHERE person_id=p.id AND state='active') AS workspace_enrolled,
     EXISTS(SELECT 1 FROM staff_administrators WHERE person_id=p.id) AS staff_admin
     FROM people p WHERE p.id=? AND p.deleted_at IS NULL`,
     )
@@ -26,6 +27,7 @@ export async function loadActor(db: Db, personId: string): Promise<Actor | null>
       sso_linked: number;
       staff_admin: number;
       team_account: number;
+      workspace_enrolled: number;
     }>();
   if (!person) return null;
   const { results } = await db
@@ -42,6 +44,7 @@ export async function loadActor(db: Db, personId: string): Promise<Actor | null>
     organizationAuthenticated: Boolean(person.workspace_linked || person.sso_linked),
     staffAdmin: Boolean(person.staff_admin),
     teamAccount: Boolean(person.team_account),
+    ...(person.workspace_enrolled ? { workspaceEnrolled: true } : {}),
     committees: results.map((row) => ({
       id: row.id,
       role: row.role,

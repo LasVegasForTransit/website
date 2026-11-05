@@ -420,7 +420,7 @@ export async function readSession(
        p.preferred_language, p.membership_status
      FROM sessions s
      JOIN people p ON p.id = s.person_id AND p.deleted_at IS NULL
-     WHERE s.id_hash = ?`,
+     WHERE s.id_hash = ? AND (s.type<>'staff' OR NOT EXISTS(SELECT 1 FROM workspace_enrollments e WHERE e.person_id=p.id AND e.state<>'active'))`,
   )
     .bind(idHash)
     .first<SessionRow>();

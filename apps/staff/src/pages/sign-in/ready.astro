@@ -1,5 +1,6 @@
 ---
 import { env } from 'cloudflare:workers';
+import { workspaceEnrollment } from '@lasvegasfortransit/platform-storage/workspace-enrollment';
 import { safeNext } from '@lasvegasfortransit/platform-core/web-auth';
 import StaffGateLayout from '@lasvegasfortransit/platform-core/staff-gate-layout';
 import StaffAccount from '../../components/StaffAccount.astro';
@@ -13,6 +14,11 @@ const session = await readStaffSession(
 );
 if (!session) return Astro.redirect('/sign-in/', 303);
 const next = safeNext(Astro.url.searchParams.get('next'));
+if (
+  (env as unknown as StaffEnv).LVBT_STAFF_DISCORD_REQUIRED === 'true' ||
+  (await workspaceEnrollment((env as unknown as StaffEnv).PLATFORM_DB, session.personId))
+)
+  return Astro.redirect(`/onboarding/?next=${encodeURIComponent(next)}`, 303);
 const title = session.person.givenName
   ? `Welcome, ${session.person.givenName}`
   : 'Your account is ready';

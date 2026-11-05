@@ -98,5 +98,10 @@
     }
   },
   "globalDependencies": [".lvbt/web-platform.json", ".lvbt/tooling.json", ".github/workflows/**"],
-  "globalPassThroughEnv": ["AUDIT_PORT", "AUDIT_SKIP_BUILD", "PLAYWRIGHT_BASE_URL"]
+  "globalPassThroughEnv": [
+    "AUDIT_PORT",
+    "AUDIT_SKIP_BUILD",
+    "PLAYWRIGHT_BASE_URL",
+    "LVBT_ONBOARDING_SCREENSHOTS"
+  ]
 }

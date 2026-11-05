@@ -221,6 +221,7 @@ export async function saveGoogleReceipt(
     retryAfterMs: number;
     resourceId: string | null;
     reviewReason?: 'inherited_access';
+    deferSharedOperation?: boolean;
   },
 ): Promise<boolean> {
   const guard = googleSyncGuard(input),
@@ -235,25 +236,26 @@ export async function saveGoogleReceipt(
       writes.push(
         ...observations(db, input, group.resourceId, { granted: false, failure: failure.kind }),
       );
-    writes.push(
-      db
-        .prepare(
-          `UPDATE integration_outbox SET state='retry',last_failure=?,attempts=attempts+1,next_attempt_at=?,updated_at=?,payload=CASE WHEN ? IS NULL THEN json_remove(payload,'$.googleReview') ELSE json_set(payload,'$.googleReview',json(?)) END WHERE id=? AND ${guard.sql}`,
-        )
-        .bind(
-          failure.kind,
-          new Date(input.now.getTime() + delay).toISOString(),
-          input.now.toISOString(),
-          failure.reviewReason
-            ? JSON.stringify({ reason: failure.reviewReason, groupEmail: failure.resourceId })
-            : null,
-          failure.reviewReason
-            ? JSON.stringify({ reason: failure.reviewReason, groupEmail: failure.resourceId })
-            : null,
-          input.plan.operationId,
-          ...guard.values,
-        ),
-    );
+    if (failure.deferSharedOperation !== false)
+      writes.push(
+        db
+          .prepare(
+            `UPDATE integration_outbox SET state='retry',last_failure=?,attempts=attempts+1,next_attempt_at=?,updated_at=?,payload=CASE WHEN ? IS NULL THEN json_remove(payload,'$.googleReview') ELSE json_set(payload,'$.googleReview',json(?)) END WHERE id=? AND ${guard.sql}`,
+          )
+          .bind(
+            failure.kind,
+            new Date(input.now.getTime() + delay).toISOString(),
+            input.now.toISOString(),
+            failure.reviewReason
+              ? JSON.stringify({ reason: failure.reviewReason, groupEmail: failure.resourceId })
+              : null,
+            failure.reviewReason
+              ? JSON.stringify({ reason: failure.reviewReason, groupEmail: failure.resourceId })
+              : null,
+            input.plan.operationId,
+            ...guard.values,
+          ),
+      );
   }
   if (!failure)
     writes.push(

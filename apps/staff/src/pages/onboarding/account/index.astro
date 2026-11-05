@@ -1,0 +1,50 @@
+---
+import { env } from 'cloudflare:workers';
+import StaffGateLayout from '@lasvegasfortransit/platform-core/staff-gate-layout';
+import { discordProviderConfiguration } from '@lasvegasfortransit/platform-integrations/discord-runtime';
+import {
+  staffOnboardingStep,
+  chooseWorkspaceAccount,
+} from '@lasvegasfortransit/platform-storage/staff-discord-handoff';
+import OnboardingProgress from '../../../components/OnboardingProgress.astro';
+import { onboardingAccount, onboardingStepPath } from '../../../lib/onboarding-account';
+import type { StaffEnv } from '../../../lib/context';
+const platform = env as unknown as StaffEnv;
+const account = await onboardingAccount(platform, Astro.request, Astro.locals.access);
+if (!account) return Astro.redirect('/sign-in/', 303);
+const step = await staffOnboardingStep(
+  platform,
+  account.token,
+  discordProviderConfiguration(platform).contextId,
+);
+if (step !== 'account') return Astro.redirect(onboardingStepPath(step, account.next), 303);
+if (Astro.request.method === 'POST') {
+  const form = await Astro.request.formData();
+  if (form.get('action') === 'workspace' && (await chooseWorkspaceAccount(platform, account.token)))
+    return Astro.redirect(onboardingStepPath('discord', account.next), 303);
+}
+---
+
+<StaffGateLayout title="Choose your LVBT account">
+  <OnboardingProgress slot="progress" step="account" />
+  <p>You’re signed in as <strong>{account.session.email}</strong>.</p>
+  <p>
+    Already an LVBT member? Connect your account to keep your saved details. Otherwise, use the
+    Workspace account prepared for you.
+  </p>
+  <form method="post" action={`/onboarding/connect/?next=${encodeURIComponent(account.next)}`}>
+    <button class="staff-action-link" type="submit">Connect account</button>
+  </form>
+  <form method="post">
+    <input type="hidden" name="action" value="workspace" /><button
+      class="staff-secondary-button"
+      type="submit">Use Workspace account</button
+    >
+  </form>
+  <form method="post" action="/sign-in/change-account/">
+    <button class="staff-gate-link staff-text-button" type="submit">Switch account</button>
+  </form>
+  <Fragment slot="help"
+    >Need help? <a href="mailto:hello@lasvegasfortransit.org">Email the team</a>.</Fragment
+  >
+</StaffGateLayout>
