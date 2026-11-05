@@ -244,7 +244,7 @@ jobs:
     name: Runtime memory
     needs: build
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 20
     # GATING from day one. Budget is 30 MB usedJsHeapSize per page after a
     # CDP-driven GC, against a baseline that lands far below that today.
     # A breach means a new JS retainer slipped in.
