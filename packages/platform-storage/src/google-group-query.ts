@@ -6,10 +6,13 @@ import { STAFF_ADMIN_SCOPE } from './staff-scope';
 /** Shared canonical entitlement for the review and its conditional actions. */
 export function googleExpectedAccess(person: string, group: string): string {
   return `(${person}.deleted_at IS NULL AND (
-    (${group}=(SELECT console_group FROM settings) AND EXISTS(SELECT 1 FROM workspace_enrollments e
-      WHERE e.person_id=${person}.id AND e.state='active' AND e.customer_id=(SELECT customer FROM settings)))
+    (${group}=(SELECT console_group FROM settings) AND EXISTS(SELECT 1 FROM workspace_directory_accounts e
+      JOIN identities enrollment_identity ON enrollment_identity.id=e.identity_record_id
+      WHERE enrollment_identity.person_id=${person}.id AND e.state='active' AND e.customer_id=(SELECT customer FROM settings)))
     OR (${group} IS NOT (SELECT console_group FROM settings) AND ${person}.membership_status='member'
-      AND NOT EXISTS(SELECT 1 FROM workspace_enrollments e WHERE e.person_id=${person}.id
+      AND NOT EXISTS(SELECT 1 FROM workspace_directory_accounts e
+        JOIN identities enrollment_identity ON enrollment_identity.id=e.identity_record_id
+        WHERE enrollment_identity.person_id=${person}.id
         AND (e.state<>'active' OR e.customer_id<>(SELECT customer FROM settings)))
       AND EXISTS(SELECT 1 FROM committee_assignments a JOIN committees c ON c.id=a.committee_id
         WHERE a.person_id=${person}.id AND a.ended_at IS NULL AND c.workspace_group_email=${group}))))`;
@@ -28,7 +31,7 @@ links AS (
   SELECT group_email FROM committee_links UNION SELECT console_group FROM settings WHERE console_group IS NOT NULL
 ), owners AS (
   SELECT i.person_id,i.external_id FROM identities i JOIN people p ON p.id=i.person_id AND p.deleted_at IS NULL
-  WHERE i.platform='google_workspace' AND (i.link_method IN ('self_linked','staff_confirmed') OR (i.link_method='created_by_platform' AND EXISTS(SELECT 1 FROM workspace_enrollments e WHERE e.identity_record_id=i.id AND e.person_id=i.person_id AND e.customer_id=(SELECT customer FROM settings))))
+  WHERE i.platform='google_workspace' AND (i.link_method IN ('self_linked','staff_confirmed') OR (i.link_method='created_by_platform' AND EXISTS(SELECT 1 FROM workspace_directory_accounts e WHERE e.identity_record_id=i.id AND e.customer_id=(SELECT customer FROM settings))))
   AND (SELECT count(*) FROM identities other WHERE other.person_id=p.id AND other.platform='google_workspace')=1
 ), expected_candidates AS (
   SELECT DISTINCT c.workspace_group_email AS group_email,p.id AS person_id FROM people p
