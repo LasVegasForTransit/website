@@ -17,17 +17,18 @@ check-ins remain a separate choice.
    `0060_discord_work_location_indexes.sql`, `0061_discord_work_canonical_identity.sql`,
    `0062_discord_work_comment_identity.sql`, `0063_discord_work_canonical_reservation.sql`,
    `0064_discord_work_tag_serialization.sql`, and `0065_discord_work_existing_events.sql`. Apply all
-   pending prerequisites and these migrations through the saved release workflow before activating
-   code that uses shared links or routes. D1 tracks full filenames, including distinct migrations
-   with the same numeric prefix. Preserve existing source settings and private check-in preferences.
-   Run the appropriate read-only
+   pending prerequisites and these migrations separately using the commands in the
+   [staff production release procedure](../reference/staff-release-operations.md#publish-an-approved-staff-production-release)
+   before activating code that uses shared links or routes. Staff release does not apply migrations.
+   D1 tracks full filenames, including distinct migrations with the same numeric prefix. Preserve
+   existing source settings and private check-in preferences. Run the appropriate read-only
    [staff preflight](../reference/staff-portal-operations.md#read-only-configuration-check) and
    confirm all required migration names are present before enabling the integration.
 3. Build the website and jobs together. The website's `DISCORD_WORK` service binding must target the
    same environment's existing jobs Worker and its `WorkPreview` export. The cf configuration calls
    this binding field `exportName`; the Wrangler configuration calls it `entrypoint`. Generated
    binding types and the compiled release must agree.
-4. Keep `LVBT_DISCORD_WORK_ENABLED=false` on website and jobs during preparation. Keep
+4. Keep `LVBT_DISCORD_WORK_ENABLED=false` on the active website and jobs during preparation. Keep
    `LVBT_TASK_CHECKINS_ENABLED` at its independently approved value. A source's paused DM delivery
    setting does not disable shared work, and a shared project link does not enable DMs.
 5. Run `pnpm check` and the jobs build. Review the resulting native card payloads and the selected
@@ -36,8 +37,45 @@ check-ins remain a separate choice.
    fixtures establish local behavior; they do not establish live Discord or Notion delivery.
 
 Do not enable sending or publish provider resources without an approved environment and trial. The
-checked-in configurations keep shared work disabled. Preview also requires the separately approved
-schedule described in task integration setup; it has no checked-in cron.
+reviewed production launch configuration enables shared work on website and jobs; preview keeps it
+disabled. Preview also requires the separately approved schedule described in task integration
+setup; it has no checked-in cron.
+
+## Activate shared work in production
+
+Before selecting a production release, complete the database backup and migration checks above,
+verify Notion and Discord access for the intended trial, and review the destination audience. Keep
+the current production Workers disabled until the release is approved. The selected website and jobs
+artifacts must both set `LVBT_DISCORD_WORK_ENABLED=true`; leave task reminders and unrelated
+provider settings at their independently approved values.
+
+Before activating jobs, inventory existing shared-work routes, links, and outstanding operations in
+the target database. For production, use the approved read-only D1 access and run:
+
+```sh
+pnpm -C apps/staff exec wrangler d1 execute lvbt-platform --remote --command "SELECT 'routes' AS item, state, count(*) AS total FROM discord_work_routes GROUP BY state UNION ALL SELECT 'project homes', state, count(*) FROM discord_project_homes GROUP BY state UNION ALL SELECT 'conversations', state, count(*) FROM discord_work_conversations GROUP BY state UNION ALL SELECT 'operations', state, count(*) FROM discord_work_operations GROUP BY state"
+```
+
+No rows means all four tables are empty. Otherwise, inspect the affected records privately and
+reconcile uncertain operations; pause any route that must not run during the trial using
+`/work routes` while the integration is available. If the integration is disabled and existing work
+cannot be reviewed or paused safely, stop and arrange recovery before activation. The existing jobs
+schedule can resume active routes and queued operations as soon as the new jobs version is active,
+including before the website is promoted. Resume a paused route only after reviewing its destination
+and audience.
+
+Publish jobs through the [staff release procedure](../reference/staff-release-operations.md), then
+promote the matching reviewed website release through the
+[website release procedure](../reference/deployment-pipeline.md). Confirm the deployed jobs and
+website versions use the reviewed settings and the website's `DISCORD_WORK` binding reaches those
+jobs. Check that the existing bot registers `/work`, then set up and activate only the reviewed
+routes. Verify the Notion footer, Discord return link, and organizer and volunteer access using the
+approved trial records. A deployed version or registered command alone does not establish that
+provider access or the volunteer experience works.
+
+If the trial must stop, disable shared work on both applications through reviewed releases and
+confirm the active versions. Keep existing mappings and provider content for recovery. Follow the
+release procedures to reconcile any uncertain activation before retrying.
 
 ## Resolve conflicting link identities
 

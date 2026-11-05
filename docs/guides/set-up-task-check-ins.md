@@ -174,10 +174,10 @@ unexpected routing or disclosure to the service owner and keep delivery paused d
 
 ## Preserve the trial during a portal release
 
-The production website and jobs configurations retain manual updates on existing cards while
-scheduled reminders and shared Discord work remain disabled. Preview remains disabled and
-unscheduled. Deploying the Staff Portal must retain the task administration pages, existing source
-policies, participant choices, mappings, operations, and card references.
+The production website and jobs configurations retain manual updates on existing cards and enable
+shared Discord work, while scheduled reminders remain disabled. Preview shared work remains disabled
+and unscheduled. Deploying the Staff Portal must retain the task administration pages, existing
+source policies, participant choices, mappings, operations, and card references.
 
 Before publication, compare the active website and jobs task switches and Notion source IDs with the
 selected release configuration. Resolve any difference before uploading. Keep the deployed Notion
