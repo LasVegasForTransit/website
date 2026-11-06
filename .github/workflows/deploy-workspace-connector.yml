@@ -1,0 +1,260 @@
+name: Deploy Workspace connector
+
+on:
+  workflow_dispatch:
+    inputs:
+      target:
+        description: Connector environment
+        required: true
+        type: choice
+        options:
+          - preview
+          - production
+
+permissions:
+  contents: read
+
+concurrency:
+  group: workspace-connector-${{ inputs.target }}
+  cancel-in-progress: false
+
+jobs:
+  verify-environment:
+    name: Verify deployment protection
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      actions: read
+      contents: read
+    steps:
+      - name: Check environment and branch policy
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TARGET: ${{ inputs.target }}
+        run: |
+          set -euo pipefail
+          environment="workspace-$TARGET"
+          endpoint="repos/$GITHUB_REPOSITORY/environments/$environment"
+
+          if ! gh api "$endpoint" > "$RUNNER_TEMP/environment.json"; then
+            echo "GitHub environment '$environment' must be configured before deployment." >&2
+            exit 1
+          fi
+
+          jq -e '.deployment_branch_policy.custom_branch_policies == true' \
+            "$RUNNER_TEMP/environment.json" >/dev/null || {
+              echo "Environment '$environment' must use a custom branch policy for main." >&2
+              exit 1
+            }
+
+          gh api "$endpoint/deployment-branch-policies" > "$RUNNER_TEMP/branches.json"
+          jq -e '.branch_policies | length == 1 and .[0].type == "branch" and .[0].name == "main"' \
+            "$RUNNER_TEMP/branches.json" >/dev/null || {
+              echo "Environment '$environment' must allow deployments from main only." >&2
+              exit 1
+            }
+
+          if [[ "$TARGET" == production ]]; then
+            jq -e '.protection_rules | any(.type == "required_reviewers" and (.reviewers | length > 0))' \
+              "$RUNNER_TEMP/environment.json" >/dev/null || {
+                echo "The workspace-production environment must require a deployment reviewer." >&2
+                exit 1
+              }
+          fi
+
+  deploy:
+    name: Build and deploy ${{ inputs.target }}
+    needs: verify-environment
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    environment:
+      name: workspace-${{ inputs.target }}
+    permissions:
+      contents: read
+      deployments: write
+      id-token: write
+      packages: read
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up Node and dependencies
+        uses: ./.github/actions/setup-node-pnpm
+
+      - name: Validate Google deployment settings
+        env:
+          TARGET: ${{ inputs.target }}
+          WORKSPACE_CONNECTOR_WIF_PROVIDER: ${{ vars.WORKSPACE_CONNECTOR_WIF_PROVIDER }}
+          WORKSPACE_CONNECTOR_DEPLOYER_SERVICE_ACCOUNT:
+            ${{ vars.WORKSPACE_CONNECTOR_DEPLOYER_SERVICE_ACCOUNT }}
+          WORKSPACE_CONNECTOR_CONFIG_VERSION: ${{ vars.WORKSPACE_CONNECTOR_CONFIG_VERSION }}
+        run: |
+          set -euo pipefail
+          [[ "$WORKSPACE_CONNECTOR_WIF_PROVIDER" =~ ^projects/[0-9]+/locations/global/workloadIdentityPools/[a-z0-9-]+/providers/[a-z0-9-]+$ ]] || {
+            echo 'Set WORKSPACE_CONNECTOR_WIF_PROVIDER in this protected environment.' >&2
+            exit 1
+          }
+          [[ "$WORKSPACE_CONNECTOR_CONFIG_VERSION" =~ ^[1-9][0-9]*$ ]] || {
+            echo 'Set WORKSPACE_CONNECTOR_CONFIG_VERSION to a reviewed numeric Secret Manager version.' >&2
+            exit 1
+          }
+
+          case "$TARGET" in
+            preview) expected='lvbt-workspace-deployer-preview@lvbt-core.iam.gserviceaccount.com' ;;
+            production) expected='lvbt-workspace-deployer@lvbt-core.iam.gserviceaccount.com' ;;
+            *) echo 'Unknown target.' >&2; exit 1 ;;
+          esac
+          [[ "$WORKSPACE_CONNECTOR_DEPLOYER_SERVICE_ACCOUNT" == "$expected" ]] || {
+            echo "Set WORKSPACE_CONNECTOR_DEPLOYER_SERVICE_ACCOUNT to the reviewed $TARGET deployer identity." >&2
+            exit 1
+          }
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3
+        with:
+          project_id: lvbt-core
+          workload_identity_provider: ${{ vars.WORKSPACE_CONNECTOR_WIF_PROVIDER }}
+          service_account: ${{ vars.WORKSPACE_CONNECTOR_DEPLOYER_SERVICE_ACCOUNT }}
+          create_credentials_file: true
+
+      - name: Set up Google Cloud CLI
+        uses: google-github-actions/setup-gcloud@aa5489c8933f4cc7a4f7d45035b3b1440c9c10db # v3
+        with:
+          project_id: lvbt-core
+
+      - name: Resolve reviewed target
+        id: target
+        env:
+          TARGET: ${{ inputs.target }}
+        run: |
+          set -euo pipefail
+          case "$TARGET" in
+            preview)
+              service='lvbt-workspace-preview'
+              runtime='lvbt-workspace-preview@lvbt-core.iam.gserviceaccount.com'
+              config_secret='workspace-connector-config-preview'
+              environment='preview'
+              ;;
+            production)
+              service='lvbt-workspace'
+              runtime='lvbt-workspace@lvbt-core.iam.gserviceaccount.com'
+              config_secret='workspace-connector-config-production'
+              environment='production'
+              ;;
+            *) echo 'Unknown target.' >&2; exit 1 ;;
+          esac
+          {
+            echo "service=$service"
+            echo "runtime=$runtime"
+            echo "config_secret=$config_secret"
+            echo "environment=$environment"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Check existing Cloud Run service and reviewed configuration
+        id: service
+        env:
+          SERVICE: ${{ steps.target.outputs.service }}
+          RUNTIME: ${{ steps.target.outputs.runtime }}
+          ENVIRONMENT: ${{ steps.target.outputs.environment }}
+          CONFIG_SECRET: ${{ steps.target.outputs.config_secret }}
+          CONFIG_VERSION: ${{ vars.WORKSPACE_CONNECTOR_CONFIG_VERSION }}
+        run: |
+          set -euo pipefail
+          service_url="$(gcloud run services describe "$SERVICE" --region us-central1 --format='value(status.url)')"
+          [[ "$service_url" == https://* ]] || {
+            echo "The $SERVICE Cloud Run service must be provisioned before this release." >&2
+            exit 1
+          }
+
+          config_file="$RUNNER_TEMP/workspace-connector-config.json"
+          umask 077
+          trap 'rm -f "$config_file"' EXIT
+          gcloud secrets versions access "$CONFIG_VERSION" \
+            --secret "$CONFIG_SECRET" \
+            --project lvbt-core > "$config_file"
+
+          WORKSPACE_CONNECTOR_CONFIG="$(< "$config_file")" \
+            pnpm --filter @lasvegasfortransit/workspace-connector preflight
+
+          node --input-type=module - "$config_file" "$service_url" "$ENVIRONMENT" "$RUNTIME" <<'NODE'
+          import { readFileSync } from 'node:fs';
+          const [path, expectedOrigin, environment, runtime] = process.argv.slice(2);
+          const config = JSON.parse(readFileSync(path, 'utf8'));
+          if (
+            config.environment !== environment ||
+            config.origin !== expectedOrigin ||
+            config.serviceAccount !== runtime
+          ) {
+            throw new Error('Secret Manager config does not match the selected Cloud Run service.');
+          }
+          NODE
+
+          printf 'service_url=%s\n' "$service_url" >> "$GITHUB_OUTPUT"
+
+      - name: Authenticate Docker to Artifact Registry
+        run: gcloud auth configure-docker us-central1-docker.pkg.dev --quiet
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3
+
+      - name: Write temporary package registry config
+        run: |
+          umask 077
+          cat > "$RUNNER_TEMP/workspace-connector.npmrc" <<'EOF'
+          @lasvegasfortransit:registry=https://npm.pkg.github.com
+          //npm.pkg.github.com/:_authToken=${NODE_AUTH_TOKEN}
+          EOF
+
+      - name: Build and publish immutable container
+        id: image
+        uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8 # v6
+        with:
+          context: .
+          file: apps/workspace-connector/Dockerfile
+          platforms: linux/amd64
+          push: true
+          tags:
+            us-central1-docker.pkg.dev/lvbt-core/workspace-connectors/${{
+            steps.target.outputs.service }}:${{ github.sha }}
+          secret-files: |
+            npmrc=${{ runner.temp }}/workspace-connector.npmrc
+          secrets: |
+            npm_token=${{ github.token }}
+
+      - name: Deploy pinned image to Cloud Run
+        env:
+          SERVICE: ${{ steps.target.outputs.service }}
+          RUNTIME: ${{ steps.target.outputs.runtime }}
+          CONFIG_SECRET: ${{ steps.target.outputs.config_secret }}
+          CONFIG_VERSION: ${{ vars.WORKSPACE_CONNECTOR_CONFIG_VERSION }}
+          IMAGE_DIGEST: ${{ steps.image.outputs.digest }}
+        run: |
+          set -euo pipefail
+          [[ "$IMAGE_DIGEST" =~ ^sha256:[a-f0-9]{64}$ ]] || {
+            echo 'The container build did not return an immutable digest.' >&2
+            exit 1
+          }
+          gcloud run deploy "$SERVICE" \
+            --image="us-central1-docker.pkg.dev/lvbt-core/workspace-connectors/$SERVICE@$IMAGE_DIGEST" \
+            --service-account="$RUNTIME" \
+            --region=us-central1 \
+            --min-instances=0 \
+            --max-instances=1 \
+            --concurrency=1 \
+            --cpu=1 \
+            --memory=512Mi \
+            --timeout=60s \
+            --cpu-throttling \
+            --set-secrets="WORKSPACE_CONNECTOR_CONFIG=$CONFIG_SECRET:$CONFIG_VERSION" \
+            --quiet
+
+      - name: Verify the deployed connector starts
+        env:
+          SERVICE_URL: ${{ steps.service.outputs.service_url }}
+        run:
+          curl --fail --silent --show-error --retry 8 --retry-all-errors --retry-delay 5 --max-time
+          10 "$SERVICE_URL/healthz"
