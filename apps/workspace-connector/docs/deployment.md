@@ -38,7 +38,7 @@ variables:
 
 - `WORKSPACE_CONNECTOR_WIF_PROVIDER`: the full Google Workload Identity Provider resource name.
 - `WORKSPACE_CONNECTOR_DEPLOYER_SERVICE_ACCOUNT`:
-  `lvbt-workspace-deployer-preview@lvbt-core.iam.gserviceaccount.com` for preview, or
+  `lvbt-ws-deployer-preview@lvbt-core.iam.gserviceaccount.com` for preview, or
   `lvbt-workspace-deployer@lvbt-core.iam.gserviceaccount.com` for production.
 - `WORKSPACE_CONNECTOR_CONFIG_VERSION`: the reviewed numeric Secret Manager version for that
   environment.
