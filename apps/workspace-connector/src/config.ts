@@ -7,7 +7,6 @@ export interface ConnectorConfig {
   siteAudience: string;
   schedulerSubject: string;
   serviceAccount: string;
-  delegatedAdmin: string;
   consoleGroupEmail: string;
   productionConsoleGroupEmail: string;
   managedGroups: string[];
@@ -20,6 +19,7 @@ export interface ConnectorConfig {
   previewUserIds?: string[];
 }
 export function validateConfig(config: ConnectorConfig) {
+  if ('delegatedAdmin' in config) throw new ConnectorFailure('not_configured');
   const policy = connectorPolicy({
     ...config,
     humanOrgUnitIds: config.humanOrgUnitIds ?? [],
@@ -30,7 +30,6 @@ export function validateConfig(config: ConnectorConfig) {
   if (
     !policy ||
     !/^\d{10,30}$/.test(config.schedulerSubject) ||
-    config.delegatedAdmin !== 'platform-admin@lasvegasfortransit.org' ||
     !/^[a-z][a-z0-9-]+@[a-z][a-z0-9-]+\.iam\.gserviceaccount\.com$/.test(config.serviceAccount)
   )
     throw new ConnectorFailure('not_configured');

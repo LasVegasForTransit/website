@@ -10,7 +10,6 @@ export const config = {
   siteAudience: 'https://preview.lasvegasfortransit.org/api/workspace/v1',
   schedulerSubject: '222222222222222222222',
   serviceAccount: 'workspace-preview@lvbt-core.iam.gserviceaccount.com',
-  delegatedAdmin: 'platform-admin@lasvegasfortransit.org',
   consoleGroupEmail: 'console-preview@lasvegasfortransit.org',
   productionConsoleGroupEmail: 'console-users@lasvegasfortransit.org',
   managedGroups: ['committee-preview@lasvegasfortransit.org'],

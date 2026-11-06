@@ -1,15 +1,15 @@
 # Deploy the Workspace connector
 
 This service runs in Google Cloud Run. Activation requires separate approval of the exact IAM,
-Workspace delegation, Scheduler, billing, and resource changes. Building or validating this package
+Workspace Admin role, Scheduler, billing, and resource changes. Building or validating this package
 alone does not authorize those changes.
 
 Use separate preview and production Cloud Run identities. Store the reviewed JSON policy for
 `WORKSPACE_CONNECTOR_CONFIG` in Secret Manager. It contains `origin`, `siteAudience`,
-`schedulerSubject`, `serviceAccount`, and `delegatedAdmin`. The delegated administrator must be
-`platform-admin@lasvegasfortransit.org`. The service account must be a Google-managed attached
-runtime identity, with permission to invoke `signJwt` only on the configured delegated service
-account. Never download a service-account key.
+`schedulerSubject`, and `serviceAccount`. The service account must be a Google-managed attached
+runtime identity, with permission to invoke `signJwt` only on itself. Assign a restricted Google
+Workspace Admin role directly to that service account. Do not create a Workspace user or configure
+domain-wide delegation for the connector. Never download a service-account key.
 
 The policy contains the exact customer ID, human OU IDs, included/excluded user IDs, preview user
 allowlist, Console group, committee registry, and complete production write registry. Preview write
@@ -17,7 +17,8 @@ groups must be disjoint from production groups, and preview discovery processes 
 preview user IDs. Review the real OU mapping and complete human/service inventory before production
 backfill. Directory returns OU paths; the connector resolves these to stable OU IDs.
 
-Delegate only these Directory scopes to the restricted administrator:
+The connector requests only these Directory OAuth scopes. Use them together with the restricted
+Workspace Admin role; both controls apply to API access:
 
 - `https://www.googleapis.com/auth/admin.directory.user.readonly`
 - `https://www.googleapis.com/auth/admin.directory.orgunit.readonly`
@@ -114,7 +115,7 @@ prerequisites cover identity/repository creation, the connector configuration se
 Workspace setup. Verify existing resources before creating them. The signing custom role contains
 only `iam.serviceAccounts.signJwt` and is bound on the exact attached service account, to itself. Do
 not replace that with a project-wide Token Creator or Owner grant. The Scheduler identity gets no
-Directory delegation or signing role. Retain the Cloud Scheduler service agent's standard job token
+Workspace Admin role or signing role. Retain the Cloud Scheduler service agent's standard job token
 permission and the deployer's existing service-account attachment permission.
 
 Store all four `LVBT_WORKSPACE_*` site settings as Worker secret bindings, including the enable

@@ -30,6 +30,21 @@ void test('deployment plans pin identities, preserve disabled rollout and emit r
     ),
   );
   assert.ok(!JSON.stringify(plan).includes('lvbt-workspace-deployer-preview'));
+  assert.deepEqual(plan.workspace, {
+    serviceAccount: 'lvbt-workspace-preview@lvbt-core.iam.gserviceaccount.com',
+    adminRolePrivileges: [
+      'Users: Read',
+      'Organizational units: Read',
+      'Groups: Read',
+      'Groups: Update',
+    ],
+    scopes: [
+      'https://www.googleapis.com/auth/admin.directory.user.readonly',
+      'https://www.googleapis.com/auth/admin.directory.orgunit.readonly',
+      'https://www.googleapis.com/auth/admin.directory.group.readonly',
+      'https://www.googleapis.com/auth/admin.directory.group.member',
+    ],
+  });
   const enableApis = plan.commands.find(
     (command) => command.includes('services') && command.includes('enable'),
   );

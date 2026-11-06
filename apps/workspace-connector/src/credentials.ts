@@ -13,7 +13,6 @@ interface Options {
 }
 interface Config {
   serviceAccount: string;
-  delegatedAdmin: string;
   siteAudience: string;
 }
 export class ManagedGoogleCredentials {
@@ -26,10 +25,7 @@ export class ManagedGoogleCredentials {
   ) {
     this.fetcher = options.fetch ?? fetch;
     this.now = options.now ?? (() => new Date());
-    if (
-      config.delegatedAdmin !== 'platform-admin@lasvegasfortransit.org' ||
-      !/^[a-z][a-z0-9-]+@[a-z][a-z0-9-]+\.iam\.gserviceaccount\.com$/.test(config.serviceAccount)
-    )
+    if (!/^[a-z][a-z0-9-]+@[a-z][a-z0-9-]+\.iam\.gserviceaccount\.com$/.test(config.serviceAccount))
       throw new ConnectorFailure('not_configured');
   }
   async getToken(scopes: readonly string[]): Promise<string> {
@@ -45,7 +41,6 @@ export class ManagedGoogleCredentials {
     const runtimeToken = this.token(runtime);
     const payload = {
       iss: this.config.serviceAccount,
-      sub: this.config.delegatedAdmin,
       aud: TOKEN,
       scope,
       iat: Math.floor(now / 1000),
@@ -62,7 +57,7 @@ export class ManagedGoogleCredentials {
     );
     if (typeof signed.signedJwt !== 'string' || signed.signedJwt.length > 16384)
       throw new ConnectorFailure('invalid_response');
-    const delegated = await jsonRequest(this.fetcher, TOKEN, {
+    const workspaceTokenResponse = await jsonRequest(this.fetcher, TOKEN, {
       method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
       body: new URLSearchParams({
@@ -70,8 +65,8 @@ export class ManagedGoogleCredentials {
         assertion: signed.signedJwt,
       }).toString(),
     });
-    const token = this.token(delegated),
-      until = now + Number(delegated.expires_in) * 1000;
+    const token = this.token(workspaceTokenResponse),
+      until = now + Number(workspaceTokenResponse.expires_in) * 1000;
     this.cache.set(scope, { token, until });
     return token;
   }
