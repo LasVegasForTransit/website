@@ -4,6 +4,10 @@ import { loadConfig } from './config';
 const config = loadConfig(process.env);
 const connector = createWorkspaceConnector(config);
 async function handle(incoming: IncomingMessage, outgoing: ServerResponse) {
+  if (incoming.method === 'GET' && incoming.url === '/healthz') {
+    outgoing.writeHead(204).end();
+    return;
+  }
   const chunks: Uint8Array[] = [];
   let length = 0;
   for await (const chunk of incoming) {

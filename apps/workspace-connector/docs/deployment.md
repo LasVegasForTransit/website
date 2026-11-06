@@ -4,11 +4,12 @@ This service runs in Google Cloud Run. Activation requires separate approval of 
 Workspace delegation, Scheduler, billing, and resource changes. Building or validating this package
 alone does not authorize those changes.
 
-Use separate preview and production Cloud Run identities. Configure `WORKSPACE_CONNECTOR_CONFIG`
-with the reviewed JSON policy and `origin`, `siteAudience`, `schedulerSubject`, `serviceAccount`,
-and `delegatedAdmin`. The delegated administrator must be `platform-admin@lasvegasfortransit.org`.
-The service account must be a Google-managed attached runtime identity, with permission to invoke
-`signJwt` only on the configured delegated service account. Never download a service-account key.
+Use separate preview and production Cloud Run identities. Store the reviewed JSON policy for
+`WORKSPACE_CONNECTOR_CONFIG` in Secret Manager. It contains `origin`, `siteAudience`,
+`schedulerSubject`, `serviceAccount`, and `delegatedAdmin`. The delegated administrator must be
+`platform-admin@lasvegasfortransit.org`. The service account must be a Google-managed attached
+runtime identity, with permission to invoke `signJwt` only on the configured delegated service
+account. Never download a service-account key.
 
 The policy contains the exact customer ID, human OU IDs, included/excluded user IDs, preview user
 allowlist, Console group, committee registry, and complete production write registry. Preview write
@@ -23,25 +24,42 @@ Delegate only these Directory scopes to the restricted administrator:
 - `https://www.googleapis.com/auth/admin.directory.group.readonly`
 - `https://www.googleapis.com/auth/admin.directory.group.member`
 
-Build the image from the repository root using `apps/workspace-connector/Dockerfile`, through the
-repository resource guard with an accurate external artifact and write estimate. The lockfile policy
-check reads private LVBT package metadata, so pass an existing read-only package credential using
-the following command:
+## Deploy routine releases
 
-```bash
-docker buildx build \
-  --secret id=npmrc,src="$HOME/.npmrc" \
-  --secret id=npm_token,env=NODE_AUTH_TOKEN \
-  -f apps/workspace-connector/Dockerfile .
-```
+Use **Deploy Workspace connector** in GitHub Actions from `main`. The workflow builds and pushes an
+immutable image, then updates the selected Cloud Run service and checks `/healthz`. The private
+package credential comes from the workflow's read-only `GITHUB_TOKEN` and is mounted as a BuildKit
+secret; it is not copied into the image or build context. Google authentication uses Workload
+Identity Federation, not a downloaded service-account key.
 
-The second secret supports an npmrc that references `NODE_AUTH_TOKEN`; it is unnecessary for a
-credential file containing a literal token. BuildKit mounts this file only for dependency
-installation; never copy credentials into the context, use a build argument for a token, or disable
-the lockfile supply-chain check. Run
-`pnpm --filter @lasvegasfortransit/workspace-connector preflight` with the reviewed configuration
-before deploying. The container uses port 8080 and Node 24; it does not require a database
-credential.
+Configure two GitHub environments, `workspace-preview` and `workspace-production`, and restrict both
+to the `main` branch. Production must require a deployment reviewer. Each environment needs these
+variables:
+
+- `WORKSPACE_CONNECTOR_WIF_PROVIDER`: the full Google Workload Identity Provider resource name.
+- `WORKSPACE_CONNECTOR_DEPLOYER_SERVICE_ACCOUNT`:
+  `lvbt-workspace-deployer-preview@lvbt-core.iam.gserviceaccount.com` for preview, or
+  `lvbt-workspace-deployer@lvbt-core.iam.gserviceaccount.com` for production.
+- `WORKSPACE_CONNECTOR_CONFIG_VERSION`: the reviewed numeric Secret Manager version for that
+  environment.
+
+The WIF provider must trust this repository, the `main` branch, and the matching GitHub environment.
+Bind only that environment's GitHub principal to its deployer through Workload Identity Federation.
+Give each deployer Artifact Registry Writer on the `workspace-connectors` repository, Cloud Run
+Developer on its matching service, Service Account User on that service's runtime identity, and
+Secret Accessor on the matching configuration secret. Grant the runtime identity Secret Accessor on
+only its own connector configuration secret. Keep the preview and production policies, service
+identities, secrets, and write-group registries separate.
+
+The workflow expects the Cloud Run service, configuration secret, Artifact Registry repository, WIF
+provider, and IAM grants to exist already. It refuses to create a missing GitHub environment or
+deploy from another branch. Use the reviewed activation plan for one-time Google setup; keep the
+site onboarding flag disabled and a newly created Scheduler paused until preview acceptance and
+production inventory review are complete. Deploying the container does not enable Workspace
+onboarding or change an existing Scheduler's state or public invoker policy. The one-time setup
+makes the webhook service public; application-level notification and Scheduler proofs remain
+mandatory. The container uses port 8080 and Node 24; its readiness route returns 204 only after the
+reviewed runtime configuration has loaded.
 
 Configure a minute Google Scheduler POST heartbeat to `/run`, using its dedicated service account
 with the exact configured subject and Cloud Run origin as OIDC audience. Every `/run` call verifies
@@ -81,7 +99,9 @@ restricted administrator privileges and complete group registry need separate Ad
 approved Directory verification. Do not enable services to make a read-only inspection succeed.
 
 Prepare deployment JSON containing `project` (`lvbt-core`), `region` (`us-central1`), `service`,
-`image`, `runtimeSubject`, `schedulerAccount` and `connector` (the full runtime configuration). Use
+`image`, `runtimeSubject`, `schedulerAccount`, `configSecretVersion` (a numeric version), and
+`connector` (the full runtime configuration). Store the connector JSON in the environment's Secret
+Manager secret: `workspace-connector-config-preview` or `workspace-connector-config-production`. Use
 `lvbt-workspace-preview` / `lvbt-workspace` for the service and attached service-account name, and
 `lvbt-workspace-tick-preview` / `lvbt-workspace-tick` for the Scheduler account. Each service
 account belongs to `lvbt-core`. Read actual numeric service-account unique IDs into `runtimeSubject`
@@ -90,25 +110,28 @@ and `connector.schedulerSubject`; these must differ. The image must be an immuta
 
 Run `pnpm --filter @lasvegasfortransit/workspace-connector deployment:plan <reviewed.json>`. It
 validates separation and prints argument arrays for review; it never executes them. Its
-prerequisites cover identity/repository creation, the runtime environment file, D1 and Workspace
-setup. Verify existing resources before creating them. The signing custom role contains only
-`iam.serviceAccounts.signJwt` and is bound on the exact attached service account, to itself. Do not
-replace that with a project-wide Token Creator or Owner grant. The Scheduler identity gets no
+prerequisites cover identity/repository creation, the connector configuration secret, D1 and
+Workspace setup. Verify existing resources before creating them. The signing custom role contains
+only `iam.serviceAccounts.signJwt` and is bound on the exact attached service account, to itself. Do
+not replace that with a project-wide Token Creator or Owner grant. The Scheduler identity gets no
 Directory delegation or signing role. Retain the Cloud Scheduler service agent's standard job token
 permission and the deployer's existing service-account attachment permission.
 
 Store all four `LVBT_WORKSPACE_*` site settings as Worker secret bindings, including the enable
 flag. Release promotion preserves secret bindings; manually added ordinary text bindings are not a
-persistent configuration source. The generated plan defaults to disabled.
+persistent configuration source. The generated plan defaults to disabled and references the reviewed
+numeric Secret Manager version. It grants the runtime identity Secret Accessor only on its
+environment's configuration secret. The deployment workflow uses the same pinned version.
 
 The public Cloud Run invoker binding is needed for Directory delivery. The application checks
 registered channel proof for notifications and the exact Scheduler identity on `/run`; test both
-before exposing production. Deployment uses request-based billing, zero minimum instances, one
-maximum instance, one request per instance, one vCPU, 512 MiB and a 60 second HTTP timeout. The
-application stops its owned work at 45 seconds. Do not allow detached work after the response. The
-Scheduler must start paused until the site endpoint policy is ready; pause a newly created job
-immediately if preparing it before activation. Keep the site's enabled flag false until preview
-acceptance and production inventory review are complete.
+before exposing production. `GET /healthz` reveals no configuration and returns success only after
+the process has loaded a valid runtime configuration. Deployment uses request-based billing, zero
+minimum instances, one maximum instance, one request per instance, one vCPU, 512 MiB and a 60 second
+HTTP timeout. The application stops its owned work at 45 seconds. Do not allow detached work after
+the response. The Scheduler must start paused until the site endpoint policy is ready; pause a newly
+created job immediately if preparing it before activation. Keep the site's enabled flag false until
+preview acceptance and production inventory review are complete.
 
 At one heartbeat per minute, a 30-day month has 43,200 invocations. Five seconds of billable work
 per invocation means about 216,000 vCPU-seconds and 108,000 GiB-seconds; the request-based free tier
