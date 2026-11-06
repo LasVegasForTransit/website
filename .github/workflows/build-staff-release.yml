@@ -18,7 +18,7 @@ jobs:
     name: Validate and save staff release
     if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 45
     # pnpm check also builds the public website before running its UI contracts.
     # Keep these public settings available to validation and release packaging.
     env:
