@@ -76,6 +76,7 @@ function commands(
       'gcloud',
       'services',
       'enable',
+      'admin.googleapis.com',
       'run.googleapis.com',
       'iamcredentials.googleapis.com',
       'cloudscheduler.googleapis.com',

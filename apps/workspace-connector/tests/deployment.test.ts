@@ -24,6 +24,10 @@ void test('deployment plans pin identities, preserve disabled rollout and emit r
   }
   assert.ok(plan.commands.flat().includes('--max-instances=1'));
   assert.ok(plan.commands.flat().includes('--min-instances=0'));
+  const enableApis = plan.commands.find(
+    (command) => command.includes('services') && command.includes('enable'),
+  );
+  assert.ok(enableApis?.includes('admin.googleapis.com'));
   assert.ok(
     plan.commands
       .flat()
