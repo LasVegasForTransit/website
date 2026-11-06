@@ -104,7 +104,7 @@ jobs:
           }
 
           case "$TARGET" in
-            preview) expected='lvbt-workspace-deployer-preview@lvbt-core.iam.gserviceaccount.com' ;;
+            preview) expected='lvbt-ws-deployer-preview@lvbt-core.iam.gserviceaccount.com' ;;
             production) expected='lvbt-workspace-deployer@lvbt-core.iam.gserviceaccount.com' ;;
             *) echo 'Unknown target.' >&2; exit 1 ;;
           esac

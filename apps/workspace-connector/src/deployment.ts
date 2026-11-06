@@ -15,7 +15,9 @@ export function deploymentPlan(input: DeploymentConfig) {
     configSecret = `workspace-connector-config-${c.environment}`;
   const service = `lvbt-workspace${suffix}`,
     runtime = `${service}@lvbt-core.iam.gserviceaccount.com`,
-    deployer = `lvbt-workspace-deployer${suffix}@lvbt-core.iam.gserviceaccount.com`;
+    deployerName =
+      c.environment === 'preview' ? 'lvbt-ws-deployer-preview' : 'lvbt-workspace-deployer',
+    deployer = `${deployerName}@lvbt-core.iam.gserviceaccount.com`;
   const scheduler = `lvbt-workspace-tick${suffix}@lvbt-core.iam.gserviceaccount.com`;
   if (
     input.project !== 'lvbt-core' ||

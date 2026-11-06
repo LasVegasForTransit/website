@@ -24,6 +24,12 @@ void test('deployment plans pin identities, preserve disabled rollout and emit r
   }
   assert.ok(plan.commands.flat().includes('--max-instances=1'));
   assert.ok(plan.commands.flat().includes('--min-instances=0'));
+  assert.ok(
+    plan.prerequisites.some((item) =>
+      item.includes('lvbt-ws-deployer-preview@lvbt-core.iam.gserviceaccount.com'),
+    ),
+  );
+  assert.ok(!JSON.stringify(plan).includes('lvbt-workspace-deployer-preview'));
   const enableApis = plan.commands.find(
     (command) => command.includes('services') && command.includes('enable'),
   );
