@@ -9,7 +9,6 @@ const config = {
   siteAudience: 'https://preview.lasvegasfortransit.org/api/workspace/v1',
   schedulerSubject: '222222222222222222222',
   serviceAccount: 'workspace-preview@lvbt-core.iam.gserviceaccount.com',
-  delegatedAdmin: 'platform-admin@lasvegasfortransit.org',
   consoleGroupEmail: 'console-preview@lasvegasfortransit.org',
   productionConsoleGroupEmail: 'console-users@lasvegasfortransit.org',
   managedGroups: ['committee-preview@lasvegasfortransit.org'],
@@ -50,10 +49,7 @@ void test('forged or oversized notifications do not trigger directory reads', as
   assert.equal(calls, 0);
 });
 
-void test('root impersonation and preview production write targets are refused before network access', () => {
-  assert.throws(() =>
-    createWorkspaceConnector({ ...config, delegatedAdmin: 'root@lasvegasfortransit.org' }),
-  );
+void test('preview production write targets are refused before network access', () => {
   assert.throws(() =>
     createWorkspaceConnector({ ...config, consoleGroupEmail: config.productionConsoleGroupEmail }),
   );

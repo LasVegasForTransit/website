@@ -44,8 +44,13 @@ export function deploymentPlan(input: DeploymentConfig) {
       LVBT_WORKSPACE_ONBOARDING_CONFIG: JSON.stringify(c),
     },
     workspace: {
-      clientId: input.runtimeSubject,
-      delegatedAdmin: c.delegatedAdmin,
+      serviceAccount: c.serviceAccount,
+      adminRolePrivileges: [
+        'Users: Read',
+        'Organizational units: Read',
+        'Groups: Read',
+        'Groups: Update',
+      ],
       scopes: [
         'https://www.googleapis.com/auth/admin.directory.user.readonly',
         'https://www.googleapis.com/auth/admin.directory.orgunit.readonly',
@@ -61,7 +66,7 @@ export function deploymentPlan(input: DeploymentConfig) {
       `Create Secret Manager secret ${configSecret}, add the reviewed connector JSON as a version, and grant Secret Accessor only to ${runtime} and ${deployer}.`,
       `Select the reviewed numeric version ${input.configSecretVersion}; verify its origin equals the actual Cloud Run service URL.`,
       'Review the complete human/service Directory inventory, OU IDs, group ownership and explicit per-ID exceptions.',
-      'Verify the restricted delegated administrator and exact domain-wide delegation client/scopes in Workspace Admin.',
+      `Assign a restricted Google Workspace Admin role directly to ${runtime} with only Users: Read, Organizational units: Read, Groups: Read, and Groups: Update. Do not create a Workspace user or use domain-wide delegation.`,
       'Apply additive D1 migrations and compatible site/staff releases with onboarding disabled before activating the connector.',
     ],
   };

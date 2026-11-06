@@ -2,8 +2,9 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { ManagedGoogleCredentials } from '../src/credentials';
 
-void test('Google credentials use managed signing and a fixed restricted delegated administrator', async () => {
+void test('Google credentials use managed signing as the restricted Workspace service account', async () => {
   const requests: string[] = [];
+  let signedPayload: Record<string, unknown> = {};
   const route = (input: Parameters<typeof fetch>[0], init?: RequestInit) => {
     const url = input instanceof Request ? input.url : input.toString();
     requests.push(url);
@@ -29,10 +30,13 @@ void test('Google credentials use managed signing and a fixed restricted delegat
       const request = JSON.parse(typeof init?.body === 'string' ? init.body : '') as {
         payload: string;
       };
-      const payload = JSON.parse(request.payload) as Record<string, unknown>;
-      assert.equal(payload.sub, 'platform-admin@lasvegasfortransit.org');
-      assert.equal(payload.aud, 'https://oauth2.googleapis.com/token');
-      assert.equal(payload.scope, 'https://www.googleapis.com/auth/admin.directory.user.readonly');
+      signedPayload = JSON.parse(request.payload) as Record<string, unknown>;
+      assert.equal(signedPayload.iss, 'workspace-preview@lvbt-core.iam.gserviceaccount.com');
+      assert.equal(signedPayload.aud, 'https://oauth2.googleapis.com/token');
+      assert.equal(
+        signedPayload.scope,
+        'https://www.googleapis.com/auth/admin.directory.user.readonly',
+      );
       return Response.json({ signedJwt: 'fixture.managed.signature' });
     }
     assert.equal(url, 'https://oauth2.googleapis.com/token');
@@ -40,7 +44,7 @@ void test('Google credentials use managed signing and a fixed restricted delegat
     assert.equal(body.get('assertion'), 'fixture.managed.signature');
     assert.equal(body.get('grant_type'), 'urn:ietf:params:oauth:grant-type:jwt-bearer');
     return Response.json({
-      access_token: 'fixture-delegated-access',
+      access_token: 'fixture-service-account-access',
       token_type: 'Bearer',
       expires_in: 3600,
     });
@@ -49,15 +53,15 @@ void test('Google credentials use managed signing and a fixed restricted delegat
   const credentials = new ManagedGoogleCredentials(
     {
       serviceAccount: 'workspace-preview@lvbt-core.iam.gserviceaccount.com',
-      delegatedAdmin: 'platform-admin@lasvegasfortransit.org',
       siteAudience: 'https://preview.lasvegasfortransit.org/api/workspace/v1',
     },
     { fetch: fetcher, now: () => new Date('2026-11-04T20:00:00Z') },
   );
   assert.equal(
     await credentials.getToken(['https://www.googleapis.com/auth/admin.directory.user.readonly']),
-    'fixture-delegated-access',
+    'fixture-service-account-access',
   );
+  assert.equal(signedPayload.sub, undefined);
   assert.equal(requests.length, 3);
 });
 
@@ -66,7 +70,6 @@ void test('the credential source rejects broader scopes and arbitrary ID-token a
   const credentials = new ManagedGoogleCredentials(
     {
       serviceAccount: 'workspace-preview@lvbt-core.iam.gserviceaccount.com',
-      delegatedAdmin: 'platform-admin@lasvegasfortransit.org',
       siteAudience: 'https://preview.lasvegasfortransit.org/api/workspace/v1',
     },
     {
@@ -86,7 +89,6 @@ void test('expired metadata credentials never reach the signing endpoint', async
   const source = new ManagedGoogleCredentials(
     {
       serviceAccount: 'workspace-preview@lvbt-core.iam.gserviceaccount.com',
-      delegatedAdmin: 'platform-admin@lasvegasfortransit.org',
       siteAudience: 'https://preview.lasvegasfortransit.org/api/workspace/v1',
     },
     {
@@ -101,11 +103,10 @@ void test('expired metadata credentials never reach the signing endpoint', async
   );
   assert.equal(requests.length, 1);
 });
-void test('credential redirects cannot move a delegated assertion to an arbitrary URL', async () => {
+void test('credential redirects cannot move a signed service-account assertion to an arbitrary URL', async () => {
   const source = new ManagedGoogleCredentials(
     {
       serviceAccount: 'workspace-preview@lvbt-core.iam.gserviceaccount.com',
-      delegatedAdmin: 'platform-admin@lasvegasfortransit.org',
       siteAudience: 'https://preview.lasvegasfortransit.org/api/workspace/v1',
     },
     {
