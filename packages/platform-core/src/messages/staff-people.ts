@@ -2,6 +2,7 @@ export const staffPeople = {
   people: {
     deleted: 'Member deleted.',
     lastActivity: 'Last activity {date}',
+    lastActivityHeading: 'Last activity',
     title: 'Members',
     unassignedTitle: 'Members without a committee',
     unassignedIntro: 'Help members find a committee where they can contribute.',

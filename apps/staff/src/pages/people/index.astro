@@ -19,7 +19,6 @@ import {
 } from '../../lib/people';
 import { messageResponse } from '../../lib/responses';
 import { rosterDetails } from '@lasvegasfortransit/platform-storage/roster-details';
-import { can } from '@lasvegasfortransit/platform-core/permissions';
 const staff = Astro.locals.staff;
 if (!staff) return messageResponse(t('staff.common.accessDenied'), 403);
 const committees = await visibleCommittees(staff.db, staff.actor);
@@ -48,11 +47,6 @@ const showDiscord = staff.accessConfiguration?.discord?.configured ?? false;
 const acceptingCommitteeIds = committees
   .filter((item) => item.acceptingMembers)
   .map((item) => item.id);
-const hasMemberTasks =
-  can(staff.actor, 'attendance.record') ||
-  can(staff.actor, 'review_queue.resolve') ||
-  can(staff.actor, 'staff_admin.manage') ||
-  can(staff.actor, 'export.full');
 ---
 
 <StaffLayout
@@ -175,70 +169,12 @@ const hasMemberTasks =
     }
   </form>
   {
-    hasMemberTasks && (
-      <details class="staff-member-tasks">
-        <summary>{t('staff.people.records')}</summary>
-        <nav aria-label={t('staff.people.recordTasks')}>
-          <ul>
-            {can(staff.actor, 'attendance.record') && (
-              <li>
-                <a href="/paper/">{t('staff.people.paperSignups')}</a>
-              </li>
-            )}
-            {can(staff.actor, 'review_queue.resolve') && (
-              <li>
-                <a href="/review/">{t('staff.people.duplicates')}</a>
-              </li>
-            )}
-            {staff.actor.staffAdmin && (
-              <li>
-                <a href="/imports/">{t('staff.imports.title')}</a>
-              </li>
-            )}
-            {staff.actor.staffAdmin && (
-              <li>
-                <a href="/task-checkins/">{t('taskCheckins.staff.title')}</a>
-              </li>
-            )}
-            {staff.actor.staffAdmin && (
-              <li>
-                <a href="/newsletter/">Newsletter follow-up</a>
-              </li>
-            )}
-            {staff.actor.staffAdmin && (
-              <li>
-                <a href="/offboarding/">Google accounts to review</a>
-              </li>
-            )}
-            {can(staff.actor, 'staff_admin.manage') && (
-              <li>
-                <a href="/roles/">{t('staff.organizationRoles.manage')}</a>
-              </li>
-            )}
-            {can(staff.actor, 'staff_admin.manage') && (
-              <li>
-                <a href="/administrators/">{t('staff.administrators.title')}</a>
-              </li>
-            )}
-            {can(staff.actor, 'staff_admin.manage') && (
-              <li>
-                <a href="/access/">{t('staff.people.checkAccess')}</a>
-              </li>
-            )}
-            {can(staff.actor, 'export.full') && (
-              <li>
-                <a href="/export/">{t('staff.people.downloadRecords')}</a>
-              </li>
-            )}
-          </ul>
-        </nav>
-      </details>
-    )
-  }
-  {
     !error &&
       (page.items.length ? (
-        <section aria-label={t('staff.people.results')} class="staff-roster-results">
+        <section
+          aria-label={t('staff.people.results')}
+          class="staff-roster-results staff-table-card"
+        >
           <div class="staff-results-meta">
             <p>
               {status === 'member'
@@ -272,6 +208,7 @@ const hasMemberTasks =
                   </th>
                 )}
                 <th scope="col">{t('staff.common.committees')}</th>
+                <th scope="col">{t('staff.people.lastActivityHeading')}</th>
               </tr>
             </thead>
             <tbody>
@@ -293,10 +230,12 @@ const hasMemberTasks =
             </tbody>
           </table>
           {page.nextCursor && (
-            <a href={pageLink(Astro.url, page.nextCursor)} class="staff-next">
-              {status === 'member' ? t('staff.people.moreMembers') : t('staff.people.morePeople')}{' '}
-              <span aria-hidden="true">→</span>
-            </a>
+            <div class="staff-table-footer">
+              <a href={pageLink(Astro.url, page.nextCursor)} class="staff-next">
+                {status === 'member' ? t('staff.people.moreMembers') : t('staff.people.morePeople')}{' '}
+                <span aria-hidden="true">→</span>
+              </a>
+            </div>
           )}
         </section>
       ) : (

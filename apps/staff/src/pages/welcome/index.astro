@@ -47,7 +47,7 @@ try {
                   <a href={`/welcome/${person.personId}/`} class="staff-person-link">
                     {welcomeName(person)}
                   </a>
-                  <p class="mt-1 text-body-sm text-on-surface-variant">
+                  <p class="staff-welcome-meta">
                     {person.joinedAt && (
                       <>
                         Joined{' '}
@@ -61,28 +61,38 @@ try {
                     {person.overdue && (
                       <span class="staff-welcome-overdue">{t('staff.welcome.overdue')}</span>
                     )}
-                  </p>
-                  <p class="mt-1 text-body-sm text-on-surface-variant">
-                    {t('staff.welcome.source', { source: welcomeSource(person.source) })}
-                    {person.waitingDays !== null && (
-                      <>
-                        {' '}
-                        ·{' '}
-                        {person.waitingDays === 0
-                          ? t('staff.welcome.today')
-                          : t('staff.welcome.waitingDays', { count: person.waitingDays })}
-                      </>
-                    )}
+                    {person.joinedAt && <span aria-hidden="true"> · </span>}
+                    <span>
+                      {t('staff.welcome.source', { source: welcomeSource(person.source) })}
+                      {person.waitingDays !== null && (
+                        <>
+                          {' '}
+                          ·{' '}
+                          {person.waitingDays === 0
+                            ? t('staff.welcome.today')
+                            : t('staff.welcome.waitingDays', { count: person.waitingDays })}
+                        </>
+                      )}
+                    </span>
                   </p>
                   {person.interests.length > 0 && (
-                    <p class="mt-1 text-body-sm">
+                    <p class="staff-welcome-meta">
                       {t('staff.welcome.interests', {
                         interests: welcomeInterestLabels(person.interests),
                       })}
                     </p>
                   )}
                 </div>
-                <p>
+                <p
+                  class:list={[
+                    'staff-status',
+                    person.claimedBy
+                      ? person.claimedBy === staff.actor.personId
+                        ? 'staff-status-ok'
+                        : 'staff-status-neutral'
+                      : 'staff-status-attention',
+                  ]}
+                >
                   {person.claimedBy
                     ? person.claimedBy === staff.actor.personId
                       ? "You're welcoming them"
@@ -93,7 +103,7 @@ try {
             ))}
           </ul>
         ) : (
-          <div>
+          <div class="staff-empty">
             <>
               <h2 class="text-title-lg font-bold">No members waiting here</h2>
               <p class="mt-1 text-body-sm text-on-surface-variant">

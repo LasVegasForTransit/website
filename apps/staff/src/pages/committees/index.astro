@@ -25,7 +25,12 @@ const committees = await listCommittees(staff.db, staff.actor);
           <p class="staff-committee-count">
             {committee.peopleCount} <span>people</span>
           </p>
-          <p class="staff-committee-leads">
+          <p
+            class:list={[
+              'staff-committee-leads',
+              !committee.leadNames.length && 'staff-status staff-status-attention',
+            ]}
+          >
             {committee.leadNames.length ? committee.leadNames.join(', ') : 'Lead not assigned'}
           </p>
         </li>
