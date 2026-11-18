@@ -163,7 +163,7 @@ try {
   assert.equal((await page.goto(`${ORIGIN}/people/`))?.status(), 200);
   const menuLink = page.getByRole('link', { name: 'Staff administrators', exact: true });
   if (!(await menuLink.isVisible())) {
-    await page.locator('details.staff-member-tasks > summary').focus();
+    await page.locator('details.staff-nav-menu > summary').focus();
     await page.keyboard.press('Enter');
   }
   await menuLink.click();

@@ -39,6 +39,7 @@ export async function recoveryBrandSource(): Promise<string> {
     rule(globalCss, 'html'),
     rule(globalCss, '.container-page'),
     ...[
+      '.staff-shell',
       '.staff-header',
       '.staff-header-inner',
       '.staff-identity',

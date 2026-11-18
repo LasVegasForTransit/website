@@ -6,7 +6,7 @@
     gap: 0.25rem 1.5rem;
   }
 
-  .staff-profile-actions a {
+  .staff-profile-actions a:not(.staff-secondary-button) {
     display: inline-flex;
     min-height: 2.75rem;
     align-items: center;
