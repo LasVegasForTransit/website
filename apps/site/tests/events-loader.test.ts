@@ -48,7 +48,7 @@ async function loadCalendar() {
     },
     parseData: ({ data }: { data: Record<string, unknown> }) => Promise.resolve(data),
     generateDigest: (input: string) => createHash('sha256').update(input).digest('hex'),
-    logger: { info: () => {} },
+    logger: { info: () => {}, warn: () => {} },
   } as unknown as LoaderContext);
   return entries;
 }
@@ -196,3 +196,41 @@ for (const [format, description, summary, body, rsvpUrl] of [
     assert.equal(moved.data.rsvpUrl, rsvpUrl);
   });
 }
+
+void test('an unreachable calendar keeps stored events outside CI', async (t) => {
+  t.mock.method(globalThis, 'fetch', () => Promise.reject(new TypeError('fetch failed')));
+  const previous = process.env.CI;
+  delete process.env.CI;
+  t.after(() => {
+    if (previous === undefined) delete process.env.CI;
+    else process.env.CI = previous;
+  });
+  let cleared = false;
+  const warnings: string[] = [];
+  await calendarEventsLoader().load({
+    store: {
+      clear: () => {
+        cleared = true;
+      },
+      set: () => true,
+    },
+    parseData: ({ data }: { data: Record<string, unknown> }) => Promise.resolve(data),
+    generateDigest: (input: string) => createHash('sha256').update(input).digest('hex'),
+    logger: { info: () => {}, warn: (message: string) => warnings.push(message) },
+  } as unknown as LoaderContext);
+  assert.equal(cleared, false);
+  assert.equal(warnings.length, 1);
+});
+
+void test('an unreachable calendar fails the build in CI', async (t) => {
+  t.mock.method(globalThis, 'fetch', () =>
+    Promise.resolve(new Response('', { status: 503, statusText: 'Unavailable' })),
+  );
+  const previous = process.env.CI;
+  process.env.CI = 'true';
+  t.after(() => {
+    if (previous === undefined) delete process.env.CI;
+    else process.env.CI = previous;
+  });
+  await assert.rejects(loadCalendar(), /Failed to fetch calendar ICS feed: 503/);
+});
