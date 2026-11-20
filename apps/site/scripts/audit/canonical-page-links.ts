@@ -29,7 +29,7 @@ function isSignInGate(response: Response, url: URL): boolean {
     response.status === 303 &&
     destination.origin === url.origin &&
     destination.pathname === '/sign-in/' &&
-    destination.searchParams.get('next') === url.pathname
+    destination.searchParams.get('next') === `${url.pathname}${url.search}`
   );
 }
 
