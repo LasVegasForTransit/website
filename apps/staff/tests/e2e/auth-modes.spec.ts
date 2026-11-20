@@ -219,6 +219,12 @@ async function journey(
     ...accessHeaders(mode, fixture.admin.assertion),
   });
   await seedMemberCookie(flow, fixture, context);
+  // A prepared account's first sign-in shows the welcome screen and its account switcher.
+  if (flow === 'change')
+    await fixture.db
+      .prepare("DELETE FROM sessions WHERE person_id=? AND type='staff'")
+      .bind(fixture.admin.person.id)
+      .run();
   const page = await context.newPage();
   const cspErrors: string[] = [];
   page.on('console', (message) => {
