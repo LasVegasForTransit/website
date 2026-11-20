@@ -4,7 +4,6 @@
 // fields that decision needs, so the two are never on screen together.
 import StaffLayout from '../../../layouts/StaffLayout.astro';
 import Button from '../../../../../site/src/components/app/Button.astro';
-import { buttonClass } from '../../../../../site/src/components/app/styles';
 import { t } from '@lasvegasfortransit/platform-core/messages';
 import { can } from '@lasvegasfortransit/platform-core/permissions';
 import { ulid } from '@lasvegasfortransit/platform-core/ids';
@@ -86,10 +85,10 @@ const token = step
       {
         waiting && !step && (
           <div class="staff-application-actions">
-            <a href={`${here}?step=accept`} class={buttonClass.primary}>
+            <a href={`${here}?step=accept`} class="staff-action-link">
               {t('staff.applications.accept')}
             </a>
-            <a href={`${here}?step=decline`} class={buttonClass.secondary}>
+            <a href={`${here}?step=decline`} class="staff-secondary-button">
               {t('staff.applications.decline')}
             </a>
           </div>
@@ -146,7 +145,7 @@ const token = step
             </div>
             <div class="staff-application-actions">
               <Button>{t('staff.applications.confirmAccept')}</Button>
-              <a href={here} class={buttonClass.secondary}>
+              <a href={here} class="staff-secondary-button">
                 {t('staff.applications.cancel')}
               </a>
             </div>
@@ -177,7 +176,7 @@ const token = step
             </div>
             <div class="staff-application-actions">
               <Button variant="destructive">{t('staff.applications.confirmDecline')}</Button>
-              <a href={here} class={buttonClass.secondary}>
+              <a href={here} class="staff-secondary-button">
                 {t('staff.applications.cancel')}
               </a>
             </div>

@@ -1,11 +1,12 @@
 ---
+// Applications for the teams this person decides on. Rows use the same list
+// pattern as the Welcome queue: who, what for, status, and one action.
 import StaffLayout from '../../layouts/StaffLayout.astro';
 import { t } from '@lasvegasfortransit/platform-core/messages';
 import { CommitteeApplicationService } from '@lasvegasfortransit/platform-storage/committee-applications';
 import {
   applicantName,
   applicationDay,
-  applicationDecision,
   applicationTarget,
   applicationWaiting,
   applicationsVisible,
@@ -34,49 +35,59 @@ const items = showDecided ? await service.decided(staff.actor) : waiting;
   </nav>
   {
     items.length ? (
-      <table class="staff-roster staff-applications">
-        <caption class="sr-only">
-          {showDecided ? t('staff.applications.decidedTab') : t('staff.applications.title')}
-        </caption>
-        <thead>
-          <tr>
-            <th scope="col">{t('staff.applications.applicant')}</th>
-            <th scope="col">{t('staff.applications.applyingFor')}</th>
-            <th scope="col">
-              {showDecided
-                ? t('staff.applications.decisionColumn')
-                : t('staff.applications.waitingColumn')}
-            </th>
-          </tr>
-        </thead>
-        <tbody>
-          {items.map((application) => (
-            <tr>
-              <th scope="row" class="staff-roster-person">
-                <a href={`/applications/${application.id}/`}>{applicantName(application)}</a>
-              </th>
-              <td>{applicationTarget(application)}</td>
-              <td class="staff-roster-status">
-                {showDecided ? (
-                  applicationDecision(application)
-                ) : (
-                  <>
-                    {applicationWaiting(application)}
-                    {application.overdue && (
-                      <span class="staff-welcome-overdue">{t('staff.applications.overdue')}</span>
-                    )}
-                    <span class="staff-applications-sent">
-                      {t('staff.applications.sent', {
-                        date: applicationDay(application.submittedAt),
-                      })}
-                    </span>
-                  </>
-                )}
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+      <ul
+        class="staff-welcome-list"
+        aria-label={
+          showDecided ? t('staff.applications.decidedTab') : t('staff.applications.title')
+        }
+      >
+        {items.map((application) => (
+          <li class="staff-welcome-row">
+            <div>
+              <a href={`/applications/${application.id}/`} class="staff-person-link">
+                {applicantName(application)}
+              </a>
+              <p class="staff-welcome-meta">
+                {applicationTarget(application)}
+                {showDecided &&
+                  ` · ${t('staff.applications.decidedDate', { date: applicationDay(application.decidedAt) })}`}
+              </p>
+            </div>
+            {showDecided ? (
+              <p
+                class:list={[
+                  'staff-status',
+                  application.state !== 'accepted' && 'staff-status-neutral',
+                ]}
+              >
+                {application.state === 'accepted'
+                  ? t('staff.applications.accepted', { name: application.decidedByName ?? '' })
+                  : application.state === 'declined'
+                    ? t('staff.applications.declined', { name: application.decidedByName ?? '' })
+                    : t('staff.applications.withdrawn')}
+              </p>
+            ) : (
+              <p class:list={['staff-status', application.overdue && 'staff-status-attention']}>
+                {applicationWaiting(application)}
+                {application.overdue && ` · ${t('staff.applications.overdue')}`}
+              </p>
+            )}
+            <div class="staff-welcome-action">
+              <a
+                href={`/applications/${application.id}/`}
+                class="staff-secondary-button"
+                aria-label={
+                  showDecided
+                    ? t('staff.applications.viewLabel', { name: applicantName(application) })
+                    : t('staff.applications.reviewLabel', { name: applicantName(application) })
+                }
+              >
+                {showDecided ? t('staff.applications.view') : t('staff.applications.review')}
+              </a>
+            </div>
+          </li>
+        ))}
+      </ul>
     ) : (
       <div class="staff-empty">
         <h2>
