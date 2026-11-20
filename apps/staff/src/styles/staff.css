@@ -436,15 +436,14 @@ html {
   }
 
   /* Phone menu: a native disclosure, so it works with scripts off. */
+  /* Icon only: the three lines are the convention, and the label stays for screen readers. */
   .staff-nav-menu > summary {
     display: inline-flex;
-    min-height: 2.75rem;
+    width: 2.75rem;
+    height: 2.75rem;
     align-items: center;
-    gap: 0.5rem;
-    padding: 0.5rem 0.875rem;
+    justify-content: center;
     border: 2px solid var(--color-outline);
-    font-size: var(--text-body-sm);
-    font-weight: 700;
     list-style: none;
     cursor: pointer;
   }
@@ -454,7 +453,7 @@ html {
   }
 
   .staff-nav-menu > summary::before {
-    width: 1rem;
+    width: 1.125rem;
     height: 0.75rem;
     border-block: 2px solid currentColor;
     background: linear-gradient(currentColor, currentColor) center / 100% 2px no-repeat;
