@@ -95,6 +95,7 @@ void test('a member applies once per role; the committee lead sees it and accept
   const lead = await f.actor(f.lead.id);
   const later = new Date(now.getTime() + 4 * 86_400_000);
   const [queued] = await f.service.queue(lead, later);
+  assert.ok(queued);
   assert.equal(queued.note, 'I run a book club.');
   assert.equal(queued.overdue, true);
 
@@ -121,6 +122,7 @@ void test('a member applies once per role; the committee lead sees it and accept
     'access follows the ordinary committee reconciliation',
   );
   const [mine] = await f.service.forPerson(f.applicant.id);
+  assert.ok(mine);
   assert.equal(mine.state, 'accepted');
   assert.equal(mine.decisionNote, 'Welcome!');
   assert.equal(
