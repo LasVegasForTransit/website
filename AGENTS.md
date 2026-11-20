@@ -59,8 +59,9 @@ run them with `pnpm -C apps/site <command>`.
 - **[`.lvbt/commit-scopes.txt`](./.lvbt/commit-scopes.txt)** — source of truth for the scope list
   (what the commit‑msg hook reads).
 
-The hooks under [`.githooks/`](./.githooks/) enforce most of this automatically. The repo's
-`prepare` script wires `core.hooksPath` to `.githooks` on `pnpm install`.
+The hooks under [`.githooks/`](./.githooks/) enforce most of this automatically.
+[`scripts/git-hooks.mjs`](./scripts/git-hooks.mjs) wires `core.hooksPath` to `.githooks` on
+`pnpm install` and at Claude Code session start, and warns when the hooks cannot run.
 
 ## Commit messages
 

@@ -1,4 +1,4 @@
-import { readdir, readFile } from 'node:fs/promises';
+import { access, readdir, readFile } from 'node:fs/promises';
 import path from 'node:path';
 
 import { withLocalWorker } from './local-worker';
@@ -104,6 +104,26 @@ async function verifySitemap(baseUrl: string, root: string): Promise<void> {
     fail('The primary sitemap index is unavailable.');
 }
 
+// Event pages come from the live Google Calendar at build time, so a rescheduled or deleted
+// occurrence can remove a page without any change to this repository. The checks below separate
+// what the code controls (the redirect rules) from what the calendar controls (whether a page
+// exists today). Calendar drift is reported as a warning so it cannot fail unrelated branches;
+// the redirect behavior itself stays a hard failure.
+function warnCalendarDrift(message: string): void {
+  // GitHub Actions turns this line into a visible annotation on the run.
+  if (process.env.CI) process.stdout.write(`::warning title=Calendar drift::${message}\n`);
+  process.stderr.write(`warning: ${message}\n`);
+}
+
+async function builtPage(root: string, pathname: string): Promise<boolean> {
+  try {
+    await access(path.join(root, 'dist', pathname, 'index.html'));
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 async function verifyEventRoutes(baseUrl: string, root: string): Promise<void> {
   const redirects = await readFile(path.join(root, 'public', '_redirects'), 'utf8');
   for (const line of redirects.split('\n')) {
@@ -112,11 +132,17 @@ async function verifyEventRoutes(baseUrl: string, root: string): Promise<void> {
     const response = await fetch(`${baseUrl}${source}`, { redirect: 'manual' });
     if (response.status !== 301 || response.headers.get('location') !== destination)
       fail(`Expected a direct event replacement for ${source}.`);
-    await expectIndexing(baseUrl, destination, true);
+    if (await builtPage(root, destination)) await expectIndexing(baseUrl, destination, true);
+    else
+      warnCalendarDrift(
+        `${source} redirects to ${destination}, but the calendar no longer has that event. ` +
+          'Update or remove the rule in apps/site/public/_redirects.',
+      );
   }
 
   // Missing Thursday occurrences are not proven replacements for the new Sunday series.
   // The board meeting was explicitly excluded in the calendar without a replacement.
+  // No redirect may point these anywhere; the calendar alone decides whether a page exists.
   for (const pathname of [
     '/events/2026-07-09-lvbt-board-of-directors-meeting/',
     '/events/2026-10-08-lvbt-board-of-directors-meeting/',
@@ -132,7 +158,10 @@ async function verifyEventRoutes(baseUrl: string, root: string): Promise<void> {
     '/vision',
   ]) {
     const response = await fetch(`${baseUrl}${pathname}`, { redirect: 'manual' });
-    if (response.status !== 404) fail(`Expected retired route ${pathname} to remain 404.`);
+    if (response.status === 404) continue;
+    if (pathname.startsWith('/events/') && response.status === 200)
+      warnCalendarDrift(`${pathname} is back in the calendar; it was expected to stay retired.`);
+    else fail(`Expected retired route ${pathname} to remain 404; received ${response.status}.`);
   }
 }
 
