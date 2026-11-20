@@ -40,6 +40,7 @@
     "./staff-administrators": "./src/staff-administrators.ts",
     "./outbox": "./src/outbox.ts",
     "./committees": "./src/committees.ts",
+    "./committee-applications": "./src/committee-applications.ts",
     "./form-tokens": "./src/form-tokens.ts",
     "./staff-people": "./src/staff-people.ts",
     "./staff-history": "./src/staff-history.ts",

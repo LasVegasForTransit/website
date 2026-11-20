@@ -1,0 +1,32 @@
+---
+// Apply for a posted role or ask to join a team. Served through
+// functions/account/apply/index.ts, which fills the heading, the hidden target
+// and, after a failed submit, the member's input and the error.
+import AccountFormPage from '../../components/app/AccountFormPage.astro';
+import TextField from '../../components/app/TextField.astro';
+import { inputClass, labelClass } from '../../components/app/styles';
+import { NOTE_LIMIT } from '@lasvegasfortransit/platform-storage/committee-applications';
+import { t } from '@lasvegasfortransit/platform-core/messages';
+---
+
+<AccountFormPage
+  title={t('applications.heading')}
+  action="/account/apply/"
+  submitLabel={t('applications.submitRole')}
+>
+  <input type="hidden" name="role" value="" />
+  <input type="hidden" name="team" value="" />
+  <div>
+    <label for="note" class={labelClass} data-slot="note-label"
+      >{t('applications.noteRoleLabel')}</label
+    >
+    <textarea
+      id="note"
+      name="note"
+      rows="5"
+      maxlength={NOTE_LIMIT}
+      class:list={[inputClass, 'max-w-xl']}></textarea>
+  </div>
+  <TextField name="availability" label={t('applications.availabilityLabel')} />
+  <p slot="after" class="mt-6">{t('applications.withdrawHint')}</p>
+</AccountFormPage>
