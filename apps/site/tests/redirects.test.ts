@@ -41,6 +41,7 @@ void test('keeps the sitemap alias and known event replacements direct', () => {
   for (const [source, destination] of [
     ['2026-07-09-lvbt-general-member-meeting', '2026-07-16-lvbt-general-member-meeting'],
     ['2026-07-11-lvbt-s-first-walk-audit-tbd', '2026-07-11-lvbt-s-first-walk-audit'],
+    ['2026-11-19-vegas-urbanist-social-club', '2026-11-12-vegas-urbanist-social-club'],
   ]) {
     for (const suffix of ['', '/']) {
       assert.deepEqual(rules.get(`/events/${source}${suffix}`), {
@@ -54,9 +55,15 @@ void test('keeps the sitemap alias and known event replacements direct', () => {
 
 void test('sends renamed Vegas Urbanists occurrences to the same dated social', () => {
   const rules = parseRedirects(readFileSync(redirectsPath, 'utf8'));
+  // The November social moved to the 12th, so its old name goes straight to the new date.
+  for (const suffix of ['', '/']) {
+    assert.deepEqual(rules.get(`/events/2026-11-19-vegas-urbanists${suffix}`), {
+      destination: '/events/2026-11-12-vegas-urbanist-social-club/',
+      status: '301',
+    });
+  }
   for (const date of [
     '2026-10-15',
-    '2026-11-19',
     '2026-12-17',
     '2027-01-21',
     '2027-02-18',
