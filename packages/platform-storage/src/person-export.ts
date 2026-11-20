@@ -239,6 +239,7 @@ export async function collectPersonExport(
     discord_server_profiles: snapshot.discord_server_profiles,
     committee_assignments: snapshot.committee_assignments,
     organization_roles: snapshot.organization_roles,
+    committee_applications: snapshot.committee_applications,
     profile_corrections: corrections(
       snapshot.profile_corrections ?? [],
       Object.keys(person),

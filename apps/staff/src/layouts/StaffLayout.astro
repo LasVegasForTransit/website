@@ -4,6 +4,7 @@ import { t, LOCALE } from '@lasvegasfortransit/platform-core/messages';
 import '../styles/staff.css';
 import { issueFormToken } from '@lasvegasfortransit/platform-storage/form-tokens';
 import { welcomeVisible } from '../lib/welcome';
+import { applicationsVisible } from '../lib/applications';
 import { can } from '@lasvegasfortransit/platform-core/permissions';
 interface Props {
   title: string;
@@ -74,6 +75,16 @@ const memberRecord = /^\/people\/[^/]+(?:\/(?:edit|delete))?\/?$/.test(Astro.url
                     aria-current={Astro.url.pathname.startsWith('/welcome') ? 'page' : undefined}
                   >
                     {t('staff.navigation.welcome')}
+                  </a>
+                )}
+                {staff && applicationsVisible(staff) && (
+                  <a
+                    href="/applications/"
+                    aria-current={
+                      Astro.url.pathname.startsWith('/applications') ? 'page' : undefined
+                    }
+                  >
+                    {t('staff.applications.navigation')}
                   </a>
                 )}
                 <a

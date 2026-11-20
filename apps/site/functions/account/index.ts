@@ -5,7 +5,7 @@
 
 import { accountView } from '../../platform/account';
 import { formatPhone } from '@lasvegasfortransit/platform-core/join-form';
-import { formatFullDate, t } from '@lasvegasfortransit/platform-core/messages';
+import { formatDate, formatFullDate, t } from '@lasvegasfortransit/platform-core/messages';
 import { show, showEmailText, showText } from '../join/_page';
 import type { SignInPagesEnv } from '../sign-in/_shared';
 import { accountPage, signedIn, takeNotice } from './_account';
@@ -13,6 +13,8 @@ import { discordLinkConfigured } from '@lasvegasfortransit/platform-integrations
 import { DiscordLinkService } from '@lasvegasfortransit/platform-storage/discord-link';
 import { SESSION_COOKIE, readCookie } from '@lasvegasfortransit/platform-core/web-auth';
 import { fillDiscordProfile } from '../../platform/discord-profile-page';
+import { fillGetInvolved, replyDue } from '../../platform/get-involved-page';
+import { CommitteeApplicationService } from '@lasvegasfortransit/platform-storage/committee-applications';
 
 // The notices a redirect can leave for this page, by the id in the cookie.
 const NOTICES: Record<string, () => string> = {
@@ -28,6 +30,12 @@ const NOTICES: Record<string, () => string> = {
   left: () => t('account.updated.left'),
   rejoined: () => t('account.updated.rejoined'),
   unavailable: () => t('account.unavailable'),
+  application_duplicate: () => t('applications.duplicate'),
+  application_on_team: () => t('applications.alreadyOnTeam'),
+  application_closed: () => t('applications.closed'),
+  application_not_member: () => t('applications.notMember'),
+  application_unknown: () => t('applications.unknown'),
+  application_withdrawn: () => t('applications.withdrawnNotice'),
 };
 
 export const onRequestGet: PagesFunction<SignInPagesEnv> = async ({ env, request }) => {
@@ -43,10 +51,31 @@ export const onRequestGet: PagesFunction<SignInPagesEnv> = async ({ env, request
     : null;
   const discord =
     person.membership_status === 'member' || connectedDiscord?.linked ? connectedDiscord : null;
+  const applications = new CommitteeApplicationService(signed.env.PLATFORM_DB);
+  const getInvolved =
+    person.membership_status === 'member'
+      ? {
+          applications: await applications.forPerson(signed.person.id),
+          committees: await applications.openCommittees(),
+          onCommittees: await applications.memberCommittees(signed.person.id),
+        }
+      : null;
+  // "Sent" names the reply date of the application just sent, the newest waiting one.
+  const latestWaiting = getInvolved?.applications.find((entry) => entry.state === 'submitted');
+
+  const text =
+    notice.key === 'application_sent'
+      ? t('applications.sent', {
+          due: latestWaiting ? formatDate(replyDue(latestWaiting.submittedAt)) : '',
+        })
+      : notice.key && Object.hasOwn(NOTICES, notice.key)
+        ? NOTICES[notice.key]?.()
+        : undefined;
 
   return accountPage(env, request, '/account/', {
     fill: (rewriter) => {
       let filled = fillDiscordProfile(rewriter, discord);
+      if (getInvolved) filled = fillGetInvolved(filled, getInvolved);
       if (person.membership_status !== 'member')
         filled = filled.on('[data-slot="discord-manage"]', {
           element(element) {
@@ -82,8 +111,6 @@ export const onRequestGet: PagesFunction<SignInPagesEnv> = async ({ env, request
           .on('[data-slot="rejoin"]', show())
           .on('[data-slot="membership-inactive"]', show());
       }
-      const text =
-        notice.key && Object.hasOwn(NOTICES, notice.key) ? NOTICES[notice.key]?.() : undefined;
       if (text) filled = filled.on('[data-slot="notice"]', showText(text));
       return filled;
     },
