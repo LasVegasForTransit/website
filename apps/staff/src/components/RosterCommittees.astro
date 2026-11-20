@@ -1,0 +1,54 @@
+---
+import { t } from '@lasvegasfortransit/platform-core/messages';
+import type { Person } from '@lasvegasfortransit/platform-storage/person-service';
+import type { RosterDetails } from '@lasvegasfortransit/platform-storage/roster-details';
+import { can } from '@lasvegasfortransit/platform-core/permissions';
+interface Props {
+  person: Person;
+  name: string;
+  details?: RosterDetails;
+  canAddToAnotherCommittee: boolean;
+  assignLink: string;
+}
+const { person, name, details, canAddToAnotherCommittee, assignLink } = Astro.props;
+const staff = Astro.locals.staff!;
+---
+
+<div class="staff-roster-committee-content">
+  {
+    details?.committees.length ? (
+      <ul class="staff-committee-chips" aria-label={t('staff.people.committeeList', { name })}>
+        {details.committees.map((committee) => (
+          <li>
+            {can(staff.actor, 'committee.view', {
+              committeeId: committee.id,
+            }) ? (
+              <a href={`/committees/${committee.id}/`}>{committee.name}</a>
+            ) : (
+              <span>{committee.name}</span>
+            )}
+          </li>
+        ))}
+      </ul>
+    ) : (
+      <p>{person.membership_status === 'member' ? t('staff.people.unassigned') : '—'}</p>
+    )
+  }
+  {
+    person.membership_status === 'member' && canAddToAnotherCommittee && (
+      <a
+        href={assignLink}
+        class="staff-roster-add-committee"
+        aria-label={
+          details?.committees.length
+            ? t('staff.people.addAnotherFor', { name })
+            : t('staff.people.addFor', { name })
+        }
+      >
+        {details?.committees.length
+          ? t('staff.people.addAnother')
+          : t('staff.people.addToCommittee')}
+      </a>
+    )
+  }
+</div>

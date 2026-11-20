@@ -237,7 +237,7 @@ export async function exerciseMemberSummary(
     });
     const contact = await page.getByRole('region', { name: 'Contact', exact: true }).boundingBox();
     const committees = await page
-      .getByRole('region', { name: 'Committees', exact: true })
+      .getByRole('region', { name: 'Teams and groups', exact: true })
       .boundingBox();
     assert.ok(contact && committees);
     assert.equal(Math.round(contact.x), Math.round(committees.x));
