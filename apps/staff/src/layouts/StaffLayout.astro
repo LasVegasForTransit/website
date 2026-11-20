@@ -158,7 +158,9 @@ const hasSidebar = groups.length > 0;
           {
             hasSidebar && (
               <details class="staff-nav-menu">
-                <summary>{t('staff.navigation.menu')}</summary>
+                <summary>
+                  <span class="sr-only">{t('staff.navigation.menu')}</span>
+                </summary>
                 <nav aria-label={t('staff.navigation.label')}>
                   {groups.map((group, index) => (
                     <div class="staff-nav-group">
