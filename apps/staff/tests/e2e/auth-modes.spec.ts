@@ -115,6 +115,17 @@ function capturedCode(email: { to: string[]; text: string }) {
   assert.deepEqual(email.to, ['admin@example.invalid']);
   return /\b\d{6}\b/.exec(email.text)?.[0] ?? '';
 }
+/** A prepared account's first sign-in shows the welcome screen and its account switcher. */
+async function modelFirstSignIn(
+  flow: string,
+  fixture: Pick<Awaited<ReturnType<typeof startRuntime>>, 'db' | 'admin'>,
+) {
+  if (flow !== 'change') return;
+  await fixture.db
+    .prepare("DELETE FROM sessions WHERE person_id=? AND type='staff'")
+    .bind(fixture.admin.person.id)
+    .run();
+}
 async function seedMemberCookie(
   flow: string,
   fixture: Pick<Awaited<ReturnType<typeof startRuntime>>, 'db' | 'admin'>,
@@ -219,12 +230,7 @@ async function journey(
     ...accessHeaders(mode, fixture.admin.assertion),
   });
   await seedMemberCookie(flow, fixture, context);
-  // A prepared account's first sign-in shows the welcome screen and its account switcher.
-  if (flow === 'change')
-    await fixture.db
-      .prepare("DELETE FROM sessions WHERE person_id=? AND type='staff'")
-      .bind(fixture.admin.person.id)
-      .run();
+  await modelFirstSignIn(flow, fixture);
   const page = await context.newPage();
   const cspErrors: string[] = [];
   page.on('console', (message) => {
