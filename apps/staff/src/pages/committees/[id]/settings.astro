@@ -78,6 +78,17 @@ const token = await issueFormToken(staff.db, staff.actor, `committee:settings:${
       >
       <p class="staff-help">Choosing No keeps existing assignments.</p>
     </div>
+    <div>
+      <label for="taking_applications">Members can ask to join</label><select
+        id="taking_applications"
+        name="taking_applications"
+        ><option value="yes" selected={values.takingApplications}>Yes</option><option
+          value="no"
+          selected={!values.takingApplications}>No</option
+        ></select
+      >
+      <p class="staff-help">Yes lists this committee in members' Get involved section.</p>
+    </div>
     <fieldset>
       <legend class="font-bold text-body-sm">Welcome interests</legend><p class="staff-help mb-2">
         Which new members should this committee’s leads be able to welcome?

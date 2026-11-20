@@ -1,0 +1,18 @@
+---
+// Applications and teams taking members. Filled for members by
+// functions/account/index.ts through platform/get-involved-page.ts.
+import { linkClass } from '../app/styles';
+import { t } from '@lasvegasfortransit/platform-core/messages';
+---
+
+<h2 class="text-title-lg">{t('applications.heading')}</h2>
+<p class="mt-3">{t('applications.intro')}</p>
+<h3 class="mt-6 font-bold">{t('applications.applicationsHeading')}</h3>
+<ul class="mt-2 border-b border-on-surface/15" data-slot="applications-list">
+  <li class="border-t border-on-surface/15 py-3 text-sm">{t('applications.none')}</li>
+</ul>
+<h3 class="mt-8 font-bold">{t('applications.teamsHeading')}</h3>
+<ul class="mt-2 border-b border-on-surface/15" data-slot="teams-list">
+  <li class="border-t border-on-surface/15 py-3 text-sm">{t('applications.noTeams')}</li>
+</ul>
+<a href="/join/" class={`${linkClass} mt-6 inline-block`}>{t('applications.rolesLink')}</a>

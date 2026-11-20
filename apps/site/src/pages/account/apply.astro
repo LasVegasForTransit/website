@@ -1,0 +1,77 @@
+---
+// Apply for a posted role or ask to join a team. Served through
+// functions/account/apply/index.ts, which fills the heading, the hidden target
+// and, after a failed submit, the member's input and the error.
+import AccountFormPage from '../../components/app/AccountFormPage.astro';
+import TextField from '../../components/app/TextField.astro';
+import { hintClass, inputClass, labelClass } from '../../components/app/styles';
+import { NOTE_LIMIT } from '@lasvegasfortransit/platform-storage/committee-applications';
+import { t } from '@lasvegasfortransit/platform-core/messages';
+
+// Times of week as two rows of toggles. Values match AVAILABLE_TIMES.
+const parts = [
+  { key: 'mornings', label: t('applications.mornings') },
+  { key: 'afternoons', label: t('applications.afternoons') },
+  { key: 'evenings', label: t('applications.evenings') },
+];
+const days = [
+  { key: 'weekday', label: t('applications.weekdays') },
+  { key: 'weekend', label: t('applications.weekends') },
+];
+const toggle =
+  'flex min-h-11 min-w-0 cursor-pointer items-center justify-center gap-1.5 border-2 border-outline bg-surface-container px-1.5 text-sm has-[:checked]:border-primary-ink has-[:checked]:bg-primary-container has-[:focus-visible]:outline';
+---
+
+<AccountFormPage
+  title={t('applications.heading')}
+  action="/account/apply/"
+  submitLabel={t('applications.submitRole')}
+>
+  <input type="hidden" name="role" value="" />
+  <input type="hidden" name="team" value="" />
+  <div>
+    <label for="note" class={labelClass} data-slot="note-label"
+      >{t('applications.noteRoleLabel')}</label
+    >
+    <textarea
+      id="note"
+      name="note"
+      rows="5"
+      maxlength={NOTE_LIMIT}
+      class:list={[inputClass, 'max-w-xl']}></textarea>
+  </div>
+  <fieldset aria-describedby="times-hint">
+    <legend class={labelClass}>{t('applications.availabilityLabel')}</legend>
+    <p id="times-hint" class={hintClass}>{t('applications.availabilityHint')}</p>
+    <div class="mt-3 space-y-3">
+      {
+        days.map((day) => (
+          <div
+            role="group"
+            aria-labelledby={`times-${day.key}`}
+            class="grid max-w-xl gap-2 sm:grid-cols-[6rem_1fr] sm:items-center"
+          >
+            <span id={`times-${day.key}`} class="text-sm font-bold">
+              {day.label}
+            </span>
+            <div class="grid grid-cols-3 gap-1.5 sm:gap-2">
+              {parts.map((part) => (
+                <label class={toggle}>
+                  <input
+                    type="checkbox"
+                    name="times"
+                    value={`${day.key}-${part.key}`}
+                    class="size-4 shrink-0 accent-primary"
+                  />
+                  {part.label}
+                </label>
+              ))}
+            </div>
+          </div>
+        ))
+      }
+    </div>
+  </fieldset>
+  <TextField name="availability" label={t('applications.availabilityNoteLabel')} />
+  <p slot="after" class="mt-6">{t('applications.withdrawHint')}</p>
+</AccountFormPage>

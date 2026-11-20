@@ -6,6 +6,7 @@ import Details from './Details.astro';
 import MailingList from './MailingList.astro';
 import Discord from './Discord.astro';
 import Data from './Data.astro';
+import GetInvolved from './GetInvolved.astro';
 
 const accountSections = orderAccountSections([
   {
@@ -14,6 +15,14 @@ const accountSections = orderAccountSections([
     component: Membership,
     navigationLabel: null,
     slot: null,
+    className: '',
+  },
+  {
+    id: 'get-involved',
+    position: 15,
+    component: GetInvolved,
+    navigationLabel: t('applications.nav'),
+    slot: 'get-involved',
     className: '',
   },
   {
