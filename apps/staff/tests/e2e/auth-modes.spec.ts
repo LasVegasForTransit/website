@@ -102,7 +102,7 @@ async function createJourney(
   const denied = await page.goto(`${ORIGIN}/people/`);
   assert.equal(denied?.status(), 403);
   await page.goto(`${ORIGIN}/paper/`);
-  await page.getByRole('button', { name: 'Sign out', exact: true }).click();
+  await clickSignOut(page);
   await page
     .getByRole('heading', {
       name: mode === 'google' ? 'Sign in to the Staff Portal' : 'You’re signed out',
@@ -139,10 +139,16 @@ async function seedMemberCookie(
     ]);
   }
 }
+// Phones keep Sign out at the end of the menu, so open it first as a person would.
+async function clickSignOut(page: Page) {
+  const menu = page.locator('details.staff-nav-menu > summary');
+  if (await menu.isVisible()) await menu.click();
+  await page.getByRole('button', { name: 'Sign out', exact: true }).click();
+}
 async function signOutAndReenter(page: Page, view: { mode: string; theme: string; width: number }) {
   const { mode } = view;
   await page.goto(`${ORIGIN}/people/`);
-  await page.getByRole('button', { name: 'Sign out', exact: true }).click();
+  await clickSignOut(page);
   await page
     .getByRole('heading', {
       name: mode === 'google' ? 'Sign in to the Staff Portal' : 'You’re signed out',

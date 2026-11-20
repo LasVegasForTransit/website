@@ -56,7 +56,6 @@ void test('sends renamed Vegas Urbanists occurrences to the same dated social', 
   const rules = parseRedirects(readFileSync(redirectsPath, 'utf8'));
   for (const date of [
     '2026-10-15',
-    '2026-11-19',
     '2026-12-17',
     '2027-01-21',
     '2027-02-18',

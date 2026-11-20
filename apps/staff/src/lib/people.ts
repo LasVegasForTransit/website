@@ -36,7 +36,7 @@ export function peopleQuery(url: URL): StaffPeopleQuery {
     membershipStatus,
     committeeId: optionalText(url.searchParams.get('committee')?.slice(0, 50)),
     cursor: optionalText(url.searchParams.get('cursor')),
-    limit: 25,
+    limit: 50,
   };
 }
 export function peopleStatus(url: URL): string {
