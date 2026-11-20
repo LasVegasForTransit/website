@@ -4,9 +4,11 @@
 // submitted, read from the signed join-step cookie.
 
 import { t } from '@lasvegasfortransit/platform-core/messages';
+import { discordLinkConfigured } from '@lasvegasfortransit/platform-integrations/discord-link';
 import { featuredWelcomeAction, welcomeAction } from '../../../../platform/member-welcome';
 import {
   builtPage,
+  show,
   finish,
   platformEnv,
   readJoinStep,
@@ -19,9 +21,11 @@ export const onRequestGet: PagesFunction<JoinEnv> = async ({ env, request }) => 
   const page = await builtPage(env, request, '/join/member/welcome/');
   const platform = platformEnv(env);
   const step = platform ? await readJoinStep(platform.LVBT_LINK_SIGNING_SECRET, request) : null;
-  if (!step) return finish(page, 200);
-
   let rewriter = new HTMLRewriter();
+  if (discordLinkConfigured(env))
+    rewriter = rewriter.on('[data-slot="discord-invitation"]', show());
+  if (!step) return finish(rewriter.transform(page), 200);
+
   if (step.givenName) {
     rewriter = rewriter.on(
       '[data-slot="heading"]',

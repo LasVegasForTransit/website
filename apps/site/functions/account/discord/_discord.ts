@@ -11,13 +11,24 @@ import {
   discordLinkOrigin,
   DiscordLinkService,
 } from '@lasvegasfortransit/platform-storage/discord-link';
-import { SESSION_COOKIE, readCookie } from '@lasvegasfortransit/platform-core/web-auth';
+import { SESSION_COOKIE, readCookie, safeNext } from '@lasvegasfortransit/platform-core/web-auth';
 import { requireMember, signInEnv, signInRedirect } from '../../../platform/sign-in';
 import type { SignInPagesEnv } from '../../sign-in/_shared';
 import { finish } from '../../join/_page';
 export const DISCORD_STATE_COOKIE = '__Host-lvbt_discord_state';
 export function discordStateCookie(value: string): string {
   return `${DISCORD_STATE_COOKIE}=${value}; Path=/; Max-Age=${value ? 600 : 0}; HttpOnly; Secure; SameSite=Lax`;
+}
+/** Where a page that sent the member here wants them back after connecting. */
+export const DISCORD_NEXT_COOKIE = '__Host-lvbt_discord_next';
+export function discordNextCookie(value: string): string {
+  return `${DISCORD_NEXT_COOKIE}=${encodeURIComponent(value)}; Path=/; Max-Age=${value ? 900 : 0}; HttpOnly; Secure; SameSite=Lax`;
+}
+/** A same-site page other than the account and Discord pages themselves, or ''. */
+export function discordReturnPath(next: string | null | undefined): string {
+  if (!next) return '';
+  const path = safeNext(next);
+  return path.startsWith('/account/') || path === '/account' ? '' : path;
 }
 export function discordPlatform(env: SignInPagesEnv): DiscordLinkEnv | null {
   const base = signInEnv(env);

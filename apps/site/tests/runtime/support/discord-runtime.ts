@@ -148,6 +148,7 @@ async function simulatorFor(
     pending: scenario.pending,
     nick: null,
   });
+  const commands: object[] = [];
   const provider: V4FetchHandler = async (request) => {
     providerCalls.push(request.url);
     const url = new URL(request.url);
@@ -171,6 +172,16 @@ async function simulatorFor(
       return json(DISCORD_USER);
     }
     assert.equal(request.headers.get('Authorization'), 'Bot fixture-bot-only');
+    // The jobs Worker registers the /link command, then reads it back.
+    if (
+      url.pathname === '/api/v10/applications/555555555555555555/guilds/111111111111111111/commands'
+    ) {
+      if (request.method === 'GET') return json(commands);
+      assert.equal(request.method, 'POST');
+      const command = { id: '777777777777777777', ...((await request.json()) as object) };
+      commands.push(command);
+      return json(command);
+    }
     if (url.pathname === '/api/v10/guilds/111111111111111111/members') {
       assert.equal(request.method, 'GET');
       assert.equal(url.searchParams.get('limit'), '1000');
@@ -207,6 +218,7 @@ async function simulatorFor(
             LVBT_LINK_SIGNING_SECRET: 'fixture-links-only',
             LVBT_DISCORD_APPLICATION_ID: '555555555555555555',
             LVBT_DISCORD_CLIENT_SECRET: 'fixture-client-only',
+            LVBT_DISCORD_GUILD_ID: '111111111111111111',
             LVBT_DEPLOYMENT_ENV: 'preview',
           },
           serviceBindings: { LVBT_DISCORD_JOBS: 'lvbt-discord-jobs-fixture' },

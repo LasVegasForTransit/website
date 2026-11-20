@@ -41,7 +41,7 @@ void test('the callback sends members to an honest connection result without exp
   const loaded = await import('../functions/account/discord/_callback').catch(() => null);
   assert.ok(loaded, 'Discord callback needs distinct server-join outcomes');
   for (const [kind, location] of [
-    ['connected', '/account/#discord'],
+    ['connected', '/account/discord/connected/'],
     ['screening_pending', '/account/discord/?result=screening_pending'],
     ['retry', '/account/discord/?result=retry'],
     ['failed', '/account/discord/?result=failed'],
