@@ -1,6 +1,10 @@
 ---
+// One application. The page shows what they sent, then Accept and Decline.
+// Each decision is its own step (?step=accept or ?step=decline) with only the
+// fields that decision needs, so the two are never on screen together.
 import StaffLayout from '../../../layouts/StaffLayout.astro';
 import Button from '../../../../../site/src/components/app/Button.astro';
+import { buttonClass } from '../../../../../site/src/components/app/styles';
 import { t } from '@lasvegasfortransit/platform-core/messages';
 import { can } from '@lasvegasfortransit/platform-core/permissions';
 import { ulid } from '@lasvegasfortransit/platform-core/ids';
@@ -12,6 +16,8 @@ import {
 } from '@lasvegasfortransit/platform-storage/committee-applications';
 import {
   applicantName,
+  applicationDay,
+  applicationDecision,
   applicationTarget,
   applicationWaiting,
   applicationsVisible,
@@ -24,111 +30,159 @@ const id = Astro.params.id ?? '';
 const application = await new CommitteeApplicationService(staff.db).entry(staff.actor, id);
 if (!application) return messageResponse("You don't have access to this", 404);
 const waiting = application.state === 'submitted';
-// Administrators can place an application on any team; a lead accepts onto the team applied to.
-const committees = waiting
-  ? (await listCommittees(staff.db, staff.actor)).filter((committee) =>
-      can(staff.actor, 'committee.assign', { committeeId: committee.id }),
-    )
-  : [];
-const acceptToken = waiting
-  ? await issueFormToken(staff.db, staff.actor, `application:accept:${id}`)
+const requested = Astro.url.searchParams.get('step');
+const step = waiting && (requested === 'accept' || requested === 'decline') ? requested : null;
+const name = applicantName(application);
+const here = `/applications/${id}/`;
+// A lead accepts onto the team applied to. An administrator can choose any
+// team, and must choose one when the role has none yet.
+const teams =
+  step === 'accept'
+    ? (await listCommittees(staff.db, staff.actor)).filter((committee) =>
+        can(staff.actor, 'committee.assign', { committeeId: committee.id }),
+      )
+    : [];
+const appliedTeam = teams.find((committee) => committee.id === application.committeeId);
+const chooseTeam = step === 'accept' && (staff.actor.staffAdmin || !appliedTeam);
+const token = step
+  ? await issueFormToken(staff.db, staff.actor, `application:${step}:${id}`)
   : null;
-const declineToken = waiting
-  ? await issueFormToken(staff.db, staff.actor, `application:decline:${id}`)
-  : null;
-const day = (iso: string | null) =>
-  iso
-    ? new Date(iso).toLocaleDateString('en-US', {
-        month: 'short',
-        day: 'numeric',
-        timeZone: 'America/Los_Angeles',
-      })
-    : '';
 ---
 
-<StaffLayout title={applicantName(application)}>
-  <a slot="breadcrumb" href="/applications/" class="staff-back">{t('staff.applications.back')}</a>
+<StaffLayout title={name}>
+  <a slot="breadcrumb" href={step ? here : '/applications/'} class="staff-back">
+    {step ? t('staff.applications.backToApplication') : t('staff.applications.back')}
+  </a>
   <div slot="heading-meta" class="staff-member-meta">
     <span>{applicationTarget(application)}</span>
-    <span>{day(application.submittedAt)}</span>
+    {
+      !waiting && (
+        <span>
+          {t('staff.applications.sent', { date: applicationDay(application.submittedAt) })}
+        </span>
+      )
+    }
     {
       waiting && (
         <span class={application.overdue ? 'text-primary-ink' : undefined}>
           {applicationWaiting(application)}
+          {application.overdue && ` · ${t('staff.applications.overdue')}`}
         </span>
       )
     }
   </div>
   <div class="space-y-8">
-    <section class="staff-welcome-start" aria-labelledby="why-heading">
-      <h2 id="why-heading">{t('staff.applications.why')}</h2>
+    <section class="staff-application-answers" aria-labelledby="why-heading">
+      <h2 id="why-heading" class="font-bold">{t('staff.applications.why')}</h2>
       <p>{application.note || t('staff.applications.noNote')}</p>
       {
         application.availability && (
           <>
-            <h2 class="mt-6">{t('staff.applications.availability')}</h2>
+            <h2 class="font-bold">{t('staff.applications.availability')}</h2>
             <p>{application.availability}</p>
           </>
+        )
+      }
+      {
+        waiting && !step && (
+          <div class="staff-application-actions">
+            <a href={`${here}?step=accept`} class={buttonClass.primary}>
+              {t('staff.applications.accept')}
+            </a>
+            <a href={`${here}?step=decline`} class={buttonClass.secondary}>
+              {t('staff.applications.decline')}
+            </a>
+          </div>
         )
       }
     </section>
     {
       !waiting && (
         <section class="staff-empty">
-          <h2>
-            {application.state === 'accepted'
-              ? t('staff.applications.accepted', { name: application.decidedByName ?? '' })
-              : application.state === 'declined'
-                ? t('staff.applications.declined', { name: application.decidedByName ?? '' })
-                : t('staff.applications.changed')}
-          </h2>
+          <h2>{applicationDecision(application)}</h2>
           {application.decisionNote && <p>“{application.decisionNote}”</p>}
         </section>
       )
     }
     {
-      waiting && (
-        <div class="staff-welcome-workspace">
-          <section class="staff-welcome-record" aria-labelledby="accept-heading">
-            <h2 id="accept-heading">{t('staff.applications.acceptHeading')}</h2>
-            <p>{t('staff.applications.acceptBody')}</p>
-            <form method="post" action={`/applications/${id}/accept/`} class="staff-form">
-              <input type="hidden" name="token" value={acceptToken} />
-              <input type="hidden" name="operation_id" value={ulid()} />
+      step === 'accept' && (
+        <section class="staff-application-step" aria-labelledby="step-heading">
+          <h2 id="step-heading">{t('staff.applications.acceptHeading', { name })}</h2>
+          <p>
+            {chooseTeam
+              ? t('staff.applications.acceptChooseTeam')
+              : t('staff.applications.acceptOnto', { committee: appliedTeam?.name ?? '' })}
+          </p>
+          <form method="post" action={`${here}accept/`} class="staff-form">
+            <input type="hidden" name="token" value={token} />
+            <input type="hidden" name="operation_id" value={ulid()} />
+            {chooseTeam ? (
               <div>
                 <label for="committee_id">{t('staff.applications.committeeLabel')}</label>
                 <select id="committee_id" name="committee_id" required>
-                  {committees.map((committee) => (
-                    <option
-                      value={committee.id}
-                      selected={committee.id === application.committeeId}
-                    >
+                  {!appliedTeam && <option value="">{t('staff.applications.chooseTeam')}</option>}
+                  {teams.map((committee) => (
+                    <option value={committee.id} selected={committee.id === appliedTeam?.id}>
                       {committee.name}
                     </option>
                   ))}
                 </select>
               </div>
-              <div>
-                <label for="welcome">{t('staff.applications.welcomeLabel')}</label>
-                <textarea id="welcome" name="note" rows="3" maxlength={NOTE_LIMIT} />
-              </div>
-              <Button>{t('staff.applications.accept')}</Button>
-            </form>
-          </section>
-          <section class="staff-welcome-record" aria-labelledby="decline-heading">
-            <h2 id="decline-heading">{t('staff.applications.declineHeading')}</h2>
-            <p>{t('staff.applications.declineBody')}</p>
-            <form method="post" action={`/applications/${id}/decline/`} class="staff-form">
-              <input type="hidden" name="token" value={declineToken} />
-              <input type="hidden" name="operation_id" value={ulid()} />
-              <div>
-                <label for="decline-note">{t('staff.applications.declineLabel')}</label>
-                <textarea id="decline-note" name="note" rows="3" maxlength={NOTE_LIMIT} />
-              </div>
-              <Button variant="secondary">{t('staff.applications.decline')}</Button>
-            </form>
-          </section>
-        </div>
+            ) : (
+              <input type="hidden" name="committee_id" value={appliedTeam?.id} />
+            )}
+            <div>
+              <label for="welcome">{t('staff.applications.welcomeLabel')}</label>
+              <textarea
+                id="welcome"
+                name="note"
+                rows="3"
+                maxlength={NOTE_LIMIT}
+                aria-describedby="welcome-hint"
+              />
+              <p id="welcome-hint" class="staff-help">
+                {t('staff.applications.welcomeHint')}
+              </p>
+            </div>
+            <div class="staff-application-actions">
+              <Button>{t('staff.applications.confirmAccept')}</Button>
+              <a href={here} class={buttonClass.secondary}>
+                {t('staff.applications.cancel')}
+              </a>
+            </div>
+          </form>
+        </section>
+      )
+    }
+    {
+      step === 'decline' && (
+        <section class="staff-application-step" aria-labelledby="step-heading">
+          <h2 id="step-heading">{t('staff.applications.declineHeading', { name })}</h2>
+          <p>{t('staff.applications.declineBody')}</p>
+          <form method="post" action={`${here}decline/`} class="staff-form">
+            <input type="hidden" name="token" value={token} />
+            <input type="hidden" name="operation_id" value={ulid()} />
+            <div>
+              <label for="decline-note">{t('staff.applications.declineLabel')}</label>
+              <textarea
+                id="decline-note"
+                name="note"
+                rows="3"
+                maxlength={NOTE_LIMIT}
+                aria-describedby="decline-hint"
+              />
+              <p id="decline-hint" class="staff-help">
+                {t('staff.applications.declineHint')}
+              </p>
+            </div>
+            <div class="staff-application-actions">
+              <Button variant="destructive">{t('staff.applications.confirmDecline')}</Button>
+              <a href={here} class={buttonClass.secondary}>
+                {t('staff.applications.cancel')}
+              </a>
+            </div>
+          </form>
+        </section>
       )
     }
   </div>

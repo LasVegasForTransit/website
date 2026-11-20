@@ -33,10 +33,37 @@ export function applicationTarget(application: StaffApplication): string {
     : t('staff.applications.askToJoin', { committee });
 }
 
+/** "Waiting 3 days", or "Sent today". */
 export function applicationWaiting(application: StaffApplication): string {
-  if (application.waitingDays === 0) return t('staff.applications.waitingToday');
-  const waiting = t('staff.applications.waitingDays', { count: application.waitingDays });
-  return application.overdue ? `${waiting} · ${t('staff.applications.overdue')}` : waiting;
+  return application.waitingDays === 0
+    ? t('staff.applications.waitingToday')
+    : t('staff.applications.waitingFor', { count: application.waitingDays });
+}
+
+/** "Nov 20" in Las Vegas time. */
+export function applicationDay(iso: string | null): string {
+  return iso
+    ? new Date(iso).toLocaleDateString('en-US', {
+        month: 'short',
+        day: 'numeric',
+        timeZone: 'America/Los_Angeles',
+      })
+    : '';
+}
+
+/** "Accepted by Leon Staff · Nov 20", for a decided application. */
+export function applicationDecision(application: StaffApplication): string {
+  const by = application.decidedByName ?? '';
+  const decision =
+    application.state === 'accepted'
+      ? t('staff.applications.accepted', { name: by })
+      : application.state === 'declined'
+        ? t('staff.applications.declined', { name: by })
+        : t('staff.applications.withdrawn');
+  return t('staff.applications.decidedOn', {
+    decision,
+    date: applicationDay(application.decidedAt),
+  });
 }
 
 export async function applicationAction(

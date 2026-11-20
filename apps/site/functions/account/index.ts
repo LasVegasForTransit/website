@@ -13,8 +13,11 @@ import { discordLinkConfigured } from '@lasvegasfortransit/platform-integrations
 import { DiscordLinkService } from '@lasvegasfortransit/platform-storage/discord-link';
 import { SESSION_COOKIE, readCookie } from '@lasvegasfortransit/platform-core/web-auth';
 import { fillDiscordProfile } from '../../platform/discord-profile-page';
-import { fillGetInvolved, replyDue } from '../../platform/get-involved-page';
-import { CommitteeApplicationService } from '@lasvegasfortransit/platform-storage/committee-applications';
+import { applicationTitle, fillGetInvolved, replyDue } from '../../platform/get-involved-page';
+import {
+  CommitteeApplicationService,
+  type MemberApplication,
+} from '@lasvegasfortransit/platform-storage/committee-applications';
 
 // The notices a redirect can leave for this page, by the id in the cookie.
 const NOTICES: Record<string, () => string> = {
@@ -35,8 +38,27 @@ const NOTICES: Record<string, () => string> = {
   application_closed: () => t('applications.closed'),
   application_not_member: () => t('applications.notMember'),
   application_unknown: () => t('applications.unknown'),
-  application_withdrawn: () => t('applications.withdrawnNotice'),
 };
+
+/** The notice text. "Sent" and "Withdrawn" name the application they are about. */
+function noticeText(key: string | null, applications: MemberApplication[]): string | undefined {
+  if (key === 'application_sent') {
+    // The application just sent is the newest waiting one.
+    const latest = applications.find((entry) => entry.state === 'submitted');
+    return t('applications.sent', {
+      due: latest ? formatDate(replyDue(latest.submittedAt)) : '',
+    });
+  }
+  if (key === 'application_withdrawn') {
+    const latest = applications
+      .filter((entry) => entry.state === 'withdrawn')
+      .sort((a, b) => (b.decidedAt ?? '').localeCompare(a.decidedAt ?? ''))[0];
+    return latest
+      ? t('applications.withdrawnNotice', { title: applicationTitle(latest) })
+      : undefined;
+  }
+  return key && Object.hasOwn(NOTICES, key) ? NOTICES[key]?.() : undefined;
+}
 
 export const onRequestGet: PagesFunction<SignInPagesEnv> = async ({ env, request }) => {
   const signed = await signedIn(env, request);
@@ -60,17 +82,7 @@ export const onRequestGet: PagesFunction<SignInPagesEnv> = async ({ env, request
           onCommittees: await applications.memberCommittees(signed.person.id),
         }
       : null;
-  // "Sent" names the reply date of the application just sent, the newest waiting one.
-  const latestWaiting = getInvolved?.applications.find((entry) => entry.state === 'submitted');
-
-  const text =
-    notice.key === 'application_sent'
-      ? t('applications.sent', {
-          due: latestWaiting ? formatDate(replyDue(latestWaiting.submittedAt)) : '',
-        })
-      : notice.key && Object.hasOwn(NOTICES, notice.key)
-        ? NOTICES[notice.key]?.()
-        : undefined;
+  const text = noticeText(notice.key, getInvolved?.applications ?? []);
 
   return accountPage(env, request, '/account/', {
     fill: (rewriter) => {
