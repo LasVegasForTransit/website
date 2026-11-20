@@ -171,6 +171,18 @@ const EXPORT_PRIVACY = {
     'Sign-in secrets and sessions, staff identifiers, duplicate candidates and merge archives are excluded.',
 };
 
+const READING_THIS_FILE = {
+  details: 'Your current profile and membership. Empty values mean the detail is not recorded.',
+  consent:
+    'Each agreement and withdrawal is separate evidence. An observed withdrawal time is when LVBT learned the status, which may be later than the choice.',
+  newsletter:
+    'Provider observations describe delivery status. A provider account creation date alone does not establish consent.',
+  activity:
+    'Your recorded activity, including corrections, recognized donation amounts and currencies, event participation, volunteer shifts, contact methods and role changes. Member responses include recognized participation and transport choices. Private staff notes, raw source payloads and references to other people are omitted.',
+  task_checkins:
+    'Your Notion account mapping, Discord check-in choices, submitted responses and delivery outcomes. History can include currently merged profiles; historical preferences do not enable delivery. Shared task snapshots, routing references and interaction tokens are omitted.',
+};
+
 /** Read one person's snapshot, then authorize and receipt its export in one guarded write. */
 export async function collectPersonExport(
   db: Db,
@@ -207,18 +219,7 @@ export async function collectPersonExport(
       date: formatFullDate(now),
     }),
     exported_at: at,
-    reading_this_file: {
-      details: 'Your current profile and membership. Empty values mean the detail is not recorded.',
-      consent:
-        'Each agreement and withdrawal is separate evidence. An observed withdrawal time is when LVBT learned the status, which may be later than the choice.',
-      newsletter:
-        'Provider observations describe delivery status. A provider account creation date alone does not establish consent.',
-      activity:
-        'Your recorded activity, including corrections, recognized donation amounts and currencies, event participation, volunteer shifts, contact methods and role changes. Member responses include recognized participation and transport choices. Private staff notes, raw source payloads and references to other people are omitted.',
-      task_checkins:
-        'Your Notion account mapping, Discord check-in choices, submitted responses and delivery outcomes. History can include currently merged profiles; historical preferences do not enable delivery. Shared task snapshots, routing references and interaction tokens are omitted.',
-      privacy: EXPORT_PRIVACY[authority.kind],
-    },
+    reading_this_file: { ...READING_THIS_FILE, privacy: EXPORT_PRIVACY[authority.kind] },
     details: { ...person, member_since: memberSince(events) },
     where_each_detail_came_from: (snapshot.where_each_detail_came_from ?? []).map(safeSources),
     consent_records: (snapshot.consent_records ?? []).map(safeSources),
