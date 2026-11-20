@@ -108,7 +108,12 @@ const blocked = Boolean(!discord || discord.disconnecting || discord.identity_co
           : 'Your Discord accounts need review. Contact hello@lasvegasfortransit.org for help.'}
       </p>
     ) : (
-      <p>If you’re joining the LVBT team, connect your Discord account and join the LVBT server.</p>
+      <>
+        <p>
+          If you’re joining the LVBT team, connect your Discord account and join the LVBT server.
+        </p>
+        <p>Your member and committee roles and channels are added for you automatically.</p>
+      </>
     )
   }
   {

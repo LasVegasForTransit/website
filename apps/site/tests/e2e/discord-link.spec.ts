@@ -8,6 +8,7 @@ import {
   ORIGIN,
   DISCORD_ROLES,
 } from '../runtime/support/discord-runtime';
+import { confirmConnection } from '../runtime/support/discord-confirmation';
 const fixture = await discordRuntime();
 const browser = await chromium
   .launch({
@@ -78,8 +79,13 @@ try {
     .getByRole('link', { name: 'Discord', exact: true })
     .click();
   await page.getByRole('heading', { name: 'Discord', exact: true }).waitFor();
-  await page.getByRole('link', { name: 'Join LVBT on Discord', exact: true }).click();
-  await page.getByRole('heading', { name: 'Join LVBT on Discord', exact: true }).waitFor();
+  await page.getByRole('link', { name: 'Connect Discord', exact: true }).click();
+  await page.getByRole('heading', { name: 'Connect your Discord account', exact: true }).waitFor();
+  // Members learn before connecting that roles and channels follow their LVBT record.
+  await page.getByRole('heading', { name: 'What happens when you connect', exact: true }).waitFor();
+  await page
+    .getByText('You get the Member role, which opens member channels.', { exact: true })
+    .waitFor();
   await page.screenshot({
     path: join(shots, 'connect-mobile.png'),
     fullPage: true,
@@ -107,10 +113,10 @@ try {
   assert.match(unsupportedSiteOrigin.headers.get('Content-Type') ?? '', /text\/html/);
   const unavailablePage = await unsupportedSiteOrigin.text();
   assert.match(unavailablePage, /<html[^>]*lang="en"/);
-  assert.match(unavailablePage, /<title>Join LVBT on Discord/);
+  assert.match(unavailablePage, /<title>Connect Discord/);
   assert.match(unavailablePage, /This connection is not available at this address\./);
-  assert.doesNotMatch(unavailablePage, /Continue to Discord/);
-  await page.getByRole('button', { name: 'Continue to Discord', exact: true }).click();
+  assert.doesNotMatch(unavailablePage, /<button[^>]*>\s*<span[^>]*>Connect Discord/);
+  await page.getByRole('button', { name: 'Connect Discord', exact: true }).click();
   await page.getByRole('link', { name: 'Cancel authorization', exact: true }).click();
   await page.waitForURL(`${ORIGIN}/account/#discord`);
   await page.getByText("Discord wasn't connected.", { exact: true }).waitFor({ timeout: 5000 });
@@ -123,9 +129,9 @@ try {
     )?.n,
     0,
   );
-  await page.getByRole('link', { name: 'Join LVBT on Discord', exact: true }).click();
+  await page.getByRole('link', { name: 'Connect Discord', exact: true }).click();
   fixture.scenario.failOAuth = true;
-  await page.getByRole('button', { name: 'Continue to Discord', exact: true }).click();
+  await page.getByRole('button', { name: 'Connect Discord', exact: true }).click();
   await page.getByRole('link', { name: 'Authorize fixture account', exact: true }).click();
   await page
     .getByText("We couldn't reach Discord. Try again in a few minutes.", { exact: true })
@@ -143,9 +149,11 @@ try {
   const callsBeforeSuccess = fixture.providerCalls.length;
   await page.getByRole('button', { name: 'Try again', exact: true }).click();
   await page.getByRole('link', { name: 'Authorize fixture account', exact: true }).click();
-  await page.waitForURL(`${ORIGIN}/account/#discord`);
+  await page.waitForURL(`${ORIGIN}/account/discord/connected/`);
+  await confirmConnection(page, join(shots, 'connected-mobile.png'));
+  await page.goto(`${ORIGIN}/account/`);
   await page.getByText(`Connected as ${DISCORD_USER.username}.`, { exact: true }).waitFor();
-  await page.getByText('You’re in LVBT’s Discord.', { exact: true }).waitFor();
+  await page.getByRole('link', { name: 'See your Discord access', exact: true }).waitFor();
   assert.equal(fixture.authorization.authorizations.length, 3);
   const authorized = fixture.authorization.authorizations[2];
   assert.ok(authorized);
@@ -190,7 +198,7 @@ try {
   fixture.scenario.pending = true;
   fixture.scenario.roles = new Set([DISCORD_ROLES.unmanaged]);
   await page.goto(`${ORIGIN}/account/discord/`);
-  await page.getByRole('button', { name: 'Continue to Discord', exact: true }).click();
+  await page.getByRole('button', { name: 'Connect Discord', exact: true }).click();
   await page.getByRole('link', { name: 'Authorize fixture account', exact: true }).click();
   await page.waitForURL(`${ORIGIN}/account/discord/?result=screening_pending`);
   await page.getByRole('link', { name: 'Open Discord', exact: true }).waitFor();
@@ -206,7 +214,7 @@ try {
   fixture.scenario.pending = false;
   fixture.scenario.failJoin = true;
   await page.goto(`${ORIGIN}/account/discord/`);
-  await page.getByRole('button', { name: 'Continue to Discord', exact: true }).click();
+  await page.getByRole('button', { name: 'Connect Discord', exact: true }).click();
   await page.getByRole('link', { name: 'Authorize fixture account', exact: true }).click();
   await page.waitForURL(`${ORIGIN}/account/discord/?result=retry`);
   await page.getByRole('button', { name: 'Try again', exact: true }).waitFor();
@@ -216,7 +224,7 @@ try {
   fixture.scenario.failJoin = false;
   await page.getByRole('button', { name: 'Try again', exact: true }).click();
   await page.getByRole('link', { name: 'Authorize fixture account', exact: true }).click();
-  await page.waitForURL(`${ORIGIN}/account/#discord`);
+  await page.waitForURL(`${ORIGIN}/account/discord/connected/`);
   assert.equal((await fixture.jobs.scheduled({ cron: '* * * * *' })).outcome, 'ok');
   assert.deepEqual([...fixture.scenario.roles].sort(), Object.values(DISCORD_ROLES).sort());
   await page.goto(`${ORIGIN}/account/`);
@@ -269,7 +277,7 @@ try {
   await page.getByText('Disconnecting Discord.', { exact: true }).waitFor();
   assert.equal((await fixture.jobs.scheduled({ cron: '* * * * *' })).outcome, 'ok');
   await page.reload();
-  await page.getByRole('link', { name: 'Join LVBT on Discord', exact: true }).waitFor();
+  await page.getByRole('link', { name: 'Connect Discord', exact: true }).waitFor();
   assert.deepEqual([...fixture.scenario.roles], [DISCORD_ROLES.unmanaged]);
   assert.equal(fixture.scenario.joined, true, 'disconnect must not kick the member');
   assert.equal(
@@ -291,8 +299,8 @@ try {
     linkMethod: 'self_linked',
   });
   const callsBeforeConflict = fixture.providerCalls.length;
-  await page.getByRole('link', { name: 'Join LVBT on Discord', exact: true }).click();
-  await page.getByRole('button', { name: 'Continue to Discord', exact: true }).click();
+  await page.getByRole('link', { name: 'Connect Discord', exact: true }).click();
+  await page.getByRole('button', { name: 'Connect Discord', exact: true }).click();
   await page.getByRole('link', { name: 'Authorize fixture account', exact: true }).click();
   await page
     .getByText('That Discord account is already connected to a different LVBT account.', {
@@ -333,7 +341,7 @@ try {
     .run();
   await page.getByRole('button', { name: 'Try again', exact: true }).click();
   await page.getByRole('link', { name: 'Authorize fixture account', exact: true }).click();
-  await page.waitForURL(`${ORIGIN}/account/#discord`);
+  await page.waitForURL(`${ORIGIN}/account/discord/connected/`);
   await fixture.people.withdrawConsent(fixture.person.id, {
     scope: 'newsletter',
     source: 'member',
@@ -347,10 +355,7 @@ try {
   );
   const former = await page.goto(`${ORIGIN}/account/discord/`);
   assert.equal(former?.status(), 409);
-  assert.equal(
-    await page.getByRole('button', { name: 'Continue to Discord', exact: true }).count(),
-    0,
-  );
+  assert.equal(await page.getByRole('button', { name: 'Connect Discord', exact: true }).count(), 0);
   await page.goto(`${ORIGIN}/account/`);
   await page.getByRole('link', { name: 'Disconnect Discord', exact: true }).click();
   await page.getByRole('button', { name: 'Disconnect Discord', exact: true }).click();

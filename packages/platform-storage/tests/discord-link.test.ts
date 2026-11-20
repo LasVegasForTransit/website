@@ -328,3 +328,54 @@ void test('linking replaces outstanding person and committee work with the new a
     ],
   );
 });
+void test('the confirmation summary shows the verified account and only the access LVBT syncs', async () => {
+  const { db, person, service, session } = await fixture();
+  assert.equal(await service.connection(session.token), null, 'nothing to confirm before linking');
+  const started = await service.begin({ sessionToken: session.token, origin });
+  assert.ok(started);
+  const claim = await service.claim({ state: started.state, sessionToken: session.token, origin });
+  assert.ok(claim);
+  assert.equal(await service.complete({ claim, identity }), 'linked');
+  const now = new Date().toISOString();
+  await db
+    .prepare(
+      "UPDATE committees SET discord_role_id=CASE id WHEN 'events' THEN '333333333333333333' WHEN 'advocacy' THEN '444444444444444444' END, discord_lead_role_id=CASE id WHEN 'advocacy' THEN '555555555555555555' END WHERE id IN ('events','advocacy')",
+    )
+    .run();
+  const assign = (id: string, committee: string, role: string, ended: string | null = null) =>
+    db
+      .prepare(
+        'INSERT INTO committee_assignments(id,person_id,committee_id,role,started_at,ended_at,end_reason,assigned_by,ended_by,updated_at) VALUES (?,?,?,?,?,?,?,?,?,?)',
+      )
+      .bind(
+        id,
+        person.id,
+        committee,
+        role,
+        now,
+        ended,
+        ended ? 'stepped_back' : null,
+        person.id,
+        ended ? person.id : null,
+        now,
+      )
+      .run();
+  await assign('a1', 'events', 'member');
+  await assign('a2', 'advocacy', 'lead');
+  // A committee without a Discord role and an ended assignment change nothing in Discord.
+  await assign('a3', 'membership', 'member');
+  await assign('a4', 'civic-tech', 'member', now);
+  await db
+    .prepare("UPDATE committees SET discord_role_id='666666666666666666' WHERE id='civic-tech'")
+    .run();
+  assert.deepEqual(await service.connection(session.token), {
+    username: identity.username,
+    displayName: identity.displayName,
+    memberRole: true,
+    committees: [
+      { name: 'Advocacy Team', lead: true },
+      { name: 'Events Committee', lead: false },
+    ],
+  });
+  assert.equal(await service.connection('not-a-session'), null);
+});

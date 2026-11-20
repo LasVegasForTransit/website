@@ -3,7 +3,13 @@ import { t } from '@lasvegasfortransit/platform-core/messages';
 import { accountPage } from '../_account';
 import { show, showText, SECURITY_HEADERS } from '../../join/_page';
 import { setValue, formOf, field, type SignInPagesEnv } from '../../sign-in/_shared';
-import { discordMember, discordReply, discordStateCookie } from './_discord';
+import {
+  discordMember,
+  discordNextCookie,
+  discordReply,
+  discordReturnPath,
+  discordStateCookie,
+} from './_discord';
 
 async function unavailablePage(
   env: SignInPagesEnv,
@@ -42,10 +48,16 @@ export const onRequestGet: PagesFunction<SignInPagesEnv> = async ({ env, request
   if (!csrf) return unavailablePage(env, request, discordReply(t('discord.unavailable'), 503));
   const response = await accountPage(env, request, '/account/discord/', {
     fill: (rewriter) => {
-      let filled = rewriter.on('input[name="token"]', setValue(csrf));
+      let filled = rewriter
+        .on('input[name="token"]', setValue(csrf))
+        .on(
+          'input[name="next"]',
+          setValue(discordReturnPath(new URL(request.url).searchParams.get('next'))),
+        );
       if (signed.profile.linked)
         filled = filled
           .on('[data-slot="discord-disconnect"]', show())
+          .on('[data-slot="discord-view-access"]', show())
           .on(
             '[data-slot="discord-status"]',
             showText(
@@ -109,10 +121,11 @@ export const onRequestPost: PagesFunction<SignInPagesEnv> = async ({ env, reques
     origin,
     csrfToken: field(form, 'token'),
   });
-  return started
-    ? discordReply(null, 303, {
-        Location: started.url,
-        'Set-Cookie': discordStateCookie(started.state),
-      })
-    : unavailablePage(env, request, discordReply(t('discord.formExpired'), 409));
+  if (!started) return unavailablePage(env, request, discordReply(t('discord.formExpired'), 409));
+  const response = discordReply(null, 303, {
+    Location: started.url,
+    'Set-Cookie': discordStateCookie(started.state),
+  });
+  response.headers.append('Set-Cookie', discordNextCookie(discordReturnPath(field(form, 'next'))));
+  return response;
 };

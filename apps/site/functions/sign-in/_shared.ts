@@ -14,6 +14,8 @@ export interface SignInPagesEnv extends JoinEnv {
   LVBT_GOOGLE_PREVIEW_ORIGINS?: string;
   LVBT_DISCORD_APPLICATION_ID?: string;
   LVBT_DISCORD_CLIENT_SECRET?: string;
+  /** The server a connected member is sent to open. */
+  LVBT_DISCORD_GUILD_ID?: string;
   LVBT_DEPLOYMENT_ENV?: string;
   LVBT_DISCORD_JOBS?: Pick<Fetcher, 'fetch'>;
 }

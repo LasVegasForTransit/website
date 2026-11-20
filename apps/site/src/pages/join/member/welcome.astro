@@ -7,17 +7,12 @@ import BaseLayout from '../../../layouts/BaseLayout.astro';
 import Confirmation from '../../../components/app/Confirmation.astro';
 import { t } from '@lasvegasfortransit/platform-core/messages';
 import { site } from '../../../lib/site';
+import { buttonClass } from '../../../components/app/styles';
 
+// Discord gets its own card, shown by the function only when connecting is
+// configured: connecting (not a bare invite) is what gives a member their
+// roles and channels.
 const nextSteps = [
-  ...(site.social.discord
-    ? [
-        {
-          href: site.social.discord,
-          label: t('welcome.nextDiscord'),
-          description: t('welcome.discordDescription'),
-        },
-      ]
-    : []),
   ...(site.social.instagram
     ? [{ href: site.social.instagram, label: t('welcome.nextInstagram') }]
     : []),
@@ -48,6 +43,15 @@ const nextSteps = [
             class="press mt-5 inline-flex bg-on-surface px-5 py-3 font-bold text-surface no-underline hover:bg-primary hover:text-on-primary focus-visible:bg-primary focus-visible:text-on-primary"
           >
             Explore ways to get involved
+          </a>
+        </div>
+        <div class="mt-6 border-2 border-on-surface p-6" data-slot="discord-invitation" hidden>
+          <p class="text-sm font-bold text-primary-ink">{t('welcome.discordLabel')}</p>
+          <h2 class="text-title-lg mt-2">{t('welcome.discordHeading')}</h2>
+          <p class="mt-2 leading-relaxed">{t('welcome.discordBody')}</p>
+          <p class="mt-2 text-on-surface-variant">{t('welcome.discordSteps')}</p>
+          <a href="/account/discord/" class:list={[buttonClass.secondary, 'mt-5']}>
+            {t('welcome.discordAction')}
           </a>
         </div>
       </Confirmation>

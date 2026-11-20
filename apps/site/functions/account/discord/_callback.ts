@@ -42,7 +42,8 @@ function connectionDestination(
     destination.searchParams.set('discord', result.kind);
     return destination.href;
   }
-  return ['connected', 'cancelled'].includes(result.kind)
+  if (result.kind === 'connected') return '/account/discord/connected/';
+  return result.kind === 'cancelled'
     ? '/account/#discord'
     : `/account/discord/?result=${result.kind}`;
 }
@@ -55,7 +56,8 @@ function connectionCookies(
   if (stateMatches && result.kind !== 'failed')
     response.headers.append('Set-Cookie', discordStateCookie(''));
   if (scoped) response.headers.append('Set-Cookie', staffDiscordCookie(STAFF_DISCORD_SESSION, ''));
-  if (result.kind === 'connected')
+  // The confirmation page says what happened, so only a staff hand-off needs the account notice.
+  if (result.kind === 'connected' && scoped)
     response.headers.append('Set-Cookie', noticeCookie('discord_connected'));
   if (result.kind === 'cancelled')
     response.headers.append('Set-Cookie', noticeCookie('discord_cancelled'));

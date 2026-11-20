@@ -563,12 +563,27 @@ LVBT's server. Access and refresh tokens are never stored or logged. Register bo
 `https://preview.lasvegasfortransit.org/account/discord/callback` before testing the respective
 deployment. Production secrets are configured by a maintainer through bootstrap.
 
-Discord joining is optional. The member invitation explains the community benefits; role assignment
-runs automatically without member-facing setup instructions. If the server requires its rules to be
-accepted, the page asks the member to open Discord and accept them. A failed join offers another
-attempt and preserves the verified account link. Joining sends no role list to Discord; the jobs
-runner applies the member role and every current committee role afterward, leaving unrelated roles
-alone. A linked account alone does not prove those roles were granted.
+Discord joining is optional, but the website encourages it everywhere a new member lands. The join
+confirmation page, the welcome email, the account page and the server's `/link` command all send
+members to `/account/discord/`. That page says, before anyone connects, that LVBT adds the Member
+role and committee channels automatically and keeps them current. A bare server invite joins the
+server without roles, so none of these places link to one. Role assignment needs no member-facing
+setup. After a successful connection the member lands on `/account/discord/connected/`. It shows the
+verified Discord account, the access LVBT keeps in sync (the Member role and each committee with a
+configured Discord role), and a button that opens the server. The page does not repeat Discord's own
+server onboarding; it says Discord walks first-time visitors through it. The server button uses the
+site's `LVBT_DISCORD_GUILD_ID` and falls back to `PUBLIC_LVBT_DISCORD` when that is unset.
+
+Other pages can send a member to connect and get them back afterwards with
+`/account/discord/?next=<same-site path>`. The path is kept for 15 minutes in a host-only cookie,
+and the confirmation page then offers **Return to where you left off**. Paths outside this site and
+account pages are ignored.
+
+If the server requires its rules to be accepted, the page asks the member to open Discord and accept
+them. A failed join offers another attempt and preserves the verified account link. Joining sends no
+role list to Discord; the jobs runner applies the member role and every current committee role
+afterward, leaving unrelated roles alone. A linked account alone does not prove those roles were
+granted.
 
 The bot token, server ID and public key remain separate setup for role synchronization and commands.
 The `/link` interaction endpoint and guild-only registration command now exist in the site code.
