@@ -23,15 +23,9 @@
 /events/2026-07-11-lvbt-s-first-walk-audit-tbd   /events/2026-07-11-lvbt-s-first-walk-audit/  301
 /events/2026-07-11-lvbt-s-first-walk-audit-tbd/  /events/2026-07-11-lvbt-s-first-walk-audit/  301
 
-# The November 2026 social moved from the 19th to the 12th in the calendar.
-/events/2026-11-19-vegas-urbanist-social-club   /events/2026-11-12-vegas-urbanist-social-club/  301
-/events/2026-11-19-vegas-urbanist-social-club/  /events/2026-11-12-vegas-urbanist-social-club/  301
-
 # Vegas Urbanists became Vegas Urbanist Social Club; keep each dated occurrence.
 /events/2026-10-15-vegas-urbanists  /events/2026-10-15-vegas-urbanist-social-club/  301
 /events/2026-10-15-vegas-urbanists/  /events/2026-10-15-vegas-urbanist-social-club/  301
-/events/2026-11-19-vegas-urbanists  /events/2026-11-12-vegas-urbanist-social-club/  301
-/events/2026-11-19-vegas-urbanists/  /events/2026-11-12-vegas-urbanist-social-club/  301
 /events/2026-12-17-vegas-urbanists  /events/2026-12-17-vegas-urbanist-social-club/  301
 /events/2026-12-17-vegas-urbanists/  /events/2026-12-17-vegas-urbanist-social-club/  301
 /events/2027-01-21-vegas-urbanists  /events/2027-01-21-vegas-urbanist-social-club/  301
