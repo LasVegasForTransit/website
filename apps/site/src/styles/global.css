@@ -547,12 +547,13 @@ html:active-view-transition-type(from-qr)::view-transition-old(root) {
     text-underline-offset: 0.18em;
   }
 
-  /* Auto-grow `<textarea>` with its content. Chrome 123+ ships this; older
-     engines ignore the property and fall back to manual resize. No textareas
-     exist on the site yet — this is forward-looking infrastructure so any
-     future contact form / project intake field gets the behavior for free. */
+  /* Text boxes grow with their content (Chrome 123+; other engines fall back
+     to manual resize). `field-sizing: content` ignores `rows`, so the minimum
+     height keeps an empty box several lines tall instead of one. */
   textarea {
     field-sizing: content;
+    min-height: 7rem;
+    min-height: calc(4lh + 1.5rem);
   }
 
   h1,

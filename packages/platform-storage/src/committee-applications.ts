@@ -10,6 +10,19 @@ import { CommitteeService } from './committees';
 export type ApplicationState = 'submitted' | 'accepted' | 'declined' | 'withdrawn';
 export const NOTE_LIMIT = 2000;
 export const AVAILABILITY_LIMIT = 500;
+/** Times of week a member can say they're usually free, in display order. */
+export const AVAILABLE_TIMES = [
+  'weekday-mornings',
+  'weekday-afternoons',
+  'weekday-evenings',
+  'weekend-mornings',
+  'weekend-afternoons',
+  'weekend-evenings',
+] as const;
+export type AvailableTime = (typeof AVAILABLE_TIMES)[number];
+export function isAvailableTime(value: string): value is AvailableTime {
+  return (AVAILABLE_TIMES as readonly string[]).includes(value);
+}
 const ROLE_SLUG = /^[a-z0-9-]{1,100}$/;
 /** Days an application can wait before the queue marks it overdue. */
 export const RESPONSE_DAYS = 3;
@@ -41,6 +54,7 @@ export interface StaffApplication extends MemberApplication {
   givenName: string | null;
   familyName: string | null;
   note: string;
+  availableTimes: AvailableTime[];
   availability: string;
   waitingDays: number;
   overdue: boolean;
@@ -60,6 +74,7 @@ interface ApplicationRow {
   role_slug: string | null;
   role_title: string | null;
   note: string;
+  available_times: string;
   availability: string;
   state: ApplicationState;
   submitted_at: string;
@@ -72,7 +87,7 @@ interface ApplicationRow {
 }
 
 const SELECT = `SELECT a.id,a.person_id,a.committee_id,c.name AS committee_name,a.role_slug,a.role_title,a.note,
-  a.availability,a.state,a.submitted_at,a.decided_at,a.decision_note,p.given_name,p.family_name,
+  a.available_times,a.availability,a.state,a.submitted_at,a.decided_at,a.decision_note,p.given_name,p.family_name,
   d.given_name AS decided_by_given,d.family_name AS decided_by_family
   FROM committee_applications a
   JOIN people p ON p.id=a.person_id AND p.deleted_at IS NULL
@@ -104,6 +119,7 @@ function staffView(row: ApplicationRow, now: Date): StaffApplication {
     givenName: row.given_name,
     familyName: row.family_name,
     note: row.note,
+    availableTimes: row.available_times.split(' ').filter(isAvailableTime),
     availability: row.availability,
     waitingDays,
     overdue: row.state === 'submitted' && waitingDays >= RESPONSE_DAYS,
@@ -194,17 +210,20 @@ export class CommitteeApplicationService {
   async submit(
     personId: string,
     target: ApplicationTarget,
-    input: { note: string; availability: string },
+    input: { note: string; availableTimes?: readonly string[]; availability: string },
     now = new Date(),
   ): Promise<SubmitOutcome> {
     const note = input.note.trim();
     const availability = input.availability.trim();
+    const chosen = input.availableTimes ?? [];
     if (
       !validTarget(target) ||
       note.length > NOTE_LIMIT ||
-      availability.length > AVAILABILITY_LIMIT
+      availability.length > AVAILABILITY_LIMIT ||
+      !chosen.every(isAvailableTime)
     )
       return { kind: 'invalid' };
+    const availableTimes = AVAILABLE_TIMES.filter((time) => chosen.includes(time)).join(' ');
     const member = await this.db
       .prepare(
         `SELECT 1 AS ok FROM people WHERE id=? AND deleted_at IS NULL AND membership_status='member'`,
@@ -220,8 +239,8 @@ export class CommitteeApplicationService {
     // One open application per role, or per committee when no role was posted.
     const result = await this.db
       .prepare(
-        `INSERT INTO committee_applications(id,person_id,committee_id,role_slug,role_title,note,availability,state,submitted_at,updated_at)
-         SELECT ?,?,?,?,?,?,?,'submitted',?,? WHERE NOT EXISTS (
+        `INSERT INTO committee_applications(id,person_id,committee_id,role_slug,role_title,note,available_times,availability,state,submitted_at,updated_at)
+         SELECT ?,?,?,?,?,?,?,?,'submitted',?,? WHERE NOT EXISTS (
            SELECT 1 FROM committee_applications WHERE person_id=? AND state='submitted' AND
              ((? IS NOT NULL AND role_slug=?) OR (? IS NULL AND role_slug IS NULL AND committee_id=?)))`,
       )
@@ -232,6 +251,7 @@ export class CommitteeApplicationService {
         target.roleSlug,
         target.roleTitle,
         note,
+        availableTimes,
         availability,
         stamp,
         stamp,

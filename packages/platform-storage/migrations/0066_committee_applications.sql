@@ -12,6 +12,9 @@ CREATE TABLE committee_applications (
   role_slug TEXT CHECK(role_slug IS NULL OR (length(role_slug) BETWEEN 1 AND 100 AND role_slug NOT GLOB '*[^a-z0-9-]*')),
   role_title TEXT CHECK(role_title IS NULL OR length(role_title) BETWEEN 1 AND 200),
   note TEXT NOT NULL DEFAULT '' CHECK(length(note)<=2000),
+  -- Space-separated times of week from a fixed list (weekday-mornings ... weekend-evenings).
+  available_times TEXT NOT NULL DEFAULT '' CHECK(length(available_times)<=200),
+  -- Anything about their schedule the times above don't cover.
   availability TEXT NOT NULL DEFAULT '' CHECK(length(availability)<=500),
   state TEXT NOT NULL CHECK(state IN ('submitted','accepted','declined','withdrawn')),
   submitted_at TEXT NOT NULL,
