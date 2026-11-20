@@ -188,7 +188,7 @@ void test('administrator review shows workspace identity gaps and recovery outco
     f.db.raw
       .prepare("UPDATE task_checkin_operations SET state='held',reason='unconfirmed_effect'")
       .run();
-    const review = await f.api.taskCheckinReview(f.db, f.actor, 'source');
+    const review = await f.api.taskCheckinReview(f.db, f.actor, 'source', { now });
     assert.equal(review.unmapped.length, 1);
     assert.equal(review.unmapped[0]?.notion_user_id, 'unmapped-guest');
     assert.equal(review.operations.items[0]?.state, 'held');
@@ -202,11 +202,12 @@ void test('administrator review shows workspace identity gaps and recovery outco
       SELECT ?,source_id,task_id,person_id,task_revision,consent_revision,policy_revision,kind,payload_json,'failed',next_attempt_at,created_at,updated_at FROM task_checkin_operations WHERE id='operation'`,
         )
         .run(`retry-${String(i).padStart(2, '0')}`);
-    const first = await f.api.taskCheckinReview(f.db, f.actor, 'source');
+    const first = await f.api.taskCheckinReview(f.db, f.actor, 'source', { now });
     assert.equal(first.operations.items.length, 50);
     assert.ok(first.operations.nextCursor);
     const second = await f.api.taskCheckinReview(f.db, f.actor, 'source', {
       cursor: first.operations.nextCursor,
+      now,
     });
     assert.equal(second.operations.items.length, 2);
     assert.equal(second.operations.nextCursor, null);
