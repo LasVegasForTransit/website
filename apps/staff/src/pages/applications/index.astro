@@ -4,6 +4,8 @@ import { t } from '@lasvegasfortransit/platform-core/messages';
 import { CommitteeApplicationService } from '@lasvegasfortransit/platform-storage/committee-applications';
 import {
   applicantName,
+  applicationDay,
+  applicationDecision,
   applicationTarget,
   applicationWaiting,
   applicationsVisible,
@@ -14,76 +16,78 @@ if (!staff || !applicationsVisible(staff))
   return messageResponse("You don't have access to this", 403);
 const service = new CommitteeApplicationService(staff.db);
 const showDecided = Astro.url.searchParams.get('view') === 'decided';
-const items = showDecided ? await service.decided(staff.actor) : await service.queue(staff.actor);
-const day = (iso: string | null) =>
-  iso
-    ? new Date(iso).toLocaleDateString('en-US', {
-        month: 'short',
-        day: 'numeric',
-        timeZone: 'America/Los_Angeles',
-      })
-    : '';
+const waiting = await service.queue(staff.actor);
+const items = showDecided ? await service.decided(staff.actor) : waiting;
 ---
 
 <StaffLayout
-  title={showDecided ? t('staff.applications.recent') : t('staff.applications.title')}
-  description={showDecided ? undefined : t('staff.applications.description')}
+  title={t('staff.applications.title')}
+  description={t('staff.applications.description')}
 >
+  <nav class="staff-access-views" aria-label={t('staff.applications.views')}>
+    <a href="/applications/" aria-current={showDecided ? undefined : 'page'}>
+      {t('staff.applications.waitingTab', { count: waiting.length })}
+    </a>
+    <a href="/applications/?view=decided" aria-current={showDecided ? 'page' : undefined}>
+      {t('staff.applications.decidedTab')}
+    </a>
+  </nav>
   {
-    showDecided && (
-      <a slot="breadcrumb" href="/applications/" class="staff-back">
-        {t('staff.applications.back')}
-      </a>
+    items.length ? (
+      <table class="staff-roster staff-applications">
+        <caption class="sr-only">
+          {showDecided ? t('staff.applications.decidedTab') : t('staff.applications.title')}
+        </caption>
+        <thead>
+          <tr>
+            <th scope="col">{t('staff.applications.applicant')}</th>
+            <th scope="col">{t('staff.applications.applyingFor')}</th>
+            <th scope="col">
+              {showDecided
+                ? t('staff.applications.decisionColumn')
+                : t('staff.applications.waitingColumn')}
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          {items.map((application) => (
+            <tr>
+              <th scope="row" class="staff-roster-person">
+                <a href={`/applications/${application.id}/`}>{applicantName(application)}</a>
+              </th>
+              <td>{applicationTarget(application)}</td>
+              <td class="staff-roster-status">
+                {showDecided ? (
+                  applicationDecision(application)
+                ) : (
+                  <>
+                    {applicationWaiting(application)}
+                    {application.overdue && (
+                      <span class="staff-welcome-overdue">{t('staff.applications.overdue')}</span>
+                    )}
+                    <span class="staff-applications-sent">
+                      {t('staff.applications.sent', {
+                        date: applicationDay(application.submittedAt),
+                      })}
+                    </span>
+                  </>
+                )}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    ) : (
+      <div class="staff-empty">
+        <h2>
+          {showDecided ? t('staff.applications.emptyDecided') : t('staff.applications.empty')}
+        </h2>
+        <p>
+          {showDecided
+            ? t('staff.applications.emptyDecidedBody')
+            : t('staff.applications.emptyBody')}
+        </p>
+      </div>
     )
   }
-  <div class="space-y-4">
-    {
-      items.length ? (
-        <ul class="staff-welcome-list" aria-label={t('staff.applications.title')}>
-          {items.map((application) => (
-            <li class="staff-welcome-row">
-              <div>
-                <a href={`/applications/${application.id}/`} class="staff-person-link">
-                  {applicantName(application)}
-                </a>
-                <p class="mt-1 text-body-sm text-on-surface-variant">
-                  {applicationTarget(application)}
-                </p>
-                <p class="mt-1 text-body-sm">
-                  {showDecided ? (
-                    <>
-                      {application.state === 'accepted'
-                        ? t('staff.applications.accepted', {
-                            name: application.decidedByName ?? '',
-                          })
-                        : t('staff.applications.declined', {
-                            name: application.decidedByName ?? '',
-                          })}{' '}
-                      · {day(application.decidedAt)}
-                    </>
-                  ) : application.overdue ? (
-                    <span class="staff-welcome-overdue">{applicationWaiting(application)}</span>
-                  ) : (
-                    applicationWaiting(application)
-                  )}
-                </p>
-              </div>
-            </li>
-          ))}
-        </ul>
-      ) : (
-        <div class="staff-empty">
-          <h2>{t('staff.applications.empty')}</h2>
-          <p>{t('staff.applications.emptyBody')}</p>
-        </div>
-      )
-    }
-    {
-      !showDecided && (
-        <p>
-          <a href="/applications/?view=decided">{t('staff.applications.recent')}</a>
-        </p>
-      )
-    }
-  </div>
 </StaffLayout>

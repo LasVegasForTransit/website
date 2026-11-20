@@ -1,7 +1,7 @@
 /// <reference types="@cloudflare/workers-types" />
 
 // Fills the account page's Get involved section: the member's applications
-// (with Withdraw for waiting ones) and the teams taking new members. Values
+// (one row each, with Withdraw for waiting ones) and the teams taking new members. Values
 // from the database are escaped; class lists match src/components/app/styles.ts.
 
 import { formatDate, t } from '@lasvegasfortransit/platform-core/messages';
@@ -13,11 +13,13 @@ import {
 } from '@lasvegasfortransit/platform-storage/committee-applications';
 import { show } from '../functions/join/_page';
 
-const ROW = 'border-t border-on-surface/15 py-4';
-const META = 'mt-1 text-sm';
+const ROW =
+  'grid gap-x-6 gap-y-2 border-t border-on-surface/15 py-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center';
+const META = 'text-sm';
 const LINK = 'font-bold underline underline-offset-4 decoration-2 decoration-primary';
-const SECONDARY =
-  'press inline-flex items-center justify-center gap-1.5 px-6 py-3 font-bold border-2 bg-transparent text-on-surface border-on-surface hover:bg-surface-container';
+// Withdraw reads like the row's other actions ("Ask to join"): a text button
+// with the full 44px target, not a boxed button competing with the row.
+const TEXT_BUTTON = `${LINK} inline-flex min-h-11 items-center text-sm cursor-pointer`;
 
 export interface GetInvolved {
   applications: MemberApplication[];
@@ -34,32 +36,47 @@ function day(iso: string): string {
   return formatDate(new Date(iso));
 }
 
-function applicationRow(application: MemberApplication): string {
-  const title = escapeHtml(application.roleTitle ?? application.committeeName ?? '');
+function applicationStatus(application: MemberApplication): string {
   const decided = application.decidedAt ?? application.submittedAt;
-  const status =
-    application.state === 'submitted'
-      ? t('applications.submitted', {
-          date: day(application.submittedAt),
-          due: formatDate(replyDue(application.submittedAt)),
-        })
-      : application.state === 'accepted'
-        ? t('applications.accepted', {
-            date: day(decided),
-            committee: application.committeeName ?? '',
-          })
-        : application.state === 'declined'
-          ? t('applications.declined', { date: day(decided) })
-          : t('applications.withdrawn', { date: day(decided) });
+  switch (application.state) {
+    case 'submitted': {
+      const dates = {
+        date: day(application.submittedAt),
+        due: formatDate(replyDue(application.submittedAt)),
+      };
+      return application.roleSlug
+        ? t('applications.submitted', dates)
+        : t('applications.pendingTeam', dates);
+    }
+    case 'accepted':
+      return t('applications.accepted', { date: day(decided) });
+    case 'declined':
+      return t('applications.declined', { date: day(decided) });
+    default:
+      return t('applications.withdrawn', { date: day(decided) });
+  }
+}
+
+/** What the application is for: the role, or the team for an ask to join. */
+export function applicationTitle(application: MemberApplication): string {
+  return application.roleTitle ?? application.committeeName ?? '';
+}
+
+function applicationRow(application: MemberApplication): string {
+  const title = escapeHtml(applicationTitle(application));
+  const team =
+    application.roleTitle && application.committeeName
+      ? ` <span class="font-normal">· ${escapeHtml(application.committeeName)}</span>`
+      : '';
   const note =
     application.decisionNote && application.state !== 'withdrawn'
-      ? `<p class="${META}">“${escapeHtml(application.decisionNote)}”</p>`
+      ? `<p class="${META} mt-1">“${escapeHtml(application.decisionNote)}”</p>`
       : '';
   const withdraw =
     application.state === 'submitted'
-      ? `<form method="post" action="/account/applications/withdraw/" class="mt-3"><input type="hidden" name="id" value="${escapeHtml(application.id)}" /><button type="submit" class="${SECONDARY}">${escapeHtml(t('applications.withdraw'))}</button></form>`
+      ? `<form method="post" action="/account/applications/withdraw/"><input type="hidden" name="id" value="${escapeHtml(application.id)}" /><button type="submit" class="${TEXT_BUTTON}">${escapeHtml(t('applications.withdraw'))}<span class="sr-only"> ${escapeHtml(t('applications.withdrawFor', { title: applicationTitle(application) }))}</span></button></form>`
       : '';
-  return `<li class="${ROW}"><p class="font-bold">${title}</p><p class="${META}">${escapeHtml(status)}</p>${note}${withdraw}</li>`;
+  return `<li class="${ROW}"><div class="min-w-0"><p class="font-bold">${title}${team}</p><p class="${META}">${escapeHtml(applicationStatus(application))}</p>${note}</div>${withdraw}</li>`;
 }
 
 function teamRow(committee: OpenCommittee, data: GetInvolved): string {
@@ -71,18 +88,18 @@ function teamRow(committee: OpenCommittee, data: GetInvolved): string {
       application.committeeId === committee.id,
   );
   const action = data.onCommittees.has(committee.id)
-    ? `<p class="${META} font-bold">${escapeHtml(t('applications.onTeam'))}</p>`
+    ? `<p class="${META}">${escapeHtml(t('applications.onTeam'))}</p>`
     : pending
-      ? `<p class="${META} font-bold">${escapeHtml(
+      ? `<p class="${META}">${escapeHtml(
           t('applications.pendingTeam', {
             date: day(pending.submittedAt),
             due: formatDate(replyDue(pending.submittedAt)),
           }),
         )}</p>`
-      : `<a href="/account/apply/?team=${encodeURIComponent(committee.id)}" class="${LINK} mt-2 inline-block">${escapeHtml(t('applications.askToJoin'))}</a>`;
-  return `<li class="${ROW}"><p class="font-bold">${escapeHtml(committee.name)}</p>${
+      : `<a href="/account/apply/?team=${encodeURIComponent(committee.id)}" class="${LINK} text-sm">${escapeHtml(t('applications.askToJoin'))}</a>`;
+  return `<li class="${ROW}"><div class="min-w-0"><p class="font-bold">${escapeHtml(committee.name)}</p>${
     details ? `<p class="${META}">${escapeHtml(details)}</p>` : ''
-  }${action}</li>`;
+  }</div>${action}</li>`;
 }
 
 function fillList(html: string): HTMLRewriterElementContentHandlers {
