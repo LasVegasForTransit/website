@@ -1,0 +1,89 @@
+---
+import StaffLayout from '../../layouts/StaffLayout.astro';
+import { t } from '@lasvegasfortransit/platform-core/messages';
+import { CommitteeApplicationService } from '@lasvegasfortransit/platform-storage/committee-applications';
+import {
+  applicantName,
+  applicationTarget,
+  applicationWaiting,
+  applicationsVisible,
+} from '../../lib/applications';
+import { messageResponse } from '../../lib/responses';
+const staff = Astro.locals.staff;
+if (!staff || !applicationsVisible(staff))
+  return messageResponse("You don't have access to this", 403);
+const service = new CommitteeApplicationService(staff.db);
+const showDecided = Astro.url.searchParams.get('view') === 'decided';
+const items = showDecided ? await service.decided(staff.actor) : await service.queue(staff.actor);
+const day = (iso: string | null) =>
+  iso
+    ? new Date(iso).toLocaleDateString('en-US', {
+        month: 'short',
+        day: 'numeric',
+        timeZone: 'America/Los_Angeles',
+      })
+    : '';
+---
+
+<StaffLayout
+  title={showDecided ? t('staff.applications.recent') : t('staff.applications.title')}
+  description={showDecided ? undefined : t('staff.applications.description')}
+>
+  {
+    showDecided && (
+      <a slot="breadcrumb" href="/applications/" class="staff-back">
+        {t('staff.applications.back')}
+      </a>
+    )
+  }
+  <div class="space-y-4">
+    {
+      items.length ? (
+        <ul class="staff-welcome-list" aria-label={t('staff.applications.title')}>
+          {items.map((application) => (
+            <li class="staff-welcome-row">
+              <div>
+                <a href={`/applications/${application.id}/`} class="staff-person-link">
+                  {applicantName(application)}
+                </a>
+                <p class="mt-1 text-body-sm text-on-surface-variant">
+                  {applicationTarget(application)}
+                </p>
+                <p class="mt-1 text-body-sm">
+                  {showDecided ? (
+                    <>
+                      {application.state === 'accepted'
+                        ? t('staff.applications.accepted', {
+                            name: application.decidedByName ?? '',
+                          })
+                        : t('staff.applications.declined', {
+                            name: application.decidedByName ?? '',
+                          })}{' '}
+                      · {day(application.decidedAt)}
+                    </>
+                  ) : application.overdue ? (
+                    <span class="staff-welcome-overdue">{applicationWaiting(application)}</span>
+                  ) : (
+                    applicationWaiting(application)
+                  )}
+                </p>
+              </div>
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <div class="staff-empty">
+          <h2>{t('staff.applications.empty')}</h2>
+          <p>{t('staff.applications.emptyBody')}</p>
+        </div>
+      )
+    }
+    {
+      !showDecided && (
+        <p>
+          <a href="/applications/?view=decided">{t('staff.applications.recent')}</a>
+        </p>
+      )
+    }
+  </div>
+</StaffLayout>

@@ -1,6 +1,7 @@
 import { staffCommon } from './staff-common';
 import { staffPeople } from './staff-people';
 import { staffWelcome } from './staff-welcome';
+import { staffApplications } from './staff-applications';
 import { staffPaper } from './staff-paper';
 import { staffAccess } from './staff-access';
 import { staffImports } from './staff-imports';
@@ -24,6 +25,7 @@ export const en = {
     ...staffAccess,
     ...staffPaper,
     ...staffWelcome,
+    ...staffApplications,
     ...staffImports,
     ...staffAdministrators,
     ...staffParticipation,
@@ -321,6 +323,42 @@ export const en = {
   data: {
     summary:
       'Everything LVBT holds about {name}, downloaded {date}. Your details come first, then where each came from, what you agreed to and when, your connected accounts and your recorded activity.',
+  },
+  applications: {
+    nav: 'Get involved',
+    heading: 'Get involved',
+    intro: 'Leads reply within 3 days.',
+    applicationsHeading: 'Your applications',
+    none: "You haven't applied for anything yet.",
+    teamsHeading: 'Teams taking new members',
+    noTeams: 'No teams are taking new members right now.',
+    rolesLink: 'See open roles',
+    askToJoin: 'Ask to join',
+    onTeam: "You're on this team.",
+    pendingTeam: 'Asked {date} · reply by {due}',
+    submitted: 'Sent {date} · reply by {due}',
+    accepted: 'Accepted {date} · {committee}',
+    declined: 'Not this time · {date}',
+    withdrawn: 'Withdrawn {date}',
+    withdraw: 'Withdraw',
+    applyRoleTitle: 'Apply: {role}',
+    askTitle: 'Ask to join {committee}',
+    applyingAs: 'Applying as {name}. Only the team lead and LVBT administrators see this.',
+    applyingAsUnnamed: 'Only the team lead and LVBT administrators see this.',
+    noteRoleLabel: 'What draws you to this role? (optional)',
+    noteTeamLabel: 'Anything the lead should know? (optional)',
+    availabilityLabel: 'When are you usually free? (optional)',
+    submitRole: 'Send application',
+    submitTeam: 'Ask to join',
+    withdrawHint: 'You can withdraw it any time from your account.',
+    sent: 'Sent. The team lead will reply by {due}.',
+    duplicate: 'You already have an application waiting for this one.',
+    alreadyOnTeam: "You're already on this team.",
+    closed: "This isn't taking applications right now.",
+    notMember: 'Applying is for current LVBT members. Rejoin LVBT from your account to apply.',
+    withdrawnNotice: 'Application withdrawn.',
+    tooLong: 'Keep your note under 2,000 characters and your availability under 500.',
+    unknown: "We couldn't find that role or team. Pick one from the list.",
   },
   header: {
     signIn: 'Sign in',

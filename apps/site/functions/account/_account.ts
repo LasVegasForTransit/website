@@ -80,7 +80,21 @@ export async function accountPage(
 }
 
 export type NoticeId =
-  'name' | 'phone' | 'email' | 'area' | 'area_placed' | 'left' | 'rejoined' | 'unavailable';
+  | 'name'
+  | 'phone'
+  | 'email'
+  | 'area'
+  | 'area_placed'
+  | 'left'
+  | 'rejoined'
+  | 'unavailable'
+  | 'application_sent'
+  | 'application_duplicate'
+  | 'application_on_team'
+  | 'application_closed'
+  | 'application_not_member'
+  | 'application_unknown'
+  | 'application_withdrawn';
 
 /** Back to the account page, which shows the notice once (functions/account/index.ts). */
 export function backToAccount(notice: NoticeId): Response {
