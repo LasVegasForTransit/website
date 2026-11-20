@@ -1,3 +1,8 @@
+-- Members can ask to join a committee only after an administrator opens it to applications.
+-- This is separate from accepting_members, which controls whether staff can assign people at all.
+ALTER TABLE committees ADD COLUMN taking_applications INTEGER NOT NULL DEFAULT 0
+  CHECK (taking_applications IN (0,1));
+
 -- A member asks to join a committee, either through a posted role or the committee itself.
 -- A lead or administrator accepts (which creates an ordinary committee assignment) or declines.
 CREATE TABLE committee_applications (

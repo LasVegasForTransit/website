@@ -3,6 +3,8 @@ export interface CommitteeSettingsInput {
   description: string;
   timeCommitment: string;
   acceptingMembers: boolean;
+  /** Left out, the committee keeps its current setting. */
+  takingApplications?: boolean;
   workspaceGroupEmail: string | null;
   discordRoleId: string | null;
   discordLeadRoleId?: string | null;
@@ -22,6 +24,7 @@ function hasSettingsShape(input: CommitteeSettingsInput): boolean {
       input.discordLeadRoleId === null ||
       typeof input.discordLeadRoleId === 'string') &&
     typeof input.acceptingMembers === 'boolean' &&
+    (input.takingApplications === undefined || typeof input.takingApplications === 'boolean') &&
     Array.isArray(input.interestIds)
   );
 }

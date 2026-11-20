@@ -29,6 +29,9 @@ function settingsInput(form: FormData, current: CommitteeSettings): CommitteeSet
     description: field(form, 'description', 2001),
     timeCommitment: field(form, 'time_commitment', 151),
     acceptingMembers: field(form, 'accepting_members', 10) === 'yes',
+    takingApplications: form.has('taking_applications')
+      ? field(form, 'taking_applications', 10) === 'yes'
+      : current.takingApplications,
     workspaceGroupEmail: field(form, 'workspace_group_email', 255) || null,
     discordRoleId: form.has('discord_role_id')
       ? field(form, 'discord_role_id', 21) || null
