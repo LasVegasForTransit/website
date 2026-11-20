@@ -143,7 +143,7 @@ export class CommitteeApplicationService {
   async openCommittees(): Promise<OpenCommittee[]> {
     const rows = await this.db
       .prepare(
-        `SELECT id,name,description,time_commitment FROM committees WHERE accepting_members=1 ORDER BY name`,
+        `SELECT id,name,description,time_commitment FROM committees WHERE taking_applications=1 AND accepting_members=1 ORDER BY name`,
       )
       .all<{ id: string; name: string; description: string; time_commitment: string }>();
     return rows.results.map((row) => ({
@@ -163,6 +163,32 @@ export class CommitteeApplicationService {
       .bind(personId)
       .all<{ committee_id: string }>();
     return new Set(rows.results.map((row) => row.committee_id));
+  }
+
+  /**
+   * Check the target committee. A posted role is its own opening, so it does not need the
+   * committee to be taking applications, and a role naming a committee that does not exist is
+   * left for the decider to place. Asking to join needs a committee open to applications.
+   */
+  private async placeTarget(
+    personId: string,
+    target: ApplicationTarget,
+  ): Promise<ApplicationTarget | 'unavailable' | 'already_on_committee'> {
+    if (target.committeeId === null) return target;
+    const committee = await this.db
+      .prepare(`SELECT accepting_members,taking_applications FROM committees WHERE id=?`)
+      .bind(target.committeeId)
+      .first<{ accepting_members: number; taking_applications: number }>();
+    if (target.roleSlug !== null) return committee ? target : { ...target, committeeId: null };
+    if (committee?.accepting_members !== 1 || committee.taking_applications !== 1)
+      return 'unavailable';
+    const current = await this.db
+      .prepare(
+        `SELECT 1 AS ok FROM committee_assignments WHERE person_id=? AND committee_id=? AND ended_at IS NULL`,
+      )
+      .bind(personId, target.committeeId)
+      .first<{ ok: number }>();
+    return current ? 'already_on_committee' : target;
   }
 
   async submit(
@@ -186,26 +212,9 @@ export class CommitteeApplicationService {
       .bind(personId)
       .first<{ ok: number }>();
     if (!member) return { kind: 'unavailable' };
-    if (target.committeeId !== null) {
-      const committee = await this.db
-        .prepare(`SELECT accepting_members FROM committees WHERE id=?`)
-        .bind(target.committeeId)
-        .first<{ accepting_members: number }>();
-      // A posted role is its own opening, so it does not need the committee to be taking
-      // members. A role naming a committee that does not exist is left for the decider to place.
-      if (!committee && target.roleSlug !== null) target = { ...target, committeeId: null };
-      else if (!committee || (target.roleSlug === null && committee.accepting_members !== 1))
-        return { kind: 'unavailable' };
-      if (target.roleSlug === null) {
-        const current = await this.db
-          .prepare(
-            `SELECT 1 AS ok FROM committee_assignments WHERE person_id=? AND committee_id=? AND ended_at IS NULL`,
-          )
-          .bind(personId, target.committeeId)
-          .first<{ ok: number }>();
-        if (current) return { kind: 'already_on_committee' };
-      }
-    }
+    const placed = await this.placeTarget(personId, target);
+    if (typeof placed === 'string') return { kind: placed };
+    target = placed;
     const id = ulid();
     const stamp = now.toISOString();
     // One open application per role, or per committee when no role was posted.
