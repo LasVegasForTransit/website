@@ -115,20 +115,28 @@ try {
       `the member roster should not scroll horizontally at ${width}px`,
     );
     if (width === 320) {
+      // Phones fold each member's teams into an expandable row.
+      await page
+        .locator('.staff-row-toggle-input')
+        .evaluateAll((toggles) =>
+          toggles.forEach((toggle) => ((toggle as HTMLInputElement).checked = true)),
+        );
       const committeeActions = await page
         .locator('.staff-roster-add-committee')
         .evaluateAll((links) =>
-          links.map((link) => {
-            const range = document.createRange();
-            range.selectNodeContents(link);
-            const rect = link.getBoundingClientRect();
-            return {
-              text: link.textContent.trim(),
-              lines: range.getClientRects().length,
-              width: Math.round(rect.width),
-              maxWidth: getComputedStyle(link).maxWidth,
-            };
-          }),
+          links
+            .filter((link) => link.getClientRects().length > 0)
+            .map((link) => {
+              const range = document.createRange();
+              range.selectNodeContents(link);
+              const rect = link.getBoundingClientRect();
+              return {
+                text: link.textContent.trim(),
+                lines: range.getClientRects().length,
+                width: Math.round(rect.width),
+                maxWidth: getComputedStyle(link).maxWidth,
+              };
+            }),
         );
       assert.ok(
         committeeActions.length > 0 && committeeActions.every((action) => action.lines === 1),

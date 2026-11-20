@@ -32,7 +32,7 @@ function moreLink(key: string, cursor: string) {
 ---
 
 <StaffLayout title={committee.name} description={committee.description || undefined}>
-  <a slot="breadcrumb" href="/committees/" class="staff-back">← Committees</a>
+  <a slot="breadcrumb" href="/committees/" class="staff-back">← Teams and groups</a>
   {
     can(staff.actor, 'committee.settings') && (
       <a slot="heading-meta" href={`/committees/${committee.id}/settings/`} class="staff-edit-link">

@@ -11,6 +11,12 @@ interface Props {
   printPage?: boolean;
   description?: string;
 }
+interface NavItem {
+  href: string;
+  label: string;
+  /** Path prefixes that mark this item as the current page. */
+  match: string[];
+}
 const { title, printPage = false, description } = Astro.props;
 const staff = Astro.locals.staff;
 const hasEnrollment = staff
@@ -19,7 +25,92 @@ const hasEnrollment = staff
 const consoleVisible = staff && can(staff.actor, 'console.enter');
 const home = staff && !consoleVisible ? '/paper/' : '/';
 const signOutToken = staff ? await issueFormToken(staff.db, staff.actor, 'sign-out') : null;
+// The signed-in staff member, shown in the account card in place of a large
+// Sign out button so staff can confirm whose session this is.
+const viewer = staff
+  ? await staff.db
+      .prepare('SELECT given_name, family_name, email FROM people WHERE id=?')
+      .bind(staff.actor.personId)
+      .first<{ given_name: string | null; family_name: string | null; email: string | null }>()
+  : null;
+const viewerName =
+  [viewer?.given_name, viewer?.family_name].filter(Boolean).join(' ') || viewer?.email || '';
+const viewerInitials =
+  viewerName
+    .split(/[\s@.]+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0]?.toUpperCase())
+    .join('') || '?';
 const memberRecord = /^\/people\/[^/]+(?:\/(?:edit|delete))?\/?$/.test(Astro.url.pathname);
+const path = Astro.url.pathname;
+
+// Every staff destination the signed-in person can open, grouped the way staff
+// think about the work. The same list renders as the desktop sidebar and the
+// phone menu, so the two can never disagree about what exists.
+const item = (href: string, label: string, match: string[] = [href]): NavItem => ({
+  href,
+  label,
+  match,
+});
+const navGroups: { label: string; items: NavItem[] }[] = [];
+if (staff && consoleVisible) {
+  const admin = staff.actor.staffAdmin;
+  const manage = can(staff.actor, 'staff_admin.manage');
+  navGroups.push(
+    {
+      label: t('staff.navigation.groupPeople'),
+      items: [
+        item('/people/', t('staff.navigation.members'), ['/people']),
+        ...(welcomeVisible(staff) ? [item('/welcome/', t('staff.navigation.welcome'))] : []),
+        ...(applicationsVisible(staff)
+          ? [item('/applications/', t('staff.applications.navigation'))]
+          : []),
+        item('/committees/', t('staff.navigation.committees')),
+      ],
+    },
+    {
+      label: t('staff.navigation.groupRecords'),
+      items: [
+        ...(can(staff.actor, 'attendance.record')
+          ? [item('/paper/', t('staff.navigation.paper'))]
+          : []),
+        ...(can(staff.actor, 'review_queue.resolve')
+          ? [item('/review/', t('staff.navigation.duplicates'))]
+          : []),
+        ...(admin
+          ? [
+              item('/imports/', t('staff.navigation.imports')),
+              item('/task-checkins/', t('staff.navigation.taskCheckins')),
+              item('/newsletter/', t('staff.navigation.newsletter')),
+              item('/offboarding/', t('staff.navigation.offboarding')),
+            ]
+          : []),
+      ],
+    },
+    {
+      label: t('staff.navigation.groupAdmin'),
+      items: [
+        ...(manage
+          ? [
+              item('/roles/', t('staff.navigation.roles')),
+              item('/administrators/', t('staff.navigation.administrators')),
+              item('/access/', t('staff.navigation.access')),
+            ]
+          : []),
+        ...(can(staff.actor, 'export.full')
+          ? [item('/export/', t('staff.navigation.export'))]
+          : []),
+      ],
+    },
+  );
+}
+const groups = navGroups.filter((group) => group.items.length);
+const current = (entry: NavItem) =>
+  entry.match.some((prefix) => path === prefix || path.startsWith(prefix.replace(/\/?$/, '/')))
+    ? 'page'
+    : undefined;
+const hasSidebar = groups.length > 0;
 ---
 
 <!doctype html>
@@ -32,9 +123,9 @@ const memberRecord = /^\/people\/[^/]+(?:\/(?:edit|delete))?\/?$/.test(Astro.url
   </head>
   <body class={printPage ? 'staff-print-sheet' : undefined}>
     <a href="#main" class="skip-link">{t('staff.navigation.skip')}</a>
-    <div class="staff-shell">
+    <div class:list={['staff-shell', hasSidebar && 'staff-shell-sidebar']}>
       <header class="staff-header">
-        <div class="container-page staff-header-inner">
+        <div class="staff-header-inner">
           <a href={home} class="staff-identity" aria-label={t('staff.navigation.home')}>
             <picture class="staff-identity-mark">
               <source
@@ -47,77 +138,127 @@ const memberRecord = /^\/people\/[^/]+(?:\/(?:edit|delete))?\/?$/.test(Astro.url
             <span>{t('staff.navigation.staff')}</span>
           </a>
           {
-            consoleVisible && (
+            hasSidebar && (
               <nav aria-label={t('staff.navigation.label')} class="staff-nav">
-                <a
-                  href="/people/"
-                  aria-current={
-                    [
-                      '/people',
-                      '/access',
-                      '/administrators',
-                      '/review',
-                      '/roles',
-                      '/export',
-                      '/newsletter',
-                      '/task-checkins',
-                      '/offboarding',
-                    ].some((path) => Astro.url.pathname.startsWith(path))
-                      ? 'page'
-                      : undefined
-                  }
-                >
-                  {t('staff.navigation.members')}
-                </a>
-                {staff && welcomeVisible(staff) && (
-                  <a
-                    href="/welcome/"
-                    aria-current={Astro.url.pathname.startsWith('/welcome') ? 'page' : undefined}
-                  >
-                    {t('staff.navigation.welcome')}
-                  </a>
-                )}
-                {staff && applicationsVisible(staff) && (
-                  <a
-                    href="/applications/"
-                    aria-current={
-                      Astro.url.pathname.startsWith('/applications') ? 'page' : undefined
-                    }
-                  >
-                    {t('staff.applications.navigation')}
-                  </a>
-                )}
-                <a
-                  href="/committees/"
-                  aria-current={Astro.url.pathname.startsWith('/committees') ? 'page' : undefined}
-                >
-                  {t('staff.navigation.committees')}
-                </a>
+                {groups.map((group, index) => (
+                  <div class="staff-nav-group">
+                    <p class="staff-nav-heading" id={`staff-nav-${index}`}>
+                      {group.label}
+                    </p>
+                    <ul aria-labelledby={`staff-nav-${index}`}>
+                      {group.items.map((entry) => (
+                        <li>
+                          <a href={entry.href} aria-current={current(entry)}>
+                            {entry.label}
+                          </a>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                ))}
               </nav>
             )
           }
           {
-            hasEnrollment && (
-              <a href="/onboarding/" class="staff-secondary-button">
-                Your account
-              </a>
+            hasSidebar && (
+              <details class="staff-nav-menu">
+                <summary>
+                  <span class="sr-only">{t('staff.navigation.menu')}</span>
+                </summary>
+                <nav aria-label={t('staff.navigation.label')}>
+                  {groups.map((group, index) => (
+                    <div class="staff-nav-group">
+                      <p class="staff-nav-heading" id={`staff-menu-${index}`}>
+                        {group.label}
+                      </p>
+                      <ul aria-labelledby={`staff-menu-${index}`}>
+                        {group.items.map((entry) => (
+                          <li>
+                            <a href={entry.href} aria-current={current(entry)}>
+                              {entry.label}
+                            </a>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  ))}
+                  {/* Phones keep the top bar to the menu and initials; the
+                      account details and Sign out live at the end of the menu. */}
+                  <div class="staff-nav-account">
+                    {viewerName && (
+                      <p class="staff-account-who">
+                        <span class="staff-avatar" aria-hidden="true">
+                          {viewerInitials}
+                        </span>
+                        <span class="staff-account-text">
+                          <span class="staff-account-name">{viewerName}</span>
+                          {viewer?.email && viewer.email !== viewerName && (
+                            <span class="staff-account-email">{viewer.email}</span>
+                          )}
+                        </span>
+                      </p>
+                    )}
+                    <div class="staff-account-actions">
+                      {hasEnrollment && (
+                        <a href="/onboarding/" class="staff-account-link">
+                          {t('staff.navigation.account')}
+                        </a>
+                      )}
+                      {signOutToken && (
+                        <form method="post" action="/sign-out/" class="staff-sign-out">
+                          <input type="hidden" name="token" value={signOutToken} />
+                          <button type="submit" class="staff-account-link press">
+                            {t('staff.navigation.signOut')}
+                          </button>
+                        </form>
+                      )}
+                    </div>
+                  </div>
+                </nav>
+              </details>
             )
           }
-          {
-            signOutToken && (
-              <form method="post" action="/sign-out/" class="staff-sign-out">
-                <input type="hidden" name="token" value={signOutToken} />
-                <button type="submit" class="staff-secondary-button press">
-                  {t('staff.navigation.signOut')}
-                </button>
-              </form>
-            )
-          }
+          <div class="staff-account">
+            {
+              viewerName && (
+                <p class="staff-account-who">
+                  <span class="staff-avatar" aria-hidden="true">
+                    {viewerInitials}
+                  </span>
+                  <span class="staff-account-text">
+                    <span class="staff-account-name">{viewerName}</span>
+                    {viewer?.email && viewer.email !== viewerName && (
+                      <span class="staff-account-email">{viewer.email}</span>
+                    )}
+                  </span>
+                </p>
+              )
+            }
+            <div class="staff-account-actions">
+              {
+                hasEnrollment && (
+                  <a href="/onboarding/" class="staff-account-link">
+                    {t('staff.navigation.account')}
+                  </a>
+                )
+              }
+              {
+                signOutToken && (
+                  <form method="post" action="/sign-out/" class="staff-sign-out">
+                    <input type="hidden" name="token" value={signOutToken} />
+                    <button type="submit" class="staff-account-link press">
+                      {t('staff.navigation.signOut')}
+                    </button>
+                  </form>
+                )
+              }
+            </div>
+          </div>
         </div>
       </header>
       <main
         id="main"
-        class:list={['container-page staff-main', memberRecord && 'staff-main-record']}
+        class:list={['staff-main', memberRecord && 'staff-main-record']}
         tabindex="-1"
       >
         <slot name="breadcrumb" />

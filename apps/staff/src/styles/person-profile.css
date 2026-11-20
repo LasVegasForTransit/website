@@ -6,7 +6,7 @@
     gap: 0.25rem 1.5rem;
   }
 
-  .staff-profile-actions a {
+  .staff-profile-actions a:not(.staff-secondary-button) {
     display: inline-flex;
     min-height: 2.75rem;
     align-items: center;
@@ -328,6 +328,84 @@
 
     .staff-person-access .staff-account-row {
       grid-template-columns: minmax(0, 1fr);
+    }
+  }
+}
+
+/* Member record: on wide screens the record reads like a dashboard detail
+   page. Who they are and how to reach them sit in a left summary column;
+   what they're involved in fills the right. */
+@layer components {
+  .staff-profile h2,
+  .staff-profile .staff-role-section-heading h2 {
+    font-size: var(--text-title-md);
+  }
+
+  .staff-profile,
+  .staff-profile-involvement {
+    gap: 1.25rem;
+  }
+
+  .staff-contact-details > div {
+    padding-block: 0.5rem;
+  }
+
+  .staff-contact-details dt {
+    margin-bottom: 0;
+  }
+
+  .staff-contact-details dd {
+    font-size: var(--text-body-sm);
+  }
+
+  .staff-contact-details a {
+    min-height: 2rem;
+  }
+
+  @media (width >= 72rem) {
+    .staff-member-profile {
+      display: grid;
+      grid-template-columns: minmax(16rem, 20rem) minmax(0, 1fr);
+      align-items: start;
+      gap: 1rem 2rem;
+      max-width: none;
+    }
+
+    .staff-member-profile > .staff-profile {
+      display: contents;
+    }
+
+    .staff-member-membership {
+      grid-column: 1;
+      grid-row: 1;
+      margin: 0;
+    }
+
+    .staff-member-profile > .staff-profile > section:first-child {
+      grid-column: 1;
+      grid-row: 2;
+      padding: 0.75rem 1rem 0.25rem;
+      border: 1px solid var(--staff-line-strong);
+      background: var(--color-surface-container);
+    }
+
+    .staff-member-profile .staff-contact-details {
+      grid-template-columns: minmax(0, 1fr);
+      margin-top: 0.25rem;
+    }
+
+    .staff-member-profile .staff-contact-details > div:last-child {
+      border-bottom: 0;
+    }
+
+    .staff-member-profile .staff-profile-involvement {
+      grid-column: 2;
+      grid-row: 1 / span 3;
+    }
+
+    .staff-member-profile > .staff-profile-history,
+    .staff-member-profile > details {
+      grid-column: 1 / -1;
     }
   }
 }

@@ -13,6 +13,7 @@
 import type { Loader } from 'astro/loaders';
 import ICAL from 'ical.js';
 import { site } from './site';
+import { fetchCalendarFeed } from './calendar-feed';
 import { slugify } from './slugify';
 import { verifiedCalendarVenues } from './event-venues';
 
@@ -284,11 +285,8 @@ export function calendarEventsLoader(): Loader {
     name: 'calendar-events-loader',
     load: async ({ store, parseData, generateDigest, logger }) => {
       logger.info(`Fetching events from ${site.calendar.icsUrl}`);
-      const res = await fetch(site.calendar.icsUrl);
-      if (!res.ok) {
-        throw new Error(`Failed to fetch calendar ICS feed: ${res.status} ${res.statusText}`);
-      }
-      const text = await res.text();
+      const text = await fetchCalendarFeed(site.calendar.icsUrl, logger);
+      if (text === null) return;
 
       const jcal = ICAL.parse(text);
       const vcal = new ICAL.Component(jcal);
