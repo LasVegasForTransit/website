@@ -25,12 +25,12 @@ export function applicantName(application: StaffApplication): string {
   );
 }
 
-/** "Events Coordinator · Events Committee" or "Ask to join · Events Committee". */
+/** "Events Coordinator · Events Committee" for a role, or the team for an ask to join. */
 export function applicationTarget(application: StaffApplication): string {
   const committee = application.committeeName ?? t('staff.applications.noCommittee');
   return application.roleTitle
     ? t('staff.applications.roleTarget', { role: application.roleTitle, committee })
-    : t('staff.applications.askToJoin', { committee });
+    : committee;
 }
 
 /** "Waiting 3 days", or "Sent today". */

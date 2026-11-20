@@ -844,19 +844,6 @@ html {
     }
   }
 
-  .staff-applications th[scope='col']:first-child {
-    width: 30%;
-  }
-
-  .staff-applications th[scope='col']:last-child {
-    width: 28%;
-  }
-
-  .staff-applications-sent {
-    display: block;
-    margin-top: 0.125rem;
-  }
-
   .staff-application-actions {
     display: flex;
     flex-wrap: wrap;
