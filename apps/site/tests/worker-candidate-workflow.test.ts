@@ -32,7 +32,14 @@ void test('required Turbo validation includes uncached dependency and secret gat
   const rootPackage = JSON.parse(
     await readFile(new URL('../../../package.json', import.meta.url), 'utf8'),
   ) as { scripts: Record<string, string> };
-  assert.equal(rootPackage.scripts['security:secrets'], 'lvbt check secrets');
+  assert.equal(rootPackage.scripts['security:secrets'], 'node scripts/secret-scan.mjs');
+  // The wrapper may skip a local scan with a warning, but CI must always run the strict check.
+  const secretScan = await readFile(
+    new URL('../../../scripts/secret-scan.mjs', import.meta.url),
+    'utf8',
+  );
+  assert.match(secretScan, /^if \(process\.env\.CI\) strict\(\);$/m);
+  assert.match(secretScan, /\[cli, 'check', 'secrets'\]/);
   assert.equal(
     rootPackage.scripts.build,
     'turbo run build && turbo run test:ui-contracts',
