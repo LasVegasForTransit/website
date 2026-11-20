@@ -64,14 +64,11 @@
   },
   "dependencies": {
     "@astrojs/sitemap": "catalog:",
-    "@tailwindcss/typography": "catalog:",
-    "@tailwindcss/vite": "catalog:",
     "astro-icon": "catalog:",
     "fast-xml-parser": "catalog:",
     "ical.js": "catalog:",
     "sharp": "catalog:",
     "sitemap": "catalog:",
-    "tailwindcss": "catalog:",
     "zod": "catalog:",
     "@lasvegasfortransit/platform-core": "workspace:*",
     "@lasvegasfortransit/platform-storage": "workspace:*",
@@ -107,6 +104,9 @@
     "typescript": "catalog:",
     "wrangler": "catalog:",
     "jose": "catalog:",
-    "miniflare": "catalog:"
+    "miniflare": "catalog:",
+    "@tailwindcss/vite": "catalog:",
+    "@tailwindcss/typography": "catalog:",
+    "tailwindcss": "catalog:"
   }
 }
