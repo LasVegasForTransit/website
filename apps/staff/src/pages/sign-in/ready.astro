@@ -20,7 +20,10 @@ if (
   (await workspaceEnrollment((env as unknown as StaffEnv).PLATFORM_DB, session.personId))
 )
   return Astro.redirect(`/onboarding/?next=${encodeURIComponent(next)}`, 303);
-if (await hasEarlierStaffSession((env as unknown as StaffEnv).PLATFORM_DB, session.personId))
+if (
+  Astro.url.searchParams.get('setup') !== '1' &&
+  (await hasEarlierStaffSession((env as unknown as StaffEnv).PLATFORM_DB, session.personId))
+)
   return Astro.redirect(staffReturnPath(next), 303);
 const title = session.person.givenName
   ? `Welcome, ${session.person.givenName}`
