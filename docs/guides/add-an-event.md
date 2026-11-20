@@ -64,6 +64,12 @@ event locally, run `pnpm check`, and share the file change through a pull reques
 - **Build fails: "No upcoming events in the Google Calendar feed"**
   - _What it means:_ every event in the calendar is in the past, so there's nothing future to show.
   - _How to fix:_ add at least one event with a future date.
+- **CI warns about "Calendar drift"**
+  - _What it means:_ a redirect in `apps/site/public/_redirects` points to an event page the
+    calendar no longer has, usually because the event moved or was deleted. CI keeps passing so
+    other changes are not blocked, but the old link now lands on a missing page.
+  - _How to fix:_ change the rule to the event's new page, or remove it if the event has no
+    replacement.
 - **Card summary repeats the title**
   - _What it means:_ the event has no human-written description in GCal, so the summary fell back to
     the title.
