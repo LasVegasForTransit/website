@@ -35,3 +35,9 @@ void test('the welcome screen appears only for a first staff session', async () 
   assert.equal(await hasEarlierStaffSession(db, person.id), true);
   db.raw.close();
 });
+
+void test('finishing account setup always asks for the welcome screen', async () => {
+  const { staffWelcomePath } = await import('../src/lib/onboarding');
+  assert.equal(staffWelcomePath('/paper/'), '/sign-in/ready/?next=%2Fpaper%2F');
+  assert.equal(staffWelcomePath('/paper/', true), '/sign-in/ready/?next=%2Fpaper%2F&setup=1');
+});

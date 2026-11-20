@@ -10,7 +10,8 @@ import { EMAIL_COOKIE } from './workspace-email';
 /**
  * The welcome screen confirms a person's first Staff Portal sign-in. Signing out deletes only that
  * browser's session and expired sessions are kept, so any earlier staff session means this person
- * has already seen it and can go straight to their destination.
+ * has already seen it and can go straight to their destination. Finishing account setup always
+ * shows it, because that connects a new account even for someone with earlier sessions.
  */
 export async function hasEarlierStaffSession(db: Db, personId: string): Promise<boolean> {
   const row = await db
@@ -19,11 +20,11 @@ export async function hasEarlierStaffSession(db: Db, personId: string): Promise<
     .first<{ n: number }>();
   return (row?.n ?? 0) > 1;
 }
-export function staffWelcomePath(next: string) {
-  return `/sign-in/ready/?next=${encodeURIComponent(next)}`;
+export function staffWelcomePath(next: string, setupCompleted = false) {
+  return `/sign-in/ready/?next=${encodeURIComponent(next)}${setupCompleted ? '&setup=1' : ''}`;
 }
 export function completedStaffSetup(result: Extract<WorkspaceCompletion, { kind: 'ok' }>) {
-  return googleResponse(staffWelcomePath(result.returnTo), [
+  return googleResponse(staffWelcomePath(result.returnTo, true), [
     workspaceCookie(PENDING_COOKIE, '', 0),
     workspaceCookie(EMAIL_COOKIE, '', 0),
     workspaceCookie('__Host-lvbt_member_handoff', '', 0),
