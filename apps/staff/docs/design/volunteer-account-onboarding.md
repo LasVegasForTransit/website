@@ -15,8 +15,9 @@ personal email or name, invents a Google subject, or replaces an existing or rev
 
 After authentication, show **Welcome, Avery**, or **Your account is ready** when no first name is
 saved. Explain: **Your account is ready. Continue to the tools for your LVBT work.** Show the
-verified LVBT Google account in a bounded card with **Change account**, then **Continue**. Existing
-authorized sessions can return directly to their destination.
+verified LVBT Google account in a bounded card with **Change account**, then **Continue**. Show this
+screen only on a person's first staff sign-in. Later sign-ins, including after a session expires or
+the gateway asks them to authenticate again, return directly to their destination.
 
 ## Unlinked accounts
 

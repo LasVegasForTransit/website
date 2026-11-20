@@ -284,12 +284,6 @@ importers:
       '@lasvegasfortransit/platform-storage':
         specifier: workspace:*
         version: link:../../packages/platform-storage
-      '@tailwindcss/typography':
-        specifier: 'catalog:'
-        version: 0.5.20(tailwindcss@4.3.3)
-      '@tailwindcss/vite':
-        specifier: 'catalog:'
-        version: 4.3.3(vite@8.2.4(@types/node@24.13.3)(esbuild@0.28.1)(jiti@2.7.0)(tsx@4.23.13)(yaml@2.9.0))
       astro-icon:
         specifier: 'catalog:'
         version: 1.2.0
@@ -305,9 +299,6 @@ importers:
       sitemap:
         specifier: 'catalog:'
         version: 9.0.1
-      tailwindcss:
-        specifier: 'catalog:'
-        version: 4.3.3
       zod:
         specifier: 'catalog:'
         version: 4.6.6
@@ -351,6 +342,12 @@ importers:
       '@playwright/test':
         specifier: 'catalog:'
         version: 1.62.1
+      '@tailwindcss/typography':
+        specifier: 'catalog:'
+        version: 0.5.20(tailwindcss@4.3.3)
+      '@tailwindcss/vite':
+        specifier: 'catalog:'
+        version: 4.3.3(vite@8.2.4(@types/node@24.13.3)(esbuild@0.28.1)(jiti@2.7.0)(tsx@4.23.13)(yaml@2.9.0))
       '@types/node':
         specifier: 'catalog:'
         version: 24.13.3
@@ -390,6 +387,9 @@ importers:
       stylelint:
         specifier: 'catalog:'
         version: 17.14.0(supports-color@10.2.2)(typescript@6.0.3)
+      tailwindcss:
+        specifier: 'catalog:'
+        version: 4.3.3
       tslib:
         specifier: 'catalog:'
         version: 2.8.1
@@ -405,9 +405,6 @@ importers:
 
   apps/staff:
     dependencies:
-      '@astrojs/cloudflare':
-        specifier: 'catalog:'
-        version: 14.2.0(@types/node@24.13.3)(astro@7.2.10(@emnapi/core@1.11.1)(@emnapi/runtime@1.11.3)(@types/node@24.13.3)(jiti@2.7.0)(tsx@4.23.13)(yaml@2.9.0))(esbuild@0.28.1)(jiti@2.7.0)(tsx@4.23.13)(wrangler@4.141.0(@cloudflare/workers-types@5.20260901.1)(@types/node@24.13.3))(yaml@2.9.0)
       '@lasvegasfortransit/platform-core':
         specifier: workspace:*
         version: link:../../packages/platform-core
@@ -417,19 +414,13 @@ importers:
       '@lasvegasfortransit/platform-storage':
         specifier: workspace:*
         version: link:../../packages/platform-storage
-      '@tailwindcss/typography':
-        specifier: 'catalog:'
-        version: 0.5.20(tailwindcss@4.3.3)
-      '@tailwindcss/vite':
-        specifier: 'catalog:'
-        version: 4.3.3(vite@8.2.4(@types/node@24.13.3)(esbuild@0.28.1)(jiti@2.7.0)(tsx@4.23.13)(yaml@2.9.0))
-      tailwindcss:
-        specifier: 'catalog:'
-        version: 4.3.3
     devDependencies:
       '@astrojs/check':
         specifier: 'catalog:'
         version: 0.9.10(prettier-plugin-astro@0.14.1)(prettier@3.9.6)(typescript@6.0.3)
+      '@astrojs/cloudflare':
+        specifier: 'catalog:'
+        version: 14.2.0(@types/node@24.13.3)(astro@7.2.10(@emnapi/core@1.11.1)(@emnapi/runtime@1.11.3)(@types/node@24.13.3)(jiti@2.7.0)(tsx@4.23.13)(yaml@2.9.0))(esbuild@0.28.1)(jiti@2.7.0)(tsx@4.23.13)(wrangler@4.141.0(@cloudflare/workers-types@5.20260901.1)(@types/node@24.13.3))(yaml@2.9.0)
       '@axe-core/playwright':
         specifier: 'catalog:'
         version: 4.13.0(playwright-core@1.62.1)
@@ -445,6 +436,12 @@ importers:
       '@playwright/test':
         specifier: 'catalog:'
         version: 1.62.1
+      '@tailwindcss/typography':
+        specifier: 'catalog:'
+        version: 0.5.20(tailwindcss@4.3.3)
+      '@tailwindcss/vite':
+        specifier: 'catalog:'
+        version: 4.3.3(vite@8.2.4(@types/node@24.13.3)(esbuild@0.28.1)(jiti@2.7.0)(tsx@4.23.13)(yaml@2.9.0))
       '@types/node':
         specifier: 'catalog:'
         version: 24.13.3
@@ -463,6 +460,9 @@ importers:
       miniflare:
         specifier: 'catalog:'
         version: 5.20260828.0-alpha(@types/node@24.13.3)
+      tailwindcss:
+        specifier: 'catalog:'
+        version: 4.3.3
       tsx:
         specifier: 'catalog:'
         version: 4.23.13
