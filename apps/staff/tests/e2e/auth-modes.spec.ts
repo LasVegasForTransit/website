@@ -158,7 +158,7 @@ async function signOutAndReenter(page: Page, view: { mode: string; theme: string
   if (mode === 'cloudflare-access')
     await page.getByRole('button', { name: 'Sign in again' }).click();
   else await page.getByRole('link', { name: 'Sign in with Google' }).click();
-  await page.getByRole('link', { name: 'Continue', exact: true }).click();
+  // The welcome screen belongs to the first sign-in; returning staff go straight in.
   await page.waitForURL(`${ORIGIN}/people/`);
   assert.equal(await page.getByRole('heading', { name: 'Finish setting up' }).count(), 0);
 }
