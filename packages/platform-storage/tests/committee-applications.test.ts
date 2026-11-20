@@ -80,7 +80,11 @@ const role = {
   roleSlug: 'events-coordinator',
   roleTitle: 'Events Coordinator',
 };
-const input = { note: 'I run a book club.', availability: 'Weeknights' };
+const input = {
+  note: 'I run a book club.',
+  availableTimes: ['weekend-mornings', 'weekday-evenings', 'weekday-evenings'],
+  availability: 'Not the first week of the month',
+};
 
 void test('a member applies once per role; the committee lead sees it and acceptance assigns the committee', async () => {
   const f = await fixture();
@@ -97,6 +101,8 @@ void test('a member applies once per role; the committee lead sees it and accept
   const [queued] = await f.service.queue(lead, later);
   assert.ok(queued);
   assert.equal(queued.note, 'I run a book club.');
+  assert.deepEqual(queued.availableTimes, ['weekday-evenings', 'weekend-mornings']);
+  assert.equal(queued.availability, 'Not the first week of the month');
   assert.equal(queued.overdue, true);
 
   const accepted = await f.service.accept(
@@ -264,6 +270,11 @@ void test('members withdraw their own applications, invalid input and closed com
         now,
       )
     ).kind,
+    'invalid',
+  );
+  assert.equal(
+    (await f.service.submit(f.applicant.id, role, { ...input, availableTimes: ['midnight'] }, now))
+      .kind,
     'invalid',
   );
   f.db.raw.exec("UPDATE committees SET accepting_members=0 WHERE id='media'");

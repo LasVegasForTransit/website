@@ -5,6 +5,7 @@ import { consumeFormToken } from '@lasvegasfortransit/platform-storage/form-toke
 import {
   CommitteeApplicationService,
   NOTE_LIMIT,
+  type AvailableTime,
   type StaffApplication,
 } from '@lasvegasfortransit/platform-storage/committee-applications';
 import type { StaffContext } from './context';
@@ -23,6 +24,20 @@ export function applicantName(application: StaffApplication): string {
   return (
     [application.givenName, application.familyName].filter(Boolean).join(' ') || 'Name not recorded'
   );
+}
+
+const TIME_LABELS: Record<AvailableTime, string> = {
+  'weekday-mornings': t('staff.applications.weekdayMornings'),
+  'weekday-afternoons': t('staff.applications.weekdayAfternoons'),
+  'weekday-evenings': t('staff.applications.weekdayEvenings'),
+  'weekend-mornings': t('staff.applications.weekendMornings'),
+  'weekend-afternoons': t('staff.applications.weekendAfternoons'),
+  'weekend-evenings': t('staff.applications.weekendEvenings'),
+};
+
+/** "Weekday evenings", "Weekend mornings", ... in week order. */
+export function applicationTimes(application: StaffApplication): string[] {
+  return application.availableTimes.map((time) => TIME_LABELS[time]);
 }
 
 /** "Events Coordinator · Events Committee" for a role, or the team for an ask to join. */

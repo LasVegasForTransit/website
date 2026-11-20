@@ -74,7 +74,14 @@ async function isMember(signed: Signed): Promise<{ member: boolean; name: string
 function page(
   { env, request }: Context,
   { resolved, name }: { resolved: Resolved; name: string },
-  input: { role: string; team: string; note: string; availability: string; error?: string },
+  input: {
+    role: string;
+    team: string;
+    note: string;
+    times: string[];
+    availability: string;
+    error?: string;
+  },
 ): Promise<Response> {
   return accountPage(env, request, '/account/apply/', {
     status: input.error ? 400 : 200,
@@ -96,6 +103,12 @@ function page(
         .on('form[action="/account/apply/"] button[type="submit"]', showText(resolved.submit))
         .on('input[name="role"]', setValue(input.role))
         .on('input[name="team"]', setValue(input.team))
+        .on('input[name="times"]', {
+          element(element) {
+            if (input.times.includes(element.getAttribute('value') ?? ''))
+              element.setAttribute('checked', '');
+          },
+        })
         .on('input[name="availability"]', setValue(input.availability))
         .on('textarea[name="note"]', showText(input.note));
       if (input.error) filled = filled.on('[data-slot="notice"]', showText(input.error));
@@ -115,7 +128,7 @@ export const onRequestGet: PagesFunction<SignInPagesEnv> = async ({ env, request
   if (!resolved) return backToAccount('application_unknown');
   const { member, name } = await isMember(signed);
   if (!member) return backToAccount('application_not_member');
-  return page(context, { resolved, name }, { role, team, note: '', availability: '' });
+  return page(context, { resolved, name }, { role, team, note: '', times: [], availability: '' });
 };
 
 export const onRequestPost: PagesFunction<SignInPagesEnv> = async ({ env, request }) => {
@@ -125,6 +138,7 @@ export const onRequestPost: PagesFunction<SignInPagesEnv> = async ({ env, reques
   const role = field(form, 'role').slice(0, 100);
   const team = role ? '' : field(form, 'team').slice(0, 100);
   const note = field(form, 'note');
+  const times = form.getAll('times').filter((value) => typeof value === 'string');
   const availability = field(form, 'availability');
   const context = { env, request, signed };
   const resolved = await resolve(context, { role, team });
@@ -139,6 +153,7 @@ export const onRequestPost: PagesFunction<SignInPagesEnv> = async ({ env, reques
         role,
         team,
         note: note.slice(0, NOTE_LIMIT),
+        times,
         availability: availability.slice(0, AVAILABILITY_LIMIT),
         error: t('applications.tooLong'),
       },
@@ -147,7 +162,7 @@ export const onRequestPost: PagesFunction<SignInPagesEnv> = async ({ env, reques
   const outcome = await new CommitteeApplicationService(signed.env.PLATFORM_DB).submit(
     signed.person.id,
     resolved.target,
-    { note, availability },
+    { note, availableTimes: times, availability },
   );
   switch (outcome.kind) {
     case 'ok':

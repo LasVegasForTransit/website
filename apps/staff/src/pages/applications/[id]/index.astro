@@ -18,6 +18,7 @@ import {
   applicationDay,
   applicationDecision,
   applicationTarget,
+  applicationTimes,
   applicationWaiting,
   applicationsVisible,
 } from '../../../lib/applications';
@@ -32,6 +33,7 @@ const waiting = application.state === 'submitted';
 const requested = Astro.url.searchParams.get('step');
 const step = waiting && (requested === 'accept' || requested === 'decline') ? requested : null;
 const name = applicantName(application);
+const times = applicationTimes(application);
 const here = `/applications/${id}/`;
 // A lead accepts onto the team applied to. An administrator can choose any
 // team, and must choose one when the role has none yet.
@@ -74,14 +76,18 @@ const token = step
     <section class="staff-application-answers" aria-labelledby="why-heading">
       <h2 id="why-heading" class="font-bold">{t('staff.applications.why')}</h2>
       <p>{application.note || t('staff.applications.noNote')}</p>
+      <h2 class="font-bold">{t('staff.applications.availability')}</h2>
       {
-        application.availability && (
-          <>
-            <h2 class="font-bold">{t('staff.applications.availability')}</h2>
-            <p>{application.availability}</p>
-          </>
+        times.length > 0 && (
+          <ul class="staff-application-times">
+            {times.map((time) => (
+              <li>{time}</li>
+            ))}
+          </ul>
         )
       }
+      {application.availability && <p>{application.availability}</p>}
+      {!times.length && !application.availability && <p>{t('staff.applications.noTimes')}</p>}
       {
         waiting && !step && (
           <div class="staff-application-actions">
@@ -135,7 +141,7 @@ const token = step
               <textarea
                 id="welcome"
                 name="note"
-                rows="3"
+                rows="5"
                 maxlength={NOTE_LIMIT}
                 aria-describedby="welcome-hint"
               />
@@ -166,7 +172,7 @@ const token = step
               <textarea
                 id="decline-note"
                 name="note"
-                rows="3"
+                rows="5"
                 maxlength={NOTE_LIMIT}
                 aria-describedby="decline-hint"
               />
