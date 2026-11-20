@@ -1082,8 +1082,8 @@ an unstarted request is reused after a route changes.
 
 Migration `0066_committee_applications.sql` adds `committee_applications`: a member's application
 for a posted role or request to join a committee. Each row moves once from `submitted` to
-`accepted`, `declined` or `withdrawn`; checks tie the decider, decision time and resulting
-committee assignment to that state. A member has at most one waiting application per role, or per
-committee when no role was posted. Erasing a person deletes their applications, and erased people
-cannot apply. Accepting creates an ordinary `committee_assignments` row, so Discord and Google
-access follow the existing reconcilers.
+`accepted`, `declined` or `withdrawn`; checks tie the decider, decision time and resulting committee
+assignment to that state. A member has at most one waiting application per role, or per committee
+when no role was posted. Erasing a person deletes their applications, and erased people cannot
+apply. Accepting creates an ordinary `committee_assignments` row, so Discord and Google access
+follow the existing reconcilers.
