@@ -43,7 +43,11 @@ export function discordServerUrl(guildId: string | undefined): string | null {
 
 export const onRequestGet: PagesFunction<SignInPagesEnv> = async ({ env, request }) => {
   const signed = await discordMember(env, request);
-  if (signed instanceof Response) return signed;
+  // The connect page explains why connecting is unavailable, as a full page.
+  if (signed instanceof Response)
+    return signed.status < 400
+      ? signed
+      : discordReply(null, 303, { Location: '/account/discord/' });
   const connection = await new DiscordLinkService(signed.platform).connection(signed.sessionToken);
   if (!connection) return discordReply(null, 303, { Location: '/account/discord/' });
   const returnTo = discordReturnPath(
