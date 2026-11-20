@@ -117,8 +117,10 @@ try {
     if (width === 320) {
       // Phones fold each member's teams into an expandable row.
       await page
-        .locator('.staff-row-details')
-        .evaluateAll((rows) => rows.forEach((row) => row.setAttribute('open', '')));
+        .locator('.staff-row-toggle-input')
+        .evaluateAll((toggles) =>
+          toggles.forEach((toggle) => ((toggle as HTMLInputElement).checked = true)),
+        );
       const committeeActions = await page
         .locator('.staff-roster-add-committee')
         .evaluateAll((links) =>

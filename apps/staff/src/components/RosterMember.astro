@@ -59,56 +59,20 @@ const staff = Astro.locals.staff!;
   <th scope="row" class="staff-roster-person">
     <a href={profile}>{name}</a>
     {person.email && person.email !== name && <p>{person.email}</p>}
-    {/* Phones show one compact line per member; the rest opens on demand. */}
-    <details class="staff-row-details">
-      <summary aria-label={t('staff.people.rowDetails', { name })}>
-        {t('staff.people.rowDetailsShort')}
-      </summary>
-      <dl>
-        {
-          rosterStatus.length > 0 && (
-            <div>
-              <dt>
-                {showMembership && showDiscord
-                  ? t('staff.people.membershipDiscord')
-                  : showDiscord
-                    ? t('staff.common.discord')
-                    : t('staff.common.membership')}
-              </dt>
-              <dd>
-                <ul class="staff-status-list">
-                  {rosterStatus.map((status) => (
-                    <li class:list={['staff-status', `staff-status-${status.tone}`]}>
-                      {status.label}
-                    </li>
-                  ))}
-                </ul>
-              </dd>
-            </div>
-          )
-        }
-        <div class="staff-roster-committee">
-          <dt>{t('staff.common.committees')}</dt>
-          <dd>
-            <RosterCommittees
-              person={person}
-              name={name}
-              details={details}
-              canAddToAnotherCommittee={canAddToAnotherCommittee}
-              assignLink={assignLink}
-            />
-          </dd>
-        </div>
-        {
-          details?.lastEngagedAt && (
-            <div>
-              <dt>{t('staff.people.lastActivityHeading')}</dt>
-              <dd>{formatFullDate(new Date(details.lastEngagedAt))}</dd>
-            </div>
-          )
-        }
-      </dl>
-    </details>
+    {
+      /* Phones show one line per member; the toggle reveals the other cells.
+        A checkbox keeps it working without scripts and without copying the
+        cells' content. */
+    }
+    <input
+      type="checkbox"
+      id={`row-details-${person.id}`}
+      class="staff-row-toggle-input"
+      aria-label={t('staff.people.rowDetails', { name })}
+    />
+    <label for={`row-details-${person.id}`} class="staff-row-toggle" aria-hidden="true">
+      {t('staff.people.rowDetailsShort')}
+    </label>
   </th>
   {
     (showMembership || showDiscord) && (

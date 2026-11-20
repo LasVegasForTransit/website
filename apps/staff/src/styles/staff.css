@@ -2853,12 +2853,13 @@ html {
     gap: 0.125rem 1rem;
   }
 
-  .staff-row-details {
+  .staff-row-toggle-input,
+  .staff-row-toggle {
     display: none;
   }
 
-  /* Phones: each member is one line (name, email, Details). Status,
-     teams and activity open beneath it. */
+  /* Phones: each member is one line (name, email, Details). The toggle
+     reveals status, teams and activity beneath it. */
   @media (width < 48rem) {
     .staff-roster tbody tr {
       gap: 0;
@@ -2876,6 +2877,37 @@ html {
       display: none;
     }
 
+    .staff-roster tr:has(.staff-row-toggle-input:checked) td.staff-roster-status,
+    .staff-roster tr:has(.staff-row-toggle-input:checked) td.staff-roster-activity-cell {
+      display: grid;
+      grid-template-columns: 5rem minmax(0, 1fr);
+      gap: 0.75rem;
+      margin-top: 0.5rem;
+    }
+
+    .staff-roster tr:has(.staff-row-toggle-input:checked) td.staff-roster-status {
+      padding-top: 0.5rem;
+      border-top: 1px solid var(--staff-line);
+    }
+
+    .staff-roster tr:has(.staff-row-toggle-input:checked) td.staff-roster-committee {
+      display: grid;
+      grid-template-columns: 5rem minmax(0, 1fr);
+      gap: 0.75rem;
+    }
+
+    .staff-roster td.staff-roster-status::before,
+    .staff-roster td.staff-roster-activity-cell::before {
+      color: var(--color-on-surface-variant);
+      font-size: var(--text-body-sm);
+      font-weight: 600;
+      content: attr(data-label);
+    }
+
+    .staff-roster-committee .staff-roster-add-committee {
+      white-space: nowrap;
+    }
+
     .staff-roster th.staff-roster-person {
       position: relative;
       min-height: 1.75rem;
@@ -2888,11 +2920,17 @@ html {
       margin: 0;
     }
 
-    .staff-row-details {
+    .staff-row-toggle-input {
       display: block;
+      position: absolute;
+      top: 0;
+      right: 0;
+      width: 1px;
+      height: 1px;
+      opacity: 0;
     }
 
-    .staff-row-details > summary {
+    .staff-row-toggle {
       position: absolute;
       top: -0.5rem;
       right: -0.25rem;
@@ -2903,15 +2941,15 @@ html {
       padding-inline: 0.5rem;
       color: var(--color-link);
       font-weight: 700;
-      list-style: none;
       cursor: pointer;
     }
 
-    .staff-row-details > summary::-webkit-details-marker {
-      display: none;
+    .staff-row-toggle-input:focus-visible + .staff-row-toggle {
+      outline: 3px solid var(--color-primary);
+      outline-offset: -3px;
     }
 
-    .staff-row-details > summary::after {
+    .staff-row-toggle::after {
       width: 0.4375rem;
       height: 0.4375rem;
       margin-top: -0.25rem;
@@ -2921,39 +2959,9 @@ html {
       transform: rotate(45deg);
     }
 
-    .staff-row-details[open] > summary::after {
+    .staff-row-toggle-input:checked + .staff-row-toggle::after {
       margin-top: 0.25rem;
       transform: rotate(225deg);
-    }
-
-    .staff-row-details > dl {
-      display: grid;
-      gap: 0.5rem;
-      margin: 0.5rem -5.5rem 0.25rem 0;
-      padding-top: 0.5rem;
-      border-top: 1px solid var(--staff-line);
-      font-weight: 400;
-    }
-
-    .staff-row-details dl > div {
-      display: grid;
-      grid-template-columns: 6rem minmax(0, 1fr);
-      align-items: start;
-      gap: 0.75rem;
-    }
-
-    .staff-row-details dl > div::before {
-      content: none;
-    }
-
-    .staff-row-details dt {
-      color: var(--color-on-surface-variant);
-      font-weight: 600;
-    }
-
-    .staff-row-details dd {
-      margin: 0;
-      min-width: 0;
     }
 
     .staff-filter-panel {
