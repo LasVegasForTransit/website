@@ -93,7 +93,7 @@ function page(
           ),
         )
         .on('[data-slot="note-label"]', showText(resolved.noteLabel))
-        .on('form button[type="submit"]', showText(resolved.submit))
+        .on('form[action="/account/apply/"] button[type="submit"]', showText(resolved.submit))
         .on('input[name="role"]', setValue(input.role))
         .on('input[name="team"]', setValue(input.team))
         .on('input[name="availability"]', setValue(input.availability))
