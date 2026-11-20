@@ -13,7 +13,8 @@ const AUTHORIZED = `${FRESH} AND ${STAFF_ADMIN_SCOPE}`;
 const MAPPING_CHANGED = `EXISTS(SELECT 1 FROM staff_operations WHERE operation_id=? AND
  (json_extract(before_state,'$.workspaceGroupEmail') IS NOT ? OR json_extract(before_state,'$.discordRoleId') IS NOT ? OR json_extract(before_state,'$.discordLeadRoleId') IS NOT ?))`;
 const SETTINGS_JSON = `json_object('id',c.id,'name',c.name,'description',c.description,'timeCommitment',c.time_commitment,
- 'acceptingMembers',json(CASE WHEN c.accepting_members=1 THEN 'true' ELSE 'false' END),'settingsVersion',c.settings_version,
+ 'acceptingMembers',json(CASE WHEN c.accepting_members=1 THEN 'true' ELSE 'false' END),
+ 'takingApplications',json(CASE WHEN c.taking_applications=1 THEN 'true' ELSE 'false' END),'settingsVersion',c.settings_version,
  'workspaceGroupEmail',c.workspace_group_email,'discordRoleId',c.discord_role_id,'discordLeadRoleId',c.discord_lead_role_id,'interestIds',json(c.interest_ids))`;
 function fresh(input: SettingsMutation) {
   return [input.operationId, input.actorId, input.committeeId, input.payload];
@@ -101,13 +102,14 @@ function mappings(db: Db, input: SettingsMutation): Statement[] {
 function saveSettings(db: Db, input: SettingsMutation): Statement {
   return db
     .prepare(
-      `UPDATE committees SET description=?,time_commitment=?,accepting_members=?,workspace_group_email=?,discord_role_id=?,discord_lead_role_id=?,interest_ids=?,settings_version=settings_version+1,updated_at=?
+      `UPDATE committees SET description=?,time_commitment=?,accepting_members=?,taking_applications=COALESCE(?,taking_applications),workspace_group_email=?,discord_role_id=?,discord_lead_role_id=?,interest_ids=?,settings_version=settings_version+1,updated_at=?
     WHERE id=? AND settings_version=? AND ${AUTHORIZED}`,
     )
     .bind(
       input.description,
       input.timeCommitment,
       Number(input.acceptingMembers),
+      input.takingApplications === undefined ? null : Number(input.takingApplications),
       input.workspaceGroupEmail,
       input.discordRoleId,
       input.discordLeadRoleId ?? null,

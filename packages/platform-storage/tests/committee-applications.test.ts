@@ -44,6 +44,10 @@ async function fixture() {
     performedBy: 'maintainer-fixture',
     operationId: 'bootstrap',
   });
+  // Committees start closed to member asks; an administrator opens Events and Media.
+  await db
+    .prepare(`UPDATE committees SET taking_applications=1 WHERE id IN ('events','media')`)
+    .run();
   const committees = new CommitteeService(db);
   assert.equal(
     (
@@ -290,9 +294,9 @@ void test('members withdraw their own applications, invalid input and closed com
   f.db.raw.close();
 });
 
-void test('a posted role takes applications even when its committee is closed to asks, and an unknown committee is left for the decider', async () => {
+void test('a posted role takes applications even when its committee is closed to asks, committees start closed, and an unknown committee is left for the decider', async () => {
   const f = await fixture();
-  await f.db.prepare(`UPDATE committees SET accepting_members=0 WHERE id='events'`).run();
+  await f.db.prepare(`UPDATE committees SET taking_applications=0 WHERE id='events'`).run();
   assert.equal((await f.service.submit(f.applicant.id, role, input, now)).kind, 'ok');
   assert.equal(
     (
@@ -326,4 +330,19 @@ void test('a posted role takes applications even when its committee is closed to
     true,
   );
   assert.deepEqual([...(await f.service.memberCommittees(f.lead.id))], ['events']);
+  assert.equal(
+    (
+      await f.service.submit(
+        f.applicant.id,
+        { committeeId: 'board', roleSlug: null, roleTitle: null },
+        input,
+        now,
+      )
+    ).kind,
+    'unavailable',
+  );
+  assert.deepEqual(
+    (await f.service.openCommittees()).map((committee) => committee.id),
+    ['media'],
+  );
 });
