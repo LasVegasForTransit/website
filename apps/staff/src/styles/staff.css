@@ -844,6 +844,62 @@ html {
     }
   }
 
+  .staff-applications th[scope='col']:first-child {
+    width: 30%;
+  }
+
+  .staff-applications th[scope='col']:last-child {
+    width: 28%;
+  }
+
+  .staff-applications-sent {
+    display: block;
+    margin-top: 0.125rem;
+  }
+
+  .staff-application-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    margin-top: 1.5rem;
+  }
+
+  .staff-application-step {
+    max-width: 40rem;
+    border-top: 2px solid var(--color-on-surface);
+    padding-top: 1.5rem;
+  }
+
+  .staff-application-step h2 {
+    font-size: 1.125rem;
+    font-weight: 800;
+    letter-spacing: -0.015em;
+  }
+
+  .staff-application-step > p {
+    margin-top: 0.5rem;
+    max-width: 48ch;
+    font-size: 0.875rem;
+    color: var(--color-on-surface-variant);
+  }
+
+  .staff-application-step form {
+    margin-top: 1.25rem;
+  }
+
+  .staff-application-answers {
+    max-width: 40rem;
+  }
+
+  .staff-application-answers h2 + p {
+    margin-top: 0.5rem;
+    white-space: pre-line;
+  }
+
+  .staff-application-answers p + h2 {
+    margin-top: 1.5rem;
+  }
+
   .staff-roster th[scope='col'] {
     position: sticky;
     top: 0;
