@@ -5,6 +5,7 @@ import type { RosterDetails } from '@lasvegasfortransit/platform-storage/roster-
 import { can } from '@lasvegasfortransit/platform-core/permissions';
 import { MEMBERSHIP_LABELS, personName } from '../lib/people';
 import { rosterReturn } from '../lib/roster-return';
+import RosterCommittees from './RosterCommittees.astro';
 interface Props {
   person: Person;
   details?: RosterDetails;
@@ -58,6 +59,56 @@ const staff = Astro.locals.staff!;
   <th scope="row" class="staff-roster-person">
     <a href={profile}>{name}</a>
     {person.email && person.email !== name && <p>{person.email}</p>}
+    {/* Phones show one compact line per member; the rest opens on demand. */}
+    <details class="staff-row-details">
+      <summary aria-label={t('staff.people.rowDetails', { name })}>
+        {t('staff.people.rowDetailsShort')}
+      </summary>
+      <dl>
+        {
+          rosterStatus.length > 0 && (
+            <div>
+              <dt>
+                {showMembership && showDiscord
+                  ? t('staff.people.membershipDiscord')
+                  : showDiscord
+                    ? t('staff.common.discord')
+                    : t('staff.common.membership')}
+              </dt>
+              <dd>
+                <ul class="staff-status-list">
+                  {rosterStatus.map((status) => (
+                    <li class:list={['staff-status', `staff-status-${status.tone}`]}>
+                      {status.label}
+                    </li>
+                  ))}
+                </ul>
+              </dd>
+            </div>
+          )
+        }
+        <div class="staff-roster-committee">
+          <dt>{t('staff.common.committees')}</dt>
+          <dd>
+            <RosterCommittees
+              person={person}
+              name={name}
+              details={details}
+              canAddToAnotherCommittee={canAddToAnotherCommittee}
+              assignLink={assignLink}
+            />
+          </dd>
+        </div>
+        {
+          details?.lastEngagedAt && (
+            <div>
+              <dt>{t('staff.people.lastActivityHeading')}</dt>
+              <dd>{formatFullDate(new Date(details.lastEngagedAt))}</dd>
+            </div>
+          )
+        }
+      </dl>
+    </details>
   </th>
   {
     (showMembership || showDiscord) && (
@@ -80,44 +131,13 @@ const staff = Astro.locals.staff!;
     )
   }
   <td class="staff-roster-committee" data-label={t('staff.common.committees')}>
-    <div class="staff-roster-committee-content">
-      {
-        details?.committees.length ? (
-          <ul class="staff-committee-chips" aria-label={t('staff.people.committeeList', { name })}>
-            {details.committees.map((committee) => (
-              <li>
-                {can(staff.actor, 'committee.view', {
-                  committeeId: committee.id,
-                }) ? (
-                  <a href={`/committees/${committee.id}/`}>{committee.name}</a>
-                ) : (
-                  <span>{committee.name}</span>
-                )}
-              </li>
-            ))}
-          </ul>
-        ) : (
-          <p>{person.membership_status === 'member' ? t('staff.people.unassigned') : '—'}</p>
-        )
-      }
-      {
-        person.membership_status === 'member' && canAddToAnotherCommittee && (
-          <a
-            href={assignLink}
-            class="staff-roster-add-committee"
-            aria-label={
-              details?.committees.length
-                ? t('staff.people.addAnotherFor', { name })
-                : t('staff.people.addFor', { name })
-            }
-          >
-            {details?.committees.length
-              ? t('staff.people.addAnother')
-              : t('staff.people.addToCommittee')}
-          </a>
-        )
-      }
-    </div>
+    <RosterCommittees
+      person={person}
+      name={name}
+      details={details}
+      canAddToAnotherCommittee={canAddToAnotherCommittee}
+      assignLink={assignLink}
+    />
   </td>
   <td class="staff-roster-activity-cell" data-label={t('staff.people.lastActivityHeading')}>
     {

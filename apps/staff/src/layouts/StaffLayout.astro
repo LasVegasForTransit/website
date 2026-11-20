@@ -24,6 +24,23 @@ const hasEnrollment = staff
 const consoleVisible = staff && can(staff.actor, 'console.enter');
 const home = staff && !consoleVisible ? '/paper/' : '/';
 const signOutToken = staff ? await issueFormToken(staff.db, staff.actor, 'sign-out') : null;
+// The signed-in staff member, shown in the account card in place of a large
+// Sign out button so staff can confirm whose session this is.
+const viewer = staff
+  ? await staff.db
+      .prepare('SELECT given_name, family_name, email FROM people WHERE id=?')
+      .bind(staff.actor.personId)
+      .first<{ given_name: string | null; family_name: string | null; email: string | null }>()
+  : null;
+const viewerName =
+  [viewer?.given_name, viewer?.family_name].filter(Boolean).join(' ') || viewer?.email || '';
+const viewerInitials =
+  viewerName
+    .split(/[\s@.]+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0]?.toUpperCase())
+    .join('') || '?';
 const memberRecord = /^\/people\/[^/]+(?:\/(?:edit|delete))?\/?$/.test(Astro.url.pathname);
 const path = Astro.url.pathname;
 
@@ -159,28 +176,77 @@ const hasSidebar = groups.length > 0;
                       </ul>
                     </div>
                   ))}
+                  {/* Phones keep the top bar to the menu and initials; the
+                      account details and Sign out live at the end of the menu. */}
+                  <div class="staff-nav-account">
+                    {viewerName && (
+                      <p class="staff-account-who">
+                        <span class="staff-avatar" aria-hidden="true">
+                          {viewerInitials}
+                        </span>
+                        <span class="staff-account-text">
+                          <span class="staff-account-name">{viewerName}</span>
+                          {viewer?.email && viewer.email !== viewerName && (
+                            <span class="staff-account-email">{viewer.email}</span>
+                          )}
+                        </span>
+                      </p>
+                    )}
+                    <div class="staff-account-actions">
+                      {hasEnrollment && (
+                        <a href="/onboarding/" class="staff-account-link">
+                          {t('staff.navigation.account')}
+                        </a>
+                      )}
+                      {signOutToken && (
+                        <form method="post" action="/sign-out/" class="staff-sign-out">
+                          <input type="hidden" name="token" value={signOutToken} />
+                          <button type="submit" class="staff-account-link press">
+                            {t('staff.navigation.signOut')}
+                          </button>
+                        </form>
+                      )}
+                    </div>
+                  </div>
                 </nav>
               </details>
             )
           }
-          <div class="staff-account-actions">
+          <div class="staff-account">
             {
-              hasEnrollment && (
-                <a href="/onboarding/" class="staff-secondary-button">
-                  {t('staff.navigation.account')}
-                </a>
+              viewerName && (
+                <p class="staff-account-who">
+                  <span class="staff-avatar" aria-hidden="true">
+                    {viewerInitials}
+                  </span>
+                  <span class="staff-account-text">
+                    <span class="staff-account-name">{viewerName}</span>
+                    {viewer?.email && viewer.email !== viewerName && (
+                      <span class="staff-account-email">{viewer.email}</span>
+                    )}
+                  </span>
+                </p>
               )
             }
-            {
-              signOutToken && (
-                <form method="post" action="/sign-out/" class="staff-sign-out">
-                  <input type="hidden" name="token" value={signOutToken} />
-                  <button type="submit" class="staff-secondary-button press">
-                    {t('staff.navigation.signOut')}
-                  </button>
-                </form>
-              )
-            }
+            <div class="staff-account-actions">
+              {
+                hasEnrollment && (
+                  <a href="/onboarding/" class="staff-account-link">
+                    {t('staff.navigation.account')}
+                  </a>
+                )
+              }
+              {
+                signOutToken && (
+                  <form method="post" action="/sign-out/" class="staff-sign-out">
+                    <input type="hidden" name="token" value={signOutToken} />
+                    <button type="submit" class="staff-account-link press">
+                      {t('staff.navigation.signOut')}
+                    </button>
+                  </form>
+                )
+              }
+            </div>
           </div>
         </div>
       </header>

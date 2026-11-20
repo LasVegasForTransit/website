@@ -88,7 +88,7 @@ try {
   const accounts = page.getByRole('region', { name: 'Accounts', exact: true });
   assert.equal(
     await page
-      .getByRole('region', { name: 'Committees', exact: true })
+      .getByRole('region', { name: 'Teams and groups', exact: true })
       .getByRole('link', {
         name: 'Google and Discord access needs attention',
         exact: true,
@@ -155,7 +155,7 @@ try {
   await page.reload();
   assert.equal(
     await page
-      .getByRole('region', { name: 'Committees', exact: true })
+      .getByRole('region', { name: 'Teams and groups', exact: true })
       .getByRole('link', {
         name: 'Google and Discord access needs attention',
         exact: true,

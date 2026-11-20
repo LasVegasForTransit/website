@@ -37,6 +37,13 @@ const status = peopleStatus(Astro.url);
 const showMembership = status !== 'member';
 const searchStatus = status;
 const unassigned = Astro.url.searchParams.get('committee') === 'unassigned';
+// The filter panel stays closed so it never covers the table; the badge says
+// how many filters are narrowing the list.
+const activeFilters = [
+  Astro.url.searchParams.get('zip'),
+  Astro.url.searchParams.get('committee'),
+  status !== 'member' ? status : null,
+].filter(Boolean).length;
 const details = await rosterDetails(
   staff.db,
   staff.actor,
@@ -71,183 +78,201 @@ const acceptingCommitteeIds = committees
       </p>
     )
   }
-  <form
-    method="get"
-    action="/people/"
-    class="staff-search"
-    role="search"
-    aria-label={t('staff.people.find')}
-  >
-    <div class="staff-search-row">
-      <div class="staff-search-query">
-        <label for="q">{t('staff.people.nameOrEmail')}</label>
-        <input
-          id="q"
-          name="q"
-          type="search"
-          placeholder={t('staff.people.placeholder')}
-          value={Astro.url.searchParams.get('q') ?? Astro.url.searchParams.get('email') ?? ''}
-          maxlength="254"
-        />
-      </div>
-      <Button name="intent" value="search">{t('staff.people.search')}</Button>
-    </div>
-    <details
-      class="staff-search-filters"
-      open={Boolean(
-        Astro.url.searchParams.has('zip') ||
-        Astro.url.searchParams.has('email') ||
-        Astro.url.searchParams.has('committee') ||
-        (Astro.url.searchParams.has('status') && Astro.url.searchParams.get('intent') !== 'search'),
-      )}
-    >
-      <summary>{t('staff.people.filters')}</summary>
-      <div class="staff-filter-row">
-        <div>
-          <label for="status">{t('staff.common.membership')}</label>
-          <select id="status" name="status">
-            {
-              Object.entries(MEMBERSHIP_LABELS).map(([value, label]) => (
-                <option value={value} selected={searchStatus === value}>
-                  {label}
-                </option>
-              ))
-            }
-            <option value="all" selected={searchStatus === 'all'}
-              >{t('staff.people.everyone')}</option
-            >
-          </select>
+  {
+    /* The search and filters sit in the table's own top bar, so it reads as
+      one tool: query, narrow, read. */
+  }
+  <div class="staff-table-card staff-roster-card">
+    <div class="staff-table-toolbar">
+      <form
+        method="get"
+        action="/people/"
+        class="staff-search"
+        role="search"
+        aria-label={t('staff.people.find')}
+      >
+        <div class="staff-search-row">
+          <div class="staff-search-query">
+            <label for="q" class="sr-only">{t('staff.people.nameOrEmail')}</label>
+            <input
+              id="q"
+              name="q"
+              type="search"
+              placeholder={t('staff.people.placeholder')}
+              value={Astro.url.searchParams.get('q') ?? Astro.url.searchParams.get('email') ?? ''}
+              maxlength="254"
+            />
+          </div>
+          <Button name="intent" value="search">{t('staff.people.search')}</Button>
         </div>
-        <div>
-          <label for="committee">{t('staff.common.committee')}</label>
-          <select id="committee" name="committee">
-            <option value="">{t('staff.people.all')}</option>
+        <details
+          class="staff-search-filters"
+          open={error === t('staff.people.invalidZip') ? true : undefined}
+        >
+          <summary>
+            {t('staff.people.filters')}
             {
-              staff.actor.staffAdmin && (
-                <option
-                  value="unassigned"
-                  selected={Astro.url.searchParams.get('committee') === 'unassigned'}
-                >
-                  {t('staff.people.unassigned')}
-                </option>
+              activeFilters > 0 && (
+                <span class="staff-filter-badge">
+                  {activeFilters}
+                  <span class="sr-only"> {t('staff.people.activeFilters')}</span>
+                </span>
               )
             }
-            {
-              committees.map((committee) => (
-                <option
-                  value={committee.id}
-                  selected={Astro.url.searchParams.get('committee') === committee.id}
-                >
-                  {committee.name}
-                </option>
-              ))
-            }
-          </select>
-        </div>
-        <div class="staff-zip">
-          <label for="zip">{t('staff.common.zip')}</label>
-          <input
-            id="zip"
-            name="zip"
-            inputmode="numeric"
-            maxlength="5"
-            value={Astro.url.searchParams.get('zip') ?? ''}
-            aria-invalid={error === t('staff.people.invalidZip') ? 'true' : undefined}
-          />
-        </div>
-      </div>
-      <Button name="intent" value="filters">{t('staff.people.applyFilters')}</Button>
-    </details>
-    {
-      Astro.url.search && (
-        <div class="staff-search-options">
-          <a href="/people/" class="staff-muted-link">
-            {t('staff.people.clearFilters')}
-          </a>
-        </div>
-      )
-    }
-  </form>
-  {
-    !error &&
-      (page.items.length ? (
-        <section
-          aria-label={t('staff.people.results')}
-          class="staff-roster-results staff-table-card"
-        >
-          <div class="staff-results-meta">
-            <p>
-              {status === 'member'
-                ? page.nextCursor
-                  ? t('staff.people.showingMembersOnPage', { count: page.items.length })
-                  : t('staff.people.showingMembers', { count: page.items.length })
-                : page.nextCursor
-                  ? t('staff.people.showingPeopleOnPage', { count: page.items.length })
-                  : t('staff.people.showingPeople', { count: page.items.length })}
-            </p>
-          </div>
-          <table
-            class:list={[
-              'staff-roster',
-              (showMembership || showDiscord) && 'staff-roster-with-status',
-            ]}
-          >
-            <caption class="sr-only">
-              {status === 'member' ? t('staff.people.title') : t('staff.people.people')}
-            </caption>
-            <thead>
-              <tr>
-                <th scope="col">{t('staff.common.member')}</th>
-                {(showMembership || showDiscord) && (
-                  <th scope="col">
-                    {showMembership && showDiscord
-                      ? t('staff.people.membershipDiscord')
-                      : showDiscord
-                        ? t('staff.common.discord')
-                        : t('staff.common.membership')}
-                  </th>
-                )}
-                <th scope="col">{t('staff.common.committees')}</th>
-                <th scope="col">{t('staff.people.lastActivityHeading')}</th>
-              </tr>
-            </thead>
-            <tbody>
-              {page.items.map((person) => (
-                <RosterMember
-                  person={person}
-                  details={details.get(person.id)}
-                  showMembership={showMembership}
-                  showDiscord={showDiscord}
-                  canAddToAnotherCommittee={
-                    person.membership_status === 'member' &&
-                    acceptingCommitteeIds.some(
-                      (committeeId) =>
-                        !details.get(person.id)?.committees.some((item) => item.id === committeeId),
+          </summary>
+          <div class="staff-filter-panel">
+            <div class="staff-filter-row">
+              <div>
+                <label for="status">{t('staff.common.membership')}</label>
+                <select id="status" name="status">
+                  {
+                    Object.entries(MEMBERSHIP_LABELS).map(([value, label]) => (
+                      <option value={value} selected={searchStatus === value}>
+                        {label}
+                      </option>
+                    ))
+                  }
+                  <option value="all" selected={searchStatus === 'all'}
+                    >{t('staff.people.everyone')}</option
+                  >
+                </select>
+              </div>
+              <div>
+                <label for="committee">{t('staff.common.committee')}</label>
+                <select id="committee" name="committee">
+                  <option value="">{t('staff.people.all')}</option>
+                  {
+                    staff.actor.staffAdmin && (
+                      <option
+                        value="unassigned"
+                        selected={Astro.url.searchParams.get('committee') === 'unassigned'}
+                      >
+                        {t('staff.people.unassigned')}
+                      </option>
                     )
                   }
+                  {
+                    committees.map((committee) => (
+                      <option
+                        value={committee.id}
+                        selected={Astro.url.searchParams.get('committee') === committee.id}
+                      >
+                        {committee.name}
+                      </option>
+                    ))
+                  }
+                </select>
+              </div>
+              <div class="staff-zip">
+                <label for="zip">{t('staff.common.zip')}</label>
+                <input
+                  id="zip"
+                  name="zip"
+                  inputmode="numeric"
+                  maxlength="5"
+                  value={Astro.url.searchParams.get('zip') ?? ''}
+                  aria-invalid={error === t('staff.people.invalidZip') ? 'true' : undefined}
                 />
-              ))}
-            </tbody>
-          </table>
-          {page.nextCursor && (
-            <div class="staff-table-footer">
-              <a href={pageLink(Astro.url, page.nextCursor)} class="staff-next">
-                {status === 'member' ? t('staff.people.moreMembers') : t('staff.people.morePeople')}{' '}
-                <span aria-hidden="true">→</span>
+              </div>
+            </div>
+            <Button name="intent" value="filters">{t('staff.people.applyFilters')}</Button>
+          </div>
+        </details>
+        {
+          Astro.url.search && (
+            <div class="staff-search-options">
+              <a href="/people/" class="staff-muted-link">
+                {t('staff.people.clearFilters')}
               </a>
             </div>
-          )}
-        </section>
-      ) : (
-        <div class="staff-empty">
-          <>
-            <h2>{t('staff.people.noMatches')}</h2>
-            <p>{t('staff.people.noMatchesHelp')}</p>
-            {status !== 'all' && (
-              <a href={allMembershipsLink(Astro.url)}>{t('staff.people.includeFormer')}</a>
+          )
+        }
+      </form>
+      {
+        !error && page.items.length > 0 && (
+          <p class="staff-results-count">
+            {status === 'member'
+              ? page.nextCursor
+                ? t('staff.people.showingMembersOnPage', { count: page.items.length })
+                : t('staff.people.showingMembers', { count: page.items.length })
+              : page.nextCursor
+                ? t('staff.people.showingPeopleOnPage', { count: page.items.length })
+                : t('staff.people.showingPeople', { count: page.items.length })}
+          </p>
+        )
+      }
+    </div>
+    {
+      !error &&
+        (page.items.length ? (
+          <section aria-label={t('staff.people.results')} class="staff-roster-results">
+            <table
+              class:list={[
+                'staff-roster',
+                (showMembership || showDiscord) && 'staff-roster-with-status',
+              ]}
+            >
+              <caption class="sr-only">
+                {status === 'member' ? t('staff.people.title') : t('staff.people.people')}
+              </caption>
+              <thead>
+                <tr>
+                  <th scope="col">{t('staff.common.member')}</th>
+                  {(showMembership || showDiscord) && (
+                    <th scope="col">
+                      {showMembership && showDiscord
+                        ? t('staff.people.membershipDiscord')
+                        : showDiscord
+                          ? t('staff.common.discord')
+                          : t('staff.common.membership')}
+                    </th>
+                  )}
+                  <th scope="col">{t('staff.common.committees')}</th>
+                  <th scope="col">{t('staff.people.lastActivityHeading')}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {page.items.map((person) => (
+                  <RosterMember
+                    person={person}
+                    details={details.get(person.id)}
+                    showMembership={showMembership}
+                    showDiscord={showDiscord}
+                    canAddToAnotherCommittee={
+                      person.membership_status === 'member' &&
+                      acceptingCommitteeIds.some(
+                        (committeeId) =>
+                          !details
+                            .get(person.id)
+                            ?.committees.some((item) => item.id === committeeId),
+                      )
+                    }
+                  />
+                ))}
+              </tbody>
+            </table>
+            {page.nextCursor && (
+              <div class="staff-table-footer">
+                <a href={pageLink(Astro.url, page.nextCursor)} class="staff-next">
+                  {status === 'member'
+                    ? t('staff.people.moreMembers')
+                    : t('staff.people.morePeople')}{' '}
+                  <span aria-hidden="true">→</span>
+                </a>
+              </div>
             )}
-          </>
-        </div>
-      ))
-  }
+          </section>
+        ) : (
+          <div class="staff-empty">
+            <>
+              <h2>{t('staff.people.noMatches')}</h2>
+              <p>{t('staff.people.noMatchesHelp')}</p>
+              {status !== 'all' && (
+                <a href={allMembershipsLink(Astro.url)}>{t('staff.people.includeFormer')}</a>
+              )}
+            </>
+          </div>
+        ))
+    }
+  </div>
 </StaffLayout>
