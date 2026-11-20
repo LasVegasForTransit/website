@@ -28,11 +28,7 @@
   "dependencies": {
     "@lasvegasfortransit/platform-core": "workspace:*",
     "@lasvegasfortransit/platform-storage": "workspace:*",
-    "@lasvegasfortransit/platform-integrations": "workspace:*",
-    "@astrojs/cloudflare": "catalog:",
-    "@tailwindcss/vite": "catalog:",
-    "@tailwindcss/typography": "catalog:",
-    "tailwindcss": "catalog:"
+    "@lasvegasfortransit/platform-integrations": "workspace:*"
   },
   "devDependencies": {
     "astro": "catalog:",
@@ -49,6 +45,10 @@
     "@playwright/test": "catalog:",
     "@axe-core/playwright": "catalog:",
     "@lhci/cli": "catalog:",
-    "fflate": "catalog:"
+    "fflate": "catalog:",
+    "@astrojs/cloudflare": "catalog:",
+    "@tailwindcss/vite": "catalog:",
+    "@tailwindcss/typography": "catalog:",
+    "tailwindcss": "catalog:"
   }
 }
