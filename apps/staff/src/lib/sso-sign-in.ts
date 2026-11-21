@@ -16,7 +16,6 @@ import {
   workspaceCookie,
 } from '@lasvegasfortransit/platform-integrations/google-sign-in';
 import type { AccessIdentity } from '@lasvegasfortransit/platform-integrations/access-identity';
-import { staffWelcomePath } from './onboarding';
 import { isSignedOut } from './sso-navigation';
 import { staffReturnPath } from './sign-in-return';
 import type { StaffEnv } from './context';
@@ -45,7 +44,7 @@ export async function startSsoSignIn(
     return googleResponse(staffReturnPath(next));
   const session = await createSsoSession(env, principal);
   if (session)
-    return googleResponse(staffWelcomePath(next), sessionCookies(session.token, session.expiresAt));
+    return googleResponse(staffReturnPath(next), sessionCookies(session.token, session.expiresAt));
   if ((await ssoPrincipalStatus(env.PLATFORM_DB, principal)) !== 'unknown')
     return messageResponse("You don't have access to this", 403);
   const pending = await new SsoLinkService(env).begin(principal, { returnTo: next });
