@@ -18,7 +18,7 @@ import {
   applicationDay,
   applicationDecision,
   applicationTarget,
-  applicationTimes,
+  applicationHours,
   applicationWaiting,
   applicationsVisible,
 } from '../../../lib/applications';
@@ -33,7 +33,7 @@ const waiting = application.state === 'submitted';
 const requested = Astro.url.searchParams.get('step');
 const step = waiting && (requested === 'accept' || requested === 'decline') ? requested : null;
 const name = applicantName(application);
-const times = applicationTimes(application);
+const hours = applicationHours(application);
 const here = `/applications/${id}/`;
 // A lead accepts onto the team applied to. An administrator can choose any
 // team, and must choose one when the role has none yet.
@@ -78,16 +78,19 @@ const token = step
       <p>{application.note || t('staff.applications.noNote')}</p>
       <h2 class="font-bold">{t('staff.applications.availability')}</h2>
       {
-        times.length > 0 && (
-          <ul class="staff-application-times">
-            {times.map((time) => (
-              <li>{time}</li>
+        hours.length > 0 && (
+          <dl class="staff-application-hours">
+            {hours.map((line) => (
+              <div>
+                <dt>{line.day}</dt>
+                <dd>{line.hours}</dd>
+              </div>
             ))}
-          </ul>
+          </dl>
         )
       }
       {application.availability && <p>{application.availability}</p>}
-      {!times.length && !application.availability && <p>{t('staff.applications.noTimes')}</p>}
+      {!hours.length && !application.availability && <p>{t('staff.applications.noTimes')}</p>}
       {
         waiting && !step && (
           <div class="staff-application-actions">
