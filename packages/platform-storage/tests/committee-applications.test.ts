@@ -4,7 +4,7 @@ import { PersonService } from '../src/person-service';
 import { linkWorkspaceIdentity } from '../src/workspace-link';
 import { bootstrapStaffAdmin, loadActor } from '../src/staff-roles';
 import { CommitteeService } from '../src/committees';
-import { CommitteeApplicationService } from '../src/committee-applications';
+import { availableRanges, CommitteeApplicationService } from '../src/committee-applications';
 import { memoryDb } from './support/db';
 
 const now = new Date('2026-11-20T12:00:00.000Z');
@@ -82,7 +82,7 @@ const role = {
 };
 const input = {
   note: 'I run a book club.',
-  availableTimes: ['weekend-mornings', 'weekday-evenings', 'weekday-evenings'],
+  availableHours: ['sat-9', 'mon-19', 'mon-18', 'mon-18', 'sat-10', 'mon-21'],
   availability: 'Not the first week of the month',
 };
 
@@ -101,7 +101,12 @@ void test('a member applies once per role; the committee lead sees it and accept
   const [queued] = await f.service.queue(lead, later);
   assert.ok(queued);
   assert.equal(queued.note, 'I run a book club.');
-  assert.deepEqual(queued.availableTimes, ['weekday-evenings', 'weekend-mornings']);
+  assert.deepEqual(queued.availableHours, ['mon-18', 'mon-19', 'mon-21', 'sat-9', 'sat-10']);
+  assert.deepEqual(availableRanges(queued.availableHours), [
+    { day: 'mon', start: 18, end: 20 },
+    { day: 'mon', start: 21, end: 22 },
+    { day: 'sat', start: 9, end: 11 },
+  ]);
   assert.equal(queued.availability, 'Not the first week of the month');
   assert.equal(queued.overdue, true);
 
@@ -273,7 +278,7 @@ void test('members withdraw their own applications, invalid input and closed com
     'invalid',
   );
   assert.equal(
-    (await f.service.submit(f.applicant.id, role, { ...input, availableTimes: ['midnight'] }, now))
+    (await f.service.submit(f.applicant.id, role, { ...input, availableHours: ['mon-23'] }, now))
       .kind,
     'invalid',
   );

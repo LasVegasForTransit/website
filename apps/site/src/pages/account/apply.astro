@@ -5,21 +5,45 @@
 import AccountFormPage from '../../components/app/AccountFormPage.astro';
 import TextField from '../../components/app/TextField.astro';
 import { hintClass, inputClass, labelClass } from '../../components/app/styles';
-import { NOTE_LIMIT } from '@lasvegasfortransit/platform-storage/committee-applications';
+import {
+  AVAILABLE_DAYS,
+  AVAILABLE_HOURS,
+  NOTE_LIMIT,
+  hourLabel,
+  hourSlot,
+  type AvailableDay,
+} from '@lasvegasfortransit/platform-storage/committee-applications';
 import { t } from '@lasvegasfortransit/platform-core/messages';
 
-// Times of week as two rows of toggles. Values match AVAILABLE_TIMES.
-const parts = [
-  { key: 'mornings', label: t('applications.mornings') },
-  { key: 'afternoons', label: t('applications.afternoons') },
-  { key: 'evenings', label: t('applications.evenings') },
-];
+// A week of one-hour slots (rows are hours, columns are days). Without
+// JavaScript each slot is a checkbox; week-picker.js adds quick-fill presets,
+// drag to paint, and arrow keys. Values match the stored slots (`mon-18`).
 const days = [
-  { key: 'weekday', label: t('applications.weekdays') },
-  { key: 'weekend', label: t('applications.weekends') },
+  { key: 'mon', short: t('applications.mon'), name: t('applications.monday') },
+  { key: 'tue', short: t('applications.tue'), name: t('applications.tuesday') },
+  { key: 'wed', short: t('applications.wed'), name: t('applications.wednesday') },
+  { key: 'thu', short: t('applications.thu'), name: t('applications.thursday') },
+  { key: 'fri', short: t('applications.fri'), name: t('applications.friday') },
+  { key: 'sat', short: t('applications.sat'), name: t('applications.saturday') },
+  { key: 'sun', short: t('applications.sun'), name: t('applications.sunday') },
+] as const;
+const weekdays = AVAILABLE_DAYS.slice(0, 5);
+const weekends = AVAILABLE_DAYS.slice(5);
+const hoursBetween = (from: number, to: number) =>
+  AVAILABLE_HOURS.filter((hour) => hour >= from && hour < to);
+const fill = (on: readonly AvailableDay[], from: number, to: number) =>
+  on.flatMap((day) => hoursBetween(from, to).map((hour) => hourSlot(day, hour))).join(' ');
+// Mornings 7 to noon, afternoons noon to 5, evenings 5 to 10.
+const presets = [
+  { label: t('applications.weekdayMornings'), slots: fill(weekdays, 7, 12) },
+  { label: t('applications.weekdayAfternoons'), slots: fill(weekdays, 12, 17) },
+  { label: t('applications.weekdayEvenings'), slots: fill(weekdays, 17, 22) },
+  { label: t('applications.weekendMornings'), slots: fill(weekends, 7, 12) },
+  { label: t('applications.weekendAfternoons'), slots: fill(weekends, 12, 17) },
+  { label: t('applications.weekendEvenings'), slots: fill(weekends, 17, 22) },
 ];
-const toggle =
-  'flex min-h-11 min-w-0 cursor-pointer items-center justify-center gap-1.5 border-2 border-outline bg-surface-container px-1.5 text-sm has-[:checked]:border-primary-ink has-[:checked]:bg-primary-container has-[:focus-visible]:outline';
+const preset =
+  'min-h-11 border-2 border-outline bg-surface-container px-3 text-sm font-bold aria-pressed:border-primary-ink aria-pressed:bg-primary-container';
 ---
 
 <AccountFormPage
@@ -40,38 +64,73 @@ const toggle =
       maxlength={NOTE_LIMIT}
       class:list={[inputClass, 'max-w-xl']}></textarea>
   </div>
-  <fieldset aria-describedby="times-hint">
+  <fieldset aria-describedby="hours-hint" data-week-picker>
     <legend class={labelClass}>{t('applications.availabilityLabel')}</legend>
-    <p id="times-hint" class={hintClass}>{t('applications.availabilityHint')}</p>
-    <div class="mt-3 space-y-3">
-      {
-        days.map((day) => (
-          <div
-            role="group"
-            aria-labelledby={`times-${day.key}`}
-            class="grid max-w-xl gap-2 sm:grid-cols-[6rem_1fr] sm:items-center"
-          >
-            <span id={`times-${day.key}`} class="text-sm font-bold">
-              {day.label}
-            </span>
-            <div class="grid grid-cols-3 gap-1.5 sm:gap-2">
-              {parts.map((part) => (
-                <label class={toggle}>
-                  <input
-                    type="checkbox"
-                    name="times"
-                    value={`${day.key}-${part.key}`}
-                    class="size-4 shrink-0 accent-primary"
-                  />
-                  {part.label}
-                </label>
-              ))}
-            </div>
-          </div>
-        ))
-      }
+    <p id="hours-hint" class={hintClass}>{t('applications.availabilityHint')}</p>
+    <div data-presets hidden class="mt-3">
+      <p class="text-sm font-bold">{t('applications.quickFill')}</p>
+      <div class="mt-2 flex flex-wrap gap-2">
+        {
+          presets.map((entry) => (
+            <button type="button" class={preset} data-preset={entry.slots} aria-pressed="false">
+              {entry.label}
+            </button>
+          ))
+        }
+        <button type="button" class={preset} data-clear>
+          {t('applications.clearHours')}
+        </button>
+      </div>
     </div>
+    <table class="mt-4 w-full max-w-xl table-fixed border-collapse select-none">
+      <thead>
+        <tr>
+          <td class="w-14"></td>
+          {
+            days.map((day) => (
+              <th scope="col" abbr={day.name} class="pb-1 text-center text-xs font-bold">
+                {day.short}
+              </th>
+            ))
+          }
+        </tr>
+      </thead>
+      <tbody>
+        {
+          AVAILABLE_HOURS.map((hour) => (
+            <tr class:list={[(hour === 12 || hour === 17) && 'border-t-2 border-outline']}>
+              <th
+                scope="row"
+                class="pr-2 text-right align-top text-xs font-normal whitespace-nowrap text-on-surface-variant"
+              >
+                {hourLabel(hour)}
+              </th>
+              {days.map((day) => (
+                <td class="p-0">
+                  <label class="block h-8 cursor-pointer border border-on-surface/20 bg-surface-container has-[:checked]:bg-primary has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-[-3px] has-[:focus-visible]:outline-on-surface">
+                    <input
+                      type="checkbox"
+                      name="hours"
+                      value={hourSlot(day.key, hour)}
+                      class="sr-only"
+                    />
+                    <span class="sr-only">
+                      {t('applications.hourSlot', {
+                        day: day.name,
+                        start: hourLabel(hour),
+                        end: hourLabel(hour + 1),
+                      })}
+                    </span>
+                  </label>
+                </td>
+              ))}
+            </tr>
+          ))
+        }
+      </tbody>
+    </table>
   </fieldset>
   <TextField name="availability" label={t('applications.availabilityNoteLabel')} />
   <p slot="after" class="mt-6">{t('applications.withdrawHint')}</p>
+  <script is:inline slot="after" src="/scripts/week-picker.js" defer></script>
 </AccountFormPage>

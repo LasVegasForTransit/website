@@ -883,24 +883,27 @@ html {
     white-space: pre-line;
   }
 
-  .staff-application-answers :is(p, ul) + h2 {
+  .staff-application-answers :is(p, dl) + h2 {
     margin-top: 1.5rem;
   }
 
-  .staff-application-times {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.5rem;
+  .staff-application-hours {
+    display: grid;
+    gap: 0.25rem;
     margin-top: 0.5rem;
   }
 
-  .staff-application-times li {
-    padding: 0.125rem 0.625rem;
-    background: var(--color-surface-container);
-    font-size: var(--text-body-sm);
+  .staff-application-hours div {
+    display: grid;
+    grid-template-columns: 7.5rem 1fr;
+    gap: 1rem;
   }
 
-  .staff-application-times + p {
+  .staff-application-hours dt {
+    font-weight: 700;
+  }
+
+  .staff-application-hours + p {
     margin-top: 0.75rem;
   }
 

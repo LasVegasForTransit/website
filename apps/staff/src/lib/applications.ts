@@ -5,7 +5,9 @@ import { consumeFormToken } from '@lasvegasfortransit/platform-storage/form-toke
 import {
   CommitteeApplicationService,
   NOTE_LIMIT,
-  type AvailableTime,
+  availableRanges,
+  hourLabel,
+  type AvailableDay,
   type StaffApplication,
 } from '@lasvegasfortransit/platform-storage/committee-applications';
 import type { StaffContext } from './context';
@@ -26,18 +28,27 @@ export function applicantName(application: StaffApplication): string {
   );
 }
 
-const TIME_LABELS: Record<AvailableTime, string> = {
-  'weekday-mornings': t('staff.applications.weekdayMornings'),
-  'weekday-afternoons': t('staff.applications.weekdayAfternoons'),
-  'weekday-evenings': t('staff.applications.weekdayEvenings'),
-  'weekend-mornings': t('staff.applications.weekendMornings'),
-  'weekend-afternoons': t('staff.applications.weekendAfternoons'),
-  'weekend-evenings': t('staff.applications.weekendEvenings'),
+const DAY_NAMES: Record<AvailableDay, string> = {
+  mon: t('applications.monday'),
+  tue: t('applications.tuesday'),
+  wed: t('applications.wednesday'),
+  thu: t('applications.thursday'),
+  fri: t('applications.friday'),
+  sat: t('applications.saturday'),
+  sun: t('applications.sunday'),
 };
 
-/** "Weekday evenings", "Weekend mornings", ... in week order. */
-export function applicationTimes(application: StaffApplication): string[] {
-  return application.availableTimes.map((time) => TIME_LABELS[time]);
+/** One line per day they're free: "Monday", "6 PM–8 PM, 9 PM–10 PM". */
+export function applicationHours(application: StaffApplication): { day: string; hours: string }[] {
+  const lines = new Map<AvailableDay, string[]>();
+  for (const range of availableRanges(application.availableHours)) {
+    const hours = t('staff.applications.hoursRange', {
+      start: hourLabel(range.start),
+      end: hourLabel(range.end),
+    });
+    lines.set(range.day, [...(lines.get(range.day) ?? []), hours]);
+  }
+  return [...lines].map(([day, hours]) => ({ day: DAY_NAMES[day], hours: hours.join(', ') }));
 }
 
 /** "Events Coordinator · Events Committee" for a role, or the team for an ask to join. */
