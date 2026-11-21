@@ -13,6 +13,7 @@ export interface WorkRoute {
   revision: number;
   baselineRevision?: number;
   trigger: { property: string; values: string[] };
+  projectLeadField?: string;
   projectRelation?: { property: string; projectSourceId: string };
   destination: { kind: 'category' | 'forum' | 'text'; channelId: string };
   tagIds?: string[];
