@@ -376,6 +376,10 @@ html {
       order: -1;
     }
 
+    .staff-shell-sidebar .staff-identity-mark {
+      display: none;
+    }
+
     .staff-shell-sidebar .staff-header-inner > .staff-account .staff-account-text,
     .staff-shell-sidebar .staff-header-inner > .staff-account .staff-account-actions {
       display: none;
@@ -436,14 +440,15 @@ html {
   }
 
   /* Phone menu: a native disclosure, so it works with scripts off. */
-  /* Icon only: the three lines are the convention, and the label stays for screen readers. */
+  /* Icon only: the three lines are the convention, and the label stays for screen readers.
+     No frame; a square 44px hit area with the icon centered, so padding is equal on all sides. */
   .staff-nav-menu > summary {
     display: inline-flex;
     width: 2.75rem;
     height: 2.75rem;
+    margin-inline-start: -0.8125rem;
     align-items: center;
     justify-content: center;
-    border: 2px solid var(--color-outline);
     list-style: none;
     cursor: pointer;
   }
@@ -454,20 +459,23 @@ html {
 
   .staff-nav-menu > summary::before {
     width: 1.125rem;
-    height: 0.75rem;
+    height: 1.125rem;
     border-block: 2px solid currentColor;
     background: linear-gradient(currentColor, currentColor) center / 100% 2px no-repeat;
     content: '';
   }
 
   .staff-nav-menu > summary:hover {
-    border-color: var(--color-on-surface);
     background: var(--staff-hover);
   }
 
   .staff-nav-menu[open] > summary {
-    border-color: var(--color-on-surface);
     background: var(--staff-pressed);
+  }
+
+  .staff-nav-menu > summary:focus-visible {
+    outline: 3px solid var(--color-primary);
+    outline-offset: -3px;
   }
 
   .staff-nav-menu > nav {
