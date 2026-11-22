@@ -42,33 +42,8 @@ const presets = [
   { label: t('applications.weekendAfternoons'), slots: fill(weekends, 12, 17) },
   { label: t('applications.weekendEvenings'), slots: fill(weekends, 17, 22) },
 ];
-const variant = import.meta.env.PUBLIC_QUICK_FILL ?? 'b';
-const presetRows = [
-  {
-    label: t('applications.weekdays'),
-    items: [
-      { label: t('applications.mornings'), slots: fill(weekdays, 7, 12) },
-      { label: t('applications.afternoons'), slots: fill(weekdays, 12, 17) },
-      { label: t('applications.evenings'), slots: fill(weekdays, 17, 22) },
-    ],
-  },
-  {
-    label: t('applications.weekends'),
-    items: [
-      { label: t('applications.mornings'), slots: fill(weekends, 7, 12) },
-      { label: t('applications.afternoons'), slots: fill(weekends, 12, 17) },
-      { label: t('applications.evenings'), slots: fill(weekends, 17, 22) },
-    ],
-  },
-];
 const segment =
   'flex min-h-11 cursor-pointer items-center gap-2 border-2 border-outline bg-surface-container px-3 text-sm font-bold not-first:-ml-0.5 has-[:checked]:z-10 has-[:checked]:border-primary-ink has-[:checked]:bg-primary-container has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-primary';
-const segmentButton =
-  'min-h-11 min-w-0 border-2 border-outline bg-surface-container px-1 text-sm font-bold not-first:-ml-0.5 aria-pressed:z-10 aria-pressed:border-primary-ink aria-pressed:bg-primary-container';
-const menuButton =
-  'flex min-h-11 cursor-pointer list-none items-center gap-2 border-2 border-outline bg-surface-container px-3 text-sm font-bold [&::-webkit-details-marker]:hidden';
-const menuItem =
-  'group flex min-h-11 w-full items-center gap-2 px-3 text-left text-sm hover:bg-surface-container focus-visible:bg-surface-container';
 const textButton =
   'min-h-11 px-1 text-sm font-bold underline decoration-2 decoration-primary underline-offset-4';
 // A chip is 32px tall to look like a chip; the button around it keeps the
@@ -116,92 +91,28 @@ const chipFace =
             </label>
           </div>
         </div>
-        {
-          variant === 'b' && (
-            <details class="relative" data-fill-menu>
-              <summary class={menuButton}>
-                {t('applications.quickFill')}
-                <span aria-hidden="true">▾</span>
-              </summary>
-              <div class="absolute right-0 z-10 mt-1 w-56 border-2 border-outline bg-surface py-1 shadow-lg">
-                {presets.map((entry) => (
-                  <button
-                    type="button"
-                    class={menuItem}
-                    data-preset={entry.slots}
-                    aria-pressed="false"
-                  >
-                    <span class="menu-check" aria-hidden="true" />
-                    {entry.label}
-                  </button>
-                ))}
-                <hr class="my-1 border-on-surface/15" />
-                <button type="button" class={menuItem} data-clear>
-                  <span class="size-4" aria-hidden="true" />
-                  {t('applications.clearHours')}
-                </button>
-              </div>
-            </details>
-          )
-        }
-        {
-          variant !== 'b' && (
-            <button type="button" class={textButton} data-clear>
-              {t('applications.clearHours')}
-            </button>
-          )
-        }
+        <button type="button" class={textButton} data-clear>
+          {t('applications.clearHours')}
+        </button>
       </div>
-      {
-        variant === 'a' && (
-          <div>
-            <p id="quick-fill" class="text-sm font-bold">
-              {t('applications.quickFill')}
-            </p>
-            <div
-              role="group"
-              aria-labelledby="quick-fill"
-              class="-mx-5 flex gap-2 overflow-x-auto px-5 [scrollbar-width:none] sm:mx-0 sm:px-0"
-            >
-              {presets.map((entry) => (
-                <button type="button" class={chip} data-preset={entry.slots} aria-pressed="false">
-                  <span class={chipFace}>{entry.label}</span>
-                </button>
-              ))}
-            </div>
-          </div>
-        )
-      }
-      {
-        variant === 'c' && (
-          <div class="space-y-2">
-            <p class="text-sm font-bold">{t('applications.quickFill')}</p>
-            {presetRows.map((row) => (
-              <div
-                role="group"
-                aria-label={row.label}
-                class="grid grid-cols-[5rem_1fr] items-center gap-2"
-              >
-                <span class="text-sm text-on-surface-variant" aria-hidden="true">
-                  {row.label}
-                </span>
-                <div class="grid grid-cols-3">
-                  {row.items.map((item) => (
-                    <button
-                      type="button"
-                      class={segmentButton}
-                      data-preset={item.slots}
-                      aria-pressed="false"
-                    >
-                      {item.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            ))}
-          </div>
-        )
-      }
+      <div>
+        <p id="quick-fill" class="text-sm font-bold">
+          {t('applications.quickFill')}
+        </p>
+        <div
+          role="group"
+          aria-labelledby="quick-fill"
+          class="-mx-5 flex gap-2 overflow-x-auto px-5 [scrollbar-width:none] sm:mx-0 sm:px-0"
+        >
+          {
+            presets.map((entry) => (
+              <button type="button" class={chip} data-preset={entry.slots} aria-pressed="false">
+                <span class={chipFace}>{entry.label}</span>
+              </button>
+            ))
+          }
+        </div>
+      </div>
     </div>
     <table class="mt-5 w-full max-w-xl table-fixed border-collapse select-none">
       <thead>
@@ -288,13 +199,5 @@ const chipFace =
   .week-cell:has(:focus-visible) {
     outline: 2px solid var(--color-on-surface);
     outline-offset: -3px;
-  }
-  .menu-check {
-    width: 1rem;
-    text-align: center;
-  }
-  [aria-pressed='true'] > .menu-check::before {
-    content: '✓';
-    font-weight: 700;
   }
 </style>
