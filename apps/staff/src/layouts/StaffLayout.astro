@@ -63,6 +63,9 @@ if (staff && consoleVisible) {
       items: [
         item('/people/', t('staff.navigation.members'), ['/people']),
         ...(welcomeVisible(staff) ? [item('/welcome/', t('staff.navigation.welcome'))] : []),
+        ...(applicationsVisible(staff)
+          ? [item('/applications/', t('staff.applications.navigation'))]
+          : []),
         item('/committees/', t('staff.navigation.committees')),
       ],
     },
