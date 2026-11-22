@@ -25,6 +25,8 @@ export const staffApplications = {
     availability: 'Usually free',
     noTimes: 'They didn’t say.',
     hoursRange: '{start}–{end}',
+    ifNeeded: 'If needed: {hours}',
+    scheduleNote: 'Schedule note',
     noNote: 'They didn’t add a note.',
     accept: 'Accept',
     acceptHeading: 'Accept {name}',

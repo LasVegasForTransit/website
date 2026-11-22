@@ -83,13 +83,27 @@ const token = step
             {hours.map((line) => (
               <div>
                 <dt>{line.day}</dt>
-                <dd>{line.hours}</dd>
+                <dd>
+                  {line.free}
+                  {line.ifNeeded && (
+                    <span class="staff-application-if-needed">
+                      {t('staff.applications.ifNeeded', { hours: line.ifNeeded })}
+                    </span>
+                  )}
+                </dd>
               </div>
             ))}
           </dl>
         )
       }
-      {application.availability && <p>{application.availability}</p>}
+      {
+        application.availability && (
+          <>
+            <h3 class="staff-application-subhead">{t('staff.applications.scheduleNote')}</h3>
+            <p>{application.availability}</p>
+          </>
+        )
+      }
       {!hours.length && !application.availability && <p>{t('staff.applications.noTimes')}</p>}
       {
         waiting && !step && (

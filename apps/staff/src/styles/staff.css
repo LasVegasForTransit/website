@@ -903,8 +903,24 @@ html {
     font-weight: 700;
   }
 
-  .staff-application-hours + p {
-    margin-top: 0.75rem;
+  .staff-application-hours dd {
+    display: flex;
+    flex-wrap: wrap;
+    column-gap: 1rem;
+  }
+
+  .staff-application-if-needed {
+    color: var(--color-on-surface-variant);
+  }
+
+  .staff-application-subhead {
+    margin-top: 1rem;
+    font-size: var(--text-body-sm);
+    font-weight: 700;
+  }
+
+  .staff-application-subhead + p {
+    margin-top: 0.25rem;
   }
 
   /* Text boxes start several lines tall; the shared field rule above sizes

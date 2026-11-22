@@ -33,7 +33,7 @@ const hoursBetween = (from: number, to: number) =>
   AVAILABLE_HOURS.filter((hour) => hour >= from && hour < to);
 const fill = (on: readonly AvailableDay[], from: number, to: number) =>
   on.flatMap((day) => hoursBetween(from, to).map((hour) => hourSlot(day, hour))).join(' ');
-// Mornings 7 to noon, afternoons noon to 5, evenings 5 to 10.
+// Quick fill: mornings 7 to noon, afternoons noon to 5, evenings 5 to 10.
 const presets = [
   { label: t('applications.weekdayMornings'), slots: fill(weekdays, 7, 12) },
   { label: t('applications.weekdayAfternoons'), slots: fill(weekdays, 12, 17) },
@@ -42,8 +42,40 @@ const presets = [
   { label: t('applications.weekendAfternoons'), slots: fill(weekends, 12, 17) },
   { label: t('applications.weekendEvenings'), slots: fill(weekends, 17, 22) },
 ];
-const preset =
-  'min-h-11 border-2 border-outline bg-surface-container px-3 text-sm font-bold aria-pressed:border-primary-ink aria-pressed:bg-primary-container';
+const variant = import.meta.env.PUBLIC_QUICK_FILL ?? 'b';
+const presetRows = [
+  {
+    label: t('applications.weekdays'),
+    items: [
+      { label: t('applications.mornings'), slots: fill(weekdays, 7, 12) },
+      { label: t('applications.afternoons'), slots: fill(weekdays, 12, 17) },
+      { label: t('applications.evenings'), slots: fill(weekdays, 17, 22) },
+    ],
+  },
+  {
+    label: t('applications.weekends'),
+    items: [
+      { label: t('applications.mornings'), slots: fill(weekends, 7, 12) },
+      { label: t('applications.afternoons'), slots: fill(weekends, 12, 17) },
+      { label: t('applications.evenings'), slots: fill(weekends, 17, 22) },
+    ],
+  },
+];
+const segment =
+  'flex min-h-11 cursor-pointer items-center gap-2 border-2 border-outline bg-surface-container px-3 text-sm font-bold not-first:-ml-0.5 has-[:checked]:z-10 has-[:checked]:border-primary-ink has-[:checked]:bg-primary-container has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-primary';
+const segmentButton =
+  'min-h-11 min-w-0 border-2 border-outline bg-surface-container px-1 text-sm font-bold not-first:-ml-0.5 aria-pressed:z-10 aria-pressed:border-primary-ink aria-pressed:bg-primary-container';
+const menuButton =
+  'flex min-h-11 cursor-pointer list-none items-center gap-2 border-2 border-outline bg-surface-container px-3 text-sm font-bold [&::-webkit-details-marker]:hidden';
+const menuItem =
+  'group flex min-h-11 w-full items-center gap-2 px-3 text-left text-sm hover:bg-surface-container focus-visible:bg-surface-container';
+const textButton =
+  'min-h-11 px-1 text-sm font-bold underline decoration-2 decoration-primary underline-offset-4';
+// A chip is 32px tall to look like a chip; the button around it keeps the
+// 44px target.
+const chip = 'group flex min-h-11 shrink-0 cursor-pointer items-center focus-visible:outline-none';
+const chipFace =
+  'inline-flex h-8 items-center gap-1.5 border border-on-surface/40 bg-surface-container px-3 text-sm font-semibold whitespace-nowrap group-hover:border-on-surface group-focus-visible:outline-2 group-focus-visible:outline-offset-2 group-focus-visible:outline-primary group-aria-pressed:border-primary-ink group-aria-pressed:bg-primary-container';
 ---
 
 <AccountFormPage
@@ -64,28 +96,117 @@ const preset =
       maxlength={NOTE_LIMIT}
       class:list={[inputClass, 'max-w-xl']}></textarea>
   </div>
-  <fieldset aria-describedby="hours-hint" data-week-picker>
+  <fieldset aria-describedby="hours-hint" class="min-w-0" data-week-picker>
     <legend class={labelClass}>{t('applications.availabilityLabel')}</legend>
     <p id="hours-hint" class={hintClass}>{t('applications.availabilityHint')}</p>
-    <div data-presets hidden class="mt-3">
-      <p class="text-sm font-bold">{t('applications.quickFill')}</p>
-      <div class="mt-2 flex flex-wrap gap-2">
+    <div data-tools hidden class="mt-4 max-w-xl space-y-3">
+      <div class="flex flex-wrap items-end justify-between gap-x-4 gap-y-3">
+        <div role="radiogroup" aria-labelledby="brush-label">
+          <p id="brush-label" class="text-sm font-bold">{t('applications.markAs')}</p>
+          <div class="mt-1 flex">
+            <label class={segment}>
+              <input type="radio" name="brush" value="free" checked class="sr-only" />
+              <span class="inline-block size-3 bg-primary" aria-hidden="true"></span>
+              {t('applications.free')}
+            </label>
+            <label class={segment}>
+              <input type="radio" name="brush" value="if_needed" class="sr-only" />
+              <span class="if-needed-swatch inline-block size-3" aria-hidden="true"></span>
+              {t('applications.ifNeeded')}
+            </label>
+          </div>
+        </div>
         {
-          presets.map((entry) => (
-            <button type="button" class={preset} data-preset={entry.slots} aria-pressed="false">
-              {entry.label}
-            </button>
-          ))
+          variant === 'b' && (
+            <details class="relative" data-fill-menu>
+              <summary class={menuButton}>
+                {t('applications.quickFill')}
+                <span aria-hidden="true">▾</span>
+              </summary>
+              <div class="absolute right-0 z-10 mt-1 w-56 border-2 border-outline bg-surface py-1 shadow-lg">
+                {presets.map((entry) => (
+                  <button
+                    type="button"
+                    class={menuItem}
+                    data-preset={entry.slots}
+                    aria-pressed="false"
+                  >
+                    <span class="menu-check" aria-hidden="true" />
+                    {entry.label}
+                  </button>
+                ))}
+                <hr class="my-1 border-on-surface/15" />
+                <button type="button" class={menuItem} data-clear>
+                  <span class="size-4" aria-hidden="true" />
+                  {t('applications.clearHours')}
+                </button>
+              </div>
+            </details>
+          )
         }
-        <button type="button" class={preset} data-clear>
-          {t('applications.clearHours')}
-        </button>
+        {
+          variant !== 'b' && (
+            <button type="button" class={textButton} data-clear>
+              {t('applications.clearHours')}
+            </button>
+          )
+        }
       </div>
+      {
+        variant === 'a' && (
+          <div>
+            <p id="quick-fill" class="text-sm font-bold">
+              {t('applications.quickFill')}
+            </p>
+            <div
+              role="group"
+              aria-labelledby="quick-fill"
+              class="-mx-5 flex gap-2 overflow-x-auto px-5 [scrollbar-width:none] sm:mx-0 sm:px-0"
+            >
+              {presets.map((entry) => (
+                <button type="button" class={chip} data-preset={entry.slots} aria-pressed="false">
+                  <span class={chipFace}>{entry.label}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        )
+      }
+      {
+        variant === 'c' && (
+          <div class="space-y-2">
+            <p class="text-sm font-bold">{t('applications.quickFill')}</p>
+            {presetRows.map((row) => (
+              <div
+                role="group"
+                aria-label={row.label}
+                class="grid grid-cols-[5rem_1fr] items-center gap-2"
+              >
+                <span class="text-sm text-on-surface-variant" aria-hidden="true">
+                  {row.label}
+                </span>
+                <div class="grid grid-cols-3">
+                  {row.items.map((item) => (
+                    <button
+                      type="button"
+                      class={segmentButton}
+                      data-preset={item.slots}
+                      aria-pressed="false"
+                    >
+                      {item.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        )
+      }
     </div>
-    <table class="mt-4 w-full max-w-xl table-fixed border-collapse select-none">
+    <table class="mt-5 w-full max-w-xl table-fixed border-collapse select-none">
       <thead>
         <tr>
-          <td class="w-14"></td>
+          <td class="w-10"></td>
           {
             days.map((day) => (
               <th scope="col" abbr={day.name} class="pb-1 text-center text-xs font-bold">
@@ -98,21 +219,34 @@ const preset =
       <tbody>
         {
           AVAILABLE_HOURS.map((hour) => (
-            <tr class:list={[(hour === 12 || hour === 17) && 'border-t-2 border-outline']}>
+            <tr>
               <th
                 scope="row"
-                class="pr-2 text-right align-top text-xs font-normal whitespace-nowrap text-on-surface-variant"
+                class="pr-1.5 text-right align-middle text-xs font-normal whitespace-nowrap text-on-surface-variant"
               >
                 {hourLabel(hour)}
               </th>
               {days.map((day) => (
-                <td class="p-0">
-                  <label class="block h-8 cursor-pointer border border-on-surface/20 bg-surface-container has-[:checked]:bg-primary has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-[-3px] has-[:focus-visible]:outline-on-surface">
+                <td
+                  class:list={[
+                    'border border-on-surface/20 p-0',
+                    (hour === 12 || hour === 17) && 'border-t-2 border-t-on-surface/70',
+                  ]}
+                >
+                  <label class="week-cell">
                     <input
                       type="checkbox"
                       name="hours"
                       value={hourSlot(day.key, hour)}
                       class="sr-only"
+                    />
+                    <input
+                      type="checkbox"
+                      name="if_needed"
+                      value={hourSlot(day.key, hour)}
+                      class="hidden"
+                      tabindex="-1"
+                      aria-hidden="true"
                     />
                     <span class="sr-only">
                       {t('applications.hourSlot', {
@@ -134,3 +268,33 @@ const preset =
   <p slot="after" class="mt-6">{t('applications.withdrawHint')}</p>
   <script is:inline slot="after" src="/scripts/week-picker.js" defer></script>
 </AccountFormPage>
+
+<style>
+  .week-cell {
+    display: block;
+    height: 2.75rem;
+    cursor: pointer;
+    background: var(--color-surface-container);
+  }
+  .week-cell:has([name='hours']:checked) {
+    background: var(--color-primary);
+  }
+  .week-cell:has([name='if_needed']:checked),
+  .if-needed-swatch {
+    background:
+      repeating-linear-gradient(135deg, var(--color-primary) 0 3px, transparent 3px 8px),
+      var(--color-primary-container);
+  }
+  .week-cell:has(:focus-visible) {
+    outline: 2px solid var(--color-on-surface);
+    outline-offset: -3px;
+  }
+  .menu-check {
+    width: 1rem;
+    text-align: center;
+  }
+  [aria-pressed='true'] > .menu-check::before {
+    content: '✓';
+    font-weight: 700;
+  }
+</style>

@@ -38,17 +38,31 @@ const DAY_NAMES: Record<AvailableDay, string> = {
   sun: t('applications.sunday'),
 };
 
-/** One line per day they're free: "Monday", "6 PM–8 PM, 9 PM–10 PM". */
-export function applicationHours(application: StaffApplication): { day: string; hours: string }[] {
+function rangesByDay(slots: readonly string[]): Map<AvailableDay, string> {
   const lines = new Map<AvailableDay, string[]>();
-  for (const range of availableRanges(application.availableHours)) {
+  for (const range of availableRanges(slots)) {
     const hours = t('staff.applications.hoursRange', {
       start: hourLabel(range.start),
       end: hourLabel(range.end),
     });
     lines.set(range.day, [...(lines.get(range.day) ?? []), hours]);
   }
-  return [...lines].map(([day, hours]) => ({ day: DAY_NAMES[day], hours: hours.join(', ') }));
+  return new Map([...lines].map(([day, hours]) => [day, hours.join(', ')]));
+}
+
+/** One line per day: the hours they're free, then the hours they could make if needed. */
+export function applicationHours(
+  application: StaffApplication,
+): { day: string; free: string; ifNeeded: string }[] {
+  const free = rangesByDay(application.availableHours);
+  const ifNeeded = rangesByDay(application.ifNeededHours);
+  return (Object.keys(DAY_NAMES) as AvailableDay[])
+    .filter((day) => free.has(day) || ifNeeded.has(day))
+    .map((day) => ({
+      day: DAY_NAMES[day],
+      free: free.get(day) ?? '',
+      ifNeeded: ifNeeded.get(day) ?? '',
+    }));
 }
 
 /** "Events Coordinator · Events Committee" for a role, or the team for an ask to join. */
