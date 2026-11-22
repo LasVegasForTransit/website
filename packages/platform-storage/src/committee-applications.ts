@@ -6,56 +6,21 @@ import { ulid } from '@lasvegasfortransit/platform-core/ids';
 import type { Actor } from '@lasvegasfortransit/platform-core/staff-types';
 import type { Db, SqlValue } from './db';
 import { CommitteeService } from './committees';
+import { AVAILABLE_SLOTS, isHourSlot } from './availability-hours';
 
 export type ApplicationState = 'submitted' | 'accepted' | 'declined' | 'withdrawn';
 export const NOTE_LIMIT = 2000;
 export const AVAILABILITY_LIMIT = 500;
-/** Days of the week, Monday first, as stored in hour slots like `mon-18`. */
-export const AVAILABLE_DAYS = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'] as const;
-export type AvailableDay = (typeof AVAILABLE_DAYS)[number];
-/** Hours a one-hour slot can start: 7 AM through 9 PM, so the last slot ends at 10 PM. */
-export const AVAILABLE_HOURS: readonly number[] = Array.from({ length: 15 }, (_, i) => 7 + i);
-/** "mon-18" means free Monday from 6 PM to 7 PM. */
-export function hourSlot(day: AvailableDay, hour: number): string {
-  return `${day}-${hour}`;
-}
-const SLOTS: readonly string[] = AVAILABLE_DAYS.flatMap((day) =>
-  AVAILABLE_HOURS.map((hour) => hourSlot(day, hour)),
-);
-export function isHourSlot(value: string): boolean {
-  return SLOTS.includes(value);
-}
-const HOUR = new Intl.DateTimeFormat('en-US', { hour: 'numeric', timeZone: 'UTC' });
-/** 18 → "6 PM", 22 → "10 PM". */
-export function hourLabel(hour: number): string {
-  return HOUR.format(Date.UTC(2000, 0, 1, hour));
-}
-export interface AvailableRange {
-  day: AvailableDay;
-  /** Hour the range starts, 7 to 21. */
-  start: number;
-  /** Hour the range ends, exclusive, 8 to 22. */
-  end: number;
-}
-/** Joins neighbouring hour slots into ranges, in week order. */
-export function availableRanges(slots: readonly string[]): AvailableRange[] {
-  const chosen = new Set(slots);
-  const ranges: AvailableRange[] = [];
-  for (const day of AVAILABLE_DAYS) {
-    let open: AvailableRange | null = null;
-    for (const hour of AVAILABLE_HOURS) {
-      if (!chosen.has(hourSlot(day, hour))) {
-        open = null;
-      } else if (open) {
-        open.end = hour + 1;
-      } else {
-        open = { day, start: hour, end: hour + 1 };
-        ranges.push(open);
-      }
-    }
-  }
-  return ranges;
-}
+export {
+  AVAILABLE_DAYS,
+  AVAILABLE_HOURS,
+  availableRanges,
+  hourLabel,
+  hourSlot,
+  isHourSlot,
+  type AvailableDay,
+  type AvailableRange,
+} from './availability-hours';
 const ROLE_SLUG = /^[a-z0-9-]{1,100}$/;
 /** Days an application can wait before the queue marks it overdue. */
 export const RESPONSE_DAYS = 3;
@@ -89,6 +54,8 @@ export interface StaffApplication extends MemberApplication {
   note: string;
   /** Hour slots like `mon-18`, in week order. */
   availableHours: string[];
+  /** Hours they could make if needed, never also in availableHours. */
+  ifNeededHours: string[];
   availability: string;
   waitingDays: number;
   overdue: boolean;
@@ -109,6 +76,7 @@ interface ApplicationRow {
   role_title: string | null;
   note: string;
   available_hours: string;
+  if_needed_hours: string;
   availability: string;
   state: ApplicationState;
   submitted_at: string;
@@ -121,7 +89,7 @@ interface ApplicationRow {
 }
 
 const SELECT = `SELECT a.id,a.person_id,a.committee_id,c.name AS committee_name,a.role_slug,a.role_title,a.note,
-  a.available_hours,a.availability,a.state,a.submitted_at,a.decided_at,a.decision_note,p.given_name,p.family_name,
+  a.available_hours,a.if_needed_hours,a.availability,a.state,a.submitted_at,a.decided_at,a.decision_note,p.given_name,p.family_name,
   d.given_name AS decided_by_given,d.family_name AS decided_by_family
   FROM committee_applications a
   JOIN people p ON p.id=a.person_id AND p.deleted_at IS NULL
@@ -154,6 +122,7 @@ function staffView(row: ApplicationRow, now: Date): StaffApplication {
     familyName: row.family_name,
     note: row.note,
     availableHours: row.available_hours.split(' ').filter(isHourSlot),
+    ifNeededHours: row.if_needed_hours.split(' ').filter(isHourSlot),
     availability: row.availability,
     waitingDays,
     overdue: row.state === 'submitted' && waitingDays >= RESPONSE_DAYS,
@@ -244,20 +213,31 @@ export class CommitteeApplicationService {
   async submit(
     personId: string,
     target: ApplicationTarget,
-    input: { note: string; availableHours?: readonly string[]; availability: string },
+    input: {
+      note: string;
+      availableHours?: readonly string[];
+      ifNeededHours?: readonly string[];
+      availability: string;
+    },
     now = new Date(),
   ): Promise<SubmitOutcome> {
     const note = input.note.trim();
     const availability = input.availability.trim();
     const chosen = input.availableHours ?? [];
+    const possible = input.ifNeededHours ?? [];
     if (
       !validTarget(target) ||
       note.length > NOTE_LIMIT ||
       availability.length > AVAILABILITY_LIMIT ||
-      !chosen.every(isHourSlot)
+      !chosen.every(isHourSlot) ||
+      !possible.every(isHourSlot)
     )
       return { kind: 'invalid' };
-    const availableHours = SLOTS.filter((slot) => chosen.includes(slot)).join(' ');
+    const availableHours = AVAILABLE_SLOTS.filter((slot) => chosen.includes(slot)).join(' ');
+    // An hour marked both ways counts as free.
+    const ifNeededHours = AVAILABLE_SLOTS.filter(
+      (slot) => possible.includes(slot) && !chosen.includes(slot),
+    ).join(' ');
     const member = await this.db
       .prepare(
         `SELECT 1 AS ok FROM people WHERE id=? AND deleted_at IS NULL AND membership_status='member'`,
@@ -273,8 +253,8 @@ export class CommitteeApplicationService {
     // One open application per role, or per committee when no role was posted.
     const result = await this.db
       .prepare(
-        `INSERT INTO committee_applications(id,person_id,committee_id,role_slug,role_title,note,available_hours,availability,state,submitted_at,updated_at)
-         SELECT ?,?,?,?,?,?,?,?,'submitted',?,? WHERE NOT EXISTS (
+        `INSERT INTO committee_applications(id,person_id,committee_id,role_slug,role_title,note,available_hours,if_needed_hours,availability,state,submitted_at,updated_at)
+         SELECT ?,?,?,?,?,?,?,?,?,'submitted',?,? WHERE NOT EXISTS (
            SELECT 1 FROM committee_applications WHERE person_id=? AND state='submitted' AND
              ((? IS NOT NULL AND role_slug=?) OR (? IS NULL AND role_slug IS NULL AND committee_id=?)))`,
       )
@@ -286,6 +266,7 @@ export class CommitteeApplicationService {
         target.roleTitle,
         note,
         availableHours,
+        ifNeededHours,
         availability,
         stamp,
         stamp,

@@ -83,6 +83,7 @@ const role = {
 const input = {
   note: 'I run a book club.',
   availableHours: ['sat-9', 'mon-19', 'mon-18', 'mon-18', 'sat-10', 'mon-21'],
+  ifNeededHours: ['mon-20', 'mon-21', 'sun-12'],
   availability: 'Not the first week of the month',
 };
 
@@ -102,6 +103,7 @@ void test('a member applies once per role; the committee lead sees it and accept
   assert.ok(queued);
   assert.equal(queued.note, 'I run a book club.');
   assert.deepEqual(queued.availableHours, ['mon-18', 'mon-19', 'mon-21', 'sat-9', 'sat-10']);
+  assert.deepEqual(queued.ifNeededHours, ['mon-20', 'sun-12']);
   assert.deepEqual(availableRanges(queued.availableHours), [
     { day: 'mon', start: 18, end: 20 },
     { day: 'mon', start: 21, end: 22 },

@@ -15,6 +15,8 @@ CREATE TABLE committee_applications (
   -- Space-separated one-hour slots the member is usually free, like 'mon-18 mon-19 sat-9'
   -- (day, then the hour the slot starts, 7 to 21).
   available_hours TEXT NOT NULL DEFAULT '' CHECK(length(available_hours)<=1000),
+  -- Hours they could make if needed, in the same form; never also in available_hours.
+  if_needed_hours TEXT NOT NULL DEFAULT '' CHECK(length(if_needed_hours)<=1000),
   -- Anything about their schedule the hours above don't cover.
   availability TEXT NOT NULL DEFAULT '' CHECK(length(availability)<=500),
   state TEXT NOT NULL CHECK(state IN ('submitted','accepted','declined','withdrawn')),
