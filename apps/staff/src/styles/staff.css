@@ -441,12 +441,12 @@ html {
 
   /* Phone menu: a native disclosure, so it works with scripts off. */
   /* Icon only: the three lines are the convention, and the label stays for screen readers.
-     No frame; a square 44px hit area with the icon centered, so padding is equal on all sides. */
+     No frame; a 44px hit area with the icon centered. */
   .staff-nav-menu > summary {
     display: inline-flex;
     width: 2.75rem;
     height: 2.75rem;
-    margin-inline-start: -0.8125rem;
+    margin-inline-start: -0.75rem;
     align-items: center;
     justify-content: center;
     list-style: none;
@@ -458,8 +458,8 @@ html {
   }
 
   .staff-nav-menu > summary::before {
-    width: 1.125rem;
-    height: 1.125rem;
+    width: 1.25rem;
+    height: 0.875rem;
     border-block: 2px solid currentColor;
     background: linear-gradient(currentColor, currentColor) center / 100% 2px no-repeat;
     content: '';
