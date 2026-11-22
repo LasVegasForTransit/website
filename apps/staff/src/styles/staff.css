@@ -1832,7 +1832,6 @@ html {
     flex-wrap: wrap;
     gap: 1.5rem;
     margin-block: 1rem;
-    border-bottom: 1px solid var(--color-outline-variant);
   }
 
   .staff-access-views a {
