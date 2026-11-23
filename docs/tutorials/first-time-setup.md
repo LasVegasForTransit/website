@@ -30,10 +30,22 @@ creates `apps/site/.env.local` from its example. It preserves a local file you a
 `https://lvbt.localhost` after the development server starts, then edit a page and watch it update.
 Press `Ctrl+C` to stop the server.
 
-If package installation reports a GitHub Packages authentication error, ask a maintainer for the
-organization's package-read setup. The registry setting is already in `.npmrc`; keep credentials in
-your personal package-manager configuration, never in this repository. A package-read credential is
-separate from Cloudflare deployment access.
+If package installation reports a GitHub Packages authentication error (`ERR_PNPM_FETCH_401`), the
+private `@lasvegasfortransit/analytics` package needs a package-read credential. With a GitHub
+account in the organization, store one in your personal pnpm configuration and install again:
+
+```sh
+gh auth refresh -s read:packages
+pnpm config set //npm.pkg.github.com/:_authToken "$(gh auth token)"
+pnpm install
+```
+
+The registry setting is already in `.npmrc`; keep credentials in your personal package-manager
+configuration, never in this repository. Without an organization account, ask a maintainer for
+package access. A package-read credential is separate from Cloudflare deployment access.
+
+Git hooks turn on even when installation fails. Until it succeeds, they block commits and pushes
+because the checks they run are not installed; the install output says so.
 
 Bootstrap warnings about Beehiiv or Notion are expected on a new checkout. The page shell and
 content preview work without those integrations. Membership submissions, the live press archive, and
