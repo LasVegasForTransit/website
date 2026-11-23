@@ -48,8 +48,11 @@ Run `pnpm check` before pushing. GitHub runs the same checks. `pnpm check:fix` c
 and some lint errors; it cannot repair every failed check.
 
 The scripts in [`.githooks/`](../../.githooks/) call the shared LVBT tools from
-`@lasvegasfortransit/cli`. `pnpm install` sets up these hooks through the `prepare` script. Change a
-shared rule in `LasVegasForTransit/repository-tooling`, rather than editing the vendored copy here.
+`@lasvegasfortransit/cli`. [`scripts/git-hooks.mjs`](../../scripts/git-hooks.mjs) turns them on. It
+runs from the `prepare` script on every `pnpm install` and at the start of every Claude Code
+session, so a checkout whose install failed still gets its hooks. It prints a warning when another
+Git setting overrides the hooks or when dependencies are missing. Change a shared rule in
+`LasVegasForTransit/repository-tooling`, rather than editing the vendored copy here.
 
 ## Don't bypass hooks
 
@@ -92,6 +95,12 @@ scan. Fix a configured scan failure rather than skipping it.
 
 Runs `pnpm check` and uploads the Git Large File Storage (LFS) objects used for screenshot
 references. The custom hook handles that upload because it replaces Git LFS's default hook.
+
+`pnpm check` includes the full-history secret scan. It needs Gitleaks 8.30.1 or a running Docker
+daemon, and full Git history. Where none of those are available, such as a sandboxed agent
+environment, [`scripts/secret-scan.mjs`](../../scripts/secret-scan.mjs) skips the local scan with a
+warning that names what is missing. CI always runs the scan and fails without it. When a scanner is
+available locally, a finding fails the check.
 
 ## What never belongs in a commit
 
