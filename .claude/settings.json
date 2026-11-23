@@ -10,5 +10,18 @@
   },
   "enabledPlugins": {
     "lvbt-contributions@lvbt": true
+  },
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"$CLAUDE_PROJECT_DIR/scripts/git-hooks.mjs\" --session-start",
+            "timeout": 10
+          }
+        ]
+      }
+    ]
   }
 }
