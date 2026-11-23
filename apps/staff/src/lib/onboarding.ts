@@ -5,12 +5,26 @@ import {
 } from '@lasvegasfortransit/platform-integrations/google-sign-in';
 import { sessionCookies } from '@lasvegasfortransit/platform-core/web-auth';
 import type { WorkspaceCompletion } from '@lasvegasfortransit/platform-storage/workspace-link';
+import type { Db } from '@lasvegasfortransit/platform-storage/db';
 import { EMAIL_COOKIE } from './workspace-email';
-export function staffWelcomePath(next: string) {
-  return `/sign-in/ready/?next=${encodeURIComponent(next)}`;
+/**
+ * The welcome screen confirms a person's first Staff Portal sign-in. Signing out deletes only that
+ * browser's session and expired sessions are kept, so any earlier staff session means this person
+ * has already seen it and can go straight to their destination. Finishing account setup always
+ * shows it, because that connects a new account even for someone with earlier sessions.
+ */
+export async function hasEarlierStaffSession(db: Db, personId: string): Promise<boolean> {
+  const row = await db
+    .prepare("SELECT count(*) AS n FROM sessions WHERE person_id=? AND type='staff'")
+    .bind(personId)
+    .first<{ n: number }>();
+  return (row?.n ?? 0) > 1;
+}
+export function staffWelcomePath(next: string, setupCompleted = false) {
+  return `/sign-in/ready/?next=${encodeURIComponent(next)}${setupCompleted ? '&setup=1' : ''}`;
 }
 export function completedStaffSetup(result: Extract<WorkspaceCompletion, { kind: 'ok' }>) {
-  return googleResponse(staffWelcomePath(result.returnTo), [
+  return googleResponse(staffWelcomePath(result.returnTo, true), [
     workspaceCookie(PENDING_COOKIE, '', 0),
     workspaceCookie(EMAIL_COOKIE, '', 0),
     workspaceCookie('__Host-lvbt_member_handoff', '', 0),
