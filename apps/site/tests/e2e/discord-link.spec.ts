@@ -59,7 +59,7 @@ try {
       .getByRole('navigation', { name: 'Account sections' })
       .getByRole('link')
       .allTextContents(),
-    ['Details', 'Email', 'Discord', 'Data'],
+    ['Get involved', 'Details', 'Email', 'Discord', 'Data'],
   );
   await page.screenshot({
     path: join(shots, 'account-sections-mobile.png'),
@@ -80,12 +80,9 @@ try {
     .click();
   await page.getByRole('heading', { name: 'Discord', exact: true }).waitFor();
   await page.getByRole('link', { name: 'Connect Discord', exact: true }).click();
-  await page.getByRole('heading', { name: 'Connect your Discord account', exact: true }).waitFor();
+  await page.getByRole('heading', { name: 'Connect Discord', exact: true }).waitFor();
   // Members learn before connecting that roles and channels follow their LVBT record.
-  await page.getByRole('heading', { name: 'What happens when you connect', exact: true }).waitFor();
-  await page
-    .getByText('You get the Member role, which opens member channels.', { exact: true })
-    .waitFor();
+  await page.getByText(/They stay up to date on their own\.$/).waitFor();
   await page.screenshot({
     path: join(shots, 'connect-mobile.png'),
     fullPage: true,

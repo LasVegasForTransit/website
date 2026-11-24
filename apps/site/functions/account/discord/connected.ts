@@ -63,7 +63,7 @@ export const onRequestGet: PagesFunction<SignInPagesEnv> = async ({ env, request
         .on('[data-slot="discord-username"]', showText(`@${connection.username}`));
       if (connection.memberRole) filled = filled.on('[data-slot="discord-access-member"]', show());
       if (connection.committees.length)
-        filled = filled.on('[data-slot="discord-access-none"]', {
+        filled = filled.on('[data-slot="discord-access-committees"]', {
           element(element) {
             element.replace(committeeItems(connection), { html: true });
           },
@@ -77,12 +77,12 @@ export const onRequestGet: PagesFunction<SignInPagesEnv> = async ({ env, request
         });
       if (returnTo)
         filled = filled
-          .on('[data-slot="discord-return"]', show())
           .on('[data-slot="discord-return-link"]', {
             element(element) {
               element.setAttribute('href', returnTo);
             },
-          });
+          })
+          .on('[data-slot="discord-return-link"]', showText(t('discord.startReturn')));
       return filled;
     },
   });

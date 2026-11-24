@@ -6,23 +6,12 @@ import { linkClass } from '../../../components/app/styles';
 ---
 
 <BaseLayout title={t('discord.join')} noindex navigation="instant">
-  <section class="container-page py-12">
-    <div class="mx-auto max-w-xl">
-      <a href="/account/#discord" class={linkClass}>{t('account.back')}</a>
-      <h1 class="text-headline-md mt-6">{t('discord.connectHeading')}</h1>
-      <p class="mt-4">
-        {t('discord.description')}
-      </p>
-      <div data-slot="discord-sync">
-        <h2 class="text-title-lg mt-8">{t('discord.syncHeading')}</h2>
-        <ul class="mt-4 space-y-3 border-l-4 border-primary pl-5">
-          <li>{t('discord.syncServer')}</li>
-          <li>{t('discord.syncMember')}</li>
-          <li>{t('discord.syncCommittees')}</li>
-        </ul>
-        <p class="mt-4 text-on-surface-variant">{t('discord.shared')}</p>
-      </div>
-      <p class="mt-3 text-on-surface-variant">{t('discord.optional')}</p>
+  <section class="container-page pt-12 pb-16 md:pt-16 md:pb-24">
+    <div class="max-w-2xl">
+      <p><a href="/account/#discord" class={linkClass}>{t('account.back')}</a></p>
+      <h1 class="text-headline-lg mt-6">{t('discord.connectHeading')}</h1>
+      <p class="lede mt-4">{t('discord.description')}</p>
+      <p class="mt-4" data-slot="discord-sync">{t('discord.syncBody')}</p>
       <a
         href="/account/discord/connected/"
         class={`${linkClass} mt-4 inline-block`}
@@ -68,7 +57,7 @@ import { linkClass } from '../../../components/app/styles';
         <input type="hidden" name="token" value="" />
         <input type="hidden" name="next" value="" />
         <Button><span data-slot="discord-connect-label">{t('discord.continue')}</span></Button>
-        <p class="mt-3 text-body-sm text-on-surface-variant">{t('discord.approveHint')}</p>
+        <p class="mt-3 text-body-sm text-on-surface-variant">{t('discord.shared')}</p>
       </form>
     </div>
   </section>

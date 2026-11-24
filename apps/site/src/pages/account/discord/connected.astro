@@ -1,8 +1,8 @@
 ---
 // The confirmation after a member connects Discord. Served through
 // functions/account/discord/connected.ts, which fills in the verified account
-// and the access LVBT keeps in sync. Discord's own server onboarding covers
-// rules and channel picks, so this page only hands off to it.
+// and the channels LVBT keeps in sync. Discord's own server onboarding covers
+// rules and channel picks, so this page only links to the server.
 import BaseLayout from '../../../layouts/BaseLayout.astro';
 import { t } from '@lasvegasfortransit/platform-core/messages';
 import { buttonClass, linkClass } from '../../../components/app/styles';
@@ -10,10 +10,9 @@ import { site } from '../../../lib/site';
 ---
 
 <BaseLayout title={t('discord.connectedTitle')} noindex navigation="instant">
-  <section class="container-page py-12">
-    <div class="mx-auto max-w-xl">
-      <h1 class="text-headline-md">{t('discord.connectedHeading')}</h1>
-      <p class="lede mt-4">{t('discord.connectedIntro')}</p>
+  <section class="container-page pt-12 pb-16 md:pt-16 md:pb-24">
+    <div class="max-w-2xl">
+      <h1 class="text-headline-lg">{t('discord.connectedHeading')}</h1>
 
       <div class="mt-8 flex items-center gap-4 border-2 border-on-surface p-5">
         <span
@@ -22,39 +21,31 @@ import { site } from '../../../lib/site';
           data-slot="discord-initial">D</span
         >
         <div class="min-w-0 [overflow-wrap:anywhere]">
-          <p class="text-sm font-bold text-on-surface-variant">{t('discord.accountLabel')}</p>
           <p class="text-title-md font-bold" data-slot="discord-display-name"></p>
           <p class="text-on-surface-variant" data-slot="discord-username"></p>
         </div>
       </div>
 
       <h2 class="text-title-lg mt-10">{t('discord.accessHeading')}</h2>
-      <ul class="mt-4 space-y-3 border-l-4 border-primary pl-5" data-slot="discord-access">
+      <ul class="mt-4 list-disc space-y-2 pl-6" data-slot="discord-access">
         <li data-slot="discord-access-member" hidden>{t('discord.accessMember')}</li>
-        <li data-slot="discord-access-none" hidden>{t('discord.accessNoCommittees')}</li>
+        <li data-slot="discord-access-committees" hidden></li>
       </ul>
+      <p class="mt-4" data-slot="discord-access-none" hidden>
+        <a href="/join/#team" class={linkClass}>{t('discord.accessNoCommittees')}</a>
+      </p>
       <p class="mt-4 text-on-surface-variant">{t('discord.accessTiming')}</p>
 
-      <h2 class="text-title-lg mt-10">{t('discord.startHeading')}</h2>
-      <a
-        href={site.social.discord ?? 'https://discord.com/app'}
-        class:list={[buttonClass.primary, 'mt-4']}
-        data-slot="discord-open">{t('discord.startOpen')}</a
-      >
-      <p class="mt-2 text-body-sm text-on-surface-variant">{t('discord.startOpenHint')}</p>
-      <ul class="mt-6 space-y-3">
-        <li data-slot="discord-return" hidden>
-          <a href="/account/" class={linkClass} data-slot="discord-return-link"
-            >{t('discord.startReturn')}</a
-          >
-        </li>
-        <li data-slot="discord-teams">
-          <a href="/join/#team" class={linkClass}>{t('discord.startTeams')}</a>
-        </li>
-        <li>
-          <a href="/account/discord/" class={linkClass}>{t('discord.startManage')}</a>
-        </li>
-      </ul>
+      <div class="mt-10 flex flex-wrap items-center gap-x-6 gap-y-4">
+        <a
+          href={site.social.discord ?? 'https://discord.com/app'}
+          class={buttonClass.primary}
+          data-slot="discord-open">{t('discord.startOpen')}</a
+        >
+        <a href="/account/" class={linkClass} data-slot="discord-return-link"
+          >{t('discord.startAccount')}</a
+        >
+      </div>
     </div>
   </section>
 </BaseLayout>
