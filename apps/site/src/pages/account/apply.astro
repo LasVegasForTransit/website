@@ -1,0 +1,203 @@
+---
+// Apply for a posted role or ask to join a team. Served through
+// functions/account/apply/index.ts, which fills the heading, the hidden target
+// and, after a failed submit, the member's input and the error.
+import AccountFormPage from '../../components/app/AccountFormPage.astro';
+import TextField from '../../components/app/TextField.astro';
+import { hintClass, inputClass, labelClass } from '../../components/app/styles';
+import {
+  AVAILABLE_DAYS,
+  AVAILABLE_HOURS,
+  NOTE_LIMIT,
+  hourLabel,
+  hourSlot,
+  type AvailableDay,
+} from '@lasvegasfortransit/platform-storage/committee-applications';
+import { t } from '@lasvegasfortransit/platform-core/messages';
+
+// A week of one-hour slots (rows are hours, columns are days). Without
+// JavaScript each slot is a checkbox; week-picker.js adds quick-fill presets,
+// drag to paint, and arrow keys. Values match the stored slots (`mon-18`).
+const days = [
+  { key: 'mon', short: t('applications.mon'), name: t('applications.monday') },
+  { key: 'tue', short: t('applications.tue'), name: t('applications.tuesday') },
+  { key: 'wed', short: t('applications.wed'), name: t('applications.wednesday') },
+  { key: 'thu', short: t('applications.thu'), name: t('applications.thursday') },
+  { key: 'fri', short: t('applications.fri'), name: t('applications.friday') },
+  { key: 'sat', short: t('applications.sat'), name: t('applications.saturday') },
+  { key: 'sun', short: t('applications.sun'), name: t('applications.sunday') },
+] as const;
+const weekdays = AVAILABLE_DAYS.slice(0, 5);
+const weekends = AVAILABLE_DAYS.slice(5);
+const hoursBetween = (from: number, to: number) =>
+  AVAILABLE_HOURS.filter((hour) => hour >= from && hour < to);
+const fill = (on: readonly AvailableDay[], from: number, to: number) =>
+  on.flatMap((day) => hoursBetween(from, to).map((hour) => hourSlot(day, hour))).join(' ');
+// Quick fill: mornings 7 to noon, afternoons noon to 5, evenings 5 to 10.
+const presets = [
+  { label: t('applications.weekdayMornings'), slots: fill(weekdays, 7, 12) },
+  { label: t('applications.weekdayAfternoons'), slots: fill(weekdays, 12, 17) },
+  { label: t('applications.weekdayEvenings'), slots: fill(weekdays, 17, 22) },
+  { label: t('applications.weekendMornings'), slots: fill(weekends, 7, 12) },
+  { label: t('applications.weekendAfternoons'), slots: fill(weekends, 12, 17) },
+  { label: t('applications.weekendEvenings'), slots: fill(weekends, 17, 22) },
+];
+const segment =
+  'flex min-h-11 cursor-pointer items-center gap-2 border-2 border-outline bg-surface-container px-3 text-sm font-bold not-first:-ml-0.5 has-[:checked]:z-10 has-[:checked]:border-primary-ink has-[:checked]:bg-primary-container has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-primary';
+const textButton =
+  'min-h-11 px-1 text-sm font-bold underline decoration-2 decoration-primary underline-offset-4';
+// A chip is 32px tall to look like a chip; the button around it keeps the
+// 44px target.
+const chip = 'group flex min-h-11 shrink-0 cursor-pointer items-center focus-visible:outline-none';
+const chipFace =
+  'inline-flex h-8 items-center gap-1.5 border border-on-surface/40 bg-surface-container px-3 text-sm font-semibold whitespace-nowrap group-hover:border-on-surface group-focus-visible:outline-2 group-focus-visible:outline-offset-2 group-focus-visible:outline-primary group-aria-pressed:border-primary-ink group-aria-pressed:bg-primary-container';
+---
+
+<AccountFormPage
+  title={t('applications.heading')}
+  action="/account/apply/"
+  submitLabel={t('applications.submitRole')}
+>
+  <input type="hidden" name="role" value="" />
+  <input type="hidden" name="team" value="" />
+  <div>
+    <label for="note" class={labelClass} data-slot="note-label"
+      >{t('applications.noteRoleLabel')}</label
+    >
+    <textarea
+      id="note"
+      name="note"
+      rows="5"
+      maxlength={NOTE_LIMIT}
+      class:list={[inputClass, 'max-w-xl']}></textarea>
+  </div>
+  <fieldset aria-describedby="hours-hint" class="min-w-0" data-week-picker>
+    <legend class={labelClass}>{t('applications.availabilityLabel')}</legend>
+    <p id="hours-hint" class={hintClass}>{t('applications.availabilityHint')}</p>
+    <div data-tools hidden class="mt-4 max-w-xl space-y-3">
+      <div class="flex flex-wrap items-end justify-between gap-x-4 gap-y-3">
+        <div role="radiogroup" aria-labelledby="brush-label">
+          <p id="brush-label" class="text-sm font-bold">{t('applications.markAs')}</p>
+          <div class="mt-1 flex">
+            <label class={segment}>
+              <input type="radio" name="brush" value="free" checked class="sr-only" />
+              <span class="inline-block size-3 bg-primary" aria-hidden="true"></span>
+              {t('applications.free')}
+            </label>
+            <label class={segment}>
+              <input type="radio" name="brush" value="if_needed" class="sr-only" />
+              <span class="if-needed-swatch inline-block size-3" aria-hidden="true"></span>
+              {t('applications.ifNeeded')}
+            </label>
+          </div>
+        </div>
+        <button type="button" class={textButton} data-clear>
+          {t('applications.clearHours')}
+        </button>
+      </div>
+      <div>
+        <p id="quick-fill" class="text-sm font-bold">
+          {t('applications.quickFill')}
+        </p>
+        <div
+          role="group"
+          aria-labelledby="quick-fill"
+          class="-mx-5 flex gap-2 overflow-x-auto px-5 [scrollbar-width:none] sm:mx-0 sm:px-0"
+        >
+          {
+            presets.map((entry) => (
+              <button type="button" class={chip} data-preset={entry.slots} aria-pressed="false">
+                <span class={chipFace}>{entry.label}</span>
+              </button>
+            ))
+          }
+        </div>
+      </div>
+    </div>
+    <table class="mt-5 w-full max-w-xl table-fixed border-collapse select-none">
+      <thead>
+        <tr>
+          <td class="w-10"></td>
+          {
+            days.map((day) => (
+              <th scope="col" abbr={day.name} class="pb-1 text-center text-xs font-bold">
+                {day.short}
+              </th>
+            ))
+          }
+        </tr>
+      </thead>
+      <tbody>
+        {
+          AVAILABLE_HOURS.map((hour) => (
+            <tr>
+              <th
+                scope="row"
+                class="pr-1.5 text-right align-middle text-xs font-normal whitespace-nowrap text-on-surface-variant"
+              >
+                {hourLabel(hour)}
+              </th>
+              {days.map((day) => (
+                <td
+                  class:list={[
+                    'border border-on-surface/20 p-0',
+                    (hour === 12 || hour === 17) && 'border-t-2 border-t-on-surface/70',
+                  ]}
+                >
+                  <label class="week-cell">
+                    <input
+                      type="checkbox"
+                      name="hours"
+                      value={hourSlot(day.key, hour)}
+                      class="sr-only"
+                    />
+                    <input
+                      type="checkbox"
+                      name="if_needed"
+                      value={hourSlot(day.key, hour)}
+                      class="hidden"
+                      tabindex="-1"
+                      aria-hidden="true"
+                    />
+                    <span class="sr-only">
+                      {t('applications.hourSlot', {
+                        day: day.name,
+                        start: hourLabel(hour),
+                        end: hourLabel(hour + 1),
+                      })}
+                    </span>
+                  </label>
+                </td>
+              ))}
+            </tr>
+          ))
+        }
+      </tbody>
+    </table>
+  </fieldset>
+  <TextField name="availability" label={t('applications.availabilityNoteLabel')} />
+  <p slot="after" class="mt-6">{t('applications.withdrawHint')}</p>
+  <script is:inline slot="after" src="/scripts/week-picker.js" defer></script>
+</AccountFormPage>
+
+<style>
+  .week-cell {
+    display: block;
+    height: 2.75rem;
+    cursor: pointer;
+    background: var(--color-surface-container);
+  }
+  .week-cell:has([name='hours']:checked) {
+    background: var(--color-primary);
+  }
+  .week-cell:has([name='if_needed']:checked),
+  .if-needed-swatch {
+    background:
+      repeating-linear-gradient(135deg, var(--color-primary) 0 3px, transparent 3px 8px),
+      var(--color-primary-container);
+  }
+  .week-cell:has(:focus-visible) {
+    outline: 2px solid var(--color-on-surface);
+    outline-offset: -3px;
+  }
+</style>

@@ -2,6 +2,38 @@ import assert from 'node:assert/strict';
 import type { Page } from '@playwright/test';
 import { PersonService } from '@lasvegasfortransit/platform-storage/person-service';
 import { ORIGIN, type startRuntime } from '../../support/runtime';
+interface Box {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
+
+// Phones keep Sign out in the menu; open it to measure.
+async function signOutBox(page: Page) {
+  const menu = page.locator('details.staff-nav-menu');
+  const menuShown = await menu.isVisible();
+  if (menuShown) await menu.evaluate((element) => element.setAttribute('open', ''));
+  const box = await page.getByRole('button', { name: 'Sign out', exact: true }).boundingBox();
+  if (menuShown) await menu.evaluate((element) => element.removeAttribute('open'));
+  return box;
+}
+
+function assertContactPlacement(contact: Box, committees: Box, width: number) {
+  if (width === 1440) {
+    assert.ok(
+      committees.x >= contact.x + contact.width,
+      'wide records keep contact in the summary column beside the committee work',
+    );
+    return;
+  }
+  assert.equal(Math.round(contact.x), Math.round(committees.x));
+  assert.ok(
+    committees.y >= contact.y + contact.height,
+    'contact and committee work follow the member portal section order',
+  );
+}
+
 export async function exerciseMemberSummary(
   page: Page,
   fixture: Awaited<ReturnType<typeof startRuntime>>,
@@ -218,9 +250,7 @@ export async function exerciseMemberSummary(
       const add = await associationForm
         .getByRole('button', { name: 'Add to committee', exact: true })
         .boundingBox();
-      const signOut = await page
-        .getByRole('button', { name: 'Sign out', exact: true })
-        .boundingBox();
+      const signOut = await signOutBox(page);
       assert.ok(add && signOut);
       assert.equal(
         remove.height,
@@ -237,27 +267,18 @@ export async function exerciseMemberSummary(
     });
     const contact = await page.getByRole('region', { name: 'Contact', exact: true }).boundingBox();
     const committees = await page
-      .getByRole('region', { name: 'Committees', exact: true })
+      .getByRole('region', { name: 'Teams and groups', exact: true })
       .boundingBox();
     assert.ok(contact && committees);
-    assert.equal(Math.round(contact.x), Math.round(committees.x));
-    assert.ok(
-      committees.y >= contact.y + contact.height,
-      'contact and committee work follow the member portal section order',
-    );
+    assertContactPlacement(contact, committees, width);
     const cells = page.locator('.staff-contact-details > div');
     const first = await cells.nth(0).boundingBox();
     const second = await cells.nth(1).boundingBox();
     assert.ok(first && second);
-    if (width === 1440) {
-      assert.equal(Math.round(first.y), Math.round(second.y));
-      assert.ok(second.x > first.x + first.width, 'contact details share a row when there is room');
-    } else {
-      assert.ok(
-        second.y >= first.y + first.height,
-        'phone contact details stay grouped and readable',
-      );
-    }
+    assert.ok(
+      second.y >= first.y + first.height,
+      'contact details stack in the summary column and on phones',
+    );
   }
   await page.goto(`${ORIGIN}/people/?q=summary%40example.invalid`);
   await page.evaluate(() => {

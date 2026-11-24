@@ -1,35 +1,164 @@
 ---
+import { t } from '@lasvegasfortransit/platform-core/messages';
+import { can } from '@lasvegasfortransit/platform-core/permissions';
+import { ulid } from '@lasvegasfortransit/platform-core/ids';
 import StaffLayout from '../../layouts/StaffLayout.astro';
-import { listCommittees } from '@lasvegasfortransit/platform-storage/committee-views';
+import Button from '../../../../site/src/components/app/Button.astro';
+import {
+  listCommittees,
+  getCommitteeView,
+  type CommitteePerson,
+} from '@lasvegasfortransit/platform-storage/committee-views';
+import { CommitteeService } from '@lasvegasfortransit/platform-storage/committees';
+import { consumeFormToken, issueFormToken } from '@lasvegasfortransit/platform-storage/form-tokens';
+import { field } from '../../lib/forms';
+import { welcomeName } from '../../lib/welcome';
 import { messageResponse } from '../../lib/responses';
 const staff = Astro.locals.staff;
 if (!staff) return messageResponse("You don't have access to this", 403);
+
+// "Lead not assigned" is fixable from this list: staff who can assign people
+// to a team pick a current member and make them its lead in place.
+let feedback: string | null = null;
+if (Astro.request.method === 'POST') {
+  const form = await Astro.request.formData();
+  const committeeId = field(form, 'committee_id', 50);
+  const assignmentId = field(form, 'assignment_id', 50);
+  const operationId = field(form, 'operation_id', 200);
+  if (
+    !(await consumeFormToken(staff.db, staff.actor, {
+      action: `committee:lead:${committeeId}`,
+      token: field(form, 'token', 43),
+    }))
+  )
+    return messageResponse(
+      'This form expired or was already submitted. Reload the page and try again.',
+      409,
+    );
+  const view = await getCommitteeView(staff.db, staff.actor, committeeId, { limit: 100 });
+  if (!view || !can(staff.actor, 'committee.assign', { committeeId }))
+    return messageResponse("You don't have access to this", 403);
+  const assignment = view.current.items.find((item) => item.assignmentId === assignmentId);
+  if (!assignment || !operationId) {
+    feedback = 'Choose someone on the team to lead it.';
+    Astro.response.status = 400;
+  } else {
+    const result = await new CommitteeService(staff.db).changeRole(
+      assignment.assignmentId,
+      'lead',
+      staff.actor.personId,
+      operationId,
+    );
+    if (result.kind === 'ok')
+      return new Response(null, {
+        status: 303,
+        headers: { Location: `/committees/?lead=${encodeURIComponent(committeeId)}#main` },
+      });
+    if (result.kind === 'forbidden' || result.kind === 'not_found')
+      return messageResponse("You don't have access to this", 403);
+    feedback = 'The team changed while you were choosing. Check the list and try again.';
+    Astro.response.status = 409;
+  }
+}
+
 const committees = await listCommittees(staff.db, staff.actor);
+const savedLead = committees.find((item) => item.id === Astro.url.searchParams.get('lead'));
+// For each leaderless team this person can staff: who could lead it, and a
+// single-use token for the form.
+const leadFixes = new Map<string, { people: CommitteePerson[]; token: string }>();
+for (const committee of committees) {
+  if (
+    committee.leadNames.length ||
+    !can(staff.actor, 'committee.assign', { committeeId: committee.id })
+  )
+    continue;
+  const view = await getCommitteeView(staff.db, staff.actor, committee.id, { limit: 100 });
+  if (!view) continue;
+  leadFixes.set(committee.id, {
+    people: view.current.items.filter((item) => item.role === 'member'),
+    token: await issueFormToken(staff.db, staff.actor, `committee:lead:${committee.id}`),
+  });
+}
 ---
 
-<StaffLayout title="Committees">
+<StaffLayout title={t('staff.navigation.committees')}>
+  {
+    savedLead && (
+      <p role="status" class="staff-result-notice">
+        {savedLead.name} now has a lead.
+      </p>
+    )
+  }
+  {
+    feedback && (
+      <p role="alert" class="staff-error">
+        {feedback}
+      </p>
+    )
+  }
   <div class="staff-committee-heading" aria-hidden="true">
-    <span>Committee</span><span>People</span><span>Lead</span>
+    <span>Name</span><span>People</span><span>Lead</span>
   </div>
-  <ul class="staff-committee-list" aria-label="Committees">
+  <ul class="staff-committee-list" aria-label={t('staff.navigation.committees')}>
     {
-      committees.map((committee) => (
-        <li>
-          <div>
-            <a href={`/committees/${committee.id}/`} class="staff-person-link">
-              {committee.name}
-            </a>
-            {committee.description && <p class="staff-help">{committee.description}</p>}
-            {!committee.acceptingMembers && <p class="staff-help">Not accepting new assignments</p>}
-          </div>
-          <p class="staff-committee-count">
-            {committee.peopleCount} <span>people</span>
-          </p>
-          <p class="staff-committee-leads">
-            {committee.leadNames.length ? committee.leadNames.join(', ') : 'Lead not assigned'}
-          </p>
-        </li>
-      ))
+      committees.map((committee) => {
+        const fix = leadFixes.get(committee.id);
+        return (
+          <li id={`team-${committee.id}`}>
+            <div>
+              <a href={`/committees/${committee.id}/`} class="staff-person-link">
+                {committee.name}
+              </a>
+              {committee.description && <p class="staff-help">{committee.description}</p>}
+              {!committee.acceptingMembers && (
+                <p class="staff-help">Not accepting new assignments</p>
+              )}
+            </div>
+            <p class="staff-committee-count">
+              {committee.peopleCount} <span>people</span>
+            </p>
+            <div class="staff-committee-lead-cell">
+              <p
+                class:list={[
+                  'staff-committee-leads',
+                  !committee.leadNames.length && 'staff-status staff-status-attention',
+                ]}
+              >
+                {committee.leadNames.length ? committee.leadNames.join(', ') : 'Lead not assigned'}
+              </p>
+              {fix &&
+                (fix.people.length ? (
+                  <details class="staff-fix">
+                    <summary aria-label={`Assign a lead for ${committee.name}`}>
+                      Assign a lead
+                    </summary>
+                    <form method="post" action="/committees/" class="staff-fix-panel">
+                      <input type="hidden" name="token" value={fix.token} />
+                      <input type="hidden" name="operation_id" value={ulid()} />
+                      <input type="hidden" name="committee_id" value={committee.id} />
+                      <label for={`lead-${committee.id}`}>Lead for {committee.name}</label>
+                      <select id={`lead-${committee.id}`} name="assignment_id" required>
+                        <option value="">Choose a team member</option>
+                        {fix.people.map((person) => (
+                          <option value={person.assignmentId}>
+                            {person.givenName || person.familyName
+                              ? welcomeName(person)
+                              : (person.email ?? welcomeName(person))}
+                          </option>
+                        ))}
+                      </select>
+                      <Button>Make lead</Button>
+                    </form>
+                  </details>
+                ) : (
+                  <a href="/people/?status=member" class="staff-fix-link">
+                    Find people to add
+                  </a>
+                ))}
+            </div>
+          </li>
+        );
+      })
     }
   </ul>
   {!committees.length && <p>No committees available.</p>}

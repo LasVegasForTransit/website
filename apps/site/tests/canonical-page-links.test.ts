@@ -98,4 +98,25 @@ void test('protected account links permit only their intentional sign-in gate', 
     }),
     /Expected direct 200/,
   );
+  const apply = '<a href="/account/apply/?role=events-coordinator">Apply</a>';
+  await checkCanonicalPageLinks(apply, '/join/events-coordinator/', origin, {
+    request: () =>
+      Promise.resolve(
+        new Response('', {
+          status: 303,
+          headers: {
+            location: `/sign-in/?next=${encodeURIComponent('/account/apply/?role=events-coordinator')}`,
+          },
+        }),
+      ),
+  });
+  await assert.rejects(
+    checkCanonicalPageLinks(apply, '/join/events-coordinator/', origin, {
+      request: () =>
+        Promise.resolve(
+          new Response('', { status: 303, headers: { location: '/sign-in/?next=%2Faccount%2F' } }),
+        ),
+    }),
+    /Expected direct 200/,
+  );
 });

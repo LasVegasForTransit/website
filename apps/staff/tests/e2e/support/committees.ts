@@ -25,7 +25,7 @@ export async function exerciseCommittees(page: Page, fixture: Fixture) {
     page.getByRole('button', { name: 'Search', exact: true }).click(),
   ]);
   await page.getByRole('link', { name: 'New Member', exact: true }).click();
-  await page.getByRole('heading', { name: 'Committees', exact: true }).waitFor();
+  await page.getByRole('heading', { name: 'Teams and groups', exact: true }).waitFor();
   await page.getByLabel('Committee', { exact: true }).selectOption('events');
   await submit(page, 'Add to committee');
   const current = page.locator('.staff-current-assignments');

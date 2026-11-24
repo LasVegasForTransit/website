@@ -102,7 +102,7 @@ async function createJourney(
   const denied = await page.goto(`${ORIGIN}/people/`);
   assert.equal(denied?.status(), 403);
   await page.goto(`${ORIGIN}/paper/`);
-  await page.getByRole('button', { name: 'Sign out', exact: true }).click();
+  await clickSignOut(page);
   await page
     .getByRole('heading', {
       name: mode === 'google' ? 'Sign in to the Staff Portal' : 'You’re signed out',
@@ -114,6 +114,17 @@ async function createJourney(
 function capturedCode(email: { to: string[]; text: string }) {
   assert.deepEqual(email.to, ['admin@example.invalid']);
   return /\b\d{6}\b/.exec(email.text)?.[0] ?? '';
+}
+/** A prepared account's first sign-in shows the welcome screen and its account switcher. */
+async function modelFirstSignIn(
+  flow: string,
+  fixture: Pick<Awaited<ReturnType<typeof startRuntime>>, 'db' | 'admin'>,
+) {
+  if (flow !== 'change') return;
+  await fixture.db
+    .prepare("DELETE FROM sessions WHERE person_id=? AND type='staff'")
+    .bind(fixture.admin.person.id)
+    .run();
 }
 async function seedMemberCookie(
   flow: string,
@@ -139,10 +150,16 @@ async function seedMemberCookie(
     ]);
   }
 }
+// Phones keep Sign out at the end of the menu, so open it first as a person would.
+async function clickSignOut(page: Page) {
+  const menu = page.locator('details.staff-nav-menu > summary');
+  if (await menu.isVisible()) await menu.click();
+  await page.getByRole('button', { name: 'Sign out', exact: true }).click();
+}
 async function signOutAndReenter(page: Page, view: { mode: string; theme: string; width: number }) {
   const { mode } = view;
   await page.goto(`${ORIGIN}/people/`);
-  await page.getByRole('button', { name: 'Sign out', exact: true }).click();
+  await clickSignOut(page);
   await page
     .getByRole('heading', {
       name: mode === 'google' ? 'Sign in to the Staff Portal' : 'You’re signed out',
@@ -158,7 +175,7 @@ async function signOutAndReenter(page: Page, view: { mode: string; theme: string
   if (mode === 'cloudflare-access')
     await page.getByRole('button', { name: 'Sign in again' }).click();
   else await page.getByRole('link', { name: 'Sign in with Google' }).click();
-  await page.getByRole('link', { name: 'Continue', exact: true }).click();
+  // The welcome screen belongs to the first sign-in; returning staff go straight in.
   await page.waitForURL(`${ORIGIN}/people/`);
   assert.equal(await page.getByRole('heading', { name: 'Finish setting up' }).count(), 0);
 }
@@ -219,6 +236,7 @@ async function journey(
     ...accessHeaders(mode, fixture.admin.assertion),
   });
   await seedMemberCookie(flow, fixture, context);
+  await modelFirstSignIn(flow, fixture);
   const page = await context.newPage();
   const cspErrors: string[] = [];
   page.on('console', (message) => {

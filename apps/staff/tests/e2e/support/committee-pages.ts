@@ -14,9 +14,9 @@ async function save(page: Page) {
   return response;
 }
 export async function exerciseCommitteePages(page: Page, fixture: Fixture) {
-  assert.equal(await page.getByRole('link', { name: 'Committees', exact: true }).count(), 1);
-  await page.getByRole('link', { name: 'Committees', exact: true }).click();
-  const list = page.getByRole('list', { name: 'Committees', exact: true });
+  assert.equal(await page.getByRole('link', { name: 'Teams and groups', exact: true }).count(), 1);
+  await page.getByRole('link', { name: 'Teams and groups', exact: true }).click();
+  const list = page.getByRole('list', { name: 'Teams and groups', exact: true });
   assert.equal(await list.locator('li').count(), 9);
   await page.screenshot({
     path: `${fixture.root}/test-results/staff/committees-desktop.png`,
@@ -110,7 +110,7 @@ export async function exerciseCommitteePages(page: Page, fixture: Fixture) {
 }
 export async function exerciseLeadCommitteePages(page: Page) {
   await page.goto(`${ORIGIN}/committees/`);
-  const list = page.getByRole('list', { name: 'Committees', exact: true });
+  const list = page.getByRole('list', { name: 'Teams and groups', exact: true });
   assert.equal(await list.locator('li').count(), 1);
   await list.getByRole('link', { name: 'Events Committee', exact: true }).click();
   assert.equal(await page.getByRole('link', { name: 'Edit committee', exact: true }).count(), 0);

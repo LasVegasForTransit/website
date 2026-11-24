@@ -55,7 +55,7 @@ export async function exercisePaperVolunteer(browser: Browser, fixture: Fixture)
   assert.equal(new URL(volunteerPage.url()).pathname, '/paper/');
   assert.equal(await volunteerPage.getByRole('link', { name: 'Members', exact: true }).count(), 0);
   assert.equal(
-    await volunteerPage.getByRole('link', { name: 'Committees', exact: true }).count(),
+    await volunteerPage.getByRole('link', { name: 'Teams and groups', exact: true }).count(),
     0,
   );
   assert.equal(

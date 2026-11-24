@@ -209,7 +209,10 @@ try {
     page.getByRole('link', { name: 'Review Google access', exact: true }).click(),
   ]);
 
-  assert.equal(await page.getByText('Amina Staff', { exact: true }).isVisible(), true);
+  assert.equal(
+    await page.getByRole('main').getByText('Amina Staff', { exact: true }).isVisible(),
+    true,
+  );
   assert.equal(await page.getByText('Not on this committee', { exact: true }).count(), 2);
   assert.equal(await page.getByText('Leon Staff', { exact: true }).isVisible(), true);
   assert.equal(await page.getByText('Missing Google access', { exact: true }).isVisible(), true);
@@ -318,7 +321,7 @@ try {
       .isVisible(),
     true,
   );
-  assert.equal(await page.getByText('Amina Staff', { exact: true }).count(), 0);
+  assert.equal(await page.getByRole('main').getByText('Amina Staff', { exact: true }).count(), 0);
   await fixture.db.prepare('DELETE FROM google_group_check_failures').run();
   await fixture.db
     .prepare('UPDATE google_group_inventory SET expires_at=? WHERE group_email=?')
@@ -331,7 +334,7 @@ try {
       .isVisible(),
     true,
   );
-  assert.equal(await page.getByText('Amina Staff', { exact: true }).count(), 0);
+  assert.equal(await page.getByRole('main').getByText('Amina Staff', { exact: true }).count(), 0);
   const invalid = await fixture.simulator.dispatchFetch(`${ORIGIN}/access/?group_cursor=invalid!`, {
     headers: {
       'Cf-Access-Jwt-Assertion': fixture.admin.assertion,

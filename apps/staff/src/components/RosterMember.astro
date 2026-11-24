@@ -5,6 +5,7 @@ import type { RosterDetails } from '@lasvegasfortransit/platform-storage/roster-
 import { can } from '@lasvegasfortransit/platform-core/permissions';
 import { MEMBERSHIP_LABELS, personName } from '../lib/people';
 import { rosterReturn } from '../lib/roster-return';
+import RosterCommittees from './RosterCommittees.astro';
 interface Props {
   person: Person;
   details?: RosterDetails;
@@ -20,16 +21,34 @@ const discordPresence =
     : details?.discordInServer === false
       ? t('staff.people.discordAbsent')
       : t('staff.people.discordNotChecked');
-const rosterStatus = [
-  showMembership ? MEMBERSHIP_LABELS[person.membership_status] : null,
-  showDiscord
-    ? details?.discordConnected
-      ? discordPresence
-      : t('staff.people.discordNotConnected')
-    : null,
-]
-  .filter(Boolean)
-  .join(' · ');
+type Tone = 'ok' | 'attention' | 'neutral';
+// Each status renders as a labeled indicator. Ember marks only the state that
+// asks staff to act (a connected account that left the server), so the roster
+// doesn't flood with color for the common "not connected yet" case.
+const rosterStatus: { label: string; tone: Tone }[] = [
+  ...(showMembership
+    ? [
+        {
+          label: MEMBERSHIP_LABELS[person.membership_status],
+          tone: (person.membership_status === 'member' ? 'ok' : 'neutral') as Tone,
+        },
+      ]
+    : []),
+  ...(showDiscord
+    ? [
+        details?.discordConnected
+          ? {
+              label: discordPresence,
+              tone: (details.discordInServer === true
+                ? 'ok'
+                : details.discordInServer === false
+                  ? 'attention'
+                  : 'neutral') as Tone,
+            }
+          : { label: t('staff.people.discordNotConnected'), tone: 'neutral' as Tone },
+      ]
+    : []),
+];
 const returnTo = rosterReturn(Astro.url.pathname + Astro.url.search) ?? '/people/';
 const profile = `/people/${person.id}/?return_to=${encodeURIComponent(returnTo)}`;
 const assignLink = `${profile}&return_after_assign=1#committees-heading`;
@@ -41,16 +60,19 @@ const staff = Astro.locals.staff!;
     <a href={profile}>{name}</a>
     {person.email && person.email !== name && <p>{person.email}</p>}
     {
-      details?.lastEngagedAt && (
-        <p class="staff-roster-activity">
-          <time datetime={details.lastEngagedAt}>
-            {t('staff.people.lastActivity', {
-              date: formatFullDate(new Date(details.lastEngagedAt)),
-            })}
-          </time>
-        </p>
-      )
+      /* Phones show one line per member; the toggle reveals the other cells.
+        A checkbox keeps it working without scripts and without copying the
+        cells' content. */
     }
+    <input
+      type="checkbox"
+      id={`row-details-${person.id}`}
+      class="staff-row-toggle-input"
+      aria-label={t('staff.people.rowDetails', { name })}
+    />
+    <label for={`row-details-${person.id}`} class="staff-row-toggle" aria-hidden="true">
+      {t('staff.people.rowDetailsShort')}
+    </label>
   </th>
   {
     (showMembership || showDiscord) && (
@@ -64,48 +86,35 @@ const staff = Astro.locals.staff!;
               : t('staff.common.membership')
         }
       >
-        {rosterStatus}
+        <ul class="staff-status-list">
+          {rosterStatus.map((status) => (
+            <li class:list={['staff-status', `staff-status-${status.tone}`]}>{status.label}</li>
+          ))}
+        </ul>
       </td>
     )
   }
   <td class="staff-roster-committee" data-label={t('staff.common.committees')}>
-    <div class="staff-roster-committee-content">
-      {
-        details?.committees.length ? (
-          <ul class="staff-committee-chips" aria-label={t('staff.people.committeeList', { name })}>
-            {details.committees.map((committee) => (
-              <li>
-                {can(staff.actor, 'committee.view', {
-                  committeeId: committee.id,
-                }) ? (
-                  <a href={`/committees/${committee.id}/`}>{committee.name}</a>
-                ) : (
-                  <span>{committee.name}</span>
-                )}
-              </li>
-            ))}
-          </ul>
-        ) : (
-          <p>{person.membership_status === 'member' ? t('staff.people.unassigned') : '—'}</p>
-        )
-      }
-      {
-        person.membership_status === 'member' && canAddToAnotherCommittee && (
-          <a
-            href={assignLink}
-            class="staff-roster-add-committee"
-            aria-label={
-              details?.committees.length
-                ? t('staff.people.addAnotherFor', { name })
-                : t('staff.people.addFor', { name })
-            }
-          >
-            {details?.committees.length
-              ? t('staff.people.addAnother')
-              : t('staff.people.addToCommittee')}
-          </a>
-        )
-      }
-    </div>
+    <RosterCommittees
+      person={person}
+      name={name}
+      details={details}
+      canAddToAnotherCommittee={canAddToAnotherCommittee}
+      assignLink={assignLink}
+    />
+  </td>
+  <td class="staff-roster-activity-cell" data-label={t('staff.people.lastActivityHeading')}>
+    {
+      details?.lastEngagedAt ? (
+        <p class="staff-roster-activity">
+          <time datetime={details.lastEngagedAt}>
+            <span class="sr-only">{t('staff.people.lastActivityHeading')} </span>
+            {formatFullDate(new Date(details.lastEngagedAt))}
+          </time>
+        </p>
+      ) : (
+        <span class="staff-roster-none">—</span>
+      )
+    }
   </td>
 </tr>

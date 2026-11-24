@@ -14,6 +14,7 @@ export interface CommitteeSettings {
   description: string;
   timeCommitment: string;
   acceptingMembers: boolean;
+  takingApplications: boolean;
   settingsVersion: number;
   workspaceGroupEmail: string | null;
   discordRoleId: string | null;
@@ -26,6 +27,7 @@ interface CommitteeRow {
   description: string;
   time_commitment: string;
   accepting_members: number;
+  taking_applications: number;
   settings_version: number;
   workspace_group_email: string | null;
   discord_role_id: string | null;
@@ -45,6 +47,7 @@ export function committeeSettings(row: CommitteeRow): CommitteeSummary {
     description: row.description,
     timeCommitment: row.time_commitment,
     acceptingMembers: Boolean(row.accepting_members),
+    takingApplications: Boolean(row.taking_applications),
     settingsVersion: row.settings_version,
     workspaceGroupEmail: row.workspace_group_email,
     discordRoleId: row.discord_role_id,

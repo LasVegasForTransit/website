@@ -241,6 +241,12 @@ const roles = defineCollection({
     summary: z.string(),
     commitment: z.string(),
     team: z.string().optional(),
+    // The portal committee an accepted applicant joins (a `committees.id`).
+    // Leave it out when an administrator should choose the team on acceptance.
+    committee: z
+      .string()
+      .regex(/^[a-z0-9-]+$/)
+      .optional(),
     order: z.number().optional(),
     // Required by Google's JobPosting structured-data guide. Set to the date
     // the posting was actually added to the repo (verified via git/GitHub

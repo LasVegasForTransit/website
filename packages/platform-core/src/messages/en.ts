@@ -1,6 +1,8 @@
 import { staffCommon } from './staff-common';
 import { staffPeople } from './staff-people';
 import { staffWelcome } from './staff-welcome';
+import { staffApplications } from './staff-applications';
+import { memberApplications } from './member-applications';
 import { staffPaper } from './staff-paper';
 import { staffAccess } from './staff-access';
 import { staffImports } from './staff-imports';
@@ -24,6 +26,7 @@ export const en = {
     ...staffAccess,
     ...staffPaper,
     ...staffWelcome,
+    ...staffApplications,
     ...staffImports,
     ...staffAdministrators,
     ...staffParticipation,
@@ -351,6 +354,7 @@ export const en = {
     summary:
       'Everything LVBT holds about {name}, downloaded {date}. Your details come first, then where each came from, what you agreed to and when, your connected accounts and your recorded activity.',
   },
+  applications: memberApplications,
   header: {
     signIn: 'Sign in',
     account: 'Your account',

@@ -1079,3 +1079,12 @@ per conversation. Conflicting existing operations block the migration for operat
 Migration `0065_discord_work_existing_events.sql` records whether an event needs existing-post
 reconciliation independently of its stable request identifier, preserving that classification when
 an unstarted request is reused after a route changes.
+
+Migration `0066_committee_applications.sql` adds `committees.taking_applications` (default off, so
+administrators open each committee to member requests) and `committee_applications`: a member's
+application for a posted role or request to join a committee. Each row moves once from `submitted`
+to `accepted`, `declined` or `withdrawn`; checks tie the decider, decision time and resulting
+committee assignment to that state. A member has at most one waiting application per role, or per
+committee when no role was posted. Erasing a person deletes their applications, and erased people
+cannot apply. Accepting creates an ordinary `committee_assignments` row, so Discord and Google
+access follow the existing reconcilers.

@@ -8,6 +8,9 @@ import type { WelcomeQueueRow } from '@lasvegasfortransit/platform-core/welcome'
 import { t } from '@lasvegasfortransit/platform-core/messages';
 import { welcomeName, welcomeSource, welcomeInterestLabels } from '../../lib/welcome';
 import { messageResponse } from '../../lib/responses';
+import { issueFormToken } from '@lasvegasfortransit/platform-storage/form-tokens';
+import { ulid } from '@lasvegasfortransit/platform-core/ids';
+import Button from '../../../../site/src/components/app/Button.astro';
 const staff = Astro.locals.staff;
 if (!staff) return messageResponse("You don't have access to this", 403);
 let page: Page<WelcomeQueueRow> = { items: [], nextCursor: null };
@@ -23,6 +26,21 @@ try {
     Astro.response.status = 400;
   } else throw cause;
 }
+// Summary for the queue header. Counts cover the rows on this page; the
+// queue is oldest-first, so the first page holds the most urgent work.
+const mine = page.items.filter((item) => item.claimedBy === staff.actor.personId);
+const open = page.items.filter((item) => !item.claimedBy);
+const overdue = page.items.filter((item) => item.overdue && !item.claimedBy);
+const next = open[0];
+// Unclaimed rows get a one-click claim; the token is single-use per person.
+const claimTokens = new Map<string, string>();
+for (const item of open)
+  claimTokens.set(
+    item.personId,
+    await issueFormToken(staff.db, staff.actor, `welcome:claim:${item.personId}`),
+  );
+// More pages means more people waiting than this page shows.
+const more = page.nextCursor ? '+' : '';
 ---
 
 <StaffLayout
@@ -38,6 +56,56 @@ try {
       )
     }
     {
+      !error && page.items.length > 0 && (
+        <section class="staff-queue-header" aria-label="Welcome queue summary">
+          <dl class="staff-stat-row">
+            <div class:list={['staff-stat', open.length > 0 && 'staff-stat-attention']}>
+              <dt>Need a welcome</dt>
+              <dd>
+                {open.length}
+                {more}
+              </dd>
+            </div>
+            <div class:list={['staff-stat', overdue.length > 0 && 'staff-stat-attention']}>
+              <dt>Waiting over 7 days</dt>
+              <dd>{overdue.length}</dd>
+            </div>
+            <div class="staff-stat">
+              <dt>You're welcoming</dt>
+              <dd>{mine.length}</dd>
+            </div>
+          </dl>
+          <div class="staff-queue-next">
+            <ol class="staff-steps" aria-label="How welcoming works">
+              <li>
+                <strong>Assign</strong> a member to yourself to see their contact details.
+              </li>
+              <li>
+                <strong>Reach out</strong> by email, phone or Discord within seven days.
+              </li>
+              <li>
+                <strong>Mark welcomed</strong> and note how you reached them.
+              </li>
+            </ol>
+            <div class="staff-queue-actions">
+              {mine[0] && (
+                <a href={`/welcome/${mine[0].personId}/`} class="staff-secondary-button">
+                  Continue with {welcomeName(mine[0])}
+                </a>
+              )}
+              {next && (
+                <form method="post" action={`/welcome/${next.personId}/claim/`}>
+                  <input type="hidden" name="token" value={claimTokens.get(next.personId)} />
+                  <input type="hidden" name="operation_id" value={ulid()} />
+                  <Button>Welcome the next member</Button>
+                </form>
+              )}
+            </div>
+          </div>
+        </section>
+      )
+    }
+    {
       !error &&
         (page.items.length ? (
           <ul class="staff-welcome-list" aria-label="Members to welcome">
@@ -47,7 +115,7 @@ try {
                   <a href={`/welcome/${person.personId}/`} class="staff-person-link">
                     {welcomeName(person)}
                   </a>
-                  <p class="mt-1 text-body-sm text-on-surface-variant">
+                  <p class="staff-welcome-meta">
                     {person.joinedAt && (
                       <>
                         Joined{' '}
@@ -61,39 +129,72 @@ try {
                     {person.overdue && (
                       <span class="staff-welcome-overdue">{t('staff.welcome.overdue')}</span>
                     )}
-                  </p>
-                  <p class="mt-1 text-body-sm text-on-surface-variant">
-                    {t('staff.welcome.source', { source: welcomeSource(person.source) })}
-                    {person.waitingDays !== null && (
-                      <>
-                        {' '}
-                        ·{' '}
-                        {person.waitingDays === 0
-                          ? t('staff.welcome.today')
-                          : t('staff.welcome.waitingDays', { count: person.waitingDays })}
-                      </>
-                    )}
+                    {person.joinedAt && <span aria-hidden="true"> · </span>}
+                    <span>
+                      {t('staff.welcome.source', { source: welcomeSource(person.source) })}
+                      {person.waitingDays !== null && (
+                        <>
+                          {' '}
+                          ·{' '}
+                          {person.waitingDays === 0
+                            ? t('staff.welcome.today')
+                            : t('staff.welcome.waitingDays', { count: person.waitingDays })}
+                        </>
+                      )}
+                    </span>
                   </p>
                   {person.interests.length > 0 && (
-                    <p class="mt-1 text-body-sm">
+                    <p class="staff-welcome-meta">
                       {t('staff.welcome.interests', {
                         interests: welcomeInterestLabels(person.interests),
                       })}
                     </p>
                   )}
                 </div>
-                <p>
+                <p
+                  class:list={[
+                    'staff-status',
+                    person.claimedBy
+                      ? person.claimedBy === staff.actor.personId
+                        ? 'staff-status-ok'
+                        : 'staff-status-neutral'
+                      : 'staff-status-attention',
+                  ]}
+                >
                   {person.claimedBy
                     ? person.claimedBy === staff.actor.personId
                       ? "You're welcoming them"
                       : `${person.claimedByName ?? 'Another staff member'} is welcoming them`
                     : 'Needs a welcome'}
                 </p>
+                <div class="staff-welcome-action">
+                  {!person.claimedBy ? (
+                    <form method="post" action={`/welcome/${person.personId}/claim/`}>
+                      <input type="hidden" name="token" value={claimTokens.get(person.personId)} />
+                      <input type="hidden" name="operation_id" value={ulid()} />
+                      <button
+                        type="submit"
+                        class="staff-secondary-button press"
+                        aria-label={`Assign ${welcomeName(person)} to me`}
+                      >
+                        Assign to me
+                      </button>
+                    </form>
+                  ) : person.claimedBy === staff.actor.personId ? (
+                    <a
+                      href={`/welcome/${person.personId}/`}
+                      class="staff-secondary-button"
+                      aria-label={`Continue welcoming ${welcomeName(person)}`}
+                    >
+                      Continue
+                    </a>
+                  ) : null}
+                </div>
               </li>
             ))}
           </ul>
         ) : (
-          <div>
+          <div class="staff-empty">
             <>
               <h2 class="text-title-lg font-bold">No members waiting here</h2>
               <p class="mt-1 text-body-sm text-on-surface-variant">

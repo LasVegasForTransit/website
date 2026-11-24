@@ -119,7 +119,7 @@ const combinations = await personMerges(staff.db, staff.actor, person.id);
   <div slot="heading-meta" class="staff-profile-actions">
     {
       can(staff.actor, 'person.update') && (
-        <a href={`/people/${person.id}/edit/${returnQuery}`} class="staff-edit-link">
+        <a href={`/people/${person.id}/edit/${returnQuery}`} class="staff-secondary-button">
           {t('staff.profile.edit')}
         </a>
       )
