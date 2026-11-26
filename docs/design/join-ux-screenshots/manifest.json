@@ -1,0 +1,218 @@
+[
+  {
+    "file": "01-public-join-desktop.png",
+    "label": "Public Join",
+    "viewport": "1440 × 900",
+    "url": "/prototypes/join/vision/?presentation=1#join"
+  },
+  {
+    "file": "02-public-join-mobile.png",
+    "label": "Public Join",
+    "viewport": "390 × 844",
+    "url": "/prototypes/join/vision/?presentation=1#join"
+  },
+  {
+    "file": "03-member-home-desktop.png",
+    "label": "Signed-in member home",
+    "viewport": "1440 × 900",
+    "url": "/prototypes/join/vision/?presentation=1&member=1#member"
+  },
+  {
+    "file": "04-member-home-mobile.png",
+    "label": "Signed-in member home",
+    "viewport": "390 × 844",
+    "url": "/prototypes/join/vision/?presentation=1&member=1#member"
+  },
+  {
+    "file": "05-member-step-1-desktop.png",
+    "label": "Member questions: step 1",
+    "viewport": "1440 × 900",
+    "url": "/prototypes/join/vision/?presentation=1&member=1&interest=build&pace=once&step=1#finder"
+  },
+  {
+    "file": "06-member-step-1-mobile.png",
+    "label": "Member questions: step 1",
+    "viewport": "390 × 844",
+    "url": "/prototypes/join/vision/?presentation=1&member=1&interest=build&pace=once&step=1#finder"
+  },
+  {
+    "file": "07-member-step-2-desktop.png",
+    "label": "Member questions: step 2",
+    "viewport": "1440 × 900",
+    "url": "/prototypes/join/vision/?presentation=1&member=1&interest=build&pace=once&step=2#finder"
+  },
+  {
+    "file": "08-member-step-2-mobile.png",
+    "label": "Member questions: step 2",
+    "viewport": "390 × 844",
+    "url": "/prototypes/join/vision/?presentation=1&member=1&interest=build&pace=once&step=2#finder"
+  },
+  {
+    "file": "09-member-step-3-desktop.png",
+    "label": "Member questions: step 3",
+    "viewport": "1440 × 900",
+    "url": "/prototypes/join/vision/?presentation=1&member=1&interest=build&pace=once&step=3#finder"
+  },
+  {
+    "file": "10-member-step-3-mobile.png",
+    "label": "Member questions: step 3",
+    "viewport": "390 × 844",
+    "url": "/prototypes/join/vision/?presentation=1&member=1&interest=build&pace=once&step=3#finder"
+  },
+  {
+    "file": "11-contributor-request-desktop.png",
+    "label": "Contributor request",
+    "viewport": "1440 × 900",
+    "url": "/prototypes/join/vision/transit-accountability-briefs/?presentation=1#request"
+  },
+  {
+    "file": "12-contributor-request-mobile.png",
+    "label": "Contributor request",
+    "viewport": "390 × 844",
+    "url": "/prototypes/join/vision/transit-accountability-briefs/?presentation=1#request"
+  },
+  {
+    "file": "13-public-form-desktop.png",
+    "label": "Public contributor form, contact and résumé",
+    "viewport": "1440 × 900",
+    "url": "/prototypes/join/vision/transit-accountability-briefs/?presentation=1#interest"
+  },
+  {
+    "file": "14-public-form-choices-desktop.png",
+    "label": "Public contributor form, project choices and context",
+    "viewport": "1440 × 900",
+    "url": "/prototypes/join/vision/transit-accountability-briefs/?presentation=1#interest"
+  },
+  {
+    "file": "15-public-form-mobile.png",
+    "label": "Public contributor form, contact and résumé",
+    "viewport": "390 × 844",
+    "url": "/prototypes/join/vision/transit-accountability-briefs/?presentation=1#interest"
+  },
+  {
+    "file": "16-public-form-choices-mobile.png",
+    "label": "Public contributor form, project choices and context",
+    "viewport": "390 × 844",
+    "url": "/prototypes/join/vision/transit-accountability-briefs/?presentation=1#interest"
+  },
+  {
+    "file": "17-public-validation.png",
+    "label": "Inline email and phone errors",
+    "viewport": "1440 × 900",
+    "url": "/prototypes/join/vision/transit-accountability-briefs/?presentation=1#interest"
+  },
+  {
+    "file": "18-public-confirmation.png",
+    "label": "Public confirmation and optional membership",
+    "viewport": "1440 × 900",
+    "url": "/prototypes/join/vision/transit-accountability-briefs/?presentation=1#interest"
+  },
+  {
+    "file": "19-member-form-desktop.png",
+    "label": "Signed-in form with account details",
+    "viewport": "1440 × 900",
+    "url": "/prototypes/join/vision/transit-accountability-briefs/?presentation=1&member=1#interest"
+  },
+  {
+    "file": "20-member-form-mobile.png",
+    "label": "Signed-in form with account details",
+    "viewport": "390 × 844",
+    "url": "/prototypes/join/vision/transit-accountability-briefs/?presentation=1&member=1#interest"
+  },
+  {
+    "file": "21-member-confirmation.png",
+    "label": "Signed-in confirmation",
+    "viewport": "1440 × 900",
+    "url": "/prototypes/join/vision/transit-accountability-briefs/?presentation=1&member=1#interest"
+  },
+  {
+    "file": "22-role-desktop.png",
+    "label": "Leadership role",
+    "viewport": "1440 × 900",
+    "url": "/prototypes/join/vision/?presentation=1#role"
+  },
+  {
+    "file": "23-role-mobile.png",
+    "label": "Leadership role",
+    "viewport": "390 × 844",
+    "url": "/prototypes/join/vision/?presentation=1#role"
+  },
+  {
+    "file": "24-role-application-desktop.png",
+    "label": "Leadership application",
+    "viewport": "1440 × 900",
+    "url": "/prototypes/join/vision/?presentation=1#role"
+  },
+  {
+    "file": "25-role-application-mobile.png",
+    "label": "Leadership application",
+    "viewport": "390 × 844",
+    "url": "/prototypes/join/vision/?presentation=1#role"
+  },
+  {
+    "file": "26-membership-committee-desktop.png",
+    "label": "Membership Committee",
+    "viewport": "1440 × 900",
+    "url": "/prototypes/join/vision/?presentation=1#membership"
+  },
+  {
+    "file": "27-membership-committee-mobile.png",
+    "label": "Membership Committee",
+    "viewport": "390 × 844",
+    "url": "/prototypes/join/vision/?presentation=1#membership"
+  },
+  {
+    "file": "28-public-engagement-team-desktop.png",
+    "label": "Public Engagement Team",
+    "viewport": "1440 × 900",
+    "url": "/prototypes/join/vision/?presentation=1#group"
+  },
+  {
+    "file": "29-committee-inquiry.png",
+    "label": "Committee inquiry",
+    "viewport": "1440 × 900",
+    "url": "/prototypes/join/vision/?presentation=1#membership"
+  },
+  {
+    "file": "30-team-inquiry.png",
+    "label": "Team inquiry",
+    "viewport": "1440 × 900",
+    "url": "/prototypes/join/vision/?presentation=1#group"
+  },
+  {
+    "file": "31-public-confirmation-mobile.png",
+    "label": "Public contributor confirmation on mobile",
+    "viewport": "390 × 844",
+    "url": "/prototypes/join/vision/transit-accountability-briefs/?presentation=1#interest"
+  },
+  {
+    "file": "32-member-confirmation-mobile.png",
+    "label": "Signed-in contributor confirmation on mobile",
+    "viewport": "390 × 844",
+    "url": "/prototypes/join/vision/transit-accountability-briefs/?presentation=1&member=1#interest"
+  },
+  {
+    "file": "33-role-confirmation-desktop.png",
+    "label": "Leadership application confirmation",
+    "viewport": "1440 × 900",
+    "url": "/prototypes/join/vision/?presentation=1#role"
+  },
+  {
+    "file": "34-role-confirmation-mobile.png",
+    "label": "Leadership application confirmation on mobile",
+    "viewport": "390 × 844",
+    "url": "/prototypes/join/vision/?presentation=1#role"
+  },
+  {
+    "file": "35-role-opening-desktop.png",
+    "label": "Leadership role opening",
+    "viewport": "1440 × 900",
+    "url": "/prototypes/join/vision/?presentation=1#role"
+  },
+  {
+    "file": "36-role-opening-mobile.png",
+    "label": "Leadership role opening",
+    "viewport": "390 × 844",
+    "url": "/prototypes/join/vision/?presentation=1#role"
+  }
+]
