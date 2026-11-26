@@ -1,20 +1,29 @@
 ---
-// Every prototype page: hidden from search engines and marked with the
-// prototype banner, so it can never be mistaken for the real site.
+// Every prototype page is hidden from search engines. Presentation mockups
+// may hide the banner while retaining the noindex directive.
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import { PROTOTYPE_BANNER } from '../../lib/prototypes';
 
 interface Props {
   title: string;
+  canvas?: 'paper' | 'dark';
+  showBanner?: boolean;
 }
 
-const { title } = Astro.props;
+const { title, canvas = 'paper', showBanner = true } = Astro.props;
 ---
 
-<BaseLayout title={`${title} · Prototype`} noindex>
-  <p class="bg-primary-ink text-surface px-4 py-3 text-center font-bold" data-prototype-banner>
-    {PROTOTYPE_BANNER}
-  </p>
+<BaseLayout title={`${title} · Prototype`} noindex canvas={canvas}>
+  {
+    showBanner && (
+      <p
+        class="bg-primary-ink text-surface px-4 py-3 text-center font-bold"
+        data-prototype-banner
+      >
+        {PROTOTYPE_BANNER}
+      </p>
+    )
+  }
   <slot />
   <script is:inline src="/scripts/app-enhance.js" defer></script>
 </BaseLayout>

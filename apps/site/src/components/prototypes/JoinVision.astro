@@ -1,0 +1,1704 @@
+---
+import PrototypeLayout from '../app/PrototypeLayout.astro';
+import JoinVisionBreadcrumbs from './JoinVisionBreadcrumbs.astro';
+import { Icon } from 'astro-icon/components';
+import { getCollection, getEntry, render } from 'astro:content';
+
+interface Props {
+  requestId?: string;
+}
+
+const contributorRequests = (await getCollection('contributorRequests')).sort((a, b) =>
+  a.data.title.localeCompare(b.data.title),
+);
+const selectedRequest =
+  contributorRequests.find((entry) => entry.id === Astro.props.requestId) ?? contributorRequests[0];
+if (!selectedRequest) throw new Error('The contributor request prototype needs a content entry.');
+const briefRequest = selectedRequest.data;
+const project = await getEntry('projects', briefRequest.project);
+if (!project) throw new Error(`Contributor request project not found: ${briefRequest.project}`);
+const technicalLead = await getEntry('roles', 'technical-lead');
+if (!technicalLead) throw new Error('The Technical Lead posting is missing.');
+const { Content: TechnicalLeadContent } = await render(technicalLead);
+const requestHref = (id: string) => {
+  const url = new URL(`/prototypes/join/vision/${id}/`, Astro.url);
+  url.hash = 'request';
+  return `${url.pathname}${url.search}${url.hash}`;
+};
+---
+
+<PrototypeLayout title="Join and member participation" canvas="paper" showBanner={false}>
+  <div class="vision" data-join-vision>
+    <div class="prototype-index container-page">
+      <nav class="screen-nav" aria-label="Prototype screens">
+        <button type="button" data-show-screen="join">Public join</button>
+        <button type="button" data-show-screen="member">Member home</button>
+        <button type="button" data-show-screen="finder">Member questions</button>
+        <button type="button" data-show-screen="request">Contributor request</button>
+        <button type="button" data-open-request-interest>Contributor interest</button>
+        <button type="button" data-show-screen="role">Leadership role</button>
+        <button type="button" data-show-screen="membership">Membership Committee</button>
+        <button type="button" data-show-screen="group">Public Engagement Team</button>
+      </nav>
+    </div>
+
+    <section class="screen" data-screen="join" aria-labelledby="join-heading">
+      <div class="container-page page-opening">
+        <h1 id="join-heading">Join Las Vegans for Better Transit.</h1>
+        <p>
+          Membership is free. Get updates on the 2028 service cuts, the 2027 legislative session,
+          and the moments when LVBT needs members to show up.
+        </p>
+        <a class="primary-link" href="/join/member">Become a member</a>
+      </div>
+      <div class="container-page section-list">
+        <section class="plain-section">
+          <h2>Requests for contributors</h2>
+          <p>Help move a specific project forward.</p>
+          <div class="lined-list">
+            {
+              contributorRequests.map((entry) => (
+                <div>
+                  <div>
+                    <h3>{entry.data.title}</h3>
+                    <p>{entry.data.listing}</p>
+                  </div>
+                  <a href={requestHref(entry.id)} data-request-link>
+                    See the request
+                  </a>
+                </div>
+              ))
+            }
+          </div>
+        </section>
+        <section class="plain-section">
+          <h2>Volunteer leadership positions</h2>
+          <p>Ongoing roles with responsibility for a part of LVBT's work.</p>
+          <div class="lined-list compact">
+            <div>
+              <div>
+                <h3>Technical Lead</h3><p>Volunteer leadership · about 5–10 hours a week</p>
+              </div><button type="button" data-show-screen="role">View role</button>
+            </div>
+          </div>
+        </section>
+        <section class="plain-section">
+          <h2>Committees and teams</h2>
+          <p>Work with other members on an ongoing part of the organization.</p>
+          <div class="committee-grid">
+            <article class="committee-card">
+              <p class="committee-type">Committee</p>
+              <h3>Membership Committee</h3>
+              <p>Improve sign-up, member information, and the first invitation to help.</p>
+              <button type="button" data-show-screen="membership">About this committee</button>
+            </article>
+            <article class="committee-card">
+              <p class="committee-type">Working team</p>
+              <h3>Public Engagement Team</h3>
+              <p>Plan town halls, prepare speakers, and share public comment opportunities.</p>
+              <button type="button" data-show-screen="group">About this team</button>
+            </article>
+          </div>
+        </section>
+        <p class="join-events">
+          Want to meet us first? <a href="/events">See upcoming events</a>
+        </p>
+      </div>
+    </section>
+
+    <section class="screen" data-screen="member" aria-labelledby="member-heading" hidden>
+      <div class="container-page page-opening member-opening">
+        <h1 id="member-heading">Welcome to LVBT.</h1>
+        <p>
+          Browse current projects and teams, or tell us what interests you and we’ll suggest a place
+          to start.
+        </p>
+        <button class="primary-link" type="button" data-show-screen="finder"
+          >Get a suggestion</button
+        >
+      </div>
+      <div class="container-page section-list member-layout">
+        <div class="member-opportunities">
+          <section class="plain-section">
+            <h2>Project requests</h2>
+            <div class="lined-list">
+              {
+                contributorRequests.map((entry) => (
+                  <div>
+                    <div>
+                      <h3>{entry.data.title}</h3>
+                      <p>{entry.data.listing}</p>
+                    </div>
+                    <a href={requestHref(entry.id)} data-request-link>
+                      See request
+                    </a>
+                  </div>
+                ))
+              }
+            </div>
+          </section>
+          <section class="plain-section" id="member-committees">
+            <h2>Committees and teams</h2>
+            <div class="committee-grid">
+              <article class="committee-card">
+                <p class="committee-type">Committee</p>
+                <h3>Membership Committee</h3>
+                <p>Improve sign-up, member information, and follow-up.</p>
+                <button type="button" data-show-screen="membership">About this committee</button>
+              </article>
+              <article class="committee-card">
+                <p class="committee-type">Working team</p>
+                <h3>Public Engagement Team</h3>
+                <p>Plan town halls and prepare residents to give comment.</p>
+                <button type="button" data-show-screen="group">About this team</button>
+              </article>
+            </div>
+          </section>
+          <section class="plain-section">
+            <h2>Leadership positions</h2>
+            <div class="lined-list compact">
+              <div>
+                <div>
+                  <h3>Technical Lead</h3><p>About 5–10 hours a week</p>
+                </div><button type="button" data-show-screen="role">View role</button>
+              </div>
+            </div>
+          </section>
+        </div>
+        <aside class="member-account">
+          <h2>Your account</h2>
+          <p>Keep your contact details and email preferences up to date.</p>
+          <a href="/account/">Account details</a>
+          <a href="/account/mailing-list/">Email preferences</a>
+          <button type="button" data-show-screen="finder">Change interests</button>
+        </aside>
+      </div>
+    </section>
+
+    <section class="screen" data-screen="finder" aria-labelledby="finder-heading" hidden>
+      <div class="container-page form-shell">
+        <JoinVisionBreadcrumbs current="Get a suggestion" parent="member" />
+        <p class="step-progress" data-progress-label>1 of 3 · Interests</p>
+        <div class="step" data-step="1">
+          <h1 id="finder-heading">What would you like to do?</h1>
+          <p class="form-intro">
+            Pick the thing that interests you most right now. You can change it later.
+          </p>
+          <div class="choices" role="group" aria-label="Your interests">
+            <button type="button" data-interest="meet"
+              ><strong>Meet other people</strong><span>Try a meetup or social event.</span></button
+            >
+            <button type="button" data-interest="learn"
+              ><strong>Learn about transit and urbanism</strong><span
+                >Join a discussion or book club.</span
+              ></button
+            >
+            <button type="button" data-interest="speak"
+              ><strong>Speak at a public meeting</strong><span
+                >Follow a local decision and give comment.</span
+              ></button
+            >
+            <button type="button" data-interest="build"
+              ><strong>Contribute skills to a project</strong><span
+                >Help with research, design, technology, or events.</span
+              ></button
+            >
+            <button type="button" data-interest="membership"
+              ><strong>Help members get involved</strong><span
+                >Work on the membership experience and follow-up.</span
+              ></button
+            >
+          </div>
+        </div>
+        <div class="step" data-step="2" hidden>
+          <h1>How much time works for you?</h1>
+          <p class="form-intro">
+            This helps us show a sensible first step. It is not a commitment.
+          </p>
+          <div class="choices" role="group" aria-label="Available time">
+            <button type="button" data-pace="once"
+              ><strong>One event or small task</strong><span>Try something once.</span></button
+            >
+            <button type="button" data-pace="sometimes"
+              ><strong>Occasionally</strong><span>Join when your schedule allows.</span></button
+            >
+            <button type="button" data-pace="regular"
+              ><strong>Regularly</strong><span>Talk about a team or ongoing role.</span></button
+            >
+          </div>
+        </div>
+        <div class="step" data-step="3" hidden>
+          <h1>One place to start</h1>
+          <p class="form-intro">Here is a place you could help.</p>
+          <article class="result">
+            <p data-result-kind>Contributor request</p>
+            <h2 data-result-title>Research and edit a Transit Accountability Brief</h2>
+            <p data-result-description>Find sources, build a timeline, or check the draft.</p>
+            <dl>
+              <div>
+                <dt data-result-source-label>Project</dt><dd data-result-source>
+                  Transit Accountability Briefs
+                </dd>
+              </div><div>
+                <dt>Your availability</dt><dd data-result-commitment>One assignment</dd>
+              </div>
+            </dl>
+            <button type="button" data-result-action data-show-screen="request"
+              >Read the details</button
+            >
+          </article>
+        </div>
+        <div class="form-actions">
+          <button type="button" class="back-link" data-step-back hidden>Back</button><button
+            type="button"
+            class="primary-link"
+            data-step-next
+            disabled>Continue</button
+          >
+        </div>
+      </div>
+    </section>
+
+    <section
+      class="screen"
+      data-screen="request"
+      data-request-listing={briefRequest.listing}
+      data-request-project={project.data.title}
+      aria-labelledby="request-heading"
+      hidden
+    >
+      <div class="container-page request-shell">
+        <JoinVisionBreadcrumbs current={briefRequest.title} />
+        <header class="request-opening">
+          <h1 id="request-heading">{briefRequest.title}</h1>
+          <p class="request-lede">{briefRequest.summary}</p>
+          <div class="request-actions">
+            <button type="button" class="primary-link" data-open-request-interest
+              >I can help with this</button
+            >
+            <a href={`/projects/${briefRequest.project}/`}>About the project</a>
+          </div>
+        </header>
+        <div class="request-content">
+          <section aria-labelledby="request-work">
+            <h2 id="request-work">What you’ll do</h2>
+            <p class="assignment-intro">
+              Work with LVBT’s project lead on one defined part of the first brief.
+            </p>
+            <div class="assignment-list">
+              {
+                briefRequest.waysToHelp.map((item) => (
+                  <div>
+                    <h3>{item.title}</h3>
+                    <p>{item.description}</p>
+                  </div>
+                ))
+              }
+            </div>
+          </section>
+          <section aria-labelledby="request-next">
+            <h2 id="request-next">What happens next</h2>
+            <p>
+              Tell us you’re interested. LVBT staff will reach out to confirm the assignment, the
+              first deliverable, and a schedule that works for you.
+            </p>
+            <button type="button" class="text-action" data-open-request-interest
+              >Let us know you’re interested</button
+            >
+          </section>
+        </div>
+      </div>
+    </section>
+
+    <dialog
+      class="interest-dialog"
+      data-request-interest-dialog
+      aria-labelledby="interest-heading"
+      aria-describedby="interest-intro"
+    >
+      <div class="interest-shell">
+        <button
+          type="button"
+          class="interest-close"
+          data-close-request-interest
+          aria-label="Close contributor form">×</button
+        >
+        <div data-request-interest-entry>
+          <header class="interest-opening">
+            <h2 id="interest-heading" tabindex="-1">{briefRequest.title}</h2>
+            <p id="interest-intro">
+              Tell us where you’d like to help. LVBT staff will follow up personally.
+            </p>
+          </header>
+          <form data-request-interest-form novalidate>
+            <div class="interest-section-heading">
+              <h3>Your contact details</h3>
+            </div>
+            <p class="public-interest-note" data-public-interest-note>
+              You can offer to help without becoming a member.
+            </p>
+            <div class="interest-contact" data-public-contact>
+              <div class="interest-fields">
+                <label>
+                  <span>Name</span>
+                  <input
+                    type="text"
+                    name="name"
+                    autocomplete="name"
+                    placeholder="Your name"
+                    aria-describedby="interest-name-hint interest-name-error"
+                    required
+                  />
+                  <small class="field-hint" id="interest-name-hint"
+                    >Use the name you’d like LVBT staff to call you.</small
+                  >
+                  <small class="field-error" id="interest-name-error" hidden></small>
+                </label>
+                <label>
+                  <span>Email</span>
+                  <input
+                    type="email"
+                    name="email"
+                    autocomplete="email"
+                    placeholder="you@example.com"
+                    aria-describedby="interest-email-hint interest-email-error"
+                    required
+                  />
+                  <small class="field-hint" id="interest-email-hint"
+                    >We’ll use this address to follow up about the project.</small
+                  >
+                  <small class="field-error" id="interest-email-error" hidden></small>
+                </label>
+                <label class="interest-phone">
+                  <span>Phone <small class="optional-label">(optional)</small></span>
+                  <input
+                    type="tel"
+                    name="phone"
+                    autocomplete="tel"
+                    placeholder="(702) 555-0123"
+                    aria-describedby="interest-phone-hint interest-phone-error"
+                  />
+                  <small class="field-hint" id="interest-phone-hint"
+                    >Add a number if you’d prefer a call.</small
+                  >
+                  <small class="field-error" id="interest-phone-error" hidden></small>
+                </label>
+              </div>
+            </div>
+            <div class="interest-contact" data-member-contact hidden>
+              <p class="member-contact-note">
+                These details come from your <a href="/account/">LVBT account</a>, where you can
+                change them.
+              </p>
+              <div class="interest-fields">
+                <label>
+                  <span>Name</span>
+                  <input type="text" value="Jordan Rivera" readonly />
+                </label>
+                <label>
+                  <span>Email</span>
+                  <input type="email" value="jordan@example.com" readonly />
+                </label>
+                <label class="interest-phone">
+                  <span>Phone</span>
+                  <input type="tel" value="(702) 555-0145" readonly />
+                </label>
+              </div>
+            </div>
+
+            <div class="interest-resume">
+              <label class="resume-card" for="interest-resume">
+                <Icon name="mdi:file-document-outline" class="resume-icon" aria-hidden="true" />
+                <span class="resume-copy">
+                  <strong>Résumé <small class="optional-label">(optional)</small></strong>
+                  <span>Share one if it helps show your experience. PDF or Word · 10 MB max.</span>
+                </span>
+                <span class="resume-pick" aria-hidden="true">Choose file</span>
+                <input
+                  id="interest-resume"
+                  name="resume"
+                  type="file"
+                  accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                  aria-describedby="interest-resume-error"
+                />
+              </label>
+              <p class="resume-selected" data-resume-filename aria-live="polite" hidden></p>
+              <p id="interest-resume-error" data-resume-error hidden></p>
+            </div>
+
+            <fieldset class="interest-choices" aria-describedby="interest-work-error">
+              <legend>{briefRequest.interestPrompt}</legend>
+              <p class="field-hint">Choose one area. We’ll talk through the details with you.</p>
+              <div class="interest-options">
+                {
+                  briefRequest.waysToHelp.map((item, index) => (
+                    <label class="interest-option">
+                      <input type="radio" name="work" value={item.title} required={index === 0} />
+                      <span class="interest-radio" aria-hidden="true" />
+                      <span class="interest-option-copy">
+                        <strong>{item.title}</strong>
+                        <small>{item.description}</small>
+                      </span>
+                    </label>
+                  ))
+                }
+                <label class="interest-option">
+                  <input type="radio" name="work" value="unsure" />
+                  <span class="interest-radio" aria-hidden="true"></span>
+                  <span class="interest-option-copy">
+                    <strong>Not sure yet</strong>
+                    <small>We can talk through the options.</small>
+                  </span>
+                </label>
+              </div>
+              <p class="field-error" id="interest-work-error" data-work-error hidden>
+                Choose one option, or select “Not sure yet.”
+              </p>
+            </fieldset>
+
+            <label class="interest-note">
+              <span>Additional context <small class="optional-label">(optional)</small></span>
+              <small class="field-hint" id="interest-note-hint"
+                >Relevant skills or why this project interests you can help us find a good fit. 300
+                characters max.</small
+              >
+              <textarea
+                name="note"
+                rows="2"
+                maxlength="300"
+                placeholder="For example, I’ve edited reports or worked with public records."
+                aria-describedby="interest-note-hint"></textarea>
+            </label>
+            <button type="submit" class="primary-link">Send interest</button>
+          </form>
+        </div>
+        <div class="interest-confirmation" data-request-interest-confirmation hidden>
+          <h2 tabindex="-1" data-interest-confirm-heading>Thanks for offering to help.</h2>
+          <p>
+            LVBT staff will reach out at <strong data-interest-confirm-email></strong> to talk about the
+            brief and where you could contribute.
+          </p>
+          <p data-public-join-invitation>
+            Want updates about other LVBT work? Membership is free.
+            <a href="/join/member">Become a member</a>
+          </p>
+          <button type="button" class="text-action" data-close-request-interest>Done</button>
+        </div>
+      </div>
+    </dialog>
+
+    <dialog
+      class="interest-dialog role-dialog"
+      data-role-dialog
+      aria-labelledby="role-apply-heading"
+    >
+      <div class="interest-shell">
+        <button type="button" class="interest-close" data-close-role aria-label="Close application"
+          >×</button
+        >
+        <div data-role-entry>
+          <header class="interest-opening">
+            <h2 id="role-apply-heading" tabindex="-1">Apply for Technical Lead</h2>
+            <p>Send your details and LVBT will get in touch about the role.</p>
+          </header>
+          <form data-role-form novalidate>
+            <div class="interest-section-heading">
+              <h3>Your contact details</h3>
+            </div>
+            <div class="interest-contact" data-role-public-contact>
+              <div class="interest-fields">
+                <label
+                  ><span>Name</span><input
+                    type="text"
+                    name="name"
+                    autocomplete="name"
+                    placeholder="Your name"
+                    aria-describedby="role-name-hint role-name-error"
+                    required
+                  /><small class="field-hint" id="role-name-hint"
+                    >Use the name you’d like LVBT staff to call you.</small
+                  ><small class="field-error" id="role-name-error" hidden></small></label
+                >
+                <label
+                  ><span>Email</span><input
+                    type="email"
+                    name="email"
+                    autocomplete="email"
+                    placeholder="you@example.com"
+                    aria-describedby="role-email-hint role-email-error"
+                    required
+                  /><small class="field-hint" id="role-email-hint"
+                    >We’ll use this address to follow up about the role.</small
+                  ><small class="field-error" id="role-email-error" hidden></small></label
+                >
+                <label
+                  ><span>Phone <small class="optional-label">(optional)</small></span><input
+                    type="tel"
+                    name="phone"
+                    autocomplete="tel"
+                    placeholder="(702) 555-0123"
+                    aria-describedby="role-phone-hint role-phone-error"
+                  /><small class="field-hint" id="role-phone-hint"
+                    >Add a number if you’d prefer a call.</small
+                  ><small class="field-error" id="role-phone-error" hidden></small></label
+                >
+              </div>
+            </div>
+            <div class="interest-contact" data-role-member-contact hidden>
+              <p class="member-contact-note">
+                These details come from your <a href="/account/">LVBT account</a>, where you can
+                change them.
+              </p>
+              <div class="interest-fields">
+                <label><span>Name</span><input type="text" value="Jordan Rivera" readonly /></label>
+                <label
+                  ><span>Email</span><input
+                    type="email"
+                    value="jordan@example.com"
+                    readonly
+                  /></label
+                >
+                <label><span>Phone</span><input type="tel" value="(702) 555-0145" readonly /></label
+                >
+              </div>
+            </div>
+            <div class="interest-resume">
+              <label class="resume-card" for="role-resume">
+                <Icon name="mdi:file-document-outline" class="resume-icon" aria-hidden="true" />
+                <span class="resume-copy">
+                  <strong>Résumé <small class="optional-label">(optional)</small></strong>
+                  <span>Share one if it helps show your experience. PDF or Word · 10 MB max.</span>
+                </span>
+                <span class="resume-pick" aria-hidden="true">Choose file</span>
+                <input
+                  id="role-resume"
+                  name="resume"
+                  type="file"
+                  accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                  aria-describedby="role-resume-error"
+                />
+              </label>
+              <p class="resume-selected" data-resume-filename aria-live="polite" hidden></p>
+              <p id="role-resume-error" data-role-resume-error hidden></p>
+            </div>
+            <button type="submit" class="primary-link">Send application</button>
+          </form>
+        </div>
+        <div class="interest-confirmation" data-role-confirmation hidden>
+          <h2 tabindex="-1" data-role-confirm-heading>Application received.</h2>
+          <p>LVBT will follow up at <strong data-role-confirm-email></strong> about the role.</p>
+          <button type="button" class="text-action" data-close-role>Done</button>
+        </div>
+      </div>
+    </dialog>
+
+    <section class="screen" data-screen="role" aria-labelledby="role-heading" hidden>
+      <div class="container-page detail-shell role-shell">
+        <JoinVisionBreadcrumbs current={technicalLead.data.title} />
+        <header class="role-opening">
+          <h1 id="role-heading">{technicalLead.data.title}</h1>
+          <p class="role-terms">Volunteer role · Remote first</p>
+          <p class="detail-intro">{technicalLead.data.summary}</p>
+          <dl class="role-facts">
+            <div><dt>Commitment</dt><dd>{technicalLead.data.commitment}</dd></div>
+            <div><dt>Team</dt><dd>{technicalLead.data.team}</dd></div>
+          </dl>
+          <button type="button" class="primary-link" data-open-role>Apply for this role</button>
+        </header>
+        <div class="role-copy prose-doc prose-posting max-w-2xl">
+          <TechnicalLeadContent />
+        </div>
+        <div class="role-bottom-action">
+          <button type="button" class="primary-link" data-open-role>Apply for this role</button>
+        </div>
+      </div>
+    </section>
+
+    <section class="screen" data-screen="membership" aria-labelledby="membership-heading" hidden>
+      <div class="container-page detail-shell">
+        <JoinVisionBreadcrumbs current="Membership Committee" />
+        <h1 id="membership-heading">Membership Committee</h1>
+        <p class="detail-intro">
+          This committee works on what happens after someone decides to join LVBT: a clear sign-up,
+          useful member information, and ways to help that match the person’s interests and time.
+        </p>
+        <h2>Current work</h2>
+        <ul>
+          <li>Improve the membership experience on the website.</li>
+          <li>Shape the member portal so people can find specific ways to contribute.</li>
+          <li>Make sure new members hear about relevant projects and events.</li>
+        </ul>
+        <h2>Ask about joining</h2>
+        <p>Tell the committee which part of membership work you’d like to help with.</p>
+        <button type="button" class="primary-link" data-open-sample>Ask about the committee</button>
+      </div>
+    </section>
+
+    <section class="screen" data-screen="group" aria-labelledby="group-heading" hidden>
+      <div class="container-page detail-shell">
+        <JoinVisionBreadcrumbs current="Public Engagement Team" />
+        <h1 id="group-heading">Public Engagement Team</h1>
+        <p class="detail-intro">
+          This team plans LVBT’s public meetings and helps residents speak up about transit
+          decisions.
+        </p>
+        <h2>What the team does</h2>
+        <ul>
+          <li>Choose issues for town halls and other public meetings.</li>
+          <li>Prepare information people need to ask questions or give comment.</li>
+          <li>Host events and bring what residents say back to LVBT.</li>
+        </ul>
+        <h2>Ask about joining</h2>
+        <p>
+          Tell the team what kind of public meeting work interests you. A team lead can explain the
+          current work and time involved.
+        </p>
+        <button type="button" class="primary-link" data-open-sample>Ask about the team</button>
+      </div>
+    </section>
+
+    <div class="sample-overlay" data-sample-overlay hidden>
+      <div class="sample-backdrop" data-close-sample></div>
+      <section
+        class="sample-dialog"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="sample-heading"
+      >
+        <button type="button" class="sample-close" data-close-sample aria-label="Close">×</button>
+        <h2 id="sample-heading" data-sample-title>Ask about this opportunity</h2>
+        <p data-sample-intro>Choose one way you would like to help.</p>
+        <form data-interest-form>
+          <fieldset>
+            <legend data-sample-legend>What works for you?</legend><label
+              ><input type="radio" name="sample-availability" value="0" required /><span
+                data-sample-option="0">One event or task</span
+              ></label
+            ><label
+              ><input type="radio" name="sample-availability" value="1" /><span
+                data-sample-option="1">Occasionally</span
+              ></label
+            ><label
+              ><input type="radio" name="sample-availability" value="2" /><span
+                data-sample-option="2">Regularly</span
+              ></label
+            >
+          </fieldset>
+          <button type="submit" class="primary-link">Open email draft</button>
+        </form>
+      </section>
+    </div>
+  </div>
+  <script is:inline src="/scripts/join-vision-prototype.js" defer></script>
+</PrototypeLayout>
+
+<style>
+  .vision {
+    color: var(--color-on-surface);
+    background: var(--color-surface);
+    min-height: 100vh;
+  }
+  .vision [hidden] {
+    display: none !important;
+  }
+  .prototype-index {
+    display: flex;
+    justify-content: space-between;
+    gap: 2rem;
+    align-items: center;
+    padding-top: 1rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid color-mix(in srgb, currentColor 20%, transparent);
+    font-size: 0.8rem;
+  }
+  .screen-nav {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
+  .vision button {
+    cursor: pointer;
+  }
+  .screen-nav button,
+  .back-link,
+  .lined-list button,
+  .member-account button,
+  .result button {
+    border: 0;
+    background: transparent;
+    color: inherit;
+    padding: 0;
+    text-decoration: underline;
+    text-underline-offset: 0.25rem;
+    text-decoration-color: var(--color-primary);
+    font-weight: 650;
+  }
+  .screen-nav button[aria-current='page'] {
+    color: var(--color-primary);
+  }
+  .vision[data-presentation] .prototype-index {
+    display: none;
+  }
+  .page-opening {
+    padding-top: clamp(3rem, 8vw, 6rem);
+    padding-bottom: 4rem;
+  }
+  .page-opening h1 {
+    font-size: var(--text-display-md);
+    line-height: var(--text-display-md--line-height);
+    letter-spacing: var(--text-display-md--letter-spacing);
+    max-width: 52rem;
+    margin: 0;
+    font-weight: var(--text-display-md--font-weight);
+  }
+  .form-shell h1,
+  .detail-shell h1 {
+    font-size: var(--text-headline-lg);
+    line-height: var(--text-headline-lg--line-height);
+    letter-spacing: var(--text-headline-lg--letter-spacing);
+    max-width: 45rem;
+    margin: 0;
+    font-weight: var(--text-headline-lg--font-weight);
+  }
+  .page-opening > p,
+  .form-intro,
+  .detail-intro {
+    font-size: clamp(1.1rem, 1.6vw, 1.35rem);
+    line-height: 1.5;
+    max-width: 43rem;
+    margin: 1.5rem 0 0;
+    opacity: 0.82;
+  }
+  .primary-link {
+    display: inline-flex;
+    width: fit-content;
+    gap: 1.5rem;
+    justify-content: space-between;
+    align-items: center;
+    border: 0;
+    background: var(--color-on-surface);
+    color: var(--color-surface);
+    text-decoration: none;
+    font-weight: 700;
+    padding: 0.9rem 1.15rem;
+    margin-top: 2rem;
+  }
+  .primary-link:hover,
+  .primary-link:focus-visible {
+    background: var(--color-primary);
+    color: var(--color-on-primary);
+  }
+  .section-list {
+    position: relative;
+    padding-bottom: 6rem;
+  }
+  .section-list::before {
+    position: absolute;
+    top: 0;
+    right: var(--page-pad);
+    left: var(--page-pad);
+    height: 4px;
+    background: currentColor;
+    content: '';
+  }
+  .plain-section {
+    padding: 3.5rem 0 0;
+  }
+  .plain-section h2,
+  .detail-shell h2 {
+    font-size: clamp(1.55rem, 2.5vw, 2.25rem);
+    font-weight: 700;
+    letter-spacing: -0.035em;
+    margin: 0 0 1rem;
+  }
+  .plain-section > p {
+    max-width: 44rem;
+    line-height: 1.6;
+    margin: 0 0 2rem;
+    opacity: 0.78;
+  }
+  .lined-list {
+    max-width: 68rem;
+  }
+  .lined-list > div {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 1.5rem;
+    padding: 1.25rem 1.5rem;
+    background: var(--color-surface-container);
+  }
+  .lined-list > div + div {
+    margin-top: 1.75rem;
+  }
+  .lined-list h3 {
+    font-size: 1.2rem;
+    font-weight: 650;
+    margin: 0 0 0.2rem;
+  }
+  .lined-list p {
+    margin: 0;
+    opacity: 0.7;
+    line-height: 1.5;
+  }
+  .lined-list a,
+  .text-link {
+    color: inherit;
+    font-weight: 650;
+    text-decoration: underline;
+    text-underline-offset: 0.25rem;
+    text-decoration-color: var(--color-primary);
+    white-space: nowrap;
+  }
+  .committee-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1rem;
+    max-width: 68rem;
+  }
+  .committee-card {
+    display: flex;
+    flex-direction: column;
+    min-height: 12rem;
+    padding: 1.25rem 1.4rem;
+    background: var(--color-surface-container);
+    border: 0;
+  }
+  .committee-card .committee-type {
+    margin: 0 0 0.35rem;
+    font-size: var(--text-body-sm);
+    font-weight: 600;
+    color: var(--color-on-surface-variant);
+  }
+  .committee-card h3 {
+    margin: 0;
+    font-size: var(--text-title-lg);
+    font-weight: var(--text-title-lg--font-weight);
+    line-height: var(--text-title-lg--line-height);
+  }
+  .committee-card > p:not(.committee-type) {
+    margin: 0.6rem 0 1rem;
+    max-width: 25rem;
+    line-height: 1.45;
+    color: var(--color-on-surface-variant);
+  }
+  .committee-card button {
+    width: fit-content;
+    margin-top: auto;
+    border: 0;
+    padding: 0;
+    background: transparent;
+    color: inherit;
+    text-align: left;
+    font-weight: 700;
+    text-decoration: underline;
+    text-decoration-color: var(--color-primary);
+    text-underline-offset: 0.25rem;
+  }
+  .join-events {
+    padding: 2rem 0;
+  }
+  .join-events a {
+    color: inherit;
+    font-weight: 700;
+    text-decoration: underline;
+    text-decoration-color: var(--color-primary);
+    text-underline-offset: 0.25rem;
+  }
+  .step-progress {
+    font-size: var(--text-body-sm);
+    font-weight: 600;
+    color: var(--color-on-surface-variant);
+    margin: 2rem 0 1rem;
+  }
+  .member-opening {
+    padding-bottom: 3rem;
+  }
+  .member-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 18rem;
+    gap: 4rem;
+  }
+  .member-layout .plain-section {
+    padding-top: 3rem;
+  }
+  .member-account {
+    align-self: start;
+    margin-top: 3rem;
+    padding: 1.5rem;
+    background: var(--color-surface-container);
+  }
+  .member-account h2 {
+    font-size: 1.5rem;
+    font-weight: 700;
+    margin: 0 0 1rem;
+  }
+  .member-account p {
+    opacity: 0.7;
+    line-height: 1.55;
+  }
+  .member-account a,
+  .member-account button {
+    color: inherit;
+    display: block;
+    padding: 0.7rem 0;
+    text-decoration: underline;
+    text-underline-offset: 0.25rem;
+    text-decoration-color: var(--color-primary);
+    font-weight: 650;
+  }
+  .form-shell {
+    padding-top: 3rem;
+    padding-bottom: 7rem;
+  }
+  .form-shell .step,
+  .form-shell .form-actions {
+    max-width: 54rem;
+  }
+  .choices {
+    display: grid;
+    gap: 0.75rem;
+    margin-top: 2rem;
+  }
+  .choices button {
+    display: flex;
+    gap: 0.5rem;
+    flex-direction: column;
+    width: 100%;
+    text-align: left;
+    padding: 1.25rem 1.5rem;
+    background: var(--color-surface-container);
+    color: inherit;
+    border: 0;
+  }
+  .choices button:hover,
+  .choices button[aria-pressed='true'] {
+    box-shadow: inset 4px 0 var(--color-primary);
+    background: color-mix(in srgb, var(--color-primary) 9%, transparent);
+  }
+  .choices strong {
+    font-size: 1.15rem;
+    font-weight: 650;
+  }
+  .choices span {
+    opacity: 0.7;
+  }
+  .form-actions {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 2rem;
+  }
+  .form-actions .primary-link {
+    margin-top: 0;
+    margin-left: auto;
+  }
+  .primary-link:disabled {
+    opacity: 0.45;
+    cursor: default;
+  }
+  .result {
+    border-top: 4px solid currentColor;
+    margin-top: 2.5rem;
+    padding: 1.5rem;
+    background: var(--color-surface-container);
+  }
+  .result > p:first-child {
+    font-size: var(--text-body-sm);
+    color: var(--color-on-surface-variant);
+    font-weight: 600;
+  }
+  .result h2 {
+    font-size: clamp(1.8rem, 3vw, 2.6rem);
+    font-weight: 700;
+    letter-spacing: -0.04em;
+    margin: 0.75rem 0;
+  }
+  .result > p {
+    max-width: 40rem;
+    line-height: 1.6;
+  }
+  .result dl,
+  .facts {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 2rem 4rem;
+    margin: 2rem 0;
+  }
+  .result dt,
+  .facts dt {
+    font-size: var(--text-body-sm);
+    font-weight: 600;
+    color: var(--color-on-surface-variant);
+  }
+  .result dd,
+  .facts dd {
+    margin: 0.35rem 0 0;
+    font-weight: 650;
+  }
+  .detail-shell {
+    padding-top: 3rem;
+    padding-bottom: 7rem;
+  }
+  .detail-shell h2 {
+    margin-top: 3rem;
+    font-size: 1.6rem;
+  }
+  .detail-shell > p,
+  .detail-shell li {
+    max-width: 46rem;
+    line-height: 1.65;
+  }
+  .detail-shell ul {
+    max-width: 48rem;
+    padding: 1.25rem 1.5rem 1.25rem 2.8rem;
+    background: var(--color-surface-container);
+    list-style: disc;
+  }
+  .detail-shell li {
+    margin: 0.5rem 0;
+  }
+  .detail-shell .facts {
+    max-width: 52rem;
+    padding: 1.5rem;
+    background: var(--color-surface-container);
+  }
+  .detail-shell .text-link {
+    display: block;
+    width: fit-content;
+    margin-top: 1.5rem;
+  }
+  .role-opening {
+    max-width: 48rem;
+    padding-bottom: 3rem;
+    border-bottom: 4px solid currentColor;
+  }
+  .role-terms {
+    margin: 1rem 0 0;
+    font-size: var(--text-body-sm);
+    font-weight: 700;
+  }
+  .role-shell .detail-intro {
+    margin-top: 1.5rem;
+  }
+  .role-facts {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1.5rem 4rem;
+    margin: 2rem 0 0;
+  }
+  .role-facts dt {
+    font-size: var(--text-body-sm);
+    color: var(--color-on-surface-variant);
+    font-weight: 600;
+  }
+  .role-facts dd {
+    margin: 0.25rem 0 0;
+    font-weight: 700;
+  }
+  .role-copy {
+    padding-top: 2rem;
+  }
+  .role-shell .role-copy h2 {
+    margin-top: 2.5rem;
+    font-size: var(--text-headline-sm);
+    line-height: var(--text-headline-sm--line-height);
+    letter-spacing: var(--text-headline-sm--letter-spacing);
+  }
+  .role-shell .role-copy h2:first-child {
+    margin-top: 0;
+  }
+  .role-shell .role-copy ul {
+    max-width: none;
+    padding: 0 0 0 1.5rem;
+    background: none;
+  }
+  .role-shell .role-copy li {
+    margin: 0.35rem 0;
+  }
+  .role-bottom-action {
+    margin-top: 2.5rem;
+  }
+  .request-shell {
+    padding-top: 3rem;
+    padding-bottom: 6rem;
+  }
+  .request-opening {
+    max-width: 48rem;
+    padding: 0 0 3.5rem;
+  }
+  .request-opening h1 {
+    max-width: 42rem;
+    margin: 0;
+    font-size: var(--text-headline-lg);
+    line-height: var(--text-headline-lg--line-height);
+    letter-spacing: var(--text-headline-lg--letter-spacing);
+    font-weight: var(--text-headline-lg--font-weight);
+  }
+  .request-lede {
+    max-width: 42rem;
+    margin: 1.25rem 0 0;
+    font-size: var(--text-body-lg);
+    line-height: 1.55;
+    color: var(--color-on-surface-variant);
+  }
+  .request-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 1.5rem;
+    margin-top: 1.75rem;
+  }
+  .request-actions .primary-link {
+    margin: 0;
+    background: var(--color-primary);
+    color: var(--color-on-primary);
+  }
+  .request-actions .primary-link:hover,
+  .request-actions .primary-link:focus-visible {
+    background: var(--color-on-surface);
+    color: var(--color-surface);
+  }
+  .request-actions a,
+  .text-action {
+    border: 0;
+    padding: 0;
+    background: none;
+    color: inherit;
+    font-weight: 700;
+    text-decoration: underline;
+    text-decoration-color: var(--color-primary);
+    text-underline-offset: 0.25rem;
+  }
+  .request-content {
+    border-top: 4px solid currentColor;
+    max-width: 54rem;
+  }
+  .request-content section {
+    padding: 2.5rem 0 0;
+  }
+  .request-content h2 {
+    margin: 0 0 0.9rem;
+    font-size: var(--text-title-lg);
+    line-height: var(--text-title-lg--line-height);
+    font-weight: var(--text-title-lg--font-weight);
+  }
+  .request-content p {
+    max-width: 42rem;
+    margin: 0;
+    line-height: 1.6;
+  }
+  .assignment-list {
+    margin-top: 1.25rem;
+    padding: 0.75rem 1.5rem;
+    background: var(--color-surface-container);
+  }
+  .assignment-list > div {
+    display: grid;
+    grid-template-columns: 12rem minmax(0, 1fr);
+    gap: 1.5rem;
+    padding: 0.7rem 0;
+  }
+  .assignment-list h3 {
+    margin: 0;
+    font-size: 1rem;
+    font-weight: 700;
+  }
+  .request-content .text-action {
+    margin-top: 1.4rem;
+  }
+  .interest-dialog {
+    width: min(54rem, calc(100vw - 2rem));
+    max-width: none;
+    max-height: calc(100dvh - 2rem);
+    margin: auto;
+    overflow: auto;
+    border: 0;
+    border-radius: 0;
+    background: var(--color-surface);
+    color: var(--color-on-surface);
+    padding: clamp(1.25rem, 3vw, 2rem);
+    box-shadow: 0 1rem 5rem rgb(0 0 0 / 0.24);
+  }
+  .interest-dialog[data-confirmed] {
+    width: min(37rem, calc(100vw - 2rem));
+    padding: 1.75rem 2rem 2rem;
+  }
+  .interest-dialog::backdrop {
+    background: rgb(15 14 13 / 0.65);
+  }
+  .interest-shell {
+    position: relative;
+  }
+  .interest-close {
+    position: absolute;
+    top: 0;
+    right: 0;
+    z-index: 1;
+    width: 2.5rem;
+    height: 2.5rem;
+    border: 0;
+    background: var(--color-surface);
+    color: inherit;
+    font-size: 1.8rem;
+    line-height: 1;
+  }
+  .interest-opening {
+    margin-bottom: 1.75rem;
+    border-bottom: 4px solid var(--color-on-surface);
+    padding: 0 3rem 1.5rem 0;
+  }
+  .interest-opening h2,
+  .interest-confirmation h2 {
+    margin: 0;
+    max-width: 36rem;
+    font-size: var(--text-headline-sm);
+    line-height: var(--text-headline-sm--line-height);
+    letter-spacing: var(--text-headline-sm--letter-spacing);
+    font-weight: var(--text-headline-sm--font-weight);
+  }
+  .interest-opening p,
+  .interest-confirmation p {
+    max-width: 40rem;
+    margin: 0.75rem 0 0;
+    color: var(--color-on-surface-variant);
+    font-size: var(--text-body-md);
+    line-height: 1.55;
+  }
+  .interest-section-heading {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 0.5rem 2rem;
+    margin: 0 0 1rem;
+  }
+  .interest-section-heading h3,
+  .interest-choices legend {
+    margin: 0;
+    font-size: var(--text-title-lg);
+    line-height: var(--text-title-lg--line-height);
+    font-weight: var(--text-title-lg--font-weight);
+  }
+  .interest-section-heading a,
+  .interest-confirmation .text-action {
+    color: inherit;
+    font-weight: 700;
+    text-decoration: underline;
+    text-decoration-color: var(--color-primary);
+    text-underline-offset: 0.25rem;
+  }
+  .public-interest-note {
+    margin: -0.25rem 0 1rem;
+    color: var(--color-on-surface-variant);
+    font-size: var(--text-body-sm);
+  }
+  .interest-contact {
+    padding-bottom: 1.75rem;
+  }
+  .interest-contact p {
+    margin: 1rem 0 0;
+    color: var(--color-on-surface-variant);
+    font-size: var(--text-body-sm);
+  }
+  .interest-contact .member-contact-note {
+    max-width: 39rem;
+    margin: 0 0 1.5rem;
+    line-height: 1.5;
+  }
+  .member-contact-note a {
+    color: var(--color-on-surface);
+    font-weight: 700;
+    text-decoration: underline;
+    text-decoration-color: var(--color-primary);
+    text-underline-offset: 0.2rem;
+  }
+  .interest-fields {
+    display: grid;
+    grid-template-columns: 1fr 1.2fr 1fr;
+    gap: 1rem;
+  }
+  .interest-contact label,
+  .interest-note {
+    display: flex;
+    flex-direction: column;
+    gap: 0.45rem;
+    font-weight: 650;
+  }
+  .interest-contact label small,
+  .interest-note small {
+    color: var(--color-on-surface-variant);
+    font-size: var(--text-body-sm);
+    font-weight: 400;
+  }
+  .interest-contact .optional-label,
+  .interest-note .optional-label,
+  .resume-copy .optional-label {
+    margin-left: 0.3rem;
+    color: var(--color-on-surface-variant);
+    font-size: var(--text-body-sm);
+    font-weight: 400;
+    white-space: nowrap;
+  }
+  .interest-contact .field-hint,
+  .interest-note .field-hint {
+    line-height: 1.4;
+  }
+  .interest-contact .field-error,
+  .interest-choices .field-error,
+  .interest-note .field-error {
+    color: var(--color-error);
+    font-size: var(--text-body-sm);
+    font-weight: 700;
+  }
+  .interest-contact input,
+  .interest-note textarea {
+    width: 100%;
+    border: 1px solid color-mix(in srgb, var(--color-on-surface) 22%, transparent);
+    border-bottom: 2px solid color-mix(in srgb, var(--color-on-surface) 55%, transparent);
+    border-radius: 0;
+    background: var(--color-surface-container);
+    color: var(--color-on-surface);
+    padding: 0.8rem 0.9rem;
+    font: inherit;
+    font-weight: 400;
+  }
+  .interest-contact input::placeholder,
+  .interest-note textarea::placeholder {
+    color: var(--color-on-surface-variant);
+    opacity: 0.75;
+  }
+  .interest-contact input[aria-invalid='true'] {
+    border-bottom-color: var(--color-error);
+  }
+  .interest-contact input[readonly] {
+    background: var(--color-surface-container);
+    border-color: color-mix(in srgb, currentColor 15%, transparent);
+    border-bottom-color: color-mix(in srgb, currentColor 30%, transparent);
+  }
+  .interest-contact input:focus-visible,
+  .interest-note textarea:focus-visible {
+    border-bottom-color: var(--color-primary);
+    outline: 2px solid var(--color-primary-ink);
+    outline-offset: 2px;
+  }
+  .interest-choices {
+    border: 0;
+    padding: 0;
+    margin: 0;
+  }
+  .interest-choices > .field-hint {
+    margin: 0.35rem 0 0;
+    color: var(--color-on-surface-variant);
+    font-size: var(--text-body-sm);
+  }
+  .interest-options {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.65rem;
+    margin-top: 1rem;
+  }
+  .interest-option {
+    position: relative;
+    display: flex;
+    gap: 0.85rem;
+    align-items: flex-start;
+    min-height: 5.25rem;
+    border: 1px solid var(--color-outline);
+    padding: 0.85rem;
+    cursor: pointer;
+  }
+  .interest-option:hover {
+    background: var(--color-surface-container);
+  }
+  .interest-option:has(input:checked) {
+    background: var(--color-on-surface);
+    border-color: var(--color-on-surface);
+    color: var(--color-surface);
+  }
+  .interest-option:focus-within {
+    outline: 3px solid var(--color-primary-ink);
+    outline-offset: 2px;
+  }
+  .interest-option input {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    opacity: 0;
+  }
+  .interest-radio {
+    display: grid;
+    flex: 0 0 1.1rem;
+    width: 1.1rem;
+    height: 1.1rem;
+    place-items: center;
+    margin-top: 0.2rem;
+    border: 1.5px solid currentColor;
+    border-radius: 50%;
+  }
+  .interest-option:has(input:checked) .interest-radio::after {
+    width: 0.55rem;
+    height: 0.55rem;
+    border-radius: 50%;
+    background: var(--color-primary);
+    content: '';
+  }
+  .interest-option-copy strong,
+  .interest-option-copy small {
+    display: block;
+  }
+  .interest-option-copy strong {
+    font-size: var(--text-body-md);
+    line-height: 1.3;
+  }
+  .interest-option-copy small {
+    margin-top: 0.2rem;
+    color: var(--color-on-surface-variant);
+    font-size: var(--text-body-sm);
+    line-height: 1.4;
+  }
+  .interest-option:has(input:checked) .interest-option-copy small {
+    color: var(--color-on-slab);
+    opacity: 0.75;
+  }
+  .interest-note {
+    margin-top: 1.25rem;
+  }
+  .interest-note textarea {
+    max-width: 44rem;
+    resize: vertical;
+  }
+  .interest-resume {
+    margin: 0 0 1.75rem;
+  }
+  .resume-card {
+    position: relative;
+    display: grid;
+    grid-template-columns: 2.5rem minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 1rem;
+    border: 1px solid color-mix(in srgb, var(--color-on-surface) 22%, transparent);
+    background: var(--color-surface-container);
+    padding: 1.15rem;
+    cursor: pointer;
+  }
+  .resume-card:hover,
+  .resume-card:focus-within {
+    background: var(--color-slab);
+    color: var(--color-on-slab);
+  }
+  .resume-card:focus-within {
+    outline: 3px solid var(--color-primary-ink);
+    outline-offset: 2px;
+  }
+  .resume-icon {
+    width: 2.5rem;
+    height: 2.5rem;
+    color: var(--color-primary-ink);
+  }
+  .resume-card:hover .resume-icon,
+  .resume-card:focus-within .resume-icon {
+    color: var(--color-primary-warm);
+  }
+  .resume-copy strong,
+  .resume-copy > span {
+    display: block;
+  }
+  .resume-copy strong {
+    font-size: var(--text-title-md);
+    line-height: 1.25;
+  }
+  .resume-copy small {
+    color: var(--color-on-surface-variant);
+    font-size: var(--text-body-sm);
+    font-weight: 400;
+  }
+  .resume-copy > span {
+    margin-top: 0.25rem;
+    color: var(--color-on-surface-variant);
+    font-size: var(--text-body-sm);
+  }
+  .resume-card:hover .resume-copy small,
+  .resume-card:hover .resume-copy > span,
+  .resume-card:focus-within .resume-copy small,
+  .resume-card:focus-within .resume-copy > span {
+    color: var(--color-on-slab);
+    opacity: 0.75;
+  }
+  .resume-pick {
+    background: var(--color-on-surface);
+    color: var(--color-surface);
+    padding: 0.4rem 0.65rem;
+    font-size: var(--text-body-sm);
+    font-weight: 700;
+  }
+  .resume-card:hover .resume-pick,
+  .resume-card:focus-within .resume-pick {
+    background: var(--color-primary);
+    color: var(--color-on-primary);
+  }
+  .resume-card input {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    opacity: 0;
+  }
+  .interest-resume p {
+    margin: 0.5rem 0 0;
+    color: var(--color-on-surface-variant);
+    font-size: var(--text-body-sm);
+  }
+  .interest-resume [data-resume-error] {
+    color: var(--color-error);
+    font-weight: 700;
+  }
+  .interest-shell form > .primary-link {
+    margin-top: 1.5rem;
+    background: var(--color-primary);
+    color: var(--color-on-primary);
+  }
+  .interest-shell form > .primary-link:hover,
+  .interest-shell form > .primary-link:focus-visible {
+    background: var(--color-on-surface);
+    color: var(--color-surface);
+  }
+  .interest-confirmation {
+    max-width: 32rem;
+    margin: 0;
+    padding: 0 3rem 0.25rem 0;
+  }
+  .interest-confirmation [data-public-join-invitation] {
+    margin-top: 1.5rem;
+    padding: 1rem 1.15rem;
+    background: var(--color-surface-container);
+  }
+  .interest-confirmation .text-action {
+    margin-top: 1.5rem;
+  }
+  .interest-confirmation [data-public-join-invitation] a {
+    display: block;
+    width: fit-content;
+    margin-top: 0.5rem;
+    color: var(--color-on-surface);
+    font-weight: 700;
+    text-decoration: underline;
+    text-decoration-color: var(--color-primary);
+    text-underline-offset: 0.25rem;
+  }
+  .sample-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+  }
+  .sample-backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgb(0 0 0 / 0.65);
+  }
+  .sample-dialog {
+    position: relative;
+    width: min(100%, 34rem);
+    max-height: calc(100dvh - 2rem);
+    overflow: auto;
+    background: var(--color-surface);
+    color: var(--color-on-surface);
+    padding: 2rem;
+    box-shadow: 0 1rem 5rem rgb(0 0 0 / 0.25);
+  }
+  .sample-close {
+    position: absolute;
+    right: 1rem;
+    top: 0.5rem;
+    background: none;
+    border: 0;
+    color: inherit;
+    font-size: 2rem;
+  }
+  .sample-dialog h2 {
+    font-size: 1.8rem;
+    font-weight: 700;
+    line-height: 1.15;
+    margin: 0 0 1rem;
+  }
+  .sample-dialog p {
+    line-height: 1.5;
+  }
+  .sample-dialog label,
+  .sample-dialog legend {
+    display: block;
+    font-weight: 650;
+    margin: 1rem 0 0.5rem;
+  }
+  .sample-dialog fieldset {
+    border: 0;
+    padding: 0;
+    margin: 1.5rem 0 0;
+  }
+  .sample-dialog fieldset label {
+    display: flex;
+    gap: 0.75rem;
+    align-items: center;
+    font-weight: 400;
+    margin: 0.8rem 0;
+  }
+  @media (max-width: 760px) {
+    .interest-dialog {
+      width: 100vw;
+      height: 100dvh;
+      max-height: none;
+      margin: 0;
+      padding: 1rem 1.25rem 2rem;
+      overscroll-behavior: contain;
+    }
+    .interest-dialog[data-confirmed] {
+      width: calc(100vw - 2rem);
+      height: fit-content;
+      max-height: calc(100dvh - 2rem);
+      margin: auto;
+      padding: 1.25rem 1.5rem 1.75rem;
+    }
+    .interest-fields,
+    .interest-options {
+      grid-template-columns: 1fr;
+    }
+    .resume-card {
+      grid-template-columns: 2.5rem minmax(0, 1fr);
+    }
+    .resume-pick {
+      grid-column: 2;
+      justify-self: start;
+    }
+    .committee-grid {
+      grid-template-columns: 1fr;
+    }
+    .assignment-list > div {
+      grid-template-columns: 1fr;
+      gap: 0.3rem;
+    }
+    .prototype-index {
+      align-items: flex-start;
+      flex-direction: column;
+    }
+    .member-layout {
+      grid-template-columns: 1fr;
+      gap: 0;
+    }
+    .member-account {
+      margin-top: 2rem;
+      padding: 1.5rem;
+    }
+    .lined-list > div {
+      align-items: flex-start;
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+    .page-opening {
+      padding-top: 3rem;
+    }
+  }
+</style>
