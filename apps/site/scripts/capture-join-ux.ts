@@ -40,7 +40,10 @@ try {
           requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
         ),
     );
-    await page.screenshot({ path: resolve(output, file), fullPage: options.fullPage });
+    await page.screenshot({
+      path: resolve(output, file),
+      ...(options.fullPage !== undefined ? { fullPage: options.fullPage } : {}),
+    });
     manifest.push({
       file,
       label,
