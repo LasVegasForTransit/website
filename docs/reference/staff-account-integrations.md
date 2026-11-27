@@ -13,6 +13,7 @@ are complete.
 Choose the section for your task:
 
 - [Committee Discord channels](#committee-discord-channels).
+- [Region Discord roles](#region-discord-roles).
 - [Review unlinked Discord accounts](#review-unlinked-discord-accounts).
 - [Organization roles](#organization-roles).
 - [Google committee access](#google-committee-access).
@@ -65,6 +66,36 @@ workaround. Changing or clearing a connection retains its previous role for clea
 a retired managed role for another committee or assignment kind. Confirm its removal from the
 approved test account while unrelated server roles remain. Accounts without a connected member
 record are flagged for staff review; this configuration does not authorize removing their roles.
+
+## Region Discord roles
+
+Administrators can connect each LVBT region to a Discord role with the same name, so members can see
+who lives or works in their part of the valley. Members choose whether to show their region from
+**Account → Discord**. The choice starts as shown. A member whose region is hidden keeps every other
+LVBT role.
+
+Before using these controls:
+
+1. Apply `0068_discord_region_roles.sql` through the approved release path before activating the
+   corresponding site, staff and jobs builds. Follow the backup steps from the committee section
+   first.
+2. In Discord, create one role per region, named exactly as the region appears in LVBT, such as
+   **East Las Vegas**. Place the bot's role above each region role. The list offers only roles whose
+   name matches the region and that no committee or other region already uses.
+
+To connect a region:
+
+1. Sign in as a staff administrator and open **Google and Discord access → Regions on Discord**.
+2. Choose the matching role under the region and select **Save connection**. Choose **Not
+   connected** to stop assigning a role. The previous role stays managed until Discord has removed
+   it from every member.
+3. With an approved linked test member whose region is set, confirm the role appears in Discord.
+   Hide the region from that member's account page and confirm the role is removed, then show it
+   again.
+
+If the page says Discord connections are unavailable, check that Discord synchronization is enabled
+for this environment and that both Workers share the same server configuration. If a save reports
+that the choice changed, reload the page; another administrator saved first.
 
 ## Review unlinked Discord accounts
 

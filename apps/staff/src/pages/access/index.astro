@@ -151,6 +151,15 @@ if (discordReviews?.nextCursor)
   {committeeOverview && <CommitteeAccessOverview page={committeeOverview} />}
   {googleOverview && <GoogleGroupOverview page={googleOverview} showGroups={false} />}
   {
+    can(staff.actor, 'committee.settings') && (
+      <p class="mt-5">
+        <a class="staff-back" href="/access/discord/regions/">
+          {t('staff.discordRegions.title')}
+        </a>
+      </p>
+    )
+  }
+  {
     discordReviews && (
       <section class="staff-discord-review" aria-labelledby="discord-review-heading">
         <h2 id="discord-review-heading">{t('staff.access.reviewHeading')}</h2>

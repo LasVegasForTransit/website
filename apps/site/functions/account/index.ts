@@ -18,6 +18,7 @@ import {
   CommitteeApplicationService,
   type MemberApplication,
 } from '@lasvegasfortransit/platform-storage/committee-applications';
+import { discordRegionVisibility } from '@lasvegasfortransit/platform-storage/discord-region';
 
 // The notices a redirect can leave for this page, by the id in the cookie.
 const NOTICES: Record<string, () => string> = {
@@ -38,6 +39,7 @@ const NOTICES: Record<string, () => string> = {
   application_closed: () => t('applications.closed'),
   application_not_member: () => t('applications.notMember'),
   application_unknown: () => t('applications.unknown'),
+  discord_region: () => t('discord.regionSaved'),
 };
 
 /** The notice text. "Sent" and "Withdrawn" name the application they are about. */
@@ -58,6 +60,16 @@ function noticeText(key: string | null, applications: MemberApplication[]): stri
       : undefined;
   }
   return key && Object.hasOwn(NOTICES, key) ? NOTICES[key]?.() : undefined;
+}
+
+/** A new Discord connection also says whether the member's region is shown there. */
+function withRegionSharing(
+  text: string | undefined,
+  key: string | null,
+  regionVisible: boolean | null,
+): string | undefined {
+  if (!text || key !== 'discord_connected') return text;
+  return `${text} ${regionVisible ? t('discord.regionConnected') : t('discord.regionHidden')}`;
 }
 
 export const onRequestGet: PagesFunction<SignInPagesEnv> = async ({ env, request }) => {
@@ -82,11 +94,18 @@ export const onRequestGet: PagesFunction<SignInPagesEnv> = async ({ env, request
           onCommittees: await applications.memberCommittees(signed.person.id),
         }
       : null;
-  const text = noticeText(notice.key, getInvolved?.applications ?? []);
+  const regionVisible = discord
+    ? await discordRegionVisibility(signed.env, readCookie(request, SESSION_COOKIE) ?? '')
+    : null;
+  const text = withRegionSharing(
+    noticeText(notice.key, getInvolved?.applications ?? []),
+    notice.key,
+    regionVisible,
+  );
 
   return accountPage(env, request, '/account/', {
     fill: (rewriter) => {
-      let filled = fillDiscordProfile(rewriter, discord);
+      let filled = fillDiscordProfile(rewriter, discord, regionVisible);
       if (getInvolved) filled = fillGetInvolved(filled, getInvolved);
       if (person.membership_status !== 'member')
         filled = filled.on('[data-slot="discord-manage"]', {

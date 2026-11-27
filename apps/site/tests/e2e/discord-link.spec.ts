@@ -145,7 +145,9 @@ try {
   await page.getByRole('link', { name: 'Authorize fixture account', exact: true }).click();
   await page.waitForURL(`${ORIGIN}/account/#discord`);
   await page.getByText(`Connected as ${DISCORD_USER.username}.`, { exact: true }).waitFor();
-  await page.getByText('You’re in LVBT’s Discord.', { exact: true }).waitFor();
+  await page
+    .getByText('You’re in LVBT’s Discord. You’ll also share your area on Discord', { exact: false })
+    .waitFor();
   assert.equal(fixture.authorization.authorizations.length, 3);
   const authorized = fixture.authorization.authorizations[2];
   assert.ok(authorized);
