@@ -160,6 +160,9 @@ for (const file of htmlFiles) {
   const page = relFromDist(distDir, file);
   const html = readFileSync(file, 'utf8');
   if (REDIRECT_STUB_RE.test(html)) continue;
+  // Prebuilt MDX body fragments for /events are internal assets hidden behind
+  // 404 by the Worker and never served as full pages.
+  if (page.startsWith('/events/bodies/')) continue;
   const blocks = [...html.matchAll(SCRIPT_RE)].map((m) => m[1] ?? '');
 
   if (blocks.length === 0) {
