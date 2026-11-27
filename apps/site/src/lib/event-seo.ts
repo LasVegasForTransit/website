@@ -1,9 +1,15 @@
-import type { CollectionEntry } from 'astro:content';
 import { TIMEZONE, formatEventTime } from './event-time';
 import { site } from './site';
 import { truncate } from './truncate';
 
-type EventEntry = CollectionEntry<'events'>;
+export interface EventSeoInput {
+  id: string;
+  data: {
+    title: string;
+    summary: string;
+    date: Date;
+  };
+}
 
 const dateFormatter = new Intl.DateTimeFormat('en-US', {
   month: 'long',
@@ -19,15 +25,15 @@ const metaTitleDateFormatter = new Intl.DateTimeFormat('en-US', {
   timeZone: TIMEZONE,
 });
 
-function eventDateLabel(event: EventEntry): string {
+function eventDateLabel(event: EventSeoInput): string {
   return dateFormatter.format(event.data.date);
 }
 
-function eventMetaDateLabel(event: EventEntry): string {
+function eventMetaDateLabel(event: EventSeoInput): string {
   return metaTitleDateFormatter.format(event.data.date);
 }
 
-export function eventMetaTitle(event: EventEntry): string {
+export function eventMetaTitle(event: EventSeoInput): string {
   const date = eventMetaDateLabel(event);
   const titleBudget = 34 - date.length - 2;
   const title = truncate(event.data.title, titleBudget, {
@@ -38,7 +44,7 @@ export function eventMetaTitle(event: EventEntry): string {
   return `${date}: ${title}`;
 }
 
-export function eventMetaDescription(event: EventEntry): string {
+export function eventMetaDescription(event: EventSeoInput): string {
   const summary = event.data.summary.trim();
   if (summary.length >= 70) return summary;
 

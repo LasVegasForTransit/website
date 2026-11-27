@@ -1,0 +1,28 @@
+---
+import { getCollection, render } from 'astro:content';
+
+export async function getStaticPaths() {
+  const bodies = await getCollection('eventBodies');
+  return bodies.map((body) => ({
+    params: { id: body.id },
+    props: { body },
+  }));
+}
+
+const { body } = Astro.props;
+const { Content } = await render(body);
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="robots" content="noindex,nofollow" />
+    <title>{body.id}</title>
+  </head>
+  <body>
+    <div data-slot="event-body" class="prose-doc">
+      <Content />
+    </div>
+  </body>
+</html>

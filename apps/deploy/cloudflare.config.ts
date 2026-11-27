@@ -15,6 +15,8 @@ const commonWorker = {
     runWorkerFirst: [
       '/api/*',
       '/platform/discord/interactions',
+      '/events',
+      '/events/*',
       '/press',
       '/press/*',
       '/join/member',

@@ -2,8 +2,19 @@
 // download. One function in, one string out — no temp files, no streams.
 // Keep this byte-exact (CRLF line breaks, ≤75 octets per line) and
 // validated against icalendar.org's tester if the output ever changes.
-import type { CollectionEntry } from 'astro:content';
+import type { EventLocation } from './event-format';
 import { site } from './site';
+
+export interface EventIcsInput {
+  id: string;
+  data: {
+    title: string;
+    summary: string;
+    date: Date;
+    endDate?: Date | undefined;
+    location?: EventLocation | undefined;
+  };
+}
 
 // UTC stamp in iCalendar's `YYYYMMDDTHHMMSSZ` form. Toolkits accept the
 // local-with-TZID form too, but the UTC form needs no VTIMEZONE block
@@ -31,7 +42,7 @@ function escapeIcsText(s: string): string {
 // the lower-level lib).
 const ASSUMED_DURATION_MS = 60 * 60 * 1000;
 
-function composeLocation(location: CollectionEntry<'events'>['data']['location']): string {
+function composeLocation(location: EventLocation | undefined): string {
   // No location yet — emit no LOCATION line (it's optional per RFC 5545).
   if (!location) return '';
   if (location.format === 'virtual') return location.joinUrl;
@@ -49,7 +60,7 @@ function composeLocation(location: CollectionEntry<'events'>['data']['location']
   return text;
 }
 
-export function buildIcs(event: CollectionEntry<'events'>): string {
+export function buildIcs(event: EventIcsInput): string {
   const eventUrl = new URL(`/events/${event.id}/`, site.url).toString();
   const dtStart = icsDateUtc(event.data.date);
   const dtEnd = icsDateUtc(
