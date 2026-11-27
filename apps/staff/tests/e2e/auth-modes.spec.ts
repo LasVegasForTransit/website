@@ -103,11 +103,7 @@ async function createJourney(
   assert.equal(denied?.status(), 403);
   await page.goto(`${ORIGIN}/paper/`);
   await clickSignOut(page);
-  await page
-    .getByRole('heading', {
-      name: mode === 'google' ? 'Sign in to the Staff Portal' : 'You’re signed out',
-    })
-    .waitFor();
+  await page.getByRole('heading', { name: 'Sign in to the Staff Portal' }).waitFor();
   console.log(`${mode}: new team account, no consent, paper-only permissions and sign-out passed.`);
   return;
 }
@@ -160,11 +156,7 @@ async function signOutAndReenter(page: Page, view: { mode: string; theme: string
   const { mode } = view;
   await page.goto(`${ORIGIN}/people/`);
   await clickSignOut(page);
-  await page
-    .getByRole('heading', {
-      name: mode === 'google' ? 'Sign in to the Staff Portal' : 'You’re signed out',
-    })
-    .waitFor();
+  await page.getByRole('heading', { name: 'Sign in to the Staff Portal' }).waitFor();
   await capture(page, view, '07-signed-out');
   await page.reload();
   assert.equal(
@@ -173,7 +165,7 @@ async function signOutAndReenter(page: Page, view: { mode: string; theme: string
     'SSO must not immediately recreate signed-out session',
   );
   if (mode === 'cloudflare-access')
-    await page.getByRole('button', { name: 'Sign in again' }).click();
+    await page.getByRole('button', { name: 'Continue with LVBT account' }).click();
   else await page.getByRole('link', { name: 'Sign in with Google' }).click();
   // The welcome screen belongs to the first sign-in; returning staff go straight in.
   await page.waitForURL(`${ORIGIN}/people/`);
