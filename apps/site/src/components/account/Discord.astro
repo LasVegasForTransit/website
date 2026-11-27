@@ -1,6 +1,8 @@
 ---
 import { linkClass } from '../app/styles';
 import { t } from '@lasvegasfortransit/platform-core/messages';
+import Button from '../app/Button.astro';
+import { hintClass } from '../app/styles';
 ---
 
 <h2 class="text-title-lg">{t('discord.heading')}</h2>
@@ -16,3 +18,24 @@ import { t } from '@lasvegasfortransit/platform-core/messages';
   data-slot="discord-disconnect"
   hidden>{t('discord.disconnect')}</a
 >
+<form
+  method="post"
+  action="/account/discord/region/"
+  class="mt-6 space-y-4"
+  data-slot="discord-region-sharing"
+  hidden
+>
+  <label class="flex min-h-11 items-center gap-3">
+    <input
+      type="checkbox"
+      name="visible"
+      value="1"
+      checked
+      aria-describedby="discord-region-hint"
+      class="size-5 accent-primary"
+    />
+    <span>{t('discord.regionSharing')}</span>
+  </label>
+  <p id="discord-region-hint" class={hintClass}>{t('discord.regionHint')}</p>
+  <Button busyLabel={t('account.saving')}>{t('account.save')}</Button>
+</form>

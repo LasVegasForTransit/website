@@ -4,6 +4,8 @@
   "private": true,
   "type": "module",
   "exports": {
+    "./discord-region-settings": "./src/discord-region-settings.ts",
+    "./discord-region": "./src/discord-region.ts",
     "./person-export": "./src/person-export.ts",
     "./workspace-offboarding": "./src/workspace-offboarding.ts",
     "./member-privacy-schedule": "./src/member-privacy-schedule.ts",

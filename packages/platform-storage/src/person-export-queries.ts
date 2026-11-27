@@ -22,7 +22,7 @@ function scope(authority: PersonExportAuthority): string {
 
 const PROFILE = `p.id,p.given_name,p.family_name,p.email,p.email_verified_at,p.phone,p.zip,
   p.census_block,p.census_block_vintage,p.place_name,p.preferred_language,p.membership_status,
-  p.membership_rules_version,p.region_id,p.region_source,p.region_set_at,p.created_at,p.updated_at,
+  p.membership_rules_version,p.region_id,p.region_source,p.region_set_at,p.discord_region_visible,p.created_at,p.updated_at,
   (SELECT name FROM regions WHERE id=p.region_id) AS region`;
 const IDENTITY = `i.platform,i.external_id,i.external_email,i.linked_at,i.link_method,i.created_at,i.updated_at`;
 const QUERIES = {

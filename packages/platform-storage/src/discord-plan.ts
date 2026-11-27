@@ -46,6 +46,7 @@ interface PlanRow {
   generation: number;
   identities: string;
   roles: string;
+  regionRoles: string;
 }
 const ROLE_MAPPINGS = `SELECT committee_id,external_id,role_kind FROM committee_account_mappings WHERE provider='discord'
   UNION SELECT id,discord_role_id,'member' FROM committees WHERE discord_role_id IS NOT NULL
@@ -64,6 +65,15 @@ export async function loadDiscordPlan(
     (SELECT json_group_array(json_object('targetId',r.committee_id,'kind',r.role_kind,'resourceId',r.external_id,'generation',coalesce((SELECT generation FROM reconcile_generations WHERE person_id=p.id AND target_id=r.committee_id),0),
       'expected',CASE WHEN p.deleted_at IS NULL AND p.membership_status='member' AND NOT EXISTS(SELECT 1 FROM discord_disconnects d JOIN identities i ON i.id=d.identity_record_id WHERE i.person_id=p.id AND i.platform='discord') AND (CASE r.role_kind WHEN 'lead' THEN c.discord_lead_role_id ELSE c.discord_role_id END)=r.external_id AND EXISTS(SELECT 1 FROM committee_assignments a WHERE a.person_id=p.id AND a.committee_id=c.id AND a.ended_at IS NULL AND (r.role_kind='member' OR a.role='lead')) THEN 1 ELSE 0 END,
       'current',CASE WHEN (CASE r.role_kind WHEN 'lead' THEN c.discord_lead_role_id ELSE c.discord_role_id END)=r.external_id THEN 1 ELSE 0 END)) FROM (SELECT * FROM (${ROLE_MAPPINGS}) ORDER BY committee_id,external_id) r JOIN committees c ON c.id=r.committee_id) AS roles
+    ,(SELECT json_group_array(json_object('targetId','region:'||r.region_id,'kind','member','resourceId',r.external_id,
+      'generation',coalesce((SELECT generation FROM reconcile_generations WHERE person_id=p.id AND target_id='person'),0),
+      'expected',CASE WHEN p.deleted_at IS NULL AND p.membership_status='member'
+        AND NOT EXISTS(SELECT 1 FROM discord_disconnects d JOIN identities i ON i.id=d.identity_record_id WHERE i.person_id=p.id AND i.platform='discord')
+        AND EXISTS(SELECT 1 FROM people profile WHERE profile.id=p.id AND profile.region_id=r.region_id AND profile.discord_region_visible=1)
+        AND c.discord_role_id=r.external_id THEN 1 ELSE 0 END,
+      'current',CASE WHEN c.discord_role_id=r.external_id THEN 1 ELSE 0 END))
+      FROM (SELECT region_id,external_id FROM discord_region_role_mappings UNION SELECT id,discord_role_id FROM regions WHERE discord_role_id IS NOT NULL) r
+      JOIN regions c ON c.id=r.region_id) AS regionRoles
     FROM reconciliation_people p WHERE p.id=? AND (p.deleted_at IS NULL OR EXISTS(
       SELECT 1 FROM integration_outbox o JOIN reconcile_generations g ON g.person_id=o.person_id AND g.target_id=o.target_id AND g.generation=o.generation
       WHERE o.id=? AND o.person_id=p.id AND o.state IN ('queued','running','retry') AND ${PERSON_OPERATION_ELIGIBLE}))`,
@@ -72,7 +82,10 @@ export async function loadDiscordPlan(
     .first<PlanRow>();
   if (!row) return null;
   const identities = JSON.parse(row.identities) as IdentityRow[];
-  const roles = JSON.parse(row.roles) as RoleRow[];
+  const roles = [
+    ...(JSON.parse(row.roles) as RoleRow[]),
+    ...(JSON.parse(row.regionRoles) as RoleRow[]),
+  ];
   const identity = identities[0];
   if (
     identities.length !== 1 ||
@@ -81,6 +94,13 @@ export async function loadDiscordPlan(
     input.memberRoleId === input.guildId ||
     roles.some(
       (role) => role.resourceId === input.memberRoleId || role.resourceId === input.guildId,
+    ) ||
+    roles.some((role) =>
+      roles.some(
+        (other) =>
+          other.resourceId === role.resourceId &&
+          (other.targetId !== role.targetId || other.kind !== role.kind),
+      ),
     )
   )
     return null;

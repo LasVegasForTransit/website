@@ -37,9 +37,11 @@ function insertReceipt(db: Db, input: SettingsMutation): Statement {
     AND NOT EXISTS(SELECT 1 FROM (SELECT committee_id,provider,external_id,role_kind FROM committee_account_mappings
       UNION SELECT id,'discord',discord_role_id,'member' FROM committees WHERE discord_role_id IS NOT NULL
       UNION SELECT id,'discord',discord_lead_role_id,'lead' FROM committees WHERE discord_lead_role_id IS NOT NULL) m WHERE
+      -- Region-owned mappings are checked separately below, including retired roles.
       (m.provider='google_workspace' AND m.external_id=? AND m.committee_id<>c.id)
       OR (m.provider='discord' AND ((m.external_id=? AND (m.committee_id<>c.id OR m.role_kind<>'member'))
         OR (m.external_id=? AND (m.committee_id<>c.id OR m.role_kind<>'lead')))))
+    AND NOT EXISTS(SELECT 1 FROM discord_region_role_mappings WHERE external_id IN (?,?))
     ON CONFLICT(operation_id) DO NOTHING`,
     )
     .bind(
@@ -52,6 +54,8 @@ function insertReceipt(db: Db, input: SettingsMutation): Statement {
       input.expectedVersion,
       input.actorId,
       input.workspaceGroupEmail,
+      input.discordRoleId,
+      input.discordLeadRoleId ?? null,
       input.discordRoleId,
       input.discordLeadRoleId ?? null,
     );

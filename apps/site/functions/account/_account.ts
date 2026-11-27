@@ -80,7 +80,15 @@ export async function accountPage(
 }
 
 export type NoticeId =
-  'name' | 'phone' | 'email' | 'area' | 'area_placed' | 'left' | 'rejoined' | 'unavailable';
+  | 'name'
+  | 'phone'
+  | 'email'
+  | 'area'
+  | 'area_placed'
+  | 'left'
+  | 'rejoined'
+  | 'unavailable'
+  | 'discord_region';
 
 /** Back to the account page, which shows the notice once (functions/account/index.ts). */
 export function backToAccount(notice: NoticeId): Response {

@@ -13,6 +13,7 @@ import { discordLinkConfigured } from '@lasvegasfortransit/platform-integrations
 import { DiscordLinkService } from '@lasvegasfortransit/platform-storage/discord-link';
 import { SESSION_COOKIE, readCookie } from '@lasvegasfortransit/platform-core/web-auth';
 import { fillDiscordProfile } from '../../platform/discord-profile-page';
+import { discordRegionVisibility } from '@lasvegasfortransit/platform-storage/discord-region';
 
 // The notices a redirect can leave for this page, by the id in the cookie.
 const NOTICES: Record<string, () => string> = {
@@ -28,6 +29,7 @@ const NOTICES: Record<string, () => string> = {
   left: () => t('account.updated.left'),
   rejoined: () => t('account.updated.rejoined'),
   unavailable: () => t('account.unavailable'),
+  discord_region: () => t('discord.regionSaved'),
 };
 
 export const onRequestGet: PagesFunction<SignInPagesEnv> = async ({ env, request }) => {
@@ -43,10 +45,13 @@ export const onRequestGet: PagesFunction<SignInPagesEnv> = async ({ env, request
     : null;
   const discord =
     person.membership_status === 'member' || connectedDiscord?.linked ? connectedDiscord : null;
+  const regionVisible = discord
+    ? await discordRegionVisibility(signed.env, readCookie(request, SESSION_COOKIE) ?? '')
+    : null;
 
   return accountPage(env, request, '/account/', {
     fill: (rewriter) => {
-      let filled = fillDiscordProfile(rewriter, discord);
+      let filled = fillDiscordProfile(rewriter, discord, regionVisible);
       if (person.membership_status !== 'member')
         filled = filled.on('[data-slot="discord-manage"]', {
           element(element) {
@@ -82,7 +87,15 @@ export const onRequestGet: PagesFunction<SignInPagesEnv> = async ({ env, request
       }
       const text =
         notice.key && Object.hasOwn(NOTICES, notice.key) ? NOTICES[notice.key]?.() : undefined;
-      if (text) filled = filled.on('[data-slot="notice"]', showText(text));
+      if (text)
+        filled = filled.on(
+          '[data-slot="notice"]',
+          showText(
+            notice.key === 'discord_connected'
+              ? `${text} ${regionVisible ? t('discord.regionConnected') : t('discord.regionHidden')}`
+              : text,
+          ),
+        );
       return filled;
     },
     status: 200,

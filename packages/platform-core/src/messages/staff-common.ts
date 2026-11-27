@@ -1,4 +1,18 @@
 export const staffCommon = {
+  discordRegions: {
+    title: 'Regions on Discord',
+    back: 'Back to account access',
+    description:
+      'Connect each region to its matching Discord role. Create the roles below LVBT’s bot first. Members can hide their area on their account page.',
+    choice: 'Discord role',
+    none: 'Not connected',
+    saved: 'Discord connection saved.',
+    save: 'Save connection',
+    unavailable:
+      'Discord connections are unavailable. Try again later; existing connections are kept.',
+    unavailableRole: 'unavailable',
+    changed: 'This choice or your access changed. Reload the page before saving again.',
+  },
   common: {
     accessDenied: "You don't have access to this",
     signInUnavailable: 'Staff sign-in is unavailable. Please try again later.',

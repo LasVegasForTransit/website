@@ -1,4 +1,11 @@
 const LEAD_PREFIX = 'committee_lead:';
+export const REGION_PREFIX = 'region:';
+export function discordRegionId(targetId: string): string | null {
+  return targetId.startsWith(REGION_PREFIX) ? targetId.slice(REGION_PREFIX.length) : null;
+}
+export function discordRegionSql(target: string, provider = "'discord'"): string {
+  return `(${provider}='discord' AND substr(${target},1,${REGION_PREFIX.length})='${REGION_PREFIX}')`;
+}
 export function discordLeadTarget(committeeId: string): string {
   return `${LEAD_PREFIX}${committeeId}`;
 }

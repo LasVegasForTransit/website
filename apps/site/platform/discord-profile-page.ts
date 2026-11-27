@@ -5,11 +5,17 @@ import { show, showText } from '../functions/join/_page';
 export function fillDiscordProfile(
   rewriter: HTMLRewriter,
   profile: DiscordLinkProfile | null,
+  regionVisible: boolean | null = null,
 ): HTMLRewriter {
   if (!profile) return rewriter;
-  const shown = rewriter
-    .on('[data-slot="discord"]', show())
-    .on('[data-slot="discord-nav"]', show());
+  let shown = rewriter.on('[data-slot="discord"]', show()).on('[data-slot="discord-nav"]', show());
+  if (regionVisible !== null)
+    shown = shown.on('[data-slot="discord-region-sharing"]', show()).on('input[name="visible"]', {
+      element(element) {
+        if (regionVisible) element.setAttribute('checked', '');
+        else element.removeAttribute('checked');
+      },
+    });
   if (!profile.linked) return shown;
   return shown
     .on(
