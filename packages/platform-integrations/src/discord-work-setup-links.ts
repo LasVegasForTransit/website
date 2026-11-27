@@ -6,6 +6,7 @@ import {
 } from '@lasvegasfortransit/platform-storage/discord-work-links';
 import { t } from '@lasvegasfortransit/platform-core/messages';
 import { authorizeWork, readWorkSource, readWorkTask } from './discord-work-authority';
+import { findActiveWorkRoute } from '@lasvegasfortransit/platform-storage/discord-work-routes';
 import { notionWorkUrl, notionWorkId, workString } from './discord-work-input';
 import { notionObject } from './notion-task-types';
 import { taskMarkdown } from './notion-task-cards';
@@ -30,7 +31,6 @@ export async function sourceSubject(
   context: WorkEffectContext,
 ): Promise<{ subject: WorkSubject; title: string } | null> {
   const source = await readWorkSource(db, context.taskSourceId, context.scope);
-  if (!source) return null;
   const page = notionObject(await providers.notion.readPage(pageId)),
     parent = notionWorkId(notionObject(page.parent).data_source_id);
   if (notionWorkId(page.id) !== pageId || page.archived === true || page.in_trash === true)
@@ -38,9 +38,11 @@ export async function sourceSubject(
   const kind =
     parent === notionWorkId(context.taskSourceId)
       ? 'task'
-      : parent === notionWorkId(source.policy.projectsSourceId)
+      : parent === notionWorkId(source?.policy.projectsSourceId)
         ? 'project_plan'
-        : null;
+        : parent && (await findActiveWorkRoute(db, context.scope, parent))?.kind === 'project'
+          ? 'project_plan'
+          : null;
   if (!kind || !parent) return null;
   const titleProperty = Object.values(notionObject(page.properties))
     .map(notionObject)
@@ -172,7 +174,6 @@ async function linkTask(
   );
   const candidates = source
     ? await findProjectHomesForPlacement(db, context.scope, {
-        sourceId: source.policy.projectsSourceId,
         projectIds: task.projectIds,
         channelId: target.destination.channelId,
         parentId: target.destination.parentId,

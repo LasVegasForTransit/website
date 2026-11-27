@@ -33,11 +33,6 @@ async function freshPreview(
   { discordUserId, route }: { discordUserId: string; route: WorkRoute },
 ) {
   if (
-    route.kind === 'project' &&
-    !(await projectRouteSourceMatches(db, context.scope, context.taskSourceId, route.sourceId))
-  )
-    return null;
-  if (
     route.projectRelation &&
     !(await projectRouteSourceMatches(
       db,
@@ -54,6 +49,7 @@ async function freshPreview(
       sourceId: route.sourceId,
       kind: route.kind,
       trigger: route.trigger,
+      ...(route.projectLeadField ? { projectLeadField: route.projectLeadField } : {}),
       destinationId: route.destination.channelId,
       ...(route.projectRelation ? { projectRelation: route.projectRelation } : {}),
       ...(route.tagSync ? { tagSync: route.tagSync } : {}),
