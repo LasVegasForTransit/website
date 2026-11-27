@@ -15,6 +15,7 @@ import { handleNewsletterEventRequest } from './newsletter-event';
 import { handleNewsletterReviewRequest } from './newsletter-review';
 import { handleDiscordDisconnectRequest } from './discord-disconnect';
 import { handleDiscordJoinRequest } from './discord-join';
+import { handleDiscordChannelsRequest } from './discord-channels';
 import { handleDiscordCommitteeRolesRequest } from './discord-committee-roles';
 import { runScheduledMembership } from './scheduled';
 export {
@@ -46,6 +47,8 @@ export default {
       return handleDiscordReadinessRequest(request, env);
     if (request.url === 'https://jobs.internal/notion/task-update')
       return handleManualTaskUpdate(request, env);
+    if (request.url === 'https://jobs.internal/discord/channels')
+      return await handleDiscordChannelsRequest(request, env);
     if (request.url === 'https://jobs.internal/discord/committee-roles')
       return await handleDiscordCommitteeRolesRequest(request, env);
     if (request.url === 'https://jobs.internal/newsletter/review')

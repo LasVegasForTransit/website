@@ -82,7 +82,7 @@ try {
   await page.getByRole('link', { name: 'Connect Discord', exact: true }).click();
   await page.getByRole('heading', { name: 'Connect Discord', exact: true }).waitFor();
   // Members learn before connecting that roles and channels follow their LVBT record.
-  await page.getByText(/They stay up to date on their own\.$/).waitFor();
+  await page.getByText(/Joining or leaving a committee adds or removes its channels\.$/).waitFor();
   await page.screenshot({
     path: join(shots, 'connect-mobile.png'),
     fullPage: true,
@@ -161,6 +161,9 @@ try {
     'https://discord.com/api/v10/users/@me',
     'https://discord.com/api/v10/users/@me',
     'https://discord.com/api/v10/guilds/111111111111111111/members/222222222222222222',
+    // The confirmation page reads roles and channels to link the channels by name.
+    'https://discord.com/api/v10/guilds/111111111111111111/roles',
+    'https://discord.com/api/v10/guilds/111111111111111111/channels',
   ]);
   assert.equal(fixture.scenario.joined, true);
   assert.deepEqual([...fixture.scenario.roles], [DISCORD_ROLES.unmanaged]);

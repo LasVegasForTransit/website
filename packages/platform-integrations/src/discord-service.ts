@@ -1,4 +1,8 @@
-async function readResult(response: Response, signal: AbortSignal): Promise<unknown> {
+async function readResult(
+  response: Response,
+  signal: AbortSignal,
+  maxBytes: number,
+): Promise<unknown> {
   if (response.status !== 200) return null;
   const reader = response.body?.getReader();
   if (!reader) return null;
@@ -16,7 +20,7 @@ async function readResult(response: Response, signal: AbortSignal): Promise<unkn
       const chunk: unknown = part.value;
       if (!(chunk instanceof Uint8Array)) return null;
       bytes += chunk.byteLength;
-      if (bytes > 512) return null;
+      if (bytes > maxBytes) return null;
       text += decoder.decode(chunk, { stream: true });
     }
     const value: unknown = JSON.parse(text + decoder.decode());
@@ -29,8 +33,9 @@ async function readResult(response: Response, signal: AbortSignal): Promise<unkn
 
 export async function requestDiscordService(
   jobs: Pick<Fetcher, 'fetch'>,
-  path: '/discord/join' | '/discord/disconnect',
+  path: '/discord/join' | '/discord/disconnect' | '/discord/channels',
   input: unknown,
+  limits: { maxBytes: number; timeoutMs: number } = { maxBytes: 512, timeoutMs: 20_000 },
 ): Promise<unknown> {
   const controller = new AbortController();
   let timer: ReturnType<typeof setTimeout> | undefined;
@@ -46,12 +51,12 @@ export async function requestDiscordService(
             signal: controller.signal,
           }),
         )
-        .then(async (response) => await readResult(response, controller.signal)),
+        .then(async (response) => await readResult(response, controller.signal, limits.maxBytes)),
       new Promise<unknown>((resolve) => {
         timer = setTimeout(() => {
           controller.abort();
           resolve(null);
-        }, 20_000);
+        }, limits.timeoutMs);
       }),
     ]);
   } catch {

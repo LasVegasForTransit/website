@@ -376,6 +376,7 @@ void test('the confirmation summary shows the verified account and only the acce
       { name: 'Advocacy Team', lead: true },
       { name: 'Events Committee', lead: false },
     ],
+    roleIds: ['444444444444444444', '555555555555555555', '333333333333333333'],
   });
   assert.equal(await service.connection('not-a-session'), null);
 });

@@ -30,6 +30,7 @@
     "./discord-link": "./src/discord-link.ts",
     "./discord-disconnect": "./src/discord-disconnect.ts",
     "./discord-join": "./src/discord-join.ts",
+    "./discord-channels": "./src/discord-channels.ts",
     "./discord-rate-limit": "./src/discord-rate-limit.ts",
     "./discord-runner": "./src/discord-runner.ts",
     "./discord-runtime": "./src/discord-runtime.ts",

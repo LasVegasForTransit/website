@@ -34,6 +34,8 @@ export interface DiscordConnectionSummary {
   displayName: string | null;
   memberRole: boolean;
   committees: Array<{ name: string; lead: boolean }>;
+  /** Discord role IDs for the member's committees, used to look up the channels they open. */
+  roleIds: string[];
 }
 export function discordLinkOrigin(origin: string): boolean {
   return ['https://lasvegasfortransit.org', 'https://preview.lasvegasfortransit.org'].includes(
@@ -79,8 +81,10 @@ export class DiscordLinkService {
     if (!/^[\w-]{43}$/.test(sessionToken)) return null;
     const row = await this.env.PLATFORM_DB.prepare(
       `SELECT profile.username,profile.display_name AS displayName,p.membership_status='member' AS memberRole,
-      (SELECT json_group_array(json_object('name',name,'lead',lead)) FROM (SELECT c.name,
-       CASE WHEN a.role='lead' AND c.discord_lead_role_id IS NOT NULL THEN 1 ELSE 0 END AS lead
+      (SELECT json_group_array(json_object('name',name,'lead',lead,'roleId',role_id,'leadRoleId',lead_role_id)) FROM (SELECT c.name,
+       CASE WHEN a.role='lead' AND c.discord_lead_role_id IS NOT NULL THEN 1 ELSE 0 END AS lead,
+       c.discord_role_id AS role_id,
+       CASE WHEN a.role='lead' THEN c.discord_lead_role_id END AS lead_role_id
        FROM committee_assignments a JOIN committees c ON c.id=a.committee_id
        WHERE a.person_id=p.id AND a.ended_at IS NULL AND p.membership_status='member' AND c.discord_role_id IS NOT NULL
        ORDER BY c.name)) AS committees
@@ -99,7 +103,12 @@ export class DiscordLinkService {
         committees: string;
       }>();
     if (!row) return null;
-    const committees = JSON.parse(row.committees) as Array<{ name: string; lead: number }>;
+    const committees = JSON.parse(row.committees) as Array<{
+      name: string;
+      lead: number;
+      roleId: string;
+      leadRoleId: string | null;
+    }>;
     return {
       username: row.username,
       displayName: row.displayName,
@@ -108,6 +117,9 @@ export class DiscordLinkService {
         name: committee.name,
         lead: Boolean(committee.lead),
       })),
+      roleIds: committees.flatMap((committee) =>
+        committee.leadRoleId ? [committee.roleId, committee.leadRoleId] : [committee.roleId],
+      ),
     };
   }
   async begin(input: BrowserInput): Promise<{ state: string; callbackUrl: string } | null> {

@@ -12,6 +12,11 @@ import {
   type DiscordConnectionSummary,
 } from '@lasvegasfortransit/platform-storage/discord-link';
 import { readCookie } from '@lasvegasfortransit/platform-core/web-auth';
+import {
+  requestDiscordChannels,
+  type DiscordChannelLink,
+} from '@lasvegasfortransit/platform-integrations/discord-channels';
+import { linkClass } from '../../../src/components/app/styles';
 import { accountPage } from '../_account';
 import { show, showText } from '../../join/_page';
 import type { SignInPagesEnv } from '../../sign-in/_shared';
@@ -28,11 +33,21 @@ export function committeeItems(connection: DiscordConnectionSummary): string {
   return connection.committees
     .map(
       (committee) =>
-        `<li>${escapeHtml(
+        `<li class="py-2">${escapeHtml(
           committee.lead
             ? t('discord.accessLead', { name: committee.name })
             : t('discord.accessCommittee', { name: committee.name }),
         )}</li>`,
+    )
+    .join('');
+}
+
+/** Each channel the member's roles open, linked by name. */
+export function channelItems(guildId: string, channels: DiscordChannelLink[]): string {
+  return channels
+    .map(
+      (channel) =>
+        `<li><a href="https://discord.com/channels/${guildId}/${channel.id}" class="inline-flex min-h-11 items-center ${linkClass}">#${escapeHtml(channel.name)}</a></li>`,
     )
     .join('');
 }
@@ -54,6 +69,15 @@ export const onRequestGet: PagesFunction<SignInPagesEnv> = async ({ env, request
     decodeURIComponent(readCookie(request, DISCORD_NEXT_COOKIE) ?? ''),
   );
   const server = discordServerUrl(env.LVBT_DISCORD_GUILD_ID);
+  const guildId = server ? env.LVBT_DISCORD_GUILD_ID : undefined;
+  // Live channel names come from the jobs Worker; without them the page lists roles by name.
+  const channels =
+    guildId && env.LVBT_DISCORD_JOBS
+      ? await requestDiscordChannels(env.LVBT_DISCORD_JOBS, {
+          member: connection.memberRole,
+          roleIds: connection.roleIds,
+        })
+      : null;
   const name = connection.displayName ?? connection.username;
   const response = await accountPage(env, request, '/account/discord/connected/', {
     fill: (rewriter) => {
@@ -61,14 +85,24 @@ export const onRequestGet: PagesFunction<SignInPagesEnv> = async ({ env, request
         .on('[data-slot="discord-initial"]', showText(Array.from(name)[0]?.toUpperCase() ?? 'D'))
         .on('[data-slot="discord-display-name"]', showText(name))
         .on('[data-slot="discord-username"]', showText(`@${connection.username}`));
-      if (connection.memberRole) filled = filled.on('[data-slot="discord-access-member"]', show());
-      if (connection.committees.length)
-        filled = filled.on('[data-slot="discord-access-committees"]', {
+      if (channels?.length && guildId)
+        filled = filled.on('[data-slot="discord-access"]', {
           element(element) {
-            element.replace(committeeItems(connection), { html: true });
+            element.setInnerContent(channelItems(guildId, channels), { html: true });
           },
         });
-      else filled = filled.on('[data-slot="discord-access-none"]', show());
+      else {
+        if (connection.memberRole)
+          filled = filled.on('[data-slot="discord-access-member"]', show());
+        if (connection.committees.length)
+          filled = filled.on('[data-slot="discord-access-committees"]', {
+            element(element) {
+              element.replace(committeeItems(connection), { html: true });
+            },
+          });
+      }
+      if (!connection.committees.length)
+        filled = filled.on('[data-slot="discord-access-none"]', show());
       if (server)
         filled = filled.on('[data-slot="discord-open"]', {
           element(element) {

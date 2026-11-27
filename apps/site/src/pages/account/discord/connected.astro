@@ -27,14 +27,13 @@ import { site } from '../../../lib/site';
       </div>
 
       <h2 class="text-title-lg mt-10">{t('discord.accessHeading')}</h2>
-      <ul class="mt-4 list-disc space-y-2 pl-6" data-slot="discord-access">
-        <li data-slot="discord-access-member" hidden>{t('discord.accessMember')}</li>
+      <ul class="mt-2" data-slot="discord-access">
+        <li class="py-2" data-slot="discord-access-member" hidden>{t('discord.accessMember')}</li>
         <li data-slot="discord-access-committees" hidden></li>
       </ul>
       <p class="mt-4" data-slot="discord-access-none" hidden>
         <a href="/join/#team" class={linkClass}>{t('discord.accessNoCommittees')}</a>
       </p>
-      <p class="mt-4 text-on-surface-variant">{t('discord.accessTiming')}</p>
 
       <div class="mt-10 flex flex-wrap items-center gap-x-6 gap-y-4">
         <a

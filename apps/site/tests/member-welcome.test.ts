@@ -91,6 +91,6 @@ void test('welcome email sends people to connect Discord with the same words as 
     /Connect Discord: https:\/\/lasvegasfortransit\.org\/account\/discord\//,
   );
   for (const body of [email.html, email.text])
-    assert.ok(body.includes('get your committees’ channels automatically'));
+    assert.ok(body.includes('Talk with other members and get your committees’ channels.'));
   assert.match(email.text, /join\/remove\/\?token=signed/);
 });
