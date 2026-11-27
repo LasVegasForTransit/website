@@ -24,16 +24,18 @@ const DAY_MS = 24 * 60 * 60 * 1000;
 // content model grows multi-hour events without explicit endDates.
 const ASSUMED_DURATION_MS = 60 * 60 * 1000;
 
+const ymdFmt = new Intl.DateTimeFormat('en-CA', {
+  timeZone: TIMEZONE,
+  year: 'numeric',
+  month: '2-digit',
+  day: '2-digit',
+});
+
 // YYYY-MM-DD in PT for a given Date. Used to compare two moments as
 // "same day" without DST off-by-one surprises — Intl.DateTimeFormat
 // resolves the timezone for us.
 function ymdInZone(d: Date): string {
-  return new Intl.DateTimeFormat('en-CA', {
-    timeZone: TIMEZONE,
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-  }).format(d);
+  return ymdFmt.format(d);
 }
 
 // The event time-of-day label ("7:00 PM PDT"), identical across the card and

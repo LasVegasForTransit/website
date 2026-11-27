@@ -1,0 +1,15 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+---
+
+<BaseLayout
+  title="Events"
+  description="Upcoming LVBT meetings, walks, teach-ins, and organizing actions for better transit in the Las Vegas Valley."
+>
+  <template data-slot="event-schema" slot="head"></template>
+  <div data-slot="event-detail"></div>
+  <script is:inline src="/scripts/share-button.js" defer></script>
+  <script>
+    import '../../scripts/event-relative';
+  </script>
+</BaseLayout>

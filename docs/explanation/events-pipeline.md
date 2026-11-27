@@ -1,37 +1,43 @@
 # Events pipeline
 
 Contributors who add events or change event code use this page to understand how calendar entries
-become website pages. You create events in Google Calendar. A build reads the calendar, and a
-maintainer publishes the reviewed release.
+become website pages. You create events in Google Calendar. The site serves `/events` routes on
+request from Cloudflare Pages Functions with a five-minute cache while keeping the page shell,
+sitemap, and optional MDX body overrides in the static build.
 
-Events on the site come from a public Google Calendar. The site rebuilds against the calendar on a
-schedule; the calendar supplies both event details (title, time, location, join URL) and event body
-copy (the rich-text description). Optional MDX body files (Markdown files that can embed interactive
+Events on the site come from a public Google Calendar. Both build-time tooling and request handlers
+parse the same public ICS feed via [`events-parse.ts`](../../apps/site/src/lib/events-parse.ts); the
+calendar supplies both event details (title, time, location, join URL) and event body copy (the
+rich-text description). Optional MDX body files (Markdown files that can embed interactive
 components — see [glossary](../reference/glossary.md#mdx)) under
-[`apps/site/src/content/event-bodies/`](../../apps/site/src/content/event-bodies/) are an optional
-replacement for descriptions that need components or checked internal links. Most events need only
-Google Calendar (GCal).
+[`apps/site/src/content/event-bodies/`](../../apps/site/src/content/event-bodies/) replace
+descriptions that need components or checked internal links. Most events need only Google Calendar
+(GCal).
 
 ## The flow
 
-The diagram below traces how a calendar entry becomes a page. An ICS feed is the standard file
-format calendars publish their events in; a slug is the short, URL-friendly id at the end of a
-page's address (e.g. `2026-05-28-general-meeting`). `getCollection` and `getEntry` are Astro
-functions that read content at build time — `getCollection` loads every item in a group, `getEntry`
-loads one by its slug.
+The diagram below traces how an incoming request resolves `/events/`, `/events/<slug>/`,
+`/events/<slug>.ics`, or `/events/id/<stableId>` through the edge caches, conditional calendar
+fetch, and Cloudflare D1 fallback. An ICS feed is the standard file format calendars publish their
+events in; a slug is the short, URL-friendly id at the end of a page's address (e.g.
+`2026-05-28-general-meeting`).
 
-```text
-Google Calendar (public ICS feed)
-        │   src/lib/site.ts → site.calendar.icsUrl
-        ▼
-src/lib/events-loader.ts                     src/content/event-bodies/<slug>.mdx
-        │  (custom Astro content-collection         │   (optional, keyed by slug)
-        │   loader; runs at build)                  │
-        ▼                                            ▼
-astro:content getCollection('events')        getEntry('eventBodies', slug)
-        │
-        ▼
-events/index.astro · events/[...slug].astro · events/[...slug].ics.ts · go.astro
+```mermaid
+flowchart TD
+  Req["GET /events or /events/..."] -->|"No session cookie"| RespCache{"Edge response cache hit"}
+  Req -->|"Has __Host-lvbt_session cookie"| ParsedCache{"Edge parsed-JSON cache hit"}
+  RespCache -->|"Hit (200 or 301)"| EdgeOut["Return cached HTTP response"]
+  RespCache -->|"Miss"| ParsedCache
+  ParsedCache -->|"Hit"| Resolve["Resolve route, 301/410/404, MDX override, or .ics"]
+  ParsedCache -->|"Miss"| D1Read["Read single D1 snapshot row"]
+  D1Read -->|"Fetch ICS with If-None-Match"| GCal{"Google Calendar response"}
+  GCal -->|"304 or SHA-256 matches snapshot"| ReuseSnap["Rehydrate parsed_json + warm cache (0 D1 writes)"]
+  GCal -->|"Changed ICS"| ParseIcs["Parse with ical.js + hash SHA-256 + update D1"]
+  GCal -->|"Error or timeout"| Outage{"Snapshot exists in D1"}
+  Outage -->|"Yes"| ReuseSnap
+  Outage -->|"No"| Cold503["HTTP 503 with Google Calendar fallback link"]
+  ReuseSnap --> Resolve
+  ParseIcs --> Resolve
 ```
 
 ## Authoring an event
@@ -115,35 +121,40 @@ The slug used for the URL (`/events/<slug>`) and for matching body fragments is:
 Both parts derived in **Pacific Time**. Example: a "General Meeting" at 6:30 PM PT on 2026-05-28 →
 `2026-05-28-general-meeting`.
 
-If you rename a calendar event, the URL changes. That's working as intended — past URLs may break,
-the calendar's own identifier is not useful to readers as part of the page address.
+## Runtime caching, identity, and lifecycle
+
+Request-time routing runs in [`apps/site/functions/events/`](../../apps/site/functions/events/) via
+`run_worker_first` (`"/events"` and `"/events/*"`). Static builds still produce `/events/`,
+`/events/shell/`, `/events/bodies/`, and `sitemap-0.xml` so the site layout, CSP headers, and
+optional MDX fragments stay prebuilt and checked at build time.
+
+- **Two-tier 5-minute edge caching**: Anonymous GETs (`200` and `301`) store rendered responses in
+  Cloudflare's edge cache (`caches.default`) for `300` seconds. When a response misses or carries
+  `__Host-lvbt_session` (`Cache-Control: private, no-store`), `loadLiveEvents` checks the shared
+  pre-parsed JSON cache entry (`#parsed-v1`) so warm requests never run `ical.js` or touch D1.
+- **Zero-write conditional refreshes and D1 scaling**: When the 5-minute parsed cache expires, the
+  Worker reads the single row in `event_feed_snapshots` (`id = 1`) and sends `If-None-Match` with
+  the stored `ETag`. If Google Calendar responds with `304`, or if the returned ICS SHA-256 matches
+  `ics_sha256`, the Worker rehydrates `parsed_json` with zero `ical.js` parsing, zero D1 writes, and
+  zero `event_slugs` scans. Only feed changes rewrite the snapshot and sync `WHERE is_current = 1`.
+- **Stable IDs, renames (`301`), removals (`410`), and 404s**: Each occurrence derives a
+  10-character lowercase base32 `stable_id` from `calendarOccurrenceId`. Renaming or rescheduling an
+  event keeps historical slugs and `/events/id/<stable_id>` issuing `301` redirects to the current
+  slug, disappeared events return HTTP `410` with `noindex`, and unknown slugs return `404`. Legacy
+  rules from `public/_redirects` still issue `301` redirects ahead of dynamic lookups.
+- **Protecting the Cloudflare Free request quota**: `Cache-Control: public, s-maxage=300` hints CDNs
+  to cache anonymous `/events` responses, though Cloudflare's default CDN bypasses `text/html`
+  unless a zone Cache Rule explicitly caches eligible `/events` and `/events/*` GETs when
+  `__Host-lvbt_session` is absent. With weekly events, D1 writes occur only when the calendar
+  actually changes, keeping the site inside the Cloudflare Free plan quotas.
 
 ## Rebuild cadence
 
-A GitHub Actions (GitHub's built-in automation that runs scripts on a schedule or on each push)
-scheduled workflow — a "cron" job, meaning it runs on a fixed timetable — at
-[`.github/workflows/cron-rebuild.yml`](../../.github/workflows/cron-rebuild.yml) fires twice a day
-(roughly morning and evening PT) and dispatches the `Deploy staging` workflow. The build re-fetches
-the calendar and updates the protected preview site. Production changes only after an editor
-promotes that successful run with `Promote website release`.
-
-Why twice a day: event metadata changes a few times a week at most; morning and evening rebuilds
-keep staging current for review. Tighten the cron in the workflow file if events start moving faster
-than that.
-
-Why GitHub Actions and not a Cloudflare Worker: the trigger needs zero long-lived credentials this
-way. The workflow uses the auto-issued `GITHUB_TOKEN`, scope-limited to `actions: write` on this
-repo. It needs no personal access token (PAT), Worker secret, or separately rotated API credential.
-Logs surface in the Actions UI alongside every other deploy.
-
-For a same-day correction, push a commit or click **Run workflow** on the `cron-rebuild` (or
-`Deploy staging`) workflow page. Review the updated event information on staging, then promote that
-run to publish the correction.
-
-Staging refresh delay: ~12 hours (gap between the morning and evening rebuilds) + however long
-Google keeps an older copy of its ICS feed (typically near-instant, can be a few hours for public
-calendars). For anything time-sensitive, build and promote an updated release in the Actions UI.
-Production has no automatic freshness guarantee while a release awaits review.
+`/events` and `/events/*` reflect Google Calendar changes within five minutes without waiting for a
+build. Static pages that link to events (the `/go/` event carousel, homepage, and `sitemap-0.xml`)
+still refresh on the scheduled
+[`.github/workflows/cron-rebuild.yml`](../../.github/workflows/cron-rebuild.yml) cadence (twice
+daily) and when promoted to production.
 
 ## Failure modes the build will surface
 

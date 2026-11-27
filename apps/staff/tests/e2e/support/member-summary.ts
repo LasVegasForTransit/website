@@ -260,6 +260,9 @@ export async function exerciseMemberSummary(
       assert.equal(remove.height, signOut.height, 'header and row buttons share one control size');
       assert.ok(link.x + link.width <= remove.x, 'committee and remove action do not collide');
     }
+    await page.evaluate(() => {
+      window.scrollTo(0, 0);
+    });
     await page.screenshot({
       animations: 'disabled',
       fullPage: true,
