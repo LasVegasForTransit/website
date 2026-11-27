@@ -31,6 +31,7 @@
 # interpreted as a calendar invite by the OS handler.
 /events/*.ics
   Content-Type: text/calendar; charset=utf-8
+  X-Robots-Tag: noindex, nofollow
 
 # Preview-only pages: the app pattern gallery and prototypes. Production
 # builds leave both out; this keeps previews out of search engines too.

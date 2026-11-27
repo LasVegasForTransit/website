@@ -1,4 +1,4 @@
-export type StrategyPriority = {
+export interface StrategyPriority {
   id: string;
   number: string;
   shortTitle: string;
@@ -9,7 +9,7 @@ export type StrategyPriority = {
     href: string;
     label: string;
   }[];
-};
+}
 
 export const strategyMeta = {
   title: 'Our strategy',
@@ -37,8 +37,8 @@ export const strategicPriorities: StrategyPriority[] = [
     thesis: 'Win better service now while building public demand for major investment.',
     body: 'The primary purpose of LVBT is to secure world-class public transportation in the Las Vegas Valley. That means pushing for long-term investment while also advocating for small-scale policy, funding, street, and service changes that improve daily life for people who use transit and people who could use transit.',
     links: [
-      { href: '/programs', label: 'Programs' },
-      { href: '/roadmap', label: 'Roadmap' },
+      { href: '/programs/', label: 'Programs' },
+      { href: '/roadmap/', label: 'Roadmap' },
     ],
   },
   {
@@ -49,8 +49,8 @@ export const strategicPriorities: StrategyPriority[] = [
     thesis: 'Treat students and young workers as the future constituency for transit.',
     body: 'Building public transportation requires long-term thinking and investment in future generations. Students and young workers have the most to gain from world-class transportation, so LVBT has to make better transit feel hopeful, useful, and worth joining.',
     links: [
-      { href: '/join', label: 'Join LVBT' },
-      { href: '/events', label: 'Events' },
+      { href: '/join/', label: 'Join LVBT' },
+      { href: '/events/', label: 'Events' },
     ],
   },
   {
@@ -61,8 +61,8 @@ export const strategicPriorities: StrategyPriority[] = [
     thesis: 'Create the home for people in Las Vegas who already know the Valley can work better.',
     body: 'Las Vegas does not yet have a strong home for transit advocates and urbanists. Without people, the organization is limited in what it can do, so LVBT has to build the community that can influence the entire Valley.',
     links: [
-      { href: '/go', label: 'Get involved' },
-      { href: '/newsletter', label: 'Newsletter' },
+      { href: '/go/', label: 'Get involved' },
+      { href: '/newsletter/', label: 'Newsletter' },
     ],
   },
   {
@@ -74,8 +74,8 @@ export const strategicPriorities: StrategyPriority[] = [
       'Help people connect better transit to the places and daily routines they already care about.',
     body: 'Most people may not define urbanism, but they know what a good place feels like. LVBT has to help residents reimagine the relationship they have with the city and the way they get around it.',
     links: [
-      { href: '/brand', label: 'Brand guide' },
-      { href: '/contact', label: 'Contact' },
+      { href: '/brand/', label: 'Brand guide' },
+      { href: '/contact/', label: 'Contact' },
     ],
   },
   {
@@ -87,8 +87,8 @@ export const strategicPriorities: StrategyPriority[] = [
       'Work with the people and institutions that can help deliver a more connected Las Vegas.',
     body: 'Legislators, public servants, agencies, schools, community organizations, businesses, and labor can all help deliver a more connected Las Vegas. LVBT has to work with institutions while keeping the mission grounded in residents.',
     links: [
-      { href: '/contact', label: 'Partner with us' },
-      { href: '/about', label: 'About LVBT' },
+      { href: '/contact/', label: 'Partner with us' },
+      { href: '/about/', label: 'About LVBT' },
     ],
   },
 ];

@@ -4,7 +4,7 @@
 // it, with no code change. See docs/reference/membership-intake.md.
 import { site } from './site';
 
-const JOIN_PATH = '/join/member';
+const JOIN_PATH = '/join/member/';
 
 /** The link target on the site. */
 export const membershipUrl = site.membership.formUrl ?? JOIN_PATH;

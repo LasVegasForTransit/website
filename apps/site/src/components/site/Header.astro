@@ -90,7 +90,7 @@ const path = normalizePath(Astro.url.pathname);
     {/* Mobile controls: Join CTA (hidden when nav open) + hamburger toggle */}
     <div class="md:hidden flex items-center gap-3">
       <a
-        href="/join"
+        href="/join/"
         data-mobile-join
         class="press inline-flex items-center gap-1.5 bg-on-surface text-surface px-4 py-2 text-sm font-bold no-underline hover:bg-primary hover:text-on-primary focus-visible:bg-primary focus-visible:text-on-primary"
       >
@@ -124,7 +124,7 @@ const path = normalizePath(Astro.url.pathname);
   <ul class="flex-1 list-none m-0 px-6 py-2">
     {
       navMain
-        .filter((item) => item.href !== '/join')
+        .filter((item) => item.href !== '/join/')
         .map((item) => {
           const active = path === normalizePath(item.href);
           return (

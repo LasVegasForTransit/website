@@ -9,7 +9,7 @@ const env: EnvLike = (import.meta as unknown as { env?: EnvLike }).env ?? {};
 // that link rather than ship a stale URL. See .env.example for the full list.
 function urlFromEnv(key: string): string | undefined {
   const value = env[key];
-  if (value && value.trim()) return value;
+  if (value?.trim()) return value;
   return undefined;
 }
 
@@ -100,10 +100,10 @@ export const site = {
 //   the omissions in Footer, index.astro, about.mdx, sitemap.astro, the
 //   llms-*.txt sources, astro.config.mjs, and vision.astro's `noindex` flag.
 export const navMain = [
-  { href: '/about', label: 'About' },
-  { href: '/programs', label: 'Programs' },
-  { href: '/projects', label: 'Projects' },
-  { href: '/events', label: 'Events' },
-  { href: '/join', label: 'Join' },
-  { href: '/contact', label: 'Contact' },
+  { href: '/about/', label: 'About' },
+  { href: '/programs/', label: 'Programs' },
+  { href: '/projects/', label: 'Projects' },
+  { href: '/events/', label: 'Events' },
+  { href: '/join/', label: 'Join' },
+  { href: '/contact/', label: 'Contact' },
 ] as const;

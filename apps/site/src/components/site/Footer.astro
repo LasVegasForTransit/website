@@ -25,8 +25,8 @@ const printLinkSheetSections: Array<{ links: PrintLinkSheetLink[] }> = [
   },
   {
     links: [
-      { label: 'Join', href: '/join', printUrl: internalPrintUrl('/join') },
-      { label: 'Newsletter', href: '/newsletter', printUrl: internalPrintUrl('/newsletter') },
+      { label: 'Join', href: '/join/', printUrl: internalPrintUrl('/join') },
+      { label: 'Newsletter', href: '/newsletter/', printUrl: internalPrintUrl('/newsletter') },
       ...(site.donate.url
         ? [
             {
@@ -41,9 +41,9 @@ const printLinkSheetSections: Array<{ links: PrintLinkSheetLink[] }> = [
   },
   {
     links: [
-      { label: 'Brand', href: '/brand', printUrl: internalPrintUrl('/brand') },
-      { label: 'Colophon', href: '/colophon', printUrl: internalPrintUrl('/colophon') },
-      { label: 'Sitemap', href: '/sitemap', printUrl: internalPrintUrl('/sitemap') },
+      { label: 'Brand', href: '/brand/', printUrl: internalPrintUrl('/brand') },
+      { label: 'Colophon', href: '/colophon/', printUrl: internalPrintUrl('/colophon') },
+      { label: 'Sitemap', href: '/sitemap/', printUrl: internalPrintUrl('/sitemap') },
       {
         label: 'Source',
         href: 'https://github.com/LasVegasForTransit/website',
@@ -170,9 +170,13 @@ const printLinkSheetSections: Array<{ links: PrintLinkSheetLink[] }> = [
       <div class="footer-nav reveal" data-footer-nav="organization">
         <p class="text-title-md font-bold text-primary-soft">Organization</p>
         <ul class="footer-nav-list text-base font-semibold">
-          <li><a href="/about" class="nav-link no-underline hover:text-primary">About</a></li>
-          <li><a href="/programs" class="nav-link no-underline hover:text-primary">Programs</a></li>
-          <li><a href="/projects" class="nav-link no-underline hover:text-primary">Projects</a></li>
+          <li><a href="/about/" class="nav-link no-underline hover:text-primary">About</a></li>
+          <li>
+            <a href="/programs/" class="nav-link no-underline hover:text-primary">Programs</a>
+          </li>
+          <li>
+            <a href="/projects/" class="nav-link no-underline hover:text-primary">Projects</a>
+          </li>
           <li>
             <a
               href="https://labs.lasvegasfortransit.org/"
@@ -180,8 +184,8 @@ const printLinkSheetSections: Array<{ links: PrintLinkSheetLink[] }> = [
               class="nav-link no-underline hover:text-primary">Labs</a
             >
           </li>
-          <li><a href="/events" class="nav-link no-underline hover:text-primary">Events</a></li>
-          <li><a href="/contact" class="nav-link no-underline hover:text-primary">Contact</a></li>
+          <li><a href="/events/" class="nav-link no-underline hover:text-primary">Events</a></li>
+          <li><a href="/contact/" class="nav-link no-underline hover:text-primary">Contact</a></li>
           <li>
             <a
               href={site.transparency.candidUrl}
@@ -194,9 +198,9 @@ const printLinkSheetSections: Array<{ links: PrintLinkSheetLink[] }> = [
       <div class="footer-nav reveal" data-footer-nav="get-involved">
         <p class="text-title-md font-bold text-primary-soft">Get involved</p>
         <ul class="footer-nav-list text-base font-semibold">
-          <li><a href="/join" class="nav-link no-underline hover:text-primary">Join us</a></li>
+          <li><a href="/join/" class="nav-link no-underline hover:text-primary">Join us</a></li>
           <li>
-            <a href="/newsletter" class="nav-link no-underline hover:text-primary">Newsletter</a>
+            <a href="/newsletter/" class="nav-link no-underline hover:text-primary">Newsletter</a>
           </li>
           {
             site.donate.url && (
@@ -359,11 +363,11 @@ const printLinkSheetSections: Array<{ links: PrintLinkSheetLink[] }> = [
       aria-label="Site utilities"
     >
       <span class="footer-utility-group">
-        <a href="/colophon" class="nav-link no-underline hover:text-primary">Colophon</a>
-        <a href="/brand" class="nav-link no-underline hover:text-primary">Brand</a>
+        <a href="/colophon/" class="nav-link no-underline hover:text-primary">Colophon</a>
+        <a href="/brand/" class="nav-link no-underline hover:text-primary">Brand</a>
       </span>
       <span class="footer-utility-group">
-        <a href="/sitemap" class="nav-link no-underline hover:text-primary">Sitemap</a>
+        <a href="/sitemap/" class="nav-link no-underline hover:text-primary">Sitemap</a>
         <a
           href="https://github.com/LasVegasForTransit/website"
           rel="noopener"

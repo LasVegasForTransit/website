@@ -9,7 +9,7 @@ import { t } from '../../../../platform/messages';
 import { site } from '../../../lib/site';
 
 const nextSteps = [
-  { href: '/events', label: t('welcome.nextEvents') },
+  { href: '/events/', label: t('welcome.nextEvents') },
   ...(site.social.discord ? [{ href: site.social.discord, label: t('welcome.nextDiscord') }] : []),
 ];
 ---

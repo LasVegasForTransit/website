@@ -1,5 +1,5 @@
 import { spawn, type ChildProcess } from 'node:child_process';
-import { readdir } from 'node:fs/promises';
+import { readdir, readFile } from 'node:fs/promises';
 import net from 'node:net';
 import path from 'node:path';
 
@@ -77,6 +77,102 @@ async function firstCalendarPath(root: string): Promise<string> {
   return `/events/${name}`;
 }
 
+async function expectIndexing(
+  baseUrl: string,
+  pathname: string,
+  indexable: boolean,
+): Promise<void> {
+  const response = await fetch(`${baseUrl}${pathname}`, { redirect: 'manual' });
+  if (response.status !== 200)
+    fail(`Expected direct 200 for ${pathname}; received ${response.status}.`);
+  const html = await response.text();
+  const expectedCanonical = `https://lasvegasfortransit.org${pathname}`;
+  if (!html.includes(`<link rel="canonical" href="${expectedCanonical}"`))
+    fail(`Expected self-canonical ${expectedCanonical}.`);
+  // These public route families appeared in Search Console as redirecting links.
+  for (const [, href] of html.matchAll(/<a\s+[^>]*href="([^"#]+)"/g)) {
+    if (!href?.startsWith('/') || href.startsWith('//')) continue;
+    const linked = new URL(href, baseUrl);
+    const reportedRoute =
+      /^\/(?:newsletter|join|projects|roadmap|letters|events)(?:\/|$)/.test(linked.pathname) ||
+      linked.pathname === '/about/strategy';
+    if (
+      reportedRoute &&
+      !linked.pathname.endsWith('/') &&
+      !linked.pathname.split('/').at(-1)?.includes('.')
+    )
+      fail(`Link ${href} on ${pathname} skips its canonical trailing slash.`);
+  }
+  const noindex =
+    /<meta\s+name="robots"\s+content="[^"]*noindex/i.test(html) ||
+    (response.headers.get('x-robots-tag') ?? '').includes('noindex');
+  if (noindex === indexable) fail(`Unexpected indexing policy for ${pathname}.`);
+}
+
+async function verifySitemap(baseUrl: string, root: string): Promise<void> {
+  const sitemap = await readFile(path.join(root, 'dist', 'sitemap-0.xml'), 'utf8');
+  const urls = [...sitemap.matchAll(/<loc>([^<]+)<\/loc>/g)].flatMap((match) =>
+    match[1] ? [match[1]] : [],
+  );
+  if (urls.length === 0) fail('The sitemap contains no URLs.');
+  for (const url of urls) {
+    const parsed = new URL(url);
+    if (parsed.origin !== 'https://lasvegasfortransit.org' || !parsed.pathname.endsWith('/'))
+      fail(`Unexpected sitemap URL: ${url}.`);
+    if (parsed.pathname === '/qr/' || parsed.pathname.endsWith('.ics'))
+      fail(`Utility URL appears in the sitemap: ${url}.`);
+    await expectIndexing(baseUrl, parsed.pathname, true);
+  }
+  for (const pathname of [
+    '/brand/',
+    '/projects/faith-and-neighborhood-network/',
+    '/join/member/',
+  ]) {
+    if (!urls.includes(`https://lasvegasfortransit.org${pathname}`))
+      fail(`Expected ${pathname} in the sitemap.`);
+  }
+  await expectIndexing(baseUrl, '/qr/', false);
+
+  const sitemapAlias = await fetch(`${baseUrl}/sitemap.xml`, { redirect: 'manual' });
+  if (sitemapAlias.status !== 301 || sitemapAlias.headers.get('location') !== '/sitemap-index.xml')
+    fail('The sitemap alias must redirect directly to /sitemap-index.xml.');
+  const index = await fetch(`${baseUrl}/sitemap-index.xml`, { redirect: 'manual' });
+  if (index.status !== 200 || !(await index.text()).includes('sitemap-0.xml'))
+    fail('The primary sitemap index is unavailable.');
+}
+
+async function verifyEventRoutes(baseUrl: string, root: string): Promise<void> {
+  const redirects = await readFile(path.join(root, 'public', '_redirects'), 'utf8');
+  for (const line of redirects.split('\n')) {
+    const [source, destination] = line.trim().split(/\s+/);
+    if (!source?.startsWith('/events/') || !destination) continue;
+    const response = await fetch(`${baseUrl}${source}`, { redirect: 'manual' });
+    if (response.status !== 301 || response.headers.get('location') !== destination)
+      fail(`Expected a direct event replacement for ${source}.`);
+    await expectIndexing(baseUrl, destination, true);
+  }
+
+  // Missing Thursday occurrences are not proven replacements for the new Sunday series.
+  // The board meeting was explicitly excluded in the calendar without a replacement.
+  for (const pathname of [
+    '/events/2026-07-09-lvbt-board-of-directors-meeting/',
+    '/events/2026-10-08-lvbt-board-of-directors-meeting/',
+    '/events/2026-09-10-lvbt-general-member-meeting/',
+    '/events/2026-10-08-lvbt-general-member-meeting/',
+    '/events/2027-01-14-lvbt-general-member-meeting/',
+    '/events/2027-03-11-lvbt-general-member-meeting/',
+    '/events/2027-05-13-lvbt-general-member-meeting/',
+    '/events/2027-06-10-lvbt-general-member-meeting/',
+    '/events/2027-07-08-lvbt-general-member-meeting/',
+    '/events/2027-08-12-lvbt-general-member-meeting/',
+    '/projects/peoples-rtc-dashboard',
+    '/vision',
+  ]) {
+    const response = await fetch(`${baseUrl}${pathname}`, { redirect: 'manual' });
+    if (response.status !== 404) fail(`Expected retired route ${pathname} to remain 404.`);
+  }
+}
+
 async function verify(baseUrl: string, root: string): Promise<void> {
   await expectPage(
     baseUrl,
@@ -97,6 +193,17 @@ async function verify(baseUrl: string, root: string): Promise<void> {
 
   const calendar = await fetch(`${baseUrl}${await firstCalendarPath(root)}`);
   expectHeader(calendar, 'content-type', 'text/calendar; charset=utf-8');
+  expectHeader(calendar, 'x-robots-tag', 'noindex, nofollow');
+  const invite = await calendar.text();
+  if (
+    calendar.status !== 200 ||
+    !invite.includes('BEGIN:VCALENDAR') ||
+    !invite.includes('BEGIN:VEVENT')
+  )
+    fail('The calendar download is not a usable event invite.');
+
+  await verifySitemap(baseUrl, root);
+  await verifyEventRoutes(baseUrl, root);
 
   const api = await fetch(`${baseUrl}/api/membership-intake`, {
     method: 'POST',

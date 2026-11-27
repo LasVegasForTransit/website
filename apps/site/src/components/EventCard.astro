@@ -1,4 +1,5 @@
 ---
+import { paths } from '../lib/paths';
 import type { CollectionEntry } from 'astro:content';
 import EventFormatPill from './EventFormatPill.astro';
 import EventBadgePill from './EventBadgePill.astro';
@@ -13,7 +14,7 @@ interface Props {
 const { event, featured = false } = Astro.props;
 const { title, date, endDate, summary, location } = event.data;
 const format = location?.format;
-const href = `/events/${event.id}`;
+const href = paths.event(event.id);
 
 // Mixed case, not all-caps. The date is the primary scannable anchor of an
 // event card ("when is this?"), so it gets a real label treatment rather

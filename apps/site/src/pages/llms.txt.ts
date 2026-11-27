@@ -12,10 +12,9 @@
 import type { APIRoute } from 'astro';
 import { getCollection } from 'astro:content';
 import { site } from '../lib/site';
+import { canonicalUrl as u } from '../lib/paths';
 
 export const prerender = true;
-
-const u = (path: string): string => new URL(path, site.url).toString();
 
 function wrapListItem(label: string, description: string): string {
   const firstPrefix = `- ${label} — `;
