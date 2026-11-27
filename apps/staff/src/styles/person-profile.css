@@ -72,7 +72,7 @@
   .staff-contact-details > div {
     min-width: 0;
     padding-block: 0.75rem;
-    border-bottom: 1px solid var(--color-outline);
+    border-bottom: 1px solid var(--staff-line);
   }
 
   .staff-contact-details dt {
@@ -113,7 +113,7 @@
     gap: 0.5rem 1rem;
     align-items: start;
     padding-block: 0.625rem;
-    border-bottom: 1px solid var(--color-outline);
+    border-bottom: 1px solid var(--staff-line);
   }
 
   .staff-committee-association-name {
@@ -211,13 +211,17 @@
 
   .staff-participation-events {
     display: grid;
-    gap: 0.75rem;
+    gap: 0;
     margin-top: 0.75rem;
   }
 
   .staff-participation-events > li {
-    padding-block: 0.5rem;
-    border-bottom: 1px solid var(--color-outline);
+    padding-block: 0.75rem;
+    border-bottom: 1px solid var(--staff-line);
+  }
+
+  .staff-participation-events > li:last-child {
+    border-bottom: 0;
   }
 
   .staff-participation-event-name {
@@ -309,7 +313,7 @@
 
   .staff-profile-history > details {
     margin-block: 0;
-    border-top: 1px solid var(--color-outline);
+    border-top: 1px solid var(--staff-line-strong);
   }
 
   @media (width < 48rem) {
@@ -347,11 +351,11 @@
   }
 
   .staff-contact-details > div {
-    padding-block: 0.5rem;
+    padding-block: 0.625rem;
   }
 
   .staff-contact-details dt {
-    margin-bottom: 0;
+    margin-bottom: 0.125rem;
   }
 
   .staff-contact-details dd {
@@ -359,7 +363,7 @@
   }
 
   .staff-contact-details a {
-    min-height: 2rem;
+    min-height: 1.75rem;
   }
 
   @media (width >= 72rem) {
@@ -367,7 +371,7 @@
       display: grid;
       grid-template-columns: minmax(16rem, 20rem) minmax(0, 1fr);
       align-items: start;
-      gap: 1rem 2rem;
+      gap: 1.25rem 2.5rem;
       max-width: none;
     }
 
@@ -384,8 +388,8 @@
     .staff-member-profile > .staff-profile > section:first-child {
       grid-column: 1;
       grid-row: 2;
-      padding: 0.75rem 1rem 0.25rem;
-      border: 1px solid var(--staff-line-strong);
+      padding: 1rem 1.25rem 0.5rem;
+      border: 1px solid var(--staff-line);
       background: var(--color-surface-container);
     }
 
@@ -401,6 +405,7 @@
     .staff-member-profile .staff-profile-involvement {
       grid-column: 2;
       grid-row: 1 / span 3;
+      gap: 2rem;
     }
 
     .staff-member-profile > .staff-profile-history,
