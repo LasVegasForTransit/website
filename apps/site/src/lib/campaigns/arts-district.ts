@@ -21,8 +21,9 @@ export const artsDistrictEvents: readonly [ArtsDistrictEvent, ...ArtsDistrictEve
     title: 'Community listening session',
     month: 'October',
     year: '2026',
-    start: '2026-10-17T14:00:00-07:00',
-    dateLabel: 'Saturday, October 17, 2026 · 2 p.m.',
+    start: '2026-10-17T13:00:00-07:00',
+    end: '2026-10-17T15:00:00-07:00',
+    dateLabel: 'Saturday, October 17, 2026 · 1–3 p.m.',
     venue: 'Barter Beer + Mall',
     venueUrl: 'https://maps.app.goo.gl/N2YVJTrV4GtqTSn36',
     summary:
