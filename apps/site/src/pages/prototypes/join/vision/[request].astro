@@ -1,0 +1,11 @@
+---
+import JoinVision from '../../../../components/prototypes/JoinVision.astro';
+import { getCollection } from 'astro:content';
+
+export async function getStaticPaths() {
+  const requests = await getCollection('contributorRequests');
+  return requests.map((request) => ({ params: { request: request.id } }));
+}
+---
+
+<JoinVision requestId={Astro.params.request} />

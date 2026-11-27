@@ -6,6 +6,7 @@ import { calendarEventsLoader } from './lib/events-loader';
 import { beehiivNewsletterLoader } from './lib/newsletter-loader';
 import { EVENT_ADMISSION_LABELS, eventLocationSchema } from './lib/event-format';
 import { programs, workAreas } from './lib/program-collections';
+import { contributorRequests } from './lib/contributor-requests';
 
 // Shared shape for schema.org's `performer`/`contributor`/`sponsor`/`funder`
 // — all four are just "a Person or Organization, optionally with a URL."
@@ -261,6 +262,7 @@ export const collections = {
   eventBodies,
   newsletter,
   projects,
+  contributorRequests,
   programs,
   workAreas,
   initiatives,

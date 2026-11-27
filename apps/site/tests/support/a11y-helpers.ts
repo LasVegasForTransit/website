@@ -42,12 +42,18 @@ export async function axeBlockingViolations(page: Page): Promise<AxeViolation[]>
 
 export async function semanticPageAudit(page: Page) {
   return page.evaluate(() => {
-    const headingLevels = [...document.querySelectorAll('h1, h2, h3, h4, h5, h6')].map(
-      (heading) => ({
+    // Hidden panels (such as inactive prototype screens) stay in the DOM with
+    // [hidden] or display:none and are not exposed in the accessibility tree.
+    const headingLevels = [...document.querySelectorAll('h1, h2, h3, h4, h5, h6')]
+      .filter((heading) => {
+        if (heading.closest('[hidden], [aria-hidden="true"]') !== null) return false;
+        const style = getComputedStyle(heading);
+        return style.display !== 'none' && style.visibility !== 'hidden';
+      })
+      .map((heading) => ({
         level: Number(heading.tagName.slice(1)),
         text: heading.textContent?.trim().replace(/\s+/g, ' ') ?? '',
-      }),
-    );
+      }));
     const headingJumps = headingLevels.flatMap((heading, index) => {
       const previous = headingLevels[index - 1];
       return previous && heading.level > previous.level + 1

@@ -1,0 +1,53 @@
+---
+interface Props {
+  current: string;
+  parent?: 'join' | 'member';
+}
+
+const { current, parent = 'join' } = Astro.props;
+const parentLabel = parent === 'member' ? 'Member home' : 'Join';
+const parentUrl = new URL('/prototypes/join/vision/', Astro.url);
+if (Astro.url.searchParams.has('presentation')) parentUrl.searchParams.set('presentation', '1');
+if (parent === 'member') parentUrl.searchParams.set('member', '1');
+parentUrl.hash = parent;
+const parentHref = `${parentUrl.pathname}${parentUrl.search}${parentUrl.hash}`;
+---
+
+<nav aria-label="Breadcrumb" class="vision-breadcrumbs">
+  <ol>
+    <li><a href="/">Home</a></li>
+    <li aria-hidden="true">/</li>
+    <li><a href={parentHref}>{parentLabel}</a></li>
+    <li aria-hidden="true">/</li>
+    <li aria-current="page">{current}</li>
+  </ol>
+</nav>
+
+<style>
+  .vision-breadcrumbs {
+    margin-bottom: 1.5rem;
+    font-size: var(--text-body-sm);
+    font-weight: 600;
+  }
+  .vision-breadcrumbs ol {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem;
+    list-style: none;
+    padding: 0;
+    margin: 0;
+  }
+  .vision-breadcrumbs a {
+    color: inherit;
+    font: inherit;
+    text-decoration: none;
+  }
+  .vision-breadcrumbs a:hover {
+    color: var(--color-primary);
+  }
+  .vision-breadcrumbs li[aria-current='page'],
+  .vision-breadcrumbs li[aria-hidden='true'] {
+    color: var(--color-on-surface-variant);
+  }
+</style>
