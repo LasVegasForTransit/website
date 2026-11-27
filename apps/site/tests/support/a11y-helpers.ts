@@ -44,13 +44,12 @@ export async function semanticPageAudit(page: Page) {
   return page.evaluate(() => {
     // Hidden panels (such as inactive prototype screens) stay in the DOM with
     // [hidden] or display:none and are not exposed in the accessibility tree.
-    const isExposed = (element: Element) => {
-      if (element.closest('[hidden], [aria-hidden="true"]') !== null) return false;
-      const style = getComputedStyle(element);
-      return style.display !== 'none' && style.visibility !== 'hidden';
-    };
     const headingLevels = [...document.querySelectorAll('h1, h2, h3, h4, h5, h6')]
-      .filter(isExposed)
+      .filter((heading) => {
+        if (heading.closest('[hidden], [aria-hidden="true"]') !== null) return false;
+        const style = getComputedStyle(heading);
+        return style.display !== 'none' && style.visibility !== 'hidden';
+      })
       .map((heading) => ({
         level: Number(heading.tagName.slice(1)),
         text: heading.textContent?.trim().replace(/\s+/g, ' ') ?? '',
