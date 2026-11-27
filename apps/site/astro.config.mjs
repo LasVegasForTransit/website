@@ -21,8 +21,21 @@ const sitemapFilter = (page) => {
   const path = new URL(page).pathname.replace(/\/$/, '') || '/';
   // The join steps after the form, the email-removal page, sign-in, member
   // accounts and the preview-only pattern gallery have nothing to index.
-  const privatePaths = ['/qr', '/join/member/region', '/join/member/welcome', '/join/remove'];
-  const privatePrefixes = ['/patterns', '/prototypes', '/sign-in', '/sign-out', '/account'];
+  const privatePaths = [
+    '/qr',
+    '/join/member/region',
+    '/join/member/welcome',
+    '/join/remove',
+    '/events/shell',
+  ];
+  const privatePrefixes = [
+    '/patterns',
+    '/prototypes',
+    '/sign-in',
+    '/sign-out',
+    '/account',
+    '/events/bodies',
+  ];
   return !privatePaths.includes(path) && !privatePrefixes.some((prefix) => path.startsWith(prefix));
 };
 

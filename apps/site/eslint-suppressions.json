@@ -202,38 +202,8 @@
     }
   },
   "src/lib/events-loader.ts": {
-    "@typescript-eslint/no-unnecessary-condition": {
-      "count": 13
-    },
-    "@typescript-eslint/no-unnecessary-type-assertion": {
-      "count": 1
-    },
-    "@typescript-eslint/no-unsafe-argument": {
-      "count": 1
-    },
-    "@typescript-eslint/no-unsafe-assignment": {
-      "count": 1
-    },
-    "@typescript-eslint/prefer-optional-chain": {
-      "count": 1
-    },
-    "@typescript-eslint/prefer-regexp-exec": {
-      "count": 4
-    },
     "@typescript-eslint/unbound-method": {
       "count": 2
-    },
-    "complexity": {
-      "count": 2
-    },
-    "max-lines-per-function": {
-      "count": 2
-    },
-    "max-params": {
-      "count": 1
-    },
-    "sonarjs/cognitive-complexity": {
-      "count": 1
     }
   },
   "src/lib/newsletter-loader.ts": {

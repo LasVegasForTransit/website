@@ -1088,3 +1088,15 @@ committee assignment to that state. A member has at most one waiting application
 committee when no role was posted. Erasing a person deletes their applications, and erased people
 cannot apply. Accepting creates an ordinary `committee_assignments` row, so Discord and Google
 access follow the existing reconcilers.
+
+Migration `0067_event_slugs.sql` stores the public calendar feed snapshot and historical event slug
+mappings for on-request `/events` rendering. `event_feed_snapshots` holds the single latest valid
+snapshot row (`id = 1`) with its SHA-256 content hash (`ics_sha256`), HTTP `ETag` (`ics_etag`),
+pre-parsed JSON entry payload (`parsed_json`), raw ICS text (`ics_text`), and fetch timestamp
+(`fetched_at`) so conditional `304` or hash-identical revalidations skip `ical.js` parsing and D1
+writes and outages fall back to `parsed_json` without re-parsing ICS. `event_slugs` records each
+event's `slug`, its 10-character lowercase RFC 4648 base32 `stable_id` derived from its calendar
+occurrence ID SHA-256 digest, its calendar `uid`, and whether the slug `is_current` (indexed on
+`(stable_id, is_current)` and `(uid, is_current)` so syncs read only active rows) so renamed or
+rescheduled events redirect (`301`) from old URLs and `/events/id/<stable_id>` while deleted events
+return `410`.

@@ -34,10 +34,11 @@ export function finishPage(
   response: Response,
   status: number,
   extraHeaders: HeadersInit = {},
+  cacheControl = 'no-store',
 ): Response {
   const headers = new Headers(response.headers);
   for (const [name, value] of Object.entries(SECURITY_HEADERS)) headers.set(name, value);
-  headers.set('Cache-Control', 'no-store');
+  headers.set('Cache-Control', cacheControl);
   headers.delete('ETag');
   headers.delete('Content-Length');
   for (const [name, value] of new Headers(extraHeaders)) headers.append(name, value);

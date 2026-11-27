@@ -13,6 +13,8 @@
     "run_worker_first": [
       "/api/*",
       "/platform/discord/interactions",
+      "/events",
+      "/events/*",
       "/press",
       "/press/*",
       "/join/member",
