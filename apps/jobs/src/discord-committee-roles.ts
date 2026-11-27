@@ -20,6 +20,7 @@ import {
 import { discordRateLimit } from '@lasvegasfortransit/platform-integrations/discord-rate-limit';
 import type { DiscordOptions } from '@lasvegasfortransit/platform-integrations/discord-role-catalog';
 import { readDiscordInput } from './discord-request';
+import { DISCORD_ROLE_REGISTRY } from '@lasvegasfortransit/platform-storage/discord-region-settings';
 interface Input {
   actorId: string;
   committeeId: string;
@@ -86,6 +87,10 @@ async function choices(
           ),
       )
       .map(({ id, name }) => ({ id, name }));
+  const regionOwned = await db
+    .prepare(`SELECT role_id FROM (${DISCORD_ROLE_REGISTRY}) WHERE owner LIKE 'region:%'`)
+    .all<{ role_id: string }>();
+  roles = roles.filter((role) => !regionOwned.results.some((r) => r.role_id === role.id));
   const memberRoles = available('member'),
     leadRoles = available('lead');
   const selected = (id: string | null, list: DiscordRoleChoice[]) =>

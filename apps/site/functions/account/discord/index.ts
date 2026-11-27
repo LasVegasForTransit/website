@@ -4,6 +4,7 @@ import { accountPage } from '../_account';
 import { show, showText, SECURITY_HEADERS } from '../../join/_page';
 import { setValue, formOf, field, type SignInPagesEnv } from '../../sign-in/_shared';
 import { discordMember, discordReply, discordStateCookie } from './_discord';
+import { discordRegionVisibility } from '@lasvegasfortransit/platform-storage/discord-region';
 
 async function unavailablePage(
   env: SignInPagesEnv,
@@ -40,9 +41,17 @@ export const onRequestGet: PagesFunction<SignInPagesEnv> = async ({ env, request
     return discordReply(null, 303, { Location: '/account/discord/disconnect/' });
   const csrf = await signed.client.formToken(signed.sessionToken, new URL(request.url).origin);
   if (!csrf) return unavailablePage(env, request, discordReply(t('discord.unavailable'), 503));
+  const visible = await discordRegionVisibility(signed.platform, signed.sessionToken);
+  if (visible === null)
+    return unavailablePage(env, request, discordReply(t('discord.notMember'), 409));
   const response = await accountPage(env, request, '/account/discord/', {
     fill: (rewriter) => {
       let filled = rewriter.on('input[name="token"]', setValue(csrf));
+      if (!visible)
+        filled = filled.on(
+          '[data-slot="discord-region-notice"]',
+          showText(t('discord.regionHidden')),
+        );
       if (signed.profile.linked)
         filled = filled
           .on('[data-slot="discord-disconnect"]', show())

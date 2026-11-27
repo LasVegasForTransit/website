@@ -94,7 +94,8 @@ export type NoticeId =
   | 'application_closed'
   | 'application_not_member'
   | 'application_unknown'
-  | 'application_withdrawn';
+  | 'application_withdrawn'
+  | 'discord_region';
 
 /** Back to the account page, which shows the notice once (functions/account/index.ts). */
 export function backToAccount(notice: NoticeId): Response {
