@@ -83,9 +83,16 @@ html {
   text-decoration: none;
 }
 
+.staff-shell .staff-action-link:hover,
 .staff-shell .staff-action-link:focus-visible {
-  outline: 3px solid var(--color-primary);
-  outline-offset: 2px;
+  border-color: var(--color-primary-warm);
+  background: var(--color-primary-warm);
+  color: var(--color-on-primary);
+}
+
+.staff-shell .staff-action-link:focus-visible {
+  outline: 3px solid var(--color-on-surface);
+  outline-offset: 3px;
 }
 
 .staff-shell .staff-action-link:active,
@@ -3066,7 +3073,7 @@ html {
     }
 
     .staff-roster-card .staff-search-row {
-      flex: 1 1 9rem;
+      flex: 1 1 100%;
       flex-wrap: nowrap;
       max-width: none;
     }
