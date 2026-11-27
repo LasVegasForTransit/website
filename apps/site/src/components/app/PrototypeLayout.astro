@@ -16,10 +16,7 @@ const { title, canvas = 'paper', showBanner = true } = Astro.props;
 <BaseLayout title={`${title} · Prototype`} noindex canvas={canvas}>
   {
     showBanner && (
-      <p
-        class="bg-primary-ink text-surface px-4 py-3 text-center font-bold"
-        data-prototype-banner
-      >
+      <p class="bg-primary-ink text-surface px-4 py-3 text-center font-bold" data-prototype-banner>
         {PROTOTYPE_BANNER}
       </p>
     )
