@@ -44,8 +44,8 @@ overrides:
   'braces': 'npm:@dieub/braces-depth-guard@3.0.3-pn.3'
   'fast-uri': '3.1.8'
   'http-cache-semantics': '4.3.0'
-  'undici@^7.0.0': '7.30.1'
-  'undici@^8.0.0': '8.12.2'
+  'undici@^7.0.0': '7.29.1'
+  'undici@^8.0.0': '8.10.2'
 catalog:
   '@axe-core/playwright': 4.13.0
   '@astrojs/check': 0.9.10

@@ -35,6 +35,25 @@ test('named production installs Chromium before its browser-backed public smoke'
   );
 });
 
+test('named production resumes using the succeeded candidate job attempt on activation-only retries', async () => {
+  const workflow = await readFile(
+    new URL('../../../.github/workflows/release-publish.yml', import.meta.url),
+    'utf8',
+  );
+  const namedCandidate = workflow.slice(
+    workflow.indexOf('  named-candidate:'),
+    workflow.indexOf('  named-production:'),
+  );
+  const namedProduction = workflow.slice(workflow.indexOf('  named-production:'));
+
+  expect(namedCandidate).toContain('candidate-attempt: ${{ github.run_attempt }}');
+  expect(namedProduction).toContain(
+    'candidate-${{ github.run_id }}-${{ needs.named-candidate.outputs.candidate-attempt ||',
+  );
+  expect(namedProduction).toContain('github.run_attempt }}');
+  expect(namedProduction).toContain('--expected-version "$EXPECTED_PRODUCTION_VERSION"');
+});
+
 test('every migration step supplies a separate D1 credential without overriding the publisher credential', async () => {
   const workflow = await readFile(
     new URL('../../../.github/workflows/release-publish.yml', import.meta.url),
