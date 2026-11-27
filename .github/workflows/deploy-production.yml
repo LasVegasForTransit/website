@@ -64,7 +64,7 @@ jobs:
     name: Verify and update staging
     needs: [build, attest]
     if: github.ref == 'refs/heads/main'
-    uses: LasVegasForTransit/repository-tooling/.github/workflows/release-publish.yml@141cafabceeebaef795812d530f573e56e01d2df
+    uses: LasVegasForTransit/repository-tooling/.github/workflows/release-publish.yml@e788db94b39634f0e844284efdac9d3db95923a0
     with:
       target: preview
       release-id: ${{ github.run_id }}

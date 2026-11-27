@@ -139,8 +139,9 @@ void test('consent changes are logged, and leaving clears member_since', async (
   );
 });
 
-void test('counts for a person with 1,000 events come back quickly', async () => {
+void test('counts for 1,000 events use one indexed query scoped to the person', async (context) => {
   const db = memoryDb();
+  context.after(() => db.raw.close());
   const people = new PersonService(db);
   const id = await person(db);
   for (let index = 0; index < 1000; index += 1) {
@@ -150,9 +151,48 @@ void test('counts for a person with 1,000 events come back quickly', async () =>
       source: 'test',
     });
   }
-  const started = performance.now();
-  await engagementCounts(db, id, NOW);
-  assert.ok(performance.now() - started < 50);
+  const { person: other } = await people.upsertFromSource({
+    source: 'staff',
+    fields: { email: 'other@example.invalid' },
+  });
+  db.raw
+    .prepare(
+      `WITH RECURSIVE noise(n) AS (
+         VALUES(1) UNION ALL SELECT n+1 FROM noise WHERE n<5000
+       )
+       INSERT INTO engagement_events(id,person_id,type,occurred_at,source,created_at)
+       SELECT 'noise-'||n,?,'attended',?,'test',? FROM noise`,
+    )
+    .run(other.id, NOW.toISOString(), NOW.toISOString());
+  const statements: string[] = [];
+  const prepare = db.prepare.bind(db);
+  db.prepare = (sql) => {
+    statements.push(sql);
+    return prepare(sql);
+  };
+  assert.equal((await engagementCounts(db, id, NOW)).attended_total, 334);
+  assert.equal(statements.length, 1, 'counts must not fetch each event in a separate query');
+  const sql = statements[0];
+  assert.ok(sql);
+  const plan = db.raw
+    .prepare(`EXPLAIN QUERY PLAN ${sql}`)
+    .all(id, daysAgo(90))
+    .map((row) => String(row.detail));
+  assert.ok(
+    plan.some((step) => /SEARCH e USING (?:COVERING )?INDEX [^(]+\(person_id=\?\)/.test(step)),
+    'counts must seek the selected person’s events through a stored index',
+  );
+  assert.ok(
+    plan.some((step) =>
+      /SEARCH correction USING (?:COVERING )?INDEX [^(]+\(person_id=\? AND type=\?\)/.test(step),
+    ),
+    'correction lookups must use the person and event type index',
+  );
+  assert.deepEqual(
+    plan.filter((step) => /^SCAN (?:e|correction|engagement_events)(?: |$)/.test(step)),
+    [],
+    'another person’s history must not become part of a full-table scan',
+  );
 });
 
 void test("a deleted person's events remain removed after profile retention", async () => {
