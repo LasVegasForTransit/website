@@ -158,7 +158,9 @@ export function rewriteShellMeta(page: Response, options: ShellRewriteOptions): 
     const schemaJson = options.schemaJson;
     rewriter = rewriter.on('[data-slot="event-schema"]', {
       element(element) {
-        element.setInnerContent(schemaJson, { html: true });
+        element.replace(`<script type="application/ld+json">${schemaJson}</script>`, {
+          html: true,
+        });
       },
     });
   } else {
