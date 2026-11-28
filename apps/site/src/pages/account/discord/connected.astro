@@ -13,6 +13,7 @@ import { site } from '../../../lib/site';
   <section class="container-page pt-12 pb-16 md:pt-16 md:pb-24">
     <div class="max-w-2xl">
       <h1 class="text-headline-lg">{t('discord.connectedHeading')}</h1>
+      <p class="lede mt-4">{t('discord.connectedIntro')}</p>
 
       <div class="mt-8 flex items-center gap-4 border-2 border-on-surface p-5">
         <span
@@ -27,6 +28,7 @@ import { site } from '../../../lib/site';
       </div>
 
       <h2 class="text-title-lg mt-10">{t('discord.accessHeading')}</h2>
+      <p class="mt-2">{t('discord.accessIntro')}</p>
       <ul class="mt-2" data-slot="discord-access">
         <li class="py-2" data-slot="discord-access-member" hidden>{t('discord.accessMember')}</li>
         <li data-slot="discord-access-committees" hidden></li>
@@ -35,7 +37,8 @@ import { site } from '../../../lib/site';
         <a href="/join/#team" class={linkClass}>{t('discord.accessNoCommittees')}</a>
       </p>
 
-      <div class="mt-10 flex flex-wrap items-center gap-x-6 gap-y-4">
+      <p class="mt-10">{t('discord.startIntro')}</p>
+      <div class="mt-4 flex flex-wrap items-center gap-x-6 gap-y-4">
         <a
           href={site.social.discord ?? 'https://discord.com/app'}
           class={buttonClass.primary}
