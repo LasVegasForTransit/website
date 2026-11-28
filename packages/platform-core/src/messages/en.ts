@@ -292,7 +292,7 @@ export const en = {
     invitation: 'Connect Discord to get member channels and your committees’ channels.',
     description: 'Discord is where LVBT members talk and work together.',
     syncBody:
-      'Connecting adds you to LVBT’s server with member channels and your committees’ channels. Joining or leaving a committee adds or removes its channels.',
+      'Connecting adds you to LVBT’s server with member channels and your committees’ channels.',
     shared: 'LVBT only gets your Discord username and profile name.',
     viewAccess: 'See your Discord access',
     connectedTitle: 'Discord connected',

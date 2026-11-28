@@ -82,7 +82,11 @@ try {
   await page.getByRole('link', { name: 'Connect Discord', exact: true }).click();
   await page.getByRole('heading', { name: 'Connect Discord', exact: true }).waitFor();
   // Members learn before connecting that roles and channels follow their LVBT record.
-  await page.getByText(/Joining or leaving a committee adds or removes its channels\.$/).waitFor();
+  await page
+    .getByText(
+      /^Connecting adds you to LVBT’s server with member channels and your committees’ channels\.$/,
+    )
+    .waitFor();
   await page.screenshot({
     path: join(shots, 'connect-mobile.png'),
     fullPage: true,
