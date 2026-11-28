@@ -47,7 +47,7 @@ export function channelItems(guildId: string, channels: DiscordChannelLink[]): s
   return channels
     .map(
       (channel) =>
-        `<li><a href="https://discord.com/channels/${guildId}/${channel.id}" class="inline-flex min-h-11 items-center ${linkClass}">#${escapeHtml(channel.name)}</a></li>`,
+        `<li class="py-2"><a href="https://discord.com/channels/${guildId}/${channel.id}" class="inline-flex min-h-11 items-center ${linkClass}">#${escapeHtml(channel.name)}</a>${channel.description ? `<p class="-mt-2 text-on-surface-variant">${escapeHtml(channel.description)}</p>` : ''}</li>`,
     )
     .join('');
 }

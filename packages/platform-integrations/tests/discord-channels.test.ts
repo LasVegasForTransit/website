@@ -3,6 +3,7 @@ import test from 'node:test';
 import {
   channelsOpenedBy,
   parseDiscordChannelsInput,
+  plainTopic,
   readDiscordChannels,
 } from '../src/discord-channels';
 
@@ -29,15 +30,17 @@ interface Fixture {
   overwrites?: ReturnType<typeof hidden>;
   type?: number;
   parentId?: string | null;
+  topic?: string | null;
 }
-const channel = ({ id, name, position, overwrites = [], type = 0, parentId = null }: Fixture) => ({
+const channel = ({
   id,
   name,
-  type,
   position,
-  parentId,
-  overwrites,
-});
+  overwrites = [],
+  type = 0,
+  parentId = null,
+  topic = null,
+}: Fixture) => ({ id, name, type, position, parentId, topic, overwrites });
 const MEMBERS = '500000000000000010';
 const COMMITTEES = '500000000000000020';
 const channels = [
@@ -48,6 +51,7 @@ const channels = [
     id: '500000000000000002',
     name: 'events',
     position: 0,
+    topic: 'Plan rides and meetups',
     overwrites: hidden([EVENTS]),
     parentId: COMMITTEES,
   }),
@@ -86,6 +90,26 @@ void test('lists only the linkable channels a member’s roles open, in sidebar 
   );
   // Channels everyone can already see are not listed as something connecting opened.
   assert.deepEqual(channelsOpenedBy(GUILD, roles, channels, []), []);
+});
+
+void test('describes each channel by its topic, or its category when it has none', () => {
+  assert.deepEqual(
+    channelsOpenedBy(GUILD, roles, channels, [MEMBER, EVENTS]).map((c) => c.description),
+    ['members', 'Plan rides and meetups'],
+  );
+  assert.equal(
+    plainTopic(
+      'Ask <@&400000000000000004> in <#500000000000000002> about **buses** <:bus:123456789012345678>',
+      new Map([
+        [LEADS, 'Leads'],
+        ['500000000000000002', 'events'],
+      ]),
+    ),
+    'Ask @Leads in #events about buses',
+  );
+  assert.equal(plainTopic('Hi <@&999999999999999999> <@123456789012345678>'), 'Hi');
+  assert.equal(plainTopic('   '), null);
+  assert.equal(plainTopic('x'.repeat(400))?.length, 160);
 });
 
 void test('a role deny wins over @everyone and an allow from another role wins over a deny', () => {
@@ -142,6 +166,7 @@ void test('reads roles and channels with the bot token and adds the Member role'
           type: 0,
           position: 0,
           parent_id: null,
+          topic: 'Say hello',
           permission_overwrites: [
             { id: GUILD, type: 0, allow: '0', deny: VIEW },
             { id: MEMBER, type: 0, allow: VIEW, deny: '0' },
@@ -161,7 +186,9 @@ void test('reads roles and channels with the bot token and adds the Member role'
     { member: true, roleIds: [] },
     { fetch: fetcher },
   );
-  assert.deepEqual(links, [{ id: '700000000000000001', name: 'general' }]);
+  assert.deepEqual(links, [
+    { id: '700000000000000001', name: 'general', description: 'Say hello' },
+  ]);
   assert.deepEqual(requested, [
     `GET /api/v10/guilds/${GUILD}/roles`,
     `GET /api/v10/guilds/${GUILD}/channels`,

@@ -16,6 +16,13 @@ export async function confirmConnection(page: Page, screenshot: string): Promise
       await page.getByRole('link', { name, exact: true }).getAttribute('href'),
       `https://discord.com/channels/111111111111111111/${id}`,
     );
+  // Each channel shows its Discord topic as plain text, or its category when it has no topic.
+  for (const text of [
+    'News and conversation for all LVBT members',
+    'Build maps and tools for riders. Ask @Events about rides.',
+    'Committees',
+  ])
+    await page.getByText(text, { exact: true }).waitFor();
   assert.equal(await page.getByRole('link', { name: '#welcome', exact: true }).count(), 0);
   assert.equal(
     await page.getByRole('link', { name: 'Open Discord', exact: true }).getAttribute('href'),

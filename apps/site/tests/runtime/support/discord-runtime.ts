@@ -28,6 +28,7 @@ const hiddenFrom = (role: string) => [
   { id: role, type: 0, allow: String(1n << 10n), deny: '0' },
 ];
 export const DISCORD_CHANNELS = [
+  { id: '123000000000000010', name: 'Committees', type: 4, position: 1, parent_id: null },
   { id: '123000000000000001', name: 'welcome', type: 0, position: 0, parent_id: null },
   {
     id: '123000000000000002',
@@ -35,6 +36,7 @@ export const DISCORD_CHANNELS = [
     type: 0,
     position: 1,
     parent_id: null,
+    topic: 'News and conversation for all LVBT members',
     permission_overwrites: hiddenFrom(DISCORD_ROLES.member),
   },
   {
@@ -43,14 +45,15 @@ export const DISCORD_CHANNELS = [
     type: 0,
     position: 2,
     parent_id: null,
+    topic: 'Build **maps and tools** for riders. Ask <@&888888888888888888> about rides.',
     permission_overwrites: hiddenFrom(DISCORD_ROLES.firstCommittee),
   },
   {
     id: '123000000000000004',
     name: 'events',
     type: 0,
-    position: 3,
-    parent_id: null,
+    position: 0,
+    parent_id: '123000000000000010',
     permission_overwrites: hiddenFrom(DISCORD_ROLES.secondCommittee),
   },
 ];
@@ -71,6 +74,7 @@ function guildInventory(request: { method: string }, url: URL): RuntimeResponse 
     return json(
       ['111111111111111111', ...Object.values(DISCORD_ROLES)].map((id) => ({
         id,
+        name: id === DISCORD_ROLES.secondCommittee ? 'Events' : 'Role',
         permissions: id === '111111111111111111' ? String(1n << 10n) : '0',
       })),
     );

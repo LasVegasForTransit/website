@@ -15,6 +15,8 @@ import {
 export interface DiscordChannelLink {
   id: string;
   name: string;
+  /** The channel's Discord topic, or its category name when it has no topic. */
+  description: string | null;
 }
 export interface DiscordChannelsInput {
   member: boolean;
@@ -22,6 +24,7 @@ export interface DiscordChannelsInput {
 }
 interface Role {
   id: string;
+  name?: string | undefined;
   permissions: bigint;
 }
 interface Overwrite {
@@ -36,6 +39,8 @@ interface Channel {
   type: number;
   position: number;
   parentId: string | null;
+  /** The raw Discord topic, turned into plain text once names are known. */
+  topic: string | null;
   overwrites: Overwrite[];
 }
 
@@ -45,7 +50,24 @@ const ADMINISTRATOR = 1n << 3n;
 const LINKABLE = new Set([0, 5, 15, 16]);
 const CATEGORY = 4;
 const MAX_ROLES = 50;
+const MAX_DESCRIPTION = 160;
 
+/**
+ * Plain text from a Discord topic: role and channel mentions become their names, other
+ * mentions, emoji tags and markdown marks are removed, and the result is cut to one short line.
+ */
+export function plainTopic(value: unknown, names = new Map<string, string>()): string | null {
+  if (typeof value !== 'string') return null;
+  const text = value
+    .replace(/<@&(\d+)>/g, (_, id: string) => (names.has(id) ? `@${names.get(id)}` : ''))
+    .replace(/<#(\d+)>/g, (_, id: string) => (names.has(id) ? `#${names.get(id)}` : ''))
+    .replace(/<@!?\d+>|<a?:\w+:\d+>/g, '')
+    .replace(/\*+|~~|`+|\|\|/g, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+  if (!text) return null;
+  return text.length > MAX_DESCRIPTION ? `${text.slice(0, MAX_DESCRIPTION - 1).trimEnd()}…` : text;
+}
 function bits(value: unknown): bigint {
   if (typeof value !== 'string' || !/^\d{1,40}$/.test(value))
     throw new DiscordApiFailure('invalid_response');
@@ -54,7 +76,11 @@ function bits(value: unknown): bigint {
 function role(value: unknown): Role {
   const data = object(value);
   if (!discordId(data.id)) throw new DiscordApiFailure('invalid_response');
-  return { id: data.id, permissions: bits(data.permissions) };
+  return {
+    id: data.id,
+    name: typeof data.name === 'string' ? data.name : undefined,
+    permissions: bits(data.permissions),
+  };
 }
 function overwrite(value: unknown): Overwrite {
   const data = object(value);
@@ -82,6 +108,7 @@ function channel(value: unknown): Channel {
     type: Number(data.type),
     position: Number(data.position),
     parentId: typeof data.parent_id === 'string' ? data.parent_id : null,
+    topic: typeof data.topic === 'string' ? data.topic : null,
     overwrites: overwrites.map(overwrite),
   };
 }
@@ -114,10 +141,13 @@ export function channelsOpenedBy(
 ): DiscordChannelLink[] {
   const granted = new Set(roleIds);
   const nobody = new Set<string>();
-  const categories = new Map(
-    channels.filter((c) => c.type === CATEGORY).map((c) => [c.id, c.position]),
-  );
-  const rank = (c: Channel) => (c.parentId ? (categories.get(c.parentId) ?? -1) : -1);
+  const categories = new Map(channels.filter((c) => c.type === CATEGORY).map((c) => [c.id, c]));
+  const rank = (c: Channel) => (c.parentId ? (categories.get(c.parentId)?.position ?? -1) : -1);
+  const names = new Map<string, string>([
+    ...roles.flatMap((r): Array<[string, string]> => (r.name ? [[r.id, r.name]] : [])),
+    ...channels.map((c): [string, string] => [c.id, c.name]),
+  ]);
+  const category = (c: Channel) => (c.parentId ? (categories.get(c.parentId)?.name ?? null) : null);
   return channels
     .filter(
       (c) =>
@@ -126,7 +156,11 @@ export function channelsOpenedBy(
         !canView(guildId, roles, nobody, c),
     )
     .sort((a, b) => rank(a) - rank(b) || a.position - b.position || a.id.localeCompare(b.id))
-    .map(({ id, name }) => ({ id, name }));
+    .map((c) => ({
+      id: c.id,
+      name: c.name,
+      description: plainTopic(c.topic, names) ?? category(c),
+    }));
 }
 
 export function parseDiscordChannelsInput(value: unknown): DiscordChannelsInput | null {
@@ -167,19 +201,25 @@ export async function readDiscordChannels(
   return channelsOpenedBy(configuration.guildId, roles.map(role), channels.map(channel), roleIds);
 }
 
+function parsedLink(item: unknown): DiscordChannelLink | null {
+  if (typeof item !== 'object' || item === null) return null;
+  const { id, name, description = null } = item as Record<string, unknown>;
+  const validName = typeof name === 'string' && name.length > 0 && name.length <= 100;
+  const validDescription =
+    description === null ||
+    (typeof description === 'string' &&
+      description.length > 0 &&
+      description.length <= MAX_DESCRIPTION);
+  return discordId(id) && validName && validDescription
+    ? { id, name, description: description }
+    : null;
+}
 function parsedChannels(value: unknown): DiscordChannelLink[] | null {
   if (typeof value !== 'object' || value === null || Array.isArray(value)) return null;
   const list = (value as Record<string, unknown>).channels;
   if (!Array.isArray(list) || list.length > 200) return null;
-  const links: DiscordChannelLink[] = [];
-  for (const item of list) {
-    if (typeof item !== 'object' || item === null) return null;
-    const { id, name } = item as Record<string, unknown>;
-    if (!discordId(id) || typeof name !== 'string' || !name.length || name.length > 100)
-      return null;
-    links.push({ id, name });
-  }
-  return links;
+  const links = list.map(parsedLink);
+  return links.every((link) => link !== null) ? links : null;
 }
 
 /** Runs in the site Worker. Returns null when the list is unavailable, so the page can fall back. */
@@ -189,7 +229,7 @@ export async function requestDiscordChannels(
 ): Promise<DiscordChannelLink[] | null> {
   return parsedChannels(
     await requestDiscordService(jobs, '/discord/channels', input, {
-      maxBytes: 32_768,
+      maxBytes: 65_536,
       timeoutMs: 3_000,
     }),
   );
