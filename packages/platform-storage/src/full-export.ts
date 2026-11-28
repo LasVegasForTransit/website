@@ -8,7 +8,7 @@ import { COUNTED_ENGAGEMENT } from './engagement';
 export type ExportRow = Record<string, string | number | null>;
 export const EXPORT_COLUMNS = {
   people:
-    'id,given_name,family_name,email,email_verified_at,phone,zip,census_block,census_block_vintage,place_name,preferred_language,membership_status,membership_rules_version,region_id,region_source,region_set_at,member_since,created_at,updated_at',
+    'id,given_name,family_name,email,email_verified_at,phone,zip,census_block,census_block_vintage,place_name,preferred_language,membership_status,membership_rules_version,region_id,region_source,region_set_at,discord_region_visible,member_since,created_at,updated_at',
   consent_records:
     'id,person_id,scope,given_at,source,method,wording_version,withdrawn_at,withdrawn_source,withdrawn_time_basis,created_at,updated_at,origin_identity_id,import_run_id',
   identities:

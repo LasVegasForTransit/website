@@ -279,6 +279,13 @@ export const en = {
     deleted: "Your LVBT account is deleted. We're sorry to see you go.",
   },
   discord: {
+    regionSharing: 'Show my region on Discord',
+    regionHint:
+      'Everyone in LVBT’s Discord can see your area, such as East Las Vegas. Untick to hide it.',
+    regionConnected:
+      'You’ll also share your area on Discord, such as East Las Vegas. You can hide it on your account page.',
+    regionHidden: 'Your area is hidden on Discord. You can change this on your account page.',
+    regionSaved: 'Your Discord sharing choice is saved. Discord will update shortly.',
     heading: 'Discord',
     join: 'Connect Discord',
     connectHeading: 'Connect Discord',

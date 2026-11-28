@@ -5,7 +5,8 @@ import {
   type WorkRoute,
 } from '@lasvegasfortransit/platform-storage/discord-work-routes';
 import { findWorkSubject } from '@lasvegasfortransit/platform-storage/discord-work-links';
-import { authorizeWork, readWorkSource } from './discord-work-authority';
+import { authorizeWork } from './discord-work-authority';
+import { projectRouteSourceMatches } from './discord-work-route-preview';
 import { notionWorkId, notionWorkUrl } from './discord-work-input';
 import { notionObject } from './notion-task-types';
 import { resolveEventProjectForum } from './discord-work-event-project';
@@ -63,11 +64,13 @@ async function eventDestination(
   let parentId = route.destination.channelId;
   let projectId: string | undefined;
   if (route.projectRelation) {
-    const source = await readWorkSource(db, context.taskSourceId, context.scope);
     if (
-      !source ||
-      notionWorkId(source.policy.projectsSourceId) !==
-        notionWorkId(route.projectRelation.projectSourceId)
+      !(await projectRouteSourceMatches(
+        db,
+        context.scope,
+        context.taskSourceId,
+        route.projectRelation.projectSourceId,
+      ))
     )
       return { error: setupReply('The project source is unavailable.') } as const;
     const resolved = await resolveEventProjectForum(db, providers, context.scope, {

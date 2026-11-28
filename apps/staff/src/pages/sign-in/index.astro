@@ -22,7 +22,7 @@ const next = safeNext(
 );
 ---
 
-<StaffGateLayout title={sso ? 'You’re signed out' : 'Sign in to the Staff Portal'}>
+<StaffGateLayout title="Sign in to the Staff Portal">
   <Fragment slot="notice">
     {
       Astro.url.searchParams.get('administrator_removed') === '1' && (
@@ -56,10 +56,11 @@ const next = safeNext(
   {
     sso ? (
       <>
-        <p>You can sign in again with your LVBT account.</p>
+        <p>Continue with the LVBT account you use for Cloudflare Access.</p>
         <form method="post" action="/sign-in/continue/">
+          <input type="hidden" name="next" value={next} />
           <button class="staff-action-link" type="submit">
-            Sign in again
+            Continue with LVBT account
           </button>
         </form>
       </>

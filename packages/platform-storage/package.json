@@ -9,6 +9,8 @@
     "./roster-import-resolve": "./src/roster-import-resolve.ts",
     "./membership-roll": "./src/membership-roll.ts",
     "./roster-import-reviews": "./src/roster-import-reviews.ts",
+    "./discord-region-settings": "./src/discord-region-settings.ts",
+    "./discord-region": "./src/discord-region.ts",
     "./person-export": "./src/person-export.ts",
     "./workspace-offboarding": "./src/workspace-offboarding.ts",
     "./scheduled-wake": "./src/scheduled-wake.ts",

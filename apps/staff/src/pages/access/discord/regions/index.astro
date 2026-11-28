@@ -1,0 +1,74 @@
+---
+import StaffLayout from '../../../../layouts/StaffLayout.astro';
+import {
+  discordRegionChoices,
+  submitDiscordRegionSettings,
+} from '../../../../lib/discord-region-settings';
+import { messageResponse } from '../../../../lib/responses';
+import { can } from '@lasvegasfortransit/platform-core/permissions';
+import { t } from '@lasvegasfortransit/platform-core/messages';
+import { ulid } from '@lasvegasfortransit/platform-core/ids';
+import { issueFormToken } from '@lasvegasfortransit/platform-storage/form-tokens';
+const staff = Astro.locals.staff;
+if (!staff || !can(staff.actor, 'committee.settings'))
+  return messageResponse(t('staff.common.accessDenied'), 403);
+if (Astro.request.method === 'POST') return await submitDiscordRegionSettings(Astro.request, staff);
+const choices = await discordRegionChoices(staff);
+const regions = await Promise.all(
+  (choices?.regions ?? []).map(async (region) => ({
+    ...region,
+    token: await issueFormToken(staff.db, staff.actor, `discord:region:${region.id}`),
+  })),
+);
+---
+
+<StaffLayout title={t('staff.discordRegions.title')}>
+  <a slot="breadcrumb" class="staff-back" href="/access/">{t('staff.discordRegions.back')}</a>
+  <p>{t('staff.discordRegions.description')}</p>
+  {
+    Astro.url.searchParams.get('saved') === '1' && (
+      <p role="status" class="staff-help">
+        {t('staff.discordRegions.saved')}
+      </p>
+    )
+  }
+  {
+    !choices && (
+      <p role="status" class="staff-help">
+        {t('staff.discordRegions.unavailable')}
+      </p>
+    )
+  }
+  {
+    regions.map((region) => (
+      <form method="post" action="/access/discord/regions/" class="staff-form staff-editor mt-8">
+        <fieldset>
+          <legend class="text-title-lg">{region.name}</legend>
+          <input type="hidden" name="token" value={region.token} />
+          <input type="hidden" name="region_id" value={region.id} />
+          <input type="hidden" name="expected_version" value={region.settingsVersion} />
+          <input type="hidden" name="operation_id" value={ulid()} />
+          <label for={`region-${region.id}`}>{t('staff.discordRegions.choice')}</label>
+          <select id={`region-${region.id}`} name="role_id">
+            <option value="" selected={!region.roleId}>
+              {t('staff.discordRegions.none')}
+            </option>
+            {region.currentRole && !region.currentRole.available && (
+              <option value={region.currentRole.id} selected disabled>
+                {region.currentRole.name} ({t('staff.discordRegions.unavailableRole')})
+              </option>
+            )}
+            {region.roles.map((role) => (
+              <option value={role.id} selected={region.roleId === role.id}>
+                {role.name}
+              </option>
+            ))}
+          </select>
+          <button type="submit" class="staff-button press mt-4">
+            {t('staff.discordRegions.save')}
+          </button>
+        </fieldset>
+      </form>
+    ))
+  }
+</StaffLayout>

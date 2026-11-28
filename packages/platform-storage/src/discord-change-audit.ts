@@ -3,7 +3,7 @@ import { accessChangeWrite } from './access-audit';
 import { digestToken } from '@lasvegasfortransit/platform-core/random-token';
 import type { Db, SqlValue } from './db';
 import type { DiscordRoleTarget } from './discord-plan';
-import { discordTarget } from './discord-target';
+import { discordTarget, discordRegionId } from './discord-target';
 import { discordSyncGuard, type DiscordSyncWrite } from './discord-sync-store';
 interface Intent {
   id: string;
@@ -14,6 +14,25 @@ interface Intent {
 }
 function targetGuard(input: DiscordSyncWrite, target: DiscordRoleTarget) {
   const base = discordSyncGuard(input);
+  const regionId = discordRegionId(target.targetId);
+  if (regionId)
+    return {
+      sql: `${base.sql} AND EXISTS(SELECT 1 FROM discord_region_role_mappings WHERE region_id=? AND external_id=?)
+      AND ?=(SELECT CASE WHEN p.deleted_at IS NULL AND p.membership_status='member'
+        AND EXISTS(SELECT 1 FROM people profile JOIN regions r ON r.id=profile.region_id WHERE profile.id=p.id
+          AND profile.discord_region_visible=1 AND r.id=? AND r.discord_role_id=?)
+        AND NOT EXISTS(SELECT 1 FROM discord_disconnects WHERE identity_record_id=?) THEN 1 ELSE 0 END FROM reconciliation_people p WHERE p.id=?)`,
+      values: [
+        ...base.values,
+        regionId,
+        target.resourceId,
+        Number(target.expectedAccess),
+        regionId,
+        target.resourceId,
+        input.plan.identityRecordId,
+        input.plan.personId,
+      ] satisfies SqlValue[],
+    };
   const { committeeId, lead } = discordTarget(target.targetId);
   const roleColumn = lead ? 'discord_lead_role_id' : 'discord_role_id';
   return {

@@ -11,3 +11,14 @@ export interface DiscordCommitteeRoleChoices {
   currentMemberRole: CurrentDiscordRole | null;
   currentLeadRole: CurrentDiscordRole | null;
 }
+export interface DiscordRegionRoleChoice {
+  id: string;
+  name: string;
+  roleId: string | null;
+  settingsVersion: number;
+  roles: DiscordRoleChoice[];
+  currentRole: CurrentDiscordRole | null;
+}
+export interface DiscordRegionRoleChoices {
+  regions: DiscordRegionRoleChoice[];
+}

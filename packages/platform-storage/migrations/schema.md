@@ -1100,3 +1100,13 @@ occurrence ID SHA-256 digest, its calendar `uid`, and whether the slug `is_curre
 `(stable_id, is_current)` and `(uid, is_current)` so syncs read only active rows) so renamed or
 rescheduled events redirect (`301`) from old URLs and `/events/id/<stable_id>` while deleted events
 return `410`.
+
+Migration `0068_discord_region_roles.sql` lets each LVBT region own one Discord role.
+`regions.discord_role_id` holds the current role and `regions.settings_version` rejects saves made
+from an out-of-date settings page. `discord_region_role_mappings` keeps every role a region has ever
+used, so the reconciler can still remove a retired role from members after an administrator changes
+or clears the connection. A trigger records each change in that history and queues a Discord
+reconciliation for every person with a connected Discord account. `people.discord_region_visible` is
+the member's choice to show their region on Discord. It defaults to shown, and changing it or the
+person's region queues a reconciliation for that person only. Committee and region roles share one
+registry, so a role connected to a region cannot be chosen for a committee and the reverse.
