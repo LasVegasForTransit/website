@@ -299,7 +299,6 @@ export const en = {
     connectedHeading: 'Discord connected',
     connectedIntro: 'You’re in LVBT’s Discord server.',
     accessHeading: 'Your channels',
-    accessIntro: 'Your member and committee roles open these channels.',
     accessMember: 'Member channels',
     accessCommittee: '{name}',
     accessLead: '{name}, including lead channels',
