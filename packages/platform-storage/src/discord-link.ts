@@ -28,6 +28,15 @@ export interface DiscordLinkProfile {
   disconnecting: boolean;
   username: string | null;
 }
+/** What a member sees after connecting: the verified account and the access LVBT keeps in sync. */
+export interface DiscordConnectionSummary {
+  username: string;
+  displayName: string | null;
+  memberRole: boolean;
+  committees: Array<{ name: string; lead: boolean }>;
+  /** Discord role IDs for the member's committees, used to look up the channels they open. */
+  roleIds: string[];
+}
 export function discordLinkOrigin(origin: string): boolean {
   return ['https://lasvegasfortransit.org', 'https://preview.lasvegasfortransit.org'].includes(
     origin,
@@ -66,6 +75,52 @@ export class DiscordLinkService {
           username: row.count === 1 ? row.username : null,
         }
       : null;
+  }
+  /** Read-only: describes one verified connection, or null when there is not exactly one. */
+  async connection(sessionToken: string): Promise<DiscordConnectionSummary | null> {
+    if (!/^[\w-]{43}$/.test(sessionToken)) return null;
+    const row = await this.env.PLATFORM_DB.prepare(
+      `SELECT profile.username,profile.display_name AS displayName,p.membership_status='member' AS memberRole,
+      (SELECT json_group_array(json_object('name',name,'lead',lead,'roleId',role_id,'leadRoleId',lead_role_id)) FROM (SELECT c.name,
+       CASE WHEN a.role='lead' AND c.discord_lead_role_id IS NOT NULL THEN 1 ELSE 0 END AS lead,
+       c.discord_role_id AS role_id,
+       CASE WHEN a.role='lead' THEN c.discord_lead_role_id END AS lead_role_id
+       FROM committee_assignments a JOIN committees c ON c.id=a.committee_id
+       WHERE a.person_id=p.id AND a.ended_at IS NULL AND p.membership_status='member' AND c.discord_role_id IS NOT NULL
+       ORDER BY c.name)) AS committees
+      FROM sessions s JOIN people p ON p.id=s.person_id
+      JOIN identities i ON i.person_id=p.id AND i.platform='discord' AND i.link_method IN ('self_linked','staff_confirmed')
+      JOIN discord_identity_profiles profile ON profile.identity_record_id=i.id
+      WHERE s.id_hash=? AND s.expires_at>? AND p.deleted_at IS NULL
+      AND (SELECT count(*) FROM identities o WHERE o.person_id=p.id AND o.platform='discord')=1
+      AND NOT EXISTS(SELECT 1 FROM discord_disconnects d WHERE d.identity_record_id=i.id)`,
+    )
+      .bind(await discordSessionHash(this.env, sessionToken), new Date().toISOString())
+      .first<{
+        username: string;
+        displayName: string | null;
+        memberRole: number;
+        committees: string;
+      }>();
+    if (!row) return null;
+    const committees = JSON.parse(row.committees) as Array<{
+      name: string;
+      lead: number;
+      roleId: string;
+      leadRoleId: string | null;
+    }>;
+    return {
+      username: row.username,
+      displayName: row.displayName,
+      memberRole: Boolean(row.memberRole),
+      committees: committees.map((committee) => ({
+        name: committee.name,
+        lead: Boolean(committee.lead),
+      })),
+      roleIds: committees.flatMap((committee) =>
+        committee.leadRoleId ? [committee.roleId, committee.leadRoleId] : [committee.roleId],
+      ),
+    };
   }
   async begin(input: BrowserInput): Promise<{ state: string; callbackUrl: string } | null> {
     const now = input.now ?? new Date();

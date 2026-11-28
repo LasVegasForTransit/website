@@ -28,6 +28,11 @@ export function fillDiscordProfile(
             : t('discord.connected'),
       ),
     )
-    .on('[data-slot="discord-manage"]', showText(t('discord.manage')))
+    .on('[data-slot="discord-manage"]', {
+      element(element) {
+        element.remove();
+      },
+    })
+    .on('[data-slot="discord-access"]', profile.disconnecting ? {} : show())
     .on('[data-slot="discord-disconnect"]', show());
 }

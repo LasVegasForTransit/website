@@ -135,8 +135,7 @@ void test('an unlinked /link command gets a private button to the member connect
   assert.deepEqual(await response.json(), {
     type: 4,
     data: {
-      content:
-        'Confirm your LVBT membership on the website to join the conversation in our member and committee channels.',
+      content: 'Connect your LVBT account to get member channels and your committees’ channels.',
       flags: 64,
       components: [
         {
@@ -145,7 +144,7 @@ void test('an unlinked /link command gets a private button to the member connect
             {
               type: 2,
               style: 5,
-              label: 'Continue on lasvegasfortransit.org',
+              label: 'Connect on lasvegasfortransit.org',
               url: 'https://lasvegasfortransit.org/account/discord/',
             },
           ],

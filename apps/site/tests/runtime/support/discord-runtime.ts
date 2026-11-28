@@ -23,6 +23,68 @@ export const DISCORD_ROLES = {
   secondCommittee: '888888888888888888',
   unmanaged: '666666666666666666',
 };
+const hiddenFrom = (role: string) => [
+  { id: '111111111111111111', type: 0, allow: '0', deny: String(1n << 10n) },
+  { id: role, type: 0, allow: String(1n << 10n), deny: '0' },
+];
+export const DISCORD_CHANNELS = [
+  { id: '123000000000000010', name: 'Committees', type: 4, position: 1, parent_id: null },
+  { id: '123000000000000001', name: 'welcome', type: 0, position: 0, parent_id: null },
+  {
+    id: '123000000000000002',
+    name: 'members',
+    type: 0,
+    position: 1,
+    parent_id: null,
+    topic: 'News and conversation for all LVBT members',
+    permission_overwrites: hiddenFrom(DISCORD_ROLES.member),
+  },
+  {
+    id: '123000000000000003',
+    name: 'civic-tech',
+    type: 0,
+    position: 2,
+    parent_id: null,
+    topic: 'Build **maps and tools** for riders. Ask <@&888888888888888888> about rides.',
+    permission_overwrites: hiddenFrom(DISCORD_ROLES.firstCommittee),
+  },
+  {
+    id: '123000000000000004',
+    name: 'events',
+    type: 0,
+    position: 0,
+    parent_id: '123000000000000010',
+    permission_overwrites: hiddenFrom(DISCORD_ROLES.secondCommittee),
+  },
+];
+async function commandResponse(
+  request: { method: string; json(): Promise<unknown> },
+  commands: object[],
+): Promise<RuntimeResponse> {
+  if (request.method === 'GET') return json(commands);
+  assert.equal(request.method, 'POST');
+  const command = { id: '777777777777777777', ...((await request.json()) as object) };
+  commands.push(command);
+  return json(command);
+}
+/** Roles and channels for the confirmation page's channel list. */
+function guildInventory(request: { method: string }, url: URL): RuntimeResponse | null {
+  if (url.pathname === '/api/v10/guilds/111111111111111111/roles') {
+    assert.equal(request.method, 'GET');
+    return json(
+      ['111111111111111111', ...Object.values(DISCORD_ROLES)].map((id) => ({
+        id,
+        name: id === DISCORD_ROLES.secondCommittee ? 'Events' : 'Role',
+        permissions: id === '111111111111111111' ? String(1n << 10n) : '0',
+      })),
+    );
+  }
+  if (url.pathname === '/api/v10/guilds/111111111111111111/channels') {
+    assert.equal(request.method, 'GET');
+    return json(DISCORD_CHANNELS);
+  }
+  return null;
+}
 interface Scenario {
   joined: boolean;
   pending: boolean;
@@ -148,6 +210,7 @@ async function simulatorFor(
     pending: scenario.pending,
     nick: null,
   });
+  const commands: object[] = [];
   const provider: V4FetchHandler = async (request) => {
     providerCalls.push(request.url);
     const url = new URL(request.url);
@@ -171,6 +234,13 @@ async function simulatorFor(
       return json(DISCORD_USER);
     }
     assert.equal(request.headers.get('Authorization'), 'Bot fixture-bot-only');
+    // The jobs Worker registers the /link command, then reads it back.
+    if (
+      url.pathname === '/api/v10/applications/555555555555555555/guilds/111111111111111111/commands'
+    )
+      return await commandResponse(request, commands);
+    const inventory = guildInventory(request, url);
+    if (inventory) return inventory;
     if (url.pathname === '/api/v10/guilds/111111111111111111/members') {
       assert.equal(request.method, 'GET');
       assert.equal(url.searchParams.get('limit'), '1000');
@@ -207,6 +277,7 @@ async function simulatorFor(
             LVBT_LINK_SIGNING_SECRET: 'fixture-links-only',
             LVBT_DISCORD_APPLICATION_ID: '555555555555555555',
             LVBT_DISCORD_CLIENT_SECRET: 'fixture-client-only',
+            LVBT_DISCORD_GUILD_ID: '111111111111111111',
             LVBT_DEPLOYMENT_ENV: 'preview',
           },
           serviceBindings: { LVBT_DISCORD_JOBS: 'lvbt-discord-jobs-fixture' },

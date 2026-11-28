@@ -70,8 +70,27 @@ void test('welcome email escapes the name and keeps actions available with image
   assert.match(email.html, /Welcome to LVBT, &lt;Alex&gt;!/);
   assert.doesNotMatch(email.html, /Welcome to LVBT, <Alex>!/);
   assert.match(email.html, /https:\/\/lasvegasfortransit\.org\/email\/discord-icon\.png/);
-  assert.match(email.html, /Join the server/);
   assert.match(email.html, /Unsubscribe from LVBT/);
-  assert.match(email.text, /Join the server|Discord:/);
+  assert.match(email.text, /join\/remove\/\?token=signed/);
+});
+
+void test('welcome email sends people to connect Discord with the same words as the website', () => {
+  const email = memberWelcomeEmail({
+    givenName: 'Alex',
+    action: welcomeAction([], null),
+    unsubscribeUrl: 'https://lasvegasfortransit.org/join/remove/?token=signed',
+  });
+  // A bare invite joins the server without roles; connecting is what syncs them.
+  assert.doesNotMatch(email.html + email.text, /discord\.gg/);
+  assert.match(
+    email.html,
+    /href="https:\/\/lasvegasfortransit\.org\/account\/discord\/"[^>]*>Connect Discord</,
+  );
+  assert.match(
+    email.text,
+    /Connect Discord: https:\/\/lasvegasfortransit\.org\/account\/discord\//,
+  );
+  for (const body of [email.html, email.text])
+    assert.ok(body.includes('Talk with other members and get your committees’ channels.'));
   assert.match(email.text, /join\/remove\/\?token=signed/);
 });
